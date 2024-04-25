@@ -156,7 +156,7 @@ ibis.to_sql(expr)
 ![](./standards.png)
 
 
-## Ibis origins {transition="fade"} {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+## Ibis origins {transition="fade" background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
 
 from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/) by Wes McKinney
 
