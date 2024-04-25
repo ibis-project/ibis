@@ -1404,7 +1404,7 @@ def test_array_literal_with_exprs(con, input, expected):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "postgres", "pandas", "polars", "risingwave", "dask"],
+    ["datafusion", "postgres", "pandas", "polars", "risingwave", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.broken(
