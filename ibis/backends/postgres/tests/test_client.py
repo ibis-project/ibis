@@ -295,3 +295,19 @@ def test_pgvector_type_load(con):
     )
 
     con.drop_table("itemsvrandom")
+
+
+def test_name_dtype(con):
+    expected_schema = ibis.schema(
+        {
+            "f_table_catalog": dt.String(nullable=True),
+            "f_table_schema": dt.String(nullable=True),
+            "f_table_name": dt.String(nullable=True),
+            "f_geometry_column": dt.String(nullable=True),
+            "coord_dimension": dt.Int32(nullable=True),
+            "srid": dt.Int32(nullable=True),
+            "type": dt.String(nullable=True),
+        }
+    )
+
+    assert con.tables.geometry_columns.schema() == expected_schema
