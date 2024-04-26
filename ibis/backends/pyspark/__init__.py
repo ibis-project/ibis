@@ -229,16 +229,34 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return catalog
 
     @contextlib.contextmanager
-    def _active_database(self, name: str | None):
-        if name is None:
+    def _active_catalog_database(self, catalog: str | None, db: str | None):
+        if catalog is None and db is None:
             yield
             return
-        current = self.current_database
+        if catalog is not None and PYSPARK_LT_34:
+            raise com.UnsupportedArgumentError(
+                "Catalogs are not supported in pyspark < 3.4"
+            )
+        current_catalog = self.current_catalog
+        current_db = self.current_database
+
+        # This little horrible bit of work is to avoid trying to set
+        # the `CurrentDatabase` inside of a catalog where we don't have permission
+        # to do so.  We can't have the catalog and database context managers work
+        # separately because we need to:
+        # 1. set catalog
+        # 2. set database
+        # 3. set catalog to previous
+        # 4. set database to previous
         try:
-            self._session.catalog.setCurrentDatabase(name)
+            if not PYSPARK_LT_34 and catalog is not None:
+                self._session.catalog.setCurrentCatalog(catalog)
+            self._session.catalog.setCurrentDatabase(db)
             yield
         finally:
-            self._session.catalog.setCurrentDatabase(current)
+            if not PYSPARK_LT_34 and catalog is not None:
+                self._session.catalog.setCurrentCatalog(current_catalog)
+            self._session.catalog.setCurrentDatabase(current_db)
 
     @contextlib.contextmanager
     def _active_catalog(self, name: str | None):
@@ -438,7 +456,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        with self._active_catalog(catalog), self._active_database(db):
+        with self._active_catalog_database(catalog, db):
             df = self._session.table(table_name)
             struct = PySparkType.to_ibis(df.schema)
 
@@ -500,13 +518,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
             query = self.compile(table)
             mode = "overwrite" if overwrite else "error"
-            with self._active_catalog(catalog), self._active_database(db):
+            with self._active_catalog_database(catalog, db):
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
                 df.write.saveAsTable(name, format=format, mode=mode)
         elif schema is not None:
             schema = PySparkSchema.from_ibis(schema)
-            with self._active_catalog(catalog), self._active_database(db):
+            with self._active_catalog_database(catalog, db):
                 self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
