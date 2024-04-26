@@ -197,7 +197,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
             session = SparkSession.builder.getOrCreate()
 
-        self._context = session.sparkContext
         self._session = session
 
         # Spark internally stores timestamps as UTC values, and timestamp data
