@@ -46,6 +46,7 @@ _from_sqlglot_types = {
     typecode.NULL: dt.Null,
     typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
+    typecode.ROWVERSION: partial(dt.Binary, nullable=False),
     typecode.SMALLINT: dt.Int16,
     typecode.SMALLMONEY: dt.Decimal(10, 4),
     typecode.TEXT: dt.String,
@@ -86,7 +87,6 @@ _from_sqlglot_types = {
     # HLLSKETCH = auto()
     # IMAGE = auto()
     # IPPREFIX = auto()
-    # ROWVERSION = auto()
     # SERIAL = auto()
     # SET = auto()
     # SMALLSERIAL = auto()
