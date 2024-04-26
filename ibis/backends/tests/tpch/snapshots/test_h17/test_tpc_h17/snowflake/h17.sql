@@ -1,50 +1,46 @@
+WITH "t2" AS (
+  SELECT
+    "t0"."L_ORDERKEY" AS "l_orderkey",
+    "t0"."L_PARTKEY" AS "l_partkey",
+    "t0"."L_SUPPKEY" AS "l_suppkey",
+    "t0"."L_LINENUMBER" AS "l_linenumber",
+    "t0"."L_QUANTITY" AS "l_quantity",
+    "t0"."L_EXTENDEDPRICE" AS "l_extendedprice",
+    "t0"."L_DISCOUNT" AS "l_discount",
+    "t0"."L_TAX" AS "l_tax",
+    "t0"."L_RETURNFLAG" AS "l_returnflag",
+    "t0"."L_LINESTATUS" AS "l_linestatus",
+    "t0"."L_SHIPDATE" AS "l_shipdate",
+    "t0"."L_COMMITDATE" AS "l_commitdate",
+    "t0"."L_RECEIPTDATE" AS "l_receiptdate",
+    "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
+    "t0"."L_SHIPMODE" AS "l_shipmode",
+    "t0"."L_COMMENT" AS "l_comment"
+  FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
+)
 SELECT
-  SUM("t9"."l_extendedprice") / 7.0 AS "avg_yearly"
+  SUM("t10"."l_extendedprice") / 7.0 AS "avg_yearly"
 FROM (
   SELECT
-    "t6"."l_orderkey",
-    "t6"."l_partkey",
-    "t6"."l_suppkey",
-    "t6"."l_linenumber",
-    "t6"."l_quantity",
-    "t6"."l_extendedprice",
-    "t6"."l_discount",
-    "t6"."l_tax",
-    "t6"."l_returnflag",
-    "t6"."l_linestatus",
-    "t6"."l_shipdate",
-    "t6"."l_commitdate",
-    "t6"."l_receiptdate",
-    "t6"."l_shipinstruct",
-    "t6"."l_shipmode",
-    "t6"."l_comment",
-    "t6"."p_partkey",
-    "t6"."p_name",
-    "t6"."p_mfgr",
-    "t6"."p_brand",
-    "t6"."p_type",
-    "t6"."p_size",
-    "t6"."p_container",
-    "t6"."p_retailprice",
-    "t6"."p_comment"
+    *
   FROM (
     SELECT
-      "t4"."l_orderkey",
-      "t4"."l_partkey",
-      "t4"."l_suppkey",
-      "t4"."l_linenumber",
-      "t4"."l_quantity",
-      "t4"."l_extendedprice",
-      "t4"."l_discount",
-      "t4"."l_tax",
-      "t4"."l_returnflag",
-      "t4"."l_linestatus",
-      "t4"."l_shipdate",
-      "t4"."l_commitdate",
-      "t4"."l_receiptdate",
-      "t4"."l_shipinstruct",
-      "t4"."l_shipmode",
-      "t4"."l_comment",
+      "t6"."l_orderkey",
+      "t6"."l_partkey",
+      "t6"."l_suppkey",
+      "t6"."l_linenumber",
+      "t6"."l_quantity",
+      "t6"."l_extendedprice",
+      "t6"."l_discount",
+      "t6"."l_tax",
+      "t6"."l_returnflag",
+      "t6"."l_linestatus",
+      "t6"."l_shipdate",
+      "t6"."l_commitdate",
+      "t6"."l_receiptdate",
+      "t6"."l_shipinstruct",
+      "t6"."l_shipmode",
+      "t6"."l_comment",
       "t5"."p_partkey",
       "t5"."p_name",
       "t5"."p_mfgr",
@@ -54,26 +50,7 @@ FROM (
       "t5"."p_container",
       "t5"."p_retailprice",
       "t5"."p_comment"
-    FROM (
-      SELECT
-        "t0"."L_ORDERKEY" AS "l_orderkey",
-        "t0"."L_PARTKEY" AS "l_partkey",
-        "t0"."L_SUPPKEY" AS "l_suppkey",
-        "t0"."L_LINENUMBER" AS "l_linenumber",
-        "t0"."L_QUANTITY" AS "l_quantity",
-        "t0"."L_EXTENDEDPRICE" AS "l_extendedprice",
-        "t0"."L_DISCOUNT" AS "l_discount",
-        "t0"."L_TAX" AS "l_tax",
-        "t0"."L_RETURNFLAG" AS "l_returnflag",
-        "t0"."L_LINESTATUS" AS "l_linestatus",
-        "t0"."L_SHIPDATE" AS "l_shipdate",
-        "t0"."L_COMMITDATE" AS "l_commitdate",
-        "t0"."L_RECEIPTDATE" AS "l_receiptdate",
-        "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
-        "t0"."L_SHIPMODE" AS "l_shipmode",
-        "t0"."L_COMMENT" AS "l_comment"
-      FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
-    ) AS "t4"
+    FROM "t2" AS "t6"
     INNER JOIN (
       SELECT
         "t1"."P_PARTKEY" AS "p_partkey",
@@ -87,37 +64,22 @@ FROM (
         "t1"."P_COMMENT" AS "p_comment"
       FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t1"
     ) AS "t5"
-      ON "t5"."p_partkey" = "t4"."l_partkey"
-  ) AS "t6"
+      ON "t5"."p_partkey" = "t6"."l_partkey"
+  ) AS "t7"
   WHERE
-    "t6"."p_brand" = 'Brand#23'
-    AND "t6"."p_container" = 'MED BOX'
-    AND "t6"."l_quantity" < (
+    "t7"."p_brand" = 'Brand#23'
+    AND "t7"."p_container" = 'MED BOX'
+    AND "t7"."l_quantity" < (
       (
         SELECT
-          AVG("t7"."l_quantity") AS "Mean(l_quantity)"
+          AVG("t8"."l_quantity") AS "Mean(l_quantity)"
         FROM (
           SELECT
-            "t0"."L_ORDERKEY" AS "l_orderkey",
-            "t0"."L_PARTKEY" AS "l_partkey",
-            "t0"."L_SUPPKEY" AS "l_suppkey",
-            "t0"."L_LINENUMBER" AS "l_linenumber",
-            "t0"."L_QUANTITY" AS "l_quantity",
-            "t0"."L_EXTENDEDPRICE" AS "l_extendedprice",
-            "t0"."L_DISCOUNT" AS "l_discount",
-            "t0"."L_TAX" AS "l_tax",
-            "t0"."L_RETURNFLAG" AS "l_returnflag",
-            "t0"."L_LINESTATUS" AS "l_linestatus",
-            "t0"."L_SHIPDATE" AS "l_shipdate",
-            "t0"."L_COMMITDATE" AS "l_commitdate",
-            "t0"."L_RECEIPTDATE" AS "l_receiptdate",
-            "t0"."L_SHIPINSTRUCT" AS "l_shipinstruct",
-            "t0"."L_SHIPMODE" AS "l_shipmode",
-            "t0"."L_COMMENT" AS "l_comment"
-          FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t0"
+            *
+          FROM "t2" AS "t4"
           WHERE
-            "t0"."L_PARTKEY" = "t6"."p_partkey"
-        ) AS "t7"
+            "t4"."l_partkey" = "t7"."p_partkey"
+        ) AS "t8"
       ) * 0.2
     )
-) AS "t9"
+) AS "t10"

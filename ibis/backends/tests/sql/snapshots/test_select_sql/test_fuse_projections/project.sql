@@ -1,7 +1,14 @@
 SELECT
-  "t0"."foo",
-  "t0"."bar",
-  "t0"."value",
-  "t0"."foo" + "t0"."bar" AS "baz",
-  "t0"."foo" * CAST(2 AS TINYINT) AS "qux"
-FROM "tbl" AS "t0"
+  "t1"."foo",
+  "t1"."bar",
+  "t1"."value",
+  "t1"."baz",
+  "t1"."foo" * CAST(2 AS TINYINT) AS "qux"
+FROM (
+  SELECT
+    "t0"."foo",
+    "t0"."bar",
+    "t0"."value",
+    "t0"."foo" + "t0"."bar" AS "baz"
+  FROM "tbl" AS "t0"
+) AS "t1"

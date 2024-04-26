@@ -1,9 +1,5 @@
 SELECT
-  "t5"."on",
-  "t5"."by",
-  "t5"."on_right",
-  "t5"."by_right",
-  "t5"."val"
+  *
 FROM (
   SELECT
     "t2"."on",
@@ -21,9 +17,7 @@ WHERE
       MAX("t4"."on") AS "Max(on)"
     FROM (
       SELECT
-        "t1"."on",
-        "t1"."by",
-        "t1"."val"
+        *
       FROM "right" AS "t1"
       WHERE
         "t1"."by" = "t0"."by" AND "t1"."on" <= "t0"."on"

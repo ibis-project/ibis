@@ -1,21 +1,6 @@
 WITH "t10" AS (
   SELECT
-    "t9"."ps_partkey",
-    "t9"."ps_suppkey",
-    "t9"."ps_availqty",
-    "t9"."ps_supplycost",
-    "t9"."ps_comment",
-    "t9"."s_suppkey",
-    "t9"."s_name",
-    "t9"."s_address",
-    "t9"."s_nationkey",
-    "t9"."s_phone",
-    "t9"."s_acctbal",
-    "t9"."s_comment",
-    "t9"."n_nationkey",
-    "t9"."n_name",
-    "t9"."n_regionkey",
-    "t9"."n_comment"
+    *
   FROM (
     SELECT
       "t7"."ps_partkey",
@@ -69,23 +54,26 @@ WITH "t10" AS (
     "t9"."n_name" = 'GERMANY'
 )
 SELECT
-  "t12"."ps_partkey",
-  "t12"."value"
+  *
 FROM (
   SELECT
-    "t11"."ps_partkey",
-    SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "value"
-  FROM "t10" AS "t11"
-  GROUP BY
-    1
-) AS "t12"
-WHERE
-  "t12"."value" > (
-    (
-      SELECT
-        SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
-      FROM "t10" AS "t11"
-    ) * CAST(0.0001 AS DOUBLE)
-  )
+    *
+  FROM (
+    SELECT
+      "t11"."ps_partkey",
+      SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "value"
+    FROM "t10" AS "t11"
+    GROUP BY
+      1
+  ) AS "t12"
+  WHERE
+    "t12"."value" > (
+      (
+        SELECT
+          SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
+        FROM "t10" AS "t11"
+      ) * CAST(0.0001 AS DOUBLE)
+    )
+) AS "t14"
 ORDER BY
-  "t12"."value" DESC
+  "t14"."value" DESC

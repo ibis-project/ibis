@@ -19,55 +19,18 @@ WITH "t5" AS (
   FROM "hive"."ibis_sf1"."lineitem" AS "t2"
 )
 SELECT
-  "t14"."c_name",
-  "t14"."c_custkey",
-  "t14"."o_orderkey",
-  "t14"."o_orderdate",
-  "t14"."o_totalprice",
-  "t14"."sum_qty"
+  *
 FROM (
   SELECT
-    "t13"."c_name",
-    "t13"."c_custkey",
-    "t13"."o_orderkey",
-    "t13"."o_orderdate",
-    "t13"."o_totalprice",
-    SUM("t13"."l_quantity") AS "sum_qty"
+    "t14"."c_name",
+    "t14"."c_custkey",
+    "t14"."o_orderkey",
+    "t14"."o_orderdate",
+    "t14"."o_totalprice",
+    SUM("t14"."l_quantity") AS "sum_qty"
   FROM (
     SELECT
-      "t11"."c_custkey",
-      "t11"."c_name",
-      "t11"."c_address",
-      "t11"."c_nationkey",
-      "t11"."c_phone",
-      "t11"."c_acctbal",
-      "t11"."c_mktsegment",
-      "t11"."c_comment",
-      "t11"."o_orderkey",
-      "t11"."o_custkey",
-      "t11"."o_orderstatus",
-      "t11"."o_totalprice",
-      "t11"."o_orderdate",
-      "t11"."o_orderpriority",
-      "t11"."o_clerk",
-      "t11"."o_shippriority",
-      "t11"."o_comment",
-      "t11"."l_orderkey",
-      "t11"."l_partkey",
-      "t11"."l_suppkey",
-      "t11"."l_linenumber",
-      "t11"."l_quantity",
-      "t11"."l_extendedprice",
-      "t11"."l_discount",
-      "t11"."l_tax",
-      "t11"."l_returnflag",
-      "t11"."l_linestatus",
-      "t11"."l_shipdate",
-      "t11"."l_commitdate",
-      "t11"."l_receiptdate",
-      "t11"."l_shipinstruct",
-      "t11"."l_shipmode",
-      "t11"."l_comment"
+      *
     FROM (
       SELECT
         "t6"."c_custkey",
@@ -135,27 +98,31 @@ FROM (
     WHERE
       "t11"."o_orderkey" IN (
         SELECT
-          "t10"."l_orderkey"
+          "t12"."l_orderkey"
         FROM (
           SELECT
-            "t8"."l_orderkey",
-            SUM("t8"."l_quantity") AS "qty_sum"
-          FROM "t5" AS "t8"
-          GROUP BY
-            1
-        ) AS "t10"
-        WHERE
-          "t10"."qty_sum" > 300
+            *
+          FROM (
+            SELECT
+              "t8"."l_orderkey",
+              SUM("t8"."l_quantity") AS "qty_sum"
+            FROM "t5" AS "t8"
+            GROUP BY
+              1
+          ) AS "t10"
+          WHERE
+            "t10"."qty_sum" > 300
+        ) AS "t12"
       )
-  ) AS "t13"
+  ) AS "t14"
   GROUP BY
     1,
     2,
     3,
     4,
     5
-) AS "t14"
+) AS "t15"
 ORDER BY
-  "t14"."o_totalprice" DESC,
-  "t14"."o_orderdate" ASC
+  "t15"."o_totalprice" DESC,
+  "t15"."o_orderdate" ASC
 LIMIT 100

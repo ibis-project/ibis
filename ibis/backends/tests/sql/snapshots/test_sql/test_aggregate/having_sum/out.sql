@@ -1,6 +1,5 @@
 SELECT
-  "t1"."foo_id",
-  "t1"."total"
+  *
 FROM (
   SELECT
     "t0"."foo_id",

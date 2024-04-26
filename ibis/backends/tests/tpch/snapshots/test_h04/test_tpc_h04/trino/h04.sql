@@ -1,21 +1,12 @@
 SELECT
-  "t5"."o_orderpriority",
-  "t5"."order_count"
+  *
 FROM (
   SELECT
-    "t4"."o_orderpriority",
+    "t5"."o_orderpriority",
     COUNT(*) AS "order_count"
   FROM (
     SELECT
-      "t2"."o_orderkey",
-      "t2"."o_custkey",
-      "t2"."o_orderstatus",
-      "t2"."o_totalprice",
-      "t2"."o_orderdate",
-      "t2"."o_orderpriority",
-      "t2"."o_clerk",
-      "t2"."o_shippriority",
-      "t2"."o_comment"
+      *
     FROM (
       SELECT
         "t0"."o_orderkey",
@@ -33,20 +24,39 @@ FROM (
       EXISTS(
         SELECT
           1
-        FROM "hive"."ibis_sf1"."lineitem" AS "t1"
+        FROM (
+          SELECT
+            "t1"."l_orderkey",
+            "t1"."l_partkey",
+            "t1"."l_suppkey",
+            "t1"."l_linenumber",
+            CAST("t1"."l_quantity" AS DECIMAL(15, 2)) AS "l_quantity",
+            CAST("t1"."l_extendedprice" AS DECIMAL(15, 2)) AS "l_extendedprice",
+            CAST("t1"."l_discount" AS DECIMAL(15, 2)) AS "l_discount",
+            CAST("t1"."l_tax" AS DECIMAL(15, 2)) AS "l_tax",
+            "t1"."l_returnflag",
+            "t1"."l_linestatus",
+            "t1"."l_shipdate",
+            "t1"."l_commitdate",
+            "t1"."l_receiptdate",
+            "t1"."l_shipinstruct",
+            "t1"."l_shipmode",
+            "t1"."l_comment"
+          FROM "hive"."ibis_sf1"."lineitem" AS "t1"
+        ) AS "t3"
         WHERE
           (
-            "t1"."l_orderkey" = "t2"."o_orderkey"
+            "t3"."l_orderkey" = "t2"."o_orderkey"
           )
           AND (
-            "t1"."l_commitdate" < "t1"."l_receiptdate"
+            "t3"."l_commitdate" < "t3"."l_receiptdate"
           )
       )
       AND "t2"."o_orderdate" >= FROM_ISO8601_DATE('1993-07-01')
       AND "t2"."o_orderdate" < FROM_ISO8601_DATE('1993-10-01')
-  ) AS "t4"
+  ) AS "t5"
   GROUP BY
     1
-) AS "t5"
+) AS "t6"
 ORDER BY
-  "t5"."o_orderpriority" ASC
+  "t6"."o_orderpriority" ASC

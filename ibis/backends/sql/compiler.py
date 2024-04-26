@@ -1107,25 +1107,24 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
-        # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
-            return parent
+    def visit_Project(self, op, *, parent, values):
+        return sg.select(*self._cleanup_names(values), copy=False).from_(
+            parent, copy=False
+        )
 
-        result = parent
+    def visit_Filter(self, op, *, parent, predicates):
+        return (
+            sg.select(STAR, copy=False)
+            .from_(parent, copy=False)
+            .where(*predicates, copy=False)
+        )
 
-        if selections:
-            result = sg.select(*self._cleanup_names(selections), copy=False).from_(
-                result, copy=False
-            )
-
-        if predicates:
-            result = result.where(*predicates, copy=False)
-
-        if sort_keys:
-            result = result.order_by(*sort_keys, copy=False)
-
-        return result
+    def visit_Sort(self, op, *, parent, keys):
+        return (
+            sg.select(STAR, copy=False)
+            .from_(parent, copy=False)
+            .order_by(*keys, copy=False)
+        )
 
     def visit_DummyTable(self, op, *, values):
         return sg.select(*self._cleanup_names(values), copy=False)

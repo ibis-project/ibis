@@ -1,6 +1,5 @@
 SELECT
-  "t6"."c_count",
-  "t6"."custdist"
+  *
 FROM (
   SELECT
     "t5"."c_count",

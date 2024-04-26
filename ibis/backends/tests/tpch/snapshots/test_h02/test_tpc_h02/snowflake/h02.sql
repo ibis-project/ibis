@@ -31,130 +31,120 @@ WITH "t9" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PARTSUPP" AS "t1"
 )
 SELECT
-  "t23"."s_acctbal",
-  "t23"."s_name",
-  "t23"."n_name",
-  "t23"."p_partkey",
-  "t23"."p_mfgr",
-  "t23"."s_address",
-  "t23"."s_phone",
-  "t23"."s_comment"
+  *
 FROM (
   SELECT
-    "t10"."p_partkey",
-    "t10"."p_name",
-    "t10"."p_mfgr",
-    "t10"."p_brand",
-    "t10"."p_type",
-    "t10"."p_size",
-    "t10"."p_container",
-    "t10"."p_retailprice",
-    "t10"."p_comment",
-    "t15"."ps_partkey",
-    "t15"."ps_suppkey",
-    "t15"."ps_availqty",
-    "t15"."ps_supplycost",
-    "t15"."ps_comment",
-    "t17"."s_suppkey",
-    "t17"."s_name",
-    "t17"."s_address",
-    "t17"."s_nationkey",
-    "t17"."s_phone",
-    "t17"."s_acctbal",
-    "t17"."s_comment",
-    "t19"."n_nationkey",
-    "t19"."n_name",
-    "t19"."n_regionkey",
-    "t19"."n_comment",
-    "t21"."r_regionkey",
-    "t21"."r_name",
-    "t21"."r_comment"
+    "t27"."s_acctbal",
+    "t27"."s_name",
+    "t27"."n_name",
+    "t27"."p_partkey",
+    "t27"."p_mfgr",
+    "t27"."s_address",
+    "t27"."s_phone",
+    "t27"."s_comment"
   FROM (
     SELECT
-      "t0"."P_PARTKEY" AS "p_partkey",
-      "t0"."P_NAME" AS "p_name",
-      "t0"."P_MFGR" AS "p_mfgr",
-      "t0"."P_BRAND" AS "p_brand",
-      "t0"."P_TYPE" AS "p_type",
-      "t0"."P_SIZE" AS "p_size",
-      "t0"."P_CONTAINER" AS "p_container",
-      "t0"."P_RETAILPRICE" AS "p_retailprice",
-      "t0"."P_COMMENT" AS "p_comment"
-    FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t0"
-  ) AS "t10"
-  INNER JOIN "t6" AS "t15"
-    ON "t10"."p_partkey" = "t15"."ps_partkey"
-  INNER JOIN "t7" AS "t17"
-    ON "t17"."s_suppkey" = "t15"."ps_suppkey"
-  INNER JOIN "t8" AS "t19"
-    ON "t17"."s_nationkey" = "t19"."n_nationkey"
-  INNER JOIN "t9" AS "t21"
-    ON "t19"."n_regionkey" = "t21"."r_regionkey"
-) AS "t23"
-WHERE
-  "t23"."p_size" = 15
-  AND "t23"."p_type" LIKE '%BRASS'
-  AND "t23"."r_name" = 'EUROPE'
-  AND "t23"."ps_supplycost" = (
-    SELECT
-      MIN("t25"."ps_supplycost") AS "Min(ps_supplycost)"
+      *
     FROM (
       SELECT
-        "t24"."ps_partkey",
-        "t24"."ps_suppkey",
-        "t24"."ps_availqty",
-        "t24"."ps_supplycost",
-        "t24"."ps_comment",
-        "t24"."s_suppkey",
-        "t24"."s_name",
-        "t24"."s_address",
-        "t24"."s_nationkey",
-        "t24"."s_phone",
-        "t24"."s_acctbal",
-        "t24"."s_comment",
-        "t24"."n_nationkey",
-        "t24"."n_name",
-        "t24"."n_regionkey",
-        "t24"."n_comment",
-        "t24"."r_regionkey",
-        "t24"."r_name",
-        "t24"."r_comment"
+        "t10"."p_partkey",
+        "t10"."p_name",
+        "t10"."p_mfgr",
+        "t10"."p_brand",
+        "t10"."p_type",
+        "t10"."p_size",
+        "t10"."p_container",
+        "t10"."p_retailprice",
+        "t10"."p_comment",
+        "t15"."ps_partkey",
+        "t15"."ps_suppkey",
+        "t15"."ps_availqty",
+        "t15"."ps_supplycost",
+        "t15"."ps_comment",
+        "t17"."s_suppkey",
+        "t17"."s_name",
+        "t17"."s_address",
+        "t17"."s_nationkey",
+        "t17"."s_phone",
+        "t17"."s_acctbal",
+        "t17"."s_comment",
+        "t19"."n_nationkey",
+        "t19"."n_name",
+        "t19"."n_regionkey",
+        "t19"."n_comment",
+        "t21"."r_regionkey",
+        "t21"."r_name",
+        "t21"."r_comment"
       FROM (
         SELECT
-          "t16"."ps_partkey",
-          "t16"."ps_suppkey",
-          "t16"."ps_availqty",
-          "t16"."ps_supplycost",
-          "t16"."ps_comment",
-          "t18"."s_suppkey",
-          "t18"."s_name",
-          "t18"."s_address",
-          "t18"."s_nationkey",
-          "t18"."s_phone",
-          "t18"."s_acctbal",
-          "t18"."s_comment",
-          "t20"."n_nationkey",
-          "t20"."n_name",
-          "t20"."n_regionkey",
-          "t20"."n_comment",
-          "t22"."r_regionkey",
-          "t22"."r_name",
-          "t22"."r_comment"
-        FROM "t6" AS "t16"
-        INNER JOIN "t7" AS "t18"
-          ON "t18"."s_suppkey" = "t16"."ps_suppkey"
-        INNER JOIN "t8" AS "t20"
-          ON "t18"."s_nationkey" = "t20"."n_nationkey"
-        INNER JOIN "t9" AS "t22"
-          ON "t20"."n_regionkey" = "t22"."r_regionkey"
-      ) AS "t24"
-      WHERE
-        "t24"."r_name" = 'EUROPE' AND "t23"."p_partkey" = "t24"."ps_partkey"
-    ) AS "t25"
-  )
+          "t0"."P_PARTKEY" AS "p_partkey",
+          "t0"."P_NAME" AS "p_name",
+          "t0"."P_MFGR" AS "p_mfgr",
+          "t0"."P_BRAND" AS "p_brand",
+          "t0"."P_TYPE" AS "p_type",
+          "t0"."P_SIZE" AS "p_size",
+          "t0"."P_CONTAINER" AS "p_container",
+          "t0"."P_RETAILPRICE" AS "p_retailprice",
+          "t0"."P_COMMENT" AS "p_comment"
+        FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."PART" AS "t0"
+      ) AS "t10"
+      INNER JOIN "t6" AS "t15"
+        ON "t10"."p_partkey" = "t15"."ps_partkey"
+      INNER JOIN "t7" AS "t17"
+        ON "t17"."s_suppkey" = "t15"."ps_suppkey"
+      INNER JOIN "t8" AS "t19"
+        ON "t17"."s_nationkey" = "t19"."n_nationkey"
+      INNER JOIN "t9" AS "t21"
+        ON "t19"."n_regionkey" = "t21"."r_regionkey"
+    ) AS "t23"
+    WHERE
+      "t23"."p_size" = 15
+      AND "t23"."p_type" LIKE '%BRASS'
+      AND "t23"."r_name" = 'EUROPE'
+      AND "t23"."ps_supplycost" = (
+        SELECT
+          MIN("t25"."ps_supplycost") AS "Min(ps_supplycost)"
+        FROM (
+          SELECT
+            *
+          FROM (
+            SELECT
+              "t16"."ps_partkey",
+              "t16"."ps_suppkey",
+              "t16"."ps_availqty",
+              "t16"."ps_supplycost",
+              "t16"."ps_comment",
+              "t18"."s_suppkey",
+              "t18"."s_name",
+              "t18"."s_address",
+              "t18"."s_nationkey",
+              "t18"."s_phone",
+              "t18"."s_acctbal",
+              "t18"."s_comment",
+              "t20"."n_nationkey",
+              "t20"."n_name",
+              "t20"."n_regionkey",
+              "t20"."n_comment",
+              "t22"."r_regionkey",
+              "t22"."r_name",
+              "t22"."r_comment"
+            FROM "t6" AS "t16"
+            INNER JOIN "t7" AS "t18"
+              ON "t18"."s_suppkey" = "t16"."ps_suppkey"
+            INNER JOIN "t8" AS "t20"
+              ON "t18"."s_nationkey" = "t20"."n_nationkey"
+            INNER JOIN "t9" AS "t22"
+              ON "t20"."n_regionkey" = "t22"."r_regionkey"
+          ) AS "t24"
+          WHERE
+            "t24"."r_name" = 'EUROPE' AND "t23"."p_partkey" = "t24"."ps_partkey"
+        ) AS "t25"
+      )
+  ) AS "t27"
+) AS "t28"
 ORDER BY
-  "t23"."s_acctbal" DESC NULLS LAST,
-  "t23"."n_name" ASC,
-  "t23"."s_name" ASC,
-  "t23"."p_partkey" ASC
+  "t28"."s_acctbal" DESC NULLS LAST,
+  "t28"."n_name" ASC,
+  "t28"."s_name" ASC,
+  "t28"."p_partkey" ASC
 LIMIT 100

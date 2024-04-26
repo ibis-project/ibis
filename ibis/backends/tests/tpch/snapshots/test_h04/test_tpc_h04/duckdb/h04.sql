@@ -1,21 +1,12 @@
 SELECT
-  "t4"."o_orderpriority",
-  "t4"."order_count"
+  *
 FROM (
   SELECT
     "t3"."o_orderpriority",
     COUNT(*) AS "order_count"
   FROM (
     SELECT
-      "t0"."o_orderkey",
-      "t0"."o_custkey",
-      "t0"."o_orderstatus",
-      "t0"."o_totalprice",
-      "t0"."o_orderdate",
-      "t0"."o_orderpriority",
-      "t0"."o_clerk",
-      "t0"."o_shippriority",
-      "t0"."o_comment"
+      *
     FROM "orders" AS "t0"
     WHERE
       EXISTS(

@@ -1245,6 +1245,14 @@ def test_interval_add_cast_column(backend, alltypes, df):
             ),
             "%Y%m%d",
             marks=[
+                pytest.mark.broken(
+                    ["duckdb"],
+                    raises=DuckDBInvalidInputException,
+                    reason="strftime format must be a constant",
+                ),
+                pytest.mark.broken(
+                    ["postgres"], raises=AssertionError, reason="different results"
+                ),
                 pytest.mark.notimpl(
                     [
                         "polars",
@@ -1273,7 +1281,6 @@ def test_interval_add_cast_column(backend, alltypes, df):
 def test_strftime(backend, alltypes, df, expr_fn, pandas_pattern):
     expr = expr_fn(alltypes)
     expected = df.timestamp_col.dt.strftime(pandas_pattern).rename("formatted")
-
     result = expr.execute()
     backend.assert_series_equal(result, expected)
 

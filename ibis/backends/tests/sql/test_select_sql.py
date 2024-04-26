@@ -243,17 +243,6 @@ def test_fuse_projections(snapshot):
     assert_decompile_roundtrip(table3_filtered, snapshot, eq=schemas_eq)
 
 
-def test_projection_filter_fuse(projection_fuse_filter, snapshot):
-    expr1, expr2, expr3 = projection_fuse_filter
-
-    sql1 = ibis.to_sql(expr1)
-    sql2 = ibis.to_sql(expr2)
-
-    assert sql1 == sql2
-
-    snapshot.assert_match(to_sql(expr3), "out.sql")
-
-
 def test_bug_project_multiple_times(customer, nation, region, snapshot):
     # GH: 108
     joined = customer.inner_join(

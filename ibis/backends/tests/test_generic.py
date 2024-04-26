@@ -2076,6 +2076,20 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
         "for older dask versions sorting by multiple columns is not supported"
     ),
 )
+@pytest.mark.broken(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason=(
+        "The ORDER BY clause is invalid in views, inline functions, derived tables, "
+        "subqueries, and common table expressions, unless TOP, OFFSET or FOR XML is "
+        "also specified."
+    ),
+)
+@pytest.mark.broken(
+    ["postgres", "mysql", "sqlite", "datafusion", "pyspark", "snowflake", "trino"],
+    raises=AssertionError,
+    reason="inner sort is not preserved in the outer sort",
+)
 def test_select_sort_sort(backend, alltypes, df):
     t = alltypes
     expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
@@ -2111,6 +2125,29 @@ def test_select_sort_sort(backend, alltypes, df):
         "for older dask versions sorting by multiple columns is not supported"
     ),
     strict=False,
+)
+@pytest.mark.broken(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason=(
+        "The ORDER BY clause is invalid in views, inline functions, derived tables, "
+        "subqueries, and common table expressions, unless TOP, OFFSET or FOR XML is "
+        "also specified."
+    ),
+)
+@pytest.mark.broken(
+    [
+        "postgres",
+        "mysql",
+        "sqlite",
+        "datafusion",
+        "pyspark",
+        "snowflake",
+        "trino",
+        "mssql",
+    ],
+    raises=AssertionError,
+    reason="inner sort is not preserved in the outer sort",
 )
 def test_select_sort_sort_deferred(backend, alltypes, df):
     t = alltypes

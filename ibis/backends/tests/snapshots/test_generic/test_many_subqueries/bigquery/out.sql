@@ -1,32 +1,62 @@
-WITH `t1` AS (
+SELECT
+  `t7`.`street`,
+  `t7`.`key`
+FROM (
   SELECT
-    `t0`.`street`,
-    ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
-  FROM `data` AS `t0`
-), `t7` AS (
-  SELECT
-    `t6`.`street`,
-    ROW_NUMBER() OVER (ORDER BY `t6`.`street` ASC) - 1 AS `key`
+    `t5`.`street`,
+    ROW_NUMBER() OVER (ORDER BY `t5`.`street` ASC) - 1 AS `key`
   FROM (
     SELECT
-      `t3`.`street`,
-      `t3`.`key`
-    FROM `t1` AS `t3`
+      `t2`.`street`,
+      `t2`.`key`
+    FROM (
+      SELECT
+        `t0`.`street`,
+        ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
+      FROM `data` AS `t0`
+    ) AS `t2`
     INNER JOIN (
       SELECT
-        `t2`.`key`
-      FROM `t1` AS `t2`
-    ) AS `t5`
-      ON `t3`.`key` = `t5`.`key`
-  ) AS `t6`
-)
-SELECT
-  `t9`.`street`,
-  `t9`.`key`
-FROM `t7` AS `t9`
+        `t1`.`key`
+      FROM (
+        SELECT
+          `t0`.`street`,
+          ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
+        FROM `data` AS `t0`
+      ) AS `t1`
+    ) AS `t4`
+      ON `t2`.`key` = `t4`.`key`
+  ) AS `t5`
+) AS `t7`
 INNER JOIN (
   SELECT
-    `t8`.`key`
-  FROM `t7` AS `t8`
-) AS `t11`
-  ON `t9`.`key` = `t11`.`key`
+    `t6`.`key`
+  FROM (
+    SELECT
+      `t5`.`street`,
+      ROW_NUMBER() OVER (ORDER BY `t5`.`street` ASC) - 1 AS `key`
+    FROM (
+      SELECT
+        `t2`.`street`,
+        `t2`.`key`
+      FROM (
+        SELECT
+          `t0`.`street`,
+          ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
+        FROM `data` AS `t0`
+      ) AS `t2`
+      INNER JOIN (
+        SELECT
+          `t1`.`key`
+        FROM (
+          SELECT
+            `t0`.`street`,
+            ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
+          FROM `data` AS `t0`
+        ) AS `t1`
+      ) AS `t4`
+        ON `t2`.`key` = `t4`.`key`
+    ) AS `t5`
+  ) AS `t6`
+) AS `t9`
+  ON `t7`.`key` = `t9`.`key`

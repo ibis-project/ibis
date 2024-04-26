@@ -18,22 +18,7 @@ WITH "t6" AS (
       )) AS "total_revenue"
     FROM (
       SELECT
-        "t1"."l_orderkey",
-        "t1"."l_partkey",
-        "t1"."l_suppkey",
-        "t1"."l_linenumber",
-        "t1"."l_quantity",
-        "t1"."l_extendedprice",
-        "t1"."l_discount",
-        "t1"."l_tax",
-        "t1"."l_returnflag",
-        "t1"."l_linestatus",
-        "t1"."l_shipdate",
-        "t1"."l_commitdate",
-        "t1"."l_receiptdate",
-        "t1"."l_shipinstruct",
-        "t1"."l_shipmode",
-        "t1"."l_comment"
+        *
       FROM "lineitem" AS "t1"
       WHERE
         "t1"."l_shipdate" >= MAKE_DATE(1996, 1, 1)
@@ -45,17 +30,25 @@ WITH "t6" AS (
     ON "t2"."s_suppkey" = "t5"."l_suppkey"
 )
 SELECT
-  "t7"."s_suppkey",
-  "t7"."s_name",
-  "t7"."s_address",
-  "t7"."s_phone",
-  "t7"."total_revenue"
-FROM "t6" AS "t7"
-WHERE
-  "t7"."total_revenue" = (
+  *
+FROM (
+  SELECT
+    "t9"."s_suppkey",
+    "t9"."s_name",
+    "t9"."s_address",
+    "t9"."s_phone",
+    "t9"."total_revenue"
+  FROM (
     SELECT
-      MAX("t7"."total_revenue") AS "Max(total_revenue)"
+      *
     FROM "t6" AS "t7"
-  )
+    WHERE
+      "t7"."total_revenue" = (
+        SELECT
+          MAX("t7"."total_revenue") AS "Max(total_revenue)"
+        FROM "t6" AS "t7"
+      )
+  ) AS "t9"
+) AS "t10"
 ORDER BY
-  "t7"."s_suppkey" ASC
+  "t10"."s_suppkey" ASC

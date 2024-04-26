@@ -1,8 +1,11 @@
 SELECT
-  "t0"."a",
-  "t0"."b"
-FROM "t" AS "t0"
-WHERE
-  "t0"."a" = CAST(1 AS TINYINT)
+  *
+FROM (
+  SELECT
+    *
+  FROM "t" AS "t0"
+  WHERE
+    "t0"."a" = CAST(1 AS TINYINT)
+) AS "t1"
 ORDER BY
-  "t0"."b" || 'a' ASC
+  "t1"."b" || 'a' ASC

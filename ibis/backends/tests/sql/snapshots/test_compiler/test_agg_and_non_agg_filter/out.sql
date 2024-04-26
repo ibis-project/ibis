@@ -1,19 +1,22 @@
+WITH "t1" AS (
+  SELECT
+    *
+  FROM "my_table" AS "t0"
+  WHERE
+    "t0"."a" < CAST(100 AS TINYINT)
+)
 SELECT
-  "t0"."a",
-  "t0"."b"
-FROM "my_table" AS "t0"
-WHERE
-  "t0"."a" < CAST(100 AS TINYINT)
-  AND "t0"."a" = (
-    SELECT
-      MAX("t1"."a") AS "Max(a)"
-    FROM (
+  *
+FROM (
+  SELECT
+    *
+  FROM "t1" AS "t2"
+  WHERE
+    "t2"."a" = (
       SELECT
-        "t0"."a",
-        "t0"."b"
-      FROM "my_table" AS "t0"
-      WHERE
-        "t0"."a" < CAST(100 AS TINYINT)
-    ) AS "t1"
-  )
-  AND "t0"."b" = 'a'
+        MAX("t2"."a") AS "Max(a)"
+      FROM "t1" AS "t2"
+    )
+) AS "t4"
+WHERE
+  "t4"."b" = 'a'
