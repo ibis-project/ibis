@@ -337,6 +337,8 @@ class DuckDBCompiler(SQLGlotCompiler):
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
         elif to.is_timestamp() and op.arg.dtype.is_integer():
             return self.f.to_timestamp(arg)
+        elif to.is_geospatial() and op.arg.dtype.is_binary():
+            return self.f.st_geomfromwkb(arg)
 
         return self.cast(arg, to)
 
