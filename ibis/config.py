@@ -58,7 +58,7 @@ class SQL(Config):
 
     """
 
-    fuse_selects: bool = True
+    fuse_selects: bool = False
     default_limit: Optional[PosInt] = None
     default_dialect: str = "duckdb"
 
