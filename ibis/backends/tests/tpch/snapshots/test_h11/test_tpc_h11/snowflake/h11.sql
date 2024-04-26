@@ -69,23 +69,28 @@ WITH "t10" AS (
     "t9"."n_name" = 'GERMANY'
 )
 SELECT
-  "t12"."ps_partkey",
-  "t12"."value"
+  "t14"."ps_partkey",
+  "t14"."value"
 FROM (
   SELECT
-    "t11"."ps_partkey",
-    SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "value"
-  FROM "t10" AS "t11"
-  GROUP BY
-    1
-) AS "t12"
-WHERE
-  "t12"."value" > (
-    (
-      SELECT
-        SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
-      FROM "t10" AS "t11"
-    ) * 0.0001
-  )
+    "t12"."ps_partkey",
+    "t12"."value"
+  FROM (
+    SELECT
+      "t11"."ps_partkey",
+      SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "value"
+    FROM "t10" AS "t11"
+    GROUP BY
+      1
+  ) AS "t12"
+  WHERE
+    "t12"."value" > (
+      (
+        SELECT
+          SUM("t11"."ps_supplycost" * "t11"."ps_availqty") AS "Sum(Multiply(ps_supplycost, ps_availqty))"
+        FROM "t10" AS "t11"
+      ) * 0.0001
+    )
+) AS "t14"
 ORDER BY
-  "t12"."value" DESC NULLS LAST
+  "t14"."value" DESC NULLS LAST

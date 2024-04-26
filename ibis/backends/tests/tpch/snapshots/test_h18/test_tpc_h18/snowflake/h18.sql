@@ -19,20 +19,20 @@ WITH "t5" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t2"
 )
 SELECT
-  "t14"."c_name",
-  "t14"."c_custkey",
-  "t14"."o_orderkey",
-  "t14"."o_orderdate",
-  "t14"."o_totalprice",
-  "t14"."sum_qty"
+  "t15"."c_name",
+  "t15"."c_custkey",
+  "t15"."o_orderkey",
+  "t15"."o_orderdate",
+  "t15"."o_totalprice",
+  "t15"."sum_qty"
 FROM (
   SELECT
-    "t13"."c_name",
-    "t13"."c_custkey",
-    "t13"."o_orderkey",
-    "t13"."o_orderdate",
-    "t13"."o_totalprice",
-    SUM("t13"."l_quantity") AS "sum_qty"
+    "t14"."c_name",
+    "t14"."c_custkey",
+    "t14"."o_orderkey",
+    "t14"."o_orderdate",
+    "t14"."o_totalprice",
+    SUM("t14"."l_quantity") AS "sum_qty"
   FROM (
     SELECT
       "t11"."c_custkey",
@@ -135,27 +135,32 @@ FROM (
     WHERE
       "t11"."o_orderkey" IN (
         SELECT
-          "t10"."l_orderkey"
+          "t12"."l_orderkey"
         FROM (
           SELECT
-            "t8"."l_orderkey",
-            SUM("t8"."l_quantity") AS "qty_sum"
-          FROM "t5" AS "t8"
-          GROUP BY
-            1
-        ) AS "t10"
-        WHERE
-          "t10"."qty_sum" > 300
+            "t10"."l_orderkey",
+            "t10"."qty_sum"
+          FROM (
+            SELECT
+              "t8"."l_orderkey",
+              SUM("t8"."l_quantity") AS "qty_sum"
+            FROM "t5" AS "t8"
+            GROUP BY
+              1
+          ) AS "t10"
+          WHERE
+            "t10"."qty_sum" > 300
+        ) AS "t12"
       )
-  ) AS "t13"
+  ) AS "t14"
   GROUP BY
     1,
     2,
     3,
     4,
     5
-) AS "t14"
+) AS "t15"
 ORDER BY
-  "t14"."o_totalprice" DESC NULLS LAST,
-  "t14"."o_orderdate" ASC
+  "t15"."o_totalprice" DESC NULLS LAST,
+  "t15"."o_orderdate" ASC
 LIMIT 100
