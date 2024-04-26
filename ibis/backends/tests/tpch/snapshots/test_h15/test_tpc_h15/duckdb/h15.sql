@@ -45,17 +45,37 @@ WITH "t6" AS (
     ON "t2"."s_suppkey" = "t5"."l_suppkey"
 )
 SELECT
-  "t7"."s_suppkey",
-  "t7"."s_name",
-  "t7"."s_address",
-  "t7"."s_phone",
-  "t7"."total_revenue"
-FROM "t6" AS "t7"
-WHERE
-  "t7"."total_revenue" = (
+  "t10"."s_suppkey",
+  "t10"."s_name",
+  "t10"."s_address",
+  "t10"."s_phone",
+  "t10"."total_revenue"
+FROM (
+  SELECT
+    "t9"."s_suppkey",
+    "t9"."s_name",
+    "t9"."s_address",
+    "t9"."s_phone",
+    "t9"."total_revenue"
+  FROM (
     SELECT
-      MAX("t7"."total_revenue") AS "Max(total_revenue)"
+      "t7"."s_suppkey",
+      "t7"."s_name",
+      "t7"."s_address",
+      "t7"."s_nationkey",
+      "t7"."s_phone",
+      "t7"."s_acctbal",
+      "t7"."s_comment",
+      "t7"."l_suppkey",
+      "t7"."total_revenue"
     FROM "t6" AS "t7"
-  )
+    WHERE
+      "t7"."total_revenue" = (
+        SELECT
+          MAX("t7"."total_revenue") AS "Max(total_revenue)"
+        FROM "t6" AS "t7"
+      )
+  ) AS "t9"
+) AS "t10"
 ORDER BY
-  "t7"."s_suppkey" ASC
+  "t10"."s_suppkey" ASC

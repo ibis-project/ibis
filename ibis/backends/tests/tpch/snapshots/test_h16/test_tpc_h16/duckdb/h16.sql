@@ -1,14 +1,14 @@
 SELECT
-  "t8"."p_brand",
-  "t8"."p_type",
-  "t8"."p_size",
-  "t8"."supplier_cnt"
+  "t9"."p_brand",
+  "t9"."p_type",
+  "t9"."p_size",
+  "t9"."supplier_cnt"
 FROM (
   SELECT
-    "t7"."p_brand",
-    "t7"."p_type",
-    "t7"."p_size",
-    COUNT(DISTINCT "t7"."ps_suppkey") AS "supplier_cnt"
+    "t8"."p_brand",
+    "t8"."p_type",
+    "t8"."p_size",
+    COUNT(DISTINCT "t8"."ps_suppkey") AS "supplier_cnt"
   FROM (
     SELECT
       "t6"."ps_partkey",
@@ -54,20 +54,30 @@ FROM (
       AND NOT (
         "t6"."ps_suppkey" IN (
           SELECT
-            "t2"."s_suppkey"
-          FROM "supplier" AS "t2"
-          WHERE
-            "t2"."s_comment" LIKE '%Customer%Complaints%'
+            "t5"."s_suppkey"
+          FROM (
+            SELECT
+              "t2"."s_suppkey",
+              "t2"."s_name",
+              "t2"."s_address",
+              "t2"."s_nationkey",
+              "t2"."s_phone",
+              "t2"."s_acctbal",
+              "t2"."s_comment"
+            FROM "supplier" AS "t2"
+            WHERE
+              "t2"."s_comment" LIKE '%Customer%Complaints%'
+          ) AS "t5"
         )
       )
-  ) AS "t7"
+  ) AS "t8"
   GROUP BY
     1,
     2,
     3
-) AS "t8"
+) AS "t9"
 ORDER BY
-  "t8"."supplier_cnt" DESC,
-  "t8"."p_brand" ASC,
-  "t8"."p_type" ASC,
-  "t8"."p_size" ASC
+  "t9"."supplier_cnt" DESC,
+  "t9"."p_brand" ASC,
+  "t9"."p_type" ASC,
+  "t9"."p_size" ASC

@@ -56,8 +56,8 @@ WITH "t5" AS (
     1
 )
 SELECT
-  "t11"."field_of_study",
-  "t11"."diff"
+  "t12"."field_of_study",
+  "t12"."diff"
 FROM (
   SELECT
     *
@@ -75,13 +75,18 @@ FROM (
     *
   FROM (
     SELECT
-      "t6"."field_of_study",
-      "t6"."diff"
-    FROM "t5" AS "t6"
-    WHERE
-      "t6"."diff" < CAST(0 AS TINYINT)
+      "t8"."field_of_study",
+      "t8"."diff"
+    FROM (
+      SELECT
+        "t6"."field_of_study",
+        "t6"."diff"
+      FROM "t5" AS "t6"
+      WHERE
+        "t6"."diff" < CAST(0 AS TINYINT)
+    ) AS "t8"
     ORDER BY
-      "t6"."diff" ASC
+      "t8"."diff" ASC
     LIMIT 10
-  ) AS "t10"
-) AS "t11"
+  ) AS "t11"
+) AS "t12"

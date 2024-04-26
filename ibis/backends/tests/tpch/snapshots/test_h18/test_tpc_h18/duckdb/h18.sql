@@ -1,18 +1,18 @@
 SELECT
-  "t10"."c_name",
-  "t10"."c_custkey",
-  "t10"."o_orderkey",
-  "t10"."o_orderdate",
-  "t10"."o_totalprice",
-  "t10"."sum_qty"
+  "t11"."c_name",
+  "t11"."c_custkey",
+  "t11"."o_orderkey",
+  "t11"."o_orderdate",
+  "t11"."o_totalprice",
+  "t11"."sum_qty"
 FROM (
   SELECT
-    "t9"."c_name",
-    "t9"."c_custkey",
-    "t9"."o_orderkey",
-    "t9"."o_orderdate",
-    "t9"."o_totalprice",
-    SUM("t9"."l_quantity") AS "sum_qty"
+    "t10"."c_name",
+    "t10"."c_custkey",
+    "t10"."o_orderkey",
+    "t10"."o_orderdate",
+    "t10"."o_totalprice",
+    SUM("t10"."l_quantity") AS "sum_qty"
   FROM (
     SELECT
       "t7"."c_custkey",
@@ -92,27 +92,32 @@ FROM (
     WHERE
       "t7"."o_orderkey" IN (
         SELECT
-          "t6"."l_orderkey"
+          "t8"."l_orderkey"
         FROM (
           SELECT
-            "t2"."l_orderkey",
-            SUM("t2"."l_quantity") AS "qty_sum"
-          FROM "lineitem" AS "t2"
-          GROUP BY
-            1
-        ) AS "t6"
-        WHERE
-          "t6"."qty_sum" > CAST(300 AS SMALLINT)
+            "t6"."l_orderkey",
+            "t6"."qty_sum"
+          FROM (
+            SELECT
+              "t2"."l_orderkey",
+              SUM("t2"."l_quantity") AS "qty_sum"
+            FROM "lineitem" AS "t2"
+            GROUP BY
+              1
+          ) AS "t6"
+          WHERE
+            "t6"."qty_sum" > CAST(300 AS SMALLINT)
+        ) AS "t8"
       )
-  ) AS "t9"
+  ) AS "t10"
   GROUP BY
     1,
     2,
     3,
     4,
     5
-) AS "t10"
+) AS "t11"
 ORDER BY
-  "t10"."o_totalprice" DESC,
-  "t10"."o_orderdate" ASC
+  "t11"."o_totalprice" DESC,
+  "t11"."o_orderdate" ASC
 LIMIT 100

@@ -1,19 +1,36 @@
 SELECT
-  "t5"."a"
+  "t8"."a"
 FROM (
   SELECT
-    "t4"."a"
+    "t7"."a"
   FROM (
     SELECT
-      "t0"."a",
-      "t0"."b",
+      "t5"."a",
+      "t5"."b",
       MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0) AS "the_date"
-    FROM "t" AS "t0"
-    WHERE
-      "t0"."c" = MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0)
-  ) AS "t4"
+    FROM (
+      SELECT
+        "t4"."a",
+        "t4"."b"
+      FROM (
+        SELECT
+          "t3"."a",
+          "t3"."b",
+          "t3"."C"
+        FROM (
+          SELECT
+            "t1"."a",
+            "t1"."b",
+            "t1"."c" AS "C"
+          FROM "t" AS "t1"
+        ) AS "t3"
+        WHERE
+          "t3"."C" = MAKE_TIMESTAMP(2018, 1, 1, 0, 0, 0.0)
+      ) AS "t4"
+    ) AS "t5"
+  ) AS "t7"
   INNER JOIN "s" AS "t2"
-    ON "t4"."b" = "t2"."b"
-) AS "t5"
+    ON "t7"."b" = "t2"."b"
+) AS "t8"
 WHERE
-  "t5"."a" < CAST(1.0 AS DOUBLE)
+  "t8"."a" < CAST(1.0 AS DOUBLE)
