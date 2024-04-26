@@ -163,6 +163,9 @@ def merge_select_select(_, **kwargs):
         return _
     if _.parent.find_below(blocking, filter=ops.Value):
         return _
+    if _.predicates and _.parent.predicates:
+        # disable merging filters, see #9058 for more details
+        return _
 
     subs = {ops.Field(_.parent, k): v for k, v in _.parent.values.items()}
     selections = {k: v.replace(subs, filter=ops.Value) for k, v in _.selections.items()}

@@ -1,7 +1,17 @@
 SELECT
-  "t0"."color"
-FROM "t" AS "t0"
+  "t2"."color"
+FROM (
+  SELECT
+    "t1"."color"
+  FROM (
+    SELECT
+      "t0"."color"
+    FROM "t" AS "t0"
+    WHERE
+      LOWER("t0"."color") LIKE '%de%'
+  ) AS "t1"
+  WHERE
+    CONTAINS(LOWER("t1"."color"), 'de')
+) AS "t2"
 WHERE
-  LOWER("t0"."color") LIKE '%de%'
-  AND CONTAINS(LOWER("t0"."color"), 'de')
-  AND REGEXP_MATCHES(LOWER("t0"."color"), '.*ge.*')
+  REGEXP_MATCHES(LOWER("t2"."color"), '.*ge.*')
