@@ -463,7 +463,7 @@ class PySparkCompiler(SQLGlotCompiler):
             )
 
         return self._standardize_windowing_output(
-            op, parent, time_col, self._format_window_interval(window_size)
+            parent, time_col, self._format_window_interval(window_size)
         )
 
     def visit_HopWindowingTVF(
@@ -475,58 +475,23 @@ class PySparkCompiler(SQLGlotCompiler):
             )
 
         return self._standardize_windowing_output(
-            op,
             parent,
             time_col,
             self._format_window_interval(window_size),
             self._format_window_interval(window_slide),
         )
 
-    def _standardize_windowing_output(self, op, parent, time_col, *args):
-        subquery = (
-            sg.select(
-                sge.Column(
-                    this=STAR, table=sg.to_identifier(parent.alias_or_name, quoted=True)
-                ),
-                self.f.window(time_col.this, *args),
-            )
-            .from_(parent)
-            .subquery("__windowed")
-        )
-
-        subquery_identifier = sg.to_identifier(subquery.alias, quoted=True)
-        cols = list(
-            map(
-                partial(sg.column, table=subquery_identifier),
-                (k for k in op.parent.schema.keys()),
-            )
-        )
+    def _standardize_windowing_output(self, parent, time_col, *args):
+        table_identifier = sg.to_identifier(parent.alias_or_name, quoted=True)
         return sg.select(
-            # the original columns
-            *cols,
-            # the 3 additional columns resulting from windowing TVF
+            sge.Column(this=STAR, table=table_identifier),
+            self.f.window(time_col.this, *args),
             sg.alias(
-                sge.Dot(
-                    this=sge.Column(this="window", table=subquery_identifier),
-                    expression=sge.Identifier(this="start"),
-                ),
-                "window_start",
-                quoted=True,
-            ),
-            sg.alias(
-                sge.Dot(
-                    this=sge.Column(this="window", table=subquery_identifier),
-                    expression=sge.Identifier(this="end"),
-                ),
-                "window_end",
-                quoted=True,
-            ),
-            sg.alias(
-                sg.column(time_col.name, table=subquery_identifier),
+                sg.column(time_col.name, table=table_identifier),
                 "window_time",
                 quoted=True,
             ),
-        ).from_(subquery)
+        ).from_(parent)
 
     def _format_window_interval(self, expression):
         unit = expression.args.get("unit").sql(dialect=self.dialect)
