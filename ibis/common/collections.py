@@ -287,6 +287,11 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
     def __hash__(self) -> int:
         return self.__precomputed_hash__
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
+            return NotImplemented
+        return collections.OrderedDict(self) == collections.OrderedDict(other)
+
     def __setitem__(self, key: K, value: V) -> None:
         raise TypeError("'FrozenDict' object does not support item assignment")
 

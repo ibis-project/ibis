@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import collections
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Union
 
@@ -89,6 +90,14 @@ class Schema(Concrete, Coercible, MapSet):
                 f"invalid equality comparison between Schema and {type(other)}"
             )
         return self == other
+
+    def __hash__(self) -> int:
+        return super().__hash__()
+
+    def __eq__(self, other):
+        if not isinstance(other, Mapping):
+            return NotImplemented
+        return collections.OrderedDict(self) == collections.OrderedDict(other)
 
     @classmethod
     def from_tuples(
