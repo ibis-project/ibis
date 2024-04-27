@@ -3,7 +3,6 @@ from __future__ import annotations
 import calendar
 import itertools
 import re
-from functools import partial
 
 import sqlglot as sg
 import sqlglot.expressions as sge
