@@ -3,6 +3,7 @@ from __future__ import annotations
 import calendar
 import itertools
 import re
+from functools import partial
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -454,50 +455,84 @@ class PySparkCompiler(SQLGlotCompiler):
             raise NotImplementedError(f"No available hashing function for {how}")
 
     def visit_TumbleWindowingTVF(
-        self, op, *, table, time_col, window_size, offset=None
+        self, op, *, parent, time_col, window_size, offset=None
     ):
         if offset is not None:
             raise com.UnsupportedOperationError(
                 "PySpark backend does not support offset in aggregations over windows."
             )
 
-        subquery = (
-            sg.select(
-                sge.Column(
-                    this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
-                ),
-                self.f.window(time_col.this, window_size),
-            )
-            .from_(table)
-            .subquery("__windowed")
+        return self._standardize_windowing_output(
+            op, parent, time_col, self._format_window_interval(window_size)
         )
-        return self._standardize_windowing_output(subquery)
 
     def visit_HopWindowingTVF(
-        self, op, *, table, time_col, window_size, window_slide, offset=None
+        self, op, *, parent, time_col, window_size, window_slide, offset=None
     ):
         if offset is not None:
             raise com.UnsupportedOperationError(
                 "PySpark backend does not support offset in aggregations over windows."
             )
 
+        return self._standardize_windowing_output(
+            op,
+            parent,
+            time_col,
+            self._format_window_interval(window_size),
+            self._format_window_interval(window_slide),
+        )
+
+    def _standardize_windowing_output(self, op, parent, time_col, *args):
         subquery = (
             sg.select(
                 sge.Column(
-                    this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                    this=STAR, table=sg.to_identifier(parent.alias_or_name, quoted=True)
                 ),
-                self.f.window(time_col.this, window_size, window_slide),
+                self.f.window(time_col.this, *args),
             )
-            .from_(table)
+            .from_(parent)
             .subquery("__windowed")
         )
-        return self._standardize_windowing_output(subquery)
 
-    def _standardize_windowing_output(self, windowing_subquery):
+        subquery_identifier = sg.to_identifier(subquery.alias, quoted=True)
+        cols = list(
+            map(
+                partial(sg.column, table=subquery_identifier),
+                (k for k in op.parent.schema.keys()),
+            )
+        )
         return sg.select(
-            sge.Column(
-                this=STAR, table=sg.to_identifier(windowing_subquery.alias, quoted=True)
+            # the original columns
+            *cols,
+            # the 3 additional columns resulting from windowing TVF
+            sg.alias(
+                sge.Dot(
+                    this=sge.Column(this="window", table=subquery_identifier),
+                    expression=sge.Identifier(this="start"),
+                ),
+                "window_start",
+                quoted=True,
             ),
-            sg.alias(sg.column("window.start"), "window_start", quoted=True),
-            sg.alias(sg.column("window.end"), "window_end", quoted=True),
-        ).from_(windowing_subquery)
+            sg.alias(
+                sge.Dot(
+                    this=sge.Column(this="window", table=subquery_identifier),
+                    expression=sge.Identifier(this="end"),
+                ),
+                "window_end",
+                quoted=True,
+            ),
+            sg.alias(
+                sg.column(time_col.name, table=subquery_identifier),
+                "window_time",
+                quoted=True,
+            ),
+        ).from_(subquery)
+
+    def _format_window_interval(self, expression):
+        unit = expression.args.get("unit").sql(dialect=self.dialect)
+        # skip plural conversion
+        unit = f" {unit}" if unit else ""
+
+        this = expression.this.this  # avoid quoting the interval as a string literal
+
+        return f"{this}{unit}"

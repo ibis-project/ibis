@@ -17,9 +17,9 @@ if TYPE_CHECKING:
 class WindowedTable:
     """An intermediate table expression to hold windowing information."""
 
-    def __init__(self, table: ir.Table, time_col: ir.Value):
-        self.table = table
-        self.time_col = next(bind(table, time_col))
+    def __init__(self, parent: ir.Table, time_col: ir.Value):
+        self.parent = parent
+        self.time_col = next(bind(parent, time_col))
 
         if self.time_col is None:
             raise com.IbisInputError(
@@ -48,9 +48,9 @@ class WindowedTable:
         Table
             Table expression after applying tumbling table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        time_col = next(bind(self.parent, self.time_col))
         return ops.TumbleWindowingTVF(
-            table=self.table,
+            parent=self.parent,
             time_col=time_col,
             window_size=window_size,
             offset=offset,
@@ -87,9 +87,9 @@ class WindowedTable:
         Table
             Table expression after applying hopping table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        time_col = next(bind(self.parent, self.time_col))
         return ops.HopWindowingTVF(
-            table=self.table,
+            parent=self.parent,
             time_col=time_col,
             window_size=window_size,
             window_slide=window_slide,
@@ -125,9 +125,9 @@ class WindowedTable:
         Table
             Table expression after applying cumulate table-valued function.
         """
-        time_col = next(bind(self.table, self.time_col))
+        time_col = next(bind(self.parent, self.time_col))
         return ops.CumulateWindowingTVF(
-            table=self.table,
+            parent=self.parent,
             time_col=time_col,
             window_size=window_size,
             window_step=window_step,

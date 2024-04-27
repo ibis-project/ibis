@@ -21,18 +21,17 @@ class WindowingTVF(Relation):
     `window_end`, and `window_time`.
     """
 
-    # TODO(kszucs): rename to `parent`
-    table: Relation
+    parent: Relation
     time_col: Column[dt.Timestamp]  # enforce timestamp column type here
 
     @attribute
     def values(self):
-        return self.table.fields
+        return self.parent.fields
 
     @property
     def schema(self):
-        names = list(self.table.schema.names)
-        types = list(self.table.schema.types)
+        names = list(self.parent.schema.names)
+        types = list(self.parent.schema.types)
 
         names.extend(["window_start", "window_end", "window_time"])
         types.extend([dt.timestamp(scale=3)] * 3)

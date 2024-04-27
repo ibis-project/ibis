@@ -148,9 +148,9 @@ class FlinkCompiler(SQLGlotCompiler):
             spec.args["end_side"] = None
         return spec
 
-    def visit_TumbleWindowingTVF(self, op, *, table, time_col, window_size, offset):
+    def visit_TumbleWindowingTVF(self, op, *, parent, time_col, window_size, offset):
         args = [
-            self.v[f"TABLE {table.this.sql(self.dialect)}"],
+            self.v[f"TABLE {parent.this.sql(self.dialect)}"],
             # `time_col` has the table _alias_, instead of the table, but it is
             # required to be bound to the table, this happens because of the
             # way we construct the op in the tumble API using bind
@@ -163,19 +163,19 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return sg.select(
             sge.Column(
-                this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                this=STAR, table=sg.to_identifier(parent.alias_or_name, quoted=True)
             )
         ).from_(
             self.f.table(self.f.tumble(*filter(None, args))).as_(
-                table.alias_or_name, quoted=True
+                parent.alias_or_name, quoted=True
             )
         )
 
     def visit_HopWindowingTVF(
-        self, op, *, table, time_col, window_size, window_slide, offset
+        self, op, *, parent, time_col, window_size, window_slide, offset
     ):
         args = [
-            self.v[f"TABLE {table.this.sql(self.dialect)}"],
+            self.v[f"TABLE {parent.this.sql(self.dialect)}"],
             self.f.descriptor(time_col.this),
             window_slide,
             window_size,
@@ -183,19 +183,19 @@ class FlinkCompiler(SQLGlotCompiler):
         ]
         return sg.select(
             sge.Column(
-                this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                this=STAR, table=sg.to_identifier(parent.alias_or_name, quoted=True)
             )
         ).from_(
             self.f.table(self.f.hop(*filter(None, args))).as_(
-                table.alias_or_name, quoted=True
+                parent.alias_or_name, quoted=True
             )
         )
 
     def visit_CumulateWindowingTVF(
-        self, op, *, table, time_col, window_size, window_step, offset
+        self, op, *, parent, time_col, window_size, window_step, offset
     ):
         args = [
-            self.v[f"TABLE {table.this.sql(self.dialect)}"],
+            self.v[f"TABLE {parent.this.sql(self.dialect)}"],
             self.f.descriptor(time_col.this),
             window_step,
             window_size,
@@ -203,11 +203,11 @@ class FlinkCompiler(SQLGlotCompiler):
         ]
         return sg.select(
             sge.Column(
-                this=STAR, table=sg.to_identifier(table.alias_or_name, quoted=True)
+                this=STAR, table=sg.to_identifier(parent.alias_or_name, quoted=True)
             )
         ).from_(
             self.f.table(self.f.cumulate(*filter(None, args))).as_(
-                table.alias_or_name, quoted=True
+                parent.alias_or_name, quoted=True
             )
         )
 
