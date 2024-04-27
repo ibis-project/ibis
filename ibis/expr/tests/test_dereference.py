@@ -24,8 +24,8 @@ def test_dereference_project():
     expected = dereference_expect(
         {
             p.int_col: p.int_col,
-            p.double_col: p.double_col,
             t.int_col: p.int_col,
+            p.double_col: p.double_col,
             t.double_col: p.double_col,
         }
     )

@@ -1608,3 +1608,29 @@ def test_json_to_pyarrow(con):
         if val is not None
     }
     assert result == expected
+
+
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
+@pytest.mark.notyet(
+    ["risingwave", "exasol"],
+    raises=com.UnsupportedOperationError,
+    reason="no temp table support",
+)
+@pytest.mark.notyet(
+    ["impala", "trino"], raises=NotImplementedError, reason="no temp table support"
+)
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(
+    ["flink"], raises=com.IbisError, reason="no persistent temp table support"
+)
+def test_schema_with_caching(alltypes):
+    t1 = alltypes.limit(5).select("bigint_col", "string_col")
+    t2 = alltypes.limit(5).select("string_col", "bigint_col")
+
+    pt1 = t1.cache()
+    pt2 = t2.cache()
+
+    assert pt1.schema() == t1.schema()
+    assert pt2.schema() == t2.schema()
