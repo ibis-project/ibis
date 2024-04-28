@@ -1925,6 +1925,11 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 @pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="SAMPLE clause on views only supports row wise sampling without seed.",
+)
+@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function random() does not exist",
@@ -1944,7 +1949,7 @@ def test_sample(backend):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
