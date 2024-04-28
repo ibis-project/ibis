@@ -11,7 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, C, FuncGen, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, C, FuncGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
@@ -622,3 +622,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
             )
             .subquery()
         )
+
+    def visit_Sample(
+        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
+    ):
+        sample = sge.TableSample(
+            this=parent,
+            method="bernoulli" if method == "row" else "system",
+            percent=sge.convert(fraction * 100.0),
+            seed=None if seed is None else sge.convert(seed),
+        )
+        return sg.select(STAR).from_(sample)

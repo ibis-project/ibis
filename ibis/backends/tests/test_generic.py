@@ -1923,7 +1923,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
