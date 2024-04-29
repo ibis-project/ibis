@@ -170,9 +170,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         if base is not None:
             cases = tuple(base == case for case in cases)
         cases, _ = cls.asframe(cases, concat=False)
+        index = cases[0].index
         results, _ = cls.asframe(results, concat=False)
         out = np.select(cases, results, default)
-        return pd.Series(out)
+        return pd.Series(out, index=index)
 
     @classmethod
     def visit(cls, op: ops.TimestampTruncate | ops.DateTruncate, arg, unit):
