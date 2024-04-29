@@ -18,8 +18,8 @@ def to_greyish(hex_code, grey_value=128):
 
 category_colors = {
     "Ibis API": "#7C65A0",
-    "SQL code": "#6A9BC9",
-    "DataFrame code": "#D58273",
+    "SQL": "#6A9BC9",
+    "DataFrame": "#D58273",
 }
 
 backend_categories = {
