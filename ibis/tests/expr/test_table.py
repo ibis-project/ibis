@@ -2161,3 +2161,6 @@ def test_table_bind():
         ibis.literal(2).name("d"),
     )
     assert eq(exprs, expected)
+
+    # no args
+    assert t.bind() == ()
