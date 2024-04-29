@@ -8,6 +8,7 @@
 }:
 let
   backends = [ "datafusion" "duckdb" "pandas" "polars" "sqlite" ]
+    # dask version has a show-stopping bug for Python >=3.11
     ++ lib.optionals (python3.pythonOlder "3.11") [ "dask" ];
   markers = lib.concatStringsSep " or " (backends ++ [ "core" ]);
 in
