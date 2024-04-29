@@ -160,11 +160,10 @@ Ibis supports 20+ backends:
 
 Most Python dataframes are tightly coupled to their execution engine. And many databases only support SQL, with no Python API. Ibis solves this problem by providing a common API for data manipulation in Python, and compiling that API into the backend’s native language. This means you can learn a single API and use it across any supported backend (execution engine).
 
-Ibis supports three types of backend:
+Ibis broadly supports two types of backend:
 
 1. SQL-generating backends
-2. Expression-generating backends
-3. Naïve execution backends
+3. DataFrame-generating backends
 
 ![Ibis backend types](docs/images/backends.png)
 

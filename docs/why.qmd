@@ -202,11 +202,10 @@ providing a common API for data manipulation in Python, and compiling that API
 into the backend's native language. This means you can learn a single API and
 use it across any supported backend (execution engine).
 
-Ibis supports three types of backend:
+Ibis broadly supports two types of backend:
 
 1. SQL-generating backends
-2. Expression-generating backends
-3. Naïve execution backends
+2. DataFrame-generating backends
 
 ```{python}
 #| echo: false
