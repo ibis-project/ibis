@@ -347,3 +347,14 @@ def test_cast_wkb_to_geo(con):
     geo_expr = t.geometry.cast("geometry")
     assert geo_expr.type().is_geospatial()
     assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
+
+
+def test_load_spatial_casting(ext_dir):
+    con = ibis.duckdb.connect(extension_directory=ext_dir)
+    parquet_file = "https://github.com/ibis-project/testing-data/raw/master/parquet/geo_wkb.parquet"
+    t = con.read_parquet(parquet_file)
+
+    geo_expr = t.geometry.cast("geometry")
+
+    assert geo_expr.type().is_geospatial()
+    assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
