@@ -163,7 +163,7 @@ Most Python dataframes are tightly coupled to their execution engine. And many d
 Ibis broadly supports two types of backend:
 
 1. SQL-generating backends
-3. DataFrame-generating backends
+2. DataFrame-generating backends
 
 ![Ibis backend types](docs/images/backends.png)
 
