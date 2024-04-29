@@ -1,19 +1,12 @@
 SELECT
-  "t14"."s_name",
-  "t14"."numwait"
+  *
 FROM (
   SELECT
     "t13"."s_name",
     COUNT(*) AS "numwait"
   FROM (
     SELECT
-      "t10"."l1_orderkey",
-      "t10"."o_orderstatus",
-      "t10"."l_receiptdate",
-      "t10"."l_commitdate",
-      "t10"."l1_suppkey",
-      "t10"."s_name",
-      "t10"."n_name"
+      *
     FROM (
       SELECT
         "t5"."l_orderkey" AS "l1_orderkey",

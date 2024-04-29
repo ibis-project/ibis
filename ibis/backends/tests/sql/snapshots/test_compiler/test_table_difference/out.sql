@@ -1,6 +1,5 @@
 SELECT
-  "t3"."key",
-  "t3"."value"
+  *
 FROM (
   SELECT
     *

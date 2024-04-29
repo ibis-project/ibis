@@ -1,21 +1,6 @@
 WITH "t7" AS (
   SELECT
-    "t6"."ps_partkey",
-    "t6"."ps_suppkey",
-    "t6"."ps_availqty",
-    "t6"."ps_supplycost",
-    "t6"."ps_comment",
-    "t6"."s_suppkey",
-    "t6"."s_name",
-    "t6"."s_address",
-    "t6"."s_nationkey",
-    "t6"."s_phone",
-    "t6"."s_acctbal",
-    "t6"."s_comment",
-    "t6"."n_nationkey",
-    "t6"."n_name",
-    "t6"."n_regionkey",
-    "t6"."n_comment"
+    *
   FROM (
     SELECT
       "t3"."ps_partkey",
@@ -44,8 +29,7 @@ WITH "t7" AS (
     "t6"."n_name" = 'GERMANY'
 )
 SELECT
-  "t9"."ps_partkey",
-  "t9"."value"
+  *
 FROM (
   SELECT
     "t8"."ps_partkey",

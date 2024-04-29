@@ -1,7 +1,5 @@
 SELECT
-  "t6"."l_shipmode",
-  "t6"."high_line_count",
-  "t6"."low_line_count"
+  *
 FROM (
   SELECT
     "t5"."l_shipmode",
@@ -25,31 +23,7 @@ FROM (
     ) AS "low_line_count"
   FROM (
     SELECT
-      "t4"."o_orderkey",
-      "t4"."o_custkey",
-      "t4"."o_orderstatus",
-      "t4"."o_totalprice",
-      "t4"."o_orderdate",
-      "t4"."o_orderpriority",
-      "t4"."o_clerk",
-      "t4"."o_shippriority",
-      "t4"."o_comment",
-      "t4"."l_orderkey",
-      "t4"."l_partkey",
-      "t4"."l_suppkey",
-      "t4"."l_linenumber",
-      "t4"."l_quantity",
-      "t4"."l_extendedprice",
-      "t4"."l_discount",
-      "t4"."l_tax",
-      "t4"."l_returnflag",
-      "t4"."l_linestatus",
-      "t4"."l_shipdate",
-      "t4"."l_commitdate",
-      "t4"."l_receiptdate",
-      "t4"."l_shipinstruct",
-      "t4"."l_shipmode",
-      "t4"."l_comment"
+      *
     FROM (
       SELECT
         "t2"."o_orderkey",

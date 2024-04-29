@@ -1,8 +1,5 @@
 SELECT
-  "t1"."c",
-  "t1"."f",
-  "t1"."foo_id",
-  "t1"."bar_id"
+  *
 FROM (
   SELECT
     *

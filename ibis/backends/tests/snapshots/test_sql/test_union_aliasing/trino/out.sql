@@ -54,15 +54,13 @@ WITH "t5" AS (
     1
 )
 SELECT
-  "t11"."field_of_study",
-  "t11"."diff"
+  *
 FROM (
   SELECT
     *
   FROM (
     SELECT
-      "t6"."field_of_study",
-      "t6"."diff"
+      *
     FROM "t5" AS "t6"
     ORDER BY
       "t6"."diff" DESC
@@ -73,8 +71,7 @@ FROM (
     *
   FROM (
     SELECT
-      "t6"."field_of_study",
-      "t6"."diff"
+      *
     FROM "t5" AS "t6"
     WHERE
       "t6"."diff" < 0

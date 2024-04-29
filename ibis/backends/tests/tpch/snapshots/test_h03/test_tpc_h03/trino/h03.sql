@@ -13,39 +13,7 @@ FROM (
     )) AS "revenue"
   FROM (
     SELECT
-      "t9"."c_custkey",
-      "t9"."c_name",
-      "t9"."c_address",
-      "t9"."c_nationkey",
-      "t9"."c_phone",
-      "t9"."c_acctbal",
-      "t9"."c_mktsegment",
-      "t9"."c_comment",
-      "t9"."o_orderkey",
-      "t9"."o_custkey",
-      "t9"."o_orderstatus",
-      "t9"."o_totalprice",
-      "t9"."o_orderdate",
-      "t9"."o_orderpriority",
-      "t9"."o_clerk",
-      "t9"."o_shippriority",
-      "t9"."o_comment",
-      "t9"."l_orderkey",
-      "t9"."l_partkey",
-      "t9"."l_suppkey",
-      "t9"."l_linenumber",
-      "t9"."l_quantity",
-      "t9"."l_extendedprice",
-      "t9"."l_discount",
-      "t9"."l_tax",
-      "t9"."l_returnflag",
-      "t9"."l_linestatus",
-      "t9"."l_shipdate",
-      "t9"."l_commitdate",
-      "t9"."l_receiptdate",
-      "t9"."l_shipinstruct",
-      "t9"."l_shipmode",
-      "t9"."l_comment"
+      *
     FROM (
       SELECT
         "t6"."c_custkey",

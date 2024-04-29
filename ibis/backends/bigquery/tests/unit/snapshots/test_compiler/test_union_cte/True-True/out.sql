@@ -7,15 +7,13 @@ WITH `t1` AS (
     1
 )
 SELECT
-  `t7`.`string_col`,
-  `t7`.`metric`
+  *
 FROM (
   SELECT
     *
   FROM (
     SELECT
-      `t5`.`string_col`,
-      `t5`.`metric`
+      *
     FROM (
       SELECT
         *

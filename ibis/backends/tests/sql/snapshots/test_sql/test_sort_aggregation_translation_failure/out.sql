@@ -1,6 +1,5 @@
 SELECT
-  "t1"."string_col",
-  "t1"."foo"
+  *
 FROM (
   SELECT
     "t0"."string_col",

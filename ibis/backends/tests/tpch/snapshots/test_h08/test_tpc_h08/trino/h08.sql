@@ -1,14 +1,10 @@
 WITH "t8" AS (
   SELECT
-    "t6"."n_nationkey",
-    "t6"."n_name",
-    "t6"."n_regionkey",
-    "t6"."n_comment"
+    *
   FROM "hive"."ibis_sf1"."nation" AS "t6"
 )
 SELECT
-  "t25"."o_year",
-  "t25"."mkt_share"
+  *
 FROM (
   SELECT
     "t24"."o_year",
@@ -109,9 +105,7 @@ FROM (
         ON "t20"."c_nationkey" = "t21"."n_nationkey"
       INNER JOIN (
         SELECT
-          "t5"."r_regionkey",
-          "t5"."r_name",
-          "t5"."r_comment"
+          *
         FROM "hive"."ibis_sf1"."region" AS "t5"
       ) AS "t14"
         ON "t21"."n_regionkey" = "t14"."r_regionkey"

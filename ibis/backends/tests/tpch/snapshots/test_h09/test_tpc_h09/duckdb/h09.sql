@@ -1,7 +1,5 @@
 SELECT
-  "t14"."nation",
-  "t14"."o_year",
-  "t14"."sum_profit"
+  *
 FROM (
   SELECT
     "t13"."nation",
@@ -9,10 +7,7 @@ FROM (
     SUM("t13"."amount") AS "sum_profit"
   FROM (
     SELECT
-      "t12"."amount",
-      "t12"."o_year",
-      "t12"."nation",
-      "t12"."p_name"
+      *
     FROM (
       SELECT
         (

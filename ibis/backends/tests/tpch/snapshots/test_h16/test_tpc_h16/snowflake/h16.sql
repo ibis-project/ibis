@@ -1,8 +1,5 @@
 SELECT
-  "t10"."p_brand",
-  "t10"."p_type",
-  "t10"."p_size",
-  "t10"."supplier_cnt"
+  *
 FROM (
   SELECT
     "t9"."p_brand",
@@ -11,20 +8,7 @@ FROM (
     COUNT(DISTINCT "t9"."ps_suppkey") AS "supplier_cnt"
   FROM (
     SELECT
-      "t8"."ps_partkey",
-      "t8"."ps_suppkey",
-      "t8"."ps_availqty",
-      "t8"."ps_supplycost",
-      "t8"."ps_comment",
-      "t8"."p_partkey",
-      "t8"."p_name",
-      "t8"."p_mfgr",
-      "t8"."p_brand",
-      "t8"."p_type",
-      "t8"."p_size",
-      "t8"."p_container",
-      "t8"."p_retailprice",
-      "t8"."p_comment"
+      *
     FROM (
       SELECT
         "t5"."ps_partkey",

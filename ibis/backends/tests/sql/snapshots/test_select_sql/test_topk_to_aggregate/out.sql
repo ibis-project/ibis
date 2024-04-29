@@ -1,6 +1,5 @@
 SELECT
-  "t1"."dest",
-  "t1"."Mean(arrdelay)"
+  *
 FROM (
   SELECT
     "t0"."dest",

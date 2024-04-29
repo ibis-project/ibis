@@ -16,8 +16,7 @@ INNER JOIN "tpch_region" AS "t5"
   ON "t4"."n_regionkey" = "t5"."r_regionkey"
 SEMI JOIN (
   SELECT
-    "t7"."n_name",
-    "t7"."Sum(c_acctbal)"
+    *
   FROM (
     SELECT
       "t6"."n_name",

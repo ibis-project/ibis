@@ -1,6 +1,5 @@
 SELECT
-  "t6"."ancestor_node_sort_order",
-  "t6"."n"
+  *
 FROM (
   SELECT
     "t5"."ancestor_node_sort_order",
