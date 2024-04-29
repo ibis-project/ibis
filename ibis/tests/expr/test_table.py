@@ -2096,8 +2096,8 @@ def test_table_bind():
     assert eq(exprs, expected)
 
     # lambda input
-    exprs = t.bind(lambda t: t.a, lambda t: t.b)
-    expected = (t.a, t.b)
+    exprs = t.bind(lambda t: t.a, lambda t: t.b, lambda _: 2)
+    expected = (t.a, t.b, ibis.literal(2))
     assert eq(exprs, expected)
 
     # deferred input

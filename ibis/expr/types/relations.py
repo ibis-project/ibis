@@ -110,7 +110,9 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
     elif isinstance(value, Selector):
         yield from value.expand(table)
     elif callable(value):
-        yield value(table)
+        # rebind, otherwise the callable is required to return an expression
+        # which would preclude support for expressions like lambda _: 2
+        yield from bind(table, value(table))
     else:
         yield literal(value)
 
