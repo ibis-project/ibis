@@ -33,6 +33,15 @@ TEST_TABLES_GEO = {
     ),
 }
 
+TEST_TABLE_GEO_PARQUET = {
+    "geo_wkb": ibis.schema(
+        {
+            "name": "string",
+            "geom": "binary",
+        }
+    ),
+}
+
 
 class TestConf(BackendTest):
     supports_map = True
@@ -65,6 +74,14 @@ class TestConf(BackendTest):
                     CREATE OR REPLACE TABLE {table} AS
                     SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
                     """
+                )
+            for table in TEST_TABLE_GEO_PARQUET:
+                # the ops on this table will need the spatial extension
+                yield (
+                    f"""
+                CREATE OR REPLACE TABLE {table} AS
+                SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
+                """
                 )
             yield (
                 """

@@ -340,3 +340,10 @@ def test_geo_binop_geo_literals(ext_dir, geo_line_lit):
     expr = geo_line_lit.distance(shapely.Point(0, 0))
 
     assert con.execute(expr) == 0
+
+
+def test_cast_wkb_to_geo(con):
+    t = con.table("geo_wkb")
+    geo_expr = t.geometry.cast("geometry")
+    assert geo_expr.type().is_geospatial()
+    assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
