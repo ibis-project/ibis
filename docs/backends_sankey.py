@@ -80,7 +80,7 @@ def create_sanky(theme="light"):
                 node=dict(
                     pad=20,
                     thickness=20,
-                    line=dict(color="grey", width=1),
+                    line=dict(color="grey", width=0.5),
                     label=[node["label"] for node in nodes],
                     color=[node["color"] for node in nodes],
                 ),
@@ -88,7 +88,7 @@ def create_sanky(theme="light"):
                     source=[link["source"] for link in links],
                     target=[link["target"] for link in links],
                     value=[link["value"] for link in links],
-                    line=dict(color="black", width=1.5),
+                    line=dict(color="grey", width=0.5),
                     color=[
                         to_greyish(nodes[link["target"]]["color"]) for link in links
                     ],
@@ -98,7 +98,7 @@ def create_sanky(theme="light"):
     )
     fig.update_layout(
         title_text="Ibis backend types",
-        font_size=18,
+        font_size=24,
         font_family="Arial",
         title_font_size=30,
         margin=dict(l=30, r=30, t=80, b=30),
