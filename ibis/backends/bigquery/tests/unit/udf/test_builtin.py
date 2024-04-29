@@ -9,7 +9,7 @@ to_sql = ibis.bigquery.compile
 def farm_fingerprint(value: bytes) -> int: ...
 
 
-@ibis.udf.scalar.builtin(schema="fn", database="bqutil")
+@ibis.udf.scalar.builtin(database="fn", catalog="bqutil")
 def from_hex(value: str) -> int:
     """Community function to convert from hex string to integer.
 

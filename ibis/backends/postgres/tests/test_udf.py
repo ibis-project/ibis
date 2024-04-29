@@ -85,7 +85,7 @@ def table(con_for_udf, table_name, test_database):
 def test_existing_sql_udf(con_for_udf, test_database, table):
     """Test creating ibis UDF object based on existing UDF in the database."""
     # Create ibis UDF objects referring to UDFs already created in the database
-    custom_length_udf = con_for_udf.function("custom_len", schema=test_database)
+    custom_length_udf = con_for_udf.function("custom_len", database=test_database)
     result_obj = table[table, custom_length_udf(table["user_name"]).name("custom_len")]
     result = result_obj.execute()
     assert result["custom_len"].sum() == result["name_length"].sum()
@@ -93,7 +93,7 @@ def test_existing_sql_udf(con_for_udf, test_database, table):
 
 def test_existing_plpython_udf(con_for_udf, test_database, table):
     # Create ibis UDF objects referring to UDFs already created in the database
-    py_length_udf = con_for_udf.function("pylen", schema=test_database)
+    py_length_udf = con_for_udf.function("pylen", database=test_database)
     result_obj = table[table, py_length_udf(table["user_name"]).name("custom_len")]
     result = result_obj.execute()
     assert result["custom_len"].sum() == result["name_length"].sum()
@@ -103,7 +103,7 @@ def test_udf(test_database, table):
     """Test creating a UDF in database based on Python function and then
     creating an ibis UDF object based on that."""
 
-    @udf.scalar.python(schema=test_database)
+    @udf.scalar.python(database=test_database)
     def mult_a_b(a: int, b: int) -> int:
         return a * b
 
@@ -129,7 +129,7 @@ def test_array_type(test_database, table):
     instantiated specifying the datatype of the elements of the array.
     """
 
-    @udf.scalar.python(schema=test_database)
+    @udf.scalar.python(database=test_database)
     def pysplit(text: str, split: str) -> list[str]:
         return text.split(split)
 
@@ -142,7 +142,7 @@ def test_client_udf_api(test_database, table):
     """Test creating a UDF in database based on Python function using an ibis
     client method."""
 
-    @udf.scalar.python(schema=test_database)
+    @udf.scalar.python(database=test_database)
     def multiply(a: int, b: int) -> int:
         return a * b
 
@@ -171,7 +171,7 @@ def test_client_udf_decorator_fails(con_for_udf, test_database):
         return wrapped
 
     @decorator
-    @udf.scalar.python(schema=test_database)
+    @udf.scalar.python(database=test_database)
     def multiply(a: int, b: int) -> int:
         return a * b
 
