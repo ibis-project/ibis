@@ -8,8 +8,7 @@ FROM (
     MAX("t1"."a") AS "Max(a)"
   FROM (
     SELECT
-      "t0"."a",
-      "t0"."b"
+      *
     FROM "t" AS "t0"
     WHERE
       "t0"."b" = 'm'

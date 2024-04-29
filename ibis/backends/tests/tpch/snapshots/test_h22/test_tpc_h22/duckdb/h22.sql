@@ -1,7 +1,5 @@
 SELECT
-  "t7"."cntrycode",
-  "t7"."numcust",
-  "t7"."totacctbal"
+  *
 FROM (
   SELECT
     "t6"."cntrycode",
@@ -23,14 +21,7 @@ FROM (
       "t5"."c_acctbal"
     FROM (
       SELECT
-        "t0"."c_custkey",
-        "t0"."c_name",
-        "t0"."c_address",
-        "t0"."c_nationkey",
-        "t0"."c_phone",
-        "t0"."c_acctbal",
-        "t0"."c_mktsegment",
-        "t0"."c_comment"
+        *
       FROM "customer" AS "t0"
       WHERE
         SUBSTRING(
@@ -49,14 +40,7 @@ FROM (
             AVG("t3"."c_acctbal") AS "Mean(c_acctbal)"
           FROM (
             SELECT
-              "t0"."c_custkey",
-              "t0"."c_name",
-              "t0"."c_address",
-              "t0"."c_nationkey",
-              "t0"."c_phone",
-              "t0"."c_acctbal",
-              "t0"."c_mktsegment",
-              "t0"."c_comment"
+              *
             FROM "customer" AS "t0"
             WHERE
               "t0"."c_acctbal" > CAST(0.0 AS DOUBLE)

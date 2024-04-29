@@ -1,6 +1,5 @@
 SELECT
-  "t7"."p_partkey",
-  "t7"."ps_supplycost"
+  *
 FROM (
   SELECT
     "t3"."p_partkey",
@@ -15,8 +14,7 @@ WHERE
       MIN("t9"."ps_supplycost") AS "Min(ps_supplycost)"
     FROM (
       SELECT
-        "t8"."ps_partkey",
-        "t8"."ps_supplycost"
+        *
       FROM (
         SELECT
           "t5"."ps_partkey",

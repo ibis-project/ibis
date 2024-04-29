@@ -1,16 +1,10 @@
 WITH "t5" AS (
   SELECT
-    "t4"."n_nationkey",
-    "t4"."n_name",
-    "t4"."n_regionkey",
-    "t4"."n_comment"
+    *
   FROM "hive"."ibis_sf1"."nation" AS "t4"
 )
 SELECT
-  "t19"."supp_nation",
-  "t19"."cust_nation",
-  "t19"."l_year",
-  "t19"."revenue"
+  *
 FROM (
   SELECT
     "t18"."supp_nation",
@@ -19,13 +13,7 @@ FROM (
     SUM("t18"."volume") AS "revenue"
   FROM (
     SELECT
-      "t17"."supp_nation",
-      "t17"."cust_nation",
-      "t17"."l_shipdate",
-      "t17"."l_extendedprice",
-      "t17"."l_discount",
-      "t17"."l_year",
-      "t17"."volume"
+      *
     FROM (
       SELECT
         "t15"."n_name" AS "supp_nation",

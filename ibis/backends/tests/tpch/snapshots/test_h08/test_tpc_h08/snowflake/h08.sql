@@ -7,8 +7,7 @@ WITH "t13" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t6"
 )
 SELECT
-  "t25"."o_year",
-  "t25"."mkt_share"
+  *
 FROM (
   SELECT
     "t24"."o_year",

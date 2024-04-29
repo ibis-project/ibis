@@ -52,6 +52,9 @@ class Select(ops.Relation):
     predicates: VarTuple[ops.Value[dt.Boolean]] = ()
     sort_keys: VarTuple[ops.SortKey] = ()
 
+    def is_star_selection(self):
+        return tuple(self.values.items()) == tuple(self.parent.fields.items())
+
     @attribute
     def values(self):
         return self.selections

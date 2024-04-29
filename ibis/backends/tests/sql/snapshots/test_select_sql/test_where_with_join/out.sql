@@ -1,10 +1,5 @@
 SELECT
-  "t4"."c",
-  "t4"."f",
-  "t4"."foo_id",
-  "t4"."bar_id",
-  "t4"."value1",
-  "t4"."value3"
+  *
 FROM (
   SELECT
     "t2"."c",

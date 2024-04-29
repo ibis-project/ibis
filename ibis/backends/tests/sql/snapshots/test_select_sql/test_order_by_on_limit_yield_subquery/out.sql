@@ -1,6 +1,5 @@
 SELECT
-  "t2"."string_col",
-  "t2"."nrows"
+  *
 FROM (
   SELECT
     "t0"."string_col",

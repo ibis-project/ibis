@@ -3,17 +3,7 @@ SELECT
   "t16"."s_address"
 FROM (
   SELECT
-    "t12"."s_suppkey",
-    "t12"."s_name",
-    "t12"."s_address",
-    "t12"."s_nationkey",
-    "t12"."s_phone",
-    "t12"."s_acctbal",
-    "t12"."s_comment",
-    "t12"."n_nationkey",
-    "t12"."n_name",
-    "t12"."n_regionkey",
-    "t12"."n_comment"
+    *
   FROM (
     SELECT
       "t8"."s_suppkey",
@@ -55,11 +45,7 @@ FROM (
         "t14"."ps_suppkey"
       FROM (
         SELECT
-          "t7"."ps_partkey",
-          "t7"."ps_suppkey",
-          "t7"."ps_availqty",
-          "t7"."ps_supplycost",
-          "t7"."ps_comment"
+          *
         FROM (
           SELECT
             "t2"."PS_PARTKEY" AS "ps_partkey",

@@ -1,6 +1,5 @@
 SELECT
-  "t17"."o_year",
-  "t17"."mkt_share"
+  *
 FROM (
   SELECT
     "t16"."o_year",

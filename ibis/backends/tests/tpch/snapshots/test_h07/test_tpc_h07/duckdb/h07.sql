@@ -1,8 +1,5 @@
 SELECT
-  "t13"."supp_nation",
-  "t13"."cust_nation",
-  "t13"."l_year",
-  "t13"."revenue"
+  *
 FROM (
   SELECT
     "t12"."supp_nation",
@@ -11,13 +8,7 @@ FROM (
     SUM("t12"."volume") AS "revenue"
   FROM (
     SELECT
-      "t11"."supp_nation",
-      "t11"."cust_nation",
-      "t11"."l_shipdate",
-      "t11"."l_extendedprice",
-      "t11"."l_discount",
-      "t11"."l_year",
-      "t11"."volume"
+      *
     FROM (
       SELECT
         "t9"."n_name" AS "supp_nation",

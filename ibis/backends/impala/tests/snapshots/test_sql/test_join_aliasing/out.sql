@@ -41,11 +41,7 @@ FROM (
 ) AS `t6`
 INNER JOIN (
   SELECT
-    `t11`.`d`,
-    `t11`.`idx`,
-    `t11`.`c`,
-    `t11`.`row_count`,
-    `t11`.`total`
+    *
   FROM (
     SELECT
       `t8`.`d`,

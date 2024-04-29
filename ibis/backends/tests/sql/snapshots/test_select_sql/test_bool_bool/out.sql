@@ -1,7 +1,5 @@
 SELECT
-  "t0"."dest",
-  "t0"."origin",
-  "t0"."arrdelay"
+  *
 FROM "airlines" AS "t0"
 WHERE
   (

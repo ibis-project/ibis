@@ -17,18 +17,10 @@ WITH `t5` AS (
     ON `t4`.`movieid` = `t2`.`movieid`
 )
 SELECT
-  `t7`.`userid`,
-  `t7`.`movieid`,
-  `t7`.`rating`,
-  `t7`.`datetime`,
-  `t7`.`title`
+  *
 FROM (
   SELECT
-    `t6`.`userid`,
-    `t6`.`movieid`,
-    `t6`.`rating`,
-    `t6`.`datetime`,
-    `t6`.`title`
+    *
   FROM `t5` AS `t6`
   WHERE
     `t6`.`userid` = 118205 AND EXTRACT(year FROM `t6`.`datetime`) > 2001

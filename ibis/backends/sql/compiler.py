@@ -1115,9 +1115,11 @@ class SQLGlotCompiler(abc.ABC):
         result = parent
 
         if selections:
-            result = sg.select(*self._cleanup_names(selections), copy=False).from_(
-                result, copy=False
-            )
+            if op.is_star_selection():
+                fields = [STAR]
+            else:
+                fields = self._cleanup_names(selections)
+            result = sg.select(*fields, copy=False).from_(result, copy=False)
 
         if predicates:
             result = result.where(*predicates, copy=False)

@@ -1,14 +1,5 @@
 SELECT
-  "t2"."l_returnflag",
-  "t2"."l_linestatus",
-  "t2"."sum_qty",
-  "t2"."sum_base_price",
-  "t2"."sum_disc_price",
-  "t2"."sum_charge",
-  "t2"."avg_qty",
-  "t2"."avg_price",
-  "t2"."avg_disc",
-  "t2"."count_order"
+  *
 FROM (
   SELECT
     "t1"."l_returnflag",

@@ -17,9 +17,7 @@ WITH "t1" AS (
     ON "t3"."g" = "t4"."g"
 )
 SELECT
-  "t8"."a",
-  "t8"."g",
-  "t8"."metric"
+  *
 FROM (
   SELECT
     *

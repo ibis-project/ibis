@@ -1,6 +1,5 @@
 SELECT
-  "t1"."int_col",
-  "t1"."bigint_col"
+  *
 FROM (
   SELECT
     "t0"."int_col",

@@ -1,5 +1,5 @@
 SELECT
-  "t5"."a"
+  *
 FROM (
   SELECT
     "t4"."a"

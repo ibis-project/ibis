@@ -1,6 +1,5 @@
 SELECT
-  "t4"."diag",
-  "t4"."status"
+  *
 FROM (
   SELECT
     *

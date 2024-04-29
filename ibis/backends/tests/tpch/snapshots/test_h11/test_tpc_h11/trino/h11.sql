@@ -1,21 +1,6 @@
 WITH "t10" AS (
   SELECT
-    "t9"."ps_partkey",
-    "t9"."ps_suppkey",
-    "t9"."ps_availqty",
-    "t9"."ps_supplycost",
-    "t9"."ps_comment",
-    "t9"."s_suppkey",
-    "t9"."s_name",
-    "t9"."s_address",
-    "t9"."s_nationkey",
-    "t9"."s_phone",
-    "t9"."s_acctbal",
-    "t9"."s_comment",
-    "t9"."n_nationkey",
-    "t9"."n_name",
-    "t9"."n_regionkey",
-    "t9"."n_comment"
+    *
   FROM (
     SELECT
       "t7"."ps_partkey",
@@ -57,10 +42,7 @@ WITH "t10" AS (
       ON "t7"."ps_suppkey" = "t8"."s_suppkey"
     INNER JOIN (
       SELECT
-        "t2"."n_nationkey",
-        "t2"."n_name",
-        "t2"."n_regionkey",
-        "t2"."n_comment"
+        *
       FROM "hive"."ibis_sf1"."nation" AS "t2"
     ) AS "t6"
       ON "t6"."n_nationkey" = "t8"."s_nationkey"
@@ -69,8 +51,7 @@ WITH "t10" AS (
     "t9"."n_name" = 'GERMANY'
 )
 SELECT
-  "t12"."ps_partkey",
-  "t12"."value"
+  *
 FROM (
   SELECT
     "t11"."ps_partkey",

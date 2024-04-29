@@ -1,6 +1,6 @@
 WITH "t1" AS (
   SELECT
-    "t0"."key"
+    *
   FROM "leaf" AS "t0"
   WHERE
     TRUE
