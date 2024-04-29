@@ -1,12 +1,5 @@
 SELECT
-  `t3`.`a`,
-  `t3`.`b`,
-  `t3`.`c`,
-  `t3`.`d`,
-  `t3`.`g`,
-  `t3`.`window_start`,
-  `t3`.`window_end`,
-  `t3`.`rownum`
+  *
 FROM (
   SELECT
     `t2`.`a`,

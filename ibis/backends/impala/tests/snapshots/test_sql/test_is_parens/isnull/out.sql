@@ -1,6 +1,5 @@
 SELECT
-  `t0`.`a`,
-  `t0`.`b`
+  *
 FROM `table` AS `t0`
 WHERE
   (
