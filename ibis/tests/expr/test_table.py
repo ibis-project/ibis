@@ -2116,7 +2116,12 @@ def test_table_bind():
     assert eq(exprs, expected)
 
     # single tuple arg
-    exprs = t.bind([1, "a"])
+    exprs = t.bind((1, "a"))
+    expected = (ibis.literal(1), t.a)
+    assert eq(exprs, expected)
+
+    # generator arg
+    exprs = t.bind(c for c in (1, "a"))
     expected = (ibis.literal(1), t.a)
     assert eq(exprs, expected)
 
