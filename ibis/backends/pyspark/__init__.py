@@ -249,12 +249,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # 3. set catalog to previous
         # 4. set database to previous
         try:
-            if not PYSPARK_LT_34 and catalog is not None:
+            if catalog is not None:
                 self._session.catalog.setCurrentCatalog(catalog)
             self._session.catalog.setCurrentDatabase(db)
             yield
         finally:
-            if not PYSPARK_LT_34 and catalog is not None:
+            if catalog is not None:
                 self._session.catalog.setCurrentCatalog(current_catalog)
             self._session.catalog.setCurrentDatabase(current_db)
 
@@ -529,7 +529,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         else:
             raise com.IbisError("The schema or obj parameter is required")
 
-        return self.table(name, database=db)
+        return self.table(name, database=(catalog, db))
 
     def create_view(
         self,
