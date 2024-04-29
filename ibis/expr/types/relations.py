@@ -229,12 +229,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         # bind keyword arguments where each entry can produce only one value
         # which is then named with the given key
         for key, arg in kwargs.items():
-            try:
-                (value,) = bind(self, arg)
-            except ValueError:
+            bindings = tuple(bind(self, arg))
+            if len(bindings) != 1:
                 raise com.IbisInputError(
                     "Keyword arguments cannot produce more than one value"
                 )
+            (value,) = bindings
             values.append(value.name(key))
 
         # dereference the values to `self`

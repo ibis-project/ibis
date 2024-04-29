@@ -2169,3 +2169,9 @@ def test_table_bind():
 
     # no args
     assert t.bind() == ()
+
+    def utter_failure(x):
+        raise ValueError("¡moo!")
+
+    with pytest.raises(ValueError, match="¡moo!"):
+        t.bind(foo=utter_failure)
