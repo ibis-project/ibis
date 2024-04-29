@@ -1711,3 +1711,12 @@ def test_mutate_ambiguty_check_not_too_strict():
         values={"id": first.id, "v": first.v, "v2": first.id},
     )
     assert second.op() == expected
+
+
+def test_projections_with_different_field_order_are_unequal():
+    t = ibis.table({"a": "int64", "b": "string"}, name="t")
+
+    t1 = t.select(a=1, b=2)
+    t2 = t.select(b=2, a=1)
+
+    assert not t1.equals(t2)

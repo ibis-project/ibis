@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-import collections
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Union
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict, MapSet
+from ibis.common.collections import FrozenOrderedDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
@@ -20,7 +19,7 @@ if TYPE_CHECKING:
 class Schema(Concrete, Coercible, MapSet):
     """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
 
-    fields: FrozenDict[str, dt.DataType]
+    fields: FrozenOrderedDict[str, dt.DataType]
     """A mapping of [](`str`) to
     [`DataType`](./datatypes.qmd#ibis.expr.datatypes.DataType)
     objects representing the type of each column."""
@@ -90,14 +89,6 @@ class Schema(Concrete, Coercible, MapSet):
                 f"invalid equality comparison between Schema and {type(other)}"
             )
         return self == other
-
-    def __hash__(self) -> int:
-        return super().__hash__()
-
-    def __eq__(self, other):
-        if not isinstance(other, Mapping):
-            return NotImplemented
-        return collections.OrderedDict(self) == collections.OrderedDict(other)
 
     @classmethod
     def from_tuples(
