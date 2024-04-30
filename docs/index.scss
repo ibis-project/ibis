@@ -1,4 +1,4 @@
-// 
+//
 // /* Base card styling */
 // .card {
 //     border: 5px solid #ddd;
@@ -16,13 +16,13 @@
 //     /* Smooth hover effect */
 //     max-width: 2400px;
 //     /* Maximum width for responsive design */
-// 
+//
 //     display: flex;
 //     flex-direction: column;
 //     /* Ensures vertical arrangement of content */
 //     // align-items: center; /* Centers all child elements horizontally */
 // }
-// 
+//
 // /* Card hover effect */
 // .card:hover {
 //     transform: scale(1.05);
@@ -30,7 +30,7 @@
 //     box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
 //     /* Intensifies the shadow on hover */
 // }
-// 
+//
 // /* CTA button styling within the card */
 // .card-button {
 //     display: inline-block;
@@ -48,17 +48,17 @@
 //     /* Centered text */
 //     transition: background-color 0.2s;
 //     /* Smooth hover transition */
-// 
+//
 //     // align self to the end of the card
 //     align-self: center;
 // }
-// 
+//
 // /* Button hover effect */
 // .card-button:hover {
 //     background-color: #0056b3;
 //     /* Darker blue on hover */
 // }
-// 
+//
 // /* Responsive layout for smaller screens */
 // @media (max-width: 600px) {
 //     .card {
@@ -66,8 +66,8 @@
 //         /* Full-width on smaller screens */
 //     }
 // }
-// 
-// 
+//
+//
 // .grad {
 //     background-image: linear-gradient($gradient-start, $gradient-end);
 // }

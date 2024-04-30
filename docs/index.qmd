@@ -208,7 +208,7 @@ instance, switch between DuckDB and BigQuery:
 ```python
 local_con = ibis.duckdb.connect()
 remote_con = ibis.bigquery.connect()
-``` 
+```
 
 ```{python}
 #| code-fold: true
@@ -593,7 +593,7 @@ backend-native tables.
 ```{python}
 #| code-fold: true
 #| code-summary: "Setup code"
- 
+
 import os
 import ibis
 
@@ -1147,4 +1147,4 @@ con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
 
 :::
 
-::: 
+:::
