@@ -36,32 +36,6 @@ collections of tables.
    create collections of `database`, respectively.
    The new methods are `list_catalogs`, `create_catalog`, `drop_catalog`,
 * There is a new `current_catalog` property.
-
-refactor(duckdb): catalog database switchover
-
-refactor(snowflake): catalog database switchover
-
-refactor(trino): catalog database switchover
-
-refactor(postgres): catalog database switchover
-
-refactor(oracle): catalog database switchover
-
-refactor(mssql): catalog database switchover
-
-refactor(bigquery): catalog database switchover
-
-refactor(clickhouse): catalog database switchover
-
-refactor(datafusion): catalog database switchover
-
-refactor(mysql): catalog database switchover
-
-refactor(exasol): catalog database switchover
-
-refactor(risingwave): catalog database switchover
-
-test(list_databases): add test for list_database contents
 * **api:** timecontext feature is removed
 * **api:** The `by` argument from `asof_join` is removed. Calls to `asof_join` that previously used `by` should pass those arguments to `predicates` instead.
 * **cleanup:** Deprecated methods and properties `op`, `output_dtype`, and `output_shape` are removed. `op` is no longer needed, and use `.dtype` and `.shape` respectively for the other two.
