@@ -51,7 +51,7 @@ class TablesAccessor(collections.abc.Mapping):
     def __getitem__(self, name) -> ir.Table:
         try:
             return self._backend.table(name)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise KeyError(name) from exc
 
     def __getattr__(self, name) -> ir.Table:
@@ -59,7 +59,7 @@ class TablesAccessor(collections.abc.Mapping):
             raise AttributeError(name)
         try:
             return self._backend.table(name)
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             raise AttributeError(name) from exc
 
     def __iter__(self) -> Iterator[str]:
