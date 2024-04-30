@@ -144,6 +144,12 @@ def array_position_rowwise(row):
         return -1
 
 
+def array_remove_rowwise(row):
+    if row["arg"] is None:
+        return None
+    return [x for x in row["arg"] if x != row["other"]]
+
+
 def array_slice_rowwise(row):
     arg, start, stop = row["arg"], row["start"], row["stop"]
     if isnull(start) and isnull(stop):
@@ -380,11 +386,12 @@ columnwise = {
     ops.Repeat: lambda df: df["arg"] * df["times"],
 }
 
+
 rowwise = {
     ops.ArrayContains: lambda row: row["other"] in row["arg"],
     ops.ArrayIndex: array_index_rowwise,
     ops.ArrayPosition: array_position_rowwise,
-    ops.ArrayRemove: lambda row: [x for x in row["arg"] if x != row["other"]],
+    ops.ArrayRemove: array_remove_rowwise,
     ops.ArrayRepeat: lambda row: np.tile(row["arg"], max(0, row["times"])),
     ops.ArraySlice: array_slice_rowwise,
     ops.ArrayUnion: lambda row: toolz.unique(row["left"] + row["right"]),

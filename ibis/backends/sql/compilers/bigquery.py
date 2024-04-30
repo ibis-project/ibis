@@ -526,7 +526,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_ArrayRemove(self, op, *, arg, other):
         name = sg.to_identifier(util.gen_name("bq_arr"))
         unnest = self._unnest(arg, as_=name)
-        return self.f.array(sg.select(name).from_(unnest).where(name.neq(other)))
+        both_null = sg.and_(name.is_(NULL), other.is_(NULL))
+        cond = sg.or_(name.neq(other), both_null)
+        return self.f.array(sg.select(name).from_(unnest).where(cond))
 
     def visit_ArrayDistinct(self, op, *, arg):
         name = util.gen_name("bq_arr")

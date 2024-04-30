@@ -584,9 +584,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFilter(func, arg)
 
     def visit_ArrayRemove(self, op, *, arg, other):
-        x = sg.to_identifier("x")
-        body = x.neq(other)
-        return self.f.arrayFilter(sge.Lambda(this=body, expressions=[x]), arg)
+        x = sg.to_identifier(util.gen_name("x"))
+        should_keep_null = sg.and_(x.is_(NULL), sg.not_(other.is_(NULL)))
+        cond = sg.or_(x.neq(other), should_keep_null)
+        return self.f.arrayFilter(sge.Lambda(this=cond, expressions=[x]), arg)
 
     def visit_ArrayUnion(self, op, *, left, right):
         arg = self.f.arrayConcat(left, right)
