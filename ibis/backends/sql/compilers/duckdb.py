@@ -10,6 +10,7 @@ from sqlglot.dialects import DuckDB
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
@@ -168,10 +169,10 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f.list_filter(left, lamduh)
 
     def visit_ArrayRemove(self, op, *, arg, other):
-        param = sg.to_identifier("x")
-        body = param.neq(other)
-        lamduh = sge.Lambda(this=body, expressions=[param])
-        return self.f.list_filter(arg, lamduh)
+        x = sg.to_identifier(util.gen_name("x"))
+        should_keep_null = sg.and_(x.is_(NULL), other.is_(sg.not_(NULL)))
+        cond = sg.or_(x.neq(other), should_keep_null)
+        return self.f.list_filter(arg, sge.Lambda(this=cond, expressions=[x]))
 
     def visit_ArrayUnion(self, op, *, left, right):
         arg = self.f.list_concat(left, right)

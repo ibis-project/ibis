@@ -601,10 +601,11 @@ def test_array_position(con, a, expected_array):
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
-    ("a"),
+    ("inp", "exp"),
     [
         param(
             [[3, 2], [], [42, 2], [2, 2], []],
+            [[3], [], [42], [], []],
             id="including-empty-array",
             marks=[
                 pytest.mark.notyet(
@@ -614,17 +615,34 @@ def test_array_position(con, a, expected_array):
                 )
             ],
         ),
-        param([[3, 2], [2], [42, 2], [2, 2], [2]], id="all-non-empty-arrays"),
+        param(
+            [[3, 2], [2], [42, 2], [2, 2], [2]],
+            [[3], [], [42], [], []],
+            id="all-non-empty-arrays",
+        ),
+        param(
+            [[3, 2, None], [None], [42, 2], [2, 2], None],
+            [[3, None], [None], [42], [], None],
+            id="including_null",
+            # marks=[
+            #     pytest.mark.broken(
+            #         ["duckdb"],
+            #         raises=AssertionError,
+            #         reason="not implmented correctly",
+            #     ),
+            # ],
+        ),
     ],
 )
-def test_array_remove(con, a):
-    t = ibis.memtable({"a": a})
+def test_array_remove(con, inp, exp):
+    t = ibis.memtable({"a": inp})
     expr = t.a.remove(2)
     result = con.execute(expr)
-    expected = pd.Series([[3], [], [42], [], []], dtype="object")
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
-    )
+    expected = pd.Series(exp, dtype="object")
+
+    assert frozenset(
+        tuple(v) if v is not None else None for v in result.values
+    ) == frozenset(tuple(v) if v is not None else None for v in expected.values)
 
 
 @builtin_array
