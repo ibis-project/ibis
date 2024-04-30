@@ -282,6 +282,16 @@ class TrinoCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(f"{unit!r} unit is not supported")
         return self.cast(res, op.dtype)
 
+    def visit_InSubquery(self, op, *, rel, needle):
+        # cast the needle to the same type as the column being queried, since
+        # trino is very strict about structs
+        if op.needle.dtype.is_struct():
+            needle = self.cast(
+                sge.Struct.from_arg_list([needle]), op.rel.schema.as_struct()
+            )
+
+        return super().visit_InSubquery(op, rel=rel, needle=needle)
+
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 

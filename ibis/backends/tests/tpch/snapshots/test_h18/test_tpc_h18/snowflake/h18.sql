@@ -19,12 +19,7 @@ WITH "t5" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t2"
 )
 SELECT
-  "t14"."c_name",
-  "t14"."c_custkey",
-  "t14"."o_orderkey",
-  "t14"."o_orderdate",
-  "t14"."o_totalprice",
-  "t14"."sum_qty"
+  *
 FROM (
   SELECT
     "t13"."c_name",
@@ -35,39 +30,7 @@ FROM (
     SUM("t13"."l_quantity") AS "sum_qty"
   FROM (
     SELECT
-      "t11"."c_custkey",
-      "t11"."c_name",
-      "t11"."c_address",
-      "t11"."c_nationkey",
-      "t11"."c_phone",
-      "t11"."c_acctbal",
-      "t11"."c_mktsegment",
-      "t11"."c_comment",
-      "t11"."o_orderkey",
-      "t11"."o_custkey",
-      "t11"."o_orderstatus",
-      "t11"."o_totalprice",
-      "t11"."o_orderdate",
-      "t11"."o_orderpriority",
-      "t11"."o_clerk",
-      "t11"."o_shippriority",
-      "t11"."o_comment",
-      "t11"."l_orderkey",
-      "t11"."l_partkey",
-      "t11"."l_suppkey",
-      "t11"."l_linenumber",
-      "t11"."l_quantity",
-      "t11"."l_extendedprice",
-      "t11"."l_discount",
-      "t11"."l_tax",
-      "t11"."l_returnflag",
-      "t11"."l_linestatus",
-      "t11"."l_shipdate",
-      "t11"."l_commitdate",
-      "t11"."l_receiptdate",
-      "t11"."l_shipinstruct",
-      "t11"."l_shipmode",
-      "t11"."l_comment"
+      *
     FROM (
       SELECT
         "t6"."c_custkey",

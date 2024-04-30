@@ -13,18 +13,14 @@ SELECT
   "t5"."total" - "t6"."total" AS "diff"
 FROM (
   SELECT
-    "t2"."region",
-    "t2"."kind",
-    "t2"."total"
+    *
   FROM "t1" AS "t2"
   WHERE
     "t2"."kind" = 'foo'
 ) AS "t5"
 INNER JOIN (
   SELECT
-    "t2"."region",
-    "t2"."kind",
-    "t2"."total"
+    *
   FROM "t1" AS "t2"
   WHERE
     "t2"."kind" = 'bar'

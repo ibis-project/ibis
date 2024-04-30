@@ -15,11 +15,13 @@ import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    PolarsColumnNotFoundError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
+    PySparkAnalysisException,
 )
-from ibis.common.exceptions import IbisError
+from ibis.common.exceptions import IbisError, OperationNotDefinedError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -234,3 +236,40 @@ def test_keyword_fields(con, nullable):
     finally:
         with contextlib.suppress(NotImplementedError):
             con.drop_table(name, force=True)
+
+
+@pytest.mark.notyet(
+    ["postgres"],
+    raises=PsycoPg2SyntaxError,
+    reason="sqlglot doesn't implement structs for postgres correctly",
+)
+@pytest.mark.notyet(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="sqlglot doesn't implement structs for postgres correctly",
+)
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsColumnNotFoundError,
+    reason="doesn't seem to support IN-style subqueries on structs",
+)
+@pytest.mark.notimpl(["pandas", "dask"], raises=OperationNotDefinedError)
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.5"],
+    reason="requires pyspark 3.5",
+    raises=PySparkAnalysisException,
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=Py4JJavaError,
+    reason="fails to parse due to an unsupported operation; flink docs say the syntax is supported",
+)
+def test_isin_struct(con):
+    needle1 = ibis.struct({"x": 1, "y": 2})
+    needle2 = ibis.struct({"x": 2, "y": 3})
+    haystack_t = ibis.memtable({"xs": [1, 2, 3], "ys": [2, 3, 4]})
+    haystack = ibis.struct({"x": haystack_t.xs, "y": haystack_t.ys})
+    both = needle1.isin(haystack) | needle2.isin(haystack)
+    result = con.execute(both)
+    # TODO(cpcloud): ensure the type is consistent
+    assert result is True or result is np.bool_(True)

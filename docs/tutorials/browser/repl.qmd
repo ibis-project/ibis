@@ -1,0 +1,44 @@
+---
+title: JupyterLite console
+format:
+  html:
+    page-layout: full
+---
+
+Try our experimental JupyterLite console with Ibis, using the Palmer
+penguins[^1] dataset loaded into the DuckDB backend!
+
+{{< include ../../_tabsets/repl_warning.qmd >}}
+
+```{python}
+#| echo: false
+#| output: asis
+from urllib.parse import urlencode
+
+lines = """
+%pip install numpy pandas tzdata
+import pyodide_js, pathlib, js
+await pyodide_js.loadPackage("https://storage.googleapis.com/ibis-wasm-wheels/pyarrow-16.0.0.dev2661%2Bg9bddb87fd-cp311-cp311-emscripten_3_1_46_wasm32.whl")
+pathlib.Path("penguins.csv").write_text(await (await js.fetch("https://storage.googleapis.com/ibis-tutorial-data/penguins.csv")).text())
+del pyodide_js, pathlib, js
+%clear
+%pip install 'ibis-framework[duckdb]'
+from ibis.interactive import *
+penguins = ibis.read_csv("penguins.csv")
+penguins
+"""
+
+params = [
+    ("toolbar", "1"),
+    ("theme", "JupyterLab Night"),
+    ("kernel", "python"),
+]
+params.extend(("code", line) for line in lines.splitlines() if line)
+query = urlencode(params)
+
+jupyterlite = f"../../jupyterlite/repl/?{query}"
+iframe = f'<iframe src="{jupyterlite}" class="jupyterlite-console"></iframe>'
+print(iframe)
+```
+
+[^1]: Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0. <https://allisonhorst.github.io/palmerpenguins/>. doi: 10.5281/zenodo.3960218.

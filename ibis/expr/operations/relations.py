@@ -10,7 +10,7 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict
+from ibis.common.collections import FrozenDict, FrozenOrderedDict
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
@@ -41,7 +41,7 @@ class Relation(Node, Coercible):
 
     @property
     @abstractmethod
-    def values(self) -> FrozenDict[str, Value]:
+    def values(self) -> FrozenOrderedDict[str, Value]:
         """A mapping of column names to expressions which build up the relation.
 
         This attribute is heavily used in rewrites as well as during field
@@ -59,13 +59,13 @@ class Relation(Node, Coercible):
         ...
 
     @property
-    def fields(self) -> FrozenDict[str, Column]:
+    def fields(self) -> FrozenOrderedDict[str, Column]:
         """A mapping of column names to fields of the relation.
 
         This calculated property shouldn't be overridden in subclasses since it
         is mostly used for convenience.
         """
-        return FrozenDict({k: Field(self, k) for k in self.schema})
+        return FrozenOrderedDict({k: Field(self, k) for k in self.schema})
 
     def to_expr(self):
         from ibis.expr.types import Table
@@ -110,7 +110,7 @@ def _check_integrity(values, allowed_parents):
 @public
 class Project(Relation):
     parent: Relation
-    values: FrozenDict[str, NonSortKey[Unaliased[Value]]]
+    values: FrozenOrderedDict[str, NonSortKey[Unaliased[Value]]]
 
     def __init__(self, parent, values):
         _check_integrity(values.values(), {parent})
@@ -133,11 +133,10 @@ class Simple(Relation):
         return self.parent.schema
 
 
-# TODO(kszucs): remove in favor of View
 @public
-class SelfReference(Simple):
+class Reference(Relation):
     _uid_counter = itertools.count()
-
+    parent: Relation
     identifier: Optional[int] = None
 
     def __init__(self, parent, identifier):
@@ -146,8 +145,21 @@ class SelfReference(Simple):
         super().__init__(parent=parent, identifier=identifier)
 
     @attribute
+    def schema(self):
+        return self.parent.schema
+
+
+# TODO(kszucs): remove in favor of View
+@public
+class SelfReference(Reference):
+    values = FrozenOrderedDict()
+
+
+@public
+class JoinReference(Reference):
+    @attribute
     def values(self):
-        return FrozenDict()
+        return self.parent.fields
 
 
 JoinKind = Literal[
@@ -165,22 +177,17 @@ JoinKind = Literal[
 
 
 @public
-class JoinTable(Simple):
-    index: int
-
-
-@public
 class JoinLink(Node):
     how: JoinKind
-    table: JoinTable
+    table: Reference
     predicates: VarTuple[Value[dt.Boolean]]
 
 
 @public
 class JoinChain(Relation):
-    first: JoinTable
+    first: Reference
     rest: VarTuple[JoinLink]
-    values: FrozenDict[str, Unaliased[Value]]
+    values: FrozenOrderedDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):
         allowed_parents = {first}
@@ -193,6 +200,10 @@ class JoinChain(Relation):
             _check_integrity(join.predicates, allowed_parents)
         _check_integrity(values.values(), allowed_parents)
         super().__init__(first=first, rest=rest, values=values)
+
+    @property
+    def tables(self):
+        return [self.first] + [link.table for link in self.rest]
 
     @property
     def length(self):
@@ -248,8 +259,8 @@ class Limit(Simple):
 @public
 class Aggregate(Relation):
     parent: Relation
-    groups: FrozenDict[str, Unaliased[Column]]
-    metrics: FrozenDict[str, Unaliased[Scalar]]
+    groups: FrozenOrderedDict[str, Unaliased[Column]]
+    metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
 
     def __init__(self, parent, groups, metrics):
         _check_integrity(groups.values(), {parent})
@@ -262,7 +273,7 @@ class Aggregate(Relation):
 
     @attribute
     def values(self):
-        return FrozenDict({**self.groups, **self.metrics})
+        return FrozenOrderedDict({**self.groups, **self.metrics})
 
     @attribute
     def schema(self):
@@ -274,7 +285,7 @@ class Set(Relation):
     left: Relation
     right: Relation
     distinct: bool = False
-    values = FrozenDict()
+    values = FrozenOrderedDict()
 
     def __init__(self, left, right, **kwargs):
         # convert to dictionary first, to get key-unordered comparison semantics
@@ -310,7 +321,7 @@ class Difference(Set):
 @public
 class PhysicalTable(Relation):
     name: str
-    values = FrozenDict()
+    values = FrozenOrderedDict()
 
 
 @public
@@ -345,7 +356,7 @@ class SQLQueryResult(Relation):
     query: str
     schema: Schema
     source: Any
-    values = FrozenDict()
+    values = FrozenOrderedDict()
 
 
 @public
@@ -367,12 +378,12 @@ class SQLStringView(Relation):
     child: Relation
     query: str
     schema: Schema
-    values = FrozenDict()
+    values = FrozenOrderedDict()
 
 
 @public
 class DummyTable(Relation):
-    values: FrozenDict[str, Value]
+    values: FrozenOrderedDict[str, Value]
 
     @attribute
     def schema(self):

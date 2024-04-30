@@ -18,22 +18,7 @@ WITH "t6" AS (
       )) AS "total_revenue"
     FROM (
       SELECT
-        "t1"."l_orderkey",
-        "t1"."l_partkey",
-        "t1"."l_suppkey",
-        "t1"."l_linenumber",
-        "t1"."l_quantity",
-        "t1"."l_extendedprice",
-        "t1"."l_discount",
-        "t1"."l_tax",
-        "t1"."l_returnflag",
-        "t1"."l_linestatus",
-        "t1"."l_shipdate",
-        "t1"."l_commitdate",
-        "t1"."l_receiptdate",
-        "t1"."l_shipinstruct",
-        "t1"."l_shipmode",
-        "t1"."l_comment"
+        *
       FROM "lineitem" AS "t1"
       WHERE
         "t1"."l_shipdate" >= MAKE_DATE(1996, 1, 1)

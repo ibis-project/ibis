@@ -1133,7 +1133,7 @@ no_mixed_timestamp_comparisons = [
         reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
     ),
     pytest.mark.xfail_version(
-        duckdb=["duckdb>=0.10"],
+        duckdb=["duckdb>=0.10,<0.10.2"],
         raises=DuckDBBinderException,
         # perhaps we should consider disallowing this in ibis as well
         reason="DuckDB doesn't allow comparing timestamp with and without timezones starting at version 0.10",
@@ -1434,6 +1434,85 @@ def test_integer_to_timestamp(backend, con, unit):
 def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.to_timestamp(fmt)).execute()
+
+    # TEST: do we get the same date out, that we put in?
+    # format string assumes that we are using pandas' strftime
+    for i, val in enumerate(result["date"]):
+        assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
+
+@pytest.mark.parametrize(
+    "fmt",
+    [
+        # "11/01/10" - "month/day/year"
+        param(
+            "%m/%d/%y",
+            id="mysql_format",
+            marks=[
+                pytest.mark.never(
+                    ["snowflake"],
+                    reason=(
+                        "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
+                        "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
+                    ),
+                    raises=SnowflakeProgrammingError,
+                ),
+                pytest.mark.never(
+                    ["flink"],
+                    raises=ValueError,
+                    reason="Datetime formatting style is not supported.",
+                ),
+            ],
+        ),
+        param(
+            "MM/dd/yy",
+            id="pyspark_format",
+            marks=[
+                pytest.mark.never(
+                    ["bigquery"],
+                    reason="400 Mismatch between format character 'M' and string character '0'",
+                    raises=GoogleBadRequest,
+                ),
+                pytest.mark.never(
+                    ["mysql"],
+                    reason="NaTType does not support strftime",
+                    raises=ValueError,
+                ),
+                pytest.mark.never(
+                    ["trino"],
+                    reason="datetime formatting style not supported",
+                    raises=TrinoUserError,
+                ),
+                pytest.mark.never(
+                    ["polars"],
+                    reason="datetime formatting style not supported",
+                    raises=PolarsComputeError,
+                ),
+                pytest.mark.never(
+                    ["duckdb"],
+                    reason="datetime formatting style not supported",
+                    raises=DuckDBInvalidInputException,
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notimpl(
+    [
+        "dask",
+        "pandas",
+        "clickhouse",
+        "sqlite",
+        "datafusion",
+        "mssql",
+        "druid",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
+def test_string_to_date(alltypes, fmt):
+    table = alltypes
+    result = table.mutate(date=table.date_string_col.to_date(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime

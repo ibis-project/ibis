@@ -1,6 +1,8 @@
 ---
-title: "Presentations"
-sidebar: presentations
+title: Presentations
+listing:
+  contents: presentations
+  type: table
+  sort:
+    - "date desc"
 ---
-
-Ibis presentations are linked here.

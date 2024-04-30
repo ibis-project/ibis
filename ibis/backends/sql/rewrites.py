@@ -52,6 +52,9 @@ class Select(ops.Relation):
     predicates: VarTuple[ops.Value[dt.Boolean]] = ()
     sort_keys: VarTuple[ops.SortKey] = ()
 
+    def is_star_selection(self):
+        return tuple(self.values.items()) == tuple(self.parent.fields.items())
+
     @attribute
     def values(self):
         return self.selections
@@ -205,6 +208,7 @@ def sqlize(
     node: ops.Node,
     params: Mapping[ops.ScalarParameter, Any],
     rewrites: Sequence[Pattern] = (),
+    fuse_selects: bool = True,
 ) -> tuple[ops.Node, list[ops.Node]]:
     """Lower the ibis expression graph to a SQL-like relational algebra.
 
@@ -216,6 +220,8 @@ def sqlize(
         A mapping of scalar parameters to their values.
     rewrites
         Supplementary rewrites to apply to the expression graph.
+    fuse_selects
+        Whether to merge subsequent Select nodes into one where possible.
 
     Returns
     -------
@@ -240,7 +246,10 @@ def sqlize(
     )
 
     # squash subsequent Select nodes into one
-    simplified = sqlized.replace(merge_select_select)
+    if fuse_selects:
+        simplified = sqlized.replace(merge_select_select)
+    else:
+        simplified = sqlized
 
     # extract common table expressions while wrapping them in a CTE node
     ctes = frozenset(extract_ctes(simplified))

@@ -3,17 +3,7 @@ SELECT
   "t16"."s_address"
 FROM (
   SELECT
-    "t12"."s_suppkey",
-    "t12"."s_name",
-    "t12"."s_address",
-    "t12"."s_nationkey",
-    "t12"."s_phone",
-    "t12"."s_acctbal",
-    "t12"."s_comment",
-    "t12"."n_nationkey",
-    "t12"."n_name",
-    "t12"."n_regionkey",
-    "t12"."n_comment"
+    *
   FROM (
     SELECT
       "t10"."s_suppkey",
@@ -40,10 +30,7 @@ FROM (
     ) AS "t10"
     INNER JOIN (
       SELECT
-        "t1"."n_nationkey",
-        "t1"."n_name",
-        "t1"."n_regionkey",
-        "t1"."n_comment"
+        *
       FROM "hive"."ibis_sf1"."nation" AS "t1"
     ) AS "t7"
       ON "t10"."s_nationkey" = "t7"."n_nationkey"
@@ -55,11 +42,7 @@ FROM (
         "t14"."ps_suppkey"
       FROM (
         SELECT
-          "t8"."ps_partkey",
-          "t8"."ps_suppkey",
-          "t8"."ps_availqty",
-          "t8"."ps_supplycost",
-          "t8"."ps_comment"
+          *
         FROM (
           SELECT
             "t2"."ps_partkey",

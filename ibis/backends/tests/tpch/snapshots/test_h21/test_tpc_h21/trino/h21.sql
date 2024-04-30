@@ -19,21 +19,14 @@ WITH "t8" AS (
   FROM "hive"."ibis_sf1"."lineitem" AS "t3"
 )
 SELECT
-  "t19"."s_name",
-  "t19"."numwait"
+  *
 FROM (
   SELECT
     "t18"."s_name",
     COUNT(*) AS "numwait"
   FROM (
     SELECT
-      "t15"."l1_orderkey",
-      "t15"."o_orderstatus",
-      "t15"."l_receiptdate",
-      "t15"."l_commitdate",
-      "t15"."l1_suppkey",
-      "t15"."s_name",
-      "t15"."n_name"
+      *
     FROM (
       SELECT
         "t12"."l_orderkey" AS "l1_orderkey",
@@ -72,10 +65,7 @@ FROM (
         ON "t10"."o_orderkey" = "t12"."l_orderkey"
       INNER JOIN (
         SELECT
-          "t2"."n_nationkey",
-          "t2"."n_name",
-          "t2"."n_regionkey",
-          "t2"."n_comment"
+          *
         FROM "hive"."ibis_sf1"."nation" AS "t2"
       ) AS "t7"
         ON "t9"."s_nationkey" = "t7"."n_nationkey"

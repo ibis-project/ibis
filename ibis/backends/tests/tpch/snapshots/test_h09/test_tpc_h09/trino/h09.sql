@@ -1,7 +1,5 @@
 SELECT
-  "t20"."nation",
-  "t20"."o_year",
-  "t20"."sum_profit"
+  *
 FROM (
   SELECT
     "t19"."nation",
@@ -9,10 +7,7 @@ FROM (
     SUM("t19"."amount") AS "sum_profit"
   FROM (
     SELECT
-      "t18"."amount",
-      "t18"."o_year",
-      "t18"."nation",
-      "t18"."p_name"
+      *
     FROM (
       SELECT
         (
@@ -97,10 +92,7 @@ FROM (
         ON "t17"."o_orderkey" = "t13"."l_orderkey"
       INNER JOIN (
         SELECT
-          "t5"."n_nationkey",
-          "t5"."n_name",
-          "t5"."n_regionkey",
-          "t5"."n_comment"
+          *
         FROM "hive"."ibis_sf1"."nation" AS "t5"
       ) AS "t12"
         ON "t14"."s_nationkey" = "t12"."n_nationkey"

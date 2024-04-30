@@ -1,8 +1,6 @@
 WITH "t1" AS (
   SELECT
-    "t0"."dest",
-    "t0"."origin",
-    "t0"."arrdelay"
+    *
   FROM "airlines" AS "t0"
   WHERE
     "t0"."dest" IN ('ORD', 'JFK', 'SFO')
@@ -18,8 +16,7 @@ FROM (
   FROM "t1" AS "t3"
   SEMI JOIN (
     SELECT
-      "t4"."dest",
-      "t4"."Mean(arrdelay)"
+      *
     FROM (
       SELECT
         "t2"."dest",

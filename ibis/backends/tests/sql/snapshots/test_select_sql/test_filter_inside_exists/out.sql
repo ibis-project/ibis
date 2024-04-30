@@ -1,8 +1,5 @@
 SELECT
-  "t0"."session_id",
-  "t0"."user_id",
-  "t0"."event_type",
-  "t0"."ts"
+  *
 FROM "events" AS "t0"
 WHERE
   EXISTS(

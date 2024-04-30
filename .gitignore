@@ -147,3 +147,8 @@ docs/**/.jupyter_cache
 # quarto generated files
 docs/posts-listing.json
 docs/posts.feed-full-staged
+docs/**/*.html
+
+# jupyterlite stuff
+.jupyterlite.doit.db
+docs/jupyter_lite_config.json

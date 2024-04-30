@@ -615,12 +615,12 @@ def test_insert_from_memtable(con, temp_table):
         "pandas",
         "polars",
         "flink",
-        "pyspark",
         "sqlite",
     ],
     raises=AttributeError,
     reason="doesn't support the common notion of a catalog",
 )
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_list_catalogs(con):
     # Every backend has its own databases
     test_catalogs = {
@@ -634,6 +634,7 @@ def test_list_catalogs(con):
         "risingwave": {"dev"},
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
+        "pyspark": {"spark_catalog"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -647,7 +648,7 @@ def test_list_catalogs(con):
         "polars",
     ],
     raises=AttributeError,
-    reason="doesn't support the common notion of a catalog",
+    reason="doesn't support the common notion of a database",
 )
 def test_list_database_contents(con):
     # Every backend has its own databases
@@ -1607,3 +1608,29 @@ def test_json_to_pyarrow(con):
         if val is not None
     }
     assert result == expected
+
+
+@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
+@pytest.mark.notyet(
+    ["risingwave", "exasol"],
+    raises=com.UnsupportedOperationError,
+    reason="no temp table support",
+)
+@pytest.mark.notyet(
+    ["impala", "trino"], raises=NotImplementedError, reason="no temp table support"
+)
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(
+    ["flink"], raises=com.IbisError, reason="no persistent temp table support"
+)
+def test_schema_with_caching(alltypes):
+    t1 = alltypes.limit(5).select("bigint_col", "string_col")
+    t2 = alltypes.limit(5).select("string_col", "bigint_col")
+
+    pt1 = t1.cache()
+    pt2 = t2.cache()
+
+    assert pt1.schema() == t1.schema()
+    assert pt2.schema() == t2.schema()

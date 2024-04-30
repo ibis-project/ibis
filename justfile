@@ -9,6 +9,8 @@ clean:
 # lock dependencies without updating existing versions
 lock:
     #!/usr/bin/env bash
+    set -euo pipefail
+
     required_version="1.8.2"
     version="$(poetry --version)"
     if ! grep -qF "${required_version}" <<< "${version}"; then
@@ -39,7 +41,7 @@ ci-check *args:
 # lint code
 lint:
     ruff format -q . --check
-    ruff .
+    ruff check .
 
 # run the test suite for one or more backends
 test +backends:
@@ -56,6 +58,7 @@ test +backends:
 
 _doctest runner *args:
     #!/usr/bin/env bash
+    set -euo pipefail
 
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
     {{ runner }} pytest --doctest-modules {{ args }} $(
@@ -80,6 +83,8 @@ ci-doctest *args:
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
     #!/usr/bin/env bash
+    set -euo pipefail
+
     outdir="{{ justfile_directory() }}/ci/ibis-testing-data"
     rm -rf "$outdir"
     url="https://github.com/{{ owner }}/{{ repo }}"
@@ -109,6 +114,8 @@ reup *backends:
 # stop and remove containers; clean up networks and volumes
 down *backends:
     #!/usr/bin/env bash
+    set -euo pipefail
+
     if [ -z "{{ backends }}" ]; then
         docker compose down --volumes --remove-orphans
     else
@@ -130,11 +137,15 @@ benchcmp number *args:
 # check for invalid links in a locally built version of the docs
 checklinks *args:
     #!/usr/bin/env bash
+    set -euo pipefail
+
     lychee --base docs/_output $(find docs/_output -name '*.html') {{ args }}
 
 # view the changelog for upcoming release (use --pretty to format with glow)
 view-changelog flags="":
     #!/usr/bin/env bash
+    set -euo pipefail
+
     npx -y -p conventional-changelog-cli \
         -- conventional-changelog --config ./.conventionalcommits.js \
         | ([ "{{ flags }}" = "--pretty" ] && glow -p - || cat -)
@@ -169,10 +180,44 @@ docs-api-preview:
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
 
+# build an ibis_framework wheel that works with pyodide
+build-ibis-for-pyodide:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # TODO(cpcloud): remove when:
+    # 1. pyarrow release contains pyodide
+    # 2. ibis supports this version of pyarrow
+    rm -rf dist/
+    poetry add 'pyarrow>=10.0.1' --allow-prereleases
+    poetry build --format wheel
+    git checkout poetry.lock pyproject.toml
+    jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
+        --arg ibis dist/*.whl \
+        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-0.10.2-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
+        > docs/jupyter_lite_config.json
+
+# build the jupyterlite deployment
+build-jupyterlite: build-ibis-for-pyodide
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    mkdir -p docs/_output/jupyterlite
+    jupyter lite build \
+        --debug \
+        --no-libarchive \
+        --config docs/jupyter_lite_config.json \
+        --output-dir docs/_output/jupyterlite
+    # jupyter lite build can copy from the nix store, and preserves the
+    # original write bit; without this the next run of this rule will result in
+    # a permission error when the build tries to remove existing files
+    chmod -R u+w docs/_output/jupyterlite
+
 # run the entire docs build pipeline
 docs-build-all:
     just docs-apigen --verbose
     just docs-render
+    just build-jupyterlite
     just checklinks docs/_output --offline --no-progress
 
 # open chat

@@ -121,21 +121,6 @@ CREATE TABLE awards_players (
 
 COPY awards_players FROM '/data/awards_players.csv' WITH (FORMAT CSV, HEADER TRUE, DELIMITER ',');
 
-DROP TYPE IF EXISTS vector CASCADE;
-CREATE TYPE vector AS (
-  x FLOAT8,
-  y FLOAT8,
-  z FLOAT8
-);
-
-DROP VIEW IF EXISTS awards_players_special_types CASCADE;
-CREATE VIEW awards_players_special_types AS
-SELECT
-    *,
-    setweight(to_tsvector('simple', notes), 'A')::TSVECTOR AS search,
-    NULL::vector AS simvec
-FROM awards_players;
-
 DROP TABLE IF EXISTS functional_alltypes CASCADE;
 
 CREATE TABLE functional_alltypes (
@@ -302,3 +287,18 @@ DROP TABLE IF EXISTS topk;
 
 CREATE TABLE topk (x BIGINT);
 INSERT INTO topk VALUES (1), (1), (NULL);
+
+CREATE EXTENSION IF NOT EXISTS vector;
+
+DROP VIEW IF EXISTS awards_players_special_types CASCADE;
+CREATE VIEW awards_players_special_types AS
+SELECT
+    *,
+    setweight(to_tsvector('simple', notes), 'A')::TSVECTOR AS search,
+    NULL::vector AS simvec
+FROM awards_players;
+
+
+DROP TABLE IF EXISTS items CASCADE;
+CREATE TABLE items (id bigserial PRIMARY KEY, embedding vector(3));
+INSERT INTO items (embedding) VALUES ('[1,2,3]'), ('[4,5,6]');

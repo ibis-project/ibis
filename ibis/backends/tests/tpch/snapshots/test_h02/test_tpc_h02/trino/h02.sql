@@ -1,15 +1,10 @@
 WITH "t6" AS (
   SELECT
-    "t4"."r_regionkey",
-    "t4"."r_name",
-    "t4"."r_comment"
+    *
   FROM "hive"."ibis_sf1"."region" AS "t4"
 ), "t5" AS (
   SELECT
-    "t3"."n_nationkey",
-    "t3"."n_name",
-    "t3"."n_regionkey",
-    "t3"."n_comment"
+    *
   FROM "hive"."ibis_sf1"."nation" AS "t3"
 ), "t9" AS (
   SELECT
@@ -100,25 +95,7 @@ WHERE
       MIN("t25"."ps_supplycost") AS "Min(ps_supplycost)"
     FROM (
       SELECT
-        "t24"."ps_partkey",
-        "t24"."ps_suppkey",
-        "t24"."ps_availqty",
-        "t24"."ps_supplycost",
-        "t24"."ps_comment",
-        "t24"."s_suppkey",
-        "t24"."s_name",
-        "t24"."s_address",
-        "t24"."s_nationkey",
-        "t24"."s_phone",
-        "t24"."s_acctbal",
-        "t24"."s_comment",
-        "t24"."n_nationkey",
-        "t24"."n_name",
-        "t24"."n_regionkey",
-        "t24"."n_comment",
-        "t24"."r_regionkey",
-        "t24"."r_name",
-        "t24"."r_comment"
+        *
       FROM (
         SELECT
           "t20"."ps_partkey",

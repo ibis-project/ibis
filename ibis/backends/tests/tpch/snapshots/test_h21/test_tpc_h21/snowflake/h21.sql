@@ -19,21 +19,14 @@ WITH "t7" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."LINEITEM" AS "t3"
 )
 SELECT
-  "t19"."s_name",
-  "t19"."numwait"
+  *
 FROM (
   SELECT
     "t18"."s_name",
     COUNT(*) AS "numwait"
   FROM (
     SELECT
-      "t15"."l1_orderkey",
-      "t15"."o_orderstatus",
-      "t15"."l_receiptdate",
-      "t15"."l_commitdate",
-      "t15"."l1_suppkey",
-      "t15"."s_name",
-      "t15"."n_name"
+      *
     FROM (
       SELECT
         "t12"."l_orderkey" AS "l1_orderkey",

@@ -15,5 +15,5 @@ SELECT
   `t3`.`val`,
   `t3`.`XYZ`
 FROM `t1` AS `t3`
-INNER JOIN `t1` AS `t5`
+INNER JOIN `t1` AS `t4`
   ON TRUE

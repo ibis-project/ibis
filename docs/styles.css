@@ -14,3 +14,10 @@ section[id^="parameters-"] {
   vertical-align: -0.125em;
   width: 1em;
 }
+
+.jupyterlite-console {
+  width: 100%;
+  height: 95%;
+  margin: auto;
+  display: block;
+}

@@ -100,25 +100,7 @@ WHERE
       MIN("t25"."ps_supplycost") AS "Min(ps_supplycost)"
     FROM (
       SELECT
-        "t24"."ps_partkey",
-        "t24"."ps_suppkey",
-        "t24"."ps_availqty",
-        "t24"."ps_supplycost",
-        "t24"."ps_comment",
-        "t24"."s_suppkey",
-        "t24"."s_name",
-        "t24"."s_address",
-        "t24"."s_nationkey",
-        "t24"."s_phone",
-        "t24"."s_acctbal",
-        "t24"."s_comment",
-        "t24"."n_nationkey",
-        "t24"."n_name",
-        "t24"."n_regionkey",
-        "t24"."n_comment",
-        "t24"."r_regionkey",
-        "t24"."r_name",
-        "t24"."r_comment"
+        *
       FROM (
         SELECT
           "t16"."ps_partkey",

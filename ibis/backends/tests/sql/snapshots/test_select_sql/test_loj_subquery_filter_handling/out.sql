@@ -5,16 +5,14 @@ SELECT
   "t5"."desc" AS "right_desc"
 FROM (
   SELECT
-    "t0"."id",
-    "t0"."desc"
+    *
   FROM "foo" AS "t0"
   WHERE
     "t0"."id" < CAST(2 AS TINYINT)
 ) AS "t4"
 LEFT OUTER JOIN (
   SELECT
-    "t1"."id",
-    "t1"."desc"
+    *
   FROM "bar" AS "t1"
   WHERE
     "t1"."id" < CAST(3 AS TINYINT)

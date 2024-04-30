@@ -58,7 +58,7 @@ t.mutate(bill_length_cm=t["bill_length_mm"] / 10).relocate(
 Use the `.join()` method to join data:
 
 ```{python}
-t.join(t, t["species"] == t["species"], how="left_semi")
+t.join(t, ["species"], how="left_semi")
 ```
 
 ## Combining it all together
@@ -66,12 +66,12 @@ t.join(t, t["species"] == t["species"], how="left_semi")
 We can use [the underscore to chain expressions together](./chain_expressions.qmd).
 
 ```{python}
-t.join(t, t["species"] == t["species"], how="left_semi").filter(
-    ibis._["species"] != "Adelie"
+t.join(t, ["species"], how="left_semi").filter(
+    _.species != "Adelie"
 ).group_by(["species", "island"]).aggregate(
-    avg_bill_length=ibis._["bill_length_mm"].mean()
+    avg_bill_length=_.bill_length_mm.mean()
 ).order_by(
-    ibis._["avg_bill_length"].desc()
+    _.avg_bill_length.desc()
 )
 ```
 

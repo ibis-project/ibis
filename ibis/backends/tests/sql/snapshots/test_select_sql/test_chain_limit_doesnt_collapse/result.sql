@@ -2,8 +2,7 @@ SELECT
   *
 FROM (
   SELECT
-    "t1"."city",
-    "t1"."CountStar(tbl)"
+    *
   FROM (
     SELECT
       "t0"."city",
@@ -22,8 +21,7 @@ OFFSET (
     COUNT(*) + CAST(-5 AS TINYINT)
   FROM (
     SELECT
-      "t1"."city",
-      "t1"."CountStar(tbl)"
+      *
     FROM (
       SELECT
         "t0"."city",

@@ -1,7 +1,5 @@
 SELECT
-  "t8"."cntrycode",
-  "t8"."numcust",
-  "t8"."totacctbal"
+  *
 FROM (
   SELECT
     "t7"."cntrycode",
@@ -15,14 +13,7 @@ FROM (
       "t6"."c_acctbal"
     FROM (
       SELECT
-        "t2"."c_custkey",
-        "t2"."c_name",
-        "t2"."c_address",
-        "t2"."c_nationkey",
-        "t2"."c_phone",
-        "t2"."c_acctbal",
-        "t2"."c_mktsegment",
-        "t2"."c_comment"
+        *
       FROM (
         SELECT
           "t0"."c_custkey",

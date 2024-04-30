@@ -1,8 +1,5 @@
 SELECT
-  "t2"."arrdelay",
-  "t2"."dest",
-  "t2"."dest_avg",
-  "t2"."dev"
+  *
 FROM (
   SELECT
     "t1"."arrdelay",

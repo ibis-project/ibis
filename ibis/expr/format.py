@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import functools
-import inspect
 import itertools
 import textwrap
 import types
@@ -13,8 +12,8 @@ from public import public
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-import ibis.expr.types as ir
 from ibis import util
+from ibis.common.graph import Node
 
 _infix_ops = {
     # comparison operations
@@ -147,57 +146,31 @@ def inline_args(fields, prefer_positional=False):
     return ", ".join(f"{k}={v}" for k, v in fields.items())
 
 
-def get_defining_frame(expr):
-    """Locate the outermost frame where `expr` is defined."""
-    for frame_info in inspect.stack()[::-1]:
-        for var in frame_info.frame.f_locals.values():
-            if isinstance(var, ir.Expr) and expr.equals(var):
-                return frame_info.frame
-    raise ValueError(f"No defining frame found for {expr}")
-
-
-def get_defining_scope(expr):
-    """Get variables in the scope where `expr` is first defined."""
-    frame = get_defining_frame(expr)
-    scope = {**frame.f_globals, **frame.f_locals}
-    return {k: v for k, v in scope.items() if isinstance(v, ir.Expr)}
-
-
 class Rendered(str):
     def __repr__(self):
         return self
 
 
 @public
-def pretty(expr: ops.Node | ir.Expr, scope: Optional[dict[str, ir.Expr]] = None) -> str:
+def pretty(node: Node, scope: Optional[dict[str, Node]] = None) -> str:
     """Pretty print an expression.
 
     Parameters
     ----------
-    expr
-        The expression to pretty print.
+    node
+        The graph node to pretty print.
     scope
         A dictionary of expression to name mappings used to intermediate
-        assignments.
-        If not provided the names of the expressions will either be
-        - the variable name in the defining scope if
-          `ibis.options.repr.show_variables` is enabled
-        - generated names like `r0`, `r1`, etc. otherwise
+        assignments. If not provided aliases will be generated for each
+        relation.
 
     Returns
     -------
     str
         A pretty printed representation of the expression.
     """
-    if isinstance(expr, ir.Expr):
-        node = expr.op()
-    elif isinstance(expr, ops.Node):
-        node = expr
-    else:
-        raise TypeError(f"Expected an expression or a node, got {type(expr)}")
-
-    if scope is None and ibis.options.repr.show_variables:
-        scope = get_defining_scope(expr)
+    if not isinstance(node, Node):
+        raise TypeError(f"Expected a graph node, got {type(node)}")
 
     refs = {}
     refcnt = itertools.count()
@@ -208,7 +181,7 @@ def pretty(expr: ops.Node | ir.Expr, scope: Optional[dict[str, ir.Expr]] = None)
         if var := variables.get(op):
             refs[op] = result
             result = var
-        elif isinstance(op, ops.Relation) and not isinstance(op, ops.JoinTable):
+        elif isinstance(op, ops.Relation) and not isinstance(op, ops.JoinReference):
             refs[op] = result
             result = f"r{next(refcnt)}"
         return Rendered(result)
@@ -391,8 +364,8 @@ def _self_reference(op, parent, **kwargs):
     return f"{op.__class__.__name__}[{parent}]"
 
 
-@fmt.register(ops.JoinTable)
-def _join_table(op, parent, index):
+@fmt.register(ops.JoinReference)
+def _join_reference(op, parent, **kwargs):
     return parent
 
 

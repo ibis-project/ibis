@@ -274,7 +274,8 @@ def test_large_compile():
     table = ops.SQLQueryResult("select * from t", schema, ibis_client).to_expr()
     for _ in range(num_joins):  # noqa: F402
         table = table.mutate(dummy=ibis.literal(""))
-        table = table.left_join(table, ["dummy"])[[table]]
+        table_ = table.view()
+        table = table.left_join(table_, ["dummy"])[[table_]]
 
     start = time.time()
     table.compile()

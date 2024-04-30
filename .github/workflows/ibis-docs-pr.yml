@@ -47,6 +47,9 @@ jobs:
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-render
 
+      - name: build jupyterlite
+        run: nix develop --ignore-environment --keep HOME -c just build-jupyterlite
+
       - name: check that all frozen computations were done before push
         run: git diff --exit-code --stat
 

@@ -169,6 +169,7 @@ REDIRECTS = {
     "/versioning": "/concepts/versioning",
     "/why_ibis/": "/why",
     "/tutorials/data-platforms/": "tutorials/cloud-data-platforms/",
+    "/repl": "/tutorials/browser/repl",
     # TODO: "/how_to/memtable-join/": "/how_to/memtable_join/",
     # TODO: "/how_to/memtable_join/"
     # TODO: "/reference/backends/base/"

@@ -1,5 +1,5 @@
 SELECT
-  `t2`.`a`
+  *
 FROM (
   SELECT
     *

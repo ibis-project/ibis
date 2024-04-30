@@ -110,6 +110,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         if func := cls.kernels.generic.get(typ):
             return cls.generic(func, **kwargs)
 
+        if len(operands) < 1:
+            raise OperationNotDefinedError(
+                f"No implementation found for operation {typ}"
+            )
         _, *rest = operands.values()
         is_multi_arg = bool(rest)
         is_multi_column = any_of(rest, pd.Series)
@@ -166,9 +170,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         if base is not None:
             cases = tuple(base == case for case in cases)
         cases, _ = cls.asframe(cases, concat=False)
+        index = cases[0].index
         results, _ = cls.asframe(results, concat=False)
         out = np.select(cases, results, default)
-        return pd.Series(out)
+        return pd.Series(out, index=index)
 
     @classmethod
     def visit(cls, op: ops.TimestampTruncate | ops.DateTruncate, arg, unit):
@@ -536,7 +541,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return df
 
     @classmethod
-    def visit(cls, op: ops.SelfReference | ops.JoinTable, parent, **kwargs):
+    def visit(cls, op: ops.Reference, parent, **kwargs):
         return parent
 
     @classmethod

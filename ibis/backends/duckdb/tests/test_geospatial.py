@@ -310,7 +310,7 @@ def test_load_geo_example(con):
 
 
 # For the next two tests we really want to ensure that
-# load_extenstion("spatial") hasn't been run yet, so we create a new connection
+# load_extension("spatial") hasn't been run yet, so we create a new connection
 # instead of using the con fixture.
 
 
@@ -319,7 +319,7 @@ def geo_line_lit():
     return ibis.literal(shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def ext_dir(tmp_path_factory):
     # this directory is necessary because of Windows extension downloads race
     # condition
@@ -340,3 +340,21 @@ def test_geo_binop_geo_literals(ext_dir, geo_line_lit):
     expr = geo_line_lit.distance(shapely.Point(0, 0))
 
     assert con.execute(expr) == 0
+
+
+def test_cast_wkb_to_geo(con):
+    t = con.table("geo_wkb")
+    geo_expr = t.geometry.cast("geometry")
+    assert geo_expr.type().is_geospatial()
+    assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
+
+
+def test_load_spatial_casting(ext_dir):
+    con = ibis.duckdb.connect(extension_directory=ext_dir)
+    parquet_file = "https://github.com/ibis-project/testing-data/raw/master/parquet/geo_wkb.parquet"
+    t = con.read_parquet(parquet_file)
+
+    geo_expr = t.geometry.cast("geometry")
+
+    assert geo_expr.type().is_geospatial()
+    assert isinstance(con.execute(geo_expr), gpd.GeoSeries)

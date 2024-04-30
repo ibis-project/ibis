@@ -7,8 +7,7 @@ SELECT
 FROM "tbl" AS "t1"
 SEMI JOIN (
   SELECT
-    "t2"."city",
-    "t2"."CountStar(tbl)"
+    *
   FROM (
     SELECT
       "t0"."city",

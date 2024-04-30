@@ -521,7 +521,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def _to_sqlglot_table(self, database):
         if database is None:
             return None
-        elif isinstance(database, tuple):
+        elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(
                     "Only database hierarchies of two or fewer levels are supported."
@@ -558,6 +558,9 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             db = table.args["this"]
             database = sg.exp.Table(catalog=catalog, db=db)
         else:
-            raise ValueError("oops")
+            raise ValueError(
+                """Invalid database hierarchy format.  Please use either dotted
+                strings ('catalog.database') or tuples ('catalog', 'database')."""
+            )
 
         return database

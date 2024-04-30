@@ -94,7 +94,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.4.6
+    image: bitnami/minio:2024.4.28
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -156,7 +156,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:444
+    image: trinodb/trino:445
     ports:
       - 8080:8080
     networks:

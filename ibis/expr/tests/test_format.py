@@ -10,6 +10,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.legacy.udf.vectorized as udf
 from ibis import util
+from ibis.common.graph import Node as Traversable
 from ibis.expr.format import fmt, pretty
 
 
@@ -308,8 +309,9 @@ def test_fillna(snapshot):
 def test_asof_join(snapshot):
     left = ibis.table([("time1", "int32"), ("value", "double")], name="left")
     right = ibis.table([("time2", "int32"), ("value2", "double")], name="right")
+    right_ = right.view()
     joined = left.asof_join(right, ("time1", "time2")).inner_join(
-        right, left.value == right.value2
+        right_, left.value == right_.value2
     )
 
     result = repr(joined)
@@ -323,8 +325,9 @@ def test_two_inner_joins(snapshot):
     right = ibis.table(
         [("time2", "int32"), ("value2", "double"), ("b", "string")], name="right"
     )
+    right_ = right.view()
     joined = left.inner_join(right, left.a == right.b).inner_join(
-        right, left.value == right.value2
+        right_, left.value == right_.value2
     )
 
     result = repr(joined)
@@ -463,5 +466,28 @@ def test_default_format_implementation(snapshot):
     t = ibis.table([("a", "int64")], name="t")
     vl = ValueList((1, 2.0, "three", t.a))
     result = pretty(vl)
+
+    snapshot.assert_match(result, "repr.txt")
+
+
+def test_arbitrary_traversables_are_supported(snapshot):
+    class MyNode(Traversable):
+        __slots__ = ("obj", "children")
+        __argnames__ = ("obj", "children")
+
+        def __init__(self, obj, children):
+            self.obj = obj.op()
+            self.children = tuple(child.op() for child in children)
+
+        @property
+        def __args__(self):
+            return self.obj, self.children
+
+        def __hash__(self):
+            return hash((self.__class__, self.obj, self.children))
+
+    t = ibis.table([("a", "int64")], name="t")
+    node = MyNode(t.a, [t.a, t.a + 1])
+    result = pretty(node)
 
     snapshot.assert_match(result, "repr.txt")

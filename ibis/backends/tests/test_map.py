@@ -10,7 +10,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
 
 pytestmark = [
     pytest.mark.never(
@@ -37,6 +37,199 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
+
+
+@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.broken(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    ("k", "v"),
+    [
+        param(["a", "b"], None, id="null_values"),
+        param(None, ["c", "d"], id="null_keys"),
+        param(None, None, id="null_both"),
+    ],
+)
+def test_map_nulls(con, k, v):
+    k = ibis.literal(k, type="array<string>")
+    v = ibis.literal(v, type="array<string>")
+    m = ibis.map(k, v)
+    assert con.execute(m) is None
+
+
+@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.broken(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    ("k", "v"),
+    [
+        param(None, ["c", "d"], id="null_keys"),
+        param(None, None, id="null_both"),
+    ],
+)
+def test_map_keys_nulls(con, k, v):
+    k = ibis.literal(k, type="array<string>")
+    v = ibis.literal(v, type="array<string>")
+    m = ibis.map(k, v)
+    assert con.execute(m.keys()) is None
+
+
+@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    "map",
+    [
+        param(
+            ibis.map(
+                ibis.literal(["a", "b"]), ibis.literal(None, type="array<string>")
+            ),
+            marks=[
+                pytest.mark.broken(
+                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                )
+            ],
+            id="null_values",
+        ),
+        param(
+            ibis.map(
+                ibis.literal(None, type="array<string>"),
+                ibis.literal(None, type="array<string>"),
+            ),
+            marks=[
+                pytest.mark.broken(
+                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                )
+            ],
+            id="null_both",
+        ),
+        param(ibis.literal(None, type="map<string, string>"), id="null_map"),
+    ],
+)
+def test_map_values_nulls(con, map):
+    assert con.execute(map.values()) is None
+
+
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    ("map", "key"),
+    [
+        param(
+            ibis.map(
+                ibis.literal(["a", "b"]), ibis.literal(["c", "d"], type="array<string>")
+            ),
+            ibis.literal(None, type="string"),
+            marks=[
+                pytest.mark.broken(
+                    ["pandas", "dask"],
+                    reason="result is False instead of None",
+                    strict=False,  # passes for contains, but not for get
+                ),
+                pytest.mark.notimpl(
+                    "flink",
+                    raises=AssertionError,
+                    reason="not yet implemented",
+                    strict=False,
+                ),
+            ],
+            id="non_null_map_null_key",
+        ),
+        param(
+            ibis.map(
+                ibis.literal(None, type="array<string>"),
+                ibis.literal(None, type="array<string>"),
+            ),
+            "a",
+            marks=[
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.broken(
+                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                ),
+            ],
+            id="null_both_non_null_key",
+        ),
+        param(
+            ibis.map(
+                ibis.literal(None, type="array<string>"),
+                ibis.literal(None, type="array<string>"),
+            ),
+            ibis.literal(None, type="string"),
+            marks=[
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
+                pytest.mark.broken(
+                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                ),
+            ],
+            id="null_both_null_key",
+        ),
+        param(
+            ibis.literal(None, type="map<string, string>"),
+            "a",
+            marks=[
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+            ],
+            id="null_map_non_null_key",
+        ),
+        param(
+            ibis.literal(None, type="map<string, string>"),
+            ibis.literal(None, type="string"),
+            marks=[
+                pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+            ],
+            id="null_map_null_key",
+        ),
+    ],
+)
+@pytest.mark.parametrize("method", ["get", "contains"])
+def test_map_get_contains_nulls(con, map, key, method):
+    expr = getattr(map, method)
+    assert con.execute(expr(key)) is None
+
+
+@pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function hstore(character varying[], character varying[]) does not exist",
+)
+@pytest.mark.parametrize(
+    ("m1", "m2"),
+    [
+        param(
+            ibis.literal(None, type="map<string, string>"),
+            ibis.literal({"a": "b"}, type="map<string, string>"),
+            id="null_and_non_null",
+        ),
+        param(
+            ibis.literal({"a": "b"}, type="map<string, string>"),
+            ibis.literal(None, type="map<string, string>"),
+            id="non_null_and_null",
+        ),
+        param(
+            ibis.literal(None, type="map<string, string>"),
+            ibis.literal(None, type="map<string, string>"),
+            id="null_and_null",
+        ),
+    ],
+)
+def test_map_merge_nulls(con, m1, m2):
+    concatted = m1 + m2
+    assert con.execute(concatted) is None
 
 
 @pytest.mark.notimpl(["pandas", "dask"])

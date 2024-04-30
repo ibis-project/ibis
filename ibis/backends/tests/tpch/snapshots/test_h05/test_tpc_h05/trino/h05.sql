@@ -1,6 +1,5 @@
 SELECT
-  "t20"."n_name",
-  "t20"."revenue"
+  *
 FROM (
   SELECT
     "t19"."n_name",
@@ -9,53 +8,7 @@ FROM (
     )) AS "revenue"
   FROM (
     SELECT
-      "t18"."c_custkey",
-      "t18"."c_name",
-      "t18"."c_address",
-      "t18"."c_nationkey",
-      "t18"."c_phone",
-      "t18"."c_acctbal",
-      "t18"."c_mktsegment",
-      "t18"."c_comment",
-      "t18"."o_orderkey",
-      "t18"."o_custkey",
-      "t18"."o_orderstatus",
-      "t18"."o_totalprice",
-      "t18"."o_orderdate",
-      "t18"."o_orderpriority",
-      "t18"."o_clerk",
-      "t18"."o_shippriority",
-      "t18"."o_comment",
-      "t18"."l_orderkey",
-      "t18"."l_partkey",
-      "t18"."l_suppkey",
-      "t18"."l_linenumber",
-      "t18"."l_quantity",
-      "t18"."l_extendedprice",
-      "t18"."l_discount",
-      "t18"."l_tax",
-      "t18"."l_returnflag",
-      "t18"."l_linestatus",
-      "t18"."l_shipdate",
-      "t18"."l_commitdate",
-      "t18"."l_receiptdate",
-      "t18"."l_shipinstruct",
-      "t18"."l_shipmode",
-      "t18"."l_comment",
-      "t18"."s_suppkey",
-      "t18"."s_name",
-      "t18"."s_address",
-      "t18"."s_nationkey",
-      "t18"."s_phone",
-      "t18"."s_acctbal",
-      "t18"."s_comment",
-      "t18"."n_nationkey",
-      "t18"."n_name",
-      "t18"."n_regionkey",
-      "t18"."n_comment",
-      "t18"."r_regionkey",
-      "t18"."r_name",
-      "t18"."r_comment"
+      *
     FROM (
       SELECT
         "t14"."c_custkey",
@@ -166,19 +119,14 @@ FROM (
         ON "t16"."l_suppkey" = "t17"."s_suppkey"
       INNER JOIN (
         SELECT
-          "t4"."n_nationkey",
-          "t4"."n_name",
-          "t4"."n_regionkey",
-          "t4"."n_comment"
+          *
         FROM "hive"."ibis_sf1"."nation" AS "t4"
       ) AS "t12"
         ON "t14"."c_nationkey" = "t17"."s_nationkey"
         AND "t17"."s_nationkey" = "t12"."n_nationkey"
       INNER JOIN (
         SELECT
-          "t5"."r_regionkey",
-          "t5"."r_name",
-          "t5"."r_comment"
+          *
         FROM "hive"."ibis_sf1"."region" AS "t5"
       ) AS "t13"
         ON "t12"."n_regionkey" = "t13"."r_regionkey"

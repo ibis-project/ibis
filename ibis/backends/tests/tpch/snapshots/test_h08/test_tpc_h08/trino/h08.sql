@@ -1,34 +1,30 @@
 WITH "t8" AS (
   SELECT
-    "t6"."n_nationkey",
-    "t6"."n_name",
-    "t6"."n_regionkey",
-    "t6"."n_comment"
+    *
   FROM "hive"."ibis_sf1"."nation" AS "t6"
 )
 SELECT
-  "t26"."o_year",
-  "t26"."mkt_share"
+  *
 FROM (
   SELECT
-    "t25"."o_year",
-    CAST(SUM("t25"."nation_volume") AS DOUBLE) / SUM("t25"."volume") AS "mkt_share"
+    "t24"."o_year",
+    CAST(SUM("t24"."nation_volume") AS DOUBLE) / SUM("t24"."volume") AS "mkt_share"
   FROM (
     SELECT
-      "t24"."o_year",
-      "t24"."volume",
-      "t24"."nation",
-      "t24"."r_name",
-      "t24"."o_orderdate",
-      "t24"."p_type",
-      CASE WHEN "t24"."nation" = 'BRAZIL' THEN "t24"."volume" ELSE 0 END AS "nation_volume"
+      "t23"."o_year",
+      "t23"."volume",
+      "t23"."nation",
+      "t23"."r_name",
+      "t23"."o_orderdate",
+      "t23"."p_type",
+      CASE WHEN "t23"."nation" = 'BRAZIL' THEN "t23"."volume" ELSE 0 END AS "nation_volume"
     FROM (
       SELECT
         EXTRACT(year FROM "t19"."o_orderdate") AS "o_year",
         "t17"."l_extendedprice" * (
           1 - "t17"."l_discount"
         ) AS "volume",
-        "t23"."n_name" AS "nation",
+        "t22"."n_name" AS "nation",
         "t14"."r_name",
         "t19"."o_orderdate",
         "t16"."p_type"
@@ -109,22 +105,20 @@ FROM (
         ON "t20"."c_nationkey" = "t21"."n_nationkey"
       INNER JOIN (
         SELECT
-          "t5"."r_regionkey",
-          "t5"."r_name",
-          "t5"."r_comment"
+          *
         FROM "hive"."ibis_sf1"."region" AS "t5"
       ) AS "t14"
         ON "t21"."n_regionkey" = "t14"."r_regionkey"
-      INNER JOIN "t8" AS "t23"
-        ON "t18"."s_nationkey" = "t23"."n_nationkey"
-    ) AS "t24"
+      INNER JOIN "t8" AS "t22"
+        ON "t18"."s_nationkey" = "t22"."n_nationkey"
+    ) AS "t23"
     WHERE
-      "t24"."r_name" = 'AMERICA'
-      AND "t24"."o_orderdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
-      AND "t24"."p_type" = 'ECONOMY ANODIZED STEEL'
-  ) AS "t25"
+      "t23"."r_name" = 'AMERICA'
+      AND "t23"."o_orderdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
+      AND "t23"."p_type" = 'ECONOMY ANODIZED STEEL'
+  ) AS "t24"
   GROUP BY
     1
-) AS "t26"
+) AS "t25"
 ORDER BY
-  "t26"."o_year" ASC
+  "t25"."o_year" ASC

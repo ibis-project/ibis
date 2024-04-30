@@ -1,0 +1,806 @@
+---
+title: "Ibis @ LinkedIn"
+subtitle: "Portable Python DataFrames"
+author:
+  - Chloe He
+  - Phillip Cloud
+format:
+  revealjs:
+    smaller: true
+    footer: <https://ibis-project.org/presentations/linkedin-meetup-2024-04-24>
+    logo: ../logo.svg
+    preview-links: true
+    # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
+    theme: night
+---
+
+# Who {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+Phillip Cloud
+
+- Principal engineer at Voltron Data
+- Python analytics for 10+ years
+- Open source
+- Tech lead for Ibis
+:::
+
+::: {.column width="50%"}
+Chloe He
+
+- Founding engineer at Claypot → Senior engineer at Voltron Data
+- Infrastructure for real-time ML
+- Ibis streaming
+:::
+
+::::
+
+# What {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## Ibis is a Python library for: {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- Exploratory data analysis
+- General analytics
+- Data engineering
+- ML preprocessing
+- Library: (e.g., [Google BigFrames](https://github.com/googleapis/python-bigquery-dataframes))
+- Build your own … Ibis (??)
+
+::: {.fragment}
+::: {.r-fit-text}
+💡 Development to production with few rewrites
+:::
+:::
+
+# Examples {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## Examples {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+<https://ibis-project.org/tutorials/getting_started>
+
+::: {.panel-tabset}
+
+## Raw data
+
+```{python}
+#| echo: true
+from ibis.interactive import *
+
+penguins = ibis.examples.penguins.fetch()
+penguins
+```
+
+## Aggregated penguins
+
+```{python}
+#| echo: true
+penguins.group_by("species", "island").agg(
+    n=penguins.count(),
+    avg_bill_mm=penguins.bill_length_mm.mean(),
+    med_flipper_mm=penguins.flipper_length_mm.median()
+)
+```
+
+## Mean-centered numerics
+
+```{python}
+#| echo: true
+cols = {
+    c: penguins[c] - penguins[c].mean()
+    for c in penguins.columns
+    if penguins[c].type().is_numeric() and c != "year"
+}
+expr = penguins.group_by("species").mutate(**cols).head(5)
+expr
+```
+
+:::
+
+# Let's talk about SQL {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## SQL {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.r-stack}
+::: {.fragment}
+
+```{python}
+#| echo: true
+cols = {
+    c: penguins[c] - penguins[c].mean()
+    for c in penguins.columns
+    if penguins[c].type().is_numeric() and c != "year"
+}
+expr = penguins.group_by("species").mutate(**cols).head(5)
+```
+
+::: {.fragment .fade-in-then-semi-out}
+```{python}
+#| echo: true
+ibis.to_sql(expr)
+```
+:::
+:::
+
+::: {.fragment}
+![](./sure.gif)
+:::
+
+::::
+
+# Back to examples… {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## `ibis-analytics` {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+<https://ibis-analytics.streamlit.app>
+
+```{=html}
+<iframe class="streamlit-app-inner" width="100%" height="75%" src="https://ibis-analytics.streamlit.app/?embedded=true"></iframe>
+```
+
+# Why? {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## DataFrame lore {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- DataFrames appear in the `S` programming language, which evolves into the `R` ~~calculator~~ programming language.
+- `pandas` perfects the DataFrame in Python … or did it?
+- Dozens of Python DataFrame libraries appear and disappear…
+- pandas is the de facto standard for Python DataFrames. It still doesn't scale.
+- Leads to data scientists throwing code over the wall to engineers.
+- What if **Ibis** were a new [standard](https://xkcd.com/927/)?
+
+
+## The legal dept requires this slide {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+![](./standards.png)
+
+
+## Ibis origins {transition="fade" background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/) by Wes McKinney
+
+> ...in 2015, I started the Ibis project...to create a pandas-friendly deferred
+> expression system for static analysis and compilation [of] these types of
+> [query planned, multicore execution] operations. Since an efficient
+> multithreaded in-memory engine for pandas was not available when I started
+> Ibis, I instead focused on building compilers for SQL engines (Impala,
+> PostgreSQL, SQLite), similar to the R dplyr package. Phillip Cloud from the
+> pandas core team has been actively working on Ibis with me for quite a long
+> time.
+
+## Two world problem {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+### What does Ibis solve?
+
+::: {.nonincremental}
+:::: {.columns}
+
+::: {.column}
+SQL:
+
+- databases & tables
+- analytics
+- metrics
+- dashboards
+:::
+
+::: {.column}
+Python:
+
+- files & DataFrames
+- data science
+- statistics
+- notebooks
+:::
+
+::::
+:::
+
+## {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+![](../logo.svg){fig-align="center"}
+
+::: {.r-fit-text}
+***Ibis bridges the gap.***
+:::
+
+## Bridging the gap {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.panel-tabset}
+## DuckDB
+
+```python
+import ibis
+
+con = ibis.duckdb.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+An embeddable, zero-dependency, C++ SQL database engine.
+
+## DataFusion {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.datafusion.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A Rust SQL query engine.
+
+## ClickHouse {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.clickhouse.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A C++ column-oriented database management system.
+
+## Polars {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.polars.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A Rust DataFrame library.
+
+## BigQuery {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.bigquery.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A serverless, highly scalable, and cost-effective cloud data warehouse.
+
+## Snowflake {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.snowflake.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A cloud data platform.
+
+## Oracle {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.oracle.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A relational database management system.
+
+## Spark {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.pyspark.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A unified analytics engine for large-scale data processing.
+
+## Trino {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.trino.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A distributed SQL query engine.
+
+## Flink {auto-animate="true"}
+
+```python
+import ibis
+
+con = ibis.flink.connect()
+penguins = con.table("penguins")
+penguins.group_by("species", "island").agg(count=ibis._.count())
+```
+
+A distributed streaming and batch SQL analytics engine.
+:::
+
+# How does Ibis work? {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+This is going to be very fast 🏃💨. I will happily answer questions about it 😂.
+
+## Engineering themes {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- Immutability
+- Type checking
+- Separation of concerns
+- Extensibility
+- Focus on end-user experience
+- Avoid common denominator trap
+- Scale up **and** down
+
+::: {.notes}
+Avoid common denominator trap
+
+Simply don't require that every backend implement every API we expose. "A
+majority", though not hard and fast.
+
+UDFs
+
+- Supported in many backends
+- Layers of extensibility
+:::
+
+## Components: expressions {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+**Expressions**: *interface*
+
+- `StringScalar`, `IntegerColumn`, `Table`
+- `.sum()`, `.split()`, `.join()`
+- No knowledge of specific operation
+:::
+
+::: {.column width="50%"}
+**Operations**: *implementation*
+
+- Specific action: e.g., `StringSplit`
+- Inputs + output dtype, shape
+- Used for compiler dispatch
+:::
+
+::::
+
+::: {.fragment}
+
+### Other goodies
+
+- Type system
+- Pattern matching
+- Graph manipulation/traversal
+
+:::
+
+::: {.fragment .r-fit-text}
+**Goal**: separate API from implementation.
+:::
+
+## Components: expressions {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+```{python}
+#| echo: true
+#| fig-align: center
+from ibis.expr.visualize import to_graph
+
+expr = penguins.group_by("species").agg(
+    avg_bill_mm=_.bill_length_mm.mean()
+)
+
+to_graph(expr)
+```
+
+## Components: compiler {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+```python
+expr = penguins.group_by("species").agg(
+    avg_bill_mm=_.bill_length_mm.mean()
+)
+```
+
+:::: {.r-hstack .semi-fade-out}
+
+::: {.fragment}
+
+```{mermaid}
+
+graph BT
+  classDef white color:white;
+
+  %% graph definition
+  DatabaseTable --> species
+  DatabaseTable --> bill_length_mm
+  bill_length_mm --> Mean
+  species --> Aggregate
+  Mean --> Aggregate
+
+  %% style
+  class DatabaseTable white;
+  class species white;
+  class bill_length_mm white;
+  class Mean white;
+  class Aggregate white;
+```
+
+:::
+
+::: {.fragment}
+
+```{mermaid}
+graph BT
+  classDef white color:white;
+
+  DatabaseTable2[DatabaseTable] --> species2[species]
+  species2 --> bill_length_mm2[bill_length_mm]
+  bill_length_mm2 --> Mean2[Mean]
+  Mean2 --> Aggregate2[Aggregate]
+
+  %% style
+  class DatabaseTable2 white;
+  class species2 white;
+  class bill_length_mm2 white;
+  class Mean2 white;
+  class Aggregate2 white;
+```
+
+:::
+
+:::: {.r-stack}
+
+::: {.fragment}
+
+![](./compile.png){width="70%" height="70%" fig-align="center"}
+
+:::
+
+::: {.fragment}
+![](./magic.gif){fig-align="center"}
+:::
+
+::::
+
+::::
+
+## Components: compiler {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.columns}
+::: {.column width="50%"}
+![](./compile.png){fig-align="center"}
+:::
+
+::: {.column width="50%"}
+- Rewrite operations
+- Bottom up compile storing intermediate outputs
+- Handoff output to sqlglot
+
+```{python}
+ibis.to_sql(expr)
+```
+:::
+::::
+
+## Components: drivers {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+![](./handoff.png){fig-align="center"}
+
+### Drivers
+
+- We have SQL at this point
+- Send to DB via DBAPI: `cursor.execute(ibis_generated_sql)`
+- (Heavily) massage the output
+
+# Ibis + Streaming {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+## Growth of streaming {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- Over 70% of Fortune 500 companies have adopted Kafka
+- 54% of Databricks’ customers are using Spark Structured Streaming
+- The stream processing market is expected to grow at a compound annual growth rate (CAGR) of 21.5% from 2022 to 2028 (IDC)
+
+![](./growth.png){fig-align="center"}
+
+## Batch and streaming {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+```{mermaid}
+%%| fig-width: 20
+%%| fig-height: 10
+%%| fig-align: center
+graph LR
+  subgraph " "
+    direction LR
+    A[data] --> B[batch processing] & C[stream processing] --> D[downstream]
+  end
+```
+
+::: {.fragment}
+![](./engines.png){width="60%" fig-align="center"}
+:::
+
+## In the machine learning world... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.fragment}
+```{mermaid}
+graph TB
+  proddata --> sampled
+  model --> prodpipeline
+
+  subgraph "local env"
+    sampled[sampled data] --> local[local experimentation]
+    local <--> iterate
+    local --> model[finally, we have a production-ready model!]
+  end
+
+  subgraph "prod env"
+    proddata[production data] --> prodpipeline[production pipelines]
+  end
+```
+:::
+
+## {#local-experimentation-to-production-image}
+
+![](./throwing.png)
+
+## In the machine learning world... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+```{mermaid}
+graph TB
+  proddata --> sampled
+  model -- "code rewrite" --> prodpipeline
+
+  linkStyle 1 color:white;
+
+  subgraph "local env"
+    sampled[sampled data] --> local[local experimentation]
+    local <--> iterate
+    local --> model[finally, we have a production-ready model!]
+  end
+
+  subgraph "prod env"
+    proddata[production data] --> prodpipeline[production pipelines]
+  end
+```
+
+## A real-world example {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.r-hstack}
+
+::: {.fragment style="margin-right: 300px;"}
+pandas
+```python
+return (
+    clicks_df
+    .groupby(["user"])
+    .rolling("1h")
+    .size()
+)
+```
+:::
+
+::: {.fragment}
+Flink SQL
+```sql
+SELECT
+  user,
+  COUNT(url) OVER (
+    PARTITION BY user
+    ORDER BY click_time
+    RANGE BETWEEN
+      INTERVAL '1' HOUR PRECEDING
+      AND CURRENT ROW
+  ) AS one_hour_user_click_cnt
+FROM clicks
+```
+:::
+
+::::
+
+## Code rewrites {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.incremental}
+- From batch to streaming
+- From local experimentation to production
+- Backfilling a streaming feature on a batch backing table
+- …
+:::
+
+::: {.notes}
+Examples for each
+:::
+
+## The solution... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.fragment}
+Stream-batch unified API
+
+- Flink SQL
+- Spark DataFrame API
+- …
+:::
+
+## Stream-batch unification {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+:::: {.columns}
+
+::: {.column width="50%"}
+pandas
+```python
+return (
+    clicks_df
+    .groupby(["user"])
+    .rolling("1h")
+    .size()
+)
+```
+:::
+
+::: {.column width="50%"}
+Flink SQL
+```sql
+SELECT
+  user,
+  COUNT(url) OVER (
+    PARTITION BY user
+    ORDER BY click_time
+    RANGE BETWEEN
+      INTERVAL '1' HOUR PRECEDING
+      AND CURRENT ROW
+  ) AS one_hour_user_click_cnt
+FROM clicks
+```
+:::
+::::
+
+::: {.fragment}
+![](./arrow.png){fig-align="center" width="5%"}
+:::
+
+::: {.fragment}
+Ibis
+```python
+agged = clicks.select(
+    _.user,
+    one_hour_user_click_cnt=_.url.count().over(
+        range=(-ibis.interval(hour=1), 0),
+        group_by=_.user,
+        order_by=_.click_time,
+    ),
+)
+```
+:::
+
+## But it's hard... {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.incremental}
+- Streaming is different
+  - Time semantics
+  - Long-running queries
+  - Sources and sinks
+  - …
+- Less established standards in streaming syntax
+:::
+
+## Ibis streaming today {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- Flink backend and RisingWave backend launched in Ibis 8.0
+- Introduction of watermarks, windowed aggregations, etc in Ibis
+
+## What's next? {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+- Expand support of streaming operations and syntax
+- Continuously iterate on a stream-batch unified API
+- More streaming backends (Spark Structured Streaming)
+
+## Towards composable data systems
+
+:::: {.columns}
+
+::: {.column width="40%"}
+![](./cds_manifesto.png)
+:::
+::: {.column width="15%"}
+:::
+::: {.column width="40%"}
+![](./cds.png)
+:::
+::::
+
+## Try it out now! {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+::: {.panel-tabset}
+## Local installation
+
+Install:
+
+```bash
+pip install 'ibis-framework[duckdb]'
+```
+
+Then run:
+
+```{python}
+#| echo: true
+from ibis.interactive import *
+
+t = ibis.examples.penguins.fetch()
+t.head()
+```
+
+## 😬 Ibis in the browser 😬
+
+```{python}
+#| echo: false
+#| output: asis
+from urllib.parse import urlencode
+
+lines = """
+%pip install numpy pandas tzdata
+import pyodide_js, pathlib, js
+await pyodide_js.loadPackage("https://storage.googleapis.com/ibis-wasm-wheels/pyarrow-16.0.0.dev2661%2Bg9bddb87fd-cp311-cp311-emscripten_3_1_46_wasm32.whl")
+pathlib.Path("penguins.csv").write_text(await (await js.fetch("https://storage.googleapis.com/ibis-tutorial-data/penguins.csv")).text())
+del pyodide_js, pathlib, js
+%clear
+%pip install 'ibis-framework[duckdb]'
+from ibis.interactive import *
+penguins = ibis.read_csv("penguins.csv")
+penguins.head()
+"""
+
+params = [
+    ("toolbar", "1"),
+    ("theme", "JupyterLab Night"),
+    ("kernel", "python"),
+]
+params.extend(("code", line) for line in lines.splitlines() if line)
+query = urlencode(params)
+
+jupyterlite = f"../jupyterlite/repl/?{query}"
+iframe = f'<iframe src="{jupyterlite}" class="jupyterlite-console" width="100%" height="500px"></iframe>'
+print(iframe)
+```
+
+:::
+
+## Questions? {background-image="./qrcode.svg" background-size="5%" background-position="96% 96%"}
+
+### Where to find us
+
+:::: {.columns}
+::: {.column width="50%"}
+Phillip
+
+- [LinkedIn (phillip-cloud)](https://www.linkedin.com/in/phillip-cloud/)
+- [GitHub (@cpcloud)](https://github.com/cpcloud)
+- [Twitter (@cpcloudy)](https://twitter.com/cpcloudy)
+
+:::
+::: {.column width="50%"}
+Chloe
+
+- [LinkedIn (chloe-he)](https://www.linkedin.com/in/chloe-he)
+- [GitHub (@chloeh13q)](https://github.com/chloeh13q)
+
+:::
+::::
+
+### Links
+
+- GitHub: <https://github.com/ibis-project/ibis>
+- Site: <https://ibis-project.org>
+- Installation: <https://ibis-project.org/install>
+- Tutorial: <https://ibis-project.org/tutorials/getting_started>
+- This talk: <https://ibis-project.org/presentations/linkedin-meetup-2024-04-24>

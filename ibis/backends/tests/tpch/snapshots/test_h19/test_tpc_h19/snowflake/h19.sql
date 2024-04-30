@@ -4,31 +4,7 @@ SELECT
   )) AS "revenue"
 FROM (
   SELECT
-    "t6"."l_orderkey",
-    "t6"."l_partkey",
-    "t6"."l_suppkey",
-    "t6"."l_linenumber",
-    "t6"."l_quantity",
-    "t6"."l_extendedprice",
-    "t6"."l_discount",
-    "t6"."l_tax",
-    "t6"."l_returnflag",
-    "t6"."l_linestatus",
-    "t6"."l_shipdate",
-    "t6"."l_commitdate",
-    "t6"."l_receiptdate",
-    "t6"."l_shipinstruct",
-    "t6"."l_shipmode",
-    "t6"."l_comment",
-    "t6"."p_partkey",
-    "t6"."p_name",
-    "t6"."p_mfgr",
-    "t6"."p_brand",
-    "t6"."p_type",
-    "t6"."p_size",
-    "t6"."p_container",
-    "t6"."p_retailprice",
-    "t6"."p_comment"
+    *
   FROM (
     SELECT
       "t4"."l_orderkey",

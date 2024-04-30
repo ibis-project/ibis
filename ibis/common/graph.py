@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import itertools
 from abc import abstractmethod
 from collections import deque
 from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
 
 from ibis.common.bases import Hashable
-from ibis.common.collections import frozendict
 from ibis.common.patterns import NoMatch, Pattern
 from ibis.common.typing import _ClassInfo
 from ibis.util import experimental, promote_list
@@ -66,8 +66,9 @@ def _flatten_collections(node: Any) -> Iterator[N]:
             yield item
         elif isinstance(item, (tuple, list)):
             yield from _flatten_collections(item)
-        elif isinstance(item, (dict, frozendict)):
-            yield from _flatten_collections(item.values())
+        elif isinstance(item, dict):
+            items = itertools.chain.from_iterable(item.items())
+            yield from _flatten_collections(items)
 
 
 def _recursive_lookup(obj: Any, dct: dict) -> Any:
@@ -89,6 +90,7 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
 
     Examples
     --------
+    >>> from ibis.common.collections import frozendict
     >>> from ibis.common.grounds import Concrete
     >>> from ibis.common.graph import Node
     >>>
@@ -117,8 +119,10 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
         return dct.get(obj, obj)
     elif isinstance(obj, (tuple, list)):
         return tuple(_recursive_lookup(o, dct) for o in obj)
-    elif isinstance(obj, (dict, frozendict)):
-        return {k: _recursive_lookup(v, dct) for k, v in obj.items()}
+    elif isinstance(obj, dict):
+        return {
+            _recursive_lookup(k, dct): _recursive_lookup(v, dct) for k, v in obj.items()
+        }
     else:
         return obj
 
@@ -623,13 +627,12 @@ def traverse(
         The Node expression or a list of expressions.
 
     """
-
-    args = reversed(node) if isinstance(node, Sequence) else [node]
-    todo: deque[Node] = deque(args)
+    nodes = list(_flatten_collections(promote_list(node)))
+    queue: deque[Node] = deque(reversed(nodes))
     seen: set[Node] = set()
 
-    while todo:
-        node = todo.pop()
+    while queue:
+        node = queue.pop()
 
         if node in seen:
             continue
@@ -650,7 +653,7 @@ def traverse(
                     "an instance of boolean or iterable"
                 )
 
-            todo.extend(reversed(children))
+            queue.extend(reversed(children))
 
 
 def bfs(root: Node) -> Graph:

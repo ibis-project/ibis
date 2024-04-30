@@ -7,25 +7,23 @@ WITH "t1" AS (
   GROUP BY
     1,
     2
-), "t6" AS (
+), "t5" AS (
   SELECT
     "t3"."a",
     "t3"."g",
     "t3"."metric"
   FROM "t1" AS "t3"
-  INNER JOIN "t1" AS "t5"
-    ON "t3"."g" = "t5"."g"
+  INNER JOIN "t1" AS "t4"
+    ON "t3"."g" = "t4"."g"
 )
 SELECT
-  "t9"."a",
-  "t9"."g",
-  "t9"."metric"
+  *
 FROM (
   SELECT
     *
-  FROM "t6" AS "t7"
+  FROM "t5" AS "t6"
   UNION ALL
   SELECT
     *
-  FROM "t6" AS "t8"
-) AS "t9"
+  FROM "t5" AS "t7"
+) AS "t8"

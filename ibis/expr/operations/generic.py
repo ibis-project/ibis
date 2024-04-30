@@ -185,13 +185,7 @@ class Constant(Scalar, Singleton):
 
 @public
 class Impure(Value):
-    _counter = itertools.count()
-    uid: Optional[int] = None
-
-    def __init__(self, uid, **kwargs):
-        if uid is None:
-            uid = next(self._counter)
-        super().__init__(uid=uid, **kwargs)
+    pass
 
 
 @public

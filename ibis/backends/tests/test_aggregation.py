@@ -874,6 +874,11 @@ def test_quantile(
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=0),
             id="covar_pop",
             marks=[
+                pytest.mark.notyet(
+                    ["dask"],
+                    reason="dask doesn't support `cov(ddof=0)` yet",
+                    raises=com.UnsupportedOperationError,
+                ),
                 pytest.mark.notimpl(
                     ["polars", "druid"],
                     raises=com.OperationNotDefinedError,
@@ -914,6 +919,11 @@ def test_quantile(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id="corr_pop",
             marks=[
+                pytest.mark.notyet(
+                    ["dask"],
+                    raises=com.UnsupportedOperationError,
+                    reason="dask doesn't support `corr(ddof=0)` yet",
+                ),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=com.OperationNotDefinedError,
@@ -978,6 +988,11 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).cov(t.G[where] <= 34.0, ddof=0),
             id="covar_pop_bool",
             marks=[
+                pytest.mark.notyet(
+                    ["dask"],
+                    raises=com.UnsupportedOperationError,
+                    reason="dask doesn't support `cov(ddof=0)` yet",
+                ),
                 pytest.mark.notimpl(
                     ["polars", "druid"],
                     raises=com.OperationNotDefinedError,
@@ -1002,6 +1017,11 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id="corr_pop_bool",
             marks=[
+                pytest.mark.notyet(
+                    ["dask"],
+                    raises=com.UnsupportedOperationError,
+                    reason="dask doesn't support `corr(ddof=0)` yet",
+                ),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=com.OperationNotDefinedError,

@@ -26,7 +26,26 @@ WITH "t5" AS (
           SELECT
             "t0"."field_of_study",
             arrayJoin(
-              [CAST(tuple('1970-71', "t0"."1970-71") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('1975-76', "t0"."1975-76") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('1980-81', "t0"."1980-81") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('1985-86', "t0"."1985-86") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('1990-91', "t0"."1990-91") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('1995-96', "t0"."1995-96") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2000-01', "t0"."2000-01") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2005-06', "t0"."2005-06") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2010-11', "t0"."2010-11") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2011-12', "t0"."2011-12") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2012-13', "t0"."2012-13") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2013-14', "t0"."2013-14") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2014-15', "t0"."2014-15") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2015-16', "t0"."2015-16") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2016-17', "t0"."2016-17") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2017-18', "t0"."2017-18") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2018-19', "t0"."2018-19") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))), CAST(tuple('2019-20', "t0"."2019-20") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64)))]
+              [
+                CAST(tuple('1970-71', "t0"."1970-71") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('1975-76', "t0"."1975-76") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('1980-81', "t0"."1980-81") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('1985-86', "t0"."1985-86") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('1990-91', "t0"."1990-91") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('1995-96', "t0"."1995-96") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2000-01', "t0"."2000-01") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2005-06', "t0"."2005-06") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2010-11', "t0"."2010-11") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2011-12', "t0"."2011-12") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2012-13', "t0"."2012-13") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2013-14', "t0"."2013-14") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2014-15', "t0"."2014-15") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2015-16', "t0"."2015-16") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2016-17', "t0"."2016-17") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2017-18', "t0"."2017-18") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2018-19', "t0"."2018-19") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
+                CAST(tuple('2019-20', "t0"."2019-20") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64)))
+              ]
             ) AS "__pivoted__"
           FROM "humanities" AS "t0"
         ) AS "t1"
@@ -37,15 +56,13 @@ WITH "t5" AS (
     "t4"."field_of_study"
 )
 SELECT
-  "t11"."field_of_study",
-  "t11"."diff"
+  *
 FROM (
   SELECT
     *
   FROM (
     SELECT
-      "t6"."field_of_study",
-      "t6"."diff"
+      *
     FROM "t5" AS "t6"
     ORDER BY
       "t6"."diff" DESC
@@ -56,8 +73,7 @@ FROM (
     *
   FROM (
     SELECT
-      "t6"."field_of_study",
-      "t6"."diff"
+      *
     FROM "t5" AS "t6"
     WHERE
       "t6"."diff" < 0

@@ -7,28 +7,27 @@ WITH "t13" AS (
   FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."NATION" AS "t6"
 )
 SELECT
-  "t26"."o_year",
-  "t26"."mkt_share"
+  *
 FROM (
   SELECT
-    "t25"."o_year",
-    SUM("t25"."nation_volume") / SUM("t25"."volume") AS "mkt_share"
+    "t24"."o_year",
+    SUM("t24"."nation_volume") / SUM("t24"."volume") AS "mkt_share"
   FROM (
     SELECT
-      "t24"."o_year",
-      "t24"."volume",
-      "t24"."nation",
-      "t24"."r_name",
-      "t24"."o_orderdate",
-      "t24"."p_type",
-      CASE WHEN "t24"."nation" = 'BRAZIL' THEN "t24"."volume" ELSE 0 END AS "nation_volume"
+      "t23"."o_year",
+      "t23"."volume",
+      "t23"."nation",
+      "t23"."r_name",
+      "t23"."o_orderdate",
+      "t23"."p_type",
+      CASE WHEN "t23"."nation" = 'BRAZIL' THEN "t23"."volume" ELSE 0 END AS "nation_volume"
     FROM (
       SELECT
         DATE_PART(year, "t17"."o_orderdate") AS "o_year",
         "t15"."l_extendedprice" * (
           1 - "t15"."l_discount"
         ) AS "volume",
-        "t23"."n_name" AS "nation",
+        "t22"."n_name" AS "nation",
         "t19"."r_name",
         "t17"."o_orderdate",
         "t14"."p_type"
@@ -115,16 +114,16 @@ FROM (
         FROM "SNOWFLAKE_SAMPLE_DATA"."TPCH_SF1"."REGION" AS "t5"
       ) AS "t19"
         ON "t21"."n_regionkey" = "t19"."r_regionkey"
-      INNER JOIN "t13" AS "t23"
-        ON "t16"."s_nationkey" = "t23"."n_nationkey"
-    ) AS "t24"
+      INNER JOIN "t13" AS "t22"
+        ON "t16"."s_nationkey" = "t22"."n_nationkey"
+    ) AS "t23"
     WHERE
-      "t24"."r_name" = 'AMERICA'
-      AND "t24"."o_orderdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
-      AND "t24"."p_type" = 'ECONOMY ANODIZED STEEL'
-  ) AS "t25"
+      "t23"."r_name" = 'AMERICA'
+      AND "t23"."o_orderdate" BETWEEN DATE_FROM_PARTS(1995, 1, 1) AND DATE_FROM_PARTS(1996, 12, 31)
+      AND "t23"."p_type" = 'ECONOMY ANODIZED STEEL'
+  ) AS "t24"
   GROUP BY
     1
-) AS "t26"
+) AS "t25"
 ORDER BY
-  "t26"."o_year" ASC
+  "t25"."o_year" ASC

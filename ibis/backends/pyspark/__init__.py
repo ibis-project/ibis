@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 import pyspark
 import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import PandasUDFType, pandas_udf
@@ -19,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase
+from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
@@ -32,6 +33,8 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import pyarrow as pa
+
+PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
 
 
 def normalize_filenames(source_list):
@@ -127,7 +130,7 @@ class _PySparkCursor:
         """No-op for compatibility."""
 
 
-class Backend(SQLBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "pyspark"
     compiler = PySparkCompiler()
 
@@ -194,7 +197,6 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             session = SparkSession.builder.getOrCreate()
 
-        self._context = session.sparkContext
         self._session = session
 
         # Spark internally stores timestamps as UTC values, and timestamp data
@@ -221,22 +223,64 @@ class Backend(SQLBackend, CanCreateDatabase):
         [(db,)] = self._session.sql("SELECT CURRENT_DATABASE()").collect()
         return db
 
+    @property
+    def current_catalog(self) -> str:
+        [(catalog,)] = self._session.sql("SELECT CURRENT_CATALOG()").collect()
+        return catalog
+
     @contextlib.contextmanager
-    def _active_database(self, name: str | None):
-        if name is None:
+    def _active_catalog_database(self, catalog: str | None, db: str | None):
+        if catalog is None and db is None:
             yield
             return
-        current = self.current_database
+        if catalog is not None and PYSPARK_LT_34:
+            raise com.UnsupportedArgumentError(
+                "Catalogs are not supported in pyspark < 3.4"
+            )
+        current_catalog = self.current_catalog
+        current_db = self.current_database
+
+        # This little horrible bit of work is to avoid trying to set
+        # the `CurrentDatabase` inside of a catalog where we don't have permission
+        # to do so.  We can't have the catalog and database context managers work
+        # separately because we need to:
+        # 1. set catalog
+        # 2. set database
+        # 3. set catalog to previous
+        # 4. set database to previous
         try:
-            self._session.catalog.setCurrentDatabase(name)
+            if catalog is not None:
+                self._session.catalog.setCurrentCatalog(catalog)
+            self._session.catalog.setCurrentDatabase(db)
             yield
         finally:
-            self._session.catalog.setCurrentDatabase(current)
+            if catalog is not None:
+                self._session.catalog.setCurrentCatalog(current_catalog)
+            self._session.catalog.setCurrentDatabase(current_db)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
-        databases = [
-            db.namespace for db in self._session.sql("SHOW DATABASES").collect()
-        ]
+    @contextlib.contextmanager
+    def _active_catalog(self, name: str | None):
+        if name is None or PYSPARK_LT_34:
+            yield
+            return
+        current = self.current_catalog
+        try:
+            self._session.catalog.setCurrentCatalog(name)
+            yield
+        finally:
+            self._session.catalog.setCurrentCatalog(current)
+
+    def list_catalogs(self, like: str | None = None) -> list[str]:
+        catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
+        return self._filter_with_like(catalogs, like)
+
+    def list_databases(
+        self, like: str | None = None, catalog: str | None = None
+    ) -> list[str]:
+        with self._active_catalog(catalog):
+            databases = [
+                db.namespace for db in self._session.sql("SHOW DATABASES").collect()
+            ]
         return self._filter_with_like(databases, like)
 
     def list_tables(
@@ -250,14 +294,21 @@ class Backend(SQLBackend, CanCreateDatabase):
             A pattern to use for listing tables.
         database
             Database to list tables from. Default behavior is to show tables in
-            the current database.
+            the current catalog and database.
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
         """
-        tables = [
-            row.tableName
-            for row in self._session.sql(
-                f"SHOW TABLES IN {database or self.current_database}"
-            ).collect()
-        ]
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        with self._active_catalog(catalog):
+            tables = [
+                row.tableName
+                for row in self._session.sql(
+                    f"SHOW TABLES IN {db or self.current_database}"
+                ).collect()
+            ]
         return self._filter_with_like(tables, like)
 
     def _wrap_udf_to_return_pandas(self, func, output_dtype):
@@ -319,6 +370,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        *,
+        catalog: str | None = None,
         path: str | Path | None = None,
         force: bool = False,
     ) -> Any:
@@ -328,6 +381,8 @@ class Backend(SQLBackend, CanCreateDatabase):
         ----------
         name
             Database name
+        catalog
+            Catalog to create database in (defaults to ``current_catalog``)
         path
             Path where to store the database data; otherwise uses Spark default
         force
@@ -347,16 +402,21 @@ class Backend(SQLBackend, CanCreateDatabase):
             this=sg.to_identifier(name),
             properties=properties,
         )
-        with self._safe_raw_sql(sql):
-            pass
+        with self._active_catalog(catalog):
+            with self._safe_raw_sql(sql):
+                pass
 
-    def drop_database(self, name: str, force: bool = False) -> Any:
+    def drop_database(
+        self, name: str, *, catalog: str | None = None, force: bool = False
+    ) -> Any:
         """Drop a Spark database.
 
         Parameters
         ----------
         name
             Database name
+        catalog
+            Catalog containing database to drop (defaults to ``current_catalog``)
         force
             If False, Spark throws exception if database is not empty or
             database does not exist
@@ -365,8 +425,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         sql = sge.Drop(
             kind="DATABASE", exist=force, this=sg.to_identifier(name), cascade=force
         )
-        with self._safe_raw_sql(sql):
-            pass
+        with self._active_catalog(catalog):
+            with self._safe_raw_sql(sql):
+                pass
 
     def get_schema(
         self,
@@ -382,7 +443,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         table_name
             Table name. May be fully qualified
         catalog
-            Unsupported in PySpark backend.
+            Catalog to use
         database
             Database to use to get the active database.
 
@@ -392,7 +453,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             An ibis schema
 
         """
-        with self._active_database(database):
+
+        table_loc = self._to_sqlglot_table((catalog, database))
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+        with self._active_catalog_database(catalog, db):
             df = self._session.table(table_name)
             struct = PySparkType.to_ibis(df.schema)
 
@@ -421,8 +485,12 @@ class Backend(SQLBackend, CanCreateDatabase):
             Mutually exclusive with `obj`, creates an empty table with a schema
         database
             Database name
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
         temp
-            Whether the new table is temporary
+            Whether the new table is temporary (unsupported)
         overwrite
             If `True`, overwrite existing data
         format
@@ -443,22 +511,25 @@ class Backend(SQLBackend, CanCreateDatabase):
                 "PySpark backend does not yet support temporary tables"
             )
 
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if obj is not None:
             table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
             query = self.compile(table)
             mode = "overwrite" if overwrite else "error"
-            with self._active_database(database):
+            with self._active_catalog_database(catalog, db):
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
                 df.write.saveAsTable(name, format=format, mode=mode)
         elif schema is not None:
             schema = PySparkSchema.from_ibis(schema)
-            with self._active_database(database):
+            with self._active_catalog_database(catalog, db):
                 self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
 
-        return self.table(name, database=database)
+        return self.table(name, database=(catalog, db))
 
     def create_view(
         self,

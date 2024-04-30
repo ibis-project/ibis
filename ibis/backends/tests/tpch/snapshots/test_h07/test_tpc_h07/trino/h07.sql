@@ -1,35 +1,23 @@
 WITH "t5" AS (
   SELECT
-    "t4"."n_nationkey",
-    "t4"."n_name",
-    "t4"."n_regionkey",
-    "t4"."n_comment"
+    *
   FROM "hive"."ibis_sf1"."nation" AS "t4"
 )
 SELECT
-  "t20"."supp_nation",
-  "t20"."cust_nation",
-  "t20"."l_year",
-  "t20"."revenue"
+  *
 FROM (
   SELECT
-    "t19"."supp_nation",
-    "t19"."cust_nation",
-    "t19"."l_year",
-    SUM("t19"."volume") AS "revenue"
+    "t18"."supp_nation",
+    "t18"."cust_nation",
+    "t18"."l_year",
+    SUM("t18"."volume") AS "revenue"
   FROM (
     SELECT
-      "t18"."supp_nation",
-      "t18"."cust_nation",
-      "t18"."l_shipdate",
-      "t18"."l_extendedprice",
-      "t18"."l_discount",
-      "t18"."l_year",
-      "t18"."volume"
+      *
     FROM (
       SELECT
         "t15"."n_name" AS "supp_nation",
-        "t17"."n_name" AS "cust_nation",
+        "t16"."n_name" AS "cust_nation",
         "t12"."l_shipdate",
         "t12"."l_extendedprice",
         "t12"."l_discount",
@@ -98,34 +86,34 @@ FROM (
         ON "t14"."c_custkey" = "t13"."o_custkey"
       INNER JOIN "t5" AS "t15"
         ON "t11"."s_nationkey" = "t15"."n_nationkey"
-      INNER JOIN "t5" AS "t17"
-        ON "t14"."c_nationkey" = "t17"."n_nationkey"
-    ) AS "t18"
+      INNER JOIN "t5" AS "t16"
+        ON "t14"."c_nationkey" = "t16"."n_nationkey"
+    ) AS "t17"
     WHERE
       (
         (
           (
-            "t18"."cust_nation" = 'FRANCE'
+            "t17"."cust_nation" = 'FRANCE'
           ) AND (
-            "t18"."supp_nation" = 'GERMANY'
+            "t17"."supp_nation" = 'GERMANY'
           )
         )
         OR (
           (
-            "t18"."cust_nation" = 'GERMANY'
+            "t17"."cust_nation" = 'GERMANY'
           ) AND (
-            "t18"."supp_nation" = 'FRANCE'
+            "t17"."supp_nation" = 'FRANCE'
           )
         )
       )
-      AND "t18"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
-  ) AS "t19"
+      AND "t17"."l_shipdate" BETWEEN FROM_ISO8601_DATE('1995-01-01') AND FROM_ISO8601_DATE('1996-12-31')
+  ) AS "t18"
   GROUP BY
     1,
     2,
     3
-) AS "t20"
+) AS "t19"
 ORDER BY
-  "t20"."supp_nation" ASC,
-  "t20"."cust_nation" ASC,
-  "t20"."l_year" ASC
+  "t19"."supp_nation" ASC,
+  "t19"."cust_nation" ASC,
+  "t19"."l_year" ASC

@@ -1,7 +1,5 @@
 SELECT
-  "t0"."key1",
-  "t0"."key2",
-  "t0"."value1"
+  *
 FROM "t1" AS "t0"
 WHERE
   EXISTS(

@@ -27,7 +27,7 @@ from ibis.backends.pandas.rewrites import (
     PandasWindowFunction,
     plan,
 )
-from ibis.common.exceptions import UnboundExpressionError
+from ibis.common.exceptions import UnboundExpressionError, UnsupportedOperationError
 from ibis.formats.pandas import PandasData, PandasType
 from ibis.util import gen_name
 
@@ -49,6 +49,15 @@ def limit_df(
         return df[df[col] >= offset]
 
     return df[df[col].between(offset, offset + n - 1)]
+
+
+def argminmax_chunk(df, keycol, valcol, method):
+    idx = getattr(df[keycol], method)()
+    return df[[keycol, valcol]].iloc[idx : idx + 1]
+
+
+def argminmax_aggregate(df, keycol, valcol, method):
+    return df[valcol].iloc[getattr(df[keycol], method)()]
 
 
 class DaskExecutor(PandasExecutor, DaskUtils):
@@ -184,66 +193,55 @@ class DaskExecutor(PandasExecutor, DaskUtils):
 
     @classmethod
     def visit(cls, op: ops.ArgMin | ops.ArgMax, arg, key, where):
-        # TODO(kszucs): raise a warning about triggering compute()?
-        if isinstance(op, ops.ArgMin):
-            func = lambda x: x.idxmin()
-        else:
-            func = lambda x: x.idxmax()
+        method = "argmin" if isinstance(op, ops.ArgMin) else "argmax"
 
-        if where is None:
+        def agg(df):
+            if where is not None:
+                df = df.where(df[where.name])
 
-            def agg(df):
-                indices = func(df[key.name])
-                if isinstance(indices, (dd.Series, dd.core.Scalar)):
-                    # to support both aggregating within a group and globally
-                    indices = indices.compute()
-                return df[arg.name].loc[indices]
-        else:
-
-            def agg(df):
-                mask = df[where.name]
-                filtered = df[mask]
-                indices = func(filtered[key.name])
-                if isinstance(indices, (dd.Series, dd.core.Scalar)):
-                    # to support both aggregating within a group and globally
-                    indices = indices.compute()
-                return filtered[arg.name].loc[indices]
+            if isinstance(df, dd.DataFrame):
+                return df.reduction(
+                    chunk=argminmax_chunk,
+                    combine=argminmax_chunk,
+                    aggregate=argminmax_aggregate,
+                    meta=op.dtype.to_pandas(),
+                    token=method,
+                    keycol=key.name,
+                    valcol=arg.name,
+                    method=method,
+                )
+            else:
+                return argminmax_aggregate(df, key.name, arg.name, method)
 
         return agg
 
     @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):
-        if where is None:
+        if how == "pop":
+            raise UnsupportedOperationError(
+                "Dask doesn't support `corr` with `how='pop'`"
+            )
 
-            def agg(df):
-                return df[left.name].corr(df[right.name])
-        else:
+        def agg(df):
+            if where is not None:
+                df = df.where(df[where.name])
 
-            def agg(df):
-                mask = df[where.name]
-                lhs = df[left.name][mask].compute()
-                rhs = df[right.name][mask].compute()
-                return lhs.corr(rhs)
+            return df[left.name].corr(df[right.name])
 
         return agg
 
     @classmethod
     def visit(cls, op: ops.Covariance, left, right, where, how):
-        # TODO(kszucs): raise a warning about triggering compute()?
-        ddof = {"pop": 0, "sample": 1}[how]
-        if where is None:
+        if how == "pop":
+            raise UnsupportedOperationError(
+                "Dask doesn't support `cov` with `how='pop'`"
+            )
 
-            def agg(df):
-                lhs = df[left.name].compute()
-                rhs = df[right.name].compute()
-                return lhs.cov(rhs, ddof=ddof)
-        else:
+        def agg(df):
+            if where is not None:
+                df = df.where(df[where.name])
 
-            def agg(df):
-                mask = df[where.name]
-                lhs = df[left.name][mask].compute()
-                rhs = df[right.name][mask].compute()
-                return lhs.cov(rhs, ddof=ddof)
+            return df[left.name].cov(df[right.name])
 
         return agg
 
