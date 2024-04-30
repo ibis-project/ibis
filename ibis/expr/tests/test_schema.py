@@ -203,6 +203,18 @@ def test_schema_mapping_api():
     assert tuple(s.items()) == tuple(zip(s.names, s.types))
 
 
+def test_schema_equality():
+    s1 = sch.schema({"a": "int64", "b": "string"})
+    s2 = sch.schema({"a": "int64", "b": "string"})
+    s3 = sch.schema({"b": "string", "a": "int64"})
+    s4 = sch.schema({"a": "int64", "b": "int64", "c": "string"})
+
+    assert s1 == s2
+    assert s1 != s3
+    assert s1 != s4
+    assert s3 != s2
+
+
 class BarSchema:
     a: int
     b: str
