@@ -168,7 +168,7 @@ def __getattr__(name: str) -> Example:
 
         example = example_class(name=name, help=description)
         setattr(ibis.examples, name, example)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         raise AttributeError(name) from e
     else:
         return example

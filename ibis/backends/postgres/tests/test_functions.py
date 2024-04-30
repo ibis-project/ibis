@@ -743,7 +743,7 @@ def test_cumulative_simple_window(alltypes, func, df):
     col = t.double_col - f().over(ibis.cumulative_window())
     expr = t.select(col.name("double_col"))
     result = expr.execute().double_col
-    expected = df.double_col - getattr(df.double_col, "cum%s" % func)()
+    expected = df.double_col - getattr(df.double_col, f"cum{func}")()
     tm.assert_series_equal(result, expected)
 
 
@@ -756,7 +756,7 @@ def test_cumulative_partitioned_window(alltypes, func, df):
     expr = t.select((t.double_col - f().over(window)).name("double_col"))
     result = expr.execute().double_col
     expected = df.groupby(df.string_col).double_col.transform(
-        lambda c: c - getattr(c, "cum%s" % func)()
+        lambda c: c - getattr(c, f"cum{func}")()
     )
     tm.assert_series_equal(result, expected)
 
@@ -769,7 +769,7 @@ def test_cumulative_ordered_window(alltypes, func, df):
     f = getattr(t.double_col, func)
     expr = t.select((t.double_col - f().over(window)).name("double_col"))
     result = expr.execute().double_col
-    expected = df.double_col - getattr(df.double_col, "cum%s" % func)()
+    expected = df.double_col - getattr(df.double_col, f"cum{func}")()
     tm.assert_series_equal(result, expected)
 
 
