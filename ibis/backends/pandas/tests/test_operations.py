@@ -742,27 +742,25 @@ def test_simple_case_column(batting, batting_df):
 
 
 def test_non_range_index():
-
     def do_replace(col):
-        return (
-            col
-            .cases(
-                (
-                    (1, "one"),
-                    (2, "two"),
-                ),
-                default="unk",
-            )
+        return col.cases(
+            (
+                (1, "one"),
+                (2, "two"),
+            ),
+            default="unk",
         )
 
-    df = pd.DataFrame({
-        "A": pd.Series({i: i % 3 for i in (0, 1, 2, 4)}),
-        "B": 0,
-    })
+    df = pd.DataFrame(
+        {
+            "A": pd.Series({i: i % 3 for i in (0, 1, 2, 4)}),
+            "B": 0,
+        }
+    )
     expr = (
         ibis.pandas.connect({"t": df})
         .table("t")
-        .mutate(**{"A": lambda t: t["A"].pipe(do_replace)})
+        .mutate(A=lambda t: t["A"].pipe(do_replace))
     )
     assert df.index.equals(expr.execute().index)
 
