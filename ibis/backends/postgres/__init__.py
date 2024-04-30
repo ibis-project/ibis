@@ -414,15 +414,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             (schema,) = cur.fetchone()
         return schema
 
-    def function(self, name: str, *, schema: str | None = None) -> Callable:
+    def function(self, name: str, *, database: str | None = None) -> Callable:
         n = ColGen(table="n")
         p = ColGen(table="p")
         f = self.compiler.f
 
         predicates = [p.proname.eq(name)]
 
-        if schema is not None:
-            predicates.append(n.nspname.rlike(sge.convert(f"^({schema})$")))
+        if database is not None:
+            predicates.append(n.nspname.rlike(sge.convert(f"^({database})$")))
 
         query = (
             sg.select(
@@ -448,7 +448,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             rows = cur.fetchall()
 
         if not rows:
-            name = f"{schema}.{name}" if schema else name
+            name = f"{database}.{name}" if database else name
             raise exc.MissingUDFError(name)
         elif len(rows) > 1:
             raise exc.AmbiguousUDFError(name)
@@ -471,7 +471,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             return_annotation=return_type,
         )
         fake_func.__annotations__ = {"return": return_type, **dict(signature)}
-        op = ops.udf.scalar.builtin(fake_func, schema=schema)
+        op = ops.udf.scalar.builtin(fake_func, database=database)
         return op
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
