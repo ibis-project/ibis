@@ -151,3 +151,4 @@ docs/**/*.html
 
 # jupyterlite stuff
 .jupyterlite.doit.db
+docs/jupyter_lite_config.json
