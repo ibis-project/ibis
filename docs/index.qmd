@@ -732,8 +732,6 @@ pip install polars
 ```
 
 ```{python}
-import polars as pl
-
 df = t.to_polars()
 df.head(3)
 ```
@@ -814,9 +812,8 @@ t.__array__()
 Ibis has the `ibis.to_sql` to generate SQL strings.
 
 In a Jupyter notebook or IPython shell session, the output of `ibis.to_sql` will
-be syntax highlighted.
-
-In a plain Python REPL use `print(ibis.to_sql(...))` to pretty print SQL.
+be syntax highlighted. In a plain Python REPL use `print(ibis.to_sql(...))` to
+pretty print SQL.
 
 Ibis uses [SQLGlot](https://sqlglot.com) under the hood to allow passing a
 `dialect` parameter to SQL methods.
@@ -838,7 +835,7 @@ sql  # <3>
 2. Convert the table to a SQL string.
 3. Display the SQL string.
 
-You can chain Ibis expressions and `.sql` together.
+You can chain `.sql` (specifying a `dialect` as input) and Ibis expressions together.
 
 ```{python}
 con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
