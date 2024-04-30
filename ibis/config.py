@@ -47,6 +47,9 @@ class SQL(Config):
 
     Attributes
     ----------
+    fuse_selects : bool
+        Whether to fuse consecutive select queries into a single query where
+        possible.
     default_limit : int | None
         Number of rows to be retrieved for a table expression without an
         explicit limit. [](`None`) means no limit.
@@ -55,6 +58,7 @@ class SQL(Config):
 
     """
 
+    fuse_selects: bool = True
     default_limit: Optional[PosInt] = None
     default_dialect: str = "duckdb"
 
