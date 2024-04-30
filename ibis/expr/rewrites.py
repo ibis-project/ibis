@@ -14,6 +14,7 @@ from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
+from ibis.common.graph import traverse
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
@@ -156,6 +157,41 @@ class DerefMap(Concrete, Traversable):
                 f"Ambiguous field reference {ambigs!r} in expression {value!r}"
             )
         return value.replace(self.subs, filter=ops.Value)
+
+
+def flatten_predicates(node):
+    """Yield the expressions corresponding to the `And` nodes of a predicate.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table([("a", "int64"), ("b", "string")], name="t")
+    >>> filt = (t.a == 1) & (t.b == "foo")
+    >>> predicates = flatten_predicates(filt.op())
+    >>> len(predicates)
+    2
+    >>> predicates[0].to_expr().name("left")
+    r0 := UnboundTable: t
+      a int64
+      b string
+    left: r0.a == 1
+    >>> predicates[1].to_expr().name("right")
+    r0 := UnboundTable: t
+      a int64
+      b string
+    right: r0.b == 'foo'
+
+    """
+
+    def predicate(node):
+        if isinstance(node, ops.And):
+            # proceed and don't yield the node
+            return True, None
+        else:
+            # halt and yield the node
+            return False, node
+
+    return list(traverse(predicate, node))
 
 
 @replace(p.Field(p.JoinChain))

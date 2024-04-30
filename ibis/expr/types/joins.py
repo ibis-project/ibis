@@ -16,8 +16,7 @@ from ibis.common.exceptions import (
     InputTypeError,
     IntegrityError,
 )
-from ibis.expr.analysis import flatten_predicates
-from ibis.expr.rewrites import peel_join_field
+from ibis.expr.rewrites import flatten_predicates, peel_join_field
 from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     DerefMap,
