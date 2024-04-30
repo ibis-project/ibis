@@ -9,6 +9,7 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.selectors as s
 from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisInputError, IntegrityError
@@ -499,7 +500,7 @@ def test_subsequent_filter():
     assert f2.op() == expected
 
 
-def test_project_dereferences_literal_expressions():
+def test_project_doesnt_dereference_literal_expressions():
     one = ibis.literal(1)
     two = ibis.literal(2)
     four = (one + one) * two
@@ -516,7 +517,7 @@ def test_project_dereferences_literal_expressions():
     )
 
     t2 = t1.select(four)
-    assert t2.op() == Project(parent=t1, values={four.get_name(): t1.four})
+    assert t2.op() == Project(parent=t1, values={four.get_name(): four})
 
 
 def test_project_before_and_after_filter():
@@ -862,6 +863,22 @@ def test_join_predicate_dereferencing_using_tuple_syntax():
             },
         )
         assert j2.op() == expected
+
+
+def test_join_with_selector_predicate():
+    t1 = ibis.table(name="t1", schema={"a": "string", "b": "string"})
+    t2 = ibis.table(name="t2", schema={"c": "string", "d": "string"})
+
+    joined = t1.join(t2, s.of_type("string"))
+    with join_tables(joined) as (r1, r2):
+        expected = JoinChain(
+            first=r1,
+            rest=[
+                JoinLink("inner", r2, [r1.a == r2.c, r1.b == r2.d]),
+            ],
+            values={"a": r1.a, "b": r1.b, "c": r2.c, "d": r2.d},
+        )
+        assert joined.op() == expected
 
 
 def test_join_rhs_dereferencing():

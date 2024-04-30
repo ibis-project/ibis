@@ -127,7 +127,11 @@ class DerefMap(Concrete, Traversable):
             yield value, distance
             value = value.rel.values.get(value.name)
             distance += 1
-        if value is not None and not value.find(ops.Impure, filter=ops.Value):
+        if (
+            value is not None
+            and value.relations
+            and not value.find(ops.Impure, filter=ops.Value)
+        ):
             yield value, distance
 
     def dereference(self, value):

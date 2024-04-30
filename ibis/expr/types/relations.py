@@ -91,18 +91,11 @@ def _regular_join_method(
     return f
 
 
-# TODO(kszucs): should use (table, *args, **kwargs) instead to avoid interpreting
-# nested inputs
-def bind(table: Table, value: Any, int_as_column=False) -> Iterator[ir.Value]:
+def bind(table: Table, value) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
     if isinstance(value, str):
         # TODO(kszucs): perhaps use getattr(table, value) instead for nicer error msg
         yield ops.Field(table, value).to_expr()
-    elif isinstance(value, bool):
-        yield literal(value)
-    elif int_as_column and isinstance(value, int):
-        name = table.columns[value]
-        yield ops.Field(table, name).to_expr()
     elif isinstance(value, ops.Value):
         yield value.to_expr()
     elif isinstance(value, Value):
@@ -116,15 +109,10 @@ def bind(table: Table, value: Any, int_as_column=False) -> Iterator[ir.Value]:
         yield value.resolve({"_": table})
     elif isinstance(value, Selector):
         yield from value.expand(table)
-    elif isinstance(value, Mapping):
-        for k, v in value.items():
-            for val in bind(table, v, int_as_column=int_as_column):
-                yield val.name(k)
-    elif util.is_iterable(value):
-        for v in value:
-            yield from bind(table, v, int_as_column=int_as_column)
     elif callable(value):
-        yield value(table)
+        # rebind, otherwise the callable is required to return an expression
+        # which would preclude support for expressions like lambda _: 2
+        yield from bind(table, value(table))
     else:
         yield literal(value)
 
@@ -135,7 +123,7 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     for value in values:
         node = value.op()
         if node.name in result:
-            raise com.IntegrityError(
+            raise com.IbisInputError(
                 f"Duplicate column name {node.name!r} in result set"
             )
         if isinstance(node, ops.Alias):
@@ -143,29 +131,6 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
         else:
             result[node.name] = node
     return result
-
-
-def dereference_values(
-    parents: Iterable[ops.Parents], values: Mapping[str, ops.Value]
-) -> Mapping[str, ops.Value]:
-    """Trace and replace fields from earlier relations in the hierarchy.
-
-    For more details see :class:`ibis.expr.rewrites.DerefMap`.
-
-    Parameters
-    ----------
-    parents
-        The relations we want the values to point to.
-    values
-        The values to dereference.
-
-    Returns
-    -------
-    The same mapping as `values` but with all the dereferenceable fields
-    replaced with the fields from the parents.
-    """
-    dm = DerefMap.from_targets(parents)
-    return {k: dm.dereference(v) for k, v in values.items()}
 
 
 @public
@@ -246,6 +211,40 @@ class Table(Expr, _FixedTextJupyterMixin):
             return where
 
         return where.resolve(self)
+
+    def bind(self, *args, **kwargs):
+        # allow the first argument to be either a dictionary or a list of values
+        if len(args) == 1:
+            if isinstance(args[0], dict):
+                kwargs = {**args[0], **kwargs}
+                args = ()
+            else:
+                args = util.promote_list(args[0])
+
+        # bind positional arguments
+        values = []
+        for arg in args:
+            values.extend(bind(self, arg))
+
+        # bind keyword arguments where each entry can produce only one value
+        # which is then named with the given key
+        for key, arg in kwargs.items():
+            bindings = tuple(bind(self, arg))
+            if len(bindings) != 1:
+                raise com.IbisInputError(
+                    "Keyword arguments cannot produce more than one value"
+                )
+            (value,) = bindings
+            values.append(value.name(key))
+
+        # dereference the values to `self`
+        dm = DerefMap.from_targets(self.op())
+        result = []
+        for original in values:
+            value = dm.dereference(original.op()).to_expr()
+            value = value.name(original.get_name())
+            result.append(value)
+        return tuple(result)
 
     def as_scalar(self) -> ir.ScalarExpr:
         """Inform ibis that the table expression should be treated as a scalar.
@@ -769,7 +768,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
 
-        values = tuple(bind(self, what, int_as_column=True))
+        args = [
+            self.columns[arg] if isinstance(arg, int) else arg
+            for arg in util.promote_list(what)
+        ]
+        values = self.bind(args)
+
         if isinstance(what, (str, int)):
             assert len(values) == 1
             return values[0]
@@ -954,7 +958,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.groupby import GroupedTable
 
         by = tuple(v for v in by if v is not None)
-        groups = bind(self, (by, key_exprs))
+        groups = self.bind(*by, **key_exprs)
         return GroupedTable(self, groups)
 
     # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
@@ -1133,15 +1137,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         node = self.op()
 
-        groups = bind(self, by)
-        metrics = bind(self, (metrics, kwargs))
-        having = tuple(bind(self, having))
+        groups = self.bind(by)
+        metrics = self.bind(metrics, **kwargs)
+        having = self.bind(having)
 
         groups = unwrap_aliases(groups)
         metrics = unwrap_aliases(metrics)
-
-        groups = dereference_values(node, groups)
-        metrics = dereference_values(node, metrics)
 
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for
@@ -1160,7 +1161,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         if having:
             # apply the having clause
-            agg = agg.filter(*having)
+            agg = agg.filter(having)
             # remove any metrics that were only used in the having clause
             if metrics != original_metrics:
                 agg = agg.select(*groups.keys(), *original_metrics.keys())
@@ -1319,7 +1320,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             having = lambda t: t.count() == 1
             method = "first"
         elif keep in ("first", "last"):
-            having = None
+            having = ()
             method = keep
         else:
             raise com.IbisError(
@@ -1327,11 +1328,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             )
 
         aggs = {col.get_name(): getattr(col, method)() for col in (~on).expand(self)}
-
-        gb = self.group_by(on)
-        if having is not None:
-            gb = gb.having(having)
-        res = gb.agg(**aggs)
+        res = self.aggregate(aggs, by=on, having=having)
 
         assert len(res.columns) == len(self.columns)
         if res.columns != self.columns:
@@ -1672,9 +1669,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │ B      │     6 │
         └───────┴────────┴───────┘
         """
-        keys = bind(self, by)
+        keys = self.bind(*by)
         keys = unwrap_aliases(keys)
-        keys = dereference_values(self.op(), keys)
         if not keys:
             raise com.IbisError("At least one sort key must be provided")
 
@@ -1921,7 +1917,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         # string and integer inputs are going to be coerced to literals instead
         # of interpreted as column references like in select
         node = self.op()
-        values = bind(self, (exprs, mutations))
+        values = self.bind(*exprs, **mutations)
         values = unwrap_aliases(values)
         # allow overriding of fields, hence the mutation behavior
         values = {**node.fields, **values}
@@ -2106,9 +2102,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.rewrites import rewrite_project_input
 
-        values = bind(self, (exprs, named_exprs))
+        values = self.bind(*exprs, **named_exprs)
         values = unwrap_aliases(values)
-        values = dereference_values(self.op(), values)
         if not values:
             raise com.IbisTypeError(
                 "You must select at least one column for a valid projection"
@@ -2483,9 +2478,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.analysis import flatten_predicates
         from ibis.expr.rewrites import rewrite_filter_input
 
-        preds = bind(self, predicates)
+        preds = self.bind(*predicates)
         preds = unwrap_aliases(preds)
-        preds = dereference_values(self.op(), preds)
         preds = flatten_predicates(list(preds.values()))
         preds = list(map(rewrite_filter_input, preds))
         if not preds:
@@ -2619,7 +2613,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         344
         """
         if subset is not None:
-            subset = bind(self, subset)
+            subset = self.bind(subset)
         return ops.DropNa(self, how, subset).to_expr()
 
     def fillna(
@@ -3323,8 +3317,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
-        expr = ops.View(child=self, name=alias).to_expr()
-        return expr
+        return ops.View(child=self, name=alias).to_expr()
 
     def sql(self, query: str, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
