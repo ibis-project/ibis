@@ -2475,8 +2475,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ male   │        68 │
         └────────┴───────────┘
         """
-        from ibis.expr.analysis import flatten_predicates
-        from ibis.expr.rewrites import rewrite_filter_input
+        from ibis.expr.rewrites import flatten_predicates, rewrite_filter_input
 
         preds = self.bind(*predicates)
         preds = unwrap_aliases(preds)
