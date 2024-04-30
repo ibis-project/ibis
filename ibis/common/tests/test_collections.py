@@ -8,6 +8,7 @@ from ibis.common.collections import (
     Collection,
     Container,
     FrozenDict,
+    FrozenOrderedDict,
     Iterable,
     Iterator,
     Mapping,
@@ -425,6 +426,41 @@ def test_frozendict():
 
     assert hash(FrozenDict(a=1, b=2)) == hash(FrozenDict(b=2, a=1))
     assert hash(FrozenDict(a=1, b=2)) != hash(d)
+
+    assert_pickle_roundtrip(d)
+
+
+def test_frozenordereddict():
+    d = FrozenOrderedDict({"a": 1, "b": 2, "c": 3})
+    e = FrozenOrderedDict(a=1, b=2, c=3)
+    f = FrozenOrderedDict(a=1, b=2, c=3, d=4)
+    g = FrozenOrderedDict(a=1, c=3, b=2)
+    h = FrozenDict(a=1, b=2, c=3)
+
+    assert isinstance(d, Mapping)
+    assert isinstance(d, collections.abc.Mapping)
+
+    assert d == e
+    assert d != f
+    assert e == h
+    assert h == e
+    assert e != g
+    assert g != e
+    assert g != h
+    assert h != g
+
+    assert d["a"] == 1
+    assert d["b"] == 2
+
+    msg = "'FrozenOrderedDict' object does not support item assignment"
+    with pytest.raises(TypeError, match=msg):
+        d["a"] = 2
+    with pytest.raises(TypeError, match=msg):
+        d["d"] = 4
+
+    assert hash(FrozenOrderedDict(a=1, b=2)) == hash(FrozenOrderedDict(a=1, b=2))
+    assert hash(FrozenOrderedDict(a=1, b=2)) != hash(FrozenOrderedDict(b=2, a=1))
+    assert hash(FrozenOrderedDict(a=1, b=2)) != hash(d)
 
     assert_pickle_roundtrip(d)
 

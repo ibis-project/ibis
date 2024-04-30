@@ -68,7 +68,7 @@ class ScalarFunction(Function):
             fn=self._make_fn(),
             name=self.name,
             signature=(self.inputs, self.output),
-            schema=self.database,
+            database=self.database,
         )
 
 
@@ -78,7 +78,7 @@ class AggregateFunction(Function):
             fn=self._make_fn(),
             name=self.name,
             signature=(self.inputs, self.output),
-            schema=self.database,
+            database=self.database,
         )
 
 

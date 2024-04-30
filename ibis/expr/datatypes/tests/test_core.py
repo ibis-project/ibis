@@ -421,6 +421,18 @@ def test_struct_set_operations():
     assert d > c
 
 
+def test_struct_equality():
+    st1 = dt.Struct({"a": dt.int64, "b": dt.string})
+    st2 = dt.Struct({"a": dt.int64, "b": dt.string})
+    st3 = dt.Struct({"b": dt.string, "a": dt.int64})
+    st4 = dt.Struct({"a": dt.int64, "b": dt.string, "c": dt.float64})
+
+    assert st1 == st2
+    assert st1 != st3
+    assert st1 != st4
+    assert st3 != st2
+
+
 def test_singleton_null():
     assert dt.null is dt.Null()
 

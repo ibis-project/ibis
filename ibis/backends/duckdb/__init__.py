@@ -115,6 +115,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         if not geocols:
             return sql
+        else:
+            self._load_extensions(["spatial"])
 
         return sg.select(
             *(

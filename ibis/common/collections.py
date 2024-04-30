@@ -288,13 +288,34 @@ class FrozenDict(dict, Mapping[K, V], Hashable):
         return self.__precomputed_hash__
 
     def __setitem__(self, key: K, value: V) -> None:
-        raise TypeError("'FrozenDict' object does not support item assignment")
+        raise TypeError(
+            f"'{self.__class__.__name__}' object does not support item assignment"
+        )
 
     def __setattr__(self, name: str, _: Any) -> None:
         raise TypeError(f"Attribute {name!r} cannot be assigned to frozendict")
 
     def __reduce__(self) -> tuple:
         return (self.__class__, (dict(self),))
+
+
+@public
+class FrozenOrderedDict(FrozenDict[K, V]):
+    def __init__(self, *args, **kwargs):
+        super(FrozenDict, self).__init__(*args, **kwargs)
+        hashable = tuple(self.items())
+        object.__setattr__(self, "__precomputed_hash__", hash(hashable))
+
+    def __hash__(self) -> int:
+        return self.__precomputed_hash__
+
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, collections.abc.Mapping):
+            return NotImplemented
+        return tuple(self.items()) == tuple(other.items())
+
+    def __ne__(self, other: Any) -> bool:
+        return not self == other
 
 
 class RewindableIterator(Iterator[V]):

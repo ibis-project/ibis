@@ -27,6 +27,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_capitalize,
     sqlize,
 )
+from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import replace_bucket
 
@@ -453,7 +454,12 @@ class SQLGlotCompiler(abc.ABC):
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         params = self._prepare_params(params)
-        op, ctes = sqlize(op, params=params, rewrites=self.rewrites)
+        op, ctes = sqlize(
+            op,
+            params=params,
+            rewrites=self.rewrites,
+            fuse_selects=options.sql.fuse_selects,
+        )
 
         aliases = {}
         counter = itertools.count()

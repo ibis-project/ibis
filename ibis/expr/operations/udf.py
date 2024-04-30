@@ -101,12 +101,17 @@ class _UDF(abc.ABC):
         fn: Callable,
         input_type: InputType,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple, Any] | None = None,
         **kwargs,
     ) -> type[S]:
         """Construct a scalar user-defined function that is built-in to the backend."""
+        if "schema" in kwargs:
+            raise exc.UnsupportedArgumentError(
+                """schema` is not a valid argument.
+                You can use the `catalog` and `database` keywords to specify a UDF location."""
+            )
 
         if signature is None:
             annotations = typing.get_type_hints(fn)
@@ -139,7 +144,7 @@ class _UDF(abc.ABC):
                 # method
                 "__func__": property(fget=lambda _, fn=fn: fn),
                 "__config__": FrozenDict(kwargs),
-                "__udf_namespace__": ops.Namespace(database=schema, catalog=database),
+                "__udf_namespace__": ops.Namespace(database=database, catalog=catalog),
                 "__module__": fn.__module__,
                 "__func_name__": func_name,
             }
@@ -181,8 +186,8 @@ class scalar(_UDF):
         cls,
         *,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple[Any, ...], Any] | None = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
@@ -190,7 +195,14 @@ class scalar(_UDF):
     @util.experimental
     @classmethod
     def builtin(
-        cls, fn=None, *, name=None, schema=None, database=None, signature=None, **kwargs
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
     ):
         """Construct a scalar user-defined function that is built-in to the backend.
 
@@ -200,10 +212,10 @@ class scalar(_UDF):
             The function to wrap.
         name
             The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which the builtin function resides.
         database
             The database in which the builtin function resides.
+        catalog
+            The catalog in which the builtin function resides.
         signature
             If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
             For example, a function taking an int and a float and returning a
@@ -233,8 +245,8 @@ class scalar(_UDF):
             InputType.BUILTIN,
             fn,
             name=name,
-            schema=schema,
             database=database,
+            catalog=catalog,
             signature=signature,
             **kwargs,
         )
@@ -249,8 +261,8 @@ class scalar(_UDF):
         cls,
         *,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple[Any, ...], Any] | None = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
@@ -258,7 +270,14 @@ class scalar(_UDF):
     @util.experimental
     @classmethod
     def python(
-        cls, fn=None, *, name=None, schema=None, database=None, signature=None, **kwargs
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
     ):
         """Construct a **non-vectorized** scalar user-defined function that accepts Python scalar values as inputs.
 
@@ -281,10 +300,10 @@ class scalar(_UDF):
             The function to wrap.
         name
             The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which to create the UDF.
         database
             The database in which to create the UDF.
+        catalog
+            The catalog in which to create the UDF.
         signature
             If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
             For example, a function taking an int and a float and returning a
@@ -296,13 +315,44 @@ class scalar(_UDF):
         Examples
         --------
         >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(dict(int_col=[1, 2, 3], str_col=["a", "b", "c"]))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ int_col ┃ str_col ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ int64   │ string  │
+        ├─────────┼─────────┤
+        │       1 │ a       │
+        │       2 │ b       │
+        │       3 │ c       │
+        └─────────┴─────────┘
         >>> @ibis.udf.scalar.python
-        ... def add_one(x: int) -> int:
+        ... def str_magic(x: str) -> str:
+        ...     return f"{x}_magic"
+        >>> @ibis.udf.scalar.python
+        ... def add_one_py(x: int) -> int:
         ...     return x + 1
-        >>> expr = add_one(2)
-        >>> con = ibis.connect("duckdb://")
-        >>> con.execute(expr)
-        3
+        >>> str_magic(t.str_col)
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ str_magic_0(str_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string               │
+        ├──────────────────────┤
+        │ a_magic              │
+        │ b_magic              │
+        │ c_magic              │
+        └──────────────────────┘
+        >>> add_one_py(t.int_col)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ add_one_py_0(int_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                 │
+        ├───────────────────────┤
+        │                     2 │
+        │                     3 │
+        │                     4 │
+        └───────────────────────┘
 
         See Also
         --------
@@ -315,8 +365,8 @@ class scalar(_UDF):
             InputType.PYTHON,
             fn,
             name=name,
-            schema=schema,
             database=database,
+            catalog=catalog,
             signature=signature,
             **kwargs,
         )
@@ -331,8 +381,8 @@ class scalar(_UDF):
         cls,
         *,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple[Any, ...], Any] | None = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
@@ -340,7 +390,14 @@ class scalar(_UDF):
     @util.experimental
     @classmethod
     def pandas(
-        cls, fn=None, *, name=None, schema=None, database=None, signature=None, **kwargs
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
     ):
         """Construct a **vectorized** scalar user-defined function that accepts pandas Series' as inputs.
 
@@ -350,10 +407,10 @@ class scalar(_UDF):
             The function to wrap.
         name
             The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which to create the UDF.
         database
             The database in which to create the UDF.
+        catalog
+            The catalog in which to create the UDF.
         signature
             If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
             For example, a function taking an int and a float and returning a
@@ -366,13 +423,32 @@ class scalar(_UDF):
         --------
         ```python
         >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(dict(int_col=[1, 2, 3], str_col=["a", "b", "c"]))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ int_col ┃ str_col ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ int64   │ string  │
+        ├─────────┼─────────┤
+        │       1 │ a       │
+        │       2 │ b       │
+        │       3 │ c       │
+        └─────────┴─────────┘
         >>> @ibis.udf.scalar.pandas
-        ... def add_one(x: int) -> int:
-        ...     return x + 1
-        >>> expr = add_one(2)
-        >>> con = ibis.connect(os.environ["SNOWFLAKE_URL"])  # doctest: +SKIP
-        >>> con.execute(expr)  # doctest: +SKIP
-        3
+        ... def str_cap(x: str) -> str:
+        ...     # note usage of pandas `str` method
+        ...     return x.str.capitalize()
+        >>> str_cap(t.str_col)  # doctest: +SKIP
+        ┏━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ string_cap_0(str_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                │
+        ├───────────────────────┤
+        │ A                     │
+        │ B                     │
+        │ C                     │
+        └───────────────────────┘
         ```
 
         See Also
@@ -386,8 +462,8 @@ class scalar(_UDF):
             InputType.PANDAS,
             fn,
             name=name,
-            schema=schema,
             database=database,
+            catalog=catalog,
             signature=signature,
             **kwargs,
         )
@@ -402,8 +478,8 @@ class scalar(_UDF):
         cls,
         *,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple[Any, ...], Any] | None = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
@@ -411,7 +487,14 @@ class scalar(_UDF):
     @util.experimental
     @classmethod
     def pyarrow(
-        cls, fn=None, *, name=None, schema=None, database=None, signature=None, **kwargs
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
     ):
         """Construct a **vectorized** scalar user-defined function that accepts PyArrow Arrays as input.
 
@@ -421,10 +504,10 @@ class scalar(_UDF):
             The function to wrap.
         name
             The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which to create the UDF.
         database
             The database in which to create the UDF.
+        catalog
+            The catalog in which to create the UDF.
         signature
             If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
             For example, a function taking an int and a float and returning a
@@ -437,13 +520,22 @@ class scalar(_UDF):
         --------
         >>> import ibis
         >>> import pyarrow.compute as pc
+        >>> from datetime import date
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     dict(start_col=[date(2024, 4, 29)], end_col=[date(2025, 4, 29)]),
+        ... )
         >>> @ibis.udf.scalar.pyarrow
-        ... def add_one(x: int) -> int:
-        ...     return pc.add(x, 1)
-        >>> expr = add_one(2)
-        >>> con = ibis.connect("duckdb://")
-        >>> con.execute(expr)
-        3
+        ... def weeks_between(start: date, end: date) -> int:
+        ...     return pc.weeks_between(start, end)
+        >>> weeks_between(t.start_col, t.end_col)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ weeks_between_0(start_col, end_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int64                               │
+        ├─────────────────────────────────────┤
+        │                                  52 │
+        └─────────────────────────────────────┘
 
         See Also
         --------
@@ -456,8 +548,8 @@ class scalar(_UDF):
             InputType.PYARROW,
             fn,
             name=name,
-            schema=schema,
             database=database,
+            catalog=catalog,
             signature=signature,
             **kwargs,
         )
@@ -479,8 +571,8 @@ class agg(_UDF):
         cls,
         *,
         name: str | None = None,
-        schema: str | None = None,
         database: str | None = None,
+        catalog: str | None = None,
         signature: tuple[tuple[Any, ...], Any] | None = None,
         **kwargs: Any,
     ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
@@ -488,7 +580,14 @@ class agg(_UDF):
     @util.experimental
     @classmethod
     def builtin(
-        cls, fn=None, *, name=None, schema=None, database=None, signature=None, **kwargs
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
     ):
         """Construct an aggregate user-defined function that is built-in to the backend.
 
@@ -498,10 +597,10 @@ class agg(_UDF):
             The function to wrap.
         name
             The name of the UDF in the backend if different from the function name.
-        schema
-            The schema in which the builtin function resides.
         database
             The database in which the builtin function resides.
+        catalog
+            The catalog in which the builtin function resides.
         signature
             If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
             For example, a function taking an int and a float and returning a
@@ -528,8 +627,8 @@ class agg(_UDF):
             InputType.BUILTIN,
             fn,
             name=name,
-            schema=schema,
             database=database,
+            catalog=catalog,
             signature=signature,
             **kwargs,
         )

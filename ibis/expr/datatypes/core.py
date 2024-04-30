@@ -14,7 +14,7 @@ from public import public
 from typing_extensions import Self, get_args, get_origin
 
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict, MapSet
+from ibis.common.collections import FrozenOrderedDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.patterns import Coercible, CoercionError
@@ -823,7 +823,7 @@ class Interval(Parametric):
 class Struct(Parametric, MapSet):
     """Structured values."""
 
-    fields: FrozenDict[str, DataType]
+    fields: FrozenOrderedDict[str, DataType]
 
     scalar = "StructScalar"
     column = "StructColumn"
