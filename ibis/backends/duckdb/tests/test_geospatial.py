@@ -310,7 +310,7 @@ def test_load_geo_example(con):
 
 
 # For the next two tests we really want to ensure that
-# load_extenstion("spatial") hasn't been run yet, so we create a new connection
+# load_extension("spatial") hasn't been run yet, so we create a new connection
 # instead of using the con fixture.
 
 
@@ -319,7 +319,7 @@ def geo_line_lit():
     return ibis.literal(shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def ext_dir(tmp_path_factory):
     # this directory is necessary because of Windows extension downloads race
     # condition
