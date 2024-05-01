@@ -193,7 +193,7 @@ And use SQL strings directly, mixing and matching with Python dataframe code:
 #| code-fold: true
 #| echo: false
 
-t = ibis.read_parquet("penguins.parquet", table_name="penguins") 
+t = ibis.read_parquet("penguins.parquet", table_name="penguins")
 ```
 
 ```{python}
