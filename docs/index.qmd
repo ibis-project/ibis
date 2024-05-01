@@ -262,7 +262,7 @@ would otherwise be tedious to do in pure SQL."
 :::
 
 ::: {.g-col-4}
-[API reference](reference.qmd){.btn .btn-primary}
+[API reference](/reference){.btn .btn-primary}
 :::
 
 :::
