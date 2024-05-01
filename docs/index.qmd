@@ -211,36 +211,37 @@ performance of modern SQL.
 
 ::: {.grid}
 
-::: {.g-col-4}
-::: {.figure .text-center}
-::: {.blockquote}
-"Ibis is amazing, we have so much bikeshedding at my job that I feel this is
+::: {.g-col-4 .card .border-light .mb-3 .text-center} 
+::: {.card-header}
+Nick Shook
+:::
+::: {.card-body}
+["Ibis is amazing, we have so much bikeshedding at my job that I feel this is
 going to significantly improve upon. Big thanks to those who have contributed!
 Currently using it to power a dashboard using Druid under the hood without
-needing to remember the nuances of Druid SQL."
-:::
-[Nick Shook]{.blockquote-footer}
-:::
+needing to remember the nuances of Druid SQL."]{.card-text}
+::: 
 :::
 
-::: {.g-col-4}
-::: {.figure .text-center}
-::: {.blockquote}
+::: {.g-col-4 .card .border-light .mb-3 .text-center}
+::: {.card-header}
+Mark Druffle
+:::
+:::{.card-body}
 "I now have Ibis code that runs PySpark in my Databricks environment and Polars
 on my laptop which is pretty slick 🔥"
 :::
-[Mark Druffle]{.blockquote-footer}
-:::
 :::
 
-::: {.g-col-4}
-::: {.figure .text-center}
-::: {.blockquote}
+::: {.g-col-4 .card .border-light .mb-3 .text-center}
+::: {.card-header}
+Daniel Kim
+:::
+::: {.card-body}
 "I love that with Ibis, I can use SQL for the heavy lifting or aggregations and
 then switch to a dataframe-like API for the type of dynamic transformations that
 would otherwise be tedious to do in pure SQL."
 :::
-[Daniel Kim]{.blockquote-footer}
 :::
 :::
 
@@ -262,8 +263,6 @@ would otherwise be tedious to do in pure SQL."
 
 ::: {.g-col-4}
 [API reference](/reference){.btn .btn-primary}
-:::
-
 :::
 
 :::
