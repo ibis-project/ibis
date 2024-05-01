@@ -46,7 +46,7 @@ More podcasts and talks are in the works, so stay tuned!
 
 We're excited to welcome [Nick Crews](https://github.com/NickCrews) and [Naty
 Clementi](https://github.com/ncclementi) as the newest committers to the Ibis
-project! 
+project!
 
 Nick has been a long-time contributor to
 Ibis, one of the most active people on the issue tracker, and increasingly
@@ -54,7 +54,7 @@ involved in the community. We're excited to have him on board!
 
 Naty has been contributing to Ibis for a while now, leading the effort to add
 geospatial support to the DuckDB backend in addition to various other
-contributions. We're excited to ahve her on board!
+contributions. We're excited to have her on board!
 
 #### 9.0 contributors
 
