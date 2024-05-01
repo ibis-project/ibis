@@ -205,7 +205,7 @@ def _get_backend_from_parts(parts: tuple[str, ...]) -> str | None:
         return parts[index + 1]
 
 
-def pytest_ignore_collect(collection_path, path, config):
+def pytest_ignore_collect(collection_path, config):
     # get the backend path part
     backend = _get_backend_from_parts(collection_path.parts)
     if backend is None or backend not in _get_backend_names():
