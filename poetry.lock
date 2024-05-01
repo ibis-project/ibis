@@ -5331,7 +5331,6 @@ files = [
 
 [package.dependencies]
 requests = "*"
-sqlalchemy = {version = "*", optional = true, markers = "extra == \"sqlalchemy\""}
 
 [package.extras]
 async = ["tornado"]
@@ -8085,4 +8084,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "9fd9a3d4d3ca5c2bfa67fcbad6c74da742d052d95aae4d19654cce3d8ae5e4d1"
+content-hash = "ee38b469412474fa96f98e4cad30d74699c625832a5c167a5b0e32da00e82437"
