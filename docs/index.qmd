@@ -1,7 +1,6 @@
 ---
 title: "Ibis"
 description: "the portable Python dataframe library"
-css: index.scss
 repo-actions: false
 code-annotations: hover
 twitter-card:
