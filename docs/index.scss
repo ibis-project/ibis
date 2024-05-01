@@ -1,3 +1,17 @@
+.grid {
+    display: flex;
+    justify-content: space-between;
+}
+
+.g-col-4 {
+    flex: 1;  /* Ensures all columns grow to fill the same space */
+    margin: 0 5px;  /* Adds a small margin between columns */
+}
+
+.btn {
+    width: 100%;  /* Ensures buttons fill the entire column width */
+}
+
 //
 // /* Base card styling */
 // .card {
