@@ -1,7 +1,7 @@
 ---
 title: "Ibis 9.0: SQLGlot-ification"
 author: "Ibis team"
-date: "2024-04-18"
+date: "2024-05-01"
 categories:
     - release
     - blog
@@ -9,22 +9,91 @@ categories:
 
 ## Overview
 
-Ibis 9.0 completes ["the big
+Ibis 9.0 wraps up ["the big
 refactor"](../../posts/roadmap-2024-H1/index.qmd#the-big-refactor), completing
 the transition from SQLAlchemy to [SQLGlot](https://github.com/tobymao/sqlglot)
 and drastically simplifying the codebase. This is a big step toward stabilized
 internals and allows us to more easily add new features and backends going
-forward.
+forward. Look out for a dedicated blog post on the refactor soon.
 
-Ibis 9.0 also adds new functionality, fixes many bugs, and welcomes a new
-committer to the project!
+Ibis 9.0 also adds new functionality, fixes many bugs, and welcomes two new
+committers to the project!
 
-### New committer
+### Meet the Ibis team!
 
-We're excited to welcome [Nick Crews](https://github.com/NickCrews) as the
-newest committer to the Ibis project! Nick has been a long-time contributor to
+Members of the core Ibis team will be at [PyCon 2024 in Pittsburg, PA,
+USA in May](https://us.pycon.org/2024/) and [SciPy 2024 in Tacoma, WA,
+USA in July](https://www.scipy2024.scipy.org/)! Stop by at one of the talks or
+tutorials to say hi in English and/or Español:
+
+- [Tutorials: Introduction to Ibis: blazing fast analytics with DuckDB, Polars,
+ Snowflake, and more, from the comfort of your Python
+ repl.](https://us.pycon.org/2024/schedule/presentation/55/)
+- [Charlas: Porque SQL está en todas
+ partes.](https://us.pycon.org/2024/schedule/presentation/117/)
+
+::: {.callout-note}
+The schedule for SciPy 2024 is not available yet, keep an eye out for Ibis sessions.
+:::
+
+You can also listen to a [recent podcast episode with Real
+Python](https://realpython.com/podcasts/rpp/201) where Phillip Cloud, lead
+maintainer of Ibis, talks about the project.
+
+More podcasts and talks are in the works, so stay tuned!
+
+### New committers
+
+We're excited to welcome [Nick Crews](https://github.com/NickCrews) and [Naty
+Clementi](https://github.com/ncclementi) as the newest committers to the Ibis
+project! 
+
+Nick has been a long-time contributor to
 Ibis, one of the most active people on the issue tracker, and increasingly
 involved in the community. We're excited to have him on board!
+
+Naty has been contributing to Ibis for a while now, leading the effort to add
+geospatial support to the DuckDB backend in addition to various other
+contributions. We're excited to ahve her on board!
+
+#### 9.0 contributors
+
+Ibis 9.0 had contributions from many people, including commits from:
+
+- Phillip Cloud
+- Krisztián Szűcs
+- Gil Forsyth
+- Jim Crist-Harif
+- Cody Peterson
+- Nick Crews
+- Naty Clementi
+- Chloe He
+- Nicola Coretti
+- Deepyaman Datta
+- Péter Gyarmati
+- Jiting Xu
+- Mehmet Fatih Aktas
+- Tyler White
+- Bryce Mecum
+- Riezebos
+- Chelsea Lin
+- Chip Huyen
+- Dan Lovell
+- Daniel Mesejo
+- Kexiang Wang
+- Mark Needham
+- Ray Bell
+- Thierry Jean
+- pieter-factful
+- saschahofmann
+
+Thank you to everyone who contributed to this release! And a special thanks to
+Krisztián Szűcs for his work on the internal representation and SQLGlot refactor
+work, it has drastically improved the Ibis codebase.
+
+With this refactor, it's never been easier to contribute to Ibis! Get on touch
+via [GitHub](https://github.com/ibis-project/ibis) or
+[Zulip](https://ibis-project.zulipchat.com/) if you're interested.
 
 ## Backends
 
@@ -32,7 +101,7 @@ No new backends were added in this release, [unless you count the April Fools'
 Day Unix backend](../unix-backend/index.qmd)! As always, there have been
 backend-specific improvements and bug fixes. Some highlights are below.
 
-Check the [full changelog](../../release_notes.qmd) for more details.
+Check the [full changelog](../../release_notes.qmd#9.0.0) for more details.
 
 ### Snowflake
 
@@ -41,14 +110,24 @@ this coming soon.
 
 ### DuckDB
 
+In this release, `asof` joins are also now supported with a `tolerance`
+parameter.
+
 With [DuckDB's addition of MySQL as a database it can attach
 to](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html), we've
 added a `read_mysql` function to Ibis inline with `read_postgres` and
 `read_sqlite`.
 
+For geospatial operations, casting from binary to geometry is now supported.
+
 ### PySpark
 
 PySpark 3.5 is now supported.
+
+### Exasol
+
+Numerous improvements have been made to the Exasol backend by Nicola including
+bit operations, time operations, and hexdigest.
 
 ### Apache Flink
 
@@ -61,7 +140,7 @@ RisingWave backend.
 
 ## Breaking changes
 
-You can view the [full changelog](../../release_notes.qmd) for additional
+You can view the [full changelog](../../release_notes.qmd#9.0.0) for additional
 breaking changes. There is [one we expect to affect many
 users](#what-does-schema-mean).
 
@@ -142,7 +221,7 @@ con.current_catalog
 ### Other breaking changes
 
 There were a few more minor breaking changes, see [the full
-changelog](../../release_notes.qmd) for more details.
+changelog](../../release_notes.qmd#9.0.0) for more details.
 
 ## Functionality
 
@@ -208,7 +287,7 @@ going through Apache Arrow as previously possible):
 t.to_polars()
 ```
 
-And you can directly input a Polars dataframe into an Ibis memtable:
+And you can directly construct an Ibis memtable from a Polars dataframe:
 
 ```{python}
 ibis.memtable(t.to_polars())
@@ -298,6 +377,33 @@ grouped
 ```
 
 You can still pass in a list or tuple if you prefer.
+
+### Unwrap JSON values
+
+You can now unwrap JSON values into backend-native values:
+
+```{python}
+data = {
+    "jstring": ['"a"', '""', None, "null"],
+    "jbool": ["true", "false", "null", None],
+    "jint": ["1", "null", None, "2"],
+    "jfloat": ["42.42", None, "null", "37.37"],
+    "jmap": ['{"a": 1}', "null", None, "{}"],
+    "jarray": ["[]", "null", None, '[{},"1",2]'],
+}
+
+t = ibis.memtable(data, schema=dict.fromkeys(data.keys(), "json"))
+t
+```
+
+
+```{python}
+t.select(unwrapped=t.jstring.unwrap_as(str), original=t.jstring)
+```
+
+```{python}
+t.select(unwrapped=t.jbool.unwrap_as("bool"), original=t.jbool)
+```
 
 ### Create more backends with empty URLs
 
