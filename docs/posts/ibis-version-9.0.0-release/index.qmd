@@ -16,6 +16,11 @@ and drastically simplifying the codebase. This is a big step toward stabilized
 internals and allows us to more easily add new features and backends going
 forward. Look out for a dedicated blog post on the refactor soon.
 
+:::{.callout-tip}
+One long-standing issue with Ibis has been chained joins, which now work as
+a user would expect. This was a major motivation for the refactor.
+:::
+
 Ibis 9.0 also adds new functionality, fixes many bugs, and welcomes two new
 committers to the project!
 
@@ -103,6 +108,27 @@ backend-specific improvements and bug fixes. Some highlights are below.
 
 Check the [full changelog](../../release_notes.qmd#9.0.0) for more details.
 
+If you're new to Ibis, see [how to install](../../../install.qmd) and [the
+getting started tutorial](../../../tutorials/getting_started.qmd).
+
+To follow along with this blog, ensure you're on `'ibis-framework>=9,<10'`.
+First, we’ll setup Ibis for interactive use:
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 3
+```
+
+And fetch the penguins dataset:
+
+```{python}
+t = ibis.examples.penguins.fetch()
+t
+```
+
 ### Snowflake
 
 You can now run Ibis inside of a Snowflake stored procedure! Look for a blog on
@@ -118,7 +144,31 @@ to](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html), we've
 added a `read_mysql` function to Ibis inline with `read_postgres` and
 `read_sqlite`.
 
-For geospatial operations, casting from binary to geometry is now supported.
+You can now cast binary data to geometry in the DuckDB backend, enabling use of regular Parquet files:
+
+```{python}
+zones = ibis.examples.zones.fetch().relocate("geom")  # <1>
+zones.to_parquet("zones.parquet")  # <2>
+```
+
+1. Fetch the zones example data with the geometry column.
+2. Write to a Parquet file, converting the geometry column to binary.
+
+```{python}
+zones = ibis.read_parquet("zones.parquet")  # <1>
+zones.schema()  # <2>
+```
+
+1. Load in the zones Paruqet file.
+2. Notice the geometry column is binary.
+
+```{python}
+zones = zones.mutate(geom=zones["geom"].cast("geometry"))  # <1>
+zones.schema()  # <2>
+```
+
+1. Cast the binary geometry column to a geometry column.
+2. Notice the geometry column is now a geometry type.
 
 ### PySpark
 
@@ -143,27 +193,6 @@ RisingWave backend.
 You can view the [full changelog](../../release_notes.qmd#9.0.0) for additional
 breaking changes. There is [one we expect to affect many
 users](#what-does-schema-mean).
-
-If you're new to Ibis, see [how to install](../../../install.qmd) and [the
-getting started tutorial](../../../tutorials/getting_started.qmd).
-
-To follow along with this blog, ensure you're on `'ibis-framework>=9,<10'`.
-First, we’ll setup Ibis for interactive use:
-
-```{python}
-import ibis
-import ibis.selectors as s
-
-ibis.options.interactive = True
-ibis.options.repr.interactive.max_rows = 3
-```
-
-And fetch the penguins dataset:
-
-```{python}
-t = ibis.examples.penguins.fetch()
-t
-```
 
 ### What does "schema" mean?
 
