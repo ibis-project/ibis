@@ -243,7 +243,6 @@ then switch to a dataframe-like API for the type of dynamic transformations that
 would otherwise be tedious to do in pure SQL."
 :::
 :::
-:::
 
 :::
 
@@ -263,6 +262,8 @@ would otherwise be tedious to do in pure SQL."
 
 ::: {.g-col-4}
 [API reference](/reference){.btn .btn-primary}
+:::
+
 :::
 
 :::
