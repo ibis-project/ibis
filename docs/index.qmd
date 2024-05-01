@@ -217,9 +217,8 @@ performance of modern SQL.
 going to significantly improve upon. Big thanks to those who have contributed!
 Currently using it to power a dashboard using Druid under the hood without
 needing to remember the nuances of Druid SQL."]{.card-text}
-:::
-::: {.card-header}
-\- Nick Shook
+
+[Nick Shook]{.blockquote-footer}
 :::
 :::
 
@@ -227,9 +226,8 @@ needing to remember the nuances of Druid SQL."]{.card-text}
 :::{.card-body}
 "I now have Ibis code that runs PySpark in my Databricks environment and Polars
 on my laptop which is pretty slick 🔥"
-:::
-::: {.card-footer}
-\- Mark Druffle
+
+[Mark Druffle]{.blockquote-footer}
 :::
 :::
 
@@ -238,9 +236,8 @@ on my laptop which is pretty slick 🔥"
 "I love that with Ibis, I can use SQL for the heavy lifting or aggregations and
 then switch to a dataframe-like API for the type of dynamic transformations that
 would otherwise be tedious to do in pure SQL."
-:::
-::: {.card-footer}
-\- Daniel Kim
+
+[Daniel Kim]{.blockquote-footer}
 :::
 :::
 
