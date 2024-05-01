@@ -211,7 +211,7 @@ performance of modern SQL.
 
 ::: {.grid}
 
-::: {.g-col-4 .card .border-light .mb-3 .text-center} 
+::: {.g-col-4 .card .border-light .mb-3 .text-center}
 ::: {.card-header}
 Nick Shook
 :::
@@ -220,7 +220,7 @@ Nick Shook
 going to significantly improve upon. Big thanks to those who have contributed!
 Currently using it to power a dashboard using Druid under the hood without
 needing to remember the nuances of Druid SQL."]{.card-text}
-::: 
+:::
 :::
 
 ::: {.g-col-4 .card .border-light .mb-3 .text-center}
