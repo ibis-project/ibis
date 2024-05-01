@@ -50,8 +50,8 @@ More podcasts and talks are in the works, so stay tuned!
 ### New committers
 
 We're excited to welcome [Nick Crews](https://github.com/NickCrews) and [Naty
-Clementi](https://github.com/ncclementi) as the newest committers to the Ibis
-project!
+Clementi](https://github.com/ncclementi) as the [newest committers to the Ibis
+project](https://github.com/ibis-project/governance/blob/main/governance.md#committers)!
 
 Nick has been a long-time contributor to
 Ibis, one of the most active people on the issue tracker, and increasingly
@@ -177,7 +177,7 @@ PySpark 3.5 is now supported.
 ### Exasol
 
 Numerous improvements have been made to the Exasol backend by Nicola including
-bit operations, time operations, and hexdigest.
+bitwise operations, time operations, and hexdigest.
 
 ### Apache Flink
 
@@ -196,24 +196,24 @@ users](#what-does-schema-mean).
 
 ### What does "schema" mean?
 
+In building a standard Python dataframe interface, we must standardize naming
+conventions and terminology across data systems. Many systems use the words
+"schema", "database", "catalog", and "namespace" to mean different things.
+
 In Ibis, a "schema" is a mapping of column names to their types:
 
 ```{python}
 t.schema()
 ```
 
-And as of Ibis 9.0, that is all "schema" means! In building a standard Python
-dataframe interface, we must standardize naming conventions and terminology
-across data systems. Many systems use the words "schema", "database", "catalog",
-and "namespace" to mean different things.
+And as of Ibis 9.0, that is all "schema" means! We have standardizes on `table`
+as the container of data which has a `schema`. A `database` is a collection of
+tables, and a `catalog` is a collection of databases. Not all backends will
+support all levels of hierarchy.
 
-We have standardizes on `table` as the container of data which has a `schema`. A
-`database` is a collection of tables, and a `catalog` is a collection of
-databases. Not all backends will support all levels of hierarchy.
-
-Using other `schema` methods as of Ibis 9.0 will give a deprecation warning, and
-the arguments throughout the API have been updated to reflect the
-standardization.
+Existing methods using the hierarchical meaning of "schema" will now raise a
+deprecation warning, and the arguments throughout the API have been updated to
+reflect the standardization.
 
 For example, `list_schemas()` will give a deprecation warning:
 
