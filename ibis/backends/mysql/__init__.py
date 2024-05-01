@@ -11,6 +11,7 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
+import numpy as np
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -481,6 +482,9 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             columns = schema.keys()
             df = op.data.to_frame()
+            # nan can not be used with MySQL
+            df = df.replace(np.nan, None)
+
             data = df.itertuples(index=False)
             cols = ", ".join(
                 ident.sql(self.name)

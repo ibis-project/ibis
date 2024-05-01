@@ -11,6 +11,7 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
+import numpy as np
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -144,6 +145,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
             columns = schema.keys()
             df = op.data.to_frame()
+            # nan gets compiled into 'NaN'::float which throws errors in non-float columns
+            df = df.replace(np.nan, None)
+
             data = df.itertuples(index=False)
             cols = ", ".join(
                 ident.sql(self.dialect)
