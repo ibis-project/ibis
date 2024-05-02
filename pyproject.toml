@@ -440,9 +440,6 @@ unfixable = [
   "F841",   # unused variables
 ]
 
-[tool.ruff.lint.pyupgrade]
-keep-runtime-typing = true
-
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]
 
