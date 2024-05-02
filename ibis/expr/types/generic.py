@@ -2227,9 +2227,23 @@ class NullColumn(Column, NullValue):
 
 
 @public
-def null():
-    """Create a NULL/NA scalar."""
-    return ops.NULL.to_expr()
+def null(type: dt.DataType | str | None = None) -> Value:
+    """Create a NULL/NA scalar.
+
+    By default, the type will be NULLTYPE. This is castable and comparable to any type,
+    but lacks datatype-specific methods:
+
+    >>> import ibis
+    >>> ibis.null().upper().execute() is None
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'NullScalar' object has no attribute 'upper'
+    >>> ibis.null(str).upper().execute() is None
+    True
+    """
+    if type is None:
+        type = dt.null
+    return ops.Literal(None, type).to_expr()
 
 
 @public

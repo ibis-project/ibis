@@ -282,7 +282,8 @@ reductions = {
     ops.ArrayCollect: lambda x: x.tolist(),
 }
 
-generic = {
+
+_generic = {
     ops.Abs: abs,
     ops.Acos: np.arccos,
     ops.Add: operator.add,
@@ -315,8 +316,6 @@ generic = {
     ops.IntervalFloorDivide: operator.floordiv,
     ops.IntervalMultiply: operator.mul,
     ops.IntervalSubtract: operator.sub,
-    ops.IsInf: np.isinf,
-    ops.IsNull: pd.isnull,
     ops.Less: operator.lt,
     ops.LessEqual: operator.le,
     ops.Ln: np.log,
@@ -327,7 +326,6 @@ generic = {
     ops.Negate: lambda x: not x if isinstance(x, (bool, np.bool_)) else -x,
     ops.Not: lambda x: not x if isinstance(x, (bool, np.bool_)) else ~x,
     ops.NotEquals: operator.ne,
-    ops.NotNull: pd.notnull,
     ops.Or: operator.or_,
     ops.Power: operator.pow,
     ops.Radians: np.radians,
@@ -348,6 +346,24 @@ generic = {
     ops.StringJoin: lambda xs, sep: reduce(lambda x, y: x + sep + y, xs),
     ops.Log: lambda x, base: np.log(x) if base is None else np.log(x) / np.log(base),
 }
+
+
+def none_proof(func):
+    def wrapper(*args, **kwargs):
+        if any(map(isnull, args)):
+            return None
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
+generic = {
+    **{k: none_proof(v) for k, v in _generic.items()},
+    ops.IsNull: pd.isnull,
+    ops.NotNull: pd.notnull,
+    ops.IsInf: np.isinf,
+}
+
 
 columnwise = {
     ops.Clip: lambda df: df["arg"].clip(lower=df["lower"], upper=df["upper"]),

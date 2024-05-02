@@ -53,12 +53,31 @@ NULL_BACKEND_TYPES = {
 @pytest.mark.notyet(["flink"], "The runtime does not support untyped `NULL` values.")
 def test_null_literal(con, backend):
     expr = ibis.null()
-    result = con.execute(expr)
-    assert pd.isna(result)
+    assert pd.isna(con.execute(expr))
 
     with contextlib.suppress(com.OperationNotDefinedError):
         backend_name = backend.name()
         assert con.execute(expr.typeof()) == NULL_BACKEND_TYPES[backend_name]
+
+    with pytest.raises(AttributeError):
+        expr.upper()
+    with pytest.raises(AttributeError):
+        expr.cast(str).max()
+    assert pd.isna(con.execute(expr.cast(str).upper()))
+
+
+@pytest.mark.broken(
+    "mssql",
+    reason="https://github.com/ibis-project/ibis/issues/9109",
+    raises=AssertionError,
+)
+def test_null_literal_typed(con, backend):
+    expr = ibis.null(bool)
+    assert pd.isna(con.execute(expr))
+    assert pd.isna(con.execute(expr.negate()))
+    assert pd.isna(con.execute(expr.cast(str).upper()))
+    with pytest.raises(AttributeError):
+        expr.upper()
 
 
 BOOLEAN_BACKEND_TYPE = {
@@ -75,6 +94,19 @@ BOOLEAN_BACKEND_TYPE = {
 }
 
 
+def test_null_literal_typed_typeof(con, backend):
+    expr = ibis.null(bool)
+    TYPES = {
+        **BOOLEAN_BACKEND_TYPE,
+        "clickhouse": "Nullable(Bool)",
+        "flink": "BOOLEAN",
+        "sqlite": "null",  # in sqlite, typeof(x) is determined by the VALUE of x at runtime, not it's static type
+    }
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        assert con.execute(expr.typeof()) == TYPES[backend.name()]
+
+
 def test_boolean_literal(con, backend):
     expr = ibis.literal(False, type=dt.boolean)
     result = con.execute(expr)
@@ -82,8 +114,7 @@ def test_boolean_literal(con, backend):
     assert type(result) in (np.bool_, bool)
 
     with contextlib.suppress(com.OperationNotDefinedError):
-        backend_name = backend.name()
-        assert con.execute(expr.typeof()) == BOOLEAN_BACKEND_TYPE[backend_name]
+        assert con.execute(expr.typeof()) == BOOLEAN_BACKEND_TYPE[backend.name()]
 
 
 @pytest.mark.parametrize(

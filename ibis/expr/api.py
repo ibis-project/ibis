@@ -200,11 +200,25 @@ pi = ops.Pi().to_expr()
 NA = null()
 """The NULL scalar.
 
+This is an untyped NULL. If you want a typed NULL, use eg `ibis.null(str)`.
+
 Examples
 --------
 >>> import ibis
->>> my_null = ibis.NA
->>> my_null.isnull()
+>>> assert ibis.NA.execute() is None
+>>> ibis.NA.isnull().execute()
+True
+
+datatype-specific methods aren't available on `NA`:
+
+>>> ibis.NA.upper().execute() is None  # quartodoc: +EXPECTED_FAILURE
+Traceback (most recent call last):
+  ...
+AttributeError: 'NullScalar' object has no attribute 'upper'
+
+Instead, use the typed `ibis.null`:
+
+>>> ibis.null(str).upper().execute() is None
 True
 """
 
