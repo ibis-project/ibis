@@ -59,10 +59,7 @@ def test_null_literal(con, backend):
         backend_name = backend.name()
         assert con.execute(expr.typeof()) == NULL_BACKEND_TYPES[backend_name]
 
-    with pytest.raises(AttributeError):
-        expr.upper()
-    with pytest.raises(AttributeError):
-        expr.cast(str).max()
+    assert expr.type() == dt.null
     assert pd.isna(con.execute(expr.cast(str).upper()))
 
 
@@ -73,11 +70,10 @@ def test_null_literal(con, backend):
 )
 def test_null_literal_typed(con, backend):
     expr = ibis.null(bool)
+    assert expr.type() == dt.boolean
     assert pd.isna(con.execute(expr))
     assert pd.isna(con.execute(expr.negate()))
     assert pd.isna(con.execute(expr.cast(str).upper()))
-    with pytest.raises(AttributeError):
-        expr.upper()
 
 
 BOOLEAN_BACKEND_TYPE = {
