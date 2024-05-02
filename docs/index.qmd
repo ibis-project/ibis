@@ -207,7 +207,9 @@ t.sql(  # <1>
 This allows you to combine the flexibility of Python with the scale and
 performance of modern SQL.
 
+::: {.text-center}
 ## Users say...
+:::
 
 ::: {.index-grid}
 
@@ -222,7 +224,7 @@ any dataset! Big thanks to those who have contributed!"]{.card-text}
 :::
 
 ::: {.index-g-col-4 .card .border-light .mb-3 .text-center}
-:::{.card-body}
+::: {.card-body}
 "I now have Ibis code that runs PySpark in my Databricks environment and Polars
 on my laptop which is pretty slick 🔥"
 
