@@ -42,8 +42,9 @@ The schedule for SciPy 2024 is not available yet, keep an eye out for Ibis sessi
 :::
 
 You can also listen to a [recent podcast episode with Real
-Python](https://realpython.com/podcasts/rpp/201) where Phillip Cloud, lead
-maintainer of Ibis, talks about the project.
+Python](https://realpython.com/podcasts/rpp/201) or [another with
+:probabl.](https://www.youtube.com/watch?v=V1_xdQYlWAc) where Phillip Cloud,
+lead maintainer of Ibis, talks about the project.
 
 More podcasts and talks are in the works, so stay tuned!
 
