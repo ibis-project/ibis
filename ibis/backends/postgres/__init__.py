@@ -155,7 +155,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             convert_df = df.convert_dtypes()
             for col in convert_df.columns:
                 if not is_float_dtype(convert_df[col]):
-                    df[col].replace(np.nan, None, inplace=True)
+                    df[col] = df[col].replace(np.nan, None)
 
             data = df.itertuples(index=False)
             cols = ", ".join(
