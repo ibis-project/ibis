@@ -216,7 +216,7 @@ performance of modern SQL.
 ::: {.index-g-col-4 .card .border-light .mb-3 .text-center}
 ::: {.card-body}
 ["Ibis is amazing, there is so much bikeshedding out there that this library
-improves upon. I love that now we can empower any visualization with nearly 
+improves upon. I love that now we can empower any visualization with nearly
 any dataset! Big thanks to those who have contributed!"]{.card-text}
 
 [Nick Shook]{.blockquote-footer}
