@@ -169,9 +169,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         if temp:
             properties.append(sge.TemporaryProperty())
 
+        temp_memtable_view = None
+
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -247,6 +250,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                             actions=[sge.RenameTable(this=final_table)],
                         ).sql(self.name)
                     )
+
+        if temp_memtable_view is not None:
+            self.con.unregister(temp_memtable_view)
 
         return self.table(name, database=database)
 
