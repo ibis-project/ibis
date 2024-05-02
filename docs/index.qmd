@@ -47,9 +47,9 @@ about:
 ### An open source dataframe library that works with any data system
 
 - Use the same API for 20+ backends
-- Run locally on embedded DuckDB, Polars, DataFusion, or SQLite
+- Fast local dataframes with embedded DuckDB (default), Polars, or DataFusion
 - Iterate locally and deploy remotely by changing a single line of code
-- Compose Python dataframe and SQL code
+- Compose SQL and Python dataframe code, bridging the gap between data engineering and data science
 
 ```{python}
 #| code-fold: true
