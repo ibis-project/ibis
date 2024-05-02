@@ -30,7 +30,6 @@ con.create_table(
 You can now see the example dataset copied over to the database:
 
 ```{python}
-con = ibis.connect("duckdb://penguins.ddb")
 con.list_tables()
 ```
 
