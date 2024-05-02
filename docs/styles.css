@@ -13,6 +13,7 @@ section[id^="parameters-"] {
   content: url("./zulip.svg");
   vertical-align: -0.125em;
   width: 1em;
+  filter: grayscale(1);
 }
 
 .jupyterlite-console {
