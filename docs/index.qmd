@@ -227,7 +227,7 @@ needing to remember the nuances of Druid SQL."]{.card-text}
 "I now have Ibis code that runs PySpark in my Databricks environment and Polars
 on my laptop which is pretty slick 🔥"
 
-[Mark Druffle]{.blockquote-footer}
+[Mark Druffel]{.blockquote-footer}
 :::
 :::
 
