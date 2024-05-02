@@ -40,513 +40,226 @@ about:
 ::: {#about}
 :::
 
-## Install
+{{< pagebreak >}}
 
-We recommend starting with the default backend (DuckDB).
+::: {.column-page}
 
-```bash
-pip install 'ibis-framework[duckdb,examples]' # <1>
+### An open source dataframe library that works with any data system
+
+- Use the same API for 20+ backends
+- Fast local dataframes with embedded DuckDB (default), Polars, or DataFusion
+- Iterate locally and deploy remotely by changing a single line of code
+- Compose SQL and Python dataframe code, bridging the gap between data engineering and data science
+
+```{python}
+#| code-fold: true
+#| echo: false
+
+import ibis
+
+t = ibis.examples.penguins.fetch()
+t.to_parquet("penguins.parquet")
 ```
 
-1. Install Ibis with the DuckDB backend along with examples.
+## Ibis: the portable Python dataframe library
 
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseBackends" role="button" aria-expanded="false" aria-controls="collapseBackends"  margin="100px">Show supported backends</a></div>
-
-###
-
-::: {#collapseBackends .collapse .multi-collapse}
-
-## Backends
-
-Need to use Ibis with a backend that isn't currently supported? [Let us know!](https://github.com/ibis-project/ibis/discussions/new?category=q-a)
-
-{{< include ./_tabsets/install.qmd >}}
-
-See the [backend support matrix](support_matrix.qmd) for details on operations supported. [Open a feature request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat) if you'd like to see support for an operation in a given backend. If the backend supports it, we'll do our best to add it quickly!
-
-:::
-
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseQuickstart" role="button" aria-expanded="false" aria-controls="collapseQuickstart">Show quickstart</a></div>
-
-###
-
-::: {#collapseQuickstart .collapse .multi-collapse}
-
-## Quickstart
-
-See [the getting started tutorial](tutorials/getting_started.qmd) for a more in-depth introduction to Ibis. Below is a quick overview.
+Ibis offers a familiar local dataframe experience with outstanding performance,
+using [DuckDB](https://duckdb.org) by default.
 
 ```{python}
 import ibis  # <1>
-import ibis.selectors as s  # <1>
 
 ibis.options.interactive = True  # <2>
 
-t = ibis.examples.penguins.fetch()  # <3>
+t = ibis.read_parquet("penguins.parquet", table_name="penguins")  # <3>
 t.head(3)  # <4>
 ```
 
-1. Ensure you install Ibis first.
-2. Use interactive mode for exploratory data analysis (EDA) or demos.
-3. Load a dataset from the built-in examples.
-4. Display the table.
+1. Import Ibis.
+2. Enable interactive mode for exploratory data analysis (EDA) or demos.
+3. Read a Parquet file and specify a table name (optional).
+4. Display the first few rows of the table.
 
-
-Ibis is a dataframe library with familiar syntax.
-
-```{python}
-t[10:15]  # <1>
-```
-
-1. Display a slice of the table.
-
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseAnalytics" role="button" aria-expanded="false" aria-controls="collapseAnalytics">Show analytics</a></div>
-
-###
-
-::: {#collapseAnalytics .collapse .multi-collapse}
-
-### Analytics
-
-Ibis is built for easy analytics at scale in Python.
+Iterate and explore data locally:
 
 ```{python}
-(  # <1>
-    t.filter(ibis._["body_mass_g"] != None)  # <1>
-    .group_by(["species", "island"])  # <1>
-    .aggregate(count=ibis._.count())  # <1>
-    .order_by(ibis.desc("count"))  # <1>
-)  # <1>
-```
-
-1. Group by species and island, and compute the number of rows in each group.
-
-:::
-
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseVisualization" role="button" aria-expanded="false" aria-controls="collapseVisualization">Show EDA + visualization</a></div>
-
-###
-
-::: {#collapseVisualization .collapse .multi-collapse}
-
-### Exploratory data analysis (EDA) and visualization
-
-#### Exploratory data analysis
-
-Ibis has built-in methods for exploration and [visualization](#visualization).
-
-```{python}
-num_species = int(t.select("species").nunique().to_pandas())  # <1>
-t["species"].topk(num_species)  # <2>
-```
-
-1. Compute the number of species in the dataset.
-2. Display the top species by count.
-
-#### Visualization
-
-Ibis works with any Python plotting library that supports the [dataframe interchange protocol](https://data-apis.org/dataframe-protocol/latest/index.html).
-
-```{python}
-grouped = (  # <1>
-    t.group_by("species")  # <1>
-    .aggregate(count=ibis._.count())  # <1>
-    .order_by(ibis.desc("count"))  # <1>
-)  # <1>
+grouped = t.group_by("species", "island").agg(count=t.count()).order_by("count")  # <1>
 grouped  # <2>
 ```
 
-1. Setup data to plot.
-2. Display the table.
+1. Transform the table.
+2. Display the transformed table.
+
+### One API for 20+ backends
+
+Use the same dataframe API for 20+ backends:
+
+```{python}
+#| code-fold: true
+#| echo: false
+
+from backends_sankey import fig
+fig.show()
+```
+
+For example:
 
 ::: {.panel-tabset}
 
-## Altair
+## DuckDB
 
-```{.bash}
-pip install altair
+```{python}
+con = ibis.connect("duckdb://")
 ```
 
 ```{python}
-import altair as alt
-
-chart = (
-    alt.Chart(grouped.to_pandas())
-    .mark_bar()
-    .encode(
-        x="species",
-        y="count",
-        tooltip=["species", "count"],
-    )
-    .properties(width=600, height=400)
-    .interactive()
-)
-chart
-```
-
-## matplotlib
-
-```{.bash}
-pip install matplotlib
+t = con.read_parquet("penguins.parquet")
+t.head(3)
 ```
 
 ```{python}
-import matplotlib.pyplot as plt
-
-chart = grouped.to_pandas().plot.bar(
-    x="species",
-    y="count",
-    figsize=(600 / 100, 400 / 100),
-)
-plt.show()
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
 ```
 
-## Plotly
+## Polars
 
-```{.bash}
-pip install plotly
+```{python}
+con = ibis.connect("polars://")
 ```
 
 ```{python}
-import plotly.express as px
-
-chart = px.bar(
-    grouped.to_pandas(),
-    x="species",
-    y="count",
-    width=600,
-    height=400,
-)
-chart
-```
-
-## plotnine
-
-```{.bash}
-pip install plotnine
-```
-```{python}
-from plotnine import ggplot, aes, geom_bar, theme
-
-chart = (
-    ggplot(
-        grouped,
-        aes(x="species", y="count"),
-    )
-    + geom_bar(stat="identity")
-    + theme(figure_size=(600 / 100, 400 / 100))
-)
-chart
-```
-
-## seaborn
-
-```{.bash}
-pip install seaborn
+t = con.read_parquet("penguins.parquet")
+t.head(3)
 ```
 
 ```{python}
-import seaborn as sns
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
 
-chart = sns.barplot(
-    data=grouped.to_pandas(),
-    x="species",
-    y="count",
-)
-chart.figure.set_size_inches(600 / 100, 400 / 100)
+## DataFusion
+
+```{python}
+con = ibis.connect("datafusion://")
+```
+
+```{python}
+t = con.read_parquet("penguins.parquet")
+t.head(3)
+```
+
+```{python}
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
+
+## PySpark
+
+```{python}
+con = ibis.connect("pyspark://")
+```
+
+```{python}
+t = con.read_parquet("penguins.parquet")
+t.head(3)
+```
+
+```{python}
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
 ```
 
 :::
 
-:::
+This allows you to iterate locally and deploy remotely by changing a single line
+of code. For instance, develop locally with DuckDB and deploy remotely to
+BigQuery. Or, using any combination of backends that meet your requirements.
 
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseDataScience" role="button" aria-expanded="false" aria-controls="collapseDataScience">Show data science</a></div>
+### Python + SQL: better together
 
-###
+Ibis works by decoupling the dataframe API from the backend execution. Most
+backends support a SQL dialect, which Ibis compiles its expressions into using
+[SQLGlot](https://github.com/tobymao/sqlglot). You can inspect the SQL that Ibis
+generates for any SQL backend:
 
-::: {#collapseDataScience .collapse .multi-collapse}
-
-### Data science
-
-Use Ibis with your favorite data science libraries for concise and efficient workflows.
 
 ```{python}
-import ibis.selectors as s  # <1>
-
-
-def transform(t):  # <2>
-    t = t.mutate(  # <2>
-        s.across(s.numeric(), {"zscore": lambda x: (x - x.mean()) / x.std()})  # <2>
-    ).dropna()  # <2>
-    return t  # <2>
-
-
-f = transform(t.drop("year"))  # <3>
-f.select("species", "island", s.contains("zscore"))  # <4>
+ibis.to_sql(grouped)  # <1>
 ```
 
-1. Import the selectors module.
-2. Define a function to transform the table for code reuse (compute z-scores on numeric columns).
-3. Apply the function to the table and assign it to a new variable.
-4. Display the transformed table.
+1. Display the SQL generated from the table expression.
 
-```bash
-pip install scikit-learn
+And use SQL strings directly, mixing and matching with Python dataframe code:
+
+```{python}
+#| code-fold: true
+#| echo: false
+
+t = ibis.read_parquet("penguins.parquet", table_name="penguins")
 ```
 
 ```{python}
-import plotly.express as px  # <1>
-from sklearn.decomposition import PCA  # <1>
-
-X = f.select(s.contains("zscore"))  # <2>
-
-n_components = 3  # <3>
-pca = PCA(n_components=n_components).fit(X)  # <3>
-
-t_pca = ibis.memtable(pca.transform(X)).rename(  # <4>
-    {"pc1": "col0", "pc2": "col1", "pc3": "col2"}  # <4>
-)  # <4>
-
-f = f.mutate(row_number=ibis.row_number().over()).join(  # <5>
-    t_pca.mutate(row_number=ibis.row_number().over()),  # <5>
-    "row_number",  # <5>
-)  # <5>
-
-px.scatter_3d(  # <6>
-    f.to_pandas(),  # <6>
-    x="pc1",  # <6>
-    y="pc2",  # <6>
-    z="pc3",  # <6>
-    color="species",  # <6>
-    symbol="island",  # <6>
-)  # <6>
+t.sql(  # <1>
+    "SELECT species, island, COUNT(*) AS count FROM penguins GROUP BY species, island"  # <1>
+).order_by("count")  # <2>
 ```
 
-1. Import data science libraries
-2. Select "features" (numeric columns) as X
-3. Compute PCA
-4. Create a table from the PCA results
-5. Join the PCA results to the original table
-6. Plot the results
+1. Transform the table using SQL.
+2. Then, transform the table using Python dataframe code.
 
+This allows you to combine the flexibility of Python with the scale and
+performance of modern SQL.
+
+::: {.text-center}
+## Users say...
 :::
 
-###
+::: {.index-grid}
 
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseInputOutput" role="button" aria-expanded="false" aria-controls="collapseInputOutput">Show input and output</a></div>
+::: {.index-g-col-4 .card .border-light .mb-3 .text-center}
+::: {.card-body}
+["Ibis is amazing, there is so much bikeshedding out there that this library
+improves upon. I love that now we can empower any visualization with nearly
+any dataset! Big thanks to those who have contributed!"]{.card-text}
 
-###
+[Nick Shook]{.blockquote-footer}
+:::
+:::
 
-::: {#collapseInputOutput .collapse .multi-collapse}
+::: {.index-g-col-4 .card .border-light .mb-3 .text-center}
+::: {.card-body}
+"I now have Ibis code that runs PySpark in my Databricks environment and Polars
+on my laptop which is pretty slick 🔥"
 
-### Input and output
+[Mark Druffel]{.blockquote-footer}
+:::
+:::
 
-Ibis supports a variety of input and output options.
+::: {.index-g-col-4 .card .border-light .mb-3 .text-center}
+::: {.card-body}
+"I love that with Ibis, I can use SQL for the heavy lifting or aggregations and
+then switch to a dataframe-like API for the type of dynamic transformations that
+would otherwise be tedious to do in pure SQL."
 
-{{< include /_code/input_output_penguins.qmd >}}
+[Daniel Kim]{.blockquote-footer}
+:::
+:::
 
 :::
 
-<div class="d-grid gap-2"><a class="btn btn-lg btn-primary" data-bs-toggle="collapse" href="#collapseSQLPython" role="button" aria-expanded="false" aria-controls="collapseSQLPython">Show SQL + Python</a></div>
+::: {.text-center}
+## Get started with Ibis
+:::
 
-::: {#collapseSQLPython .collapse .multi-collapse}
+::: {.index-grid .text-center}
 
-### SQL + Python
+::: {.index-g-col-4}
+[Why Ibis?](why.qmd){.btn .btn-primary .w-100}
+:::
 
-Ibis has the `ibis.to_sql` to generate SQL strings.
+::: {.index-g-col-4}
+[Tutorial: getting started](tutorials/getting_started.qmd){.btn .btn-primary .w-100}
+:::
 
-In a Jupyter notebook or IPython shell session, the output of `ibis.to_sql` will be syntax highlighted.
-
-In a plain Python REPL use `print(ibis.to_sql(...))` to pretty print SQL.
-
-Ibis uses [SQLGlot](https://sqlglot.com) under the hood to allow passing a `dialect` parameter to SQL methods.
-
-::: {.panel-tabset}
-
-## BigQuery
-
-```{python}
-dialect = "bigquery"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## Snowflake
-
-```{python}
-dialect = "snowflake"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## Oracle
-
-```{python}
-dialect = "oracle"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## MySQL
-
-```{python}
-dialect = "mysql"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## MSSQL
-
-```{python}
-dialect = "mssql"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## PostgreSQL
-
-```{python}
-dialect = "postgres"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## SQLite
-
-```{python}
-dialect = "sqlite"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
-## Trino
-
-```{python}
-dialect = "trino"  # <1>
-sql = ibis.to_sql(  # <2>
-    grouped,  # <2>
-    dialect=dialect,  # <2>
-)  # <2>
-sql  # <3>
-```
-
-1. Set the dialect.
-2. Convert the table to a SQL string.
-3. Display the SQL string.
-
-You can chain Ibis expressions and `.sql` together.
-
-```{python}
-con.sql(sql, dialect=dialect).filter(ibis._["species"] == "Adelie")  # <1>
-```
-
-1. Chain `.sql` calls and Ibis expressions together.
-
+::: {.index-g-col-4}
+[API reference](/reference){.btn .btn-primary .w-100}
 :::
 
 :::
