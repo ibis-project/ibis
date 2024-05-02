@@ -348,7 +348,7 @@ _generic = {
 }
 
 
-def none_proof(func):
+def none_safe(func):
     def wrapper(*args, **kwargs):
         if any(map(isnull, args)):
             return None
@@ -358,7 +358,7 @@ def none_proof(func):
 
 
 generic = {
-    **{k: none_proof(v) for k, v in _generic.items()},
+    **{k: none_safe(v) for k, v in _generic.items()},
     ops.IsNull: pd.isnull,
     ops.NotNull: pd.notnull,
     ops.IsInf: np.isinf,
