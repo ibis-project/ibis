@@ -350,6 +350,20 @@ def test_notnull(table):
     assert isinstance(expr.op(), ops.NotNull)
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        param(lambda: None, id="none"),
+        param(lambda: ibis.NA, id="NA"),
+        param(lambda: ibis.literal(None, type="int32"), id="typed-null"),
+    ],
+)
+def test_null_eq_and_ne(table, value):
+    other = value()
+    assert (table.a == other).equals(table.a.isnull())
+    assert (table.a != other).equals(table.a.notnull())
+
+
 @pytest.mark.parametrize("column", ["e", "f"], ids=["float32", "double"])
 def test_isnan_isinf_column(table, column):
     expr = table[column].isnan()
