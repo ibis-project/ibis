@@ -211,7 +211,7 @@ True
 
 datatype-specific methods aren't available on `NA`:
 
->>> ibis.NA.upper().execute() is None  # quartodoc: +EXPECTED_FAILURE
+>>> ibis.NA.upper()  # quartodoc: +EXPECTED_FAILURE
 Traceback (most recent call last):
   ...
 AttributeError: 'NullScalar' object has no attribute 'upper'
