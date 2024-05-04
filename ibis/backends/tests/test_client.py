@@ -292,11 +292,6 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     "be switched from using atexit to weakref.finalize",
 )
 @mark.notimpl(["trino", "druid"], reason="doesn't implement temporary tables")
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-    raises=PyODBCProgrammingError,
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.notimpl(
     ["impala", "pyspark"],
