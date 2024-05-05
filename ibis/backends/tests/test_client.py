@@ -1367,10 +1367,6 @@ def test_persist_expression_repeated_cache(alltypes):
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
-@mark.notimpl(
-    ["oracle"],
-    reason="Oracle error message for a missing table/view doesn't include the name of the table",
-)
 def test_persist_expression_release(con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 3")
