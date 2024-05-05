@@ -71,7 +71,7 @@ import ibis  # <1>
 
 ibis.options.interactive = True  # <2>
 
-t = ibis.read_parquet("penguins.parquet", table_name="penguins")  # <3>
+t = ibis.read_parquet("penguins.parquet")  # <3>
 t.head(3)  # <4>
 ```
 
@@ -192,17 +192,18 @@ And use SQL strings directly, mixing and matching with Python dataframe code:
 #| code-fold: true
 #| echo: false
 
-t = ibis.read_parquet("penguins.parquet", table_name="penguins")
+t = ibis.read_parquet("penguins.parquet")
 ```
 
 ```{python}
-t.sql(  # <1>
-    "SELECT species, island, COUNT(*) AS count FROM penguins GROUP BY species, island"  # <1>
-).order_by("count")  # <2>
+t.alias("penguins").sql(  # <1>
+    "SELECT species, island, COUNT(*) AS count FROM penguins GROUP BY species, island"  # <2>
+).order_by("count")  # <3>
 ```
 
-1. Transform the table using SQL.
-2. Then, transform the table using Python dataframe code.
+1. Since the table has a generated name from the Parquet file, create a friendly alias.
+2. Transform the table using SQL.
+3. Then, transform the table using Python dataframe code.
 
 This allows you to combine the flexibility of Python with the scale and
 performance of modern SQL.
