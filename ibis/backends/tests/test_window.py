@@ -17,7 +17,6 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
-    OracleDatabaseError,
     PsycoPg2InternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
@@ -249,9 +248,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotany",
-            marks=[
-                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
-            ],
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -272,9 +268,6 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotall",
-            marks=[
-                pytest.mark.broken(["oracle"], raises=OracleDatabaseError),
-            ],
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
