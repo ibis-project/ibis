@@ -9,11 +9,6 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
-from ibis.backends.sql.rewrites import (
-    rewrite_capitalize,
-    rewrite_sample_as_filter,
-)
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class DruidCompiler(SQLGlotCompiler):
@@ -21,15 +16,8 @@ class DruidCompiler(SQLGlotCompiler):
 
     dialect = Druid
     type_mapper = DruidType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        *(
-            rewrite
-            for rewrite in SQLGlotCompiler.rewrites
-            if rewrite is not rewrite_capitalize
-        ),
-    )
+
+    LOWERED_OPS = {ops.Capitalize: None}
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,

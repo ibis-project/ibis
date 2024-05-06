@@ -14,10 +14,8 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
-from ibis.backends.sql.rewrites import rewrite_sample_as_filter
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import rewrite_stringslice
 from ibis.formats.pyarrow import PyArrowType
 
 
@@ -26,11 +24,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        *SQLGlotCompiler.rewrites,
-    )
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,

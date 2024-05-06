@@ -12,9 +12,7 @@ from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.dialects import Impala
 from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -23,9 +21,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     dialect = Impala
     type_mapper = ImpalaType
     rewrites = (
-        rewrite_sample_as_filter,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
