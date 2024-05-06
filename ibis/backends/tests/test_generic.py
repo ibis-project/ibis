@@ -97,6 +97,7 @@ def test_null_literal_typed_typeof(con, backend):
         "clickhouse": "Nullable(Bool)",
         "flink": "BOOLEAN",
         "sqlite": "null",  # in sqlite, typeof(x) is determined by the VALUE of x at runtime, not it's static type
+        "snowflake": None,
     }
 
     with contextlib.suppress(com.OperationNotDefinedError):
