@@ -146,6 +146,7 @@ class TestConf(BackendTest):
                 CREATE SCHEMA IF NOT EXISTS {dbschema};
                 USE {dbschema};
                 CREATE TEMP STAGE {db};
+                CREATE STAGE IF NOT EXISTS ibis_testing;
                 CREATE STAGE IF NOT EXISTS models;
                 {self.script_dir.joinpath("snowflake.sql").read_text()}
                 """
