@@ -134,9 +134,46 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         super().__init__(*args, **kwargs)
         self._cached_dataframes = {}
 
-    def do_connect(
-        self, session: SparkSession | None = None, mode: ConnectionMode | None = None
-    ) -> None:
+    def connect(self, *args, **kwargs) -> Backend:
+        """Connect to the database.
+
+        Parameters
+        ----------
+        *args
+            Mandatory connection parameters, see the docstring of `do_connect`
+            for details.
+        **kwargs
+            Extra connection parameters, see the docstring of `do_connect` for
+            details.
+            [NOTE] Pyspark backend takes in an optional "mode" parameter that can
+            either be "batch" or "streaming". If "batch", every source, sink, and query
+            executed within this connection will be interpreted as a batch workload. If
+            "streaming", every source, sink, and query executed within this connection
+            will be interpreted as a streaming workload.
+
+        Notes
+        -----
+        This creates a new backend instance with saved `args` and `kwargs`,
+        then calls `reconnect` and finally returns the newly created and
+        connected backend instance.
+
+        Returns
+        -------
+        BaseBackend
+            An instance of the backend
+
+        """
+        mode = kwargs.pop("mode", "batch")
+        if mode == "streaming":
+            new_backend = BatchBackend(*args, **kwargs)
+        elif mode == "batch":
+            new_backend = StreamingBackend(*args, **kwargs)
+        else:
+            raise ValueError(f"Invalid mode: {mode}")
+        new_backend.reconnect()
+        return new_backend
+
+    def do_connect(self, session: SparkSession | None = None) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
         Parameters
@@ -460,12 +497,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: ir.Table
-        | pd.DataFrame
-        | pa.Table
-        | pl.DataFrame
-        | pl.LazyFrame
-        | None = None,
+        obj: (
+            ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
+        ) = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -642,6 +676,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         t.unpersist()
         assert not t.is_cached
 
+
+class BatchBackend(Backend):
     def read_delta(
         self,
         path: str | Path,
@@ -929,3 +965,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return pa.ipc.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
+
+
+class StreamingBackend(Backend):
+    @util.experimental
+    def read_kafka(
+        self,
+        topic: str,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        pass
