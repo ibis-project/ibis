@@ -11,8 +11,11 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any, Callable
 from urllib.parse import parse_qs, urlparse
 
+import numpy as np
+import pandas as pd
 import sqlglot as sg
 import sqlglot.expressions as sge
+from pandas.api.types import is_float_dtype
 
 import ibis
 import ibis.common.exceptions as com
@@ -144,6 +147,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
             columns = schema.keys()
             df = op.data.to_frame()
+            # nan gets compiled into 'NaN'::float which throws errors in non-float columns
+            # In order to hold NaN values, pandas automatically converts integer columns
+            # to float columns if there are NaN values in them. Therefore, we need to convert
+            # them to their original dtypes (that support pd.NA) to figure out which columns
+            # are actually non-float, then fill the NaN values in those columns with None.
+            convert_df = df.convert_dtypes()
+            for col in convert_df.columns:
+                if not is_float_dtype(convert_df[col]):
+                    df[col] = df[col].replace(np.nan, None)
+
             data = df.itertuples(index=False)
             cols = ", ".join(
                 ident.sql(self.dialect)
