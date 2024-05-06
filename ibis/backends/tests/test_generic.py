@@ -1925,26 +1925,33 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 @pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="SAMPLE clause on views only supports row wise sampling without seed.",
-)
-@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
-def test_sample(backend):
+@pytest.mark.parametrize(
+    "method",
+    [
+        "row",
+        param(
+            "block",
+            marks=[
+                pytest.mark.notimpl(
+                    ["snowflake"],
+                    raises=SnowflakeProgrammingError,
+                    reason="SAMPLE clause on views only supports row wise sampling without seed.",
+                )
+            ],
+        ),
+    ],
+)
+def test_sample(backend, method):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
     total_rows = t.count().execute()
     empty = t.limit(1).execute().iloc[:0]
 
-    df = t.sample(0.1, method="row").execute()
-    assert len(df) <= total_rows
-    backend.assert_frame_equal(empty, df.iloc[:0])
-
-    df = t.sample(0.1, method="block").execute()
+    df = t.sample(0.1, method=method).execute()
     assert len(df) <= total_rows
     backend.assert_frame_equal(empty, df.iloc[:0])
 
