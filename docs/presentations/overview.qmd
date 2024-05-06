@@ -24,7 +24,7 @@ format:
 - analytics
 - data engineering
 - machine learning
-- building your own library (e.g. [Google BigFrames](https://github.com/googleapis/python-bigquery-dataframes)) 
+- building your own library (e.g. [Google BigFrames](https://github.com/googleapis/python-bigquery-dataframes))
 - ...
 
 ::: {.fragment}
