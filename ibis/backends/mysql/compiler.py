@@ -68,33 +68,31 @@ class MySQLCompiler(SQLGlotCompiler):
         raise NotImplementedError("MySQL does not support Infinity")
 
     NEG_INF = POS_INF
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ApproxMedian,
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.Array,
-            ops.ArrayFlatten,
-            ops.ArrayMap,
-            ops.Covariance,
-            ops.First,
-            ops.Last,
-            ops.Levenshtein,
-            ops.Median,
-            ops.Mode,
-            ops.MultiQuantile,
-            ops.Quantile,
-            ops.RegexReplace,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.StringSplit,
-            ops.StructColumn,
-            ops.TimestampBucket,
-            ops.TimestampDelta,
-            ops.Translate,
-            ops.Unnest,
-        )
+    UNSUPPORTED_OPS = (
+        ops.ApproxMedian,
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.Array,
+        ops.ArrayFlatten,
+        ops.ArrayMap,
+        ops.Covariance,
+        ops.First,
+        ops.Last,
+        ops.Levenshtein,
+        ops.Median,
+        ops.Mode,
+        ops.MultiQuantile,
+        ops.Quantile,
+        ops.RegexReplace,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.StringSplit,
+        ops.StructColumn,
+        ops.TimestampBucket,
+        ops.TimestampDelta,
+        ops.Translate,
+        ops.Unnest,
     )
 
     SIMPLE_OPS = {

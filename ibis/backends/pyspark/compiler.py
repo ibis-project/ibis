@@ -53,12 +53,10 @@ class PySparkCompiler(SQLGlotCompiler):
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites, rewrite_stringslice)
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.RowID,
-            ops.TimestampBucket,
-            ops.RandomUUID,
-        )
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.TimestampBucket,
+        ops.RandomUUID,
     )
 
     SIMPLE_OPS = {

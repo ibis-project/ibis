@@ -39,27 +39,25 @@ class BigQueryCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.CountDistinctStar,
-            ops.DateDiff,
-            ops.ExtractAuthority,
-            ops.ExtractFile,
-            ops.ExtractFragment,
-            ops.ExtractHost,
-            ops.ExtractPath,
-            ops.ExtractProtocol,
-            ops.ExtractQuery,
-            ops.ExtractUserInfo,
-            ops.FindInSet,
-            ops.Median,
-            ops.Quantile,
-            ops.MultiQuantile,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.TimestampBucket,
-            ops.TimestampDiff,
-        )
+    UNSUPPORTED_OPS = (
+        ops.CountDistinctStar,
+        ops.DateDiff,
+        ops.ExtractAuthority,
+        ops.ExtractFile,
+        ops.ExtractFragment,
+        ops.ExtractHost,
+        ops.ExtractPath,
+        ops.ExtractProtocol,
+        ops.ExtractQuery,
+        ops.ExtractUserInfo,
+        ops.FindInSet,
+        ops.Median,
+        ops.Quantile,
+        ops.MultiQuantile,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.TimestampBucket,
+        ops.TimestampDiff,
     )
 
     NAN = sge.Cast(

@@ -33,14 +33,12 @@ class TrinoCompiler(SQLGlotCompiler):
     POS_INF = sg.func("infinity")
     NEG_INF = -POS_INF
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.Quantile,
-            ops.MultiQuantile,
-            ops.Median,
-            ops.RowID,
-            ops.TimestampBucket,
-        )
+    UNSUPPORTED_OPS = (
+        ops.Quantile,
+        ops.MultiQuantile,
+        ops.Median,
+        ops.RowID,
+        ops.TimestampBucket,
     )
 
     SIMPLE_OPS = {
