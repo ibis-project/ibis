@@ -1976,7 +1976,6 @@ def test_sample_memtable(con, backend):
         "polars",
         "postgres",
         "risingwave",
-        "snowflake",
         "sqlite",
         "trino",
         "exasol",
