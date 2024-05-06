@@ -1162,11 +1162,15 @@ class Value(Expr):
     def __eq__(self, other: Value) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.isnull()
+        elif _is_null_literal(self):
+            return other.isnull()
         return _binop(ops.Equals, self, other)
 
     def __ne__(self, other: Value) -> ir.BooleanValue:
         if _is_null_literal(other):
             return self.notnull()
+        elif _is_null_literal(self):
+            return other.notnull()
         return _binop(ops.NotEquals, self, other)
 
     def __ge__(self, other: Value) -> ir.BooleanValue:

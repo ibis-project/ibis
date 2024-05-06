@@ -352,16 +352,14 @@ def test_notnull(table):
 
 @pytest.mark.parametrize(
     "value",
-    [
-        param(lambda: None, id="none"),
-        param(lambda: ibis.NA, id="NA"),
-        param(lambda: ibis.literal(None, type="int32"), id="typed-null"),
-    ],
+    [None, ibis.NA, ibis.literal(None, type="int32")],
+    ids=["none", "NA", "typed-null"],
 )
 def test_null_eq_and_ne(table, value):
-    other = value()
-    assert (table.a == other).equals(table.a.isnull())
-    assert (table.a != other).equals(table.a.notnull())
+    assert (table.a == value).equals(table.a.isnull())
+    assert (value == table.a).equals(table.a.isnull())
+    assert (table.a != value).equals(table.a.notnull())
+    assert (value != table.a).equals(table.a.notnull())
 
 
 @pytest.mark.parametrize("column", ["e", "f"], ids=["float32", "double"])
