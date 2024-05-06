@@ -29,17 +29,15 @@ class ClickHouseCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.RowID,
-            ops.CumeDist,
-            ops.PercentRank,
-            ops.Time,
-            ops.TimeDelta,
-            ops.StringToTimestamp,
-            ops.StringToDate,
-            ops.Levenshtein,
-        )
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.CumeDist,
+        ops.PercentRank,
+        ops.Time,
+        ops.TimeDelta,
+        ops.StringToTimestamp,
+        ops.StringToDate,
+        ops.Levenshtein,
     )
 
     SIMPLE_OPS = {

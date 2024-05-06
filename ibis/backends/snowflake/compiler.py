@@ -45,16 +45,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ArrayMap,
-            ops.ArrayFilter,
-            ops.RowID,
-            ops.MultiQuantile,
-            ops.IntervalFromInteger,
-            ops.IntervalAdd,
-            ops.TimestampDiff,
-        )
+    UNSUPPORTED_OPS = (
+        ops.ArrayMap,
+        ops.ArrayFilter,
+        ops.RowID,
+        ops.MultiQuantile,
+        ops.IntervalFromInteger,
+        ops.IntervalAdd,
+        ops.TimestampDiff,
     )
 
     SIMPLE_OPS = {

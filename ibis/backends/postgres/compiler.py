@@ -37,12 +37,11 @@ class PostgresCompiler(SQLGlotCompiler):
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
     NEG_INF = sge.Literal.number("'-Inf'::double precision")
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.RowID,
-            ops.TimeDelta,
-            ops.ArrayFlatten,
-        )
+
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.TimeDelta,
+        ops.ArrayFlatten,
     )
 
     SIMPLE_OPS = {

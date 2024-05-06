@@ -208,8 +208,8 @@ class SQLGlotCompiler(abc.ABC):
     )
     """Backend's negative infinity literal."""
 
-    UNSUPPORTED_OPERATIONS: frozenset[type[ops.Node]] = frozenset()
-    """Set of operations the backend doesn't support."""
+    UNSUPPORTED_OPS: tuple[type[ops.Node]] = ()
+    """Tuple of operations the backend doesn't support."""
 
     SIMPLE_OPS = {
         ops.Abs: "abs",
@@ -354,7 +354,7 @@ class SQLGlotCompiler(abc.ABC):
             return impl
 
         # unconditionally raise an exception for unsupported operations
-        for op in cls.UNSUPPORTED_OPERATIONS:
+        for op in cls.UNSUPPORTED_OPS:
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
