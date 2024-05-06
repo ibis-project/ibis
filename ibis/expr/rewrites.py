@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-import functools
 from collections import defaultdict
-from collections.abc import Mapping
 
 import toolz
 
-import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.deferred import Item, _, deferred, var
@@ -203,54 +200,6 @@ def peel_join_field(_):
 def replace_parameter(_, params, **kwargs):
     """Replace scalar parameters with their values."""
     return ops.Literal(value=params[_], dtype=_.dtype)
-
-
-@replace(p.FillNa)
-def rewrite_fillna(_):
-    """Rewrite FillNa expressions to use more common operations."""
-    if isinstance(_.replacements, Mapping):
-        mapping = _.replacements
-    else:
-        mapping = {
-            name: _.replacements
-            for name, type in _.parent.schema.items()
-            if type.nullable
-        }
-
-    if not mapping:
-        return _.parent
-
-    selections = []
-    for name in _.parent.schema.names:
-        col = ops.Field(_.parent, name)
-        if (value := mapping.get(name)) is not None:
-            col = ops.Alias(ops.Coalesce((col, value)), name)
-        selections.append(col)
-
-    return ops.Project(_.parent, selections)
-
-
-@replace(p.DropNa)
-def rewrite_dropna(_):
-    """Rewrite DropNa expressions to use more common operations."""
-    if _.subset is None:
-        columns = [ops.Field(_.parent, name) for name in _.parent.schema.names]
-    else:
-        columns = _.subset
-
-    if columns:
-        preds = [
-            functools.reduce(
-                ops.And if _.how == "any" else ops.Or,
-                [ops.NotNull(c) for c in columns],
-            )
-        ]
-    elif _.how == "all":
-        preds = [ops.Literal(False, dtype=dt.bool)]
-    else:
-        return _.parent
-
-    return ops.Filter(_.parent, tuple(preds))
 
 
 @replace(p.StringSlice)

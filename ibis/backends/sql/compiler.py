@@ -6,7 +6,6 @@ import itertools
 import math
 import operator
 import string
-from collections.abc import Mapping
 from functools import partial, reduce
 from typing import TYPE_CHECKING, Any, Callable, ClassVar
 
@@ -35,7 +34,7 @@ from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
@@ -1338,61 +1337,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_Distinct(self, op, *, parent):
         return (
             sg.select(STAR, copy=False).distinct(copy=False).from_(parent, copy=False)
-        )
-
-    def visit_DropNa(self, op, *, parent, how, subset):
-        if subset is None:
-            subset = [
-                sg.column(
-                    name, table=parent.alias_or_name, quoted=self.quoted, copy=False
-                )
-                for name in op.schema.names
-            ]
-
-        if subset:
-            predicate = reduce(
-                sg.and_ if how == "any" else sg.or_,
-                (sg.not_(col.is_(NULL), copy=False) for col in subset),
-            )
-        elif how == "all":
-            predicate = FALSE
-        else:
-            predicate = None
-
-        if predicate is None:
-            return parent
-
-        try:
-            return parent.where(predicate, copy=False)
-        except AttributeError:
-            return (
-                sg.select(STAR, copy=False)
-                .from_(parent, copy=False)
-                .where(predicate, copy=False)
-            )
-
-    def visit_FillNa(self, op, *, parent, replacements):
-        if isinstance(replacements, Mapping):
-            mapping = replacements
-        else:
-            mapping = {
-                name: replacements
-                for name, dtype in op.schema.items()
-                if dtype.nullable
-            }
-        exprs = {
-            col: (
-                self.f.coalesce(
-                    sg.column(col, quoted=self.quoted, copy=False),
-                    sge.convert(alt),
-                )
-                if (alt := mapping.get(col)) is not None
-                else sg.column(col, quoted=self.quoted)
-            )
-            for col in op.schema.keys()
-        }
-        return sg.select(*self._cleanup_names(exprs), copy=False).from_(
-            parent, copy=False
         )
 
     def visit_CTE(self, op, *, parent):

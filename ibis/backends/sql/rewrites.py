@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+from collections.abc import Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -22,7 +23,7 @@ from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Sequence
 
 x = var("x")
 y = var("y")
@@ -108,6 +109,54 @@ def filter_to_select(_, **kwargs):
 def sort_to_select(_, **kwargs):
     """Convert a Sort node to a Select node."""
     return Select(_.parent, selections=_.values, sort_keys=_.keys)
+
+
+@replace(p.FillNa)
+def fillna_to_select(_, **kwargs):
+    """Rewrite FillNa to a Select node."""
+    if isinstance(_.replacements, Mapping):
+        mapping = _.replacements
+    else:
+        mapping = {
+            name: _.replacements
+            for name, type in _.parent.schema.items()
+            if type.nullable
+        }
+
+    if not mapping:
+        return _.parent
+
+    selections = {}
+    for name in _.parent.schema.names:
+        col = ops.Field(_.parent, name)
+        if (value := mapping.get(name)) is not None:
+            col = ops.Alias(ops.Coalesce((col, value)), name)
+        selections[name] = col
+
+    return Select(_.parent, selections=selections)
+
+
+@replace(p.DropNa)
+def dropna_to_select(_, **kwargs):
+    """Rewrite DropNa to a Select node."""
+    if _.subset is None:
+        columns = [ops.Field(_.parent, name) for name in _.parent.schema.names]
+    else:
+        columns = _.subset
+
+    if columns:
+        preds = [
+            reduce(
+                ops.And if _.how == "any" else ops.Or,
+                [ops.NotNull(c) for c in columns],
+            )
+        ]
+    elif _.how == "all":
+        preds = [ops.Literal(False, dtype=dt.bool)]
+    else:
+        return _.parent
+
+    return Select(_.parent, selections=_.values, predicates=tuple(preds))
 
 
 @replace(p.WindowFunction(p.First | p.Last))
@@ -241,6 +290,8 @@ def sqlize(
         | project_to_select
         | filter_to_select
         | sort_to_select
+        | fillna_to_select
+        | dropna_to_select
         | first_to_firstvalue,
         context=context,
     )
