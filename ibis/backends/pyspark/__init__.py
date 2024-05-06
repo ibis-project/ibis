@@ -11,7 +11,7 @@ import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import PandasUDFType, pandas_udf
+from pyspark.sql.functions import PandasUDFType, col, from_json, pandas_udf
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
 import ibis.common.exceptions as com
@@ -21,6 +21,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
+from ibis.backends.pyspark import utils
 from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+
+    from ibis.expr.api import Watermark
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
 
@@ -165,9 +168,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         mode = kwargs.pop("mode", "batch")
         if mode == "streaming":
-            new_backend = BatchBackend(*args, **kwargs)
-        elif mode == "batch":
             new_backend = StreamingBackend(*args, **kwargs)
+        elif mode == "batch":
+            new_backend = BatchBackend(*args, **kwargs)
         else:
             raise ValueError(f"Invalid mode: {mode}")
         new_backend.reconnect()
@@ -971,8 +974,58 @@ class StreamingBackend(Backend):
     @util.experimental
     def read_kafka(
         self,
-        topic: str,
         table_name: str | None = None,
-        **kwargs: Any,
+        watermark: Watermark | None = None,
+        auto_parse: bool = False,
+        schema: sch.Schema | None = None,
+        options: Mapping[str, str] | None = None,
     ) -> ir.Table:
-        pass
+        """Register a Kafka topic as a table in the current database.
+
+        Parameters
+        ----------
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        watermark
+            Watermark strategy for the table.
+        auto_parse
+            Whether to parse Kafka messages automatically. If `False`, the source is read
+            as binary keys and values. If `True`, the key is discarded and the value is
+            parsed using the provided schema.
+        schema
+            Schema of the value of the Kafka messages.
+        options
+            Additional keyword arguments passed to PySpark as .option("key", "value").
+            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        spark_df = self._session.readStream.format("kafka")
+        for k, v in options.items():
+            spark_df = spark_df.option(k, v)
+        spark_df = spark_df.load()
+
+        # parse the values of the Kafka messages using the provided schema
+        if auto_parse is True:
+            if schema is None:
+                raise com.IbisError(
+                    "When auto_parse is True, a schema must be provided to parse the messages"
+                )
+            schema = PySparkSchema.from_ibis(schema)
+            spark_df = spark_df.select(
+                from_json(col("value").cast("string"), schema).alias("parsed_value")
+            ).select("parsed_value.*")
+
+        if watermark is not None:
+            spark_df = spark_df.withWatermark(
+                watermark.time_col,
+                utils.format_interval_as_string(watermark.allowed_delay),
+            )
+
+        table_name = table_name or util.gen_name("read_kafka")
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
