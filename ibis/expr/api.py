@@ -205,8 +205,8 @@ This is an untyped NULL. If you want a typed NULL, use eg `ibis.null(str)`.
 Examples
 --------
 >>> import ibis
->>> assert ibis.NA.execute() is None
->>> ibis.NA.isnull().execute()
+>>> ibis.options.interactive = True
+>>> ibis.NA.isnull()
 True
 
 datatype-specific methods aren't available on `NA`:
@@ -218,7 +218,7 @@ AttributeError: 'NullScalar' object has no attribute 'upper'
 
 Instead, use the typed `ibis.null`:
 
->>> ibis.null(str).upper().execute() is None
+>>> ibis.null(str).upper().isnull()
 True
 """
 

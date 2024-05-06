@@ -2234,11 +2234,14 @@ def null(type: dt.DataType | str | None = None) -> Value:
     but lack datatype-specific methods:
 
     >>> import ibis
+    >>> ibis.options.interactive = True
     >>> ibis.null().upper()
     Traceback (most recent call last):
         ...
     AttributeError: 'NullScalar' object has no attribute 'upper'
-    >>> ibis.null(str).upper().execute() is None
+    >>> ibis.null(str).upper()
+    None
+    >>> ibis.null(str).upper().isnull()
     True
     """
     if type is None:
