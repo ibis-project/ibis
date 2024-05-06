@@ -43,6 +43,20 @@ pytest.importorskip("pins")
                 ),
             ),
         ),
+        param(
+            "penguins",
+            [
+                "species",
+                "island",
+                "bill_length_mm",
+                "bill_depth_mm",
+                "flipper_length_mm",
+                "body_mass_g",
+                "sex",
+                "year",
+            ],
+            id="has-null-integer-values",
+        ),
     ],
 )
 def test_load_examples(con, example, columns):
