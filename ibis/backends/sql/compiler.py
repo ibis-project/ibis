@@ -4,6 +4,7 @@ import abc
 import calendar
 import itertools
 import math
+import operator
 import string
 from collections.abc import Mapping
 from functools import partial, reduce
@@ -23,13 +24,15 @@ from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
+    lower_bucket,
+    lower_capitalize,
+    lower_sample,
     one_to_zero_index,
-    rewrite_capitalize,
     sqlize,
 )
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import replace_bucket
+from ibis.expr.rewrites import lower_stringslice
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -167,22 +170,13 @@ def parenthesize_inputs(f):
 class SQLGlotCompiler(abc.ABC):
     __slots__ = "agg", "f", "v"
 
-    rewrites: tuple = (
+    rewrites: tuple[type[pats.Replace], ...] = (
         empty_in_values_right_side,
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
-        replace_bucket,
-        rewrite_capitalize,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
-
-    extra_supported_ops: frozenset = frozenset(
-        (ops.Project, ops.Filter, ops.Sort, ops.WindowFunction)
-    )
-    """A frozenset of ops classes that are supported, but don't have explicit
-    `visit_*` methods (usually due to being handled by rewrite rules). Used by
-    `has_operation`"""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -208,8 +202,28 @@ class SQLGlotCompiler(abc.ABC):
     )
     """Backend's negative infinity literal."""
 
-    UNSUPPORTED_OPS: tuple[type[ops.Node]] = ()
+    EXTRA_SUPPORTED_OPS: tuple[type[ops.Node], ...] = (
+        ops.Project,
+        ops.Filter,
+        ops.Sort,
+        ops.WindowFunction,
+    )
+    """A tuple of ops classes that are supported, but don't have explicit
+    `visit_*` methods (usually due to being handled by rewrite rules). Used by
+    `has_operation`"""
+
+    UNSUPPORTED_OPS: tuple[type[ops.Node], ...] = ()
     """Tuple of operations the backend doesn't support."""
+
+    LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
+        ops.Bucket: lower_bucket,
+        ops.Capitalize: lower_capitalize,
+        ops.Sample: lower_sample,
+        ops.StringSlice: lower_stringslice,
+    }
+    """A mapping from an operation class to either a rewrite rule for rewriting that
+    operation to one composed of lower-level operations ("lowering"), or `None` to
+    remove an existing rewrite rule for that operation added in a base class"""
 
     SIMPLE_OPS = {
         ops.Abs: "abs",
@@ -326,6 +340,11 @@ class SQLGlotCompiler(abc.ABC):
 
     NEEDS_PARENS = BINARY_INFIX_OPS + (ops.IsNull,)
 
+    # Constructed dynamically in `__init_subclass__` from their respective
+    # UPPERCASE values to handle inheritance, do not modify directly here.
+    extra_supported_ops: ClassVar[frozenset[type[ops.Node]]] = frozenset()
+    lowered_ops: ClassVar[dict[type[ops.Node], pats.Replace]] = {}
+
     def __init__(self) -> None:
         self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen(copy=self.__class__.copy_func_args)
@@ -359,15 +378,8 @@ class SQLGlotCompiler(abc.ABC):
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
 
-        # override existing base class implementations
         for op, target_name in cls.SIMPLE_OPS.items():
             setattr(cls, methodname(op), make_impl(op, target_name))
-
-        # add simple ops that are not already implemented
-        for op, target_name in SQLGlotCompiler.SIMPLE_OPS.items():
-            name = methodname(op)
-            if not hasattr(cls, name):
-                setattr(cls, name, make_impl(op, target_name))
 
         # raise on any remaining unsupported operations
         for op in ALL_OPERATIONS:
@@ -375,13 +387,19 @@ class SQLGlotCompiler(abc.ABC):
             if not hasattr(cls, name):
                 setattr(cls, name, cls.visit_Undefined)
 
-        # Expand extra_supported_ops with any rewrite rules
+        # Amend `lowered_ops` and `extra_supported_ops` using their
+        # respective UPPERCASE classvar values.
         extra_supported_ops = set(cls.extra_supported_ops)
-        for rule in cls.rewrites:
-            if isinstance(rule, pats.Replace) and isinstance(
-                rule.matcher, pats.InstanceOf
-            ):
-                extra_supported_ops.add(rule.matcher.type)
+        lowered_ops = dict(cls.lowered_ops)
+        extra_supported_ops.update(cls.EXTRA_SUPPORTED_OPS)
+        for op_cls, rewrite in cls.LOWERED_OPS.items():
+            if rewrite is not None:
+                lowered_ops[op_cls] = rewrite
+                extra_supported_ops.add(op_cls)
+            else:
+                lowered_ops.pop(op_cls, None)
+                extra_supported_ops.discard(op_cls)
+        cls.lowered_ops = lowered_ops
         cls.extra_supported_ops = frozenset(extra_supported_ops)
 
     @property
@@ -454,6 +472,8 @@ class SQLGlotCompiler(abc.ABC):
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         params = self._prepare_params(params)
+        if self.lowered_ops:
+            op = op.replace(reduce(operator.or_, self.lowered_ops.values()))
         op, ctes = sqlize(
             op,
             params=params,
@@ -1498,3 +1518,8 @@ class SQLGlotCompiler(abc.ABC):
         raise com.UnsupportedOperationError(
             f"{type(op).__name__!r} operation is not supported in the {self.dialect} backend"
         )
+
+
+# `__init_subclass__` is uncalled for subclasses - we manually call it here to
+# autogenerate the base class implementations as well.
+SQLGlotCompiler.__init_subclass__()

@@ -18,10 +18,8 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_sample_as_filter,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.expr.rewrites import rewrite_stringslice
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
@@ -31,11 +29,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     type_mapper = BigQueryType
     udf_type_mapper = BigQueryUDFType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 

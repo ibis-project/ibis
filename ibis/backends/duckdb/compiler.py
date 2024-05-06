@@ -33,6 +33,11 @@ class DuckDBCompiler(SQLGlotCompiler):
     dialect = DuckDB
     type_mapper = DuckDBType
 
+    LOWERED_OPS = {
+        ops.Sample: None,
+        ops.StringSlice: None,
+    }
+
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
         ops.ArrayPosition: "list_indexof",

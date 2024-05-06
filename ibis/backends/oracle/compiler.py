@@ -15,12 +15,10 @@ from ibis.backends.sql.rewrites import (
     LastValue,
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
-    replace_log2,
-    replace_log10,
+    lower_log2,
+    lower_log10,
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 @public
@@ -33,10 +31,6 @@ class OracleCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        replace_log2,
-        replace_log10,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -48,6 +42,11 @@ class OracleCompiler(SQLGlotCompiler):
 
     NEG_INF = sge.Literal.number("-binary_double_infinity")
     """Backend's negative infinity literal."""
+
+    LOWERED_OPS = {
+        ops.Log2: lower_log2,
+        ops.Log10: lower_log10,
+    }
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,

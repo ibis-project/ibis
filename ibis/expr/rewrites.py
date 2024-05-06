@@ -254,7 +254,7 @@ def rewrite_dropna(_):
 
 
 @replace(p.StringSlice)
-def rewrite_stringslice(_, **kwargs):
+def lower_stringslice(_, **kwargs):
     """Rewrite StringSlice in terms of Substring."""
     if _.end is None:
         return ops.Substring(_.arg, start=_.start)
@@ -377,59 +377,6 @@ def rewrite_window_input(value, window):
     # if self is already a window function, merge the existing window frame
     # with the requested window frame
     return node.replace(window_merge_frames, filter=p.Value, context=context)
-
-
-@replace(p.Bucket)
-def replace_bucket(_):
-    cases = []
-    results = []
-
-    if _.closed == "left":
-        l_cmp = ops.LessEqual
-        r_cmp = ops.Less
-    else:
-        l_cmp = ops.Less
-        r_cmp = ops.LessEqual
-
-    user_num_buckets = len(_.buckets) - 1
-
-    bucket_id = 0
-    if _.include_under:
-        if user_num_buckets > 0:
-            cmp = ops.Less if _.close_extreme else r_cmp
-        else:
-            cmp = ops.LessEqual if _.closed == "right" else ops.Less
-        cases.append(cmp(_.arg, _.buckets[0]))
-        results.append(bucket_id)
-        bucket_id += 1
-
-    for j, (lower, upper) in enumerate(zip(_.buckets, _.buckets[1:])):
-        if _.close_extreme and (
-            (_.closed == "right" and j == 0)
-            or (_.closed == "left" and j == (user_num_buckets - 1))
-        ):
-            cases.append(
-                ops.And(ops.LessEqual(lower, _.arg), ops.LessEqual(_.arg, upper))
-            )
-            results.append(bucket_id)
-        else:
-            cases.append(ops.And(l_cmp(lower, _.arg), r_cmp(_.arg, upper)))
-            results.append(bucket_id)
-        bucket_id += 1
-
-    if _.include_over:
-        if user_num_buckets > 0:
-            cmp = ops.Less if _.close_extreme else l_cmp
-        else:
-            cmp = ops.Less if _.closed == "right" else ops.LessEqual
-
-        cases.append(cmp(_.buckets[-1], _.arg))
-        results.append(bucket_id)
-        bucket_id += 1
-
-    return ops.SearchedCase(
-        cases=tuple(cases), results=tuple(results), default=ops.NULL
-    )
 
 
 # TODO(kszucs): schema comparison should be updated to not distinguish between

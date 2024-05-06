@@ -18,7 +18,6 @@ from ibis.backends.sql.dialects import PySpark
 from ibis.backends.sql.rewrites import FirstValue, LastValue, p
 from ibis.common.patterns import replace
 from ibis.config import options
-from ibis.expr.rewrites import rewrite_stringslice
 from ibis.util import gen_name
 
 
@@ -51,13 +50,17 @@ class PySparkCompiler(SQLGlotCompiler):
 
     dialect = PySpark
     type_mapper = PySparkType
-    rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites, rewrite_stringslice)
+    rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
 
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.TimestampBucket,
         ops.RandomUUID,
     )
+
+    LOWERED_OPS = {
+        ops.Sample: None,
+    }
 
     SIMPLE_OPS = {
         ops.ArrayDistinct: "array_distinct",

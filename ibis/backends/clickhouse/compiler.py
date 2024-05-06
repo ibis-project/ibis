@@ -14,8 +14,6 @@ from ibis import util
 from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
-from ibis.backends.sql.rewrites import rewrite_sample_as_filter
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -23,11 +21,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     dialect = ClickHouse
     type_mapper = ClickHouseType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        *SQLGlotCompiler.rewrites,
-    )
 
     UNSUPPORTED_OPS = (
         ops.RowID,

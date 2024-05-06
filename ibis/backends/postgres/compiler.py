@@ -14,8 +14,6 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import rewrite_sample_as_filter
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class PostgresUDFNode(ops.Value):
@@ -28,11 +26,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
-    rewrites = (
-        rewrite_sample_as_filter,
-        *SQLGlotCompiler.rewrites,
-        rewrite_stringslice,
-    )
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")

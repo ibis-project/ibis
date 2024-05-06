@@ -15,9 +15,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class FlinkCompiler(SQLGlotCompiler):
@@ -25,11 +23,9 @@ class FlinkCompiler(SQLGlotCompiler):
     dialect = Flink
     type_mapper = FlinkType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 

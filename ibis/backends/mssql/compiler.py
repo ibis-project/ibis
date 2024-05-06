@@ -23,10 +23,8 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
-    rewrite_sample_as_filter,
 )
 from ibis.common.deferred import var
-from ibis.expr.rewrites import rewrite_stringslice
 
 y = var("y")
 start = var("start")
@@ -59,11 +57,9 @@ class MSSQLCompiler(SQLGlotCompiler):
     dialect = MSSQL
     type_mapper = MSSQLType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_rows_range_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
     copy_func_args = True

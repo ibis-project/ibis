@@ -17,11 +17,10 @@ from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
-    replace_log2,
-    replace_log10,
+    lower_log2,
+    lower_log10,
     rewrite_empty_order_by_window,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class SnowflakeFuncGen(FuncGen):
@@ -39,11 +38,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
-        replace_log2,
-        replace_log10,
         *SQLGlotCompiler.rewrites,
     )
+
+    LOWERED_OPS = {
+        ops.Log2: lower_log2,
+        ops.Log10: lower_log10,
+        ops.Sample: None,
+    }
 
     UNSUPPORTED_OPS = (
         ops.ArrayMap,

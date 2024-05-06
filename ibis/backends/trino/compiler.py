@@ -14,7 +14,6 @@ from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import exclude_unsupported_window_frame_from_ops
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class TrinoCompiler(SQLGlotCompiler):
@@ -24,7 +23,6 @@ class TrinoCompiler(SQLGlotCompiler):
     type_mapper = TrinoType
     rewrites = (
         exclude_unsupported_window_frame_from_ops,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
     quoted = True
@@ -40,6 +38,10 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.RowID,
         ops.TimestampBucket,
     )
+
+    LOWERED_OPS = {
+        ops.Sample: None,
+    }
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
