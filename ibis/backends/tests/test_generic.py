@@ -464,6 +464,7 @@ def test_table_fillna_invalid(alltypes):
         param({"int_col": 20}, id="int"),
         param({"double_col": -1, "string_col": "missing"}, id="double-int-str"),
         param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
+        param({}, id="empty"),
     ],
 )
 def test_table_fillna_mapping(backend, alltypes, replacements):
