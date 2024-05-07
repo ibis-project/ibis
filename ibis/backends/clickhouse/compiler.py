@@ -235,7 +235,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.intDivOrZero(arg, self.f.abs(arg))
 
     def visit_Hash(self, op, *, arg):
-        return self.f.sipHash64(arg)
+        return self.f.reinterpretAsInt64(self.f.sipHash64(arg))
 
     def visit_HashBytes(self, op, *, arg, how):
         supported_algorithms = {

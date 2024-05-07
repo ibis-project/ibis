@@ -1206,7 +1206,8 @@ def execute_union(op, **kw):
 
 @translate.register(ops.Hash)
 def execute_hash(op, **kw):
-    return translate(op.arg, **kw).hash()
+    # polars' hash() returns a uint64, but we want to return an int64
+    return translate(op.arg, **kw).hash().reinterpret(signed=True)
 
 
 def _arg_min_max(op, func, **kw):
