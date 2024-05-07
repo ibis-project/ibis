@@ -46,7 +46,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.BitXor: "bit_xor",
         ops.EndsWith: "suffix",
         ops.ExtractIsoYear: "isoyear",
-        ops.Hash: "hash",
         ops.IntegerRange: "range",
         ops.TimestampRange: "range",
         ops.MapLength: "cardinality",
@@ -466,6 +465,14 @@ class DuckDBCompiler(SQLGlotCompiler):
             return getattr(self.f, how)(arg)
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
+
+    def visit_Hash(self, op, *, arg):
+        # duckdb's hash() returns a uint64, but ops.Hash is supposed to be int64
+        # So do HASH(x)::BITSTRING::BIGINT
+        raw = self.f.hash(arg)
+        bitstring = sg.cast(sge.convert(raw), to=sge.DataType.Type.BIT, copy=False)
+        int64 = sg.cast(bitstring, to=sge.DataType.Type.BIGINT, copy=False)
+        return int64
 
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)

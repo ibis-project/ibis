@@ -180,7 +180,7 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
-        """Convert a sqlglot type to an ibis type."""
+        """Convert an Ibis dtype to an sqlglot dtype."""
 
         if method := getattr(cls, f"_from_ibis_{dtype.name}", None):
             return method(dtype)

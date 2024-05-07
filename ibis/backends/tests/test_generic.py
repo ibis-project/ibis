@@ -1439,11 +1439,14 @@ def test_distinct_on_keep_is_none(backend, on):
         "trino",  # checksum returns varbinary
     ]
 )
-def test_hash_consistent(backend, alltypes):
-    h1 = alltypes.string_col.hash().execute(limit=10)
-    h2 = alltypes.string_col.hash().execute(limit=10)
+def test_hash(backend, alltypes):
+    # check that multiple executions return the same result
+    h1 = alltypes.string_col.hash().execute(limit=20)
+    h2 = alltypes.string_col.hash().execute(limit=20)
     backend.assert_series_equal(h1, h2)
-    assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
+    # check that the result is a signed 64-bit integer, no nulls
+    assert h1.dtype == "i8"
+    assert h1.notnull().all()
 
 
 @pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
