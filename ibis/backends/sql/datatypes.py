@@ -247,6 +247,14 @@ class SqlglotType(TypeMapper):
         )
 
     @classmethod
+    def _from_sqlglot_TIMESTAMPNTZ(cls, scale=None) -> dt.Timestamp:
+        return dt.Timestamp(
+            timezone=None,
+            scale=cls.default_temporal_scale if scale is None else int(scale.this.this),
+            nullable=cls.default_nullable,
+        )
+
+    @classmethod
     def _from_sqlglot_INTERVAL(
         cls, precision_or_span: sge.IntervalSpan | None = None
     ) -> dt.Interval:

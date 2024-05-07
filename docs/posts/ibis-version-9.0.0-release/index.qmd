@@ -1,0 +1,487 @@
+---
+title: "Ibis 9.0: SQLGlot-ification"
+author: "Ibis team"
+date: "2024-05-01"
+categories:
+    - release
+    - blog
+---
+
+## Overview
+
+Ibis 9.0 wraps up ["the big
+refactor"](../../posts/roadmap-2024-H1/index.qmd#the-big-refactor), completing
+the transition from SQLAlchemy to [SQLGlot](https://github.com/tobymao/sqlglot)
+and drastically simplifying the codebase. This is a big step toward stabilized
+internals and allows us to more easily add new features and backends going
+forward. Look out for a dedicated blog post on the refactor soon.
+
+:::{.callout-tip}
+One long-standing issue with Ibis has been chained joins, which now work as
+a user would expect. This was a major motivation for the refactor.
+:::
+
+Ibis 9.0 also adds new functionality, fixes many bugs, and welcomes two new
+committers to the project!
+
+### Meet the Ibis team!
+
+Members of the core Ibis team will be at [PyCon 2024 in Pittsburg, PA,
+USA in May](https://us.pycon.org/2024/) and [SciPy 2024 in Tacoma, WA,
+USA in July](https://www.scipy2024.scipy.org/)! Stop by at one of the talks or
+tutorials to say hi in English and/or Español:
+
+- [Tutorials: Introduction to Ibis: blazing fast analytics with DuckDB, Polars,
+ Snowflake, and more, from the comfort of your Python
+ repl.](https://us.pycon.org/2024/schedule/presentation/55/)
+- [Charlas: Porque SQL está en todas
+ partes.](https://us.pycon.org/2024/schedule/presentation/117/)
+
+::: {.callout-note}
+The schedule for SciPy 2024 is not available yet, keep an eye out for Ibis sessions.
+:::
+
+You can also listen to a [recent podcast episode with Real
+Python](https://realpython.com/podcasts/rpp/201) or [another with
+:probabl.](https://www.youtube.com/watch?v=V1_xdQYlWAc) where Phillip Cloud,
+lead maintainer of Ibis, talks about the project.
+
+More podcasts and talks are in the works, so stay tuned!
+
+### New committers
+
+We're excited to welcome [Nick Crews](https://github.com/NickCrews) and [Naty
+Clementi](https://github.com/ncclementi) as the [newest committers to the Ibis
+project](https://github.com/ibis-project/governance/blob/main/governance.md#committers)!
+
+Nick has been a long-time contributor to
+Ibis, one of the most active people on the issue tracker, and increasingly
+involved in the community. We're excited to have him on board!
+
+Naty has been contributing to Ibis for a while now, leading the effort to add
+geospatial support to the DuckDB backend in addition to various other
+contributions. We're excited to have her on board!
+
+#### 9.0 contributors
+
+Ibis 9.0 had contributions from many people, including commits from:
+
+- Phillip Cloud
+- Krisztián Szűcs
+- Gil Forsyth
+- Jim Crist-Harif
+- Cody Peterson
+- Nick Crews
+- Naty Clementi
+- Chloe He
+- Nicola Coretti
+- Deepyaman Datta
+- Péter Gyarmati
+- Jiting Xu
+- Mehmet Fatih Aktas
+- Tyler White
+- Bryce Mecum
+- Riezebos
+- Chelsea Lin
+- Chip Huyen
+- Dan Lovell
+- Daniel Mesejo
+- Kexiang Wang
+- Mark Needham
+- Ray Bell
+- Thierry Jean
+- pieter-factful
+- saschahofmann
+
+Thank you to everyone who contributed to this release! And a special thanks to
+Krisztián Szűcs for his work on the internal representation and SQLGlot refactor
+work, it has drastically improved the Ibis codebase.
+
+With this refactor, it's never been easier to contribute to Ibis! Get on touch
+via [GitHub](https://github.com/ibis-project/ibis) or
+[Zulip](https://ibis-project.zulipchat.com/) if you're interested.
+
+## Backends
+
+No new backends were added in this release, [unless you count the April Fools'
+Day Unix backend](../unix-backend/index.qmd)! As always, there have been
+backend-specific improvements and bug fixes. Some highlights are below.
+
+Check the [full changelog](../../release_notes.qmd#9.0.0) for more details.
+
+If you're new to Ibis, see [how to install](../../../install.qmd) and [the
+getting started tutorial](../../../tutorials/getting_started.qmd).
+
+To follow along with this blog, ensure you're on `'ibis-framework>=9,<10'`.
+First, we’ll setup Ibis for interactive use:
+
+```{python}
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 3
+```
+
+And fetch the penguins dataset:
+
+```{python}
+t = ibis.examples.penguins.fetch()
+t
+```
+
+### Snowflake
+
+You can now run Ibis inside of a Snowflake stored procedure! Look for a blog on
+this coming soon.
+
+### DuckDB
+
+In this release, `asof` joins are also now supported with a `tolerance`
+parameter.
+
+With [DuckDB's addition of MySQL as a database it can attach
+to](https://duckdb.org/2024/01/26/multi-database-support-in-duckdb.html), we've
+added a `read_mysql` function to Ibis inline with `read_postgres` and
+`read_sqlite`.
+
+You can now cast binary data to geometry in the DuckDB backend, enabling use of regular Parquet files:
+
+```{python}
+zones = ibis.examples.zones.fetch().relocate("geom")  # <1>
+zones.to_parquet("zones.parquet")  # <2>
+```
+
+1. Fetch the zones example data with the geometry column.
+2. Write to a Parquet file, converting the geometry column to binary.
+
+```{python}
+zones = ibis.read_parquet("zones.parquet")  # <1>
+zones.schema()  # <2>
+```
+
+1. Load in the zones Paruqet file.
+2. Notice the geometry column is binary.
+
+```{python}
+zones = zones.mutate(geom=zones["geom"].cast("geometry"))  # <1>
+zones.schema()  # <2>
+```
+
+1. Cast the binary geometry column to a geometry column.
+2. Notice the geometry column is now a geometry type.
+
+### PySpark
+
+PySpark 3.5 is now supported.
+
+### Exasol
+
+Numerous improvements have been made to the Exasol backend by Nicola including
+bitwise operations, time operations, and hexdigest.
+
+### Apache Flink
+
+Scalar user-defined functions (UDFs) are now supported in the Flink backend.
+
+### RisingWave
+
+Streaming data definition language (DDL) support has been added to the
+RisingWave backend.
+
+## Breaking changes
+
+You can view the [full changelog](../../release_notes.qmd#9.0.0) for additional
+breaking changes. There is [one we expect to affect many
+users](#what-does-schema-mean).
+
+### What does "schema" mean?
+
+In building a standard Python dataframe interface, we must standardize naming
+conventions and terminology across data systems. Many systems use the words
+"schema", "database", "catalog", and "namespace" to mean different things.
+
+In Ibis, a "schema" is a mapping of column names to their types:
+
+```{python}
+t.schema()
+```
+
+And as of Ibis 9.0, that is all "schema" means! We have standardizes on `table`
+as the container of data which has a `schema`. A `database` is a collection of
+tables, and a `catalog` is a collection of databases. Not all backends will
+support all levels of hierarchy.
+
+Existing methods using the hierarchical meaning of "schema" will now raise a
+deprecation warning, and the arguments throughout the API have been updated to
+reflect the standardization.
+
+For example, `list_schemas()` will give a deprecation warning:
+
+```{python}
+#| warning: true
+con = ibis.connect("duckdb://")
+con.list_schemas()
+```
+
+Use `list_databases()` instead:
+
+```{python}
+con.list_databases()
+```
+
+You can also `list_catalogs()`:
+
+```{python}
+con.list_catalogs()
+```
+
+And get the current database:
+
+```{python}
+con.current_database
+```
+
+And the current catalog:
+
+```{python}
+con.current_catalog
+```
+
+### Other breaking changes
+
+There were a few more minor breaking changes, see [the full
+changelog](../../release_notes.qmd#9.0.0) for more details.
+
+## Functionality
+
+A lot of new functionality has been added in Ibis 9.0.
+
+### Python 3.12
+
+[Ibis now supports Python 3.12](https://github.com/ibis-project/ibis/pull/8529)!
+
+### Describe
+
+Ibis now has a `describe` method to get a summary of a table:
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.options.repr.interactive.max_rows = len(t.columns)
+```
+
+```{python}
+t.describe()
+```
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.options.repr.interactive.max_rows = 3
+```
+
+### GraphViz custom attributes
+
+Thanks to [a couple](https://github.com/ibis-project/ibis/pull/8510) [community
+contributions](https://github.com/ibis-project/ibis/pull/8527), you can now pass
+custom attributes to the GraphViz visualization of an expression.
+
+:::{.callout-tip}
+You can also call `expr.visualize()` and pass the same arguments.
+:::
+
+```{python}
+from ibis.expr.visualize import to_graph
+
+expr = (
+    t.group_by("species", "island")
+    .agg(count=t.count())
+    .order_by(ibis._["count"].desc())
+)
+
+to_graph(
+    expr,
+    label_edges=True,
+    node_attr={"shape": "hexagon", "color": "green", "fontname": "Roboto Mono"},
+    edge_attr={"fontsize": "12", "fontname": "Comic Sans MS"},
+)
+```
+
+### Polars input and output
+
+You can now directly output a Polars dataframe from an Ibis table (instead of
+going through Apache Arrow as previously possible):
+
+```{python}
+t.to_polars()
+```
+
+And you can directly construct an Ibis memtable from a Polars dataframe:
+
+```{python}
+ibis.memtable(t.to_polars())
+```
+
+These conversions are efficient and improve usability of Ibis and Polars
+together.
+
+### Scalar subqueries from expressions
+
+You can now create scalar subqueries from expressions:
+
+```{python}
+t.select("species").limit(1).as_scalar()
+```
+
+### Disconnect
+
+You can now explicitly disconnect from a backend. First, connect to a backend:
+
+```{python}
+con = ibis.connect("duckdb://")
+con.list_tables()
+```
+
+Then you can disconnect. Trying to use the connection after will raise an error:
+
+```{python}
+# | error: true
+con.disconnect()
+con.list_tables()
+```
+
+### Today
+
+You can now get the current date more easily:
+
+```{python}
+ibis.today()
+```
+
+And use it in expressions:
+
+```{python}
+t.mutate(ingested_at=ibis.today()).relocate("ingested_at")
+```
+
+### UUIDs
+
+You can now generate universally unique identifiers (UUIDs) in Ibis more easily:
+
+```{python}
+ibis.uuid()
+```
+
+And use them in expressions:
+
+```{python}
+t.mutate(id=ibis.uuid()).relocate("id")
+```
+
+### TopK includes NULLs
+
+This could technically be considered a breaking change or bug fix. Regardless,
+`topk` now includes NULLs by default:
+
+```{python}
+t["sex"].topk(3)
+```
+
+### Order and group by variadic arguments
+
+For consistency with other methods, `order_by` and `group_by` now accept
+variadic arguments:
+
+```{python}
+t.order_by(t["body_mass_g"].desc(), "island", t["species"])
+```
+
+```{python}
+grouped = (
+    t.group_by("species", "island")
+    .agg(count=t.count())
+    .order_by(ibis._["count"].desc())
+)
+grouped
+```
+
+You can still pass in a list or tuple if you prefer.
+
+### Unwrap JSON values
+
+You can now unwrap JSON values into backend-native values:
+
+```{python}
+data = {
+    "jstring": ['"a"', '""', None, "null"],
+    "jbool": ["true", "false", "null", None],
+    "jint": ["1", "null", None, "2"],
+    "jfloat": ["42.42", None, "null", "37.37"],
+    "jmap": ['{"a": 1}', "null", None, "{}"],
+    "jarray": ["[]", "null", None, '[{},"1",2]'],
+}
+
+t = ibis.memtable(data, schema=dict.fromkeys(data.keys(), "json"))
+t
+```
+
+
+```{python}
+t.select(unwrapped=t.jstring.unwrap_as(str), original=t.jstring)
+```
+
+```{python}
+t.select(unwrapped=t.jbool.unwrap_as("bool"), original=t.jbool)
+```
+
+### Create more backends with empty URLs
+
+For convenience, you can now create backends with an empty URL for Dask, pandas,
+Polars, and DataFusion:
+
+```{python}
+con = ibis.connect("dask://")
+con = ibis.connect("pandas://")
+con = ibis.connect("polars://")
+con = ibis.connect("datafusion://")
+```
+
+This is in addition to the existing backend-specific connection methods:
+
+```{python}
+con = ibis.dask.connect()
+con = ibis.pandas.connect()
+con = ibis.polars.connect()
+con = ibis.datafusion.connect()
+```
+
+Note that URL parameters are not meaningful with these backends. The main use
+case is more convenient connection swapping programmatically:
+
+```{python}
+for backend in [
+    "duckdb",
+    "sqlite",
+    "pyspark",
+    "dask",
+    "pandas",
+    "polars",
+    "datafusion",
+]:
+    con = ibis.connect(f"{backend}://")
+    print(con)
+```
+
+## Wrapping up
+
+Ibis 9.0 is an exciting release that completes the transition to SQLGlot, adds a
+lot of new functionality, and welcomes a new committer to the project!
+
+As always, try Ibis by [installing](../../install.qmd) and [getting
+started](../../tutorials/getting_started.qmd).
+
+If you run into any issues or find support is lacking for your backend, [open an
+issue](https://github.com/ibis-project/issues/new/choose) or
+[discussion](https://github.com/ibis-project/discussions/new/choose) and let us
+know!

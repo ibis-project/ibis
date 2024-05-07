@@ -2,6 +2,12 @@
 
 This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.
 
+::: {.callout-tip}
+You can run this tutorial in a GitHub Codespace with everything setup for you:
+
+[![](https://github.com/codespaces/badge.svg)](https://codespaces.new/ibis-project/ibis)
+:::
+
 ## Install Ibis
 
 {{< include ../_tabsets/install_default.qmd >}}
@@ -24,7 +30,6 @@ con.create_table(
 You can now see the example dataset copied over to the database:
 
 ```{python}
-con = ibis.connect("duckdb://penguins.ddb")
 con.list_tables()
 ```
 

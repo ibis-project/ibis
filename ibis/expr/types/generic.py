@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
+from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
 from ibis.expr.types.pretty import to_rich
 from ibis.util import deprecated, warn_deprecated
 
@@ -1160,13 +1160,17 @@ class Value(Expr):
         return super().__hash__()
 
     def __eq__(self, other: Value) -> ir.BooleanValue:
-        if other is None:
-            return _binop(ops.IdenticalTo, self, other)
+        if _is_null_literal(other):
+            return self.isnull()
+        elif _is_null_literal(self):
+            return other.isnull()
         return _binop(ops.Equals, self, other)
 
     def __ne__(self, other: Value) -> ir.BooleanValue:
-        if other is None:
-            return ~self.__eq__(other)
+        if _is_null_literal(other):
+            return self.notnull()
+        elif _is_null_literal(self):
+            return other.notnull()
         return _binop(ops.NotEquals, self, other)
 
     def __ge__(self, other: Value) -> ir.BooleanValue:
@@ -2223,9 +2227,26 @@ class NullColumn(Column, NullValue):
 
 
 @public
-def null():
-    """Create a NULL/NA scalar."""
-    return ops.NULL.to_expr()
+def null(type: dt.DataType | str | None = None) -> Value:
+    """Create a NULL scalar.
+
+    `NULL`s with an unspecified type are castable and comparable to values,
+    but lack datatype-specific methods:
+
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> ibis.null().upper()
+    Traceback (most recent call last):
+        ...
+    AttributeError: 'NullScalar' object has no attribute 'upper'
+    >>> ibis.null(str).upper()
+    None
+    >>> ibis.null(str).upper().isnull()
+    True
+    """
+    if type is None:
+        type = dt.null
+    return ops.Literal(None, type).to_expr()
 
 
 @public

@@ -53,12 +53,27 @@ NULL_BACKEND_TYPES = {
 @pytest.mark.notyet(["flink"], "The runtime does not support untyped `NULL` values.")
 def test_null_literal(con, backend):
     expr = ibis.null()
-    result = con.execute(expr)
-    assert pd.isna(result)
+    assert pd.isna(con.execute(expr))
 
     with contextlib.suppress(com.OperationNotDefinedError):
         backend_name = backend.name()
         assert con.execute(expr.typeof()) == NULL_BACKEND_TYPES[backend_name]
+
+    assert expr.type() == dt.null
+    assert pd.isna(con.execute(expr.cast(str).upper()))
+
+
+@pytest.mark.broken(
+    "mssql",
+    reason="https://github.com/ibis-project/ibis/issues/9109",
+    raises=AssertionError,
+)
+def test_null_literal_typed(con, backend):
+    expr = ibis.null(bool)
+    assert expr.type() == dt.boolean
+    assert pd.isna(con.execute(expr))
+    assert pd.isna(con.execute(expr.negate()))
+    assert pd.isna(con.execute(expr.cast(str).upper()))
 
 
 BOOLEAN_BACKEND_TYPE = {
@@ -75,6 +90,21 @@ BOOLEAN_BACKEND_TYPE = {
 }
 
 
+def test_null_literal_typed_typeof(con, backend):
+    expr = ibis.null(bool)
+    TYPES = {
+        **BOOLEAN_BACKEND_TYPE,
+        "clickhouse": "Nullable(Bool)",
+        "flink": "BOOLEAN",
+        "sqlite": "null",  # in sqlite, typeof(x) is determined by the VALUE of x at runtime, not it's static type
+        "snowflake": None,
+        "bigquery": "NULL",
+    }
+
+    with contextlib.suppress(com.OperationNotDefinedError):
+        assert con.execute(expr.typeof()) == TYPES[backend.name()]
+
+
 def test_boolean_literal(con, backend):
     expr = ibis.literal(False, type=dt.boolean)
     result = con.execute(expr)
@@ -82,8 +112,7 @@ def test_boolean_literal(con, backend):
     assert type(result) in (np.bool_, bool)
 
     with contextlib.suppress(com.OperationNotDefinedError):
-        backend_name = backend.name()
-        assert con.execute(expr.typeof()) == BOOLEAN_BACKEND_TYPE[backend_name]
+        assert con.execute(expr.typeof()) == BOOLEAN_BACKEND_TYPE[backend.name()]
 
 
 @pytest.mark.parametrize(
@@ -1923,28 +1952,40 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function random() does not exist",
 )
-def test_sample(backend):
+@pytest.mark.parametrize(
+    "method",
+    [
+        "row",
+        param(
+            "block",
+            marks=[
+                pytest.mark.notimpl(
+                    ["snowflake"],
+                    raises=SnowflakeProgrammingError,
+                    reason="SAMPLE clause on views only supports row wise sampling without seed.",
+                )
+            ],
+        ),
+    ],
+)
+def test_sample(backend, method):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 
     total_rows = t.count().execute()
     empty = t.limit(1).execute().iloc[:0]
 
-    df = t.sample(0.1, method="row").execute()
-    assert len(df) <= total_rows
-    backend.assert_frame_equal(empty, df.iloc[:0])
-
-    df = t.sample(0.1, method="block").execute()
+    df = t.sample(0.1, method=method).execute()
     assert len(df) <= total_rows
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid", "polars", "snowflake"])
+@pytest.mark.notimpl(["druid", "polars"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -1971,7 +2012,6 @@ def test_sample_memtable(con, backend):
         "polars",
         "postgres",
         "risingwave",
-        "snowflake",
         "sqlite",
         "trino",
         "exasol",
@@ -2032,7 +2072,7 @@ def test_select_scalar(alltypes):
     assert (res.y == 1).all()
 
 
-@pytest.mark.broken(["mssql", "oracle"], reason="incorrect syntax")
+@pytest.mark.broken(["mssql"], reason="incorrect syntax")
 def test_isnull_equality(con, backend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     t = ibis.memtable({"x": ["a", "b", None], "y": ["c", None, None], "z": [1, 2, 3]})
