@@ -7,13 +7,13 @@ execute:
 format:
   revealjs:
     footer: <https://ibis-project.org>
-    preview-links: true
+    # preview-links: true
     chalkboard: true
     incremental: true
     # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
     theme: dark
     scrollable: true
-    #smaller: true
+    # smaller: true
 ---
 
 # what
@@ -33,7 +33,7 @@ development to production with the same API
 :::
 :::
 
-## Getting stated...
+## Getting started...
 
 ```{python}
 #| code-fold: true
@@ -373,21 +373,66 @@ SQL:
 ***Ibis bridges the gap.***
 :::
 
-## dataframe history
+## dataframe history {.smaller}
 
 - **pandas** (2008): dataframes in Python
 - **Spark** (2009): distributed dataframes with PySpark
-- **Dask** (2014): distributed dataframes with Python
+- **Dask** (2014): distributed pandas dataframes with Python
 - **dplyr** (2014): dataframes in R with SQL-like syntax
-- **Ibis** (2015): dataframes in Python with SQL-like syntax
+- [**Ibis**]{style="color:#7C65A0"} (2015): dataframes in Python with SQL-like syntax
 - **cuDF** (2017): pandas on GPUs
 - **Modin** (2018): pandas on Ray/Dask
 - **Koalas** (2019): pandas on Spark
-- **Polars** (2020): multicore dataframes in Python
+- **Polars** (2020): multicore dataframes in Python via Rust
+- [**Ibis**]{style="color:#7C65A0"} (2022): Ibis invested in heavily by Voltron Data
+- **Snowpark Python** (2022): PySpark-like dataframes on Snowflake
+- **BigQuery DataFrames** (2023): pandas on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
+
+## dataframe history (aside) {.smaller}
+
+We see three approaches:
+
+::: {.nonincremental}
+:::: {.columns}
+
+::: {.column width=33%}
+pandas clones:
+
+- Modin
+- pandas on Spark
+  - formerly known as Koalas
+- cuDF
+- Dask (sort of)
+- BigQuery DataFrames
+:::
+
+::: {.column width=33%}
+PySpark clones:
+
+- Snowpark Python (sort of)
+- DuckDB Spark API
+- SQLGlot Spark API
+:::
+
+::: {.column width=33%}
+something else:
+
+- Ibis
+- Polars
+:::
+
+::::
+:::
 
 ## database history
 
 - they got faster
+
+::: {.fragment}
+::: {.r-fit-text}
+***Ibis brings the best of [databases]{style="color:#6A9BC9"} to [dataframes]{style="color:#D58273"}.***
+:::
+:::
 
 ## DuckDB {auto-animate="true"}
 
