@@ -11,7 +11,14 @@ import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import PandasUDFType, col, from_json, pandas_udf
+from pyspark.sql.functions import (
+    PandasUDFType,
+    col,
+    from_json,
+    pandas_udf,
+    struct,
+    to_json,
+)
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
 import ibis.common.exceptions as com
@@ -996,7 +1003,7 @@ class StreamingBackend(Backend):
         schema
             Schema of the value of the Kafka messages.
         options
-            Additional keyword arguments passed to PySpark as .option("key", "value").
+            Additional arguments passed to PySpark as .option("key", "value").
             https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
 
         Returns
@@ -1029,3 +1036,157 @@ class StreamingBackend(Backend):
         table_name = table_name or util.gen_name("read_kafka")
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
+
+    @util.experimental
+    def to_kafka(
+        self,
+        expr: ir.Expr,
+        auto_format: bool = False,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        """Write the results of executing the given expression to a Kafka topic.
+
+        This method does not return outputs. Streaming queries are run continuously in
+        the background.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to a Kafka topic.
+        auto_format
+            Whether to format the Kafka messages before writing. If `False`, the output is
+            written as-is. If `True`, the output is converted into JSON and written as the
+            value of the Kafka messages.
+        options
+            PySpark Kafka write arguments.
+            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+
+        """
+        df = self._session.sql(expr.compile())
+        if auto_format is True:
+            df = df.select(
+                to_json(struct([col(c).alias(c) for c in df.columns])).alias("value")
+            )
+        sq = df.writeStream.format("kafka")
+        for k, v in options.items():
+            sq = sq.option(k, v)
+        sq.start()
+
+    def read_csv(
+        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV directory as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.csv.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        inferSchema = kwargs.pop("inferSchema", True)
+        header = kwargs.pop("header", True)
+        source = util.normalize_filename(source)
+        spark_df = self._session.readStream.csv(
+            source, inferSchema=inferSchema, header=header, **kwargs
+        )
+        table_name = table_name or util.gen_name("read_csv")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def read_parquet(
+        self,
+        source: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source. A directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        source = util.normalize_filename(source)
+        spark_df = self._session.readStream.parquet(source, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def read_json(
+        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a JSON file as a table in the current database.
+
+        Parameters
+        ----------
+        source
+            The data source. A directory of JSON files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.json.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        source = util.normalize_filename(source)
+        spark_df = self._session.readStream.json(source, **kwargs)
+        table_name = table_name or util.gen_name("read_json")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def _to_filesystem_output(
+        self, expr: ir.Expr, format: str, options: Mapping[str, str]
+    ) -> None:
+        df = self._session.sql(expr.compile())
+        sq = df.writeStream.format(format)
+        for k, v in options.items():
+            sq = sq.option(k, v)
+        sq.start()
+
+    @util.experimental
+    def to_parquet(
+        self,
+        expr: ir.Expr,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        self._to_filesystem_output(expr, "parquet", options)
+
+    @util.experimental
+    def to_csv(
+        self,
+        expr: ir.Expr,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        self._to_filesystem_output(expr, "csv", options)
