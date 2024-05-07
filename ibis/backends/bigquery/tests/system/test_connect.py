@@ -238,3 +238,17 @@ def test_client_with_regional_endpoints(project_id, credentials, dataset_id):
     df = alltypes.execute()
     assert df.empty
     assert not len(alltypes.to_pyarrow())
+
+
+def test_create_table_from_memtable_needs_quotes(project_id, credentials):
+    con = ibis.bigquery.connect(
+        project_id=project_id,
+        dataset_id=f"{project_id}.testing",
+        credentials=credentials,
+    )
+
+    con.create_table(
+        "region-table",
+        schema=ibis.schema(dict(its_always="str", quoting="int")),
+    )
+    con.drop_table("region-table")
