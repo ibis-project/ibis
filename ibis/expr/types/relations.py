@@ -188,6 +188,9 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
 
+    def __arrow_c_stream__(self, requested_schema: object | None = None) -> object:
+        return self.to_pyarrow().__arrow_c_stream__(requested_schema)
+
     def __pyarrow_result__(
         self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
     ) -> pa.Table:
