@@ -3,20 +3,65 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from unittest import mock
 
 import numpy as np
 import pandas as pd
 import pytest
+from pyspark.sql import SparkSession
 
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.pyspark import StreamingBackend
 from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, topk, win
 
 
 def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def default_session_fixture():
+    with mock.patch.object(
+        StreamingBackend, "write_to_memory", write_to_memory, create=True
+    ):
+        yield
+
+
+def write_to_memory(self, expr, table_name):
+    df = self._session.sql(expr.compile())
+    df.writeStream.format("memory").queryName(table_name).start()
+
+
+# Spark internally stores timestamps as UTC values, and timestamp
+# data that is brought in without a specified time zone is
+# converted as local time to UTC with microsecond resolution.
+# https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
+_test_session_builder = (
+    SparkSession.builder.appName("ibis_testing")
+    .master("local[1]")
+    .config("spark.cores.max", 1)
+    .config("spark.default.parallelism", 1)
+    .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
+    .config("spark.dynamicAllocation.enabled", False)
+    .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
+    .config("spark.executor.heartbeatInterval", "3600s")
+    .config("spark.executor.instances", 1)
+    .config("spark.network.timeout", "4200s")
+    .config("spark.rdd.compress", False)
+    .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
+    .config("spark.shuffle.compress", False)
+    .config("spark.shuffle.spill.compress", False)
+    .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
+    .config("spark.sql.session.timeZone", "UTC")
+    .config("spark.sql.shuffle.partitions", 1)
+    .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
+    .config("spark.ui.enabled", False)
+    .config("spark.ui.showConsoleProgress", False)
+    .config("spark.sql.execution.arrow.pyspark.enabled", False)
+)
 
 
 class TestConf(BackendTest):
@@ -132,37 +177,7 @@ class TestConf(BackendTest):
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
-        # Spark internally stores timestamps as UTC values, and timestamp
-        # data that is brought in without a specified time zone is
-        # converted as local time to UTC with microsecond resolution.
-        # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-
-        from pyspark.sql import SparkSession
-
-        config = (
-            SparkSession.builder.appName("ibis_testing")
-            .master("local[1]")
-            .config("spark.cores.max", 1)
-            .config("spark.default.parallelism", 1)
-            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.dynamicAllocation.enabled", False)
-            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.executor.heartbeatInterval", "3600s")
-            .config("spark.executor.instances", 1)
-            .config("spark.network.timeout", "4200s")
-            .config("spark.rdd.compress", False)
-            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-            .config("spark.shuffle.compress", False)
-            .config("spark.shuffle.spill.compress", False)
-            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-            .config("spark.ui.enabled", False)
-            .config("spark.ui.showConsoleProgress", False)
-            .config("spark.sql.execution.arrow.pyspark.enabled", False)
-        )
-
+        config = _test_session_builder
         try:
             from delta.pip_utils import configure_spark_with_delta_pip
         except ImportError:
@@ -175,6 +190,26 @@ class TestConf(BackendTest):
 
         spark = configure_spark_with_delta_pip(config).getOrCreate()
         return ibis.pyspark.connect(spark, **kw)
+
+
+class TestConfForStreaming(TestConf):
+    @staticmethod
+    def connect(*, tmpdir, worker_id, **kw):
+        config = _test_session_builder.config(
+            "spark.sql.streaming.schemaInference", True
+        )
+        try:
+            from delta.pip_utils import configure_spark_with_delta_pip
+        except ImportError:
+            configure_spark_with_delta_pip = lambda cfg: cfg
+        else:
+            config = config.config(
+                "spark.sql.catalog.spark_catalog",
+                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+            ).config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+
+        spark = configure_spark_with_delta_pip(config).getOrCreate()
+        return ibis.pyspark.connect(spark, mode="streaming", **kw)
 
 
 @pytest.fixture(scope="session")
@@ -291,6 +326,12 @@ def con(data_dir, tmp_path_factory, worker_id):
     df_interval_invalid.createTempView("invalid_interval_table")
 
     return con
+
+
+@pytest.fixture(scope="session")
+def streaming_con(data_dir, tmp_path_factory, worker_id):
+    backend_test = TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
+    return backend_test.connection
 
 
 class IbisWindow:
