@@ -391,6 +391,17 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     ) -> None:
         """Insert data into a table.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         table_name
@@ -405,15 +416,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         overwrite
             If `True` then replace existing contents of table
 
@@ -449,6 +451,16 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     ) -> None:
         """Delete all rows from a table.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         name
@@ -459,16 +471,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         schema
             [deprecated] Schema name
 
