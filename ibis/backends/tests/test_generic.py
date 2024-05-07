@@ -385,12 +385,11 @@ def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
         new_col=(
-            ibis.case()
-            .when(table["int_col"] == 1, 20)
-            .when(table["int_col"] == 0, 10)
-            .else_(0)
-            .end()
-            .cast("int64")
+            ibis.cases(
+                (table["int_col"] == 1, 20),
+                (table["int_col"] == 0, 10),
+                else_=0,
+            ).cast("int64")
         )
     )
 
@@ -423,9 +422,7 @@ def test_select_filter_mutate(backend, alltypes, df):
 
     # Prepare the float_col so that filter must execute
     # before the cast to get the correct result.
-    t = t.mutate(
-        float_col=ibis.case().when(t["bool_col"], t["float_col"]).else_(np.nan).end()
-    )
+    t = t.mutate(float_col=ibis.cases((t["bool_col"], t["float_col"]), else_=np.nan))
 
     # Actual test
     t = t[t.columns]
@@ -2066,12 +2063,82 @@ def test_sample_with_seed(backend):
         ),
     ],
 )
-def test_value_cases(con, inp, exp):
+def test_value_cases_deprecated(con, inp, exp):
+    with pytest.warns(FutureWarning):
+        i = inp()
+    result = con.execute(i)
+    if exp is None:
+        assert pd.isna(result)
+    else:
+        assert result == exp
+
+
+@pytest.mark.parametrize(
+    "inp, exp",
+    [
+        pytest.param(
+            lambda: ibis.literal(1).cases((1, "one"), (2, "two"), else_="other"),
+            "one",
+            id="one_kwarg",
+        ),
+        pytest.param(
+            lambda: ibis.literal(5).cases((1, "one"), (2, "two")),
+            None,
+            id="fallthrough",
+        ),
+    ],
+)
+def test_value_cases_scalar(con, inp, exp):
     result = con.execute(inp())
     if exp is None:
         assert pd.isna(result)
     else:
         assert result == exp
+
+
+@pytest.mark.broken(
+    "exasol",
+    reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to ints",
+    raises=AssertionError,
+)
+def test_value_cases_column(batting):
+    df = batting.to_pandas()
+    expr = batting.RBI.cases(
+        (5, "five"), (4, "four"), (3, "three"), else_="could be good?"
+    )
+    result = expr.execute()
+    expected = pd.Series(
+        np.select(
+            [df.RBI == 5, df.RBI == 4, df.RBI == 3],
+            ["five", "four", "three"],
+            "could be good?",
+        )
+    )
+    assert Counter(result) == Counter(expected)
+
+
+@pytest.mark.broken(
+    ["sqlite", "exasol"],
+    reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to 5",
+    raises=TypeError,
+)
+def test_ibis_cases_column(batting):
+    t = batting
+    df = batting.to_pandas()
+    expr = ibis.cases(
+        (t.RBI < 5, "really bad team"),
+        (t.teamID == "PH1", "ph1 team"),
+        else_=t.teamID,
+    )
+    result = expr.execute()
+    expected = pd.Series(
+        np.select(
+            [df.RBI < 5, df.teamID == "PH1"],
+            ["really bad team", "ph1 team"],
+            df.teamID,
+        )
+    )
+    assert Counter(result) == Counter(expected)
 
 
 def test_substitute(backend):
@@ -2085,6 +2152,37 @@ def test_substitute(backend):
         .filter(lambda t: t.subs == val)
     )
     assert expr["subs_count"].execute()[0] == t.count().execute() // 10
+
+
+@pytest.mark.broken("flink", reason="can't handle SELECT NULL AS `SearchedCase(None)`")
+def test_ibis_cases_empty(con):
+    assert pd.isnull(con.execute(ibis.cases()))
+    assert con.execute(ibis.cases(else_=2)) == 2
+    assert pd.isnull(con.execute(ibis.literal(1).cases()))
+    assert con.execute(ibis.literal(1).cases(else_=2)) == 2
+
+
+@pytest.mark.broken("clickhouse", reason="special case this and returns 'oops'")
+def test_value_cases_null(con):
+    """CASE x WHEN NULL never gets hit"""
+    e = ibis.literal(5).nullif(5).cases((None, "oops"), else_="expected")
+    assert con.execute(e) == "expected"
+
+
+@pytest.mark.broken("pyspark", reason="raises a ResourceWarning that we can't catch")
+def test_case(con):
+    # just to make sure that the deprecated .case() method still works
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert con.execute(ibis.case().when(True, "yes").end()) == "yes"
+        assert pd.isna(con.execute(ibis.case().when(False, "yes").end()))
+        assert con.execute(ibis.case().when(False, "yes").else_("no").end()) == "no"
+
+        assert con.execute(ibis.literal("a").case().when("a", "yes").end()) == "yes"
+        assert pd.isna(con.execute(ibis.literal("a").case().when("b", "yes").end()))
+        assert (
+            con.execute(ibis.literal("a").case().when("b", "yes").else_("no").end())
+            == "no"
+        )
 
 
 @pytest.mark.notimpl(

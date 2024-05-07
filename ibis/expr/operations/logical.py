@@ -137,9 +137,9 @@ class InValues(Value):
 
 @public
 class IfElse(Value):
-    """Ternary case expression, equivalent to.
+    """Ternary case expression.
 
-    bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
+    Equivalent to bool_expr.cases((True, true_expr), else_=false_or_null_expr)
 
     Many backends implement this as a built-in function.
     """

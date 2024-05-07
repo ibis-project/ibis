@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.tests.util import assert_equal, assert_pickle_roundtrip
+from ibis.common.annotations import SignatureValidationError
+from ibis.tests.util import assert_pickle_roundtrip
 
 
 def test_ifelse_method(table):
@@ -44,72 +47,63 @@ def test_ifelse_function_deferred(table):
     assert res.equals(sol)
 
 
-def test_simple_case_expr(table):
-    case1, result1 = "foo", table.a
-    case2, result2 = "bar", table.c
-    default_result = table.b
+def test_err_on_bad_args(table):
+    with pytest.raises(ValueError):
+        ibis.cases((True,))
+    with pytest.raises(ValueError):
+        ibis.cases((True, 3, 4))
+    with pytest.raises(ValueError):
+        ibis.cases((True, 3, 4))
+    with pytest.raises(ValueError):
+        ibis.cases((True, 3), 5)
 
-    expr1 = table.g.lower().cases(
-        [(case1, result1), (case2, result2)], default=default_result
-    )
-
-    expr2 = (
-        table.g.lower()
-        .case()
-        .when(case1, result1)
-        .when(case2, result2)
-        .else_(default_result)
-        .end()
-    )
-
-    assert_equal(expr1, expr2)
-    assert isinstance(expr1, ir.IntegerColumn)
+    with pytest.raises(ValueError):
+        table.a.cases(("foo",))
+    with pytest.raises(ValueError):
+        table.a.cases(("foo", 3, 4))
+    with pytest.raises(ValueError):
+        table.a.cases(("foo", 3, 4))
+    with pytest.raises(TypeError):
+        table.a.cases(("foo", 3), 5)
 
 
 def test_multiple_case_expr(table):
-    expr = (
-        ibis.case()
-        .when(table.a == 5, table.f)
-        .when(table.b == 128, table.b * 2)
-        .when(table.c == 1000, table.e)
-        .else_(table.d)
-        .end()
+    expr = ibis.cases(
+        (table.a == 5, table.f),
+        (table.b == 128, table.b * 2),
+        (table.c == 1000, table.e),
+        else_=table.d,
     )
 
     # deferred cases
-    deferred = (
-        ibis.case()
-        .when(_.a == 5, table.f)
-        .when(_.b == 128, table.b * 2)
-        .when(_.c == 1000, table.e)
-        .else_(table.d)
-        .end()
+    deferred = ibis.cases(
+        (_.a == 5, table.f),
+        (_.b == 128, table.b * 2),
+        (_.c == 1000, table.e),
+        else_=table.d,
     )
     expr2 = deferred.resolve(table)
 
     # deferred results
-    expr3 = (
-        ibis.case()
-        .when(table.a == 5, _.f)
-        .when(table.b == 128, _.b * 2)
-        .when(table.c == 1000, _.e)
-        .else_(table.d)
-        .end()
-        .resolve(table)
-    )
+    expr3 = ibis.cases(
+        (table.a == 5, _.f),
+        (table.b == 128, _.b * 2),
+        (table.c == 1000, _.e),
+        else_=table.d,
+    ).resolve(table)
 
     # deferred default
-    expr4 = (
-        ibis.case()
-        .when(table.a == 5, table.f)
-        .when(table.b == 128, table.b * 2)
-        .when(table.c == 1000, table.e)
-        .else_(_.d)
-        .end()
-        .resolve(table)
-    )
+    expr4 = ibis.cases(
+        (table.a == 5, table.f),
+        (table.b == 128, table.b * 2),
+        (table.c == 1000, table.e),
+        else_=_.d,
+    ).resolve(table)
 
-    assert repr(deferred) == "<case>"
+    assert (
+        repr(deferred)
+        == "cases(((_.a == 5), <column[float64]>), ((_.b == 128), <column[int32]>), ((_.c == 1000), <column[float32]>), else_=<column[int64]>)"
+    )
     assert expr.equals(expr2)
     assert expr.equals(expr3)
     assert expr.equals(expr4)
@@ -130,13 +124,11 @@ def test_pickle_multiple_case_node(table):
     result3 = table.e
 
     default = table.d
-    expr = (
-        ibis.case()
-        .when(case1, result1)
-        .when(case2, result2)
-        .when(case3, result3)
-        .else_(default)
-        .end()
+    expr = ibis.cases(
+        (case1, result1),
+        (case2, result2),
+        (case3, result3),
+        else_=default,
     )
 
     op = expr.op()
@@ -144,7 +136,7 @@ def test_pickle_multiple_case_node(table):
 
 
 def test_simple_case_null_else(table):
-    expr = table.g.case().when("foo", "bar").end()
+    expr = table.g.cases(("foo", "bar"))
     op = expr.op()
 
     assert isinstance(expr, ir.StringColumn)
@@ -154,8 +146,8 @@ def test_simple_case_null_else(table):
 
 
 def test_multiple_case_null_else(table):
-    expr = ibis.case().when(table.g == "foo", "bar").end()
-    expr2 = ibis.case().when(table.g == "foo", _).end().resolve("bar")
+    expr = ibis.cases((table.g == "foo", "bar"))
+    expr2 = ibis.cases((table.g == "foo", _)).resolve("bar")
 
     assert expr.equals(expr2)
 
@@ -172,8 +164,61 @@ def test_case_mixed_type():
         name="my_data",
     )
 
-    expr = (
-        t0.three.case().when(0, "low").when(1, "high").else_("null").end().name("label")
-    )
+    expr = t0.three.cases((0, "low"), (1, "high"), else_="null").name("label")
     result = t0[expr]
     assert result["label"].type().equals(dt.string)
+
+
+def test_err_on_nonbool(table):
+    with pytest.raises(SignatureValidationError):
+        ibis.cases((table.a, "bar"), else_="baz")
+
+
+@pytest.mark.xfail(reason="Literal('foo', type=bool), should error, but doesn't")
+def test_err_on_nonbool2():
+    with pytest.raises(SignatureValidationError):
+        ibis.cases(("foo", "bar"), else_="baz")
+
+
+def test_err_on_noncomparable(table):
+    table.a.cases((8, "bar"))
+    table.a.cases((-8, "bar"))
+    # Can't compare an int to a string
+    with pytest.raises(TypeError):
+        table.a.cases(("foo", "bar"))
+
+
+def test_empty_cases(table):
+    ibis.cases()
+    ibis.cases(else_=42)
+    table.a.cases()
+    table.a.cases(else_=42)
+
+
+def test_dtype():
+    assert isinstance(ibis.cases((True, "bar"), (False, "bar")), ir.StringValue)
+    assert isinstance(ibis.cases((True, None), else_="bar"), ir.StringValue)
+    with pytest.raises(TypeError):
+        assert ibis.cases((True, 5), (False, "bar"))
+    with pytest.raises(TypeError):
+        assert ibis.cases((True, 5), else_="bar")
+
+
+def test_dshape(table):
+    assert isinstance(ibis.cases((True, "bar"), (False, "bar")), ir.Scalar)
+    assert isinstance(ibis.cases((True, None), else_="bar"), ir.Scalar)
+    assert isinstance(ibis.cases((table.b == 9, None), else_="bar"), ir.Column)
+    assert isinstance(ibis.cases((True, table.a), else_=42), ir.Column)
+    assert isinstance(ibis.cases((True, 42), else_=table.a), ir.Column)
+    assert isinstance(ibis.cases((True, table.a), else_=table.b), ir.Column)
+
+    assert isinstance(ibis.literal(5).cases((9, 42)), ir.Scalar)
+    assert isinstance(ibis.literal(5).cases((9, 42), else_=43), ir.Scalar)
+    assert isinstance(ibis.literal(5).cases((table.a, 42)), ir.Column)
+    assert isinstance(ibis.literal(5).cases((9, table.a)), ir.Column)
+    assert isinstance(ibis.literal(5).cases((table.a, table.b)), ir.Column)
+    assert isinstance(ibis.literal(5).cases((9, 42), else_=table.a), ir.Column)
+    assert isinstance(table.a.cases((9, 42)), ir.Column)
+    assert isinstance(table.a.cases((table.b, 42)), ir.Column)
+    assert isinstance(table.a.cases((9, table.b)), ir.Column)
+    assert isinstance(table.a.cases((table.a, table.b)), ir.Column)
