@@ -125,6 +125,27 @@ def _remove_null_ordering_from_unsupported_window(
     return node
 
 
+def _force_quote_table(table: sge.Table) -> sge.Table:
+    """Force quote all the parts of a bigquery path.
+
+    The BigQuery identifier quoting semantics are bonkers
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#identifiers
+
+    my-table is OK, but not mydataset.my-table
+
+    mytable-287 is OK, but not mytable-287a
+
+    Just quote everything.
+    """
+    for key in ("this", "db", "catalog"):
+        if (val := table.args[key]) is not None:
+            if isinstance(val, sg.exp.Identifier) and not val.quoted:
+                val.args["quoted"] = True
+            else:
+                table.args[key] = sg.to_identifier(val, quoted=True)
+    return table
+
+
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
     compiler = BigQueryCompiler()
@@ -1025,13 +1046,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         try:
             table = sg.parse_one(name, into=sge.Table, read="bigquery")
         except sg.ParseError:
-            table = sg.table(name, db=dataset, catalog=project_id)
+            table = sg.table(
+                name,
+                db=dataset,
+                catalog=project_id,
+                quoted=self.compiler.quoted,
+            )
         else:
             if table.args["db"] is None:
                 table.args["db"] = dataset
 
             if table.args["catalog"] is None:
                 table.args["catalog"] = project_id
+
+        table = _force_quote_table(table)
 
         column_defs = [
             sge.ColumnDef(
