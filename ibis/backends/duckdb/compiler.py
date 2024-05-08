@@ -45,6 +45,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",
         ops.EndsWith: "suffix",
+        ops.ExtractIsoYear: "isoyear",
         ops.Hash: "hash",
         ops.IntegerRange: "range",
         ops.TimestampRange: "range",
@@ -200,9 +201,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         # if any of the input arrays in arg are NULL, the result is NULL
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
-
-    def visit_ExtractIsoYear(self, op, *, arg):
-        return self.f.isoyear(arg)
 
     def visit_Map(self, op, *, keys, values):
         # workaround for https://github.com/ibis-project/ibis/issues/8632
