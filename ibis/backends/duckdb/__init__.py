@@ -57,14 +57,14 @@ class _Settings:
 
     def __getitem__(self, key: str) -> Any:
         maybe_value = self.con.execute(
-            f"select value from duckdb_settings() where name = '{key}'"
+            "select value from duckdb_settings() where name = $1", [key]
         ).fetchone()
         if maybe_value is not None:
             return maybe_value[0]
         raise KeyError(key)
 
     def __setitem__(self, key, value):
-        self.con.execute(f"SET {key} = '{value}'")
+        self.con.execute(f"SET {key} = {str(value)!r}")
 
     def __repr__(self):
         return repr(self.con.sql("from duckdb_settings()"))
@@ -459,9 +459,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         if extensions is not None:
             self._load_extensions(extensions)
 
-        # Default timezone
-        with self._safe_raw_sql("SET TimeZone = 'UTC'"):
-            pass
+        # Default timezone, can't be set with `config`
+        self.settings["timezone"] = "UTC"
 
         self._record_batch_readers_consumed = {}
 
