@@ -391,6 +391,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract(self.v.isoweek, arg)
 
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.f.extract(self.v.isoyear, arg)
+
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.f.extract(self.v.millisecond, arg)
 

@@ -109,6 +109,11 @@ class ExtractYear(ExtractDateField):
 
 
 @public
+class ExtractIsoYear(ExtractDateField):
+    pass
+
+
+@public
 class ExtractMonth(ExtractDateField):
     pass
 

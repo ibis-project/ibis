@@ -72,6 +72,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ExtractSecond: "toSecond",
         ops.ExtractWeekOfYear: "toISOWeek",
         ops.ExtractYear: "toYear",
+        ops.ExtractIsoYear: "toISOYear",
         ops.First: "any",
         ops.IntegerRange: "range",
         ops.IsInf: "isInfinite",

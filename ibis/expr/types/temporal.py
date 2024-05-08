@@ -33,6 +33,10 @@ class _DateComponentMixin:
         """Extract the year component."""
         return ops.ExtractYear(self).to_expr()
 
+    def iso_year(self) -> ir.IntegerValue:
+        """Extract the ISO year component."""
+        return ops.ExtractIsoYear(self).to_expr()
+
     def month(self) -> ir.IntegerValue:
         """Extract the month component."""
         return ops.ExtractMonth(self).to_expr()

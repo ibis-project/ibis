@@ -206,6 +206,9 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IW"), op.dtype)
 
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
+
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.concat(
             self.f.substr(self.f.to_char(arg, "DAY"), 0, 1),

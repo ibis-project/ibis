@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import sqlglot as sg
+import toolz
 from pytest import param
 
 import ibis
@@ -97,6 +98,45 @@ def test_timestamp_extract(backend, alltypes, df, attr):
         getattr(df.timestamp_col.dt, attr.replace("_", "")).astype("int32")
     ).rename(attr)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "transform", [toolz.identity, methodcaller("date")], ids=["timestamp", "date"]
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=(AttributeError, com.OperationNotDefinedError),
+    reason="AttributeError: 'StringColumn' object has no attribute 'X'",
+)
+@pytest.mark.notyet(
+    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't appear to support this operation directly",
+)
+def test_extract_iso_year(backend, con, alltypes, df, transform):
+    value = transform(alltypes.timestamp_col)
+    name = "iso_year"
+    expr = value.iso_year().name(name)
+    result = expr.execute()
+    expected = backend.default_series_rename(
+        df.timestamp_col.dt.isocalendar().year.astype("int32")
+    ).rename(name)
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=(AttributeError, com.OperationNotDefinedError),
+    reason="AttributeError: 'StringColumn' object has no attribute 'X'",
+)
+@pytest.mark.notyet(
+    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't appear to support this operation directly",
+)
+def test_iso_year_does_not_match_date_year(con):
+    expr = ibis.date("2022-01-01").iso_year()
+    assert con.execute(expr) == 2021
 
 
 @pytest.mark.parametrize(

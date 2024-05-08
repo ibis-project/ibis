@@ -508,6 +508,9 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract("week", arg)
 
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.f.extract("isoyear", arg)
+
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.extract("epoch", arg)
 

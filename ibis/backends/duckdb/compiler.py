@@ -45,6 +45,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",
         ops.EndsWith: "suffix",
+        ops.ExtractIsoYear: "isoyear",
         ops.Hash: "hash",
         ops.IntegerRange: "range",
         ops.TimestampRange: "range",

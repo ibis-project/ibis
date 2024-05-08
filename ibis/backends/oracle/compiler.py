@@ -450,3 +450,6 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
+
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
