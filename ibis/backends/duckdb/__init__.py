@@ -67,11 +67,7 @@ class _Settings:
         self.con.execute(f"SET {key} = '{value}'")
 
     def __repr__(self):
-        ((kv,),) = self.con.execute(
-            "select map(array_agg(name), array_agg(value)) from duckdb_settings()"
-        ).fetch()
-
-        return repr(dict(zip(kv["key"], kv["value"])))
+        return repr(self.con.sql("from duckdb_settings()"))
 
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
