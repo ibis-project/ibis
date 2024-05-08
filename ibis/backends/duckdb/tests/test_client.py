@@ -297,3 +297,10 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="shops") == icecream_table
     assert con.list_tables(database=("shops",)) == icecream_table
+
+
+def test_settings_repr():
+    con = ibis.duckdb.connect()
+    view = repr(con.settings)
+    assert "name" in view
+    assert "value" in view
