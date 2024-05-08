@@ -24,7 +24,7 @@ def test_read_csv(streaming_con, session):
         }
     )
     t = streaming_con.read_csv(
-        "ibis/backends/pyspark/tests/test_streaming/spark-test-data",
+        "ci/ibis-testing-data/pyspark/csv/payment_msg",
         table_name="t",
         schema=PySparkSchema.from_ibis(schema),
         header=True,
