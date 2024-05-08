@@ -968,8 +968,9 @@ class StreamingBackend(Backend):
             The just-registered table
         """
         spark_df = self._session.readStream.format("kafka")
-        for k, v in options.items():
-            spark_df = spark_df.option(k, v)
+        if options is not None:
+            for k, v in options.items():
+                spark_df = spark_df.option(k, v)
         spark_df = spark_df.load()
 
         # parse the values of the Kafka messages using the provided schema
@@ -1024,8 +1025,9 @@ class StreamingBackend(Backend):
                 to_json(struct([col(c).alias(c) for c in df.columns])).alias("value")
             )
         sq = df.writeStream.format("kafka")
-        for k, v in options.items():
-            sq = sq.option(k, v)
+        if options is not None:
+            for k, v in options.items():
+                sq = sq.option(k, v)
         sq.start()
 
     def read_csv(
@@ -1123,12 +1125,13 @@ class StreamingBackend(Backend):
         return self.table(table_name)
 
     def _to_filesystem_output(
-        self, expr: ir.Expr, format: str, options: Mapping[str, str]
+        self, expr: ir.Expr, format: str, options: Mapping[str, str] | None = None
     ) -> None:
         df = self._session.sql(expr.compile())
         sq = df.writeStream.format(format)
-        for k, v in options.items():
-            sq = sq.option(k, v)
+        if options is not None:
+            for k, v in options.items():
+                sq = sq.option(k, v)
         sq.start()
 
     @util.experimental
