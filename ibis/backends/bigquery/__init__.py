@@ -93,6 +93,8 @@ def _qualify_memtable(
     if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
         node.args["db"] = dataset
         node.args["catalog"] = project
+        # make sure to quote table location
+        node = _force_quote_table(node)
     return node
 
 

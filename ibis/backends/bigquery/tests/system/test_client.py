@@ -386,6 +386,8 @@ def test_fully_qualified_memtable_compile(project_id, dataset_id):
     assert new_bq_con._session_dataset is not None
     assert project_id in sql
 
+    assert f"`{project_id}`.`{new_bq_con._session_dataset.dataset_id}`.`" in sql
+
 
 def test_create_table_with_options(con):
     name = gen_name("bigquery_temp_table")
