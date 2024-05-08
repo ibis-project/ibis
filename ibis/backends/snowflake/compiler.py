@@ -75,6 +75,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         ops.BitwiseRightShift: "bitshiftright",
         ops.BitwiseXor: "bitxor",
         ops.EndsWith: "endswith",
+        ops.ExtractIsoYear: "yearofweekiso",
         ops.Hash: "hash",
         ops.Median: "median",
         ops.Mode: "mode",

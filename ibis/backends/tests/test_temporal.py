@@ -108,7 +108,12 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     raises=(AttributeError, com.OperationNotDefinedError),
     reason="AttributeError: 'StringColumn' object has no attribute 'X'",
 )
-def test_extract_iso_year(backend, alltypes, df, transform):
+@pytest.mark.notyet(
+    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't appear to support this operation directly",
+)
+def test_extract_iso_year(backend, con, alltypes, df, transform):
     value = transform(alltypes.timestamp_col)
     name = "iso_year"
     expr = value.iso_year().name(name)
@@ -117,6 +122,21 @@ def test_extract_iso_year(backend, alltypes, df, transform):
         df.timestamp_col.dt.isocalendar().year.astype("int32")
     ).rename(name)
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=(AttributeError, com.OperationNotDefinedError),
+    reason="AttributeError: 'StringColumn' object has no attribute 'X'",
+)
+@pytest.mark.notyet(
+    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't appear to support this operation directly",
+)
+def test_iso_year_does_not_match_date_year(con):
+    expr = ibis.date("2022-01-01").iso_year()
+    assert con.execute(expr) == 2021
 
 
 @pytest.mark.parametrize(
