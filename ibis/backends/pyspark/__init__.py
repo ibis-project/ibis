@@ -309,17 +309,34 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
         df.createOrReplaceTempView(op.name)
 
-    def _fetch_from_cursor(self, cursor, schema):
-        df = cursor.query.toPandas()  # blocks until finished
-        return PySparkPandasData.convert_table(df, schema)
-
+    @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
-        return self.raw_sql(query)
+        yield self.raw_sql(query)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
         return self._session.sql(query, **kwargs)
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        params: Mapping | None = None,
+        limit: str | None = "default",
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
+
+        schema = table.schema()
+
+        with self._safe_raw_sql(sql) as query:
+            df = query.toPandas()  # blocks until finished
+            result = PySparkPandasData.convert_table(df, schema)
+        return expr.__pandas_result__(result)
 
     def create_database(
         self,
