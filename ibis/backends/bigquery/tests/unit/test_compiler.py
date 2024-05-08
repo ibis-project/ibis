@@ -13,6 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
+from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.common.annotations import ValidationError
 
 to_sql = ibis.bigquery.compile
@@ -633,3 +634,15 @@ def test_unnest(snapshot):
         ).select(level_two=lambda t: t.level_one.unnest())
     )
     snapshot.assert_match(result, "out_two_unnests.sql")
+
+
+@pytest.mark.parametrize(
+    "fieldname, expected",
+    [
+        ("TryCast(b, Float64)", "TryCast_b_Float64"),
+        ("Cast(b, Int64)", "Cast_b_Int64"),
+        ("that, is, a, lot, of, spaces", "that_is_a_lot_of_spaces"),
+    ],
+)
+def test_field_names_strip_whitespace(fieldname, expected):
+    assert BigQueryCompiler._gen_valid_name(fieldname) == expected
