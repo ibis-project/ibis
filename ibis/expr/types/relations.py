@@ -770,6 +770,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         if isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
+        # skip the self.bind call for single column access with strings or ints
+        # because dereferencing has significant overhead
+        elif isinstance(what, str):
+            return ops.Field(self.op(), what).to_expr()
+        elif isinstance(what, int):
+            return ops.Field(self.op(), self.columns[what]).to_expr()
 
         args = [
             self.columns[arg] if isinstance(arg, int) else arg
