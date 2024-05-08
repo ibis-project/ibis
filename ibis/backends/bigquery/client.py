@@ -29,42 +29,6 @@ def schema_from_bigquery_table(table):
     return schema
 
 
-class BigQueryCursor:
-    """BigQuery cursor.
-
-    This allows the BigQuery client to reuse machinery in
-    :file:`ibis/client.py`.
-    """
-
-    def __init__(self, query):
-        """Construct a BigQueryCursor with query `query`."""
-        self.query = query
-
-    def fetchall(self):
-        """Fetch all rows."""
-        result = self.query.result()
-        return [row.values() for row in result]
-
-    @property
-    def columns(self):
-        """Return the columns of the result set."""
-        result = self.query.result()
-        return [field.name for field in result.schema]
-
-    @property
-    def description(self):
-        """Get the fields of the result set's schema."""
-        result = self.query.result()
-        return list(result.schema)
-
-    def __enter__(self):
-        """No-op for compatibility."""
-        return self
-
-    def __exit__(self, *_):
-        """No-op for compatibility."""
-
-
 @functools.singledispatch
 def bigquery_param(dtype, value, name):
     raise NotADirectoryError(dtype)

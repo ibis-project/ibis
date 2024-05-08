@@ -27,7 +27,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.bigquery.client import (
-    BigQueryCursor,
     bigquery_param,
     parse_project_and_dataset,
     rename_partitioned_column,
@@ -627,8 +626,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         query = self.client.query(
             stmt, job_config=job_config, project=self.billing_project
         )
-        query.result()  # blocks until finished
-        return BigQueryCursor(query)
+        return query.result()  # blocks until finished
 
     def _to_sqlglot(
         self,
@@ -793,8 +791,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self,
         cursor,
         *,
-        method: Callable[[RowIterator], pa.Table | Iterable[pa.RecordBatch]]
-        | None = None,
+        method: (
+            Callable[[RowIterator], pa.Table | Iterable[pa.RecordBatch]] | None
+        ) = None,
         chunk_size: int | None = None,
     ):
         if method is None:
