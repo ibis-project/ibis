@@ -9,5 +9,5 @@ SELECT
       CAST(`t0`.`bool_col` AS INT64),
       NULL
     )
-  ) AS `Sum_bool_col_ And_Greater_month_ 6_ Less_month_ 10`
+  ) AS `Sum_bool_col_And_Greater_month_6_Less_month_10`
 FROM `functional_alltypes` AS `t0`
