@@ -1263,6 +1263,7 @@ def test_topk_op(alltypes, df):
     result = expr.execute()
     expected = df.groupby("string_col")["string_col"].count().head(3)
     assert all(result.iloc[:, 1].values == expected.values)
+    assert expr.columns == ["string_col", "string_col_count"]
 
 
 @pytest.mark.parametrize(

@@ -1904,7 +1904,7 @@ class Column(Value, _FixedTextJupyterMixin):
         table = table.to_expr()
 
         if by is None:
-            by = lambda t: t.count()
+            by = lambda t: t.count().name(f"{self.get_name()}_count")
 
         (metric,) = bind(table, by)
 
