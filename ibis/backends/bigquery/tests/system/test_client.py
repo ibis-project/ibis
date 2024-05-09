@@ -186,7 +186,8 @@ def test_repr_struct_of_array_of_struct():
 
 
 def test_raw_sql(con):
-    assert con.raw_sql("SELECT 1").fetchall() == [(1,)]
+    result = con.raw_sql("SELECT 1").result()
+    assert [row.values() for row in result] == [(1,)]
 
 
 def test_parted_column_rename(parted_alltypes):
