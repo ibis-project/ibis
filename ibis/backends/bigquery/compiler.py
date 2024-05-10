@@ -673,7 +673,7 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:
-        return "_".join(_NAME_REGEX.findall(name)) or "tmp"
+        return "_".join(map(str.strip, _NAME_REGEX.findall(name))) or "tmp"
 
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
