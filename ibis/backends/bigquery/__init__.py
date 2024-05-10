@@ -27,7 +27,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.bigquery.client import (
-    BigQueryCursor,
     bigquery_param,
     parse_project_and_dataset,
     rename_partitioned_column,
@@ -628,7 +627,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             stmt, job_config=job_config, project=self.billing_project
         )
         query.result()  # blocks until finished
-        return BigQueryCursor(query)
+        return query
 
     def _to_sqlglot(
         self,
@@ -738,9 +737,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
-        cursor = self.raw_sql(sql, params=params, **kwargs)
+        query = self.raw_sql(sql, params=params, **kwargs)
 
-        result = self.fetch_from_cursor(cursor, expr.as_table().schema())
+        result = self.fetch_from_query(query, expr.as_table().schema())
 
         return expr.__pandas_result__(result)
 
@@ -782,19 +781,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             overwrite=overwrite,
         )
 
-    def fetch_from_cursor(self, cursor, schema):
+    def fetch_from_query(self, query, schema):
         from ibis.backends.bigquery.converter import BigQueryPandasData
 
-        arrow_t = self._cursor_to_arrow(cursor)
+        arrow_t = self._query_to_arrow(query)
         df = arrow_t.to_pandas(timestamp_as_object=True)
         return BigQueryPandasData.convert_table(df, schema)
 
-    def _cursor_to_arrow(
+    def _query_to_arrow(
         self,
-        cursor,
+        query,
         *,
-        method: Callable[[RowIterator], pa.Table | Iterable[pa.RecordBatch]]
-        | None = None,
+        method: (
+            Callable[[RowIterator], pa.Table | Iterable[pa.RecordBatch]] | None
+        ) = None,
         chunk_size: int | None = None,
     ):
         if method is None:
@@ -802,7 +802,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 progress_bar_type=None,
                 bqstorage_client=self.storage_client,
             )
-        query = cursor.query
         query_result = query.result(page_size=chunk_size)
         # workaround potentially not having the ability to create read sessions
         # in the dataset project
@@ -826,8 +825,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
-        cursor = self.raw_sql(sql, params=params, **kwargs)
-        table = self._cursor_to_arrow(cursor)
+        query = self.raw_sql(sql, params=params, **kwargs)
+        table = self._query_to_arrow(query)
         return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
@@ -846,9 +845,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
-        cursor = self.raw_sql(sql, params=params, **kwargs)
-        batch_iter = self._cursor_to_arrow(
-            cursor,
+        query = self.raw_sql(sql, params=params, **kwargs)
+        batch_iter = self._query_to_arrow(
+            query,
             method=lambda result: result.to_arrow_iterable(
                 bqstorage_client=self.storage_client
             ),

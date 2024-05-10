@@ -10,7 +10,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import PandasUDFType, pandas_udf
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -83,51 +83,6 @@ def unwrap_json(typ):
         return s.map(nullify_type_mismatched_value)
 
     return unwrap
-
-
-class _PySparkCursor:
-    """Spark cursor.
-
-    This allows the Spark client to reuse machinery in
-    `ibis/backends/base/sql/client.py`.
-    """
-
-    def __init__(self, query: DataFrame) -> None:
-        """Construct a cursor with query `query`.
-
-        Parameters
-        ----------
-        query
-            PySpark query
-
-        """
-        self.query = query
-
-    def fetchall(self):
-        """Fetch all rows."""
-        result = self.query.collect()  # blocks until finished
-        return result
-
-    def fetchmany(self, nrows: int):
-        raise NotImplementedError()
-
-    @property
-    def columns(self):
-        """Return the columns of the result set."""
-        return self.query.columns
-
-    @property
-    def description(self):
-        """Get the fields of the result set's schema."""
-        return self.query.schema
-
-    def __enter__(self):
-        # For compatibility when constructed from Query.execute()
-        """No-op for compatibility."""
-        return self
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        """No-op for compatibility."""
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
@@ -210,8 +165,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self._session.stop()
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        cursor = self.raw_sql(query)
-        struct_dtype = PySparkType.to_ibis(cursor.query.schema)
+        df = self.raw_sql(query)
+        struct_dtype = PySparkType.to_ibis(df.schema)
         return sch.Schema(struct_dtype)
 
     @property
@@ -354,18 +309,34 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
         df.createOrReplaceTempView(op.name)
 
-    def _fetch_from_cursor(self, cursor, schema):
-        df = cursor.query.toPandas()  # blocks until finished
-        return PySparkPandasData.convert_table(df, schema)
+    @contextlib.contextmanager
+    def _safe_raw_sql(self, query: str) -> Any:
+        yield self.raw_sql(query)
 
-    def _safe_raw_sql(self, query: str) -> _PySparkCursor:
-        return self.raw_sql(query)
-
-    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> _PySparkCursor:
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
-        query = self._session.sql(query)
-        return _PySparkCursor(query)
+        return self._session.sql(query, **kwargs)
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        params: Mapping | None = None,
+        limit: str | None = "default",
+        **kwargs: Any,
+    ) -> Any:
+        """Execute an expression."""
+
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        sql = self.compile(table, params=params, limit=limit, **kwargs)
+
+        schema = table.schema()
+
+        with self._safe_raw_sql(sql) as query:
+            df = query.toPandas()  # blocks until finished
+            result = PySparkPandasData.convert_table(df, schema)
+        return expr.__pandas_result__(result)
 
     def create_database(
         self,
