@@ -1,0 +1,171 @@
+---
+title: Ibis demo
+---
+
+```{python}
+import ibis
+from ibis import *
+```
+
+```
+# #assuming we want to show con, otherwise we could just use the default
+# con = ibis.duckdb.connect()
+
+# # I want to show read_parquet but idk where are this parquet files
+# ratings = con.read_parquet("path_to_local_file", table_name="ratings")
+# basics = con.read_parquet("path_to_local_file", table_name="basics")
+
+# maybe intro rename() and get everything on snake_case
+# show .sql() at some point not sure when it's best
+# we are missing a group_by and agg
+# show some basic udf stuff
+```
+
+```{python}
+ratings = ibis.examples.imdb_title_ratings.fetch()
+basics = ibis.examples.imdb_title_basics.fetch()
+```
+
+```{python}
+ # how do you do equivalent of con.list_tables in this case?
+```
+
+```{python}
+ratings
+```
+
+```{python}
+basics
+```
+
+```{python}
+ratings.execute(limit=10)
+```
+
+```{python}
+basics.to_pandas(limit=10)
+```
+
+```{python}
+ratings.to_pyarrow(limit=10)
+```
+
+```{python}
+# do we want to show experimental `to_polars()`
+```
+
+```{python}
+ibis.options.interactive = True
+```
+
+```{python}
+ratings
+```
+
+```{python}
+basics
+```
+
+```{python}
+ratings.select(avg_rating=ratings.averageRating.cast("float"))
+```
+
+```{python}
+ratings.select(
+    avg_rating=ratings.averageRating.cast("float"),
+    num_votes=ratings.numVotes.cast("int"),
+)
+```
+
+```{python}
+#the casting doesn't make much sense because data is already is of the right type
+ratings.select(
+    ratings.tconst,
+    avg_rating=ratings.averageRating.cast("float"),
+    num_votes=ratings.numVotes.cast("int"),
+)
+```
+
+```{python}
+ratings = ratings.select(
+    ratings.tconst,
+    avg_rating=ratings.averageRating.cast("float"),
+    num_votes=ratings.numVotes.cast("int"),
+)
+```
+
+```{python}
+ibis.to_sql(ratings_clean) # this will have the casting operations when we change data
+```
+
+```{python}
+ibis.to_sql(ratings_clean, dialect="sqlite") # this will show different types in casting when casting makes sense
+```
+
+```{python}
+basics
+```
+
+```{python}
+basics.columns
+```
+
+```{python}
+basics.titleType.value_counts()
+```
+
+```{python}
+basics.isAdult.value_counts()
+```
+
+```{python}
+#basics.filter([basics.titleType.isin(["movie", "tvMovie"]), basics.isAdult == "0"])
+basics.filter([basics.titleType.isin(["movie", "tvMovie"]), basics.isAdult == 0]).select("tconst",
+                                                                                          "primaryTitle",
+                                                                                          "startYear")
+```
+
+```{python}
+basics = basics.filter([basics.titleType == "movie", basics.isAdult == 0]).select("tconst",
+                                                                                    "primaryTitle",
+                                                                                    )
+```
+
+```{python}
+basics
+```
+
+```{python}
+basics.join(ratings, "tconst").execute(limit=10)
+```
+
+```{python}
+basics.join(ratings, "tconst").order_by(_.avg_rating.desc())
+```
+
+```{python}
+basics.join(ratings, "tconst").order_by(_.avg_rating.desc()).filter(_.num_votes > 1e6)
+```
+
+```{python}
+topfilms = basics.join(ratings, "tconst").order_by(_.avg_rating.desc()).filter(_.num_votes > 1e6)
+```
+
+```{python}
+ibis.options.interactive = False
+```
+
+```{python}
+topfilms
+```
+
+```{python}
+topfilms.execute(limit=10)
+```
+
+
+From here forward we show a connection to a postgres database, and also a sqlite one.
+Not sure how do we want to do that. We create two extra `con`s `con2` and `con3` and we show couple more
+operations.
+
+Lastly we show joins between tables in 2 different backends, chatting with Gil we said to avoid that for time, and also it's not something we want to show.
