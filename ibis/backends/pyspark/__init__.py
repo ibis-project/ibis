@@ -1074,7 +1074,8 @@ class StreamingBackend(Backend):
                 sq = sq.option(k, v)
         sq.start()
 
-    def read_csv(
+    @util.experimental
+    def read_csv_directory(
         self, source: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV directory as a table in the current database.
@@ -1107,7 +1108,8 @@ class StreamingBackend(Backend):
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
-    def read_parquet(
+    @util.experimental
+    def read_parquet_directory(
         self,
         source: str | Path,
         table_name: str | None = None,
@@ -1139,7 +1141,8 @@ class StreamingBackend(Backend):
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
-    def read_json(
+    @util.experimental
+    def read_json_directory(
         self, source: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table in the current database.
@@ -1179,7 +1182,7 @@ class StreamingBackend(Backend):
         sq.start()
 
     @util.experimental
-    def to_parquet(
+    def to_parquet_directory(
         self,
         expr: ir.Expr,
         options: Mapping[str, str] | None = None,
@@ -1187,7 +1190,7 @@ class StreamingBackend(Backend):
         self._to_filesystem_output(expr, "parquet", options)
 
     @util.experimental
-    def to_csv(
+    def to_csv_directory(
         self,
         expr: ir.Expr,
         options: Mapping[str, str] | None = None,
