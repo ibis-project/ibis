@@ -1556,9 +1556,14 @@ def test_close_connection(con):
     reason="JSON type not implemented",
 )
 @pytest.mark.notimpl(
-    ["risingwave", "sqlite"],
+    ["risingwave"],
     raises=pa.ArrowTypeError,
     reason="mismatch between output value and expected input type",
+)
+@pytest.mark.notimpl(
+    ["sqlite"],
+    raises=pa.ArrowInvalid,
+    reason="cannot mix list and non-list, non-null values",
 )
 @pytest.mark.never(
     ["snowflake"],

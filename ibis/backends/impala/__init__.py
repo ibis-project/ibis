@@ -1144,7 +1144,6 @@ class Backend(SQLBackend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
-        import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
         from ibis.formats.pyarrow import PyArrowData
@@ -1152,12 +1151,9 @@ class Backend(SQLBackend):
         self._run_pre_execute_hooks(expr)
 
         table_expr = expr.as_table()
-        output = pa.Table.from_pandas(
-            self.execute(table_expr, params=params, limit=limit, **kwargs),
-            preserve_index=False,
-        )
-        table = PyArrowData.convert_table(output, table_expr.schema())
-        return expr.__pyarrow_result__(table)
+        df = self.execute(table_expr, params=params, limit=limit, **kwargs)
+        pa_table = PyArrowData.convert_table(df, table_expr.schema())
+        return expr.__pyarrow_result__(pa_table)
 
     def to_pyarrow_batches(
         self,

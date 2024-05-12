@@ -26,6 +26,7 @@ from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
+from ibis.formats.pyarrow import PyArrowData
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -509,19 +510,14 @@ class Backend(SQLBackend, CanCreateDatabase):
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        import pyarrow as pa
-
         self._run_pre_execute_hooks(expr)
-
         schema = expr.as_table().schema()
         with self._safe_raw_sql(
             self.compile(expr, limit=limit, params=params)
         ) as cursor:
             df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
-        )
-        return table.to_reader(max_chunksize=chunk_size)
+        pa_table = PyArrowData.convert_table(df, schema)
+        return pa_table.to_reader(max_chunksize=chunk_size)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd

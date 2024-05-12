@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+import pandas as pd
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 
@@ -243,7 +244,14 @@ class PyArrowData(DataMapper):
             return scalar
 
     @classmethod
-    def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
+    def convert_column(
+        cls, column: pa.Array | pd.Series, dtype: dt.DataType
+    ) -> pa.Array:
+        if isinstance(column, pd.Series):
+            if dtype.is_uuid():
+                # pyarrow doesn't support UUIDs, so we need to convert them to strings
+                column = column.astype(str)
+            column = pa.Array.from_pandas(column)
         desired_type = PyArrowType.from_ibis(dtype)
         if column.type != desired_type:
             return column.cast(desired_type)
@@ -251,7 +259,15 @@ class PyArrowData(DataMapper):
             return column
 
     @classmethod
-    def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
+    def convert_table(cls, table: pa.Table | pd.DataFrame, schema: Schema) -> pa.Table:
+        if isinstance(table, pd.DataFrame):
+            table = pa.Table.from_arrays(
+                [
+                    cls.convert_column(table[col], dtype)
+                    for col, dtype in schema.items()
+                ],
+                names=schema.names,
+            )
         desired_schema = PyArrowSchema.from_ibis(schema)
         pa_schema = table.schema
 

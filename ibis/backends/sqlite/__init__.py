@@ -21,6 +21,7 @@ from ibis.backends.sql.compiler import C, F
 from ibis.backends.sqlite.compiler import SQLiteCompiler
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
+from ibis.formats.pyarrow import PyArrowData
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -269,8 +270,6 @@ class Backend(SQLBackend, UrlFromPath):
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        import pyarrow as pa
-
         self._run_pre_execute_hooks(expr)
 
         schema = expr.as_table().schema()
@@ -278,10 +277,8 @@ class Backend(SQLBackend, UrlFromPath):
             self.compile(expr, limit=limit, params=params)
         ) as cursor:
             df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
-        )
-        return table.to_reader(max_chunksize=chunk_size)
+        pa_table = PyArrowData.convert_table(df, schema)
+        return pa_table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
         column_defs = [
