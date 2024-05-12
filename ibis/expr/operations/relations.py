@@ -10,7 +10,11 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict, FrozenOrderedDict
+from ibis.common.collections import (
+    ConflictingValuesError,
+    FrozenDict,
+    FrozenOrderedDict,
+)
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
@@ -288,10 +292,21 @@ class Set(Relation):
     values = FrozenOrderedDict()
 
     def __init__(self, left, right, **kwargs):
-        # convert to dictionary first, to get key-unordered comparison semantics
-        if dict(left.schema) != dict(right.schema):
-            raise RelationError("Table schemas must be equal for set operations")
-        elif left.schema.names != right.schema.names:
+        err_msg = "Table schemas must be equal for set operations."
+        try:
+            missing_from_left = right.schema - left.schema
+            missing_from_right = left.schema - right.schema
+        except ConflictingValuesError as e:
+            raise RelationError(err_msg + "\n" + str(e)) from e
+        if missing_from_left or missing_from_right:
+            msgs = [err_msg]
+            if missing_from_left:
+                msgs.append(f"Columns missing from the left:\n{missing_from_left}.")
+            if missing_from_right:
+                msgs.append(f"Columns missing from the right:\n{missing_from_right}.")
+            raise RelationError("\n".join(msgs))
+
+        if left.schema.names != right.schema.names:
             # rewrite so that both sides have the columns in the same order making it
             # easier for the backends to implement set operations
             cols = {name: Field(right, name) for name in left.schema.names}
