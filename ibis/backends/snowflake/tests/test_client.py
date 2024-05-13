@@ -357,8 +357,7 @@ def test_list_tables_schema_warning_refactor(con):
     )
 
 
-def test_timestamp_memtable():
-    con = ibis.snowflake.connect()
+def test_timestamp_memtable(con):
     df = pd.DataFrame(
         {
             "ts": [
