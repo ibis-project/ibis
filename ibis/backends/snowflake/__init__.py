@@ -64,13 +64,6 @@ return longest.map((_, i) => {
     return Object.assign(...keys.map((key, j) => ({[key]: arrays[j][i]})));
 })""",
     },
-    "ibis_udfs.public.array_repeat": {
-        # Integer inputs are not allowed because JavaScript only supports
-        # doubles
-        "inputs": {"value": "ARRAY", "count": "DOUBLE"},
-        "returns": "ARRAY",
-        "source": """return Array(count).fill(value).flat();""",
-    },
 }
 
 

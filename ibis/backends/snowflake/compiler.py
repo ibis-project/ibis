@@ -307,7 +307,12 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.f.typeof(self.f.to_variant(arg))
 
     def visit_ArrayRepeat(self, op, *, arg, times):
-        return self.f.udf.array_repeat(arg, times)
+        return self.f.array_flatten(
+            self.f.transform(
+                self.f.array_generate_range(0, times),
+                sge.Lambda(this=arg, expressions=[sg.to_identifier("__arg__")]),
+            )
+        )
 
     def visit_ArrayUnion(self, op, *, left, right):
         return self.f.array_distinct(self.f.array_cat(left, right))
