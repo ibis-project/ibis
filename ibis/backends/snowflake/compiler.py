@@ -651,3 +651,18 @@ class SnowflakeCompiler(SQLGlotCompiler):
                 expressions=[param],
             ),
         )
+
+    def visit_JoinLink(self, op, *, how, table, predicates):
+        assert (
+            predicates or how == "cross"
+        ), "expected non-empty predicates when not a cross join"
+
+        if how == "asof":
+            # the asof join match condition is always the first predicate by
+            # construction
+            match_condition, *predicates = predicates
+            on = sg.and_(*predicates) if predicates else None
+            return sge.Join(
+                this=table, kind=how, on=on, match_condition=match_condition
+            )
+        return super().visit_JoinLink(op, how=how, table=table, predicates=predicates)
