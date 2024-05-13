@@ -355,3 +355,19 @@ def test_list_tables_schema_warning_refactor(con):
         con.list_tables(database=("IBIS_TESTING", "INFORMATION_SCHEMA"), like="TABLE")
         == like_table
     )
+
+
+def test_timestamp_memtable():
+    con = ibis.snowflake.connect()
+    df = pd.DataFrame(
+        {
+            "ts": [
+                pd.Timestamp("1970-01-01 00:00:00"),
+                pd.Timestamp("1970-01-01 00:00:01"),
+                pd.Timestamp("1970-01-01 00:00:02"),
+            ]
+        }
+    )
+    t = ibis.memtable(df)
+    result = con.to_pandas(t)
+    tm.assert_frame_equal(result, df)
