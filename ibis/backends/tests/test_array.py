@@ -418,14 +418,7 @@ def test_array_slice(backend, start, stop):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "sqlite",
-    ],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["risingwave"],
@@ -465,6 +458,7 @@ def test_array_slice(backend, start, stop):
         functools.partial(lambda x, y: x + y, y=1),
         ibis._ + 1,
     ],
+    ids=["lambda", "partial", "deferred"],
 )
 @pytest.mark.broken(
     ["risingwave"],
@@ -485,14 +479,7 @@ def test_array_map(con, input, output, func):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "flink",
-        "pandas",
-        "polars",
-        "snowflake",
-    ],
+    ["dask", "datafusion", "flink", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -533,6 +520,7 @@ def test_array_map(con, input, output, func):
         functools.partial(lambda x, y: x > y, y=1),
         ibis._ > 1,
     ],
+    ids=["lambda", "partial", "deferred"],
 )
 def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -1138,14 +1126,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "dask",
-        "pandas",
-    ],
+    ["datafusion", "flink", "polars", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
@@ -1166,16 +1147,7 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "sqlite",
-        "dask",
-        "pandas",
-        "sqlite",
-    ],
+    ["datafusion", "flink", "polars", "sqlite", "dask", "pandas", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 def test_complex_array_map(con):
