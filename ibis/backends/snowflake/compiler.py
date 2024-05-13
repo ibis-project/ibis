@@ -48,8 +48,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     }
 
     UNSUPPORTED_OPS = (
-        ops.ArrayMap,
-        ops.ArrayFilter,
         ops.RowID,
         ops.MultiQuantile,
         ops.IntervalFromInteger,
@@ -639,3 +637,22 @@ class SnowflakeCompiler(SQLGlotCompiler):
             seed=None if seed is None else sge.convert(seed),
         )
         return sg.select(STAR).from_(sample)
+
+    def visit_ArrayMap(self, op, *, arg, param, body):
+        return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+
+    def visit_ArrayFilter(self, op, *, arg, param, body):
+        return self.f.filter(
+            arg,
+            sge.Lambda(
+                this=sg.and_(
+                    body,
+                    # necessary otherwise null values are treated as JSON nulls
+                    # instead of SQL NULLs
+                    self.cast(sg.to_identifier(param), op.dtype.value_type).is_(
+                        sg.not_(NULL)
+                    ),
+                ),
+                expressions=[param],
+            ),
+        )
