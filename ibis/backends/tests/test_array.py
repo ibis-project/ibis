@@ -117,6 +117,17 @@ def test_array_repeat(con):
     assert np.array_equal(result, expected)
 
 
+@pytest.mark.notimpl(["flink", "polars"], raises=com.OperationNotDefinedError)
+def test_array_repeat_column(con):
+    t = ibis.memtable({"x": [[1.0, 2.0]]}, schema=ibis.schema({"x": "array<float64>"}))
+    expr = (t.x * 2).name("tmp")
+
+    result = con.execute(expr.name("tmp")).iat[0]
+    expected = np.array([1.0, 2.0, 1.0, 2.0])
+
+    assert np.array_equal(result, expected)
+
+
 def test_array_concat(con):
     left = ibis.literal([1, 2, 3])
     right = ibis.literal([2, 1])
