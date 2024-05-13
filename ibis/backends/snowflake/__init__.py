@@ -1041,35 +1041,26 @@ $$"""
         qtable = sg.to_identifier(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
 
-        options = " " * bool(kwargs) + " ".join(
+        kwargs.setdefault("USE_LOGICAL_TYPE", True)
+        options = " ".join(
             f"{name.upper()} = {value!r}" for name, value in kwargs.items()
         )
 
-        # we can't infer the schema from the format alone because snowflake
-        # doesn't support logical timestamp types in parquet files
-        #
-        # see
-        # https://community.snowflake.com/s/article/How-to-load-logical-type-TIMESTAMP-data-from-Parquet-files-into-Snowflake
+        type_mapper = self.compiler.type_mapper
         names_types = [
-            (
-                name,
-                self.compiler.type_mapper.to_string(typ),
-                typ.nullable,
-                typ.is_timestamp(),
-            )
+            (name, type_mapper.to_string(typ), typ.nullable)
             for name, typ in schema.items()
         ]
+
         snowflake_schema = ", ".join(
-            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not nullable)}"
-            for col, typ, nullable, _ in names_types
-        )
-        cols = ", ".join(
-            f"$1:{col}{'::VARCHAR' * is_timestamp}::{typ}"
-            for col, typ, _, is_timestamp in names_types
+            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not is_nullable)}"
+            for col, typ, is_nullable in names_types
         )
 
+        cols = ", ".join(f"$1:{col}::{typ}" for col, typ, _ in names_types)
+
         stmts = [
-            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET{options})",
+            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
             f"CREATE TEMP TABLE {qtable} ({snowflake_schema})",
         ]
 
