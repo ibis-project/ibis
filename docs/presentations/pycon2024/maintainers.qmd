@@ -310,7 +310,7 @@ def pytest_ignore_collect(...):
 
 - `xdist`: try to make this work if you can
 - `randomly`: exposes your bogus and stateful assumptions
-- `repeat`: great when randomly has exposed your busted assumptions
+- `repeat`: great when randomly exposes your busted assumptions
 - `clarity`: you will hate read failure diffs less
 - `snapshot`: better than that giant `f`-string you just wrote
 
