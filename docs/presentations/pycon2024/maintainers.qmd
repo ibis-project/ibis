@@ -63,30 +63,16 @@ format:
 dev to prod with the same API
 :::
 
-## Getting started 🏃
+## One API, 20+ backends {.smaller .scrollable}
 
 ```{python}
 #| code-fold: true
 #| echo: false
-
 import ibis
 
 t = ibis.examples.penguins.fetch()
 t.to_parquet("penguins.parquet")
 ```
-
-```{python}
-import ibis
-
-ibis.options.interactive = True
-```
-
-```{python}
-t = ibis.read_parquet("penguins.parquet")
-t.head(3)
-```
-
-## One API, 20+ backends {.smaller .scrollable}
 
 ::: {.panel-tabset}
 
@@ -158,8 +144,6 @@ t.group_by("species", "island").agg(count=t.count()).order_by("count")
 
 ## How it works
 
-Ibis compiles down to SQL or dataframe code:
-
 ```{python}
 #| echo: false
 
@@ -188,7 +172,7 @@ fig.show()
 - **9** distributed SQL
 - **3** dataframe
 - oldest: **~45** years 👀
-- newest: **~2** years
+- youngest: **~2** years
 :::
 ::::
 
@@ -249,6 +233,20 @@ _CI must complete "quickly"_
 :::
 :::
 
+## This plot
+
+::: {layout="[[-1], [1], [-1]]"}
+
+![](./progress.png){fig-align="center"}
+
+:::
+
+::: {.fragment}
+::: {.r-fit-text}
+_We've added 3 or 4 new backends since the switch_
+:::
+:::
+
 ## Tools: docker
 
 - Sure, docker
@@ -256,7 +254,7 @@ _CI must complete "quickly"_
 - Use health checks; "dumb" ones are fine
 - Make it easy for devs to use
 
-## Tools: GitHub actions
+## Tools: GitHub Actions {.smaller}
 
 ::: {.callout-note}
 ### I don't work for GitHub
