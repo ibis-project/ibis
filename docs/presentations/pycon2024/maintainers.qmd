@@ -13,44 +13,43 @@ format:
     theme: dark
 ---
 
-# what
+# What
 
-## maybe this is you
+## Maybe this is you
 
 ![](./docker-eye-roll.gif){fig-align="center"}
 
-## or this
+## Or this
 
 ![](./wonka.png){fig-align="center"}
 
-## or maybe even this
+## Or maybe even this
 
 ![](./basement-ci.jpeg){fig-align="center"}
 
-## this talk isn't earth shattering
-
-opinions informed by experience
+## Not earth shattering
 
 :::: {.columns}
 
 ::: {.column width="50%"}
-### overview
+### Overview
 
-- what we learned about maintenance building Ibis
-- day to day of supporting 20+ databases
-- unique challenges
+- What we learned about maintenance building Ibis
+- Day to day of supporting 20+ databases
+- Unique challenges
 :::
 
 ::: {.column width="50%"}
-### topics
+### Topics
 
-- some docker stuff
-- some packaging stuff
-- pytest plugins you should be using
+- Some docker stuff
+- Some packaging stuff
+- Some CI stuff
+- Some `pytest` plugins stuff
 :::
 ::::
 
-# quick overview of Ibis
+# Overview of Ibis
 
 ## Ibis is a Python library for:
 
@@ -64,7 +63,7 @@ opinions informed by experience
 dev to prod with the same API
 :::
 
-## Getting started...
+## Getting started 🏃
 
 ```{python}
 #| code-fold: true
@@ -157,7 +156,7 @@ t.group_by("species", "island").agg(count=t.count()).order_by("count")
 
 :::
 
-## how it works
+## How it works
 
 Ibis compiles down to SQL or dataframe code:
 
@@ -166,26 +165,26 @@ Ibis compiles down to SQL or dataframe code:
 
 import os
 import sys
-sys.path.append(os.path.abspath(".."))
+sys.path.append(os.path.abspath("../.."))
 
 from backends_sankey import fig
 fig.show()
 ```
 
-# what's in Ibis?
+# What's in an Ibis?
 
-## by the numbers {.smaller}
+## By the numbers {.smaller}
 
 :::: {.columns}
 ::: {.column width="50%"}
-### backends
+### Backends
 - **17** SQL
 - **3** non-SQL
 - **2** cloud
 :::
 
 ::: {.column width="50%"}
-### engines + APIs
+### Engines + APIs
 - **9** distributed SQL
 - **3** dataframe
 - oldest: **~45** years 👀
@@ -193,29 +192,29 @@ fig.show()
 :::
 ::::
 
-### other facts
+### Other facts
 
-- latency is wild
-- deployment models vary
+- Latency is variable
+- Deployment models vary
 
 ::: {.fragment}
 ::: {.r-fit-text}
-_… **feature development**_❓
+_… **Feature development**_❓
 :::
 :::
 
-## bit of a pickle
+## Bit of a pickle
 
 ![](./picklerick.png)
 
-# how
+# How
 
-## high level
+## High level
 
-### goal: fast iteration
+### Goal: fast iteration
 
-- fast env setup (dep mgmt)
-- (less) fast tests (testing)
+- fast env setup (dependency management)
+- fast(ish) tests (test-running library)
 - high **job** concurrency (ci/provider)
 - **easy to run**: dev speed ([`just`](https://github.com/casey/just))
 
@@ -225,42 +224,46 @@ _CI must complete "quickly"_
 :::
 :::
 
-## tools: overview
+## Tools: overview
 
 - **deps**: poetry
 - **ci**: GitHub Actions
-- **beasts**: docker
+- **wild beasts**: docker
 - **house pets**: docker
 - cool kids don't get special tx (duckdb, polars)
 - task runner (e.g.: `just up postgres`)
 
-## tools: poetry
+## Tools: poetry
 
 ::: {.callout-warning}
 ## Opinions follow
 :::
 
-- **env setup needs to be _fast_**: avoid SAT
-- poetry is one way; there are others
-- get yourself a lockfile
+- **Env setup needs to be _fast_**: avoid constraint solving
+- Poetry is one way; there are others
+- Get yourself a lockfile
 
 ::: {.fragment}
 ::: {.r-fit-text}
-… _are you doing that **now**_❔❓
+… _Are you doing that **now**_❔❓
 :::
 :::
 
-## tools: docker
+## Tools: docker
 
 - Sure, docker
 - But, do you to use it locally?
 - Use health checks; "dumb" ones are fine
-- Focus: make it easy for devs to use
+- Make it easy for devs to use
 
-## tools: GitHub actions
+## Tools: GitHub actions
 
-- Pay for the Teams plan ([more concurrency](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits))
-- Automate dep updates via Renovate/Dependabot
+::: {.callout-note}
+### I don't work for GitHub
+:::
+
+- Pay for the [the Teams plan](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits) to get more concurrency
+- Automate dependency updates
 
 ::: {.columns}
 ::: {.column width="50%"}
@@ -270,13 +273,13 @@ _CI must complete "quickly"_
 :::
 
 ::: {.column width="50%"}
-### ibis CI cost
+### Ibis CI cost
 
 ![](./bill.png)
 :::
 :::
 
-## pytest {.smaller}
+## `pytest` {.smaller}
 
 ### Ibis problems
 
@@ -286,7 +289,7 @@ _CI must complete "quickly"_
 - Answer questions like: "will it _ever_ blend?"
 
 ::: {.fragment}
-### markers + hooks
+### Markers + hooks
 
 ```python
 @pytest.mark.never("duckdb")  # never gonna happen
@@ -301,22 +304,25 @@ def pytest_ignore_collect(...):
 ```
 :::
 
-## pytest: plugins
+## `pytest` plugins you may like
 
 **`pytest-`**
 
 - `xdist`: try to make this work if you can
 - `randomly`: exposes your bogus and stateful assumptions
-- `repeat`: great when randomly has exposed your shenanigans
-- `clarity`: failing test diffs are **much** more readable
+- `repeat`: great when randomly has exposed your busted assumptions
+- `clarity`: you will hate read failure diffs less
 - `snapshot`: better than that giant `f`-string you just wrote
 
-# summary
+**hypothesis** 👈 that too, we don't use it enough
 
-- use docker for dev **and** "prod"
-- lock your dependencies*
-- auto update stuff where it makes sense
-- pytest probably has a thing for that
-- track ci run durations, somehow
+# Summary
 
-# questions?
+- Use docker for dev **and** "prod"
+- Lock your dependencies (dev only!)
+- Auto update stuff
+- `pytest` probably has a thing for that
+- Spend time on dev ex
+- Track CI run durations, look at them too
+
+# Questions?
