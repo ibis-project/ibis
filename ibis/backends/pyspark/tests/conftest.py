@@ -192,7 +192,22 @@ class TestConf(BackendTest):
         return ibis.pyspark.connect(spark, **kw)
 
 
-class TestConfForStreaming(TestConf):
+class TestConfForStreaming(BackendTest):
+    deps = ("pyspark",)
+
+    def _load_data(self, **_: Any) -> None:
+        s = self.connection._session
+        num_partitions = 4
+
+        sort_cols = {"functional_alltypes": "id"}
+
+        for name in TEST_TABLES:
+            path = str(self.data_dir / "directory" / "parquet" / name)
+            t = s.readStream.parquet(path).repartition(num_partitions)
+            if (sort_col := sort_cols.get(name)) is not None:
+                t = t.sort(sort_col)
+            t.createOrReplaceTempView(name)
+
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         config = _test_session_builder.config(
@@ -326,12 +341,6 @@ def con(data_dir, tmp_path_factory, worker_id):
     df_interval_invalid.createTempView("invalid_interval_table")
 
     return con
-
-
-@pytest.fixture(scope="session")
-def streaming_con(data_dir, tmp_path_factory, worker_id):
-    backend_test = TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
-    return backend_test.connection
 
 
 class IbisWindow:
