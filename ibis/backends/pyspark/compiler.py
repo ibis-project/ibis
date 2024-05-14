@@ -12,6 +12,7 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.expr.operations.udf import InputType
 from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
@@ -326,6 +327,10 @@ class PySparkCompiler(SQLGlotCompiler):
             name = op.func.__name__
         else:
             raise TypeError(f"Cannot get SQL name for {type(op).__name__}")
+
+        # builtin functions will not modify the name
+        if op.__input_type__ == InputType.BUILTIN:
+            return name
 
         if not name.isidentifier():
             # replace invalid characters with underscores
