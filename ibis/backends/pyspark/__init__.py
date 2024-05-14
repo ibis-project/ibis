@@ -1074,15 +1074,23 @@ class StreamingBackend(Backend):
                 sq = sq.option(k, v)
         sq.start()
 
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        raise NotImplementedError(
+            "Pyspark in streaming mode does not support direction registration of CSV files. "
+            "Please use `read_csv_directory` instead."
+        )
+
     @util.experimental
     def read_csv_directory(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV directory as a table in the current database.
 
         Parameters
         ----------
-        source
+        path
             The data source.
         table_name
             An optional name to use for the created table. This defaults to
@@ -1099,19 +1107,27 @@ class StreamingBackend(Backend):
         """
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source = util.normalize_filename(source)
+        path = util.normalize_filename(path)
         spark_df = self._session.readStream.csv(
-            source, inferSchema=inferSchema, header=header, **kwargs
+            path, inferSchema=inferSchema, header=header, **kwargs
         )
         table_name = table_name or util.gen_name("read_csv")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        raise NotImplementedError(
+            "Pyspark in streaming mode does not support direction registration of parquet files. "
+            "Please use `read_parquet_directory` instead."
+        )
+
     @util.experimental
     def read_parquet_directory(
         self,
-        source: str | Path,
+        path: str | Path,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -1119,7 +1135,7 @@ class StreamingBackend(Backend):
 
         Parameters
         ----------
-        source
+        path
             The data source. A directory of parquet files.
         table_name
             An optional name to use for the created table. This defaults to
@@ -1134,22 +1150,30 @@ class StreamingBackend(Backend):
             The just-registered table
 
         """
-        source = util.normalize_filename(source)
-        spark_df = self._session.readStream.parquet(source, **kwargs)
+        path = util.normalize_filename(path)
+        spark_df = self._session.readStream.parquet(path, **kwargs)
         table_name = table_name or util.gen_name("read_parquet")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
+    def read_json(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        raise NotImplementedError(
+            "Pyspark in streaming mode does not support direction registration of JSON files. "
+            "Please use `read_json_directory` instead."
+        )
+
     @util.experimental
     def read_json_directory(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table in the current database.
 
         Parameters
         ----------
-        source
+        path
             The data source. A directory of JSON files.
         table_name
             An optional name to use for the created table. This defaults to
@@ -1164,18 +1188,23 @@ class StreamingBackend(Backend):
             The just-registered table
 
         """
-        source = util.normalize_filename(source)
-        spark_df = self._session.readStream.json(source, **kwargs)
+        path = util.normalize_filename(path)
+        spark_df = self._session.readStream.json(path, **kwargs)
         table_name = table_name or util.gen_name("read_json")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
     def _to_filesystem_output(
-        self, expr: ir.Expr, format: str, options: Mapping[str, str] | None = None
+        self,
+        expr: ir.Expr,
+        format: str,
+        path: str | Path,
+        options: Mapping[str, str] | None = None,
     ) -> None:
         df = self._session.sql(expr.compile())
         sq = df.writeStream.format(format)
+        sq = sq.option("path", os.fspath(path))
         if options is not None:
             for k, v in options.items():
                 sq = sq.option(k, v)
@@ -1185,14 +1214,16 @@ class StreamingBackend(Backend):
     def to_parquet_directory(
         self,
         expr: ir.Expr,
+        path: str | Path,
         options: Mapping[str, str] | None = None,
     ) -> None:
-        self._to_filesystem_output(expr, "parquet", options)
+        self._to_filesystem_output(expr, "parquet", path, options)
 
     @util.experimental
     def to_csv_directory(
         self,
         expr: ir.Expr,
+        path: str | Path,
         options: Mapping[str, str] | None = None,
     ) -> None:
-        self._to_filesystem_output(expr, "csv", options)
+        self._to_filesystem_output(expr, "csv", path, options)
