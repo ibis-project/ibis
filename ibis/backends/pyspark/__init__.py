@@ -277,7 +277,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         for udf in node.find(ops.ScalarUDF):
             if udf.__input_type__ not in (InputType.PANDAS, InputType.BUILTIN):
                 raise NotImplementedError(
-                    "Only Builtin UDFs and Pandas UDFs are support in the PySpark backend"
+                    "Only Builtin UDFs and Pandas UDFs are supported in the PySpark backend"
                 )
             # register pandas UDFs
             if udf.__input_type__ == InputType.PANDAS:
