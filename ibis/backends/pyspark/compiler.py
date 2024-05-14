@@ -329,7 +329,7 @@ class PySparkCompiler(SQLGlotCompiler):
             raise TypeError(f"Cannot get SQL name for {type(op).__name__}")
 
         # builtin functions will not modify the name
-        if hasattr(op, "__input_type__") and op.__input_type__ == InputType.BUILTIN:
+        if getattr(op, "__input_type__", None) == InputType.BUILTIN:
             return name
 
         if not name.isidentifier():
