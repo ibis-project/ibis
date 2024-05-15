@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from operator import methodcaller
-
 import pytest
 from pytest import param
 
@@ -102,28 +100,6 @@ def test_having(simple_table, assert_sql):
         .having(simple_table.count() >= 1000)
         .aggregate(simple_table.b.sum().name("b_sum"))
     )
-    assert_sql(expr)
-
-
-@pytest.mark.parametrize(
-    "method",
-    [
-        methodcaller("tumble", window_size=ibis.interval(minutes=15)),
-        methodcaller(
-            "hop",
-            window_size=ibis.interval(minutes=15),
-            window_slide=ibis.interval(minutes=1),
-        ),
-        methodcaller(
-            "cumulate",
-            window_size=ibis.interval(minutes=1),
-            window_step=ibis.interval(seconds=10),
-        ),
-    ],
-    ids=["tumble", "hop", "cumulate"],
-)
-def test_windowing_tvf(simple_table, method, assert_sql):
-    expr = method(simple_table.window_by(time_col=simple_table.i))
     assert_sql(expr)
 
 

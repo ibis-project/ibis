@@ -7,129 +7,84 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.expr.types.relations import bind
+from ibis.common.grounds import Concrete
+from ibis.expr.types.relations import unwrap_aliases
 
 if TYPE_CHECKING:
-    from ibis.expr.types import Table
+    from collections.abc import Sequence
 
 
 @public
-class WindowedTable:
+class WindowedTable(Concrete):
     """An intermediate table expression to hold windowing information."""
 
-    def __init__(self, table: ir.Table, time_col: ir.Value):
-        self.table = table
-        self.time_col = next(bind(table, time_col))
+    table: ops.Relation
+    time_col: ops.Column
 
-        if self.time_col is None:
-            raise com.IbisInputError(
-                "Window aggregations require `time_col` as an argument"
-            )
+    def __init__(self, time_col: ops.Column, **kwargs):
+        if not time_col:
+            raise com.IbisInputError("No time column provided")
+        super().__init__(time_col=time_col, **kwargs)
 
-    def tumble(
+
+@public
+class TumbleTable(WindowedTable):
+    window_size: ir.IntervalScalar
+    offset: ir.IntervalScalar | None = None
+
+    def aggregate(
         self,
-        window_size: ir.IntervalScalar,
-        offset: ir.IntervalScalar | None = None,
-    ) -> Table:
-        """Compute a tumble table valued function.
+        metrics: Sequence[ir.Scalar] | None = (),
+        by: Sequence[ir.Value] | None = (),
+        **kwargs: ir.Value,
+    ) -> ir.Table:
+        table = self.table.to_expr()
+        groups = table.bind(by)
+        metrics = table.bind(metrics, **kwargs)
 
-        Tumbling windows have a fixed size and do not overlap. The size of the windows is
-        determined by `window_size`, optionally shifted by a duration specified by `offset`.
+        groups = unwrap_aliases(groups)
+        metrics = unwrap_aliases(metrics)
 
-        Parameters
-        ----------
-        window_size
-            Width of the tumbling windows.
-        offset
-            An optional parameter to specify the offset which window start should be shifted by.
-
-        Returns
-        -------
-        Table
-            Table expression after applying tumbling table-valued function.
-        """
-        time_col = next(bind(self.table, self.time_col))
-        return ops.TumbleWindowingTVF(
-            table=self.table,
-            time_col=time_col,
-            window_size=window_size,
-            offset=offset,
+        return ops.WindowAggregate(
+            self.table,
+            "tumble",
+            self.time_col,
+            groups=groups,
+            metrics=metrics,
+            window_size=self.window_size,
+            offset=self.offset,
         ).to_expr()
 
-    def hop(
+    agg = aggregate
+
+
+@public
+class HopTable(WindowedTable):
+    window_size: ir.IntervalScalar
+    window_step: ir.IntervalScalar
+    offset: ir.IntervalScalar | None = None
+
+    def aggregate(
         self,
-        window_size: ir.IntervalScalar,
-        window_slide: ir.IntervalScalar,
-        offset: ir.IntervalScalar | None = None,
-    ):
-        """Compute a hop table valued function.
+        metrics: Sequence[ir.Scalar] | None = (),
+        by: Sequence[ir.Value] | None = (),
+        **kwargs: ir.Value,
+    ) -> ir.Table:
+        table = self.table.to_expr()
+        groups = table.bind(by)
+        metrics = table.bind(metrics, **kwargs)
 
-        Hopping windows have a fixed size and can be overlapping if the slide is smaller than the
-        window size (in which case elements can be assigned to multiple windows). Hopping windows
-        are also known as sliding windows. The size of the windows is determined by `window_size`,
-        how frequently a hopping window is started is determined by `window_slide`, and windows can
-        be optionally shifted by a duration specified by `offset`.
+        groups = unwrap_aliases(groups)
+        metrics = unwrap_aliases(metrics)
 
-        For example, you could have windows of size 10 minutes that slides by 5 minutes. With this,
-        you get every 5 minutes a window that contains the events that arrived during the last 10 minutes.
-
-        Parameters
-        ----------
-        window_size
-            Width of the hopping windows.
-        window_slide
-            The duration between the start of sequential hopping windows.
-        offset
-            An optional parameter to specify the offset which window start should be shifted by.
-
-        Returns
-        -------
-        Table
-            Table expression after applying hopping table-valued function.
-        """
-        time_col = next(bind(self.table, self.time_col))
-        return ops.HopWindowingTVF(
-            table=self.table,
-            time_col=time_col,
-            window_size=window_size,
-            window_slide=window_slide,
-            offset=offset,
+        return ops.WindowAggregate(
+            self.table,
+            "hop",
+            self.time_col,
+            groups=groups,
+            metrics=metrics,
+            window_size=self.window_size,
+            offset=self.offset,
         ).to_expr()
 
-    def cumulate(
-        self,
-        window_size: ir.IntervalScalar,
-        window_step: ir.IntervalScalar,
-        offset: ir.IntervalScalar | None = None,
-    ):
-        """Compute a cumulate table valued function.
-
-        Cumulate windows don't have a fixed size and do overlap. Cumulate windows assign elements to windows
-        that cover rows within an initial interval of step size and expand to one more step size (keep window
-        start fixed) every step until the max window size.
-
-        For example, you could have a cumulating window for 1 hour step and 1 day max size, and you will get
-        windows: [00:00, 01:00), [00:00, 02:00), [00:00, 03:00), …, [00:00, 24:00) for every day.
-
-        Parameters
-        ----------
-        window_size
-            Max width of the cumulating windows.
-        window_step
-            A duration specifying the increased window size between the end of sequential cumulating windows.
-        offset
-            An optional parameter to specify the offset which window start should be shifted by.
-
-        Returns
-        -------
-        Table
-            Table expression after applying cumulate table-valued function.
-        """
-        time_col = next(bind(self.table, self.time_col))
-        return ops.CumulateWindowingTVF(
-            table=self.table,
-            time_col=time_col,
-            window_size=window_size,
-            window_step=window_step,
-            offset=offset,
-        ).to_expr()
+    agg = aggregate
