@@ -61,7 +61,7 @@ class TumbleTable(WindowedTable):
 @public
 class HopTable(WindowedTable):
     window_size: ir.IntervalScalar
-    window_step: ir.IntervalScalar
+    window_slide: ir.IntervalScalar
     offset: ir.IntervalScalar | None = None
 
     def aggregate(

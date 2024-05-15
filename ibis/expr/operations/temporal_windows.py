@@ -22,7 +22,7 @@ class WindowAggregate(Relation):
     groups: FrozenOrderedDict[str, Unaliased[Column]]
     metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
     window_size: Scalar[dt.Interval]
-    window_step: Optional[Scalar[dt.Interval]] = None
+    window_slide: Optional[Scalar[dt.Interval]] = None
     offset: Optional[Scalar[dt.Interval]] = None
 
     @attribute
