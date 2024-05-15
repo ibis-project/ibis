@@ -70,6 +70,8 @@ dev to prod with the same API
 #| echo: false
 import ibis
 
+ibis.options.interactive = True
+
 t = ibis.examples.penguins.fetch()
 t.to_parquet("penguins.parquet")
 ```
