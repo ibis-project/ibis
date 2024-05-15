@@ -470,9 +470,11 @@ class PySparkCompiler(SQLGlotCompiler):
         if overlaps_with_parent:
             column_alias_or_name = column.alias_or_name
             selcols.extend(
-                sg.column(col, table=parent_alias, quoted=quoted)
-                if col != column_alias_or_name
-                else computed_column
+                (
+                    sg.column(col, table=parent_alias, quoted=quoted)
+                    if col != column_alias_or_name
+                    else computed_column
+                )
                 for col in parent_schema.names
             )
         else:
@@ -515,3 +517,73 @@ class PySparkCompiler(SQLGlotCompiler):
                 )
             )
         )
+
+    def visit_WindowAggregate(
+        self,
+        op,
+        *,
+        parent,
+        window_type,
+        time_col,
+        groups,
+        metrics,
+        window_size,
+        window_slide,
+        offset,
+    ):
+        if offset is not None:
+            raise com.UnsupportedOperationError(
+                "PySpark streaming does not support windowing with offset."
+            )
+        if window_type == "tumble":
+            assert window_slide is None
+
+        return (
+            sg.select(
+                sg.alias(
+                    sge.Dot(
+                        this=sge.Column(this="window", table=parent.alias_or_name),
+                        expression=sge.Identifier(this="start"),
+                    ),
+                    "window_start",
+                    quoted=True,
+                ),
+                sg.alias(
+                    sge.Dot(
+                        this=sge.Column(this="window", table=parent.alias_or_name),
+                        expression=sge.Identifier(this="end"),
+                    ),
+                    "window_end",
+                    quoted=True,
+                ),
+                *self._cleanup_names(groups),
+                *self._cleanup_names(metrics),
+                copy=False,
+            )
+            .from_(parent.as_(parent.alias_or_name))
+            .group_by(
+                *groups.values(),
+                self.f.window(
+                    sg.column(time_col.this, table=parent.alias_or_name, quoted=True),
+                    *filter(
+                        None,
+                        [
+                            self._format_window_interval(window_size),
+                            self._format_window_interval(window_slide),
+                        ],
+                    ),
+                ),
+                copy=False,
+            )
+        )
+
+    def _format_window_interval(self, expression):
+        if expression is None:
+            return None
+        unit = expression.args.get("unit").sql(dialect=self.dialect)
+        # skip plural conversion
+        unit = f" {unit}" if unit else ""
+
+        this = expression.this.this  # avoid quoting the interval as a string literal
+
+        return f"{this}{unit}"

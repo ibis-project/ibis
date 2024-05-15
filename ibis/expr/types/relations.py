@@ -4617,7 +4617,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         window_type: Literal["tumble", "hop"],
         time_col: str | ir.Value,
         window_size: ir.IntervalScalar,
-        window_step: ir.IntervalScalar | None = None,
+        window_slide: ir.IntervalScalar | None = None,
         offset: ir.IntervalScalar | None = None,
     ) -> WindowedTable:
         from ibis.expr.types.temporal_windows import HopTable, TumbleTable
@@ -4625,7 +4625,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         time_col = next(iter(self.bind(time_col)))
 
         if window_type == "tumble":
-            if window_step is not None:
+            if window_slide is not None:
                 raise com.IbisInputError(
                     "Tumble windows are non-overlapping and the window step is assumed "
                     "to be the same as the window size. If you want to create overlapping "
@@ -4637,7 +4637,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 self,
                 time_col,
                 window_size=window_size,
-                window_step=window_step,
+                window_slide=window_slide,
                 offset=offset,
             )
         else:

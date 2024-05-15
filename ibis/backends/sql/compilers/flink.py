@@ -155,11 +155,11 @@ class FlinkCompiler(SQLGlotCompiler):
         groups,
         metrics,
         window_size,
-        window_step,
+        window_slide,
         offset,
     ):
         if window_type == "tumble":
-            assert window_step is None
+            assert window_slide is None
 
         args = [
             self.v[f"TABLE {parent.this.sql(self.dialect)}"],
@@ -169,7 +169,7 @@ class FlinkCompiler(SQLGlotCompiler):
             #
             # perhaps there's a better way to deal with this
             self.f.descriptor(time_col.this),
-            window_step,
+            window_slide,
             window_size,
             offset,
         ]
