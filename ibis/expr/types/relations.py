@@ -58,10 +58,10 @@ def _regular_join_method(
     def f(  # noqa: D417
         self: ir.Table,
         right: ir.Table,
-        predicates: str
-        | Sequence[
-            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue
-        ] = (),
+        predicates: (
+            str
+            | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
+        ) = (),
         *,
         lname: str = "",
         rname: str = "{name}_right",
@@ -2200,10 +2200,12 @@ class Table(Expr, _FixedTextJupyterMixin):
     )
     def relabel(
         self,
-        substitutions: Mapping[str, str]
-        | Callable[[str], str | None]
-        | str
-        | Literal["snake_case", "ALL_CAPS"],
+        substitutions: (
+            Mapping[str, str]
+            | Callable[[str], str | None]
+            | str
+            | Literal["snake_case", "ALL_CAPS"]
+        ),
     ) -> Table:
         """Deprecated in favor of `Table.rename`."""
         if isinstance(substitutions, Mapping):
@@ -2212,11 +2214,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def rename(
         self,
-        method: str
-        | Callable[[str], str | None]
-        | Literal["snake_case", "ALL_CAPS"]
-        | Mapping[str, str]
-        | None = None,
+        method: (
+            str
+            | Callable[[str], str | None]
+            | Literal["snake_case", "ALL_CAPS"]
+            | Mapping[str, str]
+            | None
+        ) = None,
         /,
         **substitutions: str,
     ) -> Table:
@@ -3076,17 +3080,19 @@ class Table(Expr, _FixedTextJupyterMixin):
     def join(
         left: Table,
         right: Table,
-        predicates: str
-        | Sequence[
+        predicates: (
             str
-            | ir.BooleanColumn
-            | Literal[True]
-            | Literal[False]
-            | tuple[
-                str | ir.Column | ir.Deferred,
-                str | ir.Column | ir.Deferred,
+            | Sequence[
+                str
+                | ir.BooleanColumn
+                | Literal[True]
+                | Literal[False]
+                | tuple[
+                    str | ir.Column | ir.Deferred,
+                    str | ir.Column | ir.Deferred,
+                ]
             ]
-        ] = (),
+        ) = (),
         how: JoinKind = "inner",
         *,
         lname: str = "",
@@ -3630,9 +3636,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
-        names_transform: Callable[[str], ir.Value]
-        | Mapping[str, Callable[[str], ir.Value]]
-        | None = None,
+        names_transform: (
+            Callable[[str], ir.Value] | Mapping[str, Callable[[str], ir.Value]] | None
+        ) = None,
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
     ) -> Table:
@@ -4606,25 +4612,38 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return relocated
 
-    def window_by(self, time_col: ir.Value) -> WindowedTable:
-        """Create a windowing table-valued function (TVF) expression.
+    def window_by(
+        self,
+        window_type: Literal["tumble", "hop"],
+        time_col: str | ir.Value,
+        window_size: ir.IntervalScalar,
+        window_step: ir.IntervalScalar | None = None,
+        offset: ir.IntervalScalar | None = None,
+    ) -> WindowedTable:
+        from ibis.expr.types.temporal_windows import HopTable, TumbleTable
 
-        Windowing table-valued functions (TVF) assign rows of a table to windows
-        based on a time attribute column in the table.
+        time_col = next(iter(self.bind(time_col)))
 
-        Parameters
-        ----------
-        time_col
-            Column of the table that will be mapped to windows.
-
-        Returns
-        -------
-        WindowedTable
-            WindowedTable expression.
-        """
-        from ibis.expr.types.temporal_windows import WindowedTable
-
-        return WindowedTable(self, time_col)
+        if window_type == "tumble":
+            if window_step is not None:
+                raise com.IbisInputError(
+                    "Tumble windows are non-overlapping and the window step is assumed "
+                    "to be the same as the window size. If you want to create overlapping "
+                    "windows, specify `window_type='hop'`."
+                )
+            return TumbleTable(self, time_col, window_size=window_size, offset=offset)
+        elif window_type == "hop":
+            return HopTable(
+                self,
+                time_col,
+                window_size=window_size,
+                window_step=window_step,
+                offset=offset,
+            )
+        else:
+            raise com.IbisInputError(
+                f"`window_type` must be `tumble` or `hop`, got {window_type}"
+            )
 
     def value_counts(self) -> ir.Table:
         """Compute a frequency table of this table's values.
