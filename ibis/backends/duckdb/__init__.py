@@ -478,7 +478,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             Path(temp_directory).mkdir(parents=True, exist_ok=True)
             config["temp_directory"] = str(temp_directory)
 
-        self.con = duckdb.connect(str(database), config=config, read_only=read_only)
+        self.con = duckdb.connect(str(database), read_only=read_only)
+        self.con.execute("install httpfs;")
+        self.con.execute("load httpfs;")
+        for k,v in config.items():
+            self.con.execute(f"SET {k}='{v}';")
 
         # Load any pre-specified extensions
         if extensions is not None:
