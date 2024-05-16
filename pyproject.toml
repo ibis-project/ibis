@@ -493,3 +493,6 @@ format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ bump_version(base, 
 [build-system]
 requires = ["poetry-core>=1.1.0", "poetry-dynamic-versioning"]
 build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.ibis]
+default_backend = "duckdb"
