@@ -632,3 +632,85 @@ class agg(_UDF):
             signature=signature,
             **kwargs,
         )
+
+    @overload
+    @classmethod
+    def pandas(cls, fn: Callable) -> Callable[..., ir.Value]: ...
+
+    @overload
+    @classmethod
+    def pandas(
+        cls,
+        *,
+        name: str | None = None,
+        database: str | None = None,
+        catalog: str | None = None,
+        signature: tuple[tuple[Any, ...], Any] | None = None,
+        **kwargs: Any,
+    ) -> Callable[[Callable], Callable[..., ir.Value]]: ...
+
+    @util.experimental
+    @classmethod
+    def pandas(
+        cls,
+        fn=None,
+        *,
+        name=None,
+        database=None,
+        catalog=None,
+        signature=None,
+        **kwargs,
+    ):
+        """Construct an aggregate user-defined function that accepts pandas Series' as inputs.
+
+        Parameters
+        ----------
+        fn
+            The function to wrap.
+        name
+            The name of the UDF in the backend if different from the function name.
+        database
+            The database in which the builtin function resides.
+        catalog
+            The catalog in which the builtin function resides.
+        signature
+            If present, a tuple of the form `((arg0type, arg1type, ...), returntype)`.
+            For example, a function taking an int and a float and returning a
+            string would be `((int, float), str)`. If not present, the signature
+            will be derived from the type annotations of the wrapped function.
+        kwargs
+            Additional backend-specific configuration arguments for the UDF.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> @ibis.udf.agg.pandas
+        ... def avg(x) -> float:
+        ...     return x.mean()
+        >>> conn = ibis.pyspark.connect()
+        >>> t = conn.create_view(
+        ...     "t", ibis.memtable(dict(id=[1, 2, 3, 1, 2, 1], num=[4, 5, 6, 2, 3, 4]))
+        ... )
+        >>> t = t.group_by(t.id).aggregate(avg=avg(t.num))
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━━━┓
+        ┃ id    ┃ avg      ┃
+        ┡━━━━━━━╇━━━━━━━━━━┩
+        │ int64 │ float64  │
+        ├───────┼──────────┤
+        │     1 │ 3.333333 │
+        │     2 │ 4.000000 │
+        │     3 │ 6.000000 │
+        └───────┴──────────┘
+        """
+        return _wrap(
+            cls._make_wrapper,
+            InputType.PANDAS,
+            fn,
+            name=name,
+            database=database,
+            catalog=catalog,
+            signature=signature,
+            **kwargs,
+        )

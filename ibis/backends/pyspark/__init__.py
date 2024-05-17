@@ -287,6 +287,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.SCALAR)
                 self._session.udf.register(udf_name, spark_udf)
 
+        for udf in node.find(ops.AggUDF):
+            if udf.__input_type__ not in (InputType.PANDAS, InputType.BUILTIN):
+                raise NotImplementedError(
+                    "Only Builtin AggUDFs and Pandas AggUDFs are supported in the PySpark backend"
+                )
+
+            # register pandas AggUDFs
+            if udf.__input_type__ == InputType.PANDAS:
+                udf_name = self.compiler.__sql_name__(udf)
+                udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
+                udf_return = PySparkType.from_ibis(udf.dtype)
+                spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.GROUPED_AGG)
+                self._session.udf.register(udf_name, spark_udf)
+
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
