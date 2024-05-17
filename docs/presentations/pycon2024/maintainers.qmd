@@ -9,7 +9,6 @@ format:
   revealjs:
     footer: <https://ibis-project.org>
     # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
-    theme: dark
 ---
 
 ## Who
