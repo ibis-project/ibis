@@ -1,6 +1,6 @@
 ---
 title: "Test 20 databases on every commit"
-subtitle: "You can, it's not hyperbole"
+subtitle: "It's not hyperbole"
 author:
   - Phillip Cloud
 execute:
@@ -8,10 +8,32 @@ execute:
 format:
   revealjs:
     footer: <https://ibis-project.org>
-    chalkboard: true
     # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
     theme: dark
 ---
+
+## Who
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### Me
+
+- Phillip Cloud
+- Ibis project
+- Voltron Data
+- Data tools for 10+ years
+:::
+
+::: {.column width="50%"}
+### Where
+
+- {{< fa brands github >}} [`@cpcloud`](https://github.com/cpcloud)
+- {{< fa brands youtube >}} [Phillip in the Cloud](https://www.youtube.com/@cpcloud)
+- {{< fa brands twitter >}} [`@cpcloudy`](https://x.com/cpcloudy)
+:::
+
+::::
 
 # What
 
@@ -34,18 +56,18 @@ format:
 ::: {.column width="50%"}
 ### Overview
 
-- What we learned about maintenance building Ibis
-- Day to day of supporting 20+ databases
+- What we learned about maintenance
+- Day to day of 20+ databases
 - Unique challenges
 :::
 
 ::: {.column width="50%"}
-### Topics
+### Tools
 
-- Some docker stuff
-- Some packaging stuff
-- Some CI stuff
-- Some `pytest` plugins stuff
+- Docker
+- Packaging
+- CI
+- `pytest` plugins
 :::
 ::::
 
@@ -53,14 +75,14 @@ format:
 
 ## Ibis is a Python library for:
 
-- exploratory data analysis (EDA)
-- analytics
-- data engineering
+- Exploratory data analysis (EDA)
+- Analytics
+- Data engineering
 - ML preprocessing
-- building your own dataframe library
+- Building your own DataFrame lib
 
 ::: {.r-fit-text}
-dev to prod with the same API
+_Dev to prod with the same API_
 :::
 
 ## One API, 20+ backends {.smaller .scrollable}
@@ -148,6 +170,7 @@ t.group_by("species", "island").agg(count=t.count()).order_by("count")
 
 ```{python}
 #| echo: false
+#| fig-align: center
 
 import os
 import sys
@@ -212,12 +235,12 @@ _CI must complete "quickly"_
 
 ## Tools: overview
 
-- **deps**: poetry
-- **ci**: GitHub Actions
-- **wild beasts**: docker
-- **house pets**: docker
-- cool kids don't get special tx (duckdb, polars)
-- task runner (e.g.: `just up postgres`)
+- 📦 poetry
+- 🖥️ GitHub Actions
+- 🦁 docker
+- 🐕 docker
+- 🐱 no special tx (duckdb, polars)
+- 🏃 task runner (e.g.: `just up postgres`)
 
 ## Tools: poetry
 
@@ -228,10 +251,11 @@ _CI must complete "quickly"_
 - **Env setup needs to be _fast_**: avoid constraint solving
 - Poetry is one way; there are others
 - Get yourself a lockfile
+- Downsides?
 
 ::: {.fragment}
 ::: {.r-fit-text}
-… _Are you doing that **now**_❔❓
+… _Are you doing that **now**_❓
 :::
 :::
 
@@ -283,9 +307,9 @@ _We've added 3 or 4 new backends since the switch_
 
 ### Ibis problems
 
+- Tests run across **ALL** backends
 - Backends don't implement the same stuff
 - Need to know when backend passes
-- Need to specify exception type it raises
 - Answer questions like: "will it _ever_ blend?"
 
 ::: {.fragment}
@@ -308,17 +332,21 @@ def pytest_ignore_collect(...):
 
 **`pytest-`**
 
-- `xdist`: try to make this work if you can
-- `randomly`: exposes your bogus and stateful assumptions
-- `repeat`: great when randomly exposes your busted assumptions
-- `clarity`: you will hate read failure diffs less
-- `snapshot`: better than that giant `f`-string you just wrote
+- `xdist`: make this work if you can
+- `randomly`: break your bogus stateful assumptions
+- `repeat`: when `randomly` exposes your assumptions
+- `clarity`: readable test failure messages
+- `snapshot`: better than the giant `f`-string you just wrote
 
 **hypothesis** 👈 that too, we don't use it enough
 
+## Why `pytest-randomly`?
+
+![](./heisenbug.png){fig-align="center"}
+
 # Summary
 
-- Use docker for dev **and** "prod"
+- Use docker for dev **and** prod
 - Lock your dependencies (dev only!)
 - Auto update stuff
 - `pytest` probably has a thing for that
