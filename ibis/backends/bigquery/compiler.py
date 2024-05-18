@@ -39,12 +39,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.CountDistinctStar,
         ops.DateDiff,
         ops.ExtractAuthority,
-        ops.ExtractFile,
-        ops.ExtractFragment,
-        ops.ExtractHost,
-        ops.ExtractPath,
-        ops.ExtractProtocol,
-        ops.ExtractQuery,
         ops.ExtractUserInfo,
         ops.FindInSet,
         ops.Median,
@@ -120,6 +114,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "time",
         ops.TimestampFromYMDHMS: "datetime",
         ops.TimestampNow: "current_timestamp",
+        ops.ExtractHost: "net.host",
     }
 
     @staticmethod
@@ -685,3 +680,48 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.generate_uuid()
+
+    def visit_ExtractFile(self, op, *, arg):
+        name = sg.table(
+            "cw_url_extract_file", db="persistent_udfs", catalog="bigquery-public-data"
+        ).sql(self.dialect)
+        return self.f[name](arg)
+
+    def visit_ExtractFragment(self, op, *, arg):
+        name = sg.table(
+            "cw_url_extract_fragment",
+            db="persistent_udfs",
+            catalog="bigquery-public-data",
+        ).sql(self.dialect)
+        return self.f[name](arg)
+
+    def visit_ExtractPath(self, op, *, arg):
+        name = sg.table(
+            "cw_url_extract_path", db="persistent_udfs", catalog="bigquery-public-data"
+        ).sql(self.dialect)
+        return self.f[name](arg)
+
+    def visit_ExtractProtocol(self, op, *, arg):
+        name = sg.table(
+            "cw_url_extract_protocol",
+            db="persistent_udfs",
+            catalog="bigquery-public-data",
+        ).sql(self.dialect)
+        return self.f[name](arg)
+
+    def visit_ExtractQuery(self, op, *, arg, key):
+        if key is not None:
+            name = sg.table(
+                "cw_url_extract_parameter",
+                db="persistent_udfs",
+                catalog="bigquery-public-data",
+            ).sql(self.dialect)
+
+            return self.f[name](arg, key)
+        else:
+            name = sg.table(
+                "cw_url_extract_query",
+                db="persistent_udfs",
+                catalog="bigquery-public-data",
+            ).sql(self.dialect)
+            return self.f[name](arg)
