@@ -19,7 +19,7 @@ DB_TYPES = [
     ("NUMERIC(14,3)", dt.Decimal(14, 3)),
     ("SMALLINT", dt.int16),
     ("SMALLMONEY", dt.Decimal(10, 4)),
-    ("TINYINT", dt.int8),
+    ("TINYINT", dt.uint8),
     # Approximate numerics
     ("REAL", dt.float32),
     ("FLOAT", dt.float64),
