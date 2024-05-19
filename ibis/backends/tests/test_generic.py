@@ -2226,3 +2226,19 @@ def test_null_isin_null_is_null(con):
     t = ibis.memtable({"x": [1]})
     expr = t.x.isin([None])
     assert pd.isna(con.to_pandas(expr).iat[0])
+
+
+def test_value_counts_on_tables(backend, df):
+    from ibis import selectors as s
+
+    t = backend.functional_alltypes
+    expr = t[["bigint_col", "int_col"]].value_counts().order_by(s.all())
+    result = expr.execute()
+    expected = (
+        df.groupby(["bigint_col", "int_col"])
+        .string_col.count()
+        .reset_index()
+        .rename(columns=dict(string_col="bigint_col_int_col_count"))
+    )
+    expected = expected.sort_values(expected.columns.tolist()).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
