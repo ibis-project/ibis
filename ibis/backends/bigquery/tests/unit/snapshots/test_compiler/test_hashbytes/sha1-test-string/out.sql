@@ -1,2 +1,2 @@
 SELECT
-  SHA('test') AS `tmp`
+  SHA1('test') AS `tmp`
