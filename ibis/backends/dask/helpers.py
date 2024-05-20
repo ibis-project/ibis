@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import dask.array as da
 import dask.dataframe as dd
@@ -8,6 +8,9 @@ import numpy as np
 import pandas as pd
 
 from ibis.backends.pandas.helpers import PandasUtils
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class DaskUtils(PandasUtils):

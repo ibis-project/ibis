@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import functools
 from collections import Counter, defaultdict
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any
 
 from bidict import bidict
 
 from ibis.common.exceptions import IbisError
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def memoize(func: Callable) -> Callable:

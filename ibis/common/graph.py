@@ -5,8 +5,8 @@ from __future__ import annotations
 import itertools
 from abc import abstractmethod
 from collections import deque
-from collections.abc import Iterable, Iterator, KeysView, Mapping, Sequence
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, Union
+from collections.abc import Callable, Iterable, Iterator, KeysView, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
 from ibis.common.bases import Hashable
 from ibis.common.patterns import NoMatch, Pattern

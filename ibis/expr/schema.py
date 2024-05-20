@@ -13,7 +13,7 @@ from ibis.common.patterns import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 class Schema(Concrete, Coercible, MapSet):

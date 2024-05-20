@@ -7,7 +7,7 @@ import contextlib
 import glob
 import os
 import re
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import parse_qs, urlparse
 
 import google.auth.credentials
@@ -39,7 +39,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
     from pathlib import Path
 
     import pyarrow as pa

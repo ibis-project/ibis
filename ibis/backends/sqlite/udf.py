@@ -6,9 +6,12 @@ import inspect
 import math
 import operator
 from collections import defaultdict
-from typing import Any, Callable, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 try:
     import regex as re
