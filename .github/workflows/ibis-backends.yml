@@ -237,12 +237,32 @@ jobs:
               extras:
                 - dask
           - os: ubuntu-latest
-            python-version: "3.10"
+            python-version: "3.11"
             backend:
-              name: dask
-              title: Dask
+              name: flink
+              title: Flink
+              serial: true
               extras:
-                - dask
+                - flink
+              additional_deps:
+                - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
+              services:
+                - flink
+          - os: ubuntu-latest
+            python-version: "3.11"
+            backend:
+              name: impala
+              title: Impala
+              serial: true
+              extras:
+                - impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
         exclude:
           - os: windows-latest
             backend:
@@ -298,6 +318,21 @@ jobs:
                 - postgres
               sys-deps:
                 - libgeos-dev
+          # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend:
+              name: impala
+              title: Impala
+              serial: true
+              extras:
+                - impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
           - os: windows-latest
             backend:
               name: impala
@@ -348,6 +383,19 @@ jobs:
                 - oracle
               services:
                 - oracle
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              additional_deps:
+                - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
+              services:
+                - flink
           - os: windows-latest
             backend:
               name: flink
