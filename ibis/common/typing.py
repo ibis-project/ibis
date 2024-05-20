@@ -14,7 +14,6 @@ from ibis.common.caching import memoize
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-
 from types import UnionType
 from typing import TypeAlias
 
