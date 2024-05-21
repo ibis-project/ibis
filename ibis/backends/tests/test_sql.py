@@ -205,3 +205,13 @@ def test_selects_with_impure_operations_not_merged(con, snapshot, value):
 
     sql = str(ibis.to_sql(t, dialect=con.name))
     snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.notyet(["polars"], reason="no sql generation")
+@pytest.mark.never(["pandas", "dask"], reason="no sql generation")
+def test_to_sql_default_backend(con, snapshot, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    t = ibis.memtable({"b": [1, 2]}, name="mytable")
+    expr = t.select("b").count()
+    snapshot.assert_match(ibis.to_sql(expr), "to_sql.sql")
