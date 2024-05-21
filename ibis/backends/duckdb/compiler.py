@@ -11,7 +11,7 @@ from sqlglot.dialects import DuckDB
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 
 _INTERVAL_SUFFIXES = {
@@ -32,6 +32,8 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     dialect = DuckDB
     type_mapper = DuckDBType
+
+    agg = AggGen(supports_filter=True)
 
     LOWERED_OPS = {
         ops.Sample: None,
@@ -84,12 +86,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(

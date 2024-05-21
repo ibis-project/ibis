@@ -86,12 +86,6 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.UnwrapJSONBoolean: "unwrap_json_bool",
     }
 
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-        return func(*args)
-
     def visit_InSubquery(self, op, *, rel, needle):
         if op.needle.dtype.is_struct():
             # construct the outer struct for pyspark

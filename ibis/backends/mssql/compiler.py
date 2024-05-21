@@ -144,12 +144,6 @@ class MSSQLCompiler(SQLGlotCompiler):
     def NEG_INF(self):
         return self.f.double("-Infinity")
 
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-        return func(*args)
-
     @staticmethod
     def _generate_groups(groups):
         return groups

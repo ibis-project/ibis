@@ -9,7 +9,7 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import SQLiteType
 from ibis.backends.sql.dialects import SQLite
 from ibis.common.temporal import DateUnit, IntervalUnit
@@ -21,6 +21,8 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = SQLite
     type_mapper = SQLiteType
+
+    agg = AggGen(supports_filter=True)
 
     NAN = NULL
     POS_INF = sge.Literal.number("1e999")
@@ -96,12 +98,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.Time: "time",
         ops.Date: "date",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_Log10(self, op, *, arg):
         return self.f.anon.log10(arg)
@@ -222,7 +218,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         if op.where is not None:
             cond = sg.and_(cond, where)
 
-        agg = self._aggregate(func, key, where=cond)
+        agg = self.agg[func](key, where=cond)
         return self.f.anon.json_extract(self.f.json_array(arg, agg), "$[0]")
 
     def visit_UnwrapJSONString(self, op, *, arg):
@@ -254,10 +250,10 @@ class SQLiteCompiler(SQLGlotCompiler):
         )
 
     def visit_Variance(self, op, *, arg, how, where):
-        return self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
+        return self.agg[f"_ibis_var_{op.how}"](arg, where=where)
 
     def visit_StandardDev(self, op, *, arg, how, where):
-        var = self._aggregate(f"_ibis_var_{op.how}", arg, where=where)
+        var = self.agg[f"_ibis_var_{op.how}"](arg, where=where)
         return self.f.sqrt(var)
 
     def visit_ApproxCountDistinct(self, op, *, arg, where):

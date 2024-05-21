@@ -75,12 +75,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.TypeOf: "typeof",
     }
 
-    def _aggregate(self, funcname: str, *args, where):
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-
-        return self.f[funcname](*args, dialect=self.dialect)
-
     @staticmethod
     def _minimize_spec(start, end, spec):
         # start is None means unbounded preceding

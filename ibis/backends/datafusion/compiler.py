@@ -11,7 +11,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
 from ibis.common.temporal import IntervalUnit, TimestampUnit
@@ -24,6 +24,8 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
+
+    agg = AggGen(supports_filter=True)
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,
@@ -72,12 +74,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.ArrayIntersect: "array_intersect",
         ops.ArrayUnion: "array_union",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
-        return expr
 
     def _to_timestamp(self, value, target_dtype, literal=False):
         tz = (

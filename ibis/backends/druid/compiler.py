@@ -6,7 +6,7 @@ import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
 
@@ -16,6 +16,8 @@ class DruidCompiler(SQLGlotCompiler):
 
     dialect = Druid
     type_mapper = DruidType
+
+    agg = AggGen(supports_filter=True)
 
     LOWERED_OPS = {ops.Capitalize: None}
 
@@ -79,12 +81,6 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ApproxCountDistinct: "approx_count_distinct",
         ops.StringContains: "contains_string",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
-        return expr
 
     def visit_Modulus(self, op, *, left, right):
         return self.f.anon.mod(left, right)
