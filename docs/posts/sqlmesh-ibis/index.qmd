@@ -2,6 +2,7 @@
 title: "Unlocking data insights with Ibis and SQLMesh"
 author: "Chloe He"
 date: "2024-05-21"
+image: thumbnail.png
 categories:
     - blog
     - sqlmesh
@@ -30,7 +31,8 @@ of the box.
 
 We walk through an example together to show you how to harness the full
 potential of your data analytics workflow and how SQLMesh and Ibis can work
-together hand-in-hand. Read the full article on [SQLMesh blog]()!
+together hand-in-hand. Read the full article on
+[SQLMesh blog](https://tobikodata.com/ibis-sqlmesh-unlocking-data-insights.html)!
 
 In today's data-driven world, the ability to efficiently analyze and derive
 insights from vast amounts of data is paramount. Leveraging powerful
