@@ -11,7 +11,7 @@ categories:
 # Overview
 
 Have you ever needed to learn new dialects of database languages as a data
-scientist or struggle with the differences between database languages? Does
+scientist or struggled with the differences between database languages? Does
 your company manage different production pipelines with multiple databases
 or engines? Have you needed to rewrite data pipelines from experimentation
 to deployment?
