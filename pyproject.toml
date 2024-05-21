@@ -36,7 +36,7 @@ classifiers = [
 "Issue Tracker" = "https://github.com/ibis-project/ibis/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
 numpy = ">=1.23.2,<2"

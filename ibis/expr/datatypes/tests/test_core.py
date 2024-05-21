@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import datetime  # noqa: TCH003
 import decimal  # noqa: TCH003
-import sys
 import uuid  # noqa: TCH003
 from dataclasses import dataclass
 from typing import Annotated, NamedTuple
@@ -323,7 +322,6 @@ def test_dtype_from_typehints(hint, expected):
 
 
 @pytest.mark.parametrize(("hint", "expected"), [(PyStruct2, py_struct_2)])
-@pytest.mark.skipif(sys.version_info < (3, 9), reason="requires python3.9 or higher")
 def test_dtype_from_newer_typehints(hint, expected):
     assert dt.dtype(hint) == expected
 
