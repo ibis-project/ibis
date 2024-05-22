@@ -23,7 +23,7 @@ class WindowAggregate(Relation):
     metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
     window_size: Scalar[dt.Interval]
     window_slide: Optional[Scalar[dt.Interval]] = None
-    offset: Optional[Scalar[dt.Interval]] = None
+    window_offset: Optional[Scalar[dt.Interval]] = None
 
     @attribute
     def values(self):

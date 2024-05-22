@@ -4614,36 +4614,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def window_by(
         self,
-        window_type: Literal["tumble", "hop"],
         time_col: str | ir.Value,
-        window_size: ir.IntervalScalar,
-        window_slide: ir.IntervalScalar | None = None,
-        offset: ir.IntervalScalar | None = None,
     ) -> WindowedTable:
-        from ibis.expr.types.temporal_windows import HopTable, TumbleTable
+        from ibis.expr.types.temporal_windows import WindowedTable
 
         time_col = next(iter(self.bind(time_col)))
-
-        if window_type == "tumble":
-            if window_slide is not None:
-                raise com.IbisInputError(
-                    "Tumble windows are non-overlapping and the window step is assumed "
-                    "to be the same as the window size. If you want to create overlapping "
-                    "windows, specify `window_type='hop'`."
-                )
-            return TumbleTable(self, time_col, window_size=window_size, offset=offset)
-        elif window_type == "hop":
-            return HopTable(
-                self,
-                time_col,
-                window_size=window_size,
-                window_slide=window_slide,
-                offset=offset,
-            )
-        else:
-            raise com.IbisInputError(
-                f"`window_type` must be `tumble` or `hop`, got {window_type}"
-            )
+        return WindowedTable(self, time_col)
 
     def value_counts(self) -> ir.Table:
         """Compute a frequency table of this table's values.
