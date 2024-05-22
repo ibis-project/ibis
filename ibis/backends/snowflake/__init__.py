@@ -256,10 +256,10 @@ $$ {defn["source"]} $$"""
                 kind="DATABASE", this="ibis_udfs", exists=True
             ).sql(dialect)
             if "/" in con.database:
-                (database, schema) = con.database.split("/")
+                (catalog, db) = con.database.split("/")
                 use_stmt = sge.Use(
                     kind="SCHEMA",
-                    this=sg.table(schema, db=database, quoted=self.compiler.quoted),
+                    this=sg.table(db, catalog=catalog, quoted=self.compiler.quoted),
                 ).sql(dialect)
             else:
                 use_stmt = ""
