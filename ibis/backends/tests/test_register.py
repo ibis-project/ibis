@@ -74,7 +74,7 @@ def gzip_csv(data_dir, tmp_path):
             "fancy_stones2",
             id="multi_csv",
             marks=pytest.mark.notyet(
-                ["polars", "datafusion"],
+                ["datafusion"],
                 reason="doesn't accept multiple files to scan or read",
             ),
         ),
