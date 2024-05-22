@@ -251,16 +251,18 @@ $$ {defn["source"]} $$"""
             )
 
         if create_object_udfs:
-            database = con.database
-            schema = con.schema
             dialect = self.name
             create_stmt = sge.Create(
                 kind="DATABASE", this="ibis_udfs", exists=True
             ).sql(dialect)
-            use_stmt = sge.Use(
-                kind="SCHEMA",
-                this=sg.table(schema, db=database, quoted=self.compiler.quoted),
-            ).sql(dialect)
+            if "/" in con.database:
+                (catalog, db) = con.database.split("/")
+                use_stmt = sge.Use(
+                    kind="SCHEMA",
+                    this=sg.table(db, catalog=catalog, quoted=self.compiler.quoted),
+                ).sql(dialect)
+            else:
+                use_stmt = ""
 
             stmts = [
                 create_stmt,
