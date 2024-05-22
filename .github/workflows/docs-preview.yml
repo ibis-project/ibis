@@ -11,7 +11,7 @@ jobs:
     concurrency:
       group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}-${{ github.event.label.name }}
       cancel-in-progress: true
-    if: github.event.label.name == 'docs-preview'
+    if: contains(github.event.pull_request.labels.*.name, 'docs-preview')
     steps:
       - uses: actions/create-github-app-token@v1.10.0
         id: generate_token

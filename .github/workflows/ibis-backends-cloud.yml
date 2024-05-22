@@ -35,7 +35,7 @@ jobs:
       cancel-in-progress: false
 
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event.label.name == 'ci-run-cloud'
+    if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci-run-cloud')
     strategy:
       fail-fast: false
       matrix:
@@ -71,10 +71,10 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
-        if: github.event.label.name != 'ci-run-cloud'
+        if: ${{ ! contains(github.event.pull_request.labels.*.name , 'ci-run-cloud') }}
 
       - name: checkout
-        if: github.event.label.name == 'ci-run-cloud'
+        if: contains(github.event.pull_request.labels.*.name, 'ci-run-cloud')
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -88,7 +88,7 @@ jobs:
 
       - name: reset cloud ci run label
         uses: actions-ecosystem/action-remove-labels@v1
-        if: github.event.label.name == 'ci-run-cloud'
+        if: contains(github.event.pull_request.labels.*.name, 'ci-run-cloud')
         with:
           labels: ci-run-cloud
           github_token: ${{ steps.generate_token.outputs.token }}
