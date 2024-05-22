@@ -125,6 +125,7 @@ website:
       contents:
         - auto: backends/*.qmd
         - support_matrix.qmd
+        - reference/operations.qmd
     - id: how-to
       title: "How-to"
       style: "docked"
@@ -506,6 +507,34 @@ quartodoc:
             - name: NumericValue.point
               package: ibis.expr.types.numeric
 
+        - kind: page
+          path: operations
+          package: ibis.expr.operations
+          summary:
+            name: Operations
+            desc: Low level operation classes. Subject to change in non-major releases.
+          contents:
+            - analytic
+            - arrays
+            - core
+            - generic
+            - geospatial
+            - histograms
+            - json
+            - logical
+            - maps
+            - numeric
+            - reductions
+            - relations
+            - sortkeys
+            - strings
+            - structs
+            - subqueries
+            - temporal
+            - temporal_windows
+            - udf
+            - vectorized
+            - window
         - kind: page
           summary:
             name: Column selectors
