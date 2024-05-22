@@ -4516,6 +4516,63 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return WindowedTable(self, time_col)
 
+    def value_counts(self) -> ir.Table:
+        """Compute a frequency table of this table's values.
+
+        Returns
+        -------
+        Table
+            Frequency table of this table's values.
+
+        Examples
+        --------
+        >>> from ibis import examples
+        >>> ibis.options.interactive = True
+        >>> t = examples.penguins.fetch()
+        >>> t.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.year.value_counts().order_by("year")
+        ┏━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ year_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ int64      │
+        ├───────┼────────────┤
+        │  2007 │        110 │
+        │  2008 │        114 │
+        │  2009 │        120 │
+        └───────┴────────────┘
+        >>> t[["year", "island"]].value_counts().order_by("year", "island")
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Dream     │                46 │
+        │  2007 │ Torgersen │                20 │
+        │  2008 │ Biscoe    │                64 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Torgersen │                16 │
+        │  2009 │ Biscoe    │                60 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Torgersen │                16 │
+        └───────┴───────────┴───────────────────┘
+        """
+        columns = self.columns
+        return self.group_by(columns).agg(
+            lambda t: t.count().name("_".join(columns) + "_count")
+        )
+
 
 @public
 class CachedTable(Table):
