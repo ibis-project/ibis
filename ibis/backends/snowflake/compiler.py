@@ -87,13 +87,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
         super().__init__()
         self.f = SnowflakeFuncGen()
 
-    def _aggregate(self, funcname: str, *args, where):
-        if where is not None:
-            args = [self.if_(where, arg, NULL) for arg in args]
-
-        func = self.f[funcname]
-        return func(*args)
-
     @staticmethod
     def _minimize_spec(start, end, spec):
         if (

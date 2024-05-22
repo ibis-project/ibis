@@ -11,9 +11,19 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
+
+
+class ClickhouseAggGen(AggGen):
+    def aggregate(self, compiler, name, *args, where=None):
+        # Clickhouse aggregate functions all have filtering variants with a
+        # `If` suffix (e.g. `SumIf` instead of `Sum`).
+        if where is not None:
+            name += "If"
+            args += (where,)
+        return compiler.f[name](*args, dialect=compiler.dialect)
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -21,6 +31,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     dialect = ClickHouse
     type_mapper = ClickHouseType
+
+    agg = ClickhouseAggGen()
 
     UNSUPPORTED_OPS = (
         ops.RowID,
@@ -103,13 +115,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        has_filter = where is not None
-        func = self.f[funcname + "If" * has_filter]
-        args += (where,) * has_filter
-
-        return func(*args, dialect=self.dialect)
 
     @staticmethod
     def _minimize_spec(start, end, spec):

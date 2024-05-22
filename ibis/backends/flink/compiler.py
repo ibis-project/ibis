@@ -8,7 +8,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
 from ibis.backends.sql.rewrites import (
@@ -18,10 +18,41 @@ from ibis.backends.sql.rewrites import (
 )
 
 
+class FlinkAggGen(AggGen):
+    def aggregate(self, compiler, name, *args, where=None):
+        func = compiler.f[name]
+        if where is not None:
+            # Flink does support FILTER, but it's broken for:
+            #
+            # 1. certain aggregates: std/var doesn't return the right result
+            # 2. certain kinds of predicates: x IN y doesn't filter the right
+            #    values out
+            # 3. certain aggregates AND predicates STD(w) FILTER (WHERE x IN Y)
+            #    returns an incorrect result
+            #
+            # One solution is to try `IF(predicate, arg, NULL)`.
+            #
+            # Unfortunately that won't work without casting the NULL to a
+            # specific type.
+            #
+            # At this point in the Ibis compiler we don't have any of the Ibis
+            # operation's type information because we thrown it away. In every
+            # other engine Ibis supports the type of a NULL literal is inferred
+            # by the engine.
+            #
+            # Using a CASE statement and leaving out the explicit NULL does the
+            # trick for Flink.
+            args = tuple(sge.Case(ifs=[sge.If(this=where, true=arg)]) for arg in args)
+        return func(*args)
+
+
 class FlinkCompiler(SQLGlotCompiler):
     quoted = True
     dialect = Flink
     type_mapper = FlinkType
+
+    agg = FlinkAggGen()
+
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
@@ -95,34 +126,6 @@ class FlinkCompiler(SQLGlotCompiler):
     @staticmethod
     def _generate_groups(groups):
         return groups
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            # FILTER (WHERE ) is broken for one or both of:
-            #
-            # 1. certain aggregates: std/var doesn't return the right result
-            # 2. certain kinds of predicates: x IN y doesn't filter the right
-            #    values out
-            # 3. certain aggregates AND predicates STD(w) FILTER (WHERE x IN Y)
-            #    returns an incorrect result
-            #
-            # One solution is to try `IF(predicate, arg, NULL)`.
-            #
-            # Unfortunately that won't work without casting the NULL to a
-            # specific type.
-            #
-            # At this point in the Ibis compiler we don't have any of the Ibis
-            # operation's type information because we thrown it away. In every
-            # other engine Ibis supports the type of a NULL literal is inferred
-            # by the engine.
-            #
-            # Using a CASE statement and leaving out the explicit NULL does the
-            # trick for Flink.
-            #
-            # Le sigh.
-            args = tuple(sge.Case(ifs=[sge.If(this=where, true=arg)]) for arg in args)
-        return func(*args)
 
     @staticmethod
     def _minimize_spec(start, end, spec):

@@ -11,7 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 
@@ -26,6 +26,8 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
+
+    agg = AggGen(supports_filter=True)
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
@@ -95,12 +97,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
