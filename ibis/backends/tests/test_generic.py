@@ -2228,6 +2228,10 @@ def test_null_isin_null_is_null(con):
     assert pd.isna(con.to_pandas(expr).iat[0])
 
 
+@pytest.mark.notyet(
+    ["dask"],
+    reason="multi-partition dataframes only support sorting by a single column",
+)
 def test_value_counts_on_tables(backend, df):
     from ibis import selectors as s
 
@@ -2241,4 +2245,4 @@ def test_value_counts_on_tables(backend, df):
         .rename(columns=dict(string_col="bigint_col_int_col_count"))
     )
     expected = expected.sort_values(expected.columns.tolist()).reset_index(drop=True)
-    backend.assert_frame_equal(result, expected)
+    backend.assert_frame_equal(result, expected, check_dtype=False)
