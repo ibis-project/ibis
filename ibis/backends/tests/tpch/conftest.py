@@ -4,7 +4,7 @@ import datetime
 import functools
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 
 import pytest
 import sqlglot as sg
@@ -14,6 +14,8 @@ import ibis
 from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import ibis.expr.types as ir
 
 

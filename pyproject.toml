@@ -36,7 +36,7 @@ classifiers = [
 "Issue Tracker" = "https://github.com/ibis-project/ibis/issues"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 atpublic = ">=2.3,<5"
 bidict = ">=0.22.1,<1"
 numpy = ">=1.23.2,<2"
@@ -354,7 +354,7 @@ show_deps = true
 line-length = 88
 respect-gitignore = true
 exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py"]
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -389,6 +389,7 @@ select = [
 ignore = [
   "B028",    # required stacklevel argument to warn
   "B904",    # raise from e or raise from None in exception handlers
+  "B905",    # zip-without-explicit-strict
   "C408",    # dict(...) as literal
   "D100",    # public module
   "D101",    # public class
@@ -431,6 +432,7 @@ ignore = [
   "SIM118",  # remove .keys() calls from dictionaries
   "SIM300",  # yoda conditions
   "UP007",   # Optional[str] -> str | None
+  "UP038",   # non-pep604-isinstance, results in slower code
 ]
 # none of these codes will be automatically fixed by ruff
 unfixable = [

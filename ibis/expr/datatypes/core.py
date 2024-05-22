@@ -7,11 +7,21 @@ import uuid as pyuuid
 from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from numbers import Integral, Real
-from typing import Any, Generic, Literal, NamedTuple, Optional, TypeVar, get_type_hints
+from typing import (
+    Any,
+    Generic,
+    Literal,
+    NamedTuple,
+    Optional,
+    TypeVar,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 import toolz
 from public import public
-from typing_extensions import Self, get_args, get_origin
+from typing_extensions import Self
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet

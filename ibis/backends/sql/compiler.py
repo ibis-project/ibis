@@ -7,7 +7,7 @@ import math
 import operator
 import string
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -34,7 +34,7 @@ from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Callable, Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir

@@ -64,11 +64,6 @@ def test_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
-@mark.never(
-    ["flink"],
-    condition=sys.version_info < (3, 10),
-    reason="broken with Python 3.9; works in Python 3.10",
-)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(
     ["sqlite"], raises=com.IbisTypeError, reason="sqlite doesn't support map types"
@@ -99,11 +94,6 @@ def test_map_udf(batting):
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
 @mark.notimpl(["polars"])
-@mark.never(
-    ["flink"],
-    condition=sys.version_info < (3, 10),
-    reason="broken with Python 3.9; works in Python 3.10",
-)
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 @mark.notyet(["sqlite"], raises=TypeError, reason="sqlite doesn't support map types")
 def test_map_merge_udf(batting):

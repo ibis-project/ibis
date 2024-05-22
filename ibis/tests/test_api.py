@@ -51,10 +51,7 @@ def test_multiple_backends(mocker):
             group="ibis.backends",
         ),
     ]
-    if sys.version_info < (3, 10):
-        return_value = {"ibis.backends": entrypoints}
-    else:
-        return_value = entrypoints
+    return_value = entrypoints
 
     mocker.patch("importlib.metadata.entry_points", return_value=return_value)
 

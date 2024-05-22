@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import contextlib
-from typing import Annotated, Any, Callable, Optional
+from collections.abc import Callable  # noqa: TCH003
+from typing import Annotated, Any, Optional
 
 from public import public
 

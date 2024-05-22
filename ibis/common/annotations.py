@@ -3,7 +3,7 @@ from __future__ import annotations
 import functools
 import inspect
 import types
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING
 from typing import Any as AnyType
 
 from ibis.common.bases import Immutable, Slotted
@@ -19,7 +19,7 @@ from ibis.common.patterns import pattern as ensure_pattern
 from ibis.common.typing import format_typehint, get_type_hints
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
 EMPTY = inspect.Parameter.empty  # marker for missing argument
 KEYWORD_ONLY = inspect.Parameter.KEYWORD_ONLY

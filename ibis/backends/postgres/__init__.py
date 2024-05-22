@@ -8,7 +8,7 @@ import textwrap
 from functools import partial
 from itertools import repeat, takewhile
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 import numpy as np
@@ -32,6 +32,8 @@ from ibis.backends.sql.compiler import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import pandas as pd
     import pyarrow as pa
 

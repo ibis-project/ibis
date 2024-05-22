@@ -5,10 +5,10 @@ import functools
 import inspect
 import re
 from collections import defaultdict
+from types import UnionType
+from typing import Union
 
 from ibis.common.typing import (
-    Union,
-    UnionType,
     evaluate_annotations,
     get_args,
     get_origin,
