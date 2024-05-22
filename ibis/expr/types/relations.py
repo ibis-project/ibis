@@ -4541,15 +4541,15 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.year.value_counts()
+        >>> t.year.value_counts().order_by("year")
         ┏━━━━━━━┳━━━━━━━━━━━━┓
         ┃ year  ┃ year_count ┃
         ┡━━━━━━━╇━━━━━━━━━━━━┩
         │ int64 │ int64      │
         ├───────┼────────────┤
-        │  2009 │        120 │
         │  2007 │        110 │
         │  2008 │        114 │
+        │  2009 │        120 │
         └───────┴────────────┘
         >>> t[["year", "island"]].value_counts().order_by("year", "island")
         ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
