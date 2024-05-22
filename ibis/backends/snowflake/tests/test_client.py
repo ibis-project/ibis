@@ -370,3 +370,27 @@ def test_timestamp_memtable(con):
     t = ibis.memtable(df)
     result = con.to_pandas(t)
     tm.assert_frame_equal(result, df)
+
+
+def test_connect_without_snowflake_url(con):
+    # We're testing here that the non-URL connection works.
+    # Specifically that a `database` location passed in as "catalog/database"
+    # will be parsed correctly
+    user = con.con.user
+    account = con.con.account
+    catalog = con.con.database
+    database = con.con.schema
+    warehouse = con.con.warehouse
+
+    if (password := os.getenv("SNOWFLAKE_PASSWORD")) is None:
+        pytest.mark.skip(reason="No snowflake password set, nothing to do here")
+
+    con2 = ibis.snowflake.connect(
+        user=user,
+        account=account,
+        password=password,
+        database=f"{catalog}/{database}",
+        warehouse=warehouse,
+    )
+
+    assert con2.list_tables()
