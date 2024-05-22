@@ -38,13 +38,6 @@ if TYPE_CHECKING:
     from fsspec import AbstractFileSystem
 
 
-def normalize_filenames(source_list):
-    # Promote to list
-    source_list = util.promote_list(source_list)
-
-    return list(map(util.normalize_filename, source_list))
-
-
 _UDF_INPUT_TYPE_MAPPING = {
     InputType.PYARROW: duckdb.functional.ARROW,
     InputType.PYTHON: duckdb.functional.NATIVE,
@@ -649,7 +642,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             table_name,
             sg.select(STAR).from_(
                 self.compiler.f.read_json_auto(
-                    normalize_filenames(source_list), *options
+                    util.normalize_filenames(source_list), *options
                 )
             ),
         )
@@ -682,7 +675,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = normalize_filenames(source_list)
+        source_list = util.normalize_filenames(source_list)
 
         if not table_name:
             table_name = util.gen_name("read_csv")
@@ -807,7 +800,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = normalize_filenames(source_list)
+        source_list = util.normalize_filenames(source_list)
 
         table_name = table_name or util.gen_name("read_parquet")
 
@@ -910,7 +903,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table.
 
         """
-        source_table = normalize_filenames(source_table)[0]
+        source_table = util.normalize_filenames(source_table)[0]
 
         table_name = table_name or util.gen_name("read_delta")
 

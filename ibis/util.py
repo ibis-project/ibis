@@ -512,6 +512,13 @@ def normalize_filename(source: str | Path) -> str:
     return source
 
 
+def normalize_filenames(source_list):
+    # Promote to list
+    source_list = promote_list(source_list)
+
+    return list(map(normalize_filename, source_list))
+
+
 def gen_name(namespace: str) -> str:
     """Create a unique identifier."""
     uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()

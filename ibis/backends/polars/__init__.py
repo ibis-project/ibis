@@ -22,7 +22,7 @@ from ibis.backends.polars.compiler import translate
 from ibis.backends.sql.dialects import Polars
 from ibis.expr.rewrites import lower_stringslice
 from ibis.formats.polars import PolarsSchema
-from ibis.util import gen_name, normalize_filename
+from ibis.util import gen_name, normalize_filename, normalize_filenames
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -158,7 +158,10 @@ class Backend(BaseBackend, NoUrl):
         return self.table(name)
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path | list[str | Path] | tuple[str | Path],
+        table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV file as a table.
 
@@ -180,16 +183,20 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filename(path)
+        source_list = normalize_filenames(path)
+        # Flatten the list if there's only one element because Polars
+        # can't handle glob strings, or compressed CSVs in a single-element list
+        if len(source_list) == 1:
+            source_list = source_list[0]
         table_name = table_name or gen_name("read_csv")
         try:
-            table = pl.scan_csv(path, **kwargs)
+            table = pl.scan_csv(source_list, **kwargs)
             # triggers a schema computation to handle compressed csv inference
             # and raise a compute error
             table.schema  # noqa: B018
         except pl.exceptions.ComputeError:
             # handles compressed csvs
-            table = pl.read_csv(path, **kwargs)
+            table = pl.read_csv(source_list, **kwargs)
 
         self._add_table(table_name, table)
         return self.table(table_name)
