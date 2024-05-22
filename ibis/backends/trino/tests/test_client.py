@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import os
 import string
 
 import pytest
@@ -183,3 +184,15 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="tpch.sf1") == tpch_tables
     assert con.list_tables(database=("tpch", "sf1")) == tpch_tables
+
+
+def test_connect_uri():
+    TRINO_USER = os.getenv("IBIS_TEST_TRINO_USER", os.getenv("TRINO_USER", "user"))
+    TRINO_PASS = os.getenv("IBIS_TEST_TRINO_PASSWORD", os.getenv("TRINO_PASSWORD", ""))
+    TRINO_HOST = os.getenv("IBIS_TEST_TRINO_HOST", os.getenv("TRINO_HOST", "localhost"))
+    TRINO_PORT = int(os.getenv("IBIS_TEST_TRINO_PORT", os.getenv("TRINO_PORT", "8080")))
+    con = ibis.connect(
+        f"trino://{TRINO_USER}:{TRINO_PASS}@{TRINO_HOST}:{TRINO_PORT}/memory/default"
+    )
+
+    assert con.list_tables()

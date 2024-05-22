@@ -6,6 +6,7 @@ import contextlib
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,7 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog, NoUrl
+from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
@@ -30,11 +31,24 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False
     supports_temporary_tables = False
+
+    def _from_url(self, url: str, **kwargs):
+        url = urlparse(url)
+        catalog, db = url.path.strip("/").split("/")
+        self.do_connect(
+            user=url.username or None,
+            password=url.password or None,
+            host=url.hostname or None,
+            port=url.port or None,
+            database=catalog,
+            schema=db,
+        )
+        return self
 
     def raw_sql(self, query: str | sg.Expression) -> Any:
         """Execute a raw SQL query."""
