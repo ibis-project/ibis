@@ -2228,11 +2228,9 @@ def test_null_isin_null_is_null(con):
     assert pd.isna(con.to_pandas(expr).iat[0])
 
 
-@pytest.mark.notyet(
-    ["dask"],
-    reason="multi-partition dataframes only support sorting by a single column",
-)
 def test_value_counts_on_tables(backend, df):
+    if backend.name() == "dask":
+        pytest.skip(reason="flaky errors about sorting on multi-partition dataframes")
     from ibis import selectors as s
 
     t = backend.functional_alltypes
