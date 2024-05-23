@@ -26,7 +26,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
-from ibis.util import gen_name, normalize_filename
+from ibis.util import deprecated, gen_name, normalize_filename
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -294,6 +294,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table = database.table(table_name)
         return sch.schema(table.schema)
 
+    @deprecated(
+        as_of="9.0",
+        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
+    )
     def register(
         self,
         source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,

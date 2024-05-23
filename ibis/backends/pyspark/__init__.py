@@ -27,6 +27,7 @@ from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -739,6 +740,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
+    @deprecated(
+        as_of="9.0",
+        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
+    )
     def register(
         self,
         source: str | Path | Any,
