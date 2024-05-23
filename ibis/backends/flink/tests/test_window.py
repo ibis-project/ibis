@@ -67,16 +67,12 @@ def test_rows_window(simple_table, assert_sql):
 
 
 def test_tumble_window_by_agg(con):
-    t = con.table("payment_msg")
+    t = con.table("functional_alltypes_with_watermark")
     expr = (
-        t.window_by(time_col=t.createTime)
+        t.window_by(time_col=t.timestamp_col)
         .tumble(size=ibis.interval(seconds=30))
-        .agg(by=["provinceId"], avgPayAmount=_.payAmount.mean())
+        .agg(by=["string_col"], avg=_.float_col.mean())
     )
     result = expr.to_pandas()
-    assert list(result.columns) == [
-        "window_start",
-        "window_end",
-        "provinceId",
-        "avgPayAmount",
-    ]
+    assert list(result.columns) == ["window_start", "window_end", "string_col", "avg"]
+    assert result.shape == (610, 4)
