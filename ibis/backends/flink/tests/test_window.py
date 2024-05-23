@@ -5,6 +5,7 @@ from pyflink.util.exceptions import TableException
 from pytest import param
 
 import ibis
+from ibis import _
 from ibis.backends.tests.errors import Py4JJavaError
 
 
@@ -53,13 +54,29 @@ def test_window_invalid_start_end(con, window):
     con.execute(expr)
 
 
-def test_range_window(con, simple_table, assert_sql):
+def test_range_window(simple_table, assert_sql):
     expr = simple_table.f.sum().over(
         range=(-ibis.interval(minutes=500), 0), order_by=simple_table.f
     )
     assert_sql(expr)
 
 
-def test_rows_window(con, simple_table, assert_sql):
+def test_rows_window(simple_table, assert_sql):
     expr = simple_table.f.sum().over(rows=(-1000, 0), order_by=simple_table.f)
     assert_sql(expr)
+
+
+def test_tumble_window_by_agg(con):
+    t = con.table("payment_msg")
+    expr = (
+        t.window_by(time_col=t.createTime)
+        .tumble(size=ibis.interval(seconds=30))
+        .agg(by=["provinceId"], avgPayAmount=_.payAmount.mean())
+    )
+    result = expr.to_pandas()
+    assert list(result.columns) == [
+        "window_start",
+        "window_end",
+        "provinceId",
+        "avgPayAmount",
+    ]

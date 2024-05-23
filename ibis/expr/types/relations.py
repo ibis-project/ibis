@@ -22,6 +22,7 @@ from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.pretty import to_rich
+from ibis.expr.types.temporal import TimestampColumn
 from ibis.selectors import Selector
 from ibis.util import deprecated
 
@@ -4619,6 +4620,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.temporal_windows import WindowedTable
 
         time_col = next(iter(self.bind(time_col)))
+
+        # validate time_col is a timestamp column
+        if not isinstance(time_col, TimestampColumn):
+            raise com.IbisInputError(
+                f"`time_col` must be a timestamp column, got {time_col.type()}"
+            )
+
         return WindowedTable(self, time_col)
 
     def value_counts(self) -> ir.Table:

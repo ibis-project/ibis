@@ -529,9 +529,9 @@ class PySparkCompiler(SQLGlotCompiler):
         metrics,
         window_size,
         window_slide,
-        offset,
+        window_offset,
     ):
-        if offset is not None:
+        if window_offset is not None:
             raise com.UnsupportedOperationError(
                 "PySpark streaming does not support windowing with offset."
             )
@@ -540,9 +540,11 @@ class PySparkCompiler(SQLGlotCompiler):
 
         return (
             sg.select(
+                # the window column needs to be referred to directly as `window` rather
+                # than `t0`.`window`
                 sg.alias(
                     sge.Dot(
-                        this=sge.Column(this="window", table=parent.alias_or_name),
+                        this=sge.Column(this="window"),
                         expression=sge.Identifier(this="start"),
                     ),
                     "window_start",
@@ -550,7 +552,7 @@ class PySparkCompiler(SQLGlotCompiler):
                 ),
                 sg.alias(
                     sge.Dot(
-                        this=sge.Column(this="window", table=parent.alias_or_name),
+                        this=sge.Column(this="window"),
                         expression=sge.Identifier(this="end"),
                     ),
                     "window_end",

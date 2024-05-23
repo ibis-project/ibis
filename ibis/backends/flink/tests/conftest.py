@@ -103,6 +103,27 @@ class TestConf(BackendTest):
         )
         con.create_table("topk", topk, temp=True)
 
+        # create a streaming table with watermark for testing event-time based ops
+        con.create_table(
+            "payment_msg",
+            schema=ibis.schema(
+                {
+                    "createTime": "timestamp(3)",
+                    "orderId": "int64",
+                    "payAmount": "float64",
+                    "payPlatform": "int32",
+                    "provinceId": "int32",
+                }
+            ),
+            tbl_properties={
+                "connector": "filesystem",
+                "path": self.data_dir / "csv" / "payment_msg.csv",
+                "format": "csv",
+            },
+            watermark=ibis.watermark("createTime", ibis.interval(seconds=10)),
+            temp=True,
+        )
+
 
 class TestConfForStreaming(TestConf):
     @staticmethod
