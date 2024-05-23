@@ -36,6 +36,7 @@ from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.datatypes import SnowflakeType
+from ibis.backends.tests.errors import SnowflakeProgrammingError
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -1014,7 +1015,12 @@ $$"""
         return self.table(table)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        *,
+        overwrite=False,
+        **kwargs: Any,
     ) -> ir.Table:
         """Read a Parquet file into an ibis table, using Snowflake.
 
@@ -1024,6 +1030,8 @@ $$"""
             A string or Path to a Parquet file; globs are supported
         table_name
             Optional table name
+        overwrite
+            Clobber existing table named `table_name`
         kwargs
             Additional keyword arguments. See
             https://docs.snowflake.com/en/sql-reference/sql/create-file-format#type-parquet
@@ -1070,13 +1078,21 @@ $$"""
 
         stmts = [
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
-            f"CREATE TEMP TABLE {qtable} ({snowflake_schema})",
+            f"CREATE {'OR REPLACE' * overwrite} TEMP TABLE {qtable} ({snowflake_schema})",
         ]
 
         query = ";\n".join(stmts)
-        with self._safe_raw_sql(query) as cur:
-            cur.execute(f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}")
-            cur.execute(f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})")
+        try:
+            with self._safe_raw_sql(query) as cur:
+                cur.execute(f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}")
+                cur.execute(f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})")
+        except SnowflakeProgrammingError as e:
+            if "already exists" in str(e):
+                raise OSError(
+                    f"Table {qtable} already exists. Set overwrite=True to overwrite."
+                )
+            else:
+                raise e
 
         return self.table(table)
 
