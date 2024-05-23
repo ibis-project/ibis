@@ -137,32 +137,3 @@ win = pd.DataFrame(
 )
 
 topk = pa.Table.from_pydict({"x": [1, 1, None]})
-
-# a time series dataset for streaming use cases
-payment_msg = pd.DataFrame(
-    {
-        "createTime": {
-            0: pd.Timestamp("2024-05-14 22:45:17.481"),
-            1: pd.Timestamp("2024-05-14 22:45:17.481"),
-            2: pd.Timestamp("2024-05-14 22:45:17.481"),
-            3: pd.Timestamp("2024-05-14 22:45:17.481"),
-            4: pd.Timestamp("2024-05-14 22:45:17.481"),
-        },
-        "orderId": {
-            0: 1715726718,
-            1: 1715726719,
-            2: 1715726720,
-            3: 1715726721,
-            4: 1715726722,
-        },
-        "payAmount": {
-            0: 19804.010084996993,
-            1: 95161.77724974867,
-            2: 80639.50276056337,
-            3: 38627.754005951545,
-            4: 87939.00723568315,
-        },
-        "payPlatform": {0: 1, 1: 0, 2: 0, 3: 0, 4: 0},
-        "provinceId": {0: 2, 1: 6, 2: 3, 3: 2, 4: 1},
-    }
-)
