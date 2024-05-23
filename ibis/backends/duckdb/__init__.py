@@ -454,10 +454,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         <ibis.backends.duckdb.Backend object at ...>
 
         """
-        if (
-            not isinstance(database, Path)
-            and database != ":memory:"
-            and not database.startswith(("md:", "motherduck:"))
+        if not isinstance(database, Path) and not database.startswith(
+            ("md:", "motherduck:", ":memory:")
         ):
             database = Path(database).absolute()
 
