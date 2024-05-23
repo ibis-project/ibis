@@ -273,7 +273,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         list[str]
             The list of the table names that match the pattern `like`.
         """
-        return self._filter_with_like(self.con.tables(), like)
+        database = database or "public"
+        query = (
+            sg.select("table_name")
+            .from_("information_schema.tables")
+            .where(sg.column("table_schema").eq(sge.convert(database)))
+        )
+        return self.raw_sql(query).to_pydict()["table_name"]
 
     def get_schema(
         self,
