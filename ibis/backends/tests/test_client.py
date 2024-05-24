@@ -927,6 +927,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "oracle",
                         "postgres",
                         "risingwave",
+                        "snowflake",
                         "sqlite",
                         "trino",
                     ]
@@ -948,6 +949,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "oracle",
                         "postgres",
                         "risingwave",
+                        "snowflake",
                         "sqlite",
                         "trino",
                     ]
@@ -970,6 +972,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "polars",
                         "postgres",
                         "risingwave",
+                        "snowflake",
                         "sqlite",
                         "trino",
                     ]
