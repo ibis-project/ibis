@@ -342,7 +342,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         if len(parents) == 2:
             return Deferred(Call(resolve_exists_subquery, _))
         elif len(parents) == 1:
-            op = ops.Any(self, where=self._bind_reduction_filter(where))
+            op = ops.Any(self, where=self._bind_to_parent_table(where))
         else:
             raise NotImplementedError(
                 f'Cannot compute "any" for expression of type {type(self)} '
@@ -407,7 +407,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         False
 
         """
-        return ops.All(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.All(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def notall(self, where: BooleanValue | None = None) -> BooleanScalar:
         """Return whether not all elements are `True`.
