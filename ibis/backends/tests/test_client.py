@@ -919,6 +919,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             marks=[
                 pytest.mark.notimpl(
                     [
+                        "clickhouse",
                         "duckdb",
                         "exasol",
                         "mssql",
@@ -938,6 +939,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             marks=[
                 pytest.mark.notimpl(
                     [
+                        "clickhouse",
                         "duckdb",
                         "exasol",
                         "mssql",
@@ -957,6 +959,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             marks=[
                 pytest.mark.notimpl(
                     [
+                        "clickhouse",
                         "duckdb",
                         "exasol",
                         "mssql",
