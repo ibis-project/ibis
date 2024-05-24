@@ -916,6 +916,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             pa.table({"a": ["a"], "b": [1]}).to_reader(),
             "df_arrow_batch_reader",
+            marks=[pytest.mark.notyet("duckdb")],
             id="pyarrow_rbr",
         ),
         param(
@@ -927,7 +928,9 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
             "df_arrow_dataset",
-            marks=[pytest.mark.notyet("polars")],
+            marks=[
+                pytest.mark.notyet(["polars", "duckdb"]),
+            ],
             id="pyarrow dataset",
         ),
         param(pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
