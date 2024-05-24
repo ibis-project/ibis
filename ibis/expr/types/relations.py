@@ -209,12 +209,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return PolarsData.convert_table(df, self.schema())
 
-    def _bind_reduction_filter(self, where):
-        if where is None or not isinstance(where, Deferred):
-            return where
-
-        return where.resolve(self)
-
     def bind(self, *args, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
         if len(args) == 1:
@@ -2527,9 +2521,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> t.nunique(t.a != "foo")
         1
         """
-        return ops.CountDistinctStar(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        if where is not None:
+            (where,) = bind(self, where)
+        return ops.CountDistinctStar(self, where=where).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
@@ -2566,7 +2560,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
-        return ops.CountStar(self, where=self._bind_reduction_filter(where)).to_expr()
+        if where is not None:
+            (where,) = bind(self, where)
+        return ops.CountStar(self, where=where).to_expr()
 
     def dropna(
         self,
