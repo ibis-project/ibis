@@ -629,10 +629,26 @@ def test_invalid_slice(table, step):
         table[:5:step]
 
 
-def test_table_count(table):
-    result = table.count()
+@pytest.mark.parametrize(
+    "method, op_cls", [("count", ops.CountStar), ("nunique", ops.CountDistinctStar)]
+)
+def test_table_count_nunique(table, method, op_cls):
+    def f(t, **kwargs):
+        return getattr(t, method)(**kwargs)
+
+    result = f(table)
     assert isinstance(result, ir.IntegerScalar)
-    assert isinstance(result.op(), ops.CountStar)
+    assert isinstance(result.op(), op_cls)
+    assert result.op().where is None
+
+    r1 = f(table, where=table.h)
+    r2 = f(table, where="h")
+    r3 = f(table, where=_.h)
+    r4 = f(table, where=lambda t: t.h)
+    assert r1.equals(r2)
+    assert r1.equals(r3)
+    assert r1.equals(r4)
+    assert r1.op().where.equals(table.h.op())
 
 
 def test_len_raises_expression_error(table):
