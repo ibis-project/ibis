@@ -65,7 +65,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras bigquery
@@ -457,7 +457,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
@@ -621,7 +621,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.8.2'
+        run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
       - name: remove incompatible deps
         # it requires a version of pandas that min versions are not compatible with
@@ -709,7 +709,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.8.2'
+        run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
       - name: remove lonboard
         # it requires a version of pandas that pyspark is not compatible with

@@ -30,7 +30,7 @@ jobs:
           python-version: "3.11"
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
