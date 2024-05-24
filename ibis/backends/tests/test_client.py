@@ -916,20 +916,20 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             pa.table({"a": ["a"], "b": [1]}).to_reader(),
             "df_arrow_batch_reader",
-            marks=[pytest.mark.notimpl(["duckdb", "postgres", "trino"])],
+            marks=[pytest.mark.notimpl(["duckdb", "postgres", "trino", "mysql"])],
             id="pyarrow_rbr",
         ),
         param(
             pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
             "df_arrow_single_batch",
-            marks=[pytest.mark.notimpl(["duckdb", "postgres", "trino"])],
+            marks=[pytest.mark.notimpl(["duckdb", "postgres", "trino", "mysql"])],
             id="pyarrow_single_batch",
         ),
         param(
             pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
             "df_arrow_dataset",
             marks=[
-                pytest.mark.notimpl(["polars", "duckdb", "postgres", "trino"]),
+                pytest.mark.notimpl(["polars", "duckdb", "postgres", "trino", "mysql"]),
             ],
             id="pyarrow dataset",
         ),
