@@ -28,7 +28,8 @@ from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
     import pandas as pd
-    import pyrrow as pa
+    import polars as pl
+    import pyarrow as pa
 
 
 def metadata_row_to_type(
@@ -336,7 +337,12 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -373,9 +379,11 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         if temp:
             properties.append(sge.TemporaryProperty())
 
+        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -430,6 +438,10 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 )
 
         if schema is None:
+            # Clean up temporary memtable if we've created one
+            # for in-memory reads
+            if temp_memtable_view is not None:
+                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided
