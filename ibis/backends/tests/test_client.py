@@ -916,20 +916,20 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             pa.table({"a": ["a"], "b": [1]}).to_reader(),
             "df_arrow_batch_reader",
-            marks=[pytest.mark.notyet("duckdb")],
+            marks=[pytest.mark.notyet(["duckdb", "postgres"])],
             id="pyarrow_rbr",
         ),
         param(
             pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
             "df_arrow_single_batch",
-            marks=[pytest.mark.notyet("duckdb")],
+            marks=[pytest.mark.notyet(["duckdb", "postgres"])],
             id="pyarrow_single_batch",
         ),
         param(
             pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
             "df_arrow_dataset",
             marks=[
-                pytest.mark.notyet(["polars", "duckdb"]),
+                pytest.mark.notyet(["polars", "duckdb", "postgres"]),
             ],
             id="pyarrow dataset",
         ),
@@ -958,6 +958,8 @@ def test_create_table_in_memory(con, obj, table_name):
     assert table_name in con.list_tables()
 
     assert result.equals(t.to_pyarrow())
+
+    con.drop_table(table_name)
 
 
 def test_default_backend_option(con, monkeypatch):

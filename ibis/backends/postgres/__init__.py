@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
 
@@ -663,7 +664,12 @@ $$""".format(**self._get_udf_source(udf_node))
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
