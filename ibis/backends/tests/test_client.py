@@ -920,11 +920,13 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
+                        "dask",
                         "duckdb",
                         "exasol",
                         "mssql",
                         "mysql",
                         "oracle",
+                        "pandas",
                         "postgres",
                         "pyspark",
                         "risingwave",
@@ -943,11 +945,13 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
+                        "dask",
                         "duckdb",
                         "exasol",
                         "mssql",
                         "mysql",
                         "oracle",
+                        "pandas",
                         "postgres",
                         "pyspark",
                         "risingwave",
@@ -966,11 +970,13 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
+                        "dask",
                         "duckdb",
                         "exasol",
                         "mssql",
                         "mysql",
                         "oracle",
+                        "pandas",
                         "polars",
                         "postgres",
                         "pyspark",
@@ -1009,7 +1015,7 @@ def test_create_table_in_memory(con, obj, table_name):
 
     assert result.equals(t.to_pyarrow())
 
-    con.drop_table(table_name)
+    con.drop_table(table_name, force=True)
 
 
 def test_default_backend_option(con, monkeypatch):
