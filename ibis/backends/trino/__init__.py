@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.operations as ops
@@ -357,7 +358,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -435,15 +441,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
+        temp_memtable_view = None
         if obj is not None:
-            import pandas as pd
-            import pyarrow as pa
-            import pyarrow_hotfix  # noqa: F401
-
-            if isinstance(obj, (pd.DataFrame, pa.Table)):
-                table = ibis.memtable(obj, schema=schema)
-            else:
+            if isinstance(obj, ir.Table):
                 table = obj
+            else:
+                table = ibis.memtable(obj, schema=schema)
+                temp_memtable_view = table.op().name
 
             self._run_pre_execute_hooks(table)
 
@@ -486,6 +490,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                         actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
                     ).sql(self.name)
                 )
+
+        if temp_memtable_view is not None:
+            self.drop_table(temp_memtable_view)
 
         return self.table(orig_table_ref.name)
 
