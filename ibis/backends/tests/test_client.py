@@ -918,7 +918,15 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             "df_arrow_batch_reader",
             marks=[
                 pytest.mark.notimpl(
-                    ["duckdb", "postgres", "trino", "mysql", "mssql", "exasol"]
+                    [
+                        "duckdb",
+                        "exasol",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "risingwave",
+                        "trino",
+                    ]
                 )
             ],
             id="pyarrow_rbr",
@@ -928,7 +936,15 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             "df_arrow_single_batch",
             marks=[
                 pytest.mark.notimpl(
-                    ["duckdb", "postgres", "trino", "mysql", "mssql", "exasol"]
+                    [
+                        "duckdb",
+                        "exasol",
+                        "mssql",
+                        "mysql",
+                        "postgres",
+                        "risingwave",
+                        "trino",
+                    ]
                 )
             ],
             id="pyarrow_single_batch",
@@ -939,13 +955,14 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             marks=[
                 pytest.mark.notimpl(
                     [
-                        "polars",
                         "duckdb",
-                        "postgres",
-                        "trino",
-                        "mysql",
-                        "mssql",
                         "exasol",
+                        "mssql",
+                        "mysql",
+                        "polars",
+                        "postgres",
+                        "risingwave",
+                        "trino",
                     ]
                 ),
             ],
