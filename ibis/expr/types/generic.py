@@ -1074,9 +1074,7 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        return ops.ArrayCollect(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1153,7 +1151,7 @@ class Value(Expr):
         '39.1: 36.7'
         """
         return ops.GroupConcat(
-            self, sep=sep, where=self._bind_reduction_filter(where)
+            self, sep=sep, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def __hash__(self) -> int:
@@ -1485,24 +1483,34 @@ class Column(Value, _FixedTextJupyterMixin):
                 "base table references to a projection"
             )
 
-    def _bind_reduction_filter(self, where):
-        rels = self.op().relations
-        if isinstance(where, Deferred):
-            if len(rels) == 0:
-                raise com.IbisInputError(
-                    "Unable to bind deferred expression to a table because "
-                    "the expression doesn't depend on any tables"
-                )
-            elif len(rels) == 1:
-                (table,) = rels
-                return where.resolve(table.to_expr())
-            else:
+    def _bind_to_parent_table(self, value) -> Value | None:
+        """Bind an expr to the parent table of `self`."""
+        if value is None:
+            return None
+        if isinstance(value, (Deferred, str)) or callable(value):
+            op = self.op()
+            if len(op.relations) != 1:
+                # TODO: I don't think this line can ever be hit by a valid
+                # expression, since it would require a column expression to
+                # directly depend on multiple tables. Currently some invalid
+                # expressions (like t1.a.argmin(t2.b)) aren't caught at
+                # construction time though, so we keep the check in for now.
                 raise com.RelationError(
-                    "Cannot bind deferred expression to a table because the "
-                    "expression depends on multiple tables"
+                    f"Unable to bind `{value!r}` - the current expression"
+                    f"depends on multiple tables."
                 )
-        else:
-            return where
+            table = next(iter(op.relations)).to_expr()
+
+            if isinstance(value, str):
+                return table[value]
+            elif isinstance(value, Deferred):
+                return value.resolve(table)
+            else:
+                value = value(table)
+
+        if not isinstance(value, Value):
+            return literal(value)
+        return value
 
     def __deferred_repr__(self):
         return f"<column[{self.type()}]>"
@@ -1545,7 +1553,7 @@ class Column(Value, _FixedTextJupyterMixin):
         55
         """
         return ops.ApproxCountDistinct(
-            self, where=self._bind_reduction_filter(where)
+            self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def approx_median(
@@ -1585,9 +1593,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
         3700
         """
-        return ops.ApproxMedian(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column.
@@ -1612,7 +1618,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
         5550
         """
-        return ops.Mode(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column.
@@ -1637,7 +1643,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
         4800
         """
-        return ops.Max(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column.
@@ -1662,7 +1668,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.body_mass_g.min(where=t.species == "Adelie")
         2850
         """
-        return ops.Min(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
@@ -1690,7 +1696,7 @@ class Column(Value, _FixedTextJupyterMixin):
         'Chinstrap'
         """
         return ops.ArgMax(
-            self, key=key, where=self._bind_reduction_filter(where)
+            self, key=key, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1720,7 +1726,7 @@ class Column(Value, _FixedTextJupyterMixin):
         'Adelie'
         """
         return ops.ArgMin(
-            self, key=key, where=self._bind_reduction_filter(where)
+            self, key=key, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def median(self, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1776,7 +1782,7 @@ class Column(Value, _FixedTextJupyterMixin):
         │ Torgersen │ Adelie         │
         └───────────┴────────────────┘
         """
-        return ops.Median(self, where=where).to_expr()
+        return ops.Median(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def quantile(
         self,
@@ -1846,7 +1852,7 @@ class Column(Value, _FixedTextJupyterMixin):
             op = ops.MultiQuantile
         else:
             op = ops.Quantile
-        return op(self, quantile, where=where).to_expr()
+        return op(self, quantile, where=self._bind_to_parent_table(where)).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
@@ -1872,7 +1878,7 @@ class Column(Value, _FixedTextJupyterMixin):
         55
         """
         return ops.CountDistinct(
-            self, where=self._bind_reduction_filter(where)
+            self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def topk(
@@ -1938,7 +1944,7 @@ class Column(Value, _FixedTextJupyterMixin):
                 removed_in="10.0",
                 instead="call `first` or `last` explicitly",
             )
-        return ops.Arbitrary(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.
@@ -1953,7 +1959,7 @@ class Column(Value, _FixedTextJupyterMixin):
         IntegerScalar
             Number of elements in an expression
         """
-        return ops.Count(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def value_counts(self) -> ir.Table:
         """Compute a frequency table.
@@ -2022,7 +2028,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.chars.first(where=t.chars != "a")
         'b'
         """
-        return ops.First(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.First(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def last(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the last value of a column.
@@ -2048,7 +2054,7 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t.chars.last(where=t.chars != "d")
         'c'
         """
-        return ops.Last(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Last(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.
