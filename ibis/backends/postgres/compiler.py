@@ -225,7 +225,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayContains(self, op, *, arg, other):
         arg_dtype = op.arg.dtype
-        return sge.ArrayContains(
+        # ArrayContainsAll introduced in 24, keep backcompat if it doesn't exist
+        cls = getattr(sge, "ArrayContainsAll", sge.ArrayContains)
+        return cls(
             this=self.cast(arg, arg_dtype),
             expression=self.f.array(self.cast(other, arg_dtype.value_type)),
         )
