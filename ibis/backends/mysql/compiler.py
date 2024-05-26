@@ -276,7 +276,9 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_LRStrip(self, op, *, arg, position):
         return reduce(
-            lambda arg, char: self.f.trim(this=arg, position=self.v[position], expression=char),
+            lambda arg, char: self.f.trim(
+                this=arg, position=self.v[position], expression=char
+            ),
             map(
                 partial(self.cast, to=dt.string),
                 map(self.f.unhex, map(self.f.hex, string.whitespace.encode())),
