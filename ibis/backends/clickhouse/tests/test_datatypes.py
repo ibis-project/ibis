@@ -3,7 +3,9 @@ from __future__ import annotations
 import hypothesis as h
 import hypothesis.strategies as st
 import pytest
+import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -192,6 +194,11 @@ def test_array_discovery_clickhouse(con):
                 ),
                 nullable=False,
             ),
+            marks=pytest.mark.xfail(
+                vparse(sg.__version__) == vparse("24.0.0"),
+                reason="struct parsing for clickhouse broken in sqlglot 24",
+                raises=sg.ParseError,
+            ),
             id="named_tuple",
         ),
         param(
@@ -203,6 +210,11 @@ def test_array_discovery_clickhouse(con):
                 ),
                 nullable=False,
             ),
+            marks=pytest.mark.xfail(
+                vparse("24.0.0") <= vparse(sg.__version__) <= vparse("24.0.1"),
+                reason="struct parsing for clickhouse broken in sqlglot 24",
+                raises=sg.ParseError,
+            ),
             id="unnamed_tuple",
         ),
         param(
@@ -213,6 +225,11 @@ def test_array_discovery_clickhouse(con):
                     f1=dt.Array(dt.float64, nullable=False),
                 ),
                 nullable=False,
+            ),
+            marks=pytest.mark.xfail(
+                vparse("24.0.0") <= vparse(sg.__version__) <= vparse("24.0.1"),
+                reason="struct parsing for clickhouse broken in sqlglot 24",
+                raises=sg.ParseError,
             ),
             id="partially_named",
         ),
