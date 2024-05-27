@@ -315,6 +315,8 @@ def join(op, **kw):
     if how == "right":
         how = "left"
         left, right = right, left
+    elif how == "outer":
+        how = "full"
 
     joined = left.join(right, on=on, how=how)
 
