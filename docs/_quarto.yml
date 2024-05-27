@@ -516,7 +516,6 @@ quartodoc:
           contents:
             - analytic
             - arrays
-            - core
             - generic
             - geospatial
             - histograms
