@@ -124,8 +124,7 @@ website:
       collapse-level: 2
       contents:
         - auto: backends/*.qmd
-        - support_matrix.qmd
-        - reference/operations.qmd
+        - auto: backends/support
     - id: how-to
       title: "How-to"
       style: "docked"
