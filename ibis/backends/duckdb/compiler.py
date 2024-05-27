@@ -53,7 +53,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.MapLength: "cardinality",
         ops.Mode: "mode",
         ops.TimeFromHMS: "make_time",
-        ops.TypeOf: "typeof",
         ops.GeoPoint: "st_point",
         ops.GeoAsText: "st_astext",
         ops.GeoArea: "st_area",
@@ -495,3 +494,6 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.uuid()
+
+    def visit_TypeOf(self, op, *, arg):
+        return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")
