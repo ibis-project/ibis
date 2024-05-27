@@ -532,7 +532,6 @@ quartodoc:
             - temporal
             - temporal_windows
             - udf
-            - vectorized
             - window
         - kind: page
           summary:
