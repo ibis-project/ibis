@@ -9,6 +9,8 @@ from ibis.expr.operations import Value
 
 @public
 class JSONGetItem(Value):
+    """Get a value from a JSON object or array."""
+
     arg: Value[dt.JSON]
     index: Value[dt.String | dt.Integer]
 
@@ -18,6 +20,8 @@ class JSONGetItem(Value):
 
 @public
 class ToJSONArray(Value):
+    """Convert a value to an array of JSON objects."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.Array(dt.json)
@@ -26,6 +30,8 @@ class ToJSONArray(Value):
 
 @public
 class ToJSONMap(Value):
+    """Convert a value to a map of string to JSON."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.Map(dt.string, dt.json)
@@ -34,6 +40,8 @@ class ToJSONMap(Value):
 
 @public
 class UnwrapJSONString(Value):
+    """Unwrap a JSON string into an engine-native string."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.string
@@ -42,6 +50,8 @@ class UnwrapJSONString(Value):
 
 @public
 class UnwrapJSONInt64(Value):
+    """Unwrap a JSON number into an engine-native int64."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.int64
@@ -50,6 +60,8 @@ class UnwrapJSONInt64(Value):
 
 @public
 class UnwrapJSONFloat64(Value):
+    """Unwrap a JSON number into an engine-native float64."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.float64
@@ -58,6 +70,8 @@ class UnwrapJSONFloat64(Value):
 
 @public
 class UnwrapJSONBoolean(Value):
+    """Unwrap a JSON bool into an engine-native bool."""
+
     arg: Value[dt.JSON]
 
     dtype = dt.boolean
