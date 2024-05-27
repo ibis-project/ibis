@@ -1,3 +1,5 @@
+"""Operations for analytic window functions."""
+
 from __future__ import annotations
 
 from typing import Optional

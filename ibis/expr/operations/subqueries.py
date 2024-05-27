@@ -1,3 +1,5 @@
+"""Subquery operations."""
+
 from __future__ import annotations
 
 from public import public

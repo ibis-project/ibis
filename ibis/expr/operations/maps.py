@@ -1,3 +1,5 @@
+"""Operations for working with maps."""
+
 from __future__ import annotations
 
 from public import public

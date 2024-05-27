@@ -1,3 +1,5 @@
+"""Operations for working with JSON data."""
+
 from __future__ import annotations
 
 from public import public

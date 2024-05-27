@@ -1,3 +1,5 @@
+"""User-defined functions (UDFs) implementation."""
+
 from __future__ import annotations
 
 import abc

@@ -1,3 +1,5 @@
+"""Logical operations."""
+
 from __future__ import annotations
 
 from public import public
@@ -147,7 +149,9 @@ class InValues(Value):
 
 @public
 class IfElse(Value):
-    """Ternary case expression, equivalent to
+    """Ternary case expression.
+
+    Equivalent to
 
     ```python
     bool_expr.case().when(True, true_expr).else_(false_or_null_expr)

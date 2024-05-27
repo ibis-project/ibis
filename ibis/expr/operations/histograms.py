@@ -1,3 +1,5 @@
+"""Operations for computing histograms."""
+
 from __future__ import annotations
 
 import numbers  # noqa: TCH003
