@@ -100,7 +100,7 @@ def gzip_csv(data_dir, tmp_path):
 )
 def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     with pushd(data_dir / "csv"):
-        with pytest.warns(FutureWarning, match="v9.0"):
+        with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
@@ -129,7 +129,7 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
 )
 def test_register_csv_gz(con, data_dir, gzip_csv):
     with pushd(data_dir):
-        with pytest.warns(FutureWarning, match="v9.0"):
+        with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(gzip_csv)
 
     assert table.count().execute()
@@ -159,7 +159,7 @@ def test_register_with_dotted_name(con, data_dir, tmp_path):
     f.parent.mkdir()
     data = data_dir.joinpath("csv", "diamonds.csv").read_bytes()
     f.write_bytes(data)
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         table = con.register(str(f.absolute()))
 
     if con.name != "datafusion":
@@ -223,7 +223,7 @@ def test_register_parquet(
     pq.write_table(table, tmp_path / fname.name)
 
     with pushd(tmp_path):
-        with pytest.warns(FutureWarning, match="v9.0"):
+        with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
         assert any(out_table_name in t for t in con.list_tables())
@@ -264,7 +264,7 @@ def test_register_iterator_parquet(
     pq.write_table(table, tmp_path / "functional_alltypes.parquet")
 
     with pushd(tmp_path):
-        with pytest.warns(FutureWarning, match="v9.0"):
+        with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(
                 [
                     "parquet://functional_alltypes.parquet",
@@ -301,11 +301,11 @@ def test_register_pandas(con):
     pd = pytest.importorskip("pandas")
     df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         t = con.register(df)
     assert t.x.sum().execute() == 6
 
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         t = con.register(df, "my_table")
     assert t.op().name == "my_table"
     assert t.x.sum().execute() == 6
@@ -335,7 +335,7 @@ def test_register_pyarrow_tables(con):
     pa = pytest.importorskip("pyarrow")
     pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         t = con.register(pa_t)
     assert t.x.sum().execute() == 6
 
@@ -369,7 +369,7 @@ def test_csv_reregister_schema(con, tmp_path):
             ]
         )
 
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         # For a full file scan, expect correct schema based on final row
         foo_table = con.register(foo, table_name="same")
     result_schema = foo_table.schema()

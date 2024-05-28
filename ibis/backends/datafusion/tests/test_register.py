@@ -25,21 +25,21 @@ def test_read_parquet(conn, data_dir):
 
 def test_register_table(conn):
     tab = pa.table({"x": [1, 2, 3]})
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         conn.register(tab, "my_table")
     assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_pandas(conn):
     df = pd.DataFrame({"x": [1, 2, 3]})
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         conn.register(df, "my_table")
         assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_batches(conn):
     batch = pa.record_batch([pa.array([1, 2, 3])], names=["x"])
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         conn.register(batch, "my_table")
         assert conn.table("my_table").x.sum().execute() == 6
 
@@ -47,6 +47,6 @@ def test_register_batches(conn):
 def test_register_dataset(conn):
     tab = pa.table({"x": [1, 2, 3]})
     dataset = ds.InMemoryDataset(tab)
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9.1"):
         conn.register(dataset, "my_table")
         assert conn.table("my_table").x.sum().execute() == 6

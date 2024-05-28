@@ -23,10 +23,10 @@ class TestConf(BackendTest):
         con = self.connection
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-            with pytest.warns(FutureWarning, match="v9.0"):
+            with pytest.warns(FutureWarning, match="v9.1"):
                 con.register(path, table_name=table_name)
         # TODO: remove warnings and replace register when implementing 8858
-        with pytest.warns(FutureWarning, match="v9.0"):
+        with pytest.warns(FutureWarning, match="v9.1"):
             con.register(array_types, table_name="array_types")
             con.register(struct_types, table_name="struct")
             con.register(win, table_name="win")

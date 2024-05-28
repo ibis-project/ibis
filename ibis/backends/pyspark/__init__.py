@@ -741,7 +741,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.table(table_name)
 
     @deprecated(
-        as_of="9.0",
+        as_of="9.1",
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
     )
     def register(
