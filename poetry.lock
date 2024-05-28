@@ -2930,13 +2930,13 @@ arrow = ">=0.15.0"
 
 [[package]]
 name = "itables"
-version = "2.0.1"
+version = "2.1.0"
 description = "Pandas and Polar DataFrames as interactive DataTables"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "itables-2.0.1-py3-none-any.whl", hash = "sha256:ab99561f088eb7dbfca6f24f894a80929fd8c3198f55126441057366e0718bec"},
-    {file = "itables-2.0.1.tar.gz", hash = "sha256:dae51872275f7d2a7be7159c280a67ae369ec31bb0d3b87042c5919f6de201a3"},
+    {file = "itables-2.1.0-py3-none-any.whl", hash = "sha256:4ff280a173bb741339b4e6a44a827e220f60094fccfa7884b3e437ba10f7f14f"},
+    {file = "itables-2.1.0.tar.gz", hash = "sha256:7c013060d78041bddf7ee19db57ab4aff9f1e68333fc5cd03969c8c9a56e6691"},
 ]
 
 [package.dependencies]
@@ -8089,4 +8089,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9f1e8fa7f1b73d5ac4ab883f892300ae19d5e057bcb0fbe53fa85fa52ab237b4"
+content-hash = "987dd6aefab23eadf5b3c841610a7cae32035f50657ca439e7629303f32c09e2"
