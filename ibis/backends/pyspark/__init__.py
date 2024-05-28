@@ -144,52 +144,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         super().__init__(*args, **kwargs)
         self._cached_dataframes = {}
 
-    def connect(self, *args, **kwargs) -> Backend:
-        """Connect to the database.
-
-        Parameters
-        ----------
-        *args
-            Mandatory connection parameters, see the docstring of `do_connect`
-            for details.
-        **kwargs
-            Extra connection parameters, see the docstring of `do_connect` for
-            details.
-            [NOTE] Pyspark backend takes in an optional "mode" parameter that can
-            either be "batch" or "streaming". If "batch", every source, sink, and query
-            executed within this connection will be interpreted as a batch workload. If
-            "streaming", every source, sink, and query executed within this connection
-            will be interpreted as a streaming workload.
-
-        Notes
-        -----
-        This creates a new backend instance with saved `args` and `kwargs`,
-        then calls `reconnect` and finally returns the newly created and
-        connected backend instance.
-
-        Returns
-        -------
-        BaseBackend
-            An instance of the backend
-
-        """
-        mode = kwargs.pop("mode", "batch")
-        if mode == "streaming":
-            new_backend = StreamingBackend(*args, **kwargs)
-        elif mode == "batch":
-            new_backend = BatchBackend(*args, **kwargs)
-        else:
-            raise ValueError(f"Invalid mode: {mode}")
-        new_backend.reconnect()
-        return new_backend
-
-    def do_connect(self, session: SparkSession | None = None) -> None:
+    def do_connect(
+        self, session: SparkSession | None = None, mode: ConnectionMode | None = None
+    ) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
         Parameters
         ----------
         session
             A SparkSession instance
+        mode
+            Can be either "batch" or "streaming". If "batch", every source, sink, and
+            query executed within this connection will be interpreted as a batch
+            workload. If "streaming", every source, sink, and query executed within
+            this connection will be interpreted as a streaming workload.
 
         Examples
         --------
@@ -204,6 +172,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             from pyspark.sql import SparkSession
 
             session = SparkSession.builder.getOrCreate()
+
+        mode = mode or "batch"
+        if mode not in ("batch", "streaming"):
+            raise com.IbisInputError(
+                f"Invalid connection mode: {mode}, must be `streaming` or `batch`"
+            )
+        self._mode = mode
 
         self._session = session
 
@@ -221,6 +196,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df = self.raw_sql(query)
         struct_dtype = PySparkType.to_ibis(df.schema)
         return sch.Schema(struct_dtype)
+
+    @property
+    def mode(self) -> ConnectionMode:
+        return self._mode
 
     @property
     def version(self):
@@ -673,8 +652,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         t.unpersist()
         assert not t.is_cached
 
-
-class BatchBackend(Backend):
     def read_delta(
         self,
         path: str | Path,
@@ -700,6 +677,10 @@ class BatchBackend(Backend):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Reading a Delta Lake table in streaming mode is not supported"
+            )
         path = util.normalize_filename(path)
         spark_df = self._session.read.format("delta").load(path, **kwargs)
         table_name = table_name or util.gen_name("read_delta")
@@ -732,6 +713,11 @@ class BatchBackend(Backend):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of parquet files. "
+                "Please use `read_parquet_directory` instead."
+            )
         path = util.normalize_filename(path)
         spark_df = self._session.read.parquet(path, **kwargs)
         table_name = table_name or util.gen_name("read_parquet")
@@ -765,6 +751,11 @@ class BatchBackend(Backend):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of CSV files. "
+                "Please use `read_csv_directory` instead."
+            )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
         source_list = normalize_filenames(source_list)
@@ -802,6 +793,11 @@ class BatchBackend(Backend):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of JSON files. "
+                "Please use `read_json_directory` instead."
+            )
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
         table_name = table_name or util.gen_name("read_json")
@@ -892,6 +888,10 @@ class BatchBackend(Backend):
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.save.html
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Writing to a Delta Lake table in streaming mode is not supported"
+            )
         df = self._session.sql(expr.compile())
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
@@ -902,6 +902,8 @@ class BatchBackend(Backend):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        if self.mode == "streaming":
+            raise NotImplementedError
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
@@ -924,6 +926,8 @@ class BatchBackend(Backend):
         chunk_size: int = 1000000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
+        if self.mode == "streaming":
+            raise NotImplementedError
         pa = self._import_pyarrow()
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
@@ -932,8 +936,6 @@ class BatchBackend(Backend):
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
 
-
-class StreamingBackend(Backend):
     @util.experimental
     def read_kafka(
         self,
@@ -967,6 +969,10 @@ class StreamingBackend(Backend):
         ir.Table
             The just-registered table
         """
+        if self.mode == "batch":
+            raise NotImplementedError(
+                "Reading from Kafka in batch mode is not supported"
+            )
         spark_df = self._session.readStream.format("kafka")
         if options is not None:
             for k, v in options.items():
@@ -1019,6 +1025,8 @@ class StreamingBackend(Backend):
             https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
 
         """
+        if self.mode == "batch":
+            raise NotImplementedError("Writing to Kafka in batch mode is not supported")
         df = self._session.sql(expr.compile())
         if auto_format is True:
             df = df.select(
@@ -1029,14 +1037,6 @@ class StreamingBackend(Backend):
             for k, v in options.items():
                 sq = sq.option(k, v)
         sq.start()
-
-    def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        raise NotImplementedError(
-            "Pyspark in streaming mode does not support direction registration of CSV files. "
-            "Please use `read_csv_directory` instead."
-        )
 
     @util.experimental
     def read_csv_directory(
@@ -1064,21 +1064,18 @@ class StreamingBackend(Backend):
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
         path = util.normalize_filename(path)
-        spark_df = self._session.readStream.csv(
-            path, inferSchema=inferSchema, header=header, **kwargs
-        )
-        table_name = table_name or util.gen_name("read_csv")
+        if self.mode == "batch":
+            spark_df = self._session.read.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
+            )
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
+            )
+        table_name = table_name or util.gen_name("read_csv_directory")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
-
-    def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        raise NotImplementedError(
-            "Pyspark in streaming mode does not support direction registration of parquet files. "
-            "Please use `read_parquet_directory` instead."
-        )
 
     @util.experimental
     def read_parquet_directory(
@@ -1107,19 +1104,14 @@ class StreamingBackend(Backend):
 
         """
         path = util.normalize_filename(path)
-        spark_df = self._session.readStream.parquet(path, **kwargs)
-        table_name = table_name or util.gen_name("read_parquet")
+        if self.mode == "batch":
+            spark_df = self._session.read.parquet(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.parquet(path, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet_directory")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
-
-    def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
-    ) -> ir.Table:
-        raise NotImplementedError(
-            "Pyspark in streaming mode does not support direction registration of JSON files. "
-            "Please use `read_json_directory` instead."
-        )
 
     @util.experimental
     def read_json_directory(
@@ -1145,8 +1137,11 @@ class StreamingBackend(Backend):
 
         """
         path = util.normalize_filename(path)
-        spark_df = self._session.readStream.json(path, **kwargs)
-        table_name = table_name or util.gen_name("read_json")
+        if self.mode == "batch":
+            spark_df = self._session.read.json(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.json(path, **kwargs)
+        table_name = table_name or util.gen_name("read_json_directory")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
