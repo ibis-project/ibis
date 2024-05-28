@@ -301,43 +301,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table = database.table(table_name)
         return sch.schema(table.schema)
 
-    def read_in_memory(
-        self,
-        source: pd.DataFrame
-        | pa.Table
-        | pa.RecordBatchReader
-        | pa.RecordBatch
-        | pl.DataFrame
-        | pl.LazyFrame,
-        table_name: str | None = None,
-        **kwargs: Any,
-    ) -> ir.Table:
-        """Register an in-memory table object in the current database.
-
-        Supported objects include pandas DataFrame, a Polars
-        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
-
-        Parameters
-        ----------
-        source
-            The data source.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        kwargs
-            Keyword arguments to forward to a memory-format-specific reader function.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-        """
-        table_name = table_name or gen_name("read_in_memory")
-
-        _read_in_memory(source, table_name, self)
-
-        return self.table(table_name)
-
     def register(
         self,
         source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
