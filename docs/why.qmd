@@ -352,7 +352,7 @@ Ibis already works well with machine learning libraries like:
 
 {{< include ./_tabsets/install.qmd >}}
 
-See the [backend support matrix](support_matrix.qmd) for details on operations
+See the [backend support matrix](./backends/support/matrix.qmd) for details on operations
 supported. [Open a feature
 request](https://github.com/ibis-project/ibis/issues/new?assignees=&labels=feature&projects=&template=feature-request.yml&title=feat)
 if you'd like to see support for an operation in a given backend. If the backend
