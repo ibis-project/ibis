@@ -773,64 +773,6 @@ def test_quantile_group_by(batting, batting_pandas_df):
     tm.assert_series_equal(result, expected, check_index=False)
 
 
-def test_searched_case_scalar(client):
-    expr = ibis.case().when(True, 1).when(False, 2).end()
-    result = client.execute(expr)
-    expected = np.int8(1)
-    assert result == expected
-
-
-def test_searched_case_column(batting, batting_pandas_df):
-    t = batting
-    df = batting_pandas_df
-    expr = (
-        ibis.case()
-        .when(t.RBI < 5, "really bad team")
-        .when(t.teamID == "PH1", "ph1 team")
-        .else_(t.teamID)
-        .end()
-    )
-    result = expr.execute()
-    expected = pd.Series(
-        np.select(
-            [df.RBI < 5, df.teamID == "PH1"],
-            ["really bad team", "ph1 team"],
-            df.teamID,
-        )
-    )
-    tm.assert_series_equal(result, expected, check_names=False)
-
-
-def test_simple_case_scalar(client):
-    x = ibis.literal(2)
-    expr = x.case().when(2, x - 1).when(3, x + 1).when(4, x + 2).end()
-    result = client.execute(expr)
-    expected = np.int8(1)
-    assert result == expected
-
-
-def test_simple_case_column(batting, batting_pandas_df):
-    t = batting
-    df = batting_pandas_df
-    expr = (
-        t.RBI.case()
-        .when(5, "five")
-        .when(4, "four")
-        .when(3, "three")
-        .else_("could be good?")
-        .end()
-    )
-    result = expr.execute()
-    expected = pd.Series(
-        np.select(
-            [df.RBI == 5, df.RBI == 4, df.RBI == 3],
-            ["five", "four", "three"],
-            "could be good?",
-        )
-    )
-    tm.assert_series_equal(result, expected, check_names=False)
-
-
 def test_table_distinct(t, df):
     expr = t[["dup_strings"]].distinct()
     result = expr.compile()
