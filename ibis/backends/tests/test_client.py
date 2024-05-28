@@ -391,7 +391,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["druid", "polars"])
+@mark.notimpl(["druid"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -1392,11 +1392,6 @@ def gen_test_name(con: BaseBackend):
     con.drop_table(name, force=True)
 
 
-@mark.notimpl(
-    ["polars"],
-    raises=NotImplementedError,
-    reason="overwriting not implemented in ibis for this backend",
-)
 @mark.broken(
     ["druid"], raises=NotImplementedError, reason="generated SQL fails to parse"
 )
