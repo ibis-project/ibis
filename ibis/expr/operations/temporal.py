@@ -1,3 +1,5 @@
+"""Temporal operations."""
+
 from __future__ import annotations
 
 import operator
@@ -15,17 +17,9 @@ from ibis.expr.operations.logical import Between
 
 
 @public
-class TemporalUnary(Unary):
-    arg: Value[dt.Temporal]
-
-
-@public
-class TimestampUnary(Unary):
-    arg: Value[dt.Timestamp]
-
-
-@public
 class TimestampTruncate(Value):
+    """Truncate a timestamp to a specified unit."""
+
     arg: Value[dt.Timestamp]
     unit: IntervalUnit
 
@@ -35,6 +29,8 @@ class TimestampTruncate(Value):
 
 @public
 class DateTruncate(Value):
+    """Truncate a date to a specified unit."""
+
     arg: Value[dt.Date]
     unit: DateUnit
 
@@ -44,6 +40,8 @@ class DateTruncate(Value):
 
 @public
 class TimeTruncate(Value):
+    """Truncate a time to a specified unit."""
+
     arg: Value[dt.Time]
     unit: TimeUnit
 
@@ -53,6 +51,8 @@ class TimeTruncate(Value):
 
 @public
 class TimestampBucket(Value):
+    """Bucketize a timestamp to a specified interval."""
+
     arg: Value[dt.Timestamp]
     interval: Scalar[dt.Interval]
     offset: Optional[Scalar[dt.Interval]] = None
@@ -63,6 +63,8 @@ class TimestampBucket(Value):
 
 @public
 class Strftime(Value):
+    """Format a temporal value as a string."""
+
     arg: Value[dt.Temporal]
     format_str: Value[dt.String]
 
@@ -72,6 +74,8 @@ class Strftime(Value):
 
 @public
 class StringToTimestamp(Value):
+    """Convert a string to a timestamp."""
+
     arg: Value[dt.String]
     format_str: Value[dt.String]
 
@@ -81,6 +85,8 @@ class StringToTimestamp(Value):
 
 @public
 class StringToDate(Value):
+    """Convert a string to a date."""
+
     arg: Value[dt.String]
     format_str: Value[dt.String]
 
@@ -89,87 +95,96 @@ class StringToDate(Value):
 
 
 @public
-class ExtractTemporalField(TemporalUnary):
+class ExtractTemporalField(Unary):
+    """Extract a field from a temporal value."""
+
+    arg: Value[dt.Temporal]
     dtype = dt.int32
 
 
 @public
 class ExtractDateField(ExtractTemporalField):
+    """Extract a field from a date."""
+
     arg: Value[dt.Date | dt.Timestamp]
 
 
 @public
 class ExtractTimeField(ExtractTemporalField):
+    """Extract a field from a time."""
+
     arg: Value[dt.Time | dt.Timestamp]
 
 
 @public
 class ExtractYear(ExtractDateField):
-    pass
+    """Extract the year from a date or timestamp."""
 
 
 @public
 class ExtractIsoYear(ExtractDateField):
-    pass
+    """Extract the ISO year from a date or timestamp."""
 
 
 @public
 class ExtractMonth(ExtractDateField):
-    pass
+    """Extract the month from a date or timestamp."""
 
 
 @public
 class ExtractDay(ExtractDateField):
-    pass
+    """Extract the day from a date or timestamp."""
 
 
 @public
 class ExtractDayOfYear(ExtractDateField):
-    pass
+    """Extract the day of the year from a date or timestamp."""
 
 
 @public
 class ExtractQuarter(ExtractDateField):
-    pass
+    """Extract the quarter from a date or timestamp."""
 
 
 @public
 class ExtractEpochSeconds(ExtractDateField):
-    pass
+    """Extract seconds since the UNIX epoch from a date or timestamp."""
 
 
 @public
 class ExtractWeekOfYear(ExtractDateField):
-    pass
+    """Extract the week of the year from a date or timestamp."""
 
 
 @public
 class ExtractHour(ExtractTimeField):
-    pass
+    """Extract the hour from a time or timestamp."""
 
 
 @public
 class ExtractMinute(ExtractTimeField):
-    pass
+    """Extract the minute from a time or timestamp."""
 
 
 @public
 class ExtractSecond(ExtractTimeField):
-    pass
-
-
-@public
-class ExtractMicrosecond(ExtractTimeField):
-    pass
+    """Extract the second from a time or timestamp."""
 
 
 @public
 class ExtractMillisecond(ExtractTimeField):
-    pass
+    """Extract milliseconds from a time or timestamp."""
+
+
+@public
+class ExtractMicrosecond(ExtractTimeField):
+    """Extract microseconds from a time or timestamp."""
 
 
 @public
 class DayOfWeekIndex(Unary):
+    """Extract the index of the day of the week from a date or timestamp."""
+
     arg: Value[dt.Date | dt.Timestamp]
 
     dtype = dt.int16
@@ -177,6 +192,8 @@ class DayOfWeekIndex(Unary):
 
 @public
 class DayOfWeekName(Unary):
+    """Extract the name of the day of the week from a date or timestamp."""
+
     arg: Value[dt.Date | dt.Timestamp]
 
     dtype = dt.string
@@ -184,16 +201,22 @@ class DayOfWeekName(Unary):
 
 @public
 class Time(Unary):
+    """Extract the time from a timestamp."""
+
     dtype = dt.time
 
 
 @public
 class Date(Unary):
+    """Extract the date from a timestamp."""
+
     dtype = dt.date
 
 
 @public
 class DateFromYMD(Value):
+    """Construct a date from year, month, and day."""
+
     year: Value[dt.Integer]
     month: Value[dt.Integer]
     day: Value[dt.Integer]
@@ -204,6 +227,8 @@ class DateFromYMD(Value):
 
 @public
 class TimeFromHMS(Value):
+    """Construct a time from hours, minutes, and seconds."""
+
     hours: Value[dt.Integer]
     minutes: Value[dt.Integer]
     seconds: Value[dt.Integer]
@@ -214,6 +239,8 @@ class TimeFromHMS(Value):
 
 @public
 class TimestampFromYMDHMS(Value):
+    """Construct a timestamp from components."""
+
     year: Value[dt.Integer]
     month: Value[dt.Integer]
     day: Value[dt.Integer]
@@ -227,6 +254,8 @@ class TimestampFromYMDHMS(Value):
 
 @public
 class TimestampFromUNIX(Value):
+    """Construct a timestamp from a UNIX timestamp."""
+
     arg: Value
     unit: TimestampUnit
 
@@ -240,6 +269,8 @@ DateInterval = Annotated[dt.Interval, Attrs(unit=As(DateUnit))]
 
 @public
 class DateAdd(Binary):
+    """Add an interval to a date."""
+
     left: Value[dt.Date]
     right: Value[DateInterval]
 
@@ -248,6 +279,8 @@ class DateAdd(Binary):
 
 @public
 class DateSub(Binary):
+    """Subtract an interval from a date."""
+
     left: Value[dt.Date]
     right: Value[DateInterval]
 
@@ -256,6 +289,8 @@ class DateSub(Binary):
 
 @public
 class DateDiff(Binary):
+    """Compute the difference between two dates."""
+
     left: Value[dt.Date]
     right: Value[dt.Date]
 
@@ -264,6 +299,8 @@ class DateDiff(Binary):
 
 @public
 class TimeAdd(Binary):
+    """Add an interval to a time."""
+
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
@@ -272,6 +309,8 @@ class TimeAdd(Binary):
 
 @public
 class TimeSub(Binary):
+    """Subtract an interval from a time."""
+
     left: Value[dt.Time]
     right: Value[TimeInterval]
 
@@ -280,6 +319,8 @@ class TimeSub(Binary):
 
 @public
 class TimeDiff(Binary):
+    """Compute the difference between two times."""
+
     left: Value[dt.Time]
     right: Value[dt.Time]
 
@@ -288,6 +329,8 @@ class TimeDiff(Binary):
 
 @public
 class TimestampAdd(Binary):
+    """Add an interval to a timestamp."""
+
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
@@ -296,6 +339,8 @@ class TimestampAdd(Binary):
 
 @public
 class TimestampSub(Binary):
+    """Subtract an interval from a timestamp."""
+
     left: Value[dt.Timestamp]
     right: Value[dt.Interval]
 
@@ -304,6 +349,8 @@ class TimestampSub(Binary):
 
 @public
 class TimestampDiff(Binary):
+    """Compute the difference between two timestamps."""
+
     left: Value[dt.Timestamp]
     right: Value[dt.Timestamp]
 
@@ -312,6 +359,8 @@ class TimestampDiff(Binary):
 
 @public
 class IntervalBinary(Binary):
+    """Base class for interval binary operations."""
+
     @attribute
     def dtype(self):
         interval_unit_args = [
@@ -324,6 +373,8 @@ class IntervalBinary(Binary):
 
 @public
 class IntervalAdd(IntervalBinary):
+    """Add two intervals."""
+
     left: Value[dt.Interval]
     right: Value[dt.Interval]
     op = operator.add
@@ -331,6 +382,8 @@ class IntervalAdd(IntervalBinary):
 
 @public
 class IntervalSubtract(IntervalBinary):
+    """Subtract one interval from another."""
+
     left: Value[dt.Interval]
     right: Value[dt.Interval]
     op = operator.sub
@@ -338,6 +391,8 @@ class IntervalSubtract(IntervalBinary):
 
 @public
 class IntervalMultiply(IntervalBinary):
+    """Multiply an interval by a scalar."""
+
     left: Value[dt.Interval]
     right: Value[dt.Numeric | dt.Boolean]
     op = operator.mul
@@ -345,6 +400,8 @@ class IntervalMultiply(IntervalBinary):
 
 @public
 class IntervalFloorDivide(IntervalBinary):
+    """Divide an interval by a scalar, rounding down."""
+
     left: Value[dt.Interval]
     right: Value[dt.Numeric | dt.Boolean]
     op = operator.floordiv
@@ -352,6 +409,8 @@ class IntervalFloorDivide(IntervalBinary):
 
 @public
 class IntervalFromInteger(Value):
+    """Construct an interval from an integer."""
+
     arg: Value[dt.Integer]
     unit: IntervalUnit
 
@@ -368,12 +427,16 @@ class IntervalFromInteger(Value):
 
 @public
 class BetweenTime(Between):
+    """Check if a time is between two bounds."""
+
     arg: Value[dt.Time | dt.Timestamp]
     lower_bound: Value[dt.Time | dt.String]
     upper_bound: Value[dt.Time | dt.String]
 
 
 class TemporalDelta(Value):
+    """Base class for temporal delta operations."""
+
     part: Value[dt.String]
     shape = rlz.shape_like("args")
     dtype = dt.int64
@@ -381,18 +444,24 @@ class TemporalDelta(Value):
 
 @public
 class TimeDelta(TemporalDelta):
+    """Compute the difference between two times as integer number of requested units."""
+
     left: Value[dt.Time]
     right: Value[dt.Time]
 
 
 @public
 class DateDelta(TemporalDelta):
+    """Compute the difference between two dates as integer number of requested units."""
+
     left: Value[dt.Date]
     right: Value[dt.Date]
 
 
 @public
 class TimestampDelta(TemporalDelta):
+    """Compute the difference between two timestamps as integer number of requested units."""
+
     left: Value[dt.Timestamp]
     right: Value[dt.Timestamp]
 

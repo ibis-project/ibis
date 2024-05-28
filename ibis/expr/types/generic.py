@@ -1354,7 +1354,7 @@ class Column(Value, _FixedTextJupyterMixin):
         max_rows
             Maximum number of rows to display
         max_length
-           Maximum length for pretty-printed arrays and maps.
+            Maximum length for pretty-printed arrays and maps.
         max_string
             Maximum length for pretty-printed strings.
         max_depth

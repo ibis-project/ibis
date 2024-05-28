@@ -1,3 +1,5 @@
+"""Operations for working with maps."""
+
 from __future__ import annotations
 
 from public import public
@@ -10,6 +12,8 @@ from ibis.expr.operations.core import Unary, Value
 
 @public
 class Map(Value):
+    """Construct a map."""
+
     keys: Value[dt.Array]
     values: Value[dt.Array]
 
@@ -25,12 +29,16 @@ class Map(Value):
 
 @public
 class MapLength(Unary):
+    """Compute the number of unique keys in a map."""
+
     arg: Value[dt.Map]
     dtype = dt.int64
 
 
 @public
 class MapGet(Value):
+    """Get a value from a map by key."""
+
     arg: Value[dt.Map]
     key: Value
     default: Value = None
@@ -44,6 +52,8 @@ class MapGet(Value):
 
 @public
 class MapContains(Value):
+    """Check if a map contains a key."""
+
     arg: Value[dt.Map]
     key: Value
 
@@ -53,6 +63,8 @@ class MapContains(Value):
 
 @public
 class MapKeys(Unary):
+    """Get the keys of a map as an array."""
+
     arg: Value[dt.Map]
 
     @attribute
@@ -62,6 +74,8 @@ class MapKeys(Unary):
 
 @public
 class MapValues(Unary):
+    """Get the values of a map as an array."""
+
     arg: Value[dt.Map]
 
     @attribute
@@ -71,6 +85,11 @@ class MapValues(Unary):
 
 @public
 class MapMerge(Value):
+    """Combine two maps into one.
+
+    If a key is present in both maps, the value from the first is kept.
+    """
+
     left: Value[dt.Map]
     right: Value[dt.Map]
 

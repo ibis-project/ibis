@@ -1,0 +1,130 @@
+---
+title: "Operation support matrix"
+format: dashboard
+hide:
+  - toc
+---
+
+## {height=25%}
+
+::: {.card title="Welcome to the operation support matrix!"}
+
+This is a [Quarto dashboard](https://quarto.org/docs/dashboards/) that shows
+the operations each backend supports.
+
+Due to differences in SQL dialects and upstream support for different
+operations in different backends, support for the full breadth of the Ibis API
+varies.
+
+::: {.callout-tip}
+Backends with low coverage are good places to start contributing!
+
+Each backend implements operations differently, but this is usually very
+similar to other backends. If you want to start contributing to ibis, it's
+a good idea to start by adding missing operations to backends that have low
+operation coverage.
+:::
+
+:::
+
+### {width=25%}
+
+```{python}
+#| content: valuebox
+#| title: "Number of backends"
+import ibis
+
+dict(
+    value=len(ibis.util.backend_entry_points()),
+    color="info",
+    icon="signpost-split-fill",
+)
+```
+
+### {width=25%}
+
+```{python}
+#| content: valuebox
+#| title: "Number of SQL backends"
+import importlib
+from ibis.backends.sql import SQLBackend
+
+sql_backends = sum(
+    issubclass(
+        importlib.import_module(f"ibis.backends.{entry_point.name}").Backend, SQLBackend
+    )
+    for entry_point in ibis.util.backend_entry_points()
+)
+assert sql_backends > 0
+dict(value=sql_backends, color="green", icon="database")
+```
+
+## {height=70%}
+
+```{python}
+#| echo: false
+import pandas as pd
+
+import ibis
+import ibis.expr.operations as ops
+
+
+def make_support_matrix():
+    """Construct the backend operation support matrix data."""
+
+    from ibis.backends.sql.compiler import ALL_OPERATIONS
+
+    support_matrix_ignored_operations = (ops.ScalarParameter,)
+
+    public_ops = ALL_OPERATIONS.difference(support_matrix_ignored_operations)
+
+    assert public_ops
+
+    support = {"Operation": [f"{op.__module__}.{op.__name__}" for op in public_ops]}
+    support.update(
+        (backend, list(map(getattr(ibis, backend).has_operation, public_ops)))
+        for backend in sorted(ep.name for ep in ibis.util.backend_entry_points())
+    )
+
+    def make_link(parts):
+        module, op = parts[-2:]
+        return f'<a href="./operations.html#ibis.expr.operations.{module}.{op}">{op}</a>'
+
+    support_matrix = (
+        pd.DataFrame(support)
+        .assign(splits=lambda df: df.Operation.str.findall("[a-zA-Z_][a-zA-Z_0-9]*"))
+        .assign(
+            Category=lambda df: df.splits.str[-2],
+            Operation=lambda df: df.splits.map(make_link),
+        )
+        .drop(["splits"], axis=1)
+        .set_index(["Category", "Operation"])
+        .sort_index()
+    )
+    all_visible_ops_count = len(support_matrix)
+    assert all_visible_ops_count
+
+    coverage = pd.Index(
+        support_matrix.sum()
+        .map(lambda n: f"{n} ({round(100 * n / all_visible_ops_count)}%)")
+        .T
+    )
+    support_matrix.columns = pd.MultiIndex.from_tuples(
+        list(zip(support_matrix.columns, coverage)), names=("Backend", "API coverage")
+    )
+    return support_matrix
+```
+
+```{python}
+from itables import show
+
+
+matrix = make_support_matrix()
+
+show(
+    matrix.replace({True: "✔", False: "🚫"}),
+    ordering=False,
+    paging=False,
+    buttons=["copy", "excel", "csv"],
+)
+```

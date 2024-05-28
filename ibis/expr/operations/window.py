@@ -1,3 +1,5 @@
+"""Window operations."""
+
 from __future__ import annotations
 
 from typing import Literal as LiteralType
@@ -25,6 +27,8 @@ S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
 
 @public
 class WindowBoundary(Value[T, S]):
+    """Window boundary object."""
+
     # TODO(kszucs): consider to prefer Concrete base class here
     # pretty similar to SortKey and Alias operations which wrap a single value
     value: Value[T, S]
@@ -61,6 +65,8 @@ class WindowBoundary(Value[T, S]):
 
 @public
 class WindowFunction(Value):
+    """Window function operation."""
+
     func: Analytic | Reduction
     how: LiteralType["rows", "range"] = "rows"
     start: Optional[WindowBoundary[dt.Numeric | dt.Interval]] = None

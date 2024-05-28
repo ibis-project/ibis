@@ -1,3 +1,5 @@
+"""Generic value operations."""
+
 from __future__ import annotations
 
 import itertools
@@ -21,7 +23,7 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 @public
 class RowID(Value):
-    """The row number (an autonumeric) of the returned result."""
+    """The row number of the returned result."""
 
     name = "rowid"
     table: Relation
@@ -36,7 +38,7 @@ class RowID(Value):
 
 @public
 class Cast(Value):
-    """Explicitly cast value to a specific data type."""
+    """Explicitly cast a value to a specific data type."""
 
     arg: Value
     to: dt.DataType
@@ -54,7 +56,7 @@ class Cast(Value):
 
 @public
 class TryCast(Value):
-    """Explicitly try cast value to a specific data type."""
+    """Try to cast a value to a specific data type."""
 
     arg: Value
     to: dt.DataType
@@ -68,40 +70,28 @@ class TryCast(Value):
 
 @public
 class TypeOf(Unary):
+    """Return the _database_ data type of the input expression."""
+
     dtype = dt.string
 
 
 @public
 class IsNull(Unary):
-    """Return true if values are null.
-
-    Returns
-    -------
-    ir.BooleanValue
-        Value expression indicating whether values are null
-
-    """
+    """Return true if values are null."""
 
     dtype = dt.boolean
 
 
 @public
 class NotNull(Unary):
-    """Returns true if values are not null.
-
-    Returns
-    -------
-    ir.BooleanValue
-        Value expression indicating whether values are not null
-
-    """
+    """Returns true if values are not null."""
 
     dtype = dt.boolean
 
 
 @public
 class NullIf(Value):
-    """Set values to NULL if they equal the null_if_expr."""
+    """Return NULL if an expression equals some specific value."""
 
     arg: Value
     null_if_expr: Value
@@ -112,6 +102,8 @@ class NullIf(Value):
 
 @public
 class Coalesce(Value):
+    """Return the first non-null expression from a tuple of expressions."""
+
     arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
@@ -120,6 +112,8 @@ class Coalesce(Value):
 
 @public
 class Greatest(Value):
+    """Return the largest value from a tuple of expressions."""
+
     arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
@@ -128,6 +122,8 @@ class Greatest(Value):
 
 @public
 class Least(Value):
+    """Return the smallest value from a tuple of expressions."""
+
     arg: Annotated[VarTuple[Value], Length(at_least=1)]
 
     shape = rlz.shape_like("arg")
@@ -139,6 +135,8 @@ T = TypeVar("T", bound=dt.DataType, covariant=True)
 
 @public
 class Literal(Scalar[T]):
+    """A constant value."""
+
     value: Annotated[Any, ~InstanceOf(Deferred)]
     dtype: T
 
@@ -180,6 +178,8 @@ class ScalarParameter(Scalar):
 
 @public
 class Constant(Scalar, Singleton):
+    """A function that produces a constant."""
+
     shape = ds.scalar
 
 
@@ -190,38 +190,52 @@ class Impure(Value):
 
 @public
 class TimestampNow(Constant):
+    """Return the current timestamp."""
+
     dtype = dt.timestamp
 
 
 @public
 class DateNow(Constant):
+    """Return the current date."""
+
     dtype = dt.date
 
 
 @public
 class RandomScalar(Impure):
+    """Return a random scalar between 0 and 1."""
+
     dtype = dt.float64
     shape = ds.scalar
 
 
 @public
 class RandomUUID(Impure):
+    """Return a random UUID."""
+
     dtype = dt.uuid
     shape = ds.scalar
 
 
 @public
 class E(Constant):
+    """The mathematical constant e."""
+
     dtype = dt.float64
 
 
 @public
 class Pi(Constant):
+    """The mathematical constant pi."""
+
     dtype = dt.float64
 
 
 @public
 class Hash(Value):
+    """Return the hash of a value."""
+
     arg: Value
 
     dtype = dt.int64
@@ -253,6 +267,8 @@ class HashBytes(Value):
 
 @public
 class HexDigest(Value):
+    """Return the hexadecimal digest of a value."""
+
     arg: Value[dt.String | dt.Binary]
     how: LiteralType[
         "md5",
@@ -270,6 +286,8 @@ class HexDigest(Value):
 # api.py
 @public
 class SimpleCase(Value):
+    """Simple case statement."""
+
     base: Value
     cases: VarTuple[Value]
     results: VarTuple[Value]
@@ -289,6 +307,8 @@ class SimpleCase(Value):
 
 @public
 class SearchedCase(Value):
+    """Searched case statement."""
+
     cases: VarTuple[Value[dt.Boolean]]
     results: VarTuple[Value]
     default: Value

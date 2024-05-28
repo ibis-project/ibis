@@ -1,3 +1,5 @@
+"""Operations for analytic window functions."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -12,11 +14,14 @@ from ibis.expr.operations.core import Column, Scalar, Value
 
 @public
 class Analytic(Value):
+    """Base class for analytic window function operations."""
+
     shape = ds.columnar
 
 
-@public
 class ShiftBase(Analytic):
+    """Base class for shift operations."""
+
     arg: Column[dt.Any]
     offset: Optional[Value[dt.Integer | dt.Interval]] = None
     default: Optional[Value] = None
@@ -26,16 +31,18 @@ class ShiftBase(Analytic):
 
 @public
 class Lag(ShiftBase):
-    pass
+    """Shift a column forward."""
 
 
 @public
 class Lead(ShiftBase):
-    pass
+    """Shift a column backward."""
 
 
 @public
 class RankBase(Analytic):
+    """Base class for ranking operations."""
+
     dtype = dt.int64
 
 
@@ -51,39 +58,27 @@ class DenseRank(RankBase):
 
 @public
 class RowNumber(RankBase):
-    """Compute the row number over a window, starting from 0.
-
-    Equivalent to SQL's `ROW_NUMBER()`.
-
-    Examples
-    --------
-    >>> import ibis
-    >>> import ibis.expr.datatypes as dt
-    >>> t = ibis.table([("values", dt.int64)])
-    >>> w = ibis.window(order_by=t.values)
-    >>> row_num = ibis.row_number().over(w)
-    >>> result = t[t.values, row_num.name("row_num")]
-
-    Returns
-    -------
-    IntegerColumn
-        Row number
-
-    """
+    """Compute the row number over a window, starting from 0."""
 
 
 @public
 class PercentRank(Analytic):
+    """Compute the percentile rank over a window."""
+
     dtype = dt.double
 
 
 @public
 class CumeDist(Analytic):
+    """Compute the cumulative distribution function of a column over a window."""
+
     dtype = dt.double
 
 
 @public
 class NTile(Analytic):
+    """Compute the percentile of a column over a window."""
+
     buckets: Scalar[dt.Integer]
 
     dtype = dt.int64
@@ -91,7 +86,7 @@ class NTile(Analytic):
 
 @public
 class NthValue(Analytic):
-    """Retrieve the Nth element."""
+    """Retrieve the Nth element of a column over a window."""
 
     arg: Column[dt.Any]
     nth: Value[dt.Integer]

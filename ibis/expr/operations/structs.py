@@ -1,3 +1,5 @@
+"""Operations for working with structs."""
+
 from __future__ import annotations
 
 from public import public
@@ -11,6 +13,8 @@ from ibis.expr.operations.core import Value
 
 @public
 class StructField(Value):
+    """Extract a field from a struct value."""
+
     arg: Value[dt.Struct]
     field: str
 
@@ -29,6 +33,8 @@ class StructField(Value):
 
 @public
 class StructColumn(Value):
+    """Construct a struct column from literals or expressions."""
+
     names: VarTuple[str]
     values: VarTuple[Value]
 

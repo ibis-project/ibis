@@ -1,3 +1,5 @@
+"""String operations."""
+
 from __future__ import annotations
 
 from typing import Optional
@@ -13,6 +15,8 @@ from ibis.expr.operations.core import Unary, Value
 
 @public
 class StringUnary(Unary):
+    """Base class for string operations accepting one argument."""
+
     arg: Value[dt.String]
 
     dtype = dt.string
@@ -20,41 +24,43 @@ class StringUnary(Unary):
 
 @public
 class Uppercase(StringUnary):
-    pass
+    """Convert a string to uppercase."""
 
 
 @public
 class Lowercase(StringUnary):
-    pass
+    """Convert a string to lowercase."""
 
 
 @public
 class Reverse(StringUnary):
-    pass
+    """Reverse a string."""
 
 
 @public
 class Strip(StringUnary):
-    pass
+    """Strip leading and trailing whitespace."""
 
 
 @public
 class LStrip(StringUnary):
-    pass
+    """Strip leading whitespace."""
 
 
 @public
 class RStrip(StringUnary):
-    pass
+    """Strip trailing whitespace."""
 
 
 @public
 class Capitalize(StringUnary):
-    pass
+    """Capitalize the first letter of a string."""
 
 
 @public
 class Substring(Value):
+    """Extract a substring from a string."""
+
     arg: Value[dt.String]
     start: Value[dt.Integer]
     length: Optional[Value[dt.Integer]] = None
@@ -65,6 +71,8 @@ class Substring(Value):
 
 @public
 class StringSlice(Value):
+    """Extract a substring from a string."""
+
     arg: Value[dt.String]
     start: Optional[Value[dt.Integer]] = None
     end: Optional[Value[dt.Integer]] = None
@@ -75,6 +83,8 @@ class StringSlice(Value):
 
 @public
 class StrRight(Value):
+    """Extract a substring starting from the right of a string."""
+
     arg: Value[dt.String]
     nchars: Value[dt.Integer]
 
@@ -84,6 +94,8 @@ class StrRight(Value):
 
 @public
 class Repeat(Value):
+    """Repeat a string."""
+
     arg: Value[dt.String]
     times: Value[dt.Integer]
 
@@ -93,6 +105,8 @@ class Repeat(Value):
 
 @public
 class StringFind(Value):
+    """Find the position of a substring in a string."""
+
     arg: Value[dt.String]
     substr: Value[dt.String]
     start: Optional[Value[dt.Integer]] = None
@@ -104,6 +118,8 @@ class StringFind(Value):
 
 @public
 class Translate(Value):
+    """Translate characters in a string."""
+
     arg: Value[dt.String]
     from_str: Value[dt.String]
     to_str: Value[dt.String]
@@ -114,6 +130,8 @@ class Translate(Value):
 
 @public
 class LPad(Value):
+    """Pad a string on the left."""
+
     arg: Value[dt.String]
     length: Value[dt.Integer]
     pad: Optional[Value[dt.String]] = None
@@ -124,6 +142,8 @@ class LPad(Value):
 
 @public
 class RPad(Value):
+    """Pad a string on the right."""
+
     arg: Value[dt.String]
     length: Value[dt.Integer]
     pad: Optional[Value[dt.String]] = None
@@ -134,6 +154,8 @@ class RPad(Value):
 
 @public
 class FindInSet(Value):
+    """Find the position of a string in a list of comma-separated strings."""
+
     needle: Value[dt.String]
     values: VarTuple[Value[dt.String]]
 
@@ -143,6 +165,8 @@ class FindInSet(Value):
 
 @public
 class StringJoin(Value):
+    """Join strings with a separator."""
+
     arg: VarTuple[Value[dt.String]]
     sep: Value[dt.String]
 
@@ -155,6 +179,8 @@ class StringJoin(Value):
 
 @public
 class ArrayStringJoin(Value):
+    """Join strings in an array with a separator."""
+
     arg: Value[dt.Array[dt.String]]
     sep: Value[dt.String]
 
@@ -164,6 +190,8 @@ class ArrayStringJoin(Value):
 
 @public
 class StartsWith(Value):
+    """Check if a string starts with another string."""
+
     arg: Value[dt.String]
     start: Value[dt.String]
 
@@ -173,6 +201,8 @@ class StartsWith(Value):
 
 @public
 class EndsWith(Value):
+    """Check if a string ends with another string."""
+
     arg: Value[dt.String]
     end: Value[dt.String]
 
@@ -191,6 +221,11 @@ class FuzzySearch(Value):
 
 @public
 class StringSQLLike(FuzzySearch):
+    """SQL LIKE string match operation.
+
+    Similar to globbing.
+    """
+
     arg: Value[dt.String]
     pattern: Value[dt.String]
     escape: Optional[str] = None
@@ -198,16 +233,21 @@ class StringSQLLike(FuzzySearch):
 
 @public
 class StringSQLILike(StringSQLLike):
-    """SQL ilike operation."""
+    """Case-insensitive SQL LIKE string match operation.
+
+    Similar to case-insensitive globbing.
+    """
 
 
 @public
 class RegexSearch(FuzzySearch):
-    pass
+    """Search a string with a regular expression."""
 
 
 @public
 class RegexExtract(Value):
+    """Extract a substring from a string using a regular expression."""
+
     arg: Value[dt.String]
     pattern: Value[dt.String]
     index: Value[dt.Integer]
@@ -218,6 +258,8 @@ class RegexExtract(Value):
 
 @public
 class RegexSplit(Value):
+    """Split a string using a regular expression."""
+
     arg: Value[dt.String]
     pattern: Value[dt.String]
 
@@ -230,6 +272,8 @@ class RegexSplit(Value):
 
 @public
 class RegexReplace(Value):
+    """Replace a substring in a string using a regular expression."""
+
     arg: Value[dt.String]
     pattern: Value[dt.String]
     replacement: Value[dt.String]
@@ -240,6 +284,8 @@ class RegexReplace(Value):
 
 @public
 class StringReplace(Value):
+    """Replace a substring in a string with another string."""
+
     arg: Value[dt.String]
     pattern: Value[dt.String]
     replacement: Value[dt.String]
@@ -250,6 +296,8 @@ class StringReplace(Value):
 
 @public
 class StringSplit(Value):
+    """Split a string using a delimiter."""
+
     arg: Value[dt.String]
     delimiter: Value[dt.String]
 
@@ -259,6 +307,8 @@ class StringSplit(Value):
 
 @public
 class StringConcat(Value):
+    """Concatenate strings."""
+
     arg: VarTuple[Value[dt.String]]
 
     shape = rlz.shape_like("arg")
@@ -275,56 +325,64 @@ class ExtractURLField(Value):
 
 @public
 class ExtractProtocol(ExtractURLField):
-    pass
+    """Extract the protocol from a URL."""
 
 
 @public
 class ExtractAuthority(ExtractURLField):
-    pass
+    """Extract the authority from a URL."""
 
 
 @public
 class ExtractUserInfo(ExtractURLField):
-    pass
+    """Extract the user info from a URL."""
 
 
 @public
 class ExtractHost(ExtractURLField):
-    pass
+    """Extract the host from a URL."""
 
 
 @public
 class ExtractFile(ExtractURLField):
-    pass
+    """Extract the file from a URL."""
 
 
 @public
 class ExtractPath(ExtractURLField):
-    pass
+    """Extract the path from a URL."""
 
 
 @public
 class ExtractQuery(ExtractURLField):
+    """Extract the query from a URL."""
+
     key: Optional[Value[dt.String]] = None
 
 
 @public
 class ExtractFragment(ExtractURLField):
-    pass
+    """Extract the fragment from a URL."""
 
 
 @public
 class StringLength(StringUnary):
+    """Compute the length of a string."""
+
     dtype = dt.int32
 
 
 @public
 class StringAscii(StringUnary):
+    """Compute the ASCII code of the first character of a string."""
+
     dtype = dt.int32
 
 
 @public
 class StringContains(Value):
+    """Check if a string contains a substring."""
+
     haystack: Value[dt.String]
     needle: Value[dt.String]
 
@@ -334,6 +392,8 @@ class StringContains(Value):
 
 @public
 class Levenshtein(Value):
+    """Compute the Levenshtein distance between two strings."""
+
     left: Value[dt.String]
     right: Value[dt.String]
 
