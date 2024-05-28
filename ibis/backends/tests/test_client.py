@@ -1746,3 +1746,44 @@ def test_schema_with_caching(alltypes):
 
     assert pt1.schema() == t1.schema()
     assert pt2.schema() == t2.schema()
+
+
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(
+    ["datafusion"], reason="Doesn't support table creation from records"
+)
+@pytest.mark.parametrize(
+    "first_row, second_row",
+    [
+        param([{"a": 1, "b": 2}], [{"b": 22, "a": 11}], id="column order reversed"),
+        param([{"a": 1, "b": 2}], [{"a": 11, "b": 22}], id="column order matching"),
+        param(
+            [{"a": 1, "b": 2}],
+            [(11, 22)],
+            marks=[
+                pytest.mark.notimpl(
+                    ["impala"],
+                    reason="Impala DDL has strict validation checks on schema",
+                )
+            ],
+            id="auto generated cols",
+        ),
+    ],
+)
+def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    table_name = gen_name("table")
+    con.create_table(table_name, first_row)
+    con.insert(table_name, second_row)
+
+    result = con.table(table_name).order_by("a").to_pyarrow()
+    expected_result = pa.table({"a": [1, 11], "b": [2, 22]})
+
+    assert result.equals(expected_result)
+
+    # Ideally we'd use a temp table for this test, but several backends don't
+    # support them and it's nice to know that data are being inserted correctly.
+    con.drop_table(table_name)
