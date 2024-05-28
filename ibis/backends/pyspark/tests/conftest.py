@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
-from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -13,26 +12,12 @@ from pyspark.sql import SparkSession
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.pyspark import StreamingBackend
 from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, topk, win
 
 
 def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def default_session_fixture():
-    with mock.patch.object(
-        StreamingBackend, "write_to_memory", write_to_memory, create=True
-    ):
-        yield
-
-
-def write_to_memory(self, expr, table_name):
-    df = self._session.sql(expr.compile())
-    df.writeStream.format("memory").queryName(table_name).start()
 
 
 # Spark internally stores timestamps as UTC values, and timestamp
