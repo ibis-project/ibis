@@ -28,7 +28,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
-from ibis.backends.pyspark import utils
 from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
@@ -97,6 +96,10 @@ def unwrap_json(typ):
         return s.map(nullify_type_mismatched_value)
 
     return unwrap
+
+
+def _format_interval_as_string(interval):
+    return f"{interval.op().value} {interval.op().dtype.unit.name.lower()}"
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
@@ -903,7 +906,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         **kwargs: Any,
     ) -> pa.Table:
         if self.mode == "streaming":
-            raise NotImplementedError
+            raise NotImplementedError(
+                "PySpark in streaming mode does not support to_pyarrow"
+            )
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
@@ -927,7 +932,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         if self.mode == "streaming":
-            raise NotImplementedError
+            raise NotImplementedError(
+                "PySpark in streaming mode does not support to_pyarrow_batches"
+            )
         pa = self._import_pyarrow()
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
@@ -993,7 +1000,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if watermark is not None:
             spark_df = spark_df.withWatermark(
                 watermark.time_col,
-                utils.format_interval_as_string(watermark.allowed_delay),
+                _format_interval_as_string(watermark.allowed_delay),
             )
 
         table_name = table_name or util.gen_name("read_kafka")
@@ -1154,12 +1161,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         options: Mapping[str, str] | None = None,
     ) -> None:
         df = self._session.sql(expr.compile())
-        sq = df.writeStream.format(format)
-        sq = sq.option("path", os.fspath(path))
-        if options is not None:
-            for k, v in options.items():
-                sq = sq.option(k, v)
-        sq.start()
+        if self.mode == "batch":
+            df = df.write.format(format)
+            if options is not None:
+                for k, v in options.items():
+                    df = df.option(k, v)
+            df.save(path)
+        elif self.mode == "streaming":
+            sq = df.writeStream.format(format)
+            sq = sq.option("path", os.fspath(path))
+            if options is not None:
+                for k, v in options.items():
+                    sq = sq.option(k, v)
+            sq.start()
 
     @util.experimental
     def to_parquet_directory(
@@ -1168,6 +1182,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         path: str | Path,
         options: Mapping[str, str] | None = None,
     ) -> None:
+        self._run_pre_execute_hooks(expr)
         self._to_filesystem_output(expr, "parquet", path, options)
 
     @util.experimental
@@ -1177,4 +1192,5 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         path: str | Path,
         options: Mapping[str, str] | None = None,
     ) -> None:
+        self._run_pre_execute_hooks(expr)
         self._to_filesystem_output(expr, "csv", path, options)
