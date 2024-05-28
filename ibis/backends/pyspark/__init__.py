@@ -89,10 +89,6 @@ def unwrap_json(typ):
     return unwrap
 
 
-def _format_interval_as_string(interval):
-    return f"{interval.op().value} {interval.op().dtype.unit.name.lower()}"
-
-
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "pyspark"
     compiler = PySparkCompiler()
