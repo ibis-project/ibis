@@ -141,6 +141,7 @@ jobs:
             extras:
               - mysql
               - geospatial
+              - polars
             sys-deps:
               - libgeos-dev
           - name: postgres
@@ -186,6 +187,7 @@ jobs:
             title: MS SQL Server
             extras:
               - mssql
+              - polars
             services:
               - mssql
             sys-deps:
@@ -216,6 +218,7 @@ jobs:
             serial: true
             extras:
               - oracle
+              - polars
             services:
               - oracle
           - name: flink
@@ -271,6 +274,7 @@ jobs:
               extras:
                 - mysql
                 - geospatial
+                - polars
               services:
                 - mysql
               sys-deps:
@@ -352,6 +356,7 @@ jobs:
               title: MS SQL Server
               extras:
                 - mssql
+                - polars
               services:
                 - mssql
               sys-deps:
@@ -381,6 +386,7 @@ jobs:
               serial: true
               extras:
                 - oracle
+                - polars
               services:
                 - oracle
           - os: ubuntu-latest
