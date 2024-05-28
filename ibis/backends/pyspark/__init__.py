@@ -11,7 +11,14 @@ import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import PandasUDFType, pandas_udf
+from pyspark.sql.functions import (
+    PandasUDFType,
+    col,
+    from_json,
+    pandas_udf,
+    struct,
+    to_json,
+)
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
 import ibis.common.exceptions as com
@@ -35,6 +42,8 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+
+    from ibis.expr.api import Watermark
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
 
@@ -930,3 +939,105 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return pa.ipc.RecordBatchReader.from_batches(
             pa_table.schema, pa_table.to_batches(max_chunksize=chunk_size)
         )
+
+    @util.experimental
+    def read_kafka(
+        self,
+        table_name: str | None = None,
+        watermark: Watermark | None = None,
+        auto_parse: bool = False,
+        schema: sch.Schema | None = None,
+        options: Mapping[str, str] | None = None,
+    ) -> ir.Table:
+        """Register a Kafka topic as a table in the current database.
+
+        Parameters
+        ----------
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        watermark
+            Watermark strategy for the table.
+        auto_parse
+            Whether to parse Kafka messages automatically. If `False`, the source is read
+            as binary keys and values. If `True`, the key is discarded and the value is
+            parsed using the provided schema.
+        schema
+            Schema of the value of the Kafka messages.
+        options
+            Additional arguments passed to PySpark as .option("key", "value").
+            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+        """
+        if self.mode == "batch":
+            raise NotImplementedError(
+                "Reading from Kafka in batch mode is not supported"
+            )
+        spark_df = self._session.readStream.format("kafka")
+        if options is not None:
+            for k, v in options.items():
+                spark_df = spark_df.option(k, v)
+        spark_df = spark_df.load()
+
+        # parse the values of the Kafka messages using the provided schema
+        if auto_parse is True:
+            if schema is None:
+                raise com.IbisError(
+                    "When auto_parse is True, a schema must be provided to parse the messages"
+                )
+            schema = PySparkSchema.from_ibis(schema)
+            spark_df = spark_df.select(
+                from_json(col("value").cast("string"), schema).alias("parsed_value")
+            ).select("parsed_value.*")
+
+        if watermark is not None:
+            spark_df = spark_df.withWatermark(
+                watermark.time_col,
+                _format_interval_as_string(watermark.allowed_delay),
+            )
+
+        table_name = table_name or util.gen_name("read_kafka")
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    @util.experimental
+    def to_kafka(
+        self,
+        expr: ir.Expr,
+        auto_format: bool = False,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        """Write the results of executing the given expression to a Kafka topic.
+
+        This method does not return outputs. Streaming queries are run continuously in
+        the background.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to a Kafka topic.
+        auto_format
+            Whether to format the Kafka messages before writing. If `False`, the output is
+            written as-is. If `True`, the output is converted into JSON and written as the
+            value of the Kafka messages.
+        options
+            PySpark Kafka write arguments.
+            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+
+        """
+        if self.mode == "batch":
+            raise NotImplementedError("Writing to Kafka in batch mode is not supported")
+        df = self._session.sql(expr.compile())
+        if auto_format is True:
+            df = df.select(
+                to_json(struct([col(c).alias(c) for c in df.columns])).alias("value")
+            )
+        sq = df.writeStream.format("kafka")
+        if options is not None:
+            for k, v in options.items():
+                sq = sq.option(k, v)
+        sq.start()
