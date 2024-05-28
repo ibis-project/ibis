@@ -46,6 +46,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.operations as ops
@@ -447,7 +448,12 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
-        obj: ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema=None,
         database=None,
@@ -459,7 +465,7 @@ class Backend(SQLBackend):
         partition=None,
         like_parquet=None,
     ) -> ir.Table:
-        """Create a new table in Impala using an Ibis table expression.
+        """Create a new table using an Ibis table expression or in-memory data.
 
         Parameters
         ----------
