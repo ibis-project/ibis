@@ -433,13 +433,22 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
         compiler = self.compiler
         quoted = compiler.quoted
+
+        # Compare the columns between the target table and the object to be inserted
+        # If they don't match, assume auto-generated column names and use positional
+        # ordering.
+        columns = (
+            obj.columns
+            if not set(parent_cols := self.get_schema(table_name).names).difference(
+                obj.columns
+            )
+            else parent_cols
+        )
+
         query = sge.insert(
             expression=self.compile(obj),
             into=sg.table(table_name, db=db, catalog=catalog, quoted=quoted),
-            columns=[
-                sg.to_identifier(col, quoted=quoted)
-                for col in self.get_schema(table_name).names
-            ],
+            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
             dialect=compiler.dialect,
         )
 

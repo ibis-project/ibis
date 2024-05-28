@@ -1140,10 +1140,22 @@ $$"""
 
         table = sg.table(table_name, db=db, catalog=catalog, quoted=True)
         self._run_pre_execute_hooks(obj)
+
+        # Compare the columns between the target table and the object to be inserted
+        # If they don't match, assume auto-generated column names and use positional
+        # ordering.
+        columns = (
+            obj.columns
+            if not set(parent_cols := self.get_schema(table_name).names).difference(
+                obj.columns
+            )
+            else parent_cols
+        )
+
         query = sg.exp.insert(
             expression=self.compile(obj),
             into=table,
-            columns=[sg.to_identifier(col, quoted=True) for col in obj.columns],
+            columns=[sg.to_identifier(col, quoted=True) for col in columns],
             dialect=self.name,
         )
 
