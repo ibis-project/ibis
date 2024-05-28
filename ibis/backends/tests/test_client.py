@@ -887,31 +887,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 @pytest.mark.parametrize(
     "obj, table_name",
     [
-        param(
-            ibis.memtable([("a", 1)], columns=["a", "b"]),
-            "memtable",
-            id="memtable_list",
-        ),
-        param(
-            ibis.memtable(pa.table({"a": ["a"], "b": [1]})),
-            "memtable_pa",
-            id="memtable pyarrow",
-        ),
-        param(
-            ibis.memtable(pd.DataFrame({"a": ["a"], "b": [1]})),
-            "memtable_pandas",
-            id="memtable pandas",
-        ),
-        param(
-            ibis.memtable(pl.DataFrame({"a": ["a"], "b": [1]})),
-            "memtable_polars_eager",
-            id="memtable polars dataframe",
-        ),
-        param(
-            ibis.memtable(pl.LazyFrame({"a": ["a"], "b": [1]})),
-            "memtable_polars_lazy",
-            id="memtable polars lazyframe",
-        ),
         param(pa.table({"a": ["a"], "b": [1]}), "df_arrow", id="pyarrow table"),
         param(
             pa.table({"a": ["a"], "b": [1]}).to_reader(),
@@ -1021,7 +996,56 @@ def test_create_table_in_memory(con, obj, table_name):
 
     assert result.equals(t.to_pyarrow())
 
-    con.drop_table(table_name, force=True)
+    with contextlib.suppress(NotImplementedError):
+        # polars doesn't have drop_table
+        con.drop_table(table_name, force=True)
+
+
+@pytest.mark.parametrize(
+    "obj, table_name",
+    [
+        param(
+            lambda: ibis.memtable([("a", 1)], columns=["a", "b"]),
+            "memtable",
+            id="memtable_list",
+        ),
+        param(
+            lambda: ibis.memtable(pa.table({"a": ["a"], "b": [1]})),
+            "memtable_pa",
+            id="memtable pyarrow",
+        ),
+        param(
+            lambda: ibis.memtable(pd.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_pandas",
+            id="memtable pandas",
+        ),
+        param(
+            lambda: ibis.memtable(pl.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_eager",
+            id="memtable polars dataframe",
+        ),
+        param(
+            lambda: ibis.memtable(pl.LazyFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_lazy",
+            id="memtable polars lazyframe",
+        ),
+    ],
+)
+def test_create_table_from_memtable(con, obj, table_name, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    obj = obj()
+
+    t = con.create_table(table_name, obj)
+
+    result = pa.table({"a": ["a"], "b": [1]})
+    assert table_name in con.list_tables()
+
+    assert result.equals(t.to_pyarrow())
+
+    with contextlib.suppress(NotImplementedError):
+        # polars doesn't have drop_table
+        con.drop_table(table_name, force=True)
 
 
 def test_default_backend_option(con, monkeypatch):
