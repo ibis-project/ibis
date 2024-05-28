@@ -383,6 +383,27 @@ class Backend(BaseBackend, NoUrl):
         self._add_table(name, obj)
         return self.table(name)
 
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        return self.create_table(
+            name, obj=obj, temp=None, database=database, overwrite=overwrite
+        )
+
+    def drop_table(self, name: str, *, force: bool = False) -> None:
+        if name in self._tables:
+            del self._tables[name]
+        elif not force:
+            raise com.IbisError(f"Table {name!r} does not exist")
+
+    def drop_view(self, name: str, *, force: bool = False) -> None:
+        self.drop_table(name, force=force)
+
     def get_schema(self, table_name):
         return self._tables[table_name].schema
 
@@ -532,12 +553,3 @@ class Backend(BaseBackend, NoUrl):
 
     def _clean_up_cached_table(self, op):
         self._remove_table(op.name)
-
-    def create_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
-
-    def drop_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
-
-    def drop_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
