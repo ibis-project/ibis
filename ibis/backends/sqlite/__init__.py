@@ -577,8 +577,26 @@ class Backend(SQLBackend, UrlFromPath):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
-        expr = self._to_sqlglot(obj)
-        insert_stmt = sge.Insert(this=table, expression=expr).sql(self.name)
+
+        # Compare the columns between the target table and the object to be inserted
+        # If they don't match, assume auto-generated column names and use positional
+        # ordering.
+        columns = (
+            obj.columns
+            if not set(parent_cols := self.get_schema(table_name).names).difference(
+                obj.columns
+            )
+            else parent_cols
+        )
+
+        insert_stmt = sge.insert(
+            expression=self.compile(obj),
+            into=sg.table(table_name, catalog=database, quoted=self.compiler.quoted),
+            columns=[
+                sg.to_identifier(col, quoted=self.compiler.quoted) for col in columns
+            ],
+            dialect=self.compiler.dialect,
+        ).sql(self.name)
         with self.begin() as cur:
             if overwrite:
                 cur.execute(f"DELETE FROM {table.sql(self.name)}")
