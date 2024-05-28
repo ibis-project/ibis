@@ -331,7 +331,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         -------
         ir.Table
             The just-registered table
-
         """
         table_name = table_name or gen_name("read_in_memory")
 
@@ -736,7 +735,7 @@ def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
 
     CREATE [OR REPLACE] TABLE table_name AS SELECT * FROM in_memory_thing
 
-    and that allows us to toggle the overwrite flag
+    and that allows us to toggle the overwrite flag.
     """
     src = sge.Create(
         this=table_name,
