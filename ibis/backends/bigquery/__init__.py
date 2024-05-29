@@ -13,7 +13,6 @@ from urllib.parse import parse_qs, urlparse
 import google.auth.credentials
 import google.cloud.bigquery as bq
 import google.cloud.bigquery_storage_v1 as bqstorage
-import pandas as pd
 import pydata_google_auth
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -42,6 +41,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
     from pathlib import Path
 
+    import pandas as pd
+    import polars as pl
     import pyarrow as pa
     from google.cloud.bigquery.table import RowIterator
 
@@ -940,7 +941,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -1027,14 +1033,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             for name, value in (options or {}).items()
         )
 
-        if obj is not None:
-            import pyarrow as pa
-            import pyarrow_hotfix  # noqa: F401
+        if obj is not None and not isinstance(obj, ir.Table):
+            obj = ibis.memtable(obj, schema=schema)
 
-            if isinstance(obj, (pd.DataFrame, pa.Table)):
-                obj = ibis.memtable(obj, schema=schema)
-
-            self._register_in_memory_tables(obj)
+        # This is a no-op if there aren't any memtables
+        self._register_in_memory_tables(obj)
 
         if temp:
             dataset = self._session_dataset.dataset_id

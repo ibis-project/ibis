@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
 
 
 def _to_memtable(v):
@@ -586,7 +587,12 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,

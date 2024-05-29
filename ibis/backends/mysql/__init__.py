@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
 
@@ -360,7 +361,12 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -382,9 +388,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         if temp:
             properties.append(sge.TemporaryProperty())
 
+        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -436,6 +444,11 @@ class Backend(SQLBackend, CanCreateDatabase):
                 )
 
         if schema is None:
+            # Clean up temporary memtable if we've created one
+            # for in-memory reads
+            if temp_memtable_view is not None:
+                self.drop_table(temp_memtable_view)
+
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

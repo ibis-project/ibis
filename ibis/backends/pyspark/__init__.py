@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
@@ -438,7 +439,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: ir.Table | pd.DataFrame | pa.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -487,8 +493,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
+        temp_memtable_view = None
         if obj is not None:
-            table = obj if isinstance(obj, ir.Expr) else ibis.memtable(obj)
+            if isinstance(obj, ir.Expr):
+                table = obj
+            else:
+                table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             query = self.compile(table)
             mode = "overwrite" if overwrite else "error"
             with self._active_catalog_database(catalog, db):
@@ -501,6 +512,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
+
+        # Clean up temporary memtable if we've created one
+        # for in-memory reads
+        if temp_memtable_view is not None:
+            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 

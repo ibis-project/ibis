@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     import pandas as pd
+    import polars as pl
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -738,7 +739,12 @@ $$"""
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -808,9 +814,11 @@ $$"""
         if comment is not None:
             properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
+        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -830,6 +838,11 @@ $$"""
 
         with self._safe_raw_sql(create_stmt):
             pass
+
+        # Clean up temporary memtable if we've created one
+        # for in-memory reads
+        if temp_memtable_view is not None:
+            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 

@@ -14,6 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend, NoUrl
+from ibis.common.dispatch import lazy_singledispatch
 from ibis.formats.pandas import PandasData, PandasSchema
 from ibis.formats.pyarrow import PyArrowData
 
@@ -243,6 +244,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
         del self.dictionary[name]
 
     def _convert_object(self, obj: Any) -> Any:
+        return _convert_object(obj, self)
         if isinstance(obj, pd.DataFrame):
             return obj
         elif isinstance(obj, ir.Table):
@@ -339,3 +341,38 @@ class Backend(BasePandasBackend):
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())
+
+
+@lazy_singledispatch
+def _convert_object(obj: Any, _conn):
+    raise com.BackendConversionError(
+        f"Unable to convert {obj.__class__} object "
+        f"to backend type: {_conn.__class__.backend_table_type}"
+    )
+
+
+@_convert_object.register("ibis.expr.types.Table")
+def _table(obj, _conn):
+    if isinstance(op := obj.op(), ops.InMemoryTable):
+        return op.data.to_frame()
+    else:
+        raise com.BackendConversionError(
+            f"Unable to convert {obj.__class__} object "
+            f"to backend type: {_conn.__class__.backend_table_type}"
+        )
+
+
+@_convert_object.register("polars.DataFrame")
+@_convert_object.register("pyarrow.Table")
+def _pa_polars(obj, _conn):
+    return obj.to_pandas()
+
+
+@_convert_object.register("polars.LazyFrame")
+def _polars_lazy(obj, _conn):
+    return obj.collect().to_pandas()
+
+
+@_convert_object.register("pandas.DataFrame")
+def _pandas(obj, _conn):
+    return obj
