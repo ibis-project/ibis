@@ -3,7 +3,7 @@ from __future__ import annotations
 import contextlib
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import pyspark
 import sqlglot as sg
@@ -37,6 +37,8 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
+
+ConnectionMode = Literal["streaming", "batch"]
 
 
 def normalize_filenames(source_list):
@@ -132,13 +134,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         super().__init__(*args, **kwargs)
         self._cached_dataframes = {}
 
-    def do_connect(self, session: SparkSession | None = None) -> None:
+    def do_connect(
+        self, session: SparkSession | None = None, mode: ConnectionMode | None = None
+    ) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
         Parameters
         ----------
         session
             A SparkSession instance
+        mode
+            Can be either "batch" or "streaming". If "batch", every source, sink, and
+            query executed within this connection will be interpreted as a batch
+            workload. If "streaming", every source, sink, and query executed within
+            this connection will be interpreted as a streaming workload.
 
         Examples
         --------
@@ -153,6 +162,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             from pyspark.sql import SparkSession
 
             session = SparkSession.builder.getOrCreate()
+
+        mode = mode or "batch"
+        if mode not in ("batch", "streaming"):
+            raise com.IbisInputError(
+                f"Invalid connection mode: {mode}, must be `streaming` or `batch`"
+            )
+        self._mode = mode
 
         self._session = session
 
@@ -170,6 +186,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df = self.raw_sql(query)
         struct_dtype = PySparkType.to_ibis(df.schema)
         return sch.Schema(struct_dtype)
+
+    @property
+    def mode(self) -> ConnectionMode:
+        return self._mode
 
     @property
     def version(self):
@@ -624,7 +644,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_delta(
         self,
-        source: str | Path,
+        path: str | Path,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -632,11 +652,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source
+        path
             The path to the Delta Lake table.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            a random generated name.
         kwargs
             Additional keyword arguments passed to PySpark.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.load.html
@@ -647,8 +667,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The just-registered table
 
         """
-        source = util.normalize_filename(source)
-        spark_df = self._session.read.format("delta").load(source, **kwargs)
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Reading a Delta Lake table in streaming mode is not supported"
+            )
+        path = util.normalize_filename(path)
+        spark_df = self._session.read.format("delta").load(path, **kwargs)
         table_name = table_name or util.gen_name("read_delta")
 
         spark_df.createOrReplaceTempView(table_name)
@@ -656,7 +680,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_parquet(
         self,
-        source: str | Path,
+        path: str | Path,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -664,11 +688,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source
+        path
             The data source. May be a path to a file or directory of parquet files.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            a random generated name.
         kwargs
             Additional keyword arguments passed to PySpark.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.parquet.html
@@ -679,8 +703,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The just-registered table
 
         """
-        source = util.normalize_filename(source)
-        spark_df = self._session.read.parquet(source, **kwargs)
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of parquet files. "
+                "Please use `read_parquet_directory` instead."
+            )
+        path = util.normalize_filename(path)
+        spark_df = self._session.read.parquet(path, **kwargs)
         table_name = table_name or util.gen_name("read_parquet")
 
         spark_df.createOrReplaceTempView(table_name)
@@ -701,7 +730,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             iterable of CSV files.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            a random generated name.
         kwargs
             Additional keyword arguments passed to PySpark loading function.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.csv.html
@@ -712,6 +741,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of CSV files. "
+                "Please use `read_csv_directory` instead."
+            )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
         source_list = normalize_filenames(source_list)
@@ -738,7 +772,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             iterable of JSON files.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            a random generated name.
         kwargs
             Additional keyword arguments passed to PySpark loading function.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameReader.json.html
@@ -749,6 +783,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The just-registered table
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Pyspark in streaming mode does not support direction registration of JSON files. "
+                "Please use `read_json_directory` instead."
+            )
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
         table_name = table_name or util.gen_name("read_json")
@@ -775,7 +814,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             parquet/csv files, or an iterable of CSV files.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            a random generated name.
         **kwargs
             Additional keyword arguments passed to PySpark loading functions for
             CSV or parquet.
@@ -835,9 +874,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The data source. A string or Path to the Delta Lake table.
 
         **kwargs
-            PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
+            PySpark Delta Lake table write arguments.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.save.html
 
         """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Writing to a Delta Lake table in streaming mode is not supported"
+            )
         df = self._session.sql(expr.compile())
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
@@ -848,6 +892,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "PySpark in streaming mode does not support to_pyarrow"
+            )
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
@@ -870,6 +918,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         chunk_size: int = 1000000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "PySpark in streaming mode does not support to_pyarrow_batches"
+            )
         pa = self._import_pyarrow()
         pa_table = self.to_pyarrow(
             expr.as_table(), params=params, limit=limit, **kwargs
