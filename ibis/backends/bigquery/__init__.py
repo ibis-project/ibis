@@ -1036,8 +1036,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         if obj is not None and not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj, schema=schema)
 
-        # This is a no-op if there aren't any memtables
-        self._register_in_memory_tables(obj)
+        if obj is not None:
+            self._register_in_memory_tables(obj)
 
         if temp:
             dataset = self._session_dataset.dataset_id
