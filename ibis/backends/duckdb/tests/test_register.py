@@ -257,10 +257,10 @@ def test_read_sqlite_no_table_name(con, tmp_path):
 )
 def test_register_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
-
     sqlite_con = sqlite3.connect(str(path))
     sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    ft = con.register(f"sqlite://{path}", "t")
+    with pytest.warns(FutureWarning, match="v9.1"):
+        ft = con.register(f"sqlite://{path}", "t")
     assert ft.count().execute()
 
 

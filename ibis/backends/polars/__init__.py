@@ -23,7 +23,7 @@ from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.rewrites import lower_stringslice
 from ibis.formats.polars import PolarsSchema
-from ibis.util import gen_name, normalize_filename, normalize_filenames
+from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -75,6 +75,10 @@ class Backend(BaseBackend, NoUrl):
         schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
+    @deprecated(
+        as_of="9.1",
+        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
+    )
     def register(
         self,
         source: str | Path | Any,
