@@ -14,6 +14,6 @@ import pytest
         methodcaller("read_json", source_list="test.json"),
     ],
 )
-@pytest.mark.notyet(["pyspark"], raises=NotImplementedError)
 def test_streaming_import_not_implemented(con_streaming, method):
-    method(con_streaming)
+    with pytest.raises(NotImplementedError):
+        method(con_streaming)
