@@ -811,6 +811,62 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
 
     @util.experimental
+    def to_parquet(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the parquet file.
+        **kwargs
+            Additional keyword arguments passed to
+            [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
+
+        """
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
+        df.write.format("parquet").save(os.fspath(path), **kwargs)
+
+    @util.experimental
+    def to_csv(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a CSV file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV file.
+        kwargs
+            Additional keyword arguments passed to
+            [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
+
+        """
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
+        df.write.format("csv").save(os.fspath(path), **kwargs)
+
+    @util.experimental
     def to_delta(
         self,
         expr: ir.Table,
@@ -828,12 +884,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The ibis expression to execute and persist to a Delta Lake table.
         path
             The data source. A string or Path to the Delta Lake table.
-
         **kwargs
-            PySpark Delta Lake table write arguments. https://spark.apache.org/docs/3.1.1/api/python/reference/api/pyspark.sql.DataFrameWriter.save.html
+            Additional keyword arguments passed to
+            [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
 
         """
-        df = self._session.sql(expr.compile())
+        self._run_pre_execute_hooks(expr)
+        table = expr.as_table()
+        df = self._session.sql(self.compile(table))
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(

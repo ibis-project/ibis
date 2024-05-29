@@ -5,7 +5,7 @@ import pytest
 
 import ibis
 
-pyspark = pytest.importorskip("pyspark")
+pytest.importorskip("pyspark")
 
 import pyspark.sql.functions as F  # noqa: E402
 from pyspark.sql.window import Window  # noqa: E402
