@@ -52,12 +52,16 @@ def struct(
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.struct(dict(a=1, b="foo"))
-    {'a': 1, 'b': 'foo'}
+    ┌──────────────────────┐
+    │ {'a': 1, 'b': 'foo'} │
+    └──────────────────────┘
 
     Specify a type (note the 1 is now a `float`):
 
     >>> ibis.struct(dict(a=1, b="foo"), type="struct<a: float, b: string>")
-    {'a': 1.0, 'b': 'foo'}
+    ┌────────────────────────┐
+    │ {'a': 1.0, 'b': 'foo'} │
+    └────────────────────────┘
 
     Create a struct column from a column and a scalar literal
 
