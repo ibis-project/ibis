@@ -37,8 +37,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
     from pyspark.sql.streaming import StreamingQuery
 
-    from ibis.expr.api import Watermark
-
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
 
 ConnectionMode = Literal["streaming", "batch"]
@@ -1054,7 +1052,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         format: str,
         path: str | Path,
         options: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> StreamingQuery | None:
         df = self._session.sql(expr.compile())
         if self.mode == "batch":
             df = df.write.format(format)
@@ -1062,13 +1060,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 for k, v in options.items():
                     df = df.option(k, v)
             df.save(path)
-        elif self.mode == "streaming":
-            sq = df.writeStream.format(format)
-            sq = sq.option("path", os.fspath(path))
-            if options is not None:
-                for k, v in options.items():
-                    sq = sq.option(k, v)
-            sq.start()
+            return None
+        sq = df.writeStream.format(format)
+        sq = sq.option("path", os.fspath(path))
+        if options is not None:
+            for k, v in options.items():
+                sq = sq.option(k, v)
+        sq.start()
+        return sq
 
     @util.experimental
     def to_parquet_directory(
@@ -1076,9 +1075,25 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         expr: ir.Expr,
         path: str | Path,
         options: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> StreamingQuery | None:
+        """Write the results of executing the given expression to a parquet directory.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the parquet directory.
+        options
+            Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
+
+        Returns
+        -------
+        StreamingQuery | None
+            Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
+        """
         self._run_pre_execute_hooks(expr)
-        self._to_filesystem_output(expr, "parquet", path, options)
+        return self._to_filesystem_output(expr, "parquet", path, options)
 
     @util.experimental
     def to_csv_directory(
@@ -1086,6 +1101,22 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         expr: ir.Expr,
         path: str | Path,
         options: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> StreamingQuery | None:
+        """Write the results of executing the given expression to a CSV directory.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV directory.
+        options
+            Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
+
+        Returns
+        -------
+        StreamingQuery | None
+            Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
+        """
         self._run_pre_execute_hooks(expr)
-        self._to_filesystem_output(expr, "csv", path, options)
+        return self._to_filesystem_output(expr, "csv", path, options)
