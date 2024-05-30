@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from pyspark.sql.streaming import StreamingQuery
 
     from ibis.expr.api import Watermark
 
@@ -1010,7 +1011,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         expr: ir.Expr,
         auto_format: bool = False,
         options: Mapping[str, str] | None = None,
-    ) -> None:
+    ) -> StreamingQuery:
         """Write the results of executing the given expression to a Kafka topic.
 
         This method does not return outputs. Streaming queries are run continuously in
@@ -1028,6 +1029,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             PySpark Kafka write arguments.
             https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
 
+        Returns
+        -------
+        StreamingQuery
+            A Pyspark StreamingQuery object
         """
         if self.mode == "batch":
             raise NotImplementedError("Writing to Kafka in batch mode is not supported")
@@ -1041,3 +1046,4 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             for k, v in options.items():
                 sq = sq.option(k, v)
         sq.start()
+        return sq
