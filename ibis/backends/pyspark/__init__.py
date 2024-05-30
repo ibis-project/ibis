@@ -941,117 +941,151 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
 
     @util.experimental
-    def read_kafka(
-        self,
-        table_name: str | None = None,
-        *,
-        watermark: Watermark | None = None,
-        auto_parse: bool = False,
-        schema: sch.Schema | None = None,
-        options: Mapping[str, str] | None = None,
+    def read_csv_directory(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
-        """Register a Kafka topic as a table.
+        """Register a CSV directory as a table in the current database.
 
         Parameters
         ----------
+        path
+            The data source.
         table_name
             An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        watermark
-            Watermark strategy for the table.
-        auto_parse
-            Whether to parse Kafka messages automatically. If `False`, the source is read
-            as binary keys and values. If `True`, the key is discarded and the value is
-            parsed using the provided schema.
-        schema
-            Schema of the value of the Kafka messages.
-        options
-            Additional arguments passed to PySpark as .option("key", "value").
-            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.csv.html
 
         Returns
         -------
         ir.Table
             The just-registered table
+
         """
+        inferSchema = kwargs.pop("inferSchema", True)
+        header = kwargs.pop("header", True)
+        path = util.normalize_filename(path)
         if self.mode == "batch":
-            raise NotImplementedError(
-                "Reading from Kafka in batch mode is not supported"
+            spark_df = self._session.read.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
             )
-        spark_df = self._session.readStream.format("kafka")
-        for k, v in (options or {}).items():
-            spark_df = spark_df.option(k, v)
-        spark_df = spark_df.load()
-
-        # parse the values of the Kafka messages using the provided schema
-        if auto_parse:
-            if schema is None:
-                raise com.IbisError(
-                    "When auto_parse is True, a schema must be provided to parse the messages"
-                )
-            schema = PySparkSchema.from_ibis(schema)
-            spark_df = spark_df.select(
-                F.from_json(F.col("value").cast("string"), schema).alias("parsed_value")
-            ).select("parsed_value.*")
-
-        if watermark is not None:
-            spark_df = spark_df.withWatermark(
-                watermark.time_col,
-                _interval_to_string(watermark.allowed_delay),
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
             )
+        table_name = table_name or util.gen_name("read_csv_directory")
 
-        table_name = table_name or util.gen_name("read_kafka")
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
     @util.experimental
-    def to_kafka(
+    def read_parquet_directory(
         self,
-        expr: ir.Expr,
-        *,
-        auto_format: bool = False,
-        options: Mapping[str, str] | None = None,
-        params: Mapping | None = None,
-        limit: str | None = "default",
-    ) -> StreamingQuery:
-        """Write the results of executing the given expression to a Kafka topic.
-
-        This method does not return outputs. Streaming queries are run continuously in
-        the background.
+        path: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
 
         Parameters
         ----------
-        expr
-            The ibis expression to execute and persist to a Kafka topic.
-        auto_format
-            Whether to format the Kafka messages before writing. If `False`, the output is
-            written as-is. If `True`, the output is converted into JSON and written as the
-            value of the Kafka messages.
-        options
-            PySpark Kafka write arguments.
-            https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
-        params
-            Mapping of scalar parameter expressions to value.
-        limit
-            An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+        path
+            The data source. A directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html
 
         Returns
         -------
-        StreamingQuery
-            A Pyspark StreamingQuery object
+        ir.Table
+            The just-registered table
+
         """
+        path = util.normalize_filename(path)
         if self.mode == "batch":
-            raise NotImplementedError("Writing to Kafka in batch mode is not supported")
-        df = self._session.sql(expr.compile(params=params, limit=limit))
-        if auto_format:
-            df = df.select(
-                F.to_json(F.struct([F.col(c).alias(c) for c in df.columns])).alias(
-                    "value"
-                )
-            )
-        sq = df.writeStream.format("kafka")
-        for k, v in (options or {}).items():
-            sq = sq.option(k, v)
-        sq.start()
-        return sq
+            spark_df = self._session.read.parquet(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.parquet(path, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet_directory")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    @util.experimental
+    def read_json_directory(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a JSON file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source. A directory of JSON files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.json.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        path = util.normalize_filename(path)
+        if self.mode == "batch":
+            spark_df = self._session.read.json(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.json(path, **kwargs)
+        table_name = table_name or util.gen_name("read_json_directory")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def _to_filesystem_output(
+        self,
+        expr: ir.Expr,
+        format: str,
+        path: str | Path,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        df = self._session.sql(expr.compile())
+        if self.mode == "batch":
+            df = df.write.format(format)
+            if options is not None:
+                for k, v in options.items():
+                    df = df.option(k, v)
+            df.save(path)
+        elif self.mode == "streaming":
+            sq = df.writeStream.format(format)
+            sq = sq.option("path", os.fspath(path))
+            if options is not None:
+                for k, v in options.items():
+                    sq = sq.option(k, v)
+            sq.start()
+
+    @util.experimental
+    def to_parquet_directory(
+        self,
+        expr: ir.Expr,
+        path: str | Path,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        self._run_pre_execute_hooks(expr)
+        self._to_filesystem_output(expr, "parquet", path, options)
+
+    @util.experimental
+    def to_csv_directory(
+        self,
+        expr: ir.Expr,
+        path: str | Path,
+        options: Mapping[str, str] | None = None,
+    ) -> None:
+        self._run_pre_execute_hooks(expr)
+        self._to_filesystem_output(expr, "csv", path, options)
