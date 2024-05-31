@@ -29,6 +29,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2SyntaxError,
     Py4JJavaError,
     PySparkAnalysisException,
+    SnowflakeProgrammingError,
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
@@ -476,6 +477,11 @@ def test_array_slice(backend, start, stop):
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
+)
 def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -532,6 +538,11 @@ def test_array_map(con, input, output, func):
         ibis._ > 1,
     ],
     ids=["lambda", "partial", "deferred"],
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -1146,6 +1157,11 @@ def test_unnest_empty_array(con):
     raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
+)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -1160,6 +1176,11 @@ def test_array_map_with_conflicting_names(backend, con):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars", "sqlite", "dask", "pandas", "sqlite"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_complex_array_map(con):
     def upper(token):
