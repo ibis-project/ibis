@@ -19,9 +19,10 @@ from ibis.common.deferred import _
     ],
     ids=["tumble", "hop"],
 )
-def test_window_by_agg_schema(table, method):
+@pytest.mark.parametrize("by", ["g", _.g, ["g"]])
+def test_window_by_agg_schema(table, method, by):
     expr = method(table.window_by(time_col=table.i))
-    expr = expr.agg(by=["g"], a_sum=_.a.sum())
+    expr = expr.agg(by=by, a_sum=_.a.sum())
     expected_schema = ibis.schema(
         {
             "window_start": "timestamp",
@@ -36,3 +37,28 @@ def test_window_by_agg_schema(table, method):
 def test_window_by_with_non_timestamp_column(table):
     with pytest.raises(com.IbisInputError):
         table.window_by(time_col=table.a)
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        methodcaller("tumble", size=ibis.interval(minutes=15)),
+        methodcaller(
+            "hop", size=ibis.interval(minutes=15), slide=ibis.interval(minutes=1)
+        ),
+    ],
+    ids=["tumble", "hop"],
+)
+@pytest.mark.parametrize("by", ["g", _.g, ["g"]])
+def test_window_by_group_by_agg(table, method, by):
+    expr = method(table.window_by(time_col=table.i))
+    expr = expr.group_by(by).agg(a_sum=_.a.sum())
+    expected_schema = ibis.schema(
+        {
+            "window_start": "timestamp",
+            "window_end": "timestamp",
+            "g": "string",
+            "a_sum": "int64",
+        }
+    )
+    assert expr.schema() == expected_schema

@@ -221,7 +221,6 @@ class Table(Expr, _FixedTextJupyterMixin):
                 args = ()
             else:
                 args = util.promote_list(args[0])
-
         # bind positional arguments
         values = []
         for arg in args:

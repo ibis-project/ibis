@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.common.collections import FrozenOrderedDict  # noqa: TCH001
+from ibis.common.grounds import Concrete
+from ibis.expr.operations.relations import Unaliased  # noqa: TCH001
 from ibis.expr.types.relations import unwrap_aliases
 
 if TYPE_CHECKING:
@@ -14,27 +17,31 @@ if TYPE_CHECKING:
 
 
 @public
-class WindowedTable:
+class WindowedTable(Concrete):
     """An intermediate table expression to hold windowing information."""
 
-    def __init__(self, parent: ir.Table, time_col: ops.Column):
+    parent: ir.Table
+    time_col: ops.Column
+    window_type: Literal["tumble", "hop"] | None = None
+    window_size: ir.IntervalScalar | None = None
+    window_slide: ir.IntervalScalar | None = None
+    window_offset: ir.IntervalScalar | None = None
+    groups: FrozenOrderedDict[str, Unaliased[ops.Column]] | None = None
+    metrics: FrozenOrderedDict[str, Unaliased[ops.Column]] | None = None
+
+    def __init__(self, time_col: ops.Column, **kwargs):
         if time_col is None:
             raise com.IbisInputError(
                 "Window aggregations require `time_col` as an argument"
             )
-        self.parent = parent
-        self.time_col = time_col
+        super().__init__(time_col=time_col, **kwargs)
 
     def tumble(
         self,
         size: ir.IntervalScalar,
         offset: ir.IntervalScalar | None = None,
     ) -> WindowedTable:
-        self.window_type = "tumble"
-        self.window_slide = None
-        self.window_size = size
-        self.window_offset = offset
-        return self
+        return self.copy(window_type="tumble", window_size=size, window_offset=offset)
 
     def hop(
         self,
@@ -42,23 +49,27 @@ class WindowedTable:
         slide: ir.IntervalScalar,
         offset: ir.IntervalScalar | None = None,
     ) -> WindowedTable:
-        self.window_type = "hop"
-        self.window_size = size
-        self.window_slide = slide
-        self.window_offset = offset
-        return self
+        return self.copy(
+            window_type="hop",
+            window_size=size,
+            window_slide=slide,
+            window_offset=offset,
+        )
 
     def aggregate(
         self,
         metrics: Sequence[ir.Scalar] | None = (),
-        by: Sequence[ir.Value] | None = (),
+        by: str | ir.Value | Sequence[str] | Sequence[ir.Value] | None = (),
         **kwargs: ir.Value,
     ) -> ir.Table:
-        groups = self.parent.bind(by)
+        by = self.parent.bind(by)
         metrics = self.parent.bind(metrics, **kwargs)
 
-        groups = unwrap_aliases(groups)
+        by = unwrap_aliases(by)
         metrics = unwrap_aliases(metrics)
+
+        groups = dict(self.groups) if self.groups is not None else {}
+        groups.update(by)
 
         return ops.WindowAggregate(
             self.parent,
@@ -72,3 +83,11 @@ class WindowedTable:
         ).to_expr()
 
     agg = aggregate
+
+    def group_by(
+        self, *by: str | ir.Value | Sequence[str] | Sequence[ir.Value]
+    ) -> WindowedTable:
+        by = tuple(v for v in by if v is not None)
+        groups = self.parent.bind(*by)
+        groups = unwrap_aliases(groups)
+        return self.copy(groups=groups)
