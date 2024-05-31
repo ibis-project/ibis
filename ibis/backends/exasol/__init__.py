@@ -280,7 +280,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
         with self._safe_raw_sql(
-            sge.Drop(kind="TABLE", this=ident, force=True, cascade=True)
+            sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
         ):
             pass
 
