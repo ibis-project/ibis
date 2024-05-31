@@ -660,6 +660,7 @@ def test_table_info(alltypes):
             ),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
@@ -712,6 +713,7 @@ def test_table_info(alltypes):
             s.of_type("numeric"),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
@@ -742,6 +744,7 @@ def test_table_info(alltypes):
             s.of_type("string"),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
