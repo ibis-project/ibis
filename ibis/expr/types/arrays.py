@@ -1090,7 +1090,9 @@ def array(values: Iterable[V]) -> ArrayValue:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.array([1.0, None])
-    [1.0, None]
+    ┌─────────────┐
+    │ [1.0, None] │
+    └─────────────┘
 
     Create an array from column and scalar expressions
 

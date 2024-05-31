@@ -368,7 +368,9 @@ class MapValue(Value):
         >>> ibis.options.interactive = True
         >>> m = ibis.map({"a": 1, "b": 2})
         >>> m.values()
-        [1, 2]
+        ┌────────┐
+        │ [1, 2] │
+        └────────┘
         """
         return ops.MapValues(self).to_expr()
 
@@ -392,7 +394,9 @@ class MapValue(Value):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        {'a': 1, 'b': 2, ... +2}
+        ┌──────────────────────────┐
+        │ {'a': 1, 'b': 2, ... +2} │
+        └──────────────────────────┘
         """
         return ops.MapMerge(self, other).to_expr()
 
@@ -416,7 +420,9 @@ class MapValue(Value):
         >>> m1 = ibis.map({"a": 1, "b": 2})
         >>> m2 = ibis.map({"c": 3, "d": 4})
         >>> m1 + m2
-        {'a': 1, 'b': 2, ... +2}
+        ┌──────────────────────────┐
+        │ {'a': 1, 'b': 2, ... +2} │
+        └──────────────────────────┘
         """
         return ops.MapMerge(self, other).to_expr()
 
@@ -462,7 +468,9 @@ def map(
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.map(dict(a=1, b=2))
-    {'a': 1, 'b': 2}
+    ┌──────────────────┐
+    │ {'a': 1, 'b': 2} │
+    └──────────────────┘
 
     Create a Map Column from columns with keys and values
 

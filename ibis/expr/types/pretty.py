@@ -9,7 +9,9 @@ from urllib.parse import urlparse
 
 import rich
 import rich.table
+from rich import box
 from rich.align import Align
+from rich.panel import Panel
 from rich.pretty import Pretty
 from rich.text import Text
 
@@ -286,12 +288,13 @@ def _to_rich_scalar(
     max_string: int | None = None,
     max_depth: int | None = None,
 ) -> Pretty:
-    return Pretty(
+    scalar = Pretty(
         expr.execute(),
         max_length=max_length or ibis.options.repr.interactive.max_length,
         max_string=max_string or ibis.options.repr.interactive.max_string,
         max_depth=max_depth or ibis.options.repr.interactive.max_depth,
     )
+    return Panel(scalar, expand=False, box=box.SQUARE)
 
 
 def _to_rich_table(

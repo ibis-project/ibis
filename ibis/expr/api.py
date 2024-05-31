@@ -207,7 +207,9 @@ Examples
 >>> import ibis
 >>> ibis.options.interactive = True
 >>> ibis.NA.isnull()
-True
+┌──────┐
+│ True │
+└──────┘
 
 datatype-specific methods aren't available on `NA`:
 
@@ -219,7 +221,9 @@ AttributeError: 'NullScalar' object has no attribute 'upper'
 Instead, use the typed `ibis.null`:
 
 >>> ibis.null(str).upper().isnull()
-True
+┌──────┐
+│ True │
+└──────┘
 """
 
 deferred = _
@@ -848,12 +852,16 @@ def timestamp(
     Create a timestamp scalar from a string
 
     >>> ibis.timestamp("2023-01-02T03:04:05")
-    Timestamp('2023-01-02 03:04:05')
+    ┌──────────────────────────────────┐
+    │ Timestamp('2023-01-02 03:04:05') │
+    └──────────────────────────────────┘
 
     Create a timestamp scalar from components
 
     >>> ibis.timestamp(2023, 1, 2, 3, 4, 5)
-    Timestamp('2023-01-02 03:04:05')
+    ┌──────────────────────────────────┐
+    │ Timestamp('2023-01-02 03:04:05') │
+    └──────────────────────────────────┘
 
     Create a timestamp column from components
 
@@ -929,12 +937,16 @@ def date(value_or_year, month=None, day=None, /):
     Create a date scalar from a string
 
     >>> ibis.date("2023-01-02")
-    datetime.date(2023, 1, 2)
+    ┌───────────────────────────┐
+    │ datetime.date(2023, 1, 2) │
+    └───────────────────────────┘
 
     Create a date scalar from year, month, and day
 
     >>> ibis.date(2023, 1, 2)
-    datetime.date(2023, 1, 2)
+    ┌───────────────────────────┐
+    │ datetime.date(2023, 1, 2) │
+    └───────────────────────────┘
 
     Create a date column from year, month, and day
 
@@ -998,12 +1010,16 @@ def time(value_or_hour, minute=None, second=None, /):
     Create a time scalar from a string
 
     >>> ibis.time("01:02:03")
-    datetime.time(1, 2, 3)
+    ┌────────────────────────┐
+    │ datetime.time(1, 2, 3) │
+    └────────────────────────┘
 
     Create a time scalar from hour, minute, and second
 
     >>> ibis.time(1, 2, 3)
-    datetime.time(1, 2, 3)
+    ┌────────────────────────┐
+    │ datetime.time(1, 2, 3) │
+    └────────────────────────┘
 
     Create a time column from hour, minute, and second
 
@@ -2135,33 +2151,45 @@ def range(start, stop, step) -> ir.ArrayValue:
     Range using only a stop argument
 
     >>> ibis.range(5)
-    [0, 1, ... +3]
+    ┌────────────────┐
+    │ [0, 1, ... +3] │
+    └────────────────┘
 
     Simple range using start and stop
 
     >>> ibis.range(1, 5)
-    [1, 2, ... +2]
+    ┌────────────────┐
+    │ [1, 2, ... +2] │
+    └────────────────┘
 
     Generate an empty range
 
     >>> ibis.range(0)
-    []
+    ┌────┐
+    │ [] │
+    └────┘
 
     Negative step values are supported
 
     >>> ibis.range(10, 4, -2)
-    [10, 8, ... +1]
+    ┌─────────────────┐
+    │ [10, 8, ... +1] │
+    └─────────────────┘
 
     `ibis.range` behaves the same as Python's range ...
 
     >>> ibis.range(0, 7, -1)
-    []
+    ┌────┐
+    │ [] │
+    └────┘
 
     ... except when the step is zero, in which case `ibis.range` returns an
     empty array
 
     >>> ibis.range(0, 5, 0)
-    []
+    ┌────┐
+    │ [] │
+    └────┘
 
     Because the resulting expression is array, you can unnest the values
 
@@ -2182,11 +2210,13 @@ def range(start, stop, step) -> ir.ArrayValue:
 
     >>> expr = ibis.range("2002-01-01", "2002-02-01", ibis.interval(days=2)).name("ts")
     >>> expr
-    [
-        datetime.datetime(2002, 1, 1, 0, 0),
-        datetime.datetime(2002, 1, 3, 0, 0),
-        ... +14
-    ]
+    ┌──────────────────────────────────────────┐
+    │ [                                        │
+    │     datetime.datetime(2002, 1, 1, 0, 0), │
+    │     datetime.datetime(2002, 1, 3, 0, 0), │
+    │     ... +14                              │
+    │ ]                                        │
+    └──────────────────────────────────────────┘
     >>> expr.unnest()
     ┏━━━━━━━━━━━━━━━━━━━━━┓
     ┃ ts                  ┃
@@ -2405,7 +2435,9 @@ def coalesce(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.coalesce(None, 4, 5)
-    4
+    ┌───┐
+    │ 4 │
+    └───┘
 
     """
     return ops.Coalesce(args).to_expr()
@@ -2430,7 +2462,9 @@ def greatest(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.greatest(None, 4, 5)
-    5
+    ┌───┐
+    │ 5 │
+    └───┘
 
     """
     return ops.Greatest(args).to_expr()
@@ -2455,7 +2489,9 @@ def least(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.least(None, 4, 5)
-    4
+    ┌───┐
+    │ 4 │
+    └───┘
 
     """
     return ops.Least(args).to_expr()

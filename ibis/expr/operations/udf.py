@@ -621,7 +621,9 @@ class agg(_UDF):
         >>> t = ibis.examples.penguins.fetch()
         >>> expr = favg(t.bill_length_mm)
         >>> expr
-        43.9219298245614
+        ┌──────────────────┐
+        │ 43.9219298245614 │
+        └──────────────────┘
 
         """
         return _wrap(

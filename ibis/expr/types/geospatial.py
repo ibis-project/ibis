@@ -803,7 +803,9 @@ class GeoSpatialValue(NumericValue):
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
         >>> line_lit.length()
-        2.0
+        ┌─────┐
+        │ 2.0 │
+        └─────┘
         >>> t = ibis.examples.zones.fetch()
         >>> t.geom.length()
         ┏━━━━━━━━━━━━━━━━━┓
@@ -1034,7 +1036,9 @@ class GeoSpatialValue(NumericValue):
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
         >>> line_lit.start_point()
-        <POINT (0 0)>
+        ┌───────────────┐
+        │ <POINT (0 0)> │
+        └───────────────┘
         """
         return ops.GeoStartPoint(self).to_expr()
 
@@ -1058,7 +1062,9 @@ class GeoSpatialValue(NumericValue):
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
         >>> line_lit.end_point()
-        <POINT (1 1)>
+        ┌───────────────┐
+        │ <POINT (1 1)> │
+        └───────────────┘
         """
         return ops.GeoEndPoint(self).to_expr()
 
@@ -1647,7 +1653,11 @@ class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.zones.fetch()
         >>> t.geom.unary_union()
-        <MULTIPOLYGON (((934491.267 196304.019, 934656.105 196375.819, 934810.948 19...>
+        ┌──────────────────────────────────────────────────────────────────────────────┐
+        │ <MULTIPOLYGON (((934491.267 196304.019, 934656.105 196375.819, 934810.948    │
+        │ 19...>                                                                       │
+        └──────────────────────────────────────────────────────────────────────────────┘
+
         """
         return ops.GeoUnaryUnion(self, where=where).to_expr()
 
