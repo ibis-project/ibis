@@ -193,7 +193,7 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 1. Install development dependencies
 
    ```sh
-   pip install 'poetry==1.8.2'
+   pip install 'poetry==1.8.3'
    pip install -r requirements-dev.txt
    ```
 

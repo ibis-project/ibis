@@ -60,7 +60,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -111,7 +111,7 @@ jobs:
           python-version: "3.12"
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install system dependencies
         run: |
@@ -150,7 +150,7 @@ jobs:
           python-version: "3.12"
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ibis with all extras
         run: poetry install --without dev --without docs --all-extras

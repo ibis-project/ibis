@@ -100,7 +100,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
