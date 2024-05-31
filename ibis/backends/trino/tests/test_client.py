@@ -183,3 +183,14 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="tpch.sf1") == tpch_tables
     assert con.list_tables(database=("tpch", "sf1")) == tpch_tables
+
+
+def test_connect_uri():
+    con = ibis.connect(
+        f"trino://{TRINO_USER}:{TRINO_PASS}@{TRINO_HOST}:{TRINO_PORT}/memory/default"
+    )
+
+    result = con.sql("SELECT 1 AS a, 'b' AS b").to_pandas()
+
+    assert result.iat[0, 0] == 1
+    assert result.iat[0, 1] == "b"

@@ -464,6 +464,7 @@ def test_table_fillna_invalid(alltypes):
         param({"int_col": 20}, id="int"),
         param({"double_col": -1, "string_col": "missing"}, id="double-int-str"),
         param({"double_col": -1.5, "string_col": "missing"}, id="double-str"),
+        param({}, id="empty"),
     ],
 )
 def test_table_fillna_mapping(backend, alltypes, replacements):
@@ -673,6 +674,7 @@ def test_table_info_large(con):
             ),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
@@ -725,6 +727,7 @@ def test_table_info_large(con):
             s.of_type("numeric"),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
@@ -755,6 +758,7 @@ def test_table_info_large(con):
             s.of_type("string"),
             [
                 "name",
+                "pos",
                 "type",
                 "count",
                 "nulls",
@@ -1295,6 +1299,9 @@ def test_pivot_longer(backend):
     assert len(res.execute()) == len(expected)
 
 
+@pytest.mark.xfail_version(
+    datafusion=["datafusion==38.0.1"], reason="internal error about MEDIAN(G) naming"
+)
 def test_pivot_wider(backend):
     diamonds = backend.diamonds
     expr = (
@@ -1452,11 +1459,14 @@ def test_distinct_on_keep_is_none(backend, on):
         "trino",  # checksum returns varbinary
     ]
 )
-def test_hash_consistent(backend, alltypes):
-    h1 = alltypes.string_col.hash().execute(limit=10)
-    h2 = alltypes.string_col.hash().execute(limit=10)
+def test_hash(backend, alltypes):
+    # check that multiple executions return the same result
+    h1 = alltypes.string_col.hash().execute(limit=20)
+    h2 = alltypes.string_col.hash().execute(limit=20)
     backend.assert_series_equal(h1, h2)
-    assert h1.dtype in ("i8", "uint64")  # polars likes returning uint64 for this
+    # check that the result is a signed 64-bit integer, no nulls
+    assert h1.dtype == "i8"
+    assert h1.notnull().all()
 
 
 @pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
@@ -2236,3 +2246,21 @@ def test_null_isin_null_is_null(con):
     t = ibis.memtable({"x": [1]})
     expr = t.x.isin([None])
     assert pd.isna(con.to_pandas(expr).iat[0])
+
+
+def test_value_counts_on_tables(backend, df):
+    if backend.name() == "dask":
+        pytest.skip(reason="flaky errors about sorting on multi-partition dataframes")
+    from ibis import selectors as s
+
+    t = backend.functional_alltypes
+    expr = t[["bigint_col", "int_col"]].value_counts().order_by(s.all())
+    result = expr.execute()
+    expected = (
+        df.groupby(["bigint_col", "int_col"])
+        .string_col.count()
+        .reset_index()
+        .rename(columns=dict(string_col="bigint_col_int_col_count"))
+    )
+    expected = expected.sort_values(expected.columns.tolist()).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected, check_dtype=False)

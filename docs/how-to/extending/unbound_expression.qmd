@@ -109,7 +109,7 @@ Because Ibis separates the transformation logic from the execution engine, you
 can easily reuse the written transformation for another backend. Here we use
 Polars as an example, but you can do the same for any of Ibis' 20+ supported
 backends as long as that particular backend supports the operations
-(see [the operation support matrix](../../support_matrix.qmd)).
+(see [the operation support matrix](../../backends/support/matrix.qmd)).
 
 ```{python}
 pl = ibis.polars.connect()

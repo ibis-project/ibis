@@ -17,11 +17,10 @@ from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
-    replace_log2,
-    replace_log10,
+    lower_log2,
+    lower_log10,
     rewrite_empty_order_by_window,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class SnowflakeFuncGen(FuncGen):
@@ -39,22 +38,21 @@ class SnowflakeCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
-        replace_log2,
-        replace_log10,
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ArrayMap,
-            ops.ArrayFilter,
-            ops.RowID,
-            ops.MultiQuantile,
-            ops.IntervalFromInteger,
-            ops.IntervalAdd,
-            ops.TimestampDiff,
-        )
+    LOWERED_OPS = {
+        ops.Log2: lower_log2,
+        ops.Log10: lower_log10,
+        ops.Sample: None,
+    }
+
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.MultiQuantile,
+        ops.IntervalFromInteger,
+        ops.IntervalAdd,
+        ops.TimestampDiff,
     )
 
     SIMPLE_OPS = {
@@ -75,6 +73,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         ops.BitwiseRightShift: "bitshiftright",
         ops.BitwiseXor: "bitxor",
         ops.EndsWith: "endswith",
+        ops.ExtractIsoYear: "yearofweekiso",
         ops.Hash: "hash",
         ops.Median: "median",
         ops.Mode: "mode",
@@ -87,13 +86,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def __init__(self):
         super().__init__()
         self.f = SnowflakeFuncGen()
-
-    def _aggregate(self, funcname: str, *args, where):
-        if where is not None:
-            args = [self.if_(where, arg, NULL) for arg in args]
-
-        func = self.f[funcname]
-        return func(*args)
 
     @staticmethod
     def _minimize_spec(start, end, spec):
@@ -633,3 +625,37 @@ class SnowflakeCompiler(SQLGlotCompiler):
             seed=None if seed is None else sge.convert(seed),
         )
         return sg.select(STAR).from_(sample)
+
+    def visit_ArrayMap(self, op, *, arg, param, body):
+        return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+
+    def visit_ArrayFilter(self, op, *, arg, param, body):
+        return self.f.filter(
+            arg,
+            sge.Lambda(
+                this=sg.and_(
+                    body,
+                    # necessary otherwise null values are treated as JSON nulls
+                    # instead of SQL NULLs
+                    self.cast(sg.to_identifier(param), op.dtype.value_type).is_(
+                        sg.not_(NULL)
+                    ),
+                ),
+                expressions=[param],
+            ),
+        )
+
+    def visit_JoinLink(self, op, *, how, table, predicates):
+        assert (
+            predicates or how == "cross"
+        ), "expected non-empty predicates when not a cross join"
+
+        if how == "asof":
+            # the asof join match condition is always the first predicate by
+            # construction
+            match_condition, *predicates = predicates
+            on = sg.and_(*predicates) if predicates else None
+            return sge.Join(
+                this=table, kind=how, on=on, match_condition=match_condition
+            )
+        return super().visit_JoinLink(op, how=how, table=table, predicates=predicates)

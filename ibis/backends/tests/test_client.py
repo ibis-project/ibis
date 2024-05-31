@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.dataset
 import pytest
 import rich.console
 import toolz
@@ -41,6 +42,8 @@ from ibis.util import gen_name
 
 if TYPE_CHECKING:
     from ibis.backends import BaseBackend
+
+pl = pytest.importorskip("polars", reason="Polars is not installed")
 
 
 @pytest.fixture
@@ -391,7 +394,7 @@ def test_nullable_input_output(con, temp_table):
     assert t.schema().types[2].nullable
 
 
-@mark.notimpl(["druid", "polars"])
+@mark.notimpl(["druid"])
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
@@ -883,24 +886,147 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    ("arg", "func"),
+    "obj, table_name",
     [
-        ([("a", 1.0)], lambda arg: ibis.memtable(arg, columns=["a", "b"])),
-        (pd.DataFrame([("a", 1.0)], columns=["a", "b"]), ibis.memtable),
+        param(lambda: pa.table({"a": ["a"], "b": [1]}), "df_arrow", id="pyarrow table"),
+        param(
+            lambda: pa.table({"a": ["a"], "b": [1]}).to_reader(),
+            "df_arrow_batch_reader",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "duckdb",
+                        "exasol",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "oracle",
+                        "pandas",
+                        "postgres",
+                        "pyspark",
+                        "risingwave",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                )
+            ],
+            id="pyarrow_rbr",
+        ),
+        param(
+            lambda: pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
+            "df_arrow_single_batch",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "duckdb",
+                        "exasol",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "oracle",
+                        "pandas",
+                        "postgres",
+                        "pyspark",
+                        "risingwave",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                )
+            ],
+            id="pyarrow_single_batch",
+        ),
+        param(
+            lambda: pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
+            "df_arrow_dataset",
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "bigquery",
+                        "clickhouse",
+                        "dask",
+                        "duckdb",
+                        "exasol",
+                        "impala",
+                        "mssql",
+                        "mysql",
+                        "oracle",
+                        "pandas",
+                        "polars",
+                        "postgres",
+                        "pyspark",
+                        "risingwave",
+                        "snowflake",
+                        "sqlite",
+                        "trino",
+                    ]
+                ),
+            ],
+            id="pyarrow dataset",
+        ),
+        param(lambda: pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
+        param(
+            lambda: pl.DataFrame({"a": ["a"], "b": [1]}),
+            "df_polars_eager",
+            id="polars dataframe",
+        ),
+        param(
+            lambda: pl.LazyFrame({"a": ["a"], "b": [1]}),
+            "df_polars_lazy",
+            id="polars lazyframe",
+        ),
+        param(
+            lambda: ibis.memtable([("a", 1)], columns=["a", "b"]),
+            "memtable",
+            id="memtable_list",
+        ),
+        param(
+            lambda: ibis.memtable(pa.table({"a": ["a"], "b": [1]})),
+            "memtable_pa",
+            id="memtable pyarrow",
+        ),
+        param(
+            lambda: ibis.memtable(pd.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_pandas",
+            id="memtable pandas",
+        ),
+        param(
+            lambda: ibis.memtable(pl.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_eager",
+            id="memtable polars dataframe",
+        ),
+        param(
+            lambda: ibis.memtable(pl.LazyFrame({"a": ["a"], "b": [1]})),
+            "memtable_polars_lazy",
+            id="memtable polars lazyframe",
+        ),
     ],
-    ids=["python", "pandas"],
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
-def test_create_from_in_memory_table(con, temp_table, arg, func, monkeypatch):
+def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
+    obj = obj()
+    t = con.create_table(table_name, obj)
 
-    t = func(arg)
-    con.create_table(temp_table, t)
-    assert temp_table in con.list_tables()
+    result = pa.table({"a": ["a"], "b": [1]})
+    assert table_name in con.list_tables()
+
+    assert result.equals(t.to_pyarrow())
+
+    with contextlib.suppress(NotImplementedError):
+        # polars doesn't have drop_table
+        con.drop_table(table_name, force=True)
 
 
 def test_default_backend_option(con, monkeypatch):
@@ -1392,11 +1518,6 @@ def gen_test_name(con: BaseBackend):
     con.drop_table(name, force=True)
 
 
-@mark.notimpl(
-    ["polars"],
-    raises=NotImplementedError,
-    reason="overwriting not implemented in ibis for this backend",
-)
 @mark.broken(
     ["druid"], raises=NotImplementedError, reason="generated SQL fails to parse"
 )
@@ -1625,3 +1746,44 @@ def test_schema_with_caching(alltypes):
 
     assert pt1.schema() == t1.schema()
     assert pt2.schema() == t2.schema()
+
+
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(
+    ["datafusion"], reason="Doesn't support table creation from records"
+)
+@pytest.mark.parametrize(
+    "first_row, second_row",
+    [
+        param([{"a": 1, "b": 2}], [{"b": 22, "a": 11}], id="column order reversed"),
+        param([{"a": 1, "b": 2}], [{"a": 11, "b": 22}], id="column order matching"),
+        param(
+            [{"a": 1, "b": 2}],
+            [(11, 22)],
+            marks=[
+                pytest.mark.notimpl(
+                    ["impala"],
+                    reason="Impala DDL has strict validation checks on schema",
+                )
+            ],
+            id="auto generated cols",
+        ),
+    ],
+)
+def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    table_name = gen_name("table")
+    con.create_table(table_name, first_row)
+    con.insert(table_name, second_row)
+
+    result = con.table(table_name).order_by("a").to_pyarrow()
+    expected_result = pa.table({"a": [1, 11], "b": [2, 22]})
+
+    assert result.equals(expected_result)
+
+    # Ideally we'd use a temp table for this test, but several backends don't
+    # support them and it's nice to know that data are being inserted correctly.
+    con.drop_table(table_name)

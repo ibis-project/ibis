@@ -12,9 +12,7 @@ from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.dialects import Impala
 from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -23,40 +21,36 @@ class ImpalaCompiler(SQLGlotCompiler):
     dialect = Impala
     type_mapper = ImpalaType
     rewrites = (
-        rewrite_sample_as_filter,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.ArrayPosition,
-            ops.Array,
-            ops.Covariance,
-            ops.DateDelta,
-            ops.ExtractDayOfYear,
-            ops.First,
-            ops.Last,
-            ops.Levenshtein,
-            ops.Map,
-            ops.Median,
-            ops.MultiQuantile,
-            ops.NthValue,
-            ops.Quantile,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.StringSplit,
-            ops.StructColumn,
-            ops.Time,
-            ops.TimeDelta,
-            ops.TimestampBucket,
-            ops.TimestampDelta,
-            ops.Unnest,
-        )
+    UNSUPPORTED_OPS = (
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.ArrayPosition,
+        ops.Array,
+        ops.Covariance,
+        ops.DateDelta,
+        ops.ExtractDayOfYear,
+        ops.First,
+        ops.Last,
+        ops.Levenshtein,
+        ops.Map,
+        ops.Median,
+        ops.MultiQuantile,
+        ops.NthValue,
+        ops.Quantile,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.StringSplit,
+        ops.StructColumn,
+        ops.Time,
+        ops.TimeDelta,
+        ops.TimestampBucket,
+        ops.TimestampDelta,
+        ops.Unnest,
     )
 
     SIMPLE_OPS = {
@@ -80,12 +74,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Strip: "trim",
         ops.TypeOf: "typeof",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-
-        return self.f[funcname](*args, dialect=self.dialect)
 
     @staticmethod
     def _minimize_spec(start, end, spec):

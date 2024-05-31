@@ -257,10 +257,10 @@ def test_read_sqlite_no_table_name(con, tmp_path):
 )
 def test_register_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
-
     sqlite_con = sqlite3.connect(str(path))
     sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    ft = con.register(f"sqlite://{path}", "t")
+    with pytest.warns(FutureWarning, match="v9.1"):
+        ft = con.register(f"sqlite://{path}", "t")
     assert ft.count().execute()
 
 
@@ -309,16 +309,6 @@ def test_attach_sqlite(data_dir, tmp_path):
     types = fa.schema().types
     assert len(set(types)) == 1
     assert dt.String(nullable=True) in set(types)
-
-
-def test_read_in_memory(con):
-    df_arrow = pa.table({"a": ["a"], "b": [1]})
-    df_pandas = pd.DataFrame({"a": ["a"], "b": [1]})
-    con.read_in_memory(df_arrow, table_name="df_arrow")
-    con.read_in_memory(df_pandas, table_name="df_pandas")
-
-    assert "df_arrow" in con.list_tables()
-    assert "df_pandas" in con.list_tables()
 
 
 def test_re_read_in_memory_overwrite(con):

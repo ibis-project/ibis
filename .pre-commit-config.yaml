@@ -18,11 +18,11 @@ default_stages:
   - commit
 repos:
   - repo: https://github.com/rhysd/actionlint
-    rev: v1.6.27
+    rev: v1.7.0
     hooks:
       - id: actionlint-system
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.3.0
     hooks:
       - id: codespell
         additional_dependencies:

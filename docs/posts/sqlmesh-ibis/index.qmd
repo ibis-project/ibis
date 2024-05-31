@@ -1,0 +1,42 @@
+---
+title: "Unlocking data insights with Ibis and SQLMesh"
+author: "Chloe He"
+date: "2024-05-21"
+image: thumbnail.png
+categories:
+    - blog
+    - sqlmesh
+    - data engineering
+---
+
+# Overview
+
+Have you ever needed to learn new dialects of database languages as a data
+scientist or struggled with the differences between database languages? Does
+your company manage different production pipelines with multiple databases
+or engines? Have you needed to rewrite data pipelines from experimentation
+to deployment?
+
+These are challenges that SQLMesh and Ibis together can solve.
+
+[SQLMesh](https://sqlmesh.com/) is a next-generation data transformation
+and modeling framework. It aims to be easy to use, correct, and efficient
+and is maintained by the [Tobiko Data](https://tobikodata.com/) team. It
+helps you scalably, reliably and safely modify your data pipelines because
+it understands SQL and can make intelligent updates instead of stringing
+scripts together. SQLMesh boasts several future-proof features such as
+automatic data contracts, virtual data environments and snapshots, extensive
+change summaries (before updates are applied!) and column-level lineage out
+of the box.
+
+We walk through an example together to show you how to harness the full
+potential of your data analytics workflow and how SQLMesh and Ibis can work
+together hand-in-hand. Read the full article on
+[SQLMesh blog](https://tobikodata.com/ibis-sqlmesh-unlocking-data-insights.html)!
+
+In today's data-driven world, the ability to efficiently analyze and derive
+insights from vast amounts of data is paramount. Leveraging powerful
+open-source tools like SQLMesh and Ibis can streamline this process,
+enabling you to easily manipulate and query data.
+
+Let us know how you're using SQLMesh and Ibis together in your use case!

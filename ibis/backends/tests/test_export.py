@@ -4,6 +4,7 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pcsv
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -42,6 +43,22 @@ no_limit = [
 ]
 
 limit_no_limit = limit + no_limit
+
+
+@pytest.mark.skipif(
+    vparse(pa.__version__) < vparse("14"), reason="pyarrow >= 14 required"
+)
+def test_table___arrow_c_stream__(awards_players):
+    sol = awards_players.to_pyarrow()
+    res = pa.table(awards_players)
+    assert res.schema.equals(sol.schema)
+    assert len(res) == len(sol)
+
+    # With explicit schema
+    schema = awards_players.schema().to_pyarrow()
+    res = pa.table(awards_players, schema=schema)
+    assert res.schema.equals(sol.schema)
+    assert len(res) == len(sol)
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)

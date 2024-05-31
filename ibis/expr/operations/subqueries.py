@@ -1,3 +1,5 @@
+"""Subquery operations."""
+
 from __future__ import annotations
 
 from public import public
@@ -13,6 +15,8 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 @public
 class Subquery(Value):
+    """Base class for subquery operations."""
+
     rel: Relation
 
     @attribute
@@ -22,12 +26,16 @@ class Subquery(Value):
 
 @public
 class ExistsSubquery(Subquery):
+    """Check if a subquery returns any rows."""
+
     dtype = dt.boolean
     shape = ds.columnar
 
 
 @public
 class ScalarSubquery(Subquery):
+    """A subquery that returns a single scalar value."""
+
     shape = ds.scalar
 
     def __init__(self, rel):
@@ -50,6 +58,8 @@ class ScalarSubquery(Subquery):
 
 @public
 class InSubquery(Subquery):
+    """Check if a value is in the result of a subquery."""
+
     needle: Value
 
     dtype = dt.boolean

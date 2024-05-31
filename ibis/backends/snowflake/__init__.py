@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
 
     import pandas as pd
+    import polars as pl
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -251,16 +252,18 @@ $$ {defn["source"]} $$"""
             )
 
         if create_object_udfs:
-            database = con.database
-            schema = con.schema
             dialect = self.name
             create_stmt = sge.Create(
                 kind="DATABASE", this="ibis_udfs", exists=True
             ).sql(dialect)
-            use_stmt = sge.Use(
-                kind="SCHEMA",
-                this=sg.table(schema, db=database, quoted=self.compiler.quoted),
-            ).sql(dialect)
+            if "/" in con.database:
+                (catalog, db) = con.database.split("/")
+                use_stmt = sge.Use(
+                    kind="SCHEMA",
+                    this=sg.table(db, catalog=catalog, quoted=self.compiler.quoted),
+                ).sql(dialect)
+            else:
+                use_stmt = ""
 
             stmts = [
                 create_stmt,
@@ -583,6 +586,17 @@ $$"""
     ) -> list[str]:
         """List the tables in the database.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         like
@@ -593,17 +607,6 @@ $$"""
             To specify a table in a separate Snowflake catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         schema
             [deprecated] The schema inside `database` to perform the list against.
         """
@@ -736,7 +739,12 @@ $$"""
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -806,9 +814,11 @@ $$"""
         if comment is not None:
             properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
+        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
+                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -828,6 +838,11 @@ $$"""
 
         with self._safe_raw_sql(create_stmt):
             pass
+
+        # Clean up temporary memtable if we've created one
+        # for in-memory reads
+        if temp_memtable_view is not None:
+            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 
@@ -1048,35 +1063,26 @@ $$"""
         qtable = sg.to_identifier(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
 
-        options = " " * bool(kwargs) + " ".join(
+        kwargs.setdefault("USE_LOGICAL_TYPE", True)
+        options = " ".join(
             f"{name.upper()} = {value!r}" for name, value in kwargs.items()
         )
 
-        # we can't infer the schema from the format alone because snowflake
-        # doesn't support logical timestamp types in parquet files
-        #
-        # see
-        # https://community.snowflake.com/s/article/How-to-load-logical-type-TIMESTAMP-data-from-Parquet-files-into-Snowflake
+        type_mapper = self.compiler.type_mapper
         names_types = [
-            (
-                name,
-                self.compiler.type_mapper.to_string(typ),
-                typ.nullable,
-                typ.is_timestamp(),
-            )
+            (name, type_mapper.to_string(typ), typ.nullable)
             for name, typ in schema.items()
         ]
+
         snowflake_schema = ", ".join(
-            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not nullable)}"
-            for col, typ, nullable, _ in names_types
-        )
-        cols = ", ".join(
-            f"$1:{col}{'::VARCHAR' * is_timestamp}::{typ}"
-            for col, typ, _, is_timestamp in names_types
+            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not is_nullable)}"
+            for col, typ, is_nullable in names_types
         )
 
+        cols = ", ".join(f"$1:{col}::{typ}" for col, typ, _ in names_types)
+
         stmts = [
-            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET{options})",
+            f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
             f"CREATE TEMP TABLE {qtable} ({snowflake_schema})",
         ]
 
@@ -1097,6 +1103,15 @@ $$"""
     ) -> None:
         """Insert data into a table.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         table_name
@@ -1113,15 +1128,6 @@ $$"""
             For multi-level table hierarchies, you can pass in a dotted string
             path like `"catalog.database"` or a tuple of strings like
             `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         overwrite
             If `True` then replace existing contents of table
 
@@ -1132,13 +1138,13 @@ $$"""
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        table = sg.table(table_name, db=db, catalog=catalog, quoted=True)
         self._run_pre_execute_hooks(obj)
-        query = sg.exp.insert(
-            expression=self.compile(obj),
-            into=table,
-            columns=[sg.to_identifier(col, quoted=True) for col in obj.columns],
-            dialect=self.name,
+
+        query = self._build_insert_query(
+            target=table_name, source=obj, db=db, catalog=catalog
+        )
+        table = sg.table(
+            table_name, db=db, catalog=catalog, quoted=self.compiler.quoted
         )
 
         statements = []

@@ -8,10 +8,13 @@ import functools
 import inspect
 import textwrap
 from collections import ChainMap
-from typing import Callable
+from typing import TYPE_CHECKING
 
 from ibis.backends.bigquery.udf.find import find_names
 from ibis.backends.bigquery.udf.rewrite import rewrite
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class SymbolTable(ChainMap):

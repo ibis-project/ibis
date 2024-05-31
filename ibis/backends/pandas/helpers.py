@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import itertools
 import math
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 def isnull(obj):

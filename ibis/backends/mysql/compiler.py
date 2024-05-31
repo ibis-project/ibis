@@ -18,10 +18,9 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
 from ibis.common.patterns import replace
-from ibis.expr.rewrites import p, rewrite_stringslice
+from ibis.expr.rewrites import p
 
 
 @replace(p.Limit)
@@ -50,12 +49,10 @@ class MySQLCompiler(SQLGlotCompiler):
     type_mapper = MySQLType
     rewrites = (
         rewrite_limit,
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -68,33 +65,31 @@ class MySQLCompiler(SQLGlotCompiler):
         raise NotImplementedError("MySQL does not support Infinity")
 
     NEG_INF = POS_INF
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ApproxMedian,
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.Array,
-            ops.ArrayFlatten,
-            ops.ArrayMap,
-            ops.Covariance,
-            ops.First,
-            ops.Last,
-            ops.Levenshtein,
-            ops.Median,
-            ops.Mode,
-            ops.MultiQuantile,
-            ops.Quantile,
-            ops.RegexReplace,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.StringSplit,
-            ops.StructColumn,
-            ops.TimestampBucket,
-            ops.TimestampDelta,
-            ops.Translate,
-            ops.Unnest,
-        )
+    UNSUPPORTED_OPS = (
+        ops.ApproxMedian,
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.Array,
+        ops.ArrayFlatten,
+        ops.ArrayMap,
+        ops.Covariance,
+        ops.First,
+        ops.Last,
+        ops.Levenshtein,
+        ops.Median,
+        ops.Mode,
+        ops.MultiQuantile,
+        ops.Quantile,
+        ops.RegexReplace,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.StringSplit,
+        ops.StructColumn,
+        ops.TimestampBucket,
+        ops.TimestampDelta,
+        ops.Translate,
+        ops.Unnest,
     )
 
     SIMPLE_OPS = {
@@ -111,12 +106,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.StringToTimestamp: "str_to_date",
         ops.Log2: "log2",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-        return func(*args)
 
     @staticmethod
     def _minimize_spec(start, end, spec):
@@ -287,7 +276,9 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_LRStrip(self, op, *, arg, position):
         return reduce(
-            lambda arg, char: self.f.trim(this=arg, position=position, expression=char),
+            lambda arg, char: self.f.trim(
+                this=arg, position=self.v[position], expression=char
+            ),
             map(
                 partial(self.cast, to=dt.string),
                 map(self.f.unhex, map(self.f.hex, string.whitespace.encode())),

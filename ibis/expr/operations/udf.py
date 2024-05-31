@@ -1,3 +1,5 @@
+"""User-defined functions (UDFs) implementation."""
+
 from __future__ import annotations
 
 import abc
@@ -7,7 +9,7 @@ import functools
 import inspect
 import itertools
 import typing
-from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
 
 from public import public
 
@@ -22,7 +24,7 @@ from ibis.common.collections import FrozenDict
 from ibis.common.deferred import deferrable
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, MutableMapping
+    from collections.abc import Callable, Iterable, MutableMapping
 
     import ibis.expr.types as ir
 
@@ -223,7 +225,7 @@ class scalar(_UDF):
             will be derived from the type annotations of the wrapped function.
 
             For **builtin** UDFs, only the **return type** annotation is required.
-            See [the user guide](../how-to/extending/builtin.qmd#input-types) for
+            See [the user guide](/how-to/extending/builtin.qmd#input-types) for
             more information.
         kwargs
             Additional backend-specific configuration arguments for the UDF.
@@ -288,9 +290,9 @@ class scalar(_UDF):
         Python function call per row
 
         This calling pattern tends to be **much** slower than
-        [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
+        [`pandas`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
         or
-        [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)-based
+        [`pyarrow`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)-based
         vectorized UDFs.
         :::
 
@@ -356,8 +358,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
-        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
+        - [`pandas`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
+        - [`pyarrow`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
 
         """
         return _wrap(
@@ -453,8 +455,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
-        - [`pyarrow`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
+        - [`python`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
+        - [`pyarrow`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pyarrow)
 
         """
         return _wrap(
@@ -539,8 +541,8 @@ class scalar(_UDF):
 
         See Also
         --------
-        - [`python`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
-        - [`pandas`](./scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
+        - [`python`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.python)
+        - [`pandas`](/reference/scalar-udfs.qmd#ibis.expr.operations.udf.scalar.pandas)
 
         """
         return _wrap(
@@ -619,7 +621,9 @@ class agg(_UDF):
         >>> t = ibis.examples.penguins.fetch()
         >>> expr = favg(t.bill_length_mm)
         >>> expr
-        43.9219298245614
+        ┌──────────────────┐
+        │ 43.9219298245614 │
+        └──────────────────┘
 
         """
         return _wrap(

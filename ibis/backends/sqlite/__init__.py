@@ -27,6 +27,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
 
@@ -386,7 +387,12 @@ class Backend(SQLBackend, UrlFromPath):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
@@ -421,9 +427,11 @@ class Backend(SQLBackend, UrlFromPath):
         if schema is not None:
             schema = ibis.schema(schema)
 
+        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 obj = ibis.memtable(obj)
+                temp_memtable_view = obj.op().name
 
             self._run_pre_execute_hooks(obj)
 
@@ -479,6 +487,10 @@ class Backend(SQLBackend, UrlFromPath):
                 )
 
         if schema is None:
+            # Clean up temporary memtable if we've created one
+            # for in-memory reads
+            if temp_memtable_view is not None:
+                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided
@@ -565,8 +577,12 @@ class Backend(SQLBackend, UrlFromPath):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
-        expr = self._to_sqlglot(obj)
-        insert_stmt = sge.Insert(this=table, expression=expr).sql(self.name)
+
+        query = self._build_insert_query(
+            target=table_name, source=obj, catalog=database
+        )
+        insert_stmt = query.sql(self.name)
+
         with self.begin() as cur:
             if overwrite:
                 cur.execute(f"DELETE FROM {table.sql(self.name)}")

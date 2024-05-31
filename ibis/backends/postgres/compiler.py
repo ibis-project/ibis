@@ -11,11 +11,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import rewrite_sample_as_filter
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class PostgresUDFNode(ops.Value):
@@ -28,21 +26,17 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
-    rewrites = (
-        rewrite_sample_as_filter,
-        *SQLGlotCompiler.rewrites,
-        rewrite_stringslice,
-    )
+
+    agg = AggGen(supports_filter=True)
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
     NEG_INF = sge.Literal.number("'-Inf'::double precision")
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.RowID,
-            ops.TimeDelta,
-            ops.ArrayFlatten,
-        )
+
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.TimeDelta,
+        ops.ArrayFlatten,
     )
 
     SIMPLE_OPS = {
@@ -103,12 +97,6 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
@@ -237,7 +225,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayContains(self, op, *, arg, other):
         arg_dtype = op.arg.dtype
-        return sge.ArrayContains(
+        # ArrayContainsAll introduced in 24, keep backcompat if it doesn't exist
+        cls = getattr(sge, "ArrayContainsAll", sge.ArrayContains)
+        return cls(
             this=self.cast(arg, arg_dtype),
             expression=self.f.array(self.cast(other, arg_dtype.value_type)),
         )
@@ -515,6 +505,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract("week", arg)
+
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.f.extract("isoyear", arg)
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.extract("epoch", arg)

@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
     import pandas as pd
+    import polars as pl
 
 
 def _to_memtable(v):
@@ -422,8 +423,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = sge.insert(self.compile(obj), into=name, dialect=self.name)
-
+        query = self._build_insert_query(target=name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)
@@ -586,7 +586,12 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,

@@ -10,11 +10,10 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import exclude_unsupported_window_frame_from_ops
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class TrinoCompiler(SQLGlotCompiler):
@@ -22,9 +21,11 @@ class TrinoCompiler(SQLGlotCompiler):
 
     dialect = Trino
     type_mapper = TrinoType
+
+    agg = AggGen(supports_filter=True)
+
     rewrites = (
         exclude_unsupported_window_frame_from_ops,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
     quoted = True
@@ -33,15 +34,17 @@ class TrinoCompiler(SQLGlotCompiler):
     POS_INF = sg.func("infinity")
     NEG_INF = -POS_INF
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.Quantile,
-            ops.MultiQuantile,
-            ops.Median,
-            ops.RowID,
-            ops.TimestampBucket,
-        )
+    UNSUPPORTED_OPS = (
+        ops.Quantile,
+        ops.MultiQuantile,
+        ops.Median,
+        ops.RowID,
+        ops.TimestampBucket,
     )
+
+    LOWERED_OPS = {
+        ops.Sample: None,
+    }
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
@@ -80,13 +83,8 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ExtractPath: "url_extract_path",
         ops.ExtractFragment: "url_extract_fragment",
         ops.ArrayPosition: "array_position",
+        ops.ExtractIsoYear: "year_of_week",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     @staticmethod
     def _minimize_spec(start, end, spec):

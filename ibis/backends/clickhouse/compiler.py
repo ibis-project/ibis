@@ -11,11 +11,19 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
-from ibis.backends.sql.rewrites import rewrite_sample_as_filter
-from ibis.expr.rewrites import rewrite_stringslice
+
+
+class ClickhouseAggGen(AggGen):
+    def aggregate(self, compiler, name, *args, where=None):
+        # Clickhouse aggregate functions all have filtering variants with a
+        # `If` suffix (e.g. `SumIf` instead of `Sum`).
+        if where is not None:
+            name += "If"
+            args += (where,)
+        return compiler.f[name](*args, dialect=compiler.dialect)
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -23,23 +31,18 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     dialect = ClickHouse
     type_mapper = ClickHouseType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        *SQLGlotCompiler.rewrites,
-    )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.RowID,
-            ops.CumeDist,
-            ops.PercentRank,
-            ops.Time,
-            ops.TimeDelta,
-            ops.StringToTimestamp,
-            ops.StringToDate,
-            ops.Levenshtein,
-        )
+    agg = ClickhouseAggGen()
+
+    UNSUPPORTED_OPS = (
+        ops.RowID,
+        ops.CumeDist,
+        ops.PercentRank,
+        ops.Time,
+        ops.TimeDelta,
+        ops.StringToTimestamp,
+        ops.StringToDate,
+        ops.Levenshtein,
     )
 
     SIMPLE_OPS = {
@@ -81,6 +84,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ExtractSecond: "toSecond",
         ops.ExtractWeekOfYear: "toISOWeek",
         ops.ExtractYear: "toYear",
+        ops.ExtractIsoYear: "toISOYear",
         ops.First: "any",
         ops.IntegerRange: "range",
         ops.IsInf: "isInfinite",
@@ -111,13 +115,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        has_filter = where is not None
-        func = self.f[funcname + "If" * has_filter]
-        args += (where,) * has_filter
-
-        return func(*args, dialect=self.dialect)
 
     @staticmethod
     def _minimize_spec(start, end, spec):
@@ -243,7 +240,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.intDivOrZero(arg, self.f.abs(arg))
 
     def visit_Hash(self, op, *, arg):
-        return self.f.sipHash64(arg)
+        return self.f.reinterpretAsInt64(self.f.sipHash64(arg))
 
     def visit_HashBytes(self, op, *, arg, how):
         supported_algorithms = {

@@ -4,10 +4,10 @@ import abc
 import calendar
 import itertools
 import math
+import operator
 import string
-from collections.abc import Mapping
 from functools import partial, reduce
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -23,16 +23,18 @@ from ibis.backends.sql.rewrites import (
     add_one_to_nth_value_input,
     add_order_by_to_empty_ranking_window_functions,
     empty_in_values_right_side,
+    lower_bucket,
+    lower_capitalize,
+    lower_sample,
     one_to_zero_index,
-    rewrite_capitalize,
     sqlize,
 )
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
-from ibis.expr.rewrites import replace_bucket
+from ibis.expr.rewrites import lower_stringslice
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable, Mapping
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
@@ -51,16 +53,77 @@ ALL_OPERATIONS = frozenset(get_leaf_classes(ops.Node))
 
 
 class AggGen:
-    __slots__ = ("aggfunc",)
+    """A descriptor for compiling aggregate functions.
 
-    def __init__(self, *, aggfunc: Callable) -> None:
-        self.aggfunc = aggfunc
+    Common cases can be handled by setting configuration flags,
+    special cases should override the `aggregate` method directly.
 
-    def __getattr__(self, name: str) -> partial:
-        return partial(self.aggfunc, name)
+    Parameters
+    ----------
+    supports_filter
+        Whether the backend supports a FILTER clause in the aggregate.
+        Defaults to False.
+    """
 
-    def __getitem__(self, key: str) -> partial:
-        return getattr(self, key)
+    class _Accessor:
+        """An internal type to handle getattr/getitem access."""
+
+        __slots__ = ("handler", "compiler")
+
+        def __init__(self, handler: Callable, compiler: SQLGlotCompiler):
+            self.handler = handler
+            self.compiler = compiler
+
+        def __getattr__(self, name: str) -> Callable:
+            return partial(self.handler, self.compiler, name)
+
+        __getitem__ = __getattr__
+
+    __slots__ = ("supports_filter",)
+
+    def __init__(self, *, supports_filter: bool = False):
+        self.supports_filter = supports_filter
+
+    def __get__(self, instance, owner=None):
+        if instance is None:
+            return self
+
+        return AggGen._Accessor(self.aggregate, instance)
+
+    def aggregate(
+        self,
+        compiler: SQLGlotCompiler,
+        name: str,
+        *args: Any,
+        where: Any = None,
+    ):
+        """Compile the specified aggregate.
+
+        Parameters
+        ----------
+        compiler
+            The backend's compiler.
+        name
+            The aggregate name (e.g. `"sum"`).
+        args
+            Any arguments to pass to the aggregate.
+        where
+            An optional column filter to apply before performing the aggregate.
+
+        """
+        func = compiler.f[name]
+
+        if where is None:
+            return func(*args)
+
+        if self.supports_filter:
+            return sge.Filter(
+                this=func(*args),
+                expression=sge.Where(this=where),
+            )
+        else:
+            args = tuple(compiler.if_(where, arg, NULL) for arg in args)
+            return func(*args)
 
 
 class VarGen:
@@ -165,24 +228,18 @@ def parenthesize_inputs(f):
 
 @public
 class SQLGlotCompiler(abc.ABC):
-    __slots__ = "agg", "f", "v"
+    __slots__ = "f", "v"
 
-    rewrites: tuple = (
+    agg = AggGen()
+    """A generator for handling aggregate functions"""
+
+    rewrites: tuple[type[pats.Replace], ...] = (
         empty_in_values_right_side,
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
-        replace_bucket,
-        rewrite_capitalize,
     )
     """A sequence of rewrites to apply to the expression tree before compilation."""
-
-    extra_supported_ops: frozenset = frozenset(
-        (ops.Project, ops.Filter, ops.Sort, ops.WindowFunction)
-    )
-    """A frozenset of ops classes that are supported, but don't have explicit
-    `visit_*` methods (usually due to being handled by rewrite rules). Used by
-    `has_operation`"""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -208,8 +265,28 @@ class SQLGlotCompiler(abc.ABC):
     )
     """Backend's negative infinity literal."""
 
-    UNSUPPORTED_OPERATIONS: frozenset[type[ops.Node]] = frozenset()
-    """Set of operations the backend doesn't support."""
+    EXTRA_SUPPORTED_OPS: tuple[type[ops.Node], ...] = (
+        ops.Project,
+        ops.Filter,
+        ops.Sort,
+        ops.WindowFunction,
+    )
+    """A tuple of ops classes that are supported, but don't have explicit
+    `visit_*` methods (usually due to being handled by rewrite rules). Used by
+    `has_operation`"""
+
+    UNSUPPORTED_OPS: tuple[type[ops.Node], ...] = ()
+    """Tuple of operations the backend doesn't support."""
+
+    LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
+        ops.Bucket: lower_bucket,
+        ops.Capitalize: lower_capitalize,
+        ops.Sample: lower_sample,
+        ops.StringSlice: lower_stringslice,
+    }
+    """A mapping from an operation class to either a rewrite rule for rewriting that
+    operation to one composed of lower-level operations ("lowering"), or `None` to
+    remove an existing rewrite rule for that operation added in a base class"""
 
     SIMPLE_OPS = {
         ops.Abs: "abs",
@@ -326,8 +403,12 @@ class SQLGlotCompiler(abc.ABC):
 
     NEEDS_PARENS = BINARY_INFIX_OPS + (ops.IsNull,)
 
+    # Constructed dynamically in `__init_subclass__` from their respective
+    # UPPERCASE values to handle inheritance, do not modify directly here.
+    extra_supported_ops: ClassVar[frozenset[type[ops.Node]]] = frozenset()
+    lowered_ops: ClassVar[dict[type[ops.Node], pats.Replace]] = {}
+
     def __init__(self) -> None:
-        self.agg = AggGen(aggfunc=self._aggregate)
         self.f = FuncGen(copy=self.__class__.copy_func_args)
         self.v = VarGen()
 
@@ -354,20 +435,13 @@ class SQLGlotCompiler(abc.ABC):
             return impl
 
         # unconditionally raise an exception for unsupported operations
-        for op in cls.UNSUPPORTED_OPERATIONS:
+        for op in cls.UNSUPPORTED_OPS:
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
 
-        # override existing base class implementations
         for op, target_name in cls.SIMPLE_OPS.items():
             setattr(cls, methodname(op), make_impl(op, target_name))
-
-        # add simple ops that are not already implemented
-        for op, target_name in SQLGlotCompiler.SIMPLE_OPS.items():
-            name = methodname(op)
-            if not hasattr(cls, name):
-                setattr(cls, name, make_impl(op, target_name))
 
         # raise on any remaining unsupported operations
         for op in ALL_OPERATIONS:
@@ -375,13 +449,19 @@ class SQLGlotCompiler(abc.ABC):
             if not hasattr(cls, name):
                 setattr(cls, name, cls.visit_Undefined)
 
-        # Expand extra_supported_ops with any rewrite rules
+        # Amend `lowered_ops` and `extra_supported_ops` using their
+        # respective UPPERCASE classvar values.
         extra_supported_ops = set(cls.extra_supported_ops)
-        for rule in cls.rewrites:
-            if isinstance(rule, pats.Replace) and isinstance(
-                rule.matcher, pats.InstanceOf
-            ):
-                extra_supported_ops.add(rule.matcher.type)
+        lowered_ops = dict(cls.lowered_ops)
+        extra_supported_ops.update(cls.EXTRA_SUPPORTED_OPS)
+        for op_cls, rewrite in cls.LOWERED_OPS.items():
+            if rewrite is not None:
+                lowered_ops[op_cls] = rewrite
+                extra_supported_ops.add(op_cls)
+            else:
+                lowered_ops.pop(op_cls, None)
+                extra_supported_ops.discard(op_cls)
+        cls.lowered_ops = lowered_ops
         cls.extra_supported_ops = frozenset(extra_supported_ops)
 
     @property
@@ -393,20 +473,6 @@ class SQLGlotCompiler(abc.ABC):
     @abc.abstractmethod
     def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
-
-    @abc.abstractmethod
-    def _aggregate(self, funcname, *args, where):
-        """Translate an aggregate function.
-
-        Three flavors of filtering aggregate function inputs:
-
-        1. supports filter (duckdb, postgres, others)
-           e.g.: sum(x) filter (where predicate)
-        2. use null to filter out
-           e.g.: sum(if(predicate, x, NULL))
-        3. clickhouse's ${func}If implementation, e.g.:
-           sumIf(predicate, x)
-        """
 
     # Concrete API
 
@@ -454,6 +520,8 @@ class SQLGlotCompiler(abc.ABC):
         # substitute parameters immediately to avoid having to define a
         # ScalarParameter translation rule
         params = self._prepare_params(params)
+        if self.lowered_ops:
+            op = op.replace(reduce(operator.or_, self.lowered_ops.values()))
         op, ctes = sqlize(
             op,
             params=params,
@@ -1320,61 +1388,6 @@ class SQLGlotCompiler(abc.ABC):
             sg.select(STAR, copy=False).distinct(copy=False).from_(parent, copy=False)
         )
 
-    def visit_DropNa(self, op, *, parent, how, subset):
-        if subset is None:
-            subset = [
-                sg.column(
-                    name, table=parent.alias_or_name, quoted=self.quoted, copy=False
-                )
-                for name in op.schema.names
-            ]
-
-        if subset:
-            predicate = reduce(
-                sg.and_ if how == "any" else sg.or_,
-                (sg.not_(col.is_(NULL), copy=False) for col in subset),
-            )
-        elif how == "all":
-            predicate = FALSE
-        else:
-            predicate = None
-
-        if predicate is None:
-            return parent
-
-        try:
-            return parent.where(predicate, copy=False)
-        except AttributeError:
-            return (
-                sg.select(STAR, copy=False)
-                .from_(parent, copy=False)
-                .where(predicate, copy=False)
-            )
-
-    def visit_FillNa(self, op, *, parent, replacements):
-        if isinstance(replacements, Mapping):
-            mapping = replacements
-        else:
-            mapping = {
-                name: replacements
-                for name, dtype in op.schema.items()
-                if dtype.nullable
-            }
-        exprs = {
-            col: (
-                self.f.coalesce(
-                    sg.column(col, quoted=self.quoted, copy=False),
-                    sge.convert(alt),
-                )
-                if (alt := mapping.get(col)) is not None
-                else sg.column(col, quoted=self.quoted)
-            )
-            for col in op.schema.keys()
-        }
-        return sg.select(*self._cleanup_names(exprs), copy=False).from_(
-            parent, copy=False
-        )
-
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
@@ -1498,3 +1511,8 @@ class SQLGlotCompiler(abc.ABC):
         raise com.UnsupportedOperationError(
             f"{type(op).__name__!r} operation is not supported in the {self.dialect} backend"
         )
+
+
+# `__init_subclass__` is uncalled for subclasses - we manually call it here to
+# autogenerate the base class implementations as well.
+SQLGlotCompiler.__init_subclass__()

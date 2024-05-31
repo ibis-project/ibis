@@ -15,12 +15,10 @@ from ibis.backends.sql.rewrites import (
     LastValue,
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
-    replace_log2,
-    replace_log10,
+    lower_log2,
+    lower_log10,
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 @public
@@ -33,10 +31,6 @@ class OracleCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        replace_log2,
-        replace_log10,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -49,39 +43,42 @@ class OracleCompiler(SQLGlotCompiler):
     NEG_INF = sge.Literal.number("-binary_double_infinity")
     """Backend's negative infinity literal."""
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.Array,
-            ops.ArrayFlatten,
-            ops.ArrayMap,
-            ops.ArrayStringJoin,
-            ops.First,
-            ops.Last,
-            ops.Mode,
-            ops.MultiQuantile,
-            ops.RegexSplit,
-            ops.StringSplit,
-            ops.TimeTruncate,
-            ops.Bucket,
-            ops.TimestampBucket,
-            ops.TimeDelta,
-            ops.DateDelta,
-            ops.TimestampDelta,
-            ops.TimestampFromYMDHMS,
-            ops.TimeFromHMS,
-            ops.IntervalFromInteger,
-            ops.DayOfWeekIndex,
-            ops.DayOfWeekName,
-            ops.DateDiff,
-            ops.ExtractEpochSeconds,
-            ops.ExtractWeekOfYear,
-            ops.ExtractDayOfYear,
-            ops.RowID,
-            ops.RandomUUID,
-        )
+    LOWERED_OPS = {
+        ops.Log2: lower_log2,
+        ops.Log10: lower_log10,
+    }
+
+    UNSUPPORTED_OPS = (
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.Array,
+        ops.ArrayFlatten,
+        ops.ArrayMap,
+        ops.ArrayStringJoin,
+        ops.First,
+        ops.Last,
+        ops.Mode,
+        ops.MultiQuantile,
+        ops.RegexSplit,
+        ops.StringSplit,
+        ops.TimeTruncate,
+        ops.Bucket,
+        ops.TimestampBucket,
+        ops.TimeDelta,
+        ops.DateDelta,
+        ops.TimestampDelta,
+        ops.TimestampFromYMDHMS,
+        ops.TimeFromHMS,
+        ops.IntervalFromInteger,
+        ops.DayOfWeekIndex,
+        ops.DayOfWeekName,
+        ops.DateDiff,
+        ops.ExtractEpochSeconds,
+        ops.ExtractWeekOfYear,
+        ops.ExtractDayOfYear,
+        ops.RowID,
+        ops.RandomUUID,
     )
 
     SIMPLE_OPS = {
@@ -97,12 +94,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.Strip: "trim",
         ops.Hash: "ora_hash",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg) for arg in args)
-        return func(*args)
 
     @staticmethod
     def _generate_groups(groups):
@@ -453,3 +444,6 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
+
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)

@@ -1,3 +1,5 @@
+"""Operations for numeric expressions."""
+
 from __future__ import annotations
 
 import operator
@@ -24,16 +26,22 @@ class NumericBinary(Binary):
 
 @public
 class Add(NumericBinary):
+    """Add two values."""
+
     dtype = rlz.numeric_like("args", operator.add)
 
 
 @public
 class Multiply(NumericBinary):
+    """Multiply two values."""
+
     dtype = rlz.numeric_like("args", operator.mul)
 
 
 @public
 class Power(NumericBinary):
+    """Raise the left value to the power of the right value."""
+
     @property
     def dtype(self):
         dtypes = (arg.dtype for arg in self.args)
@@ -45,26 +53,36 @@ class Power(NumericBinary):
 
 @public
 class Subtract(NumericBinary):
+    """Subtract the right value from the left value."""
+
     dtype = rlz.numeric_like("args", operator.sub)
 
 
 @public
 class Divide(NumericBinary):
+    """Divide the left value by the right value."""
+
     dtype = dt.float64
 
 
 @public
 class FloorDivide(Divide):
+    """Divide the left value by the right value and round down to the nearest integer."""
+
     dtype = dt.int64
 
 
 @public
 class Modulus(NumericBinary):
+    """Return the remainder after the division of the left value by the right value."""
+
     dtype = rlz.numeric_like("args", operator.mod)
 
 
 @public
 class Negate(Unary):
+    """Negate the value."""
+
     arg: Value[dt.Numeric | dt.Interval]
 
     dtype = rlz.dtype_like("arg")
@@ -72,6 +90,8 @@ class Negate(Unary):
 
 @public
 class IsNan(Unary):
+    """Check if the value is NaN."""
+
     arg: Value[dt.Floating]
 
     dtype = dt.boolean
@@ -79,6 +99,8 @@ class IsNan(Unary):
 
 @public
 class IsInf(Unary):
+    """Check if the value is infinite."""
+
     arg: Value[dt.Floating]
 
     dtype = dt.boolean
@@ -95,15 +117,7 @@ class Abs(Unary):
 
 @public
 class Ceil(Unary):
-    """Round up to the nearest integer value greater than or equal to this value.
-
-    Returns
-    -------
-    DecimalValue | IntegerValue
-        Decimal values: yield decimal
-        Other numeric values: yield integer (int32)
-
-    """
+    """Round up to the nearest integer value greater than or equal to this value."""
 
     arg: SoftNumeric
 
@@ -117,15 +131,7 @@ class Ceil(Unary):
 
 @public
 class Floor(Unary):
-    """Round down to the nearest integer value less than or equal to this value.
-
-    Returns
-    -------
-    DecimalValue | IntegerValue
-        Decimal values: yield decimal
-        Other numeric values: yield integer (int32)
-
-    """
+    """Round down to the nearest integer value less than or equal to this value."""
 
     arg: SoftNumeric
 
@@ -139,6 +145,8 @@ class Floor(Unary):
 
 @public
 class Round(Value):
+    """Round a value."""
+
     arg: StrictNumeric
     # TODO(kszucs): the default should be 0 instead of being None
     digits: Optional[Integer] = None
@@ -157,6 +165,8 @@ class Round(Value):
 
 @public
 class Clip(Value):
+    """Clip a value to a specified range."""
+
     arg: StrictNumeric
     lower: Optional[StrictNumeric] = None
     upper: Optional[StrictNumeric] = None
@@ -167,6 +177,8 @@ class Clip(Value):
 
 @public
 class BaseConvert(Value):
+    """Convert a number from one base to another."""
+
     # TODO(kszucs): this should be Integer simply
     arg: Value[dt.Integer | dt.String]
     from_base: Integer
@@ -178,6 +190,8 @@ class BaseConvert(Value):
 
 @public
 class MathUnary(Unary):
+    """Base class for unary math operations."""
+
     arg: SoftNumeric
 
     @attribute
@@ -185,7 +199,6 @@ class MathUnary(Unary):
         return dt.higher_precedence(self.arg.dtype, dt.float64)
 
 
-@public
 class ExpandingMathUnary(MathUnary):
     @attribute
     def dtype(self):
@@ -197,11 +210,13 @@ class ExpandingMathUnary(MathUnary):
 
 @public
 class Exp(ExpandingMathUnary):
-    pass
+    """Exponential function."""
 
 
 @public
 class Sign(Unary):
+    """Sign of the value."""
+
     arg: SoftNumeric
 
     dtype = rlz.dtype_like("arg")
@@ -209,16 +224,20 @@ class Sign(Unary):
 
 @public
 class Sqrt(MathUnary):
-    pass
+    """Square root of the value."""
 
 
 @public
 class Logarithm(MathUnary):
+    """Base class for logarithmic operations."""
+
     arg: StrictNumeric
 
 
 @public
 class Log(Logarithm):
+    """Logarithm with a specific base."""
+
     base: Optional[StrictNumeric] = None
 
 
@@ -245,9 +264,6 @@ class Degrees(ExpandingMathUnary):
 @public
 class Radians(MathUnary):
     """Converts degrees to radians."""
-
-
-# TRIGONOMETRIC OPERATIONS
 
 
 @public
@@ -307,6 +323,8 @@ class Tan(TrigonometricUnary):
 
 @public
 class BitwiseNot(Unary):
+    """Bitwise NOT operation."""
+
     arg: Integer
 
     dtype = rlz.numeric_like("args", operator.invert)
@@ -314,32 +332,44 @@ class BitwiseNot(Unary):
 
 @public
 class BitwiseBinary(Binary):
+    """Base class for bitwise binary operations."""
+
     left: Integer
     right: Integer
 
 
 @public
 class BitwiseAnd(BitwiseBinary):
+    """Bitwise AND operation."""
+
     dtype = rlz.numeric_like("args", operator.and_)
 
 
 @public
 class BitwiseOr(BitwiseBinary):
+    """Bitwise OR operation."""
+
     dtype = rlz.numeric_like("args", operator.or_)
 
 
 @public
 class BitwiseXor(BitwiseBinary):
+    """Bitwise XOR operation."""
+
     dtype = rlz.numeric_like("args", operator.xor)
 
 
 @public
 class BitwiseLeftShift(BitwiseBinary):
+    """Bitwise left shift operation."""
+
     shape = rlz.shape_like("args")
     dtype = dt.int64
 
 
 @public
 class BitwiseRightShift(BitwiseBinary):
+    """Bitwise right shift operation."""
+
     shape = rlz.shape_like("args")
     dtype = dt.int64

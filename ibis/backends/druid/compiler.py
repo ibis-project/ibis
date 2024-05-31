@@ -6,14 +6,9 @@ import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
-from ibis.backends.sql.rewrites import (
-    rewrite_capitalize,
-    rewrite_sample_as_filter,
-)
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class DruidCompiler(SQLGlotCompiler):
@@ -21,62 +16,55 @@ class DruidCompiler(SQLGlotCompiler):
 
     dialect = Druid
     type_mapper = DruidType
-    rewrites = (
-        rewrite_sample_as_filter,
-        rewrite_stringslice,
-        *(
-            rewrite
-            for rewrite in SQLGlotCompiler.rewrites
-            if rewrite is not rewrite_capitalize
-        ),
-    )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ApproxMedian,
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.ArrayDistinct,
-            ops.ArrayFilter,
-            ops.ArrayFlatten,
-            ops.ArrayIntersect,
-            ops.ArrayMap,
-            ops.ArraySort,
-            ops.ArrayUnion,
-            ops.ArrayZip,
-            ops.CountDistinctStar,
-            ops.Covariance,
-            ops.DateDelta,
-            ops.DayOfWeekIndex,
-            ops.DayOfWeekName,
-            ops.First,
-            ops.IntervalFromInteger,
-            ops.IsNan,
-            ops.IsInf,
-            ops.Last,
-            ops.Levenshtein,
-            ops.Median,
-            ops.MultiQuantile,
-            ops.Quantile,
-            ops.RandomUUID,
-            ops.RegexReplace,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.StandardDev,
-            ops.Strftime,
-            ops.StringAscii,
-            ops.StringSplit,
-            ops.StringToDate,
-            ops.StringToTimestamp,
-            ops.TimeDelta,
-            ops.TimestampBucket,
-            ops.TimestampDelta,
-            ops.Translate,
-            ops.TypeOf,
-            ops.Unnest,
-            ops.Variance,
-        )
+    agg = AggGen(supports_filter=True)
+
+    LOWERED_OPS = {ops.Capitalize: None}
+
+    UNSUPPORTED_OPS = (
+        ops.ApproxMedian,
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.ArrayDistinct,
+        ops.ArrayFilter,
+        ops.ArrayFlatten,
+        ops.ArrayIntersect,
+        ops.ArrayMap,
+        ops.ArraySort,
+        ops.ArrayUnion,
+        ops.ArrayZip,
+        ops.CountDistinctStar,
+        ops.Covariance,
+        ops.DateDelta,
+        ops.DayOfWeekIndex,
+        ops.DayOfWeekName,
+        ops.First,
+        ops.IntervalFromInteger,
+        ops.IsNan,
+        ops.IsInf,
+        ops.Last,
+        ops.Levenshtein,
+        ops.Median,
+        ops.MultiQuantile,
+        ops.Quantile,
+        ops.RandomUUID,
+        ops.RegexReplace,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.StandardDev,
+        ops.Strftime,
+        ops.StringAscii,
+        ops.StringSplit,
+        ops.StringToDate,
+        ops.StringToTimestamp,
+        ops.TimeDelta,
+        ops.TimestampBucket,
+        ops.TimestampDelta,
+        ops.Translate,
+        ops.TypeOf,
+        ops.Unnest,
+        ops.Variance,
     )
 
     SIMPLE_OPS = {
@@ -93,12 +81,6 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ApproxCountDistinct: "approx_count_distinct",
         ops.StringContains: "contains_string",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sg.exp.Filter(this=expr, expression=sg.exp.Where(this=where))
-        return expr
 
     def visit_Modulus(self, op, *, left, right):
         return self.f.anon.mod(left, right)

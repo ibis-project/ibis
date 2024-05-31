@@ -16,7 +16,7 @@ import types
 import uuid
 import warnings
 from types import ModuleType
-from typing import TYPE_CHECKING, Any, Callable, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from uuid import uuid4
 
 import toolz
@@ -24,7 +24,7 @@ import toolz
 from ibis.common.typing import Coercible
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Callable, Iterator, Sequence
     from numbers import Real
     from pathlib import Path
 
@@ -446,10 +446,7 @@ def experimental(func):
 def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints."""
 
-    if sys.version_info < (3, 10):
-        eps = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        eps = importlib.metadata.entry_points(group="ibis.backends")
+    eps = importlib.metadata.entry_points(group="ibis.backends")
     return sorted(eps)
 
 
@@ -510,6 +507,13 @@ def normalize_filename(source: str | Path) -> str:
 
     source = _absolufy_paths(source)
     return source
+
+
+def normalize_filenames(source_list):
+    # Promote to list
+    source_list = promote_list(source_list)
+
+    return list(map(normalize_filename, source_list))
 
 
 def gen_name(namespace: str) -> str:

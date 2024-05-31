@@ -1,3 +1,5 @@
+"""Operations for computing histograms."""
+
 from __future__ import annotations
 
 import numbers  # noqa: TCH003
@@ -14,6 +16,8 @@ from ibis.expr.operations.core import Column, Value
 
 @public
 class Bucket(Value):
+    """Compute the bucket number of a numeric column."""
+
     arg: Column[dt.Numeric | dt.Boolean]
     buckets: VarTuple[numbers.Real]
     closed: Literal["left", "right"] = "left"

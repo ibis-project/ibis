@@ -14,9 +14,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
-    rewrite_sample_as_filter,
 )
-from ibis.expr.rewrites import rewrite_stringslice
 
 
 class ExasolCompiler(SQLGlotCompiler):
@@ -25,71 +23,67 @@ class ExasolCompiler(SQLGlotCompiler):
     dialect = Exasol
     type_mapper = ExasolType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_empty_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.AnalyticVectorizedUDF,
-            ops.ApproxMedian,
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.ArrayDistinct,
-            ops.ArrayFilter,
-            ops.ArrayFlatten,
-            ops.ArrayIntersect,
-            ops.ArrayMap,
-            ops.ArraySort,
-            ops.ArrayStringJoin,
-            ops.ArrayUnion,
-            ops.ArrayZip,
-            ops.BitwiseNot,
-            ops.Covariance,
-            ops.CumeDist,
-            ops.DateAdd,
-            ops.DateSub,
-            ops.DateFromYMD,
-            ops.DayOfWeekIndex,
-            ops.ElementWiseVectorizedUDF,
-            ops.First,
-            ops.IntervalFromInteger,
-            ops.IsInf,
-            ops.IsNan,
-            ops.Last,
-            ops.Levenshtein,
-            ops.Median,
-            ops.MultiQuantile,
-            ops.Quantile,
-            ops.RandomUUID,
-            ops.ReductionVectorizedUDF,
-            ops.RegexExtract,
-            ops.RegexReplace,
-            ops.RegexSearch,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.StandardDev,
-            ops.Strftime,
-            ops.StringJoin,
-            ops.StringSplit,
-            ops.StringToDate,
-            ops.StringToTimestamp,
-            ops.TimeDelta,
-            ops.TimestampAdd,
-            ops.TimestampBucket,
-            ops.TimestampDelta,
-            ops.TimestampDiff,
-            ops.TimestampSub,
-            ops.TypeOf,
-            ops.Unnest,
-            ops.Variance,
-        )
+    UNSUPPORTED_OPS = (
+        ops.AnalyticVectorizedUDF,
+        ops.ApproxMedian,
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.ArrayDistinct,
+        ops.ArrayFilter,
+        ops.ArrayFlatten,
+        ops.ArrayIntersect,
+        ops.ArrayMap,
+        ops.ArraySort,
+        ops.ArrayStringJoin,
+        ops.ArrayUnion,
+        ops.ArrayZip,
+        ops.BitwiseNot,
+        ops.Covariance,
+        ops.CumeDist,
+        ops.DateAdd,
+        ops.DateSub,
+        ops.DateFromYMD,
+        ops.DayOfWeekIndex,
+        ops.ElementWiseVectorizedUDF,
+        ops.First,
+        ops.IntervalFromInteger,
+        ops.IsInf,
+        ops.IsNan,
+        ops.Last,
+        ops.Levenshtein,
+        ops.Median,
+        ops.MultiQuantile,
+        ops.Quantile,
+        ops.RandomUUID,
+        ops.ReductionVectorizedUDF,
+        ops.RegexExtract,
+        ops.RegexReplace,
+        ops.RegexSearch,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.StandardDev,
+        ops.Strftime,
+        ops.StringJoin,
+        ops.StringSplit,
+        ops.StringToDate,
+        ops.StringToTimestamp,
+        ops.TimeDelta,
+        ops.TimestampAdd,
+        ops.TimestampBucket,
+        ops.TimestampDelta,
+        ops.TimestampDiff,
+        ops.TimestampSub,
+        ops.TypeOf,
+        ops.Unnest,
+        ops.Variance,
     )
 
     SIMPLE_OPS = {
@@ -108,12 +102,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ):
             return None
         return spec
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-        return func(*args)
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:
@@ -211,6 +199,9 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IW"), op.dtype)
+
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.concat(

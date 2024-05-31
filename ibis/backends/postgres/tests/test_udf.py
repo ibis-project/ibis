@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import functools
-import sys
 
 import pytest
 
@@ -115,11 +114,6 @@ def test_udf(test_database, table):
     assert result["mult_result"].iat[0] == 8
 
 
-@pytest.mark.xfail(
-    condition=sys.version_info[:2] < (3, 9),
-    raises=TypeError,
-    reason="no straightforward way to use new (Python 3.9) annotations syntax",
-)
 def test_array_type(test_database, table):
     """Test that usage of Array types work Other scalar types can be
     represented either by the class or an instance, but Array types work

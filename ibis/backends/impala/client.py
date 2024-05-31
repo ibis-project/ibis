@@ -109,6 +109,11 @@ class ImpalaTable(ir.Table):
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
+        if not set(self.columns).difference(obj.columns):
+            # project out using column order of parent table
+            # if column names match
+            obj = obj.select(self.columns)
+
         self._client._run_pre_execute_hooks(obj)
 
         expr = obj

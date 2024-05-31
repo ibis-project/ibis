@@ -40,6 +40,7 @@ def gzip_csv(data_dir, tmp_path):
     return str(f.absolute())
 
 
+# TODO: rewrite or delete test when register api is removed
 @pytest.mark.parametrize(
     ("fname", "in_table_name", "out_table_name"),
     [
@@ -74,7 +75,7 @@ def gzip_csv(data_dir, tmp_path):
             "fancy_stones2",
             id="multi_csv",
             marks=pytest.mark.notyet(
-                ["polars", "datafusion"],
+                ["datafusion"],
                 reason="doesn't accept multiple files to scan or read",
             ),
         ),
@@ -99,13 +100,15 @@ def gzip_csv(data_dir, tmp_path):
 )
 def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     with pushd(data_dir / "csv"):
-        table = con.register(fname, table_name=in_table_name)
+        with pytest.warns(FutureWarning, match="v9.1"):
+            table = con.register(fname, table_name=in_table_name)
 
     assert any(out_table_name in t for t in con.list_tables())
     if con.name != "datafusion":
         table.count().execute()
 
 
+# TODO: rewrite or delete test when register api is removed
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
@@ -126,11 +129,13 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
 )
 def test_register_csv_gz(con, data_dir, gzip_csv):
     with pushd(data_dir):
-        table = con.register(gzip_csv)
+        with pytest.warns(FutureWarning, match="v9.1"):
+            table = con.register(gzip_csv)
 
     assert table.count().execute()
 
 
+# TODO: rewrite or delete test when register api is removed
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -154,7 +159,8 @@ def test_register_with_dotted_name(con, data_dir, tmp_path):
     f.parent.mkdir()
     data = data_dir.joinpath("csv", "diamonds.csv").read_bytes()
     f.write_bytes(data)
-    table = con.register(str(f.absolute()))
+    with pytest.warns(FutureWarning, match="v9.1"):
+        table = con.register(str(f.absolute()))
 
     if con.name != "datafusion":
         table.count().execute()
@@ -173,6 +179,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
     return pac.read_csv(data_dir / f"{table_name}.csv", convert_options=convert_options)
 
 
+# TODO: rewrite or delete test when register api is removed
 @pytest.mark.parametrize(
     ("fname", "in_table_name", "out_table_name"),
     [
@@ -216,14 +223,16 @@ def test_register_parquet(
     pq.write_table(table, tmp_path / fname.name)
 
     with pushd(tmp_path):
-        table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
+        with pytest.warns(FutureWarning, match="v9.1"):
+            table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
-    assert any(out_table_name in t for t in con.list_tables())
+        assert any(out_table_name in t for t in con.list_tables())
 
     if con.name != "datafusion":
         table.count().execute()
 
 
+# TODO: rewrite or delete test when register api is removed
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -255,15 +264,20 @@ def test_register_iterator_parquet(
     pq.write_table(table, tmp_path / "functional_alltypes.parquet")
 
     with pushd(tmp_path):
-        table = con.register(
-            ["parquet://functional_alltypes.parquet", "functional_alltypes.parquet"],
-            table_name=None,
-        )
+        with pytest.warns(FutureWarning, match="v9.1"):
+            table = con.register(
+                [
+                    "parquet://functional_alltypes.parquet",
+                    "functional_alltypes.parquet",
+                ],
+                table_name=None,
+            )
 
     assert any("ibis_read_parquet" in t for t in con.list_tables())
     assert table.count().execute()
 
 
+# TODO: modify test to use read_in_memory when implemented xref: 8858
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
@@ -287,14 +301,17 @@ def test_register_pandas(con):
     pd = pytest.importorskip("pandas")
     df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
-    t = con.register(df)
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t = con.register(df)
     assert t.x.sum().execute() == 6
 
-    t = con.register(df, "my_table")
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t = con.register(df, "my_table")
     assert t.op().name == "my_table"
     assert t.x.sum().execute() == 6
 
 
+# TODO: modify test to use read_in_memory when implemented xref: 8858
 @pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.notyet(
     [
@@ -318,7 +335,8 @@ def test_register_pyarrow_tables(con):
     pa = pytest.importorskip("pyarrow")
     pa_t = pa.Table.from_pydict({"x": [1, 2, 3], "y": ["a", "b", "c"]})
 
-    t = con.register(pa_t)
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t = con.register(pa_t)
     assert t.x.sum().execute() == 6
 
 
@@ -351,8 +369,9 @@ def test_csv_reregister_schema(con, tmp_path):
             ]
         )
 
-    # For a full file scan, expect correct schema based on final row
-    foo_table = con.register(foo, table_name="same")
+    with pytest.warns(FutureWarning, match="v9.1"):
+        # For a full file scan, expect correct schema based on final row
+        foo_table = con.register(foo, table_name="same")
     result_schema = foo_table.schema()
 
     assert result_schema.names == ("cola", "colb", "colc")

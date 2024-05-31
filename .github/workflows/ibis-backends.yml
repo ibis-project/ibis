@@ -52,8 +52,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.11"
+          - "3.10"
+          - "3.12"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -65,7 +65,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras bigquery
@@ -95,8 +95,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.11"
+          - "3.10"
+          - "3.12"
         backend:
           - name: duckdb
             title: DuckDB
@@ -104,18 +104,12 @@ jobs:
             extras:
               - duckdb
               - deltalake
+              - geospatial
               - examples
               - decompiler
               - polars
             additional_deps:
               - torch
-          # TODO: remove this duckdb job once the next duckdb_spatial is released
-          - name: duckdb
-            title: DuckDB + Geospatial
-            extras:
-              - geospatial
-            additional_deps:
-              - "duckdb==0.9.2"
           - name: clickhouse
             title: ClickHouse
             services:
@@ -147,6 +141,7 @@ jobs:
             extras:
               - mysql
               - geospatial
+              - polars
             sys-deps:
               - libgeos-dev
           - name: postgres
@@ -192,6 +187,7 @@ jobs:
             title: MS SQL Server
             extras:
               - mssql
+              - polars
             services:
               - mssql
             sys-deps:
@@ -222,6 +218,7 @@ jobs:
             serial: true
             extras:
               - oracle
+              - polars
             services:
               - oracle
           - name: flink
@@ -243,12 +240,32 @@ jobs:
               extras:
                 - dask
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.11"
             backend:
-              name: dask
-              title: Dask
+              name: flink
+              title: Flink
+              serial: true
               extras:
-                - dask
+                - flink
+              additional_deps:
+                - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
+              services:
+                - flink
+          - os: ubuntu-latest
+            python-version: "3.11"
+            backend:
+              name: impala
+              title: Impala
+              serial: true
+              extras:
+                - impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
         exclude:
           - os: windows-latest
             backend:
@@ -257,6 +274,7 @@ jobs:
               extras:
                 - mysql
                 - geospatial
+                - polars
               services:
                 - mysql
               sys-deps:
@@ -304,6 +322,21 @@ jobs:
                 - postgres
               sys-deps:
                 - libgeos-dev
+          # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend:
+              name: impala
+              title: Impala
+              serial: true
+              extras:
+                - impala
+              services:
+                - impala
+                - kudu
+              sys-deps:
+                - cmake
+                - ninja-build
           - os: windows-latest
             backend:
               name: impala
@@ -323,6 +356,7 @@ jobs:
               title: MS SQL Server
               extras:
                 - mssql
+                - polars
               services:
                 - mssql
               sys-deps:
@@ -352,8 +386,22 @@ jobs:
               serial: true
               extras:
                 - oracle
+                - polars
               services:
                 - oracle
+          - os: ubuntu-latest
+            python-version: "3.12"
+            backend:
+              name: flink
+              title: Flink
+              serial: true
+              extras:
+                - flink
+              additional_deps:
+                - "'apache-flink < 1.20.0'"
+                - "'pandas < 2.2'"
+              services:
+                - flink
           - os: windows-latest
             backend:
               name: flink
@@ -409,7 +457,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: pip install 'poetry==1.8.2'
+        run: pip install 'poetry==1.8.3'
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
@@ -468,8 +516,8 @@ jobs:
           - ubuntu-latest
           - windows-latest
         python-version:
-          - "3.9"
-          - "3.11"
+          - "3.10"
+          - "3.12"
         backend:
           - name: dask
             title: Dask
@@ -515,7 +563,7 @@ jobs:
               extras:
                 - postgres
                 - geospatial
-          - python-version: "3.11"
+          - python-version: "3.12"
             backend:
               name: postgres
               title: PostgreSQL
@@ -532,7 +580,7 @@ jobs:
               extras:
                 - postgres
                 - geospatial
-          - python-version: "3.11"
+          - python-version: "3.12"
             backend:
               name: dask
               title: Dask
@@ -573,7 +621,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.8.2'
+        run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
       - name: remove incompatible deps
         # it requires a version of pandas that min versions are not compatible with
@@ -623,7 +671,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python-version: "3.9"
+          - python-version: "3.10"
             pyspark-version: "3.3"
             deps:
               - "'pandas@<2'"
@@ -661,7 +709,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install poetry
-        run: python -m pip install --upgrade pip 'poetry==1.8.2'
+        run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
       - name: remove lonboard
         # it requires a version of pandas that pyspark is not compatible with

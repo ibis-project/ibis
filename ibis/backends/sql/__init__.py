@@ -391,6 +391,17 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     ) -> None:
         """Insert data into a table.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of `table` is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         table_name
@@ -405,15 +416,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         overwrite
             If `True` then replace existing contents of table
 
@@ -429,25 +431,52 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
         self._run_pre_execute_hooks(obj)
 
-        compiler = self.compiler
-        quoted = compiler.quoted
-        query = sge.insert(
-            expression=self.compile(obj),
-            into=sg.table(table_name, db=db, catalog=catalog, quoted=quoted),
-            columns=[
-                sg.to_identifier(col, quoted=quoted)
-                for col in self.get_schema(table_name).names
-            ],
-            dialect=compiler.dialect,
+        query = self._build_insert_query(
+            target=table_name, source=obj, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
             pass
 
+    def _build_insert_query(
+        self, *, target: str, source, db: str | None = None, catalog: str | None = None
+    ):
+        compiler = self.compiler
+        quoted = compiler.quoted
+        # Compare the columns between the target table and the object to be inserted
+        # If they don't match, assume auto-generated column names and use positional
+        # ordering.
+        source_cols = source.columns
+        columns = (
+            source_cols
+            if not set(target_cols := self.get_schema(target).names).difference(
+                source_cols
+            )
+            else target_cols
+        )
+
+        query = sge.insert(
+            expression=self.compile(source),
+            into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
+            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
+            dialect=compiler.dialect,
+        )
+        return query
+
     def truncate_table(
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> None:
         """Delete all rows from a table.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
 
         Parameters
         ----------
@@ -459,16 +488,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
         schema
             [deprecated] Schema name
 

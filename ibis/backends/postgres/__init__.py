@@ -8,7 +8,7 @@ import textwrap
 from functools import partial
 from itertools import repeat, takewhile
 from operator import itemgetter
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 import numpy as np
@@ -32,7 +32,10 @@ from ibis.backends.sql.compiler import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
 
@@ -302,6 +305,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     ) -> list[str]:
         """List the tables in the database.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         like
@@ -311,18 +325,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
-
         """
         if schema is not None:
             self._warn_schema()
@@ -662,7 +664,12 @@ $$""".format(**self._get_udf_source(udf_node))
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,

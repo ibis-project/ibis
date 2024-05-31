@@ -28,7 +28,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:11.3.2
+    image: mariadb:11.4.2
     ports:
       - 3306:3306
     networks:
@@ -77,7 +77,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:16.2-alpine
+    image: postgres:16.3-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -94,7 +94,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.5.1
+    image: bitnami/minio:2024.5.28
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -156,7 +156,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:446
+    image: trinodb/trino:448
     ports:
       - 8080:8080
     networks:
@@ -167,7 +167,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:16.2-alpine
+    image: postgres:16.3-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword
@@ -362,7 +362,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:7.1.26
+    image: exasol/docker-db:8.27.0
     privileged: true
     ports:
       - 8563:8563
@@ -372,7 +372,7 @@ services:
       timeout: 90s
       test:
         - CMD-SHELL
-        - /usr/opt/EXASuite-7/EXASolution-7.*/bin/Console/exaplus -c 127.0.0.1:8563 -u sys -p exasol -encryption OFF <<< 'SELECT 1'
+        - /opt/exasol/db-8.*/bin/Console/exaplus -q -x -c 127.0.0.1:8563 -u sys -p exasol -jdbcparam validateservercertificate=0 -sql 'SELECT 1;'
     networks:
       - exasol
     volumes:

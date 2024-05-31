@@ -15,7 +15,10 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class IbisError(Exception):
@@ -141,6 +144,16 @@ class InvalidDecoratorError(IbisError):
     def __str__(self) -> str:
         name, lines = self.args
         return f"Only the `@udf` decorator is allowed in user-defined function: `{name}`; found lines {lines}"
+
+
+class ConflictingValuesError(ValueError):
+    """A single key has conflicting values in two different mappings."""
+
+    def __init__(self, conflicts: set[tuple[Any, Any, Any]]):
+        self.conflicts = conflicts
+        msgs = [f"  `{key}`: {v1} != {v2}" for key, v1, v2 in conflicts]
+        msg = "Conflicting values for keys:\n" + "\n".join(msgs)
+        super().__init__(msg)
 
 
 def mark_as_unsupported(f: Callable) -> Callable:

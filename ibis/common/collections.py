@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from public import public
 
 from ibis.common.bases import Abstract, Hashable
+from ibis.common.exceptions import ConflictingValuesError
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -202,12 +203,13 @@ class MapSet(Mapping[K, V]):
         # A key-value pair is conflicting if the key is the same but the value is
         # different.
         common_keys = self.keys() & other.keys()
-        for key in common_keys:
-            left, right = self[key], other[key]
-            if left != right:
-                raise ValueError(
-                    f"Conflicting values for key `{key}`: {left} != {right}"
-                )
+        conflicts = {
+            (key, self[key], other[key])
+            for key in common_keys
+            if self[key] != other[key]
+        }
+        if conflicts:
+            raise ConflictingValuesError(conflicts)
         return common_keys
 
     def __ge__(self, other: collections.abc.Mapping) -> bool:

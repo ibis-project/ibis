@@ -13,7 +13,7 @@ from ibis.common.patterns import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
-    from typing_extensions import TypeAlias
+    from typing import TypeAlias
 
 
 class Schema(Concrete, Coercible, MapSet):
@@ -69,6 +69,8 @@ class Schema(Concrete, Coercible, MapSet):
     def equals(self, other: Schema) -> bool:
         """Return whether `other` is equal to `self`.
 
+        The order of fields in the schema is taken into account when computing equality.
+
         Parameters
         ----------
         other
@@ -77,12 +79,13 @@ class Schema(Concrete, Coercible, MapSet):
         Examples
         --------
         >>> import ibis
-        >>> first = ibis.schema({"a": "int"})
-        >>> second = ibis.schema({"a": "int"})
-        >>> assert first.equals(second)
-        >>> third = ibis.schema({"a": "array<int>"})
-        >>> assert not first.equals(third)
-
+        >>> xy = ibis.schema({"x": int, "y": str})
+        >>> xy2 = ibis.schema({"x": int, "y": str})
+        >>> yx = ibis.schema({"y": str, "x": int})
+        >>> xy_float = ibis.schema({"x": float, "y": str})
+        >>> assert xy.equals(xy2)
+        >>> assert not xy.equals(yx)
+        >>> assert not xy.equals(xy_float)
         """
         if not isinstance(other, Schema):
             raise TypeError(

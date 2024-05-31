@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -20,9 +20,10 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.backends.polars.compiler import translate
 from ibis.backends.sql.dialects import Polars
-from ibis.expr.rewrites import rewrite_stringslice
+from ibis.common.dispatch import lazy_singledispatch
+from ibis.expr.rewrites import lower_stringslice
 from ibis.formats.polars import PolarsSchema
-from ibis.util import gen_name, normalize_filename
+from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -74,6 +75,10 @@ class Backend(BaseBackend, NoUrl):
         schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
+    @deprecated(
+        as_of="9.1",
+        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
+    )
     def register(
         self,
         source: str | Path | Any,
@@ -158,7 +163,10 @@ class Backend(BaseBackend, NoUrl):
         return self.table(name)
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path | list[str | Path] | tuple[str | Path],
+        table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV file as a table.
 
@@ -180,16 +188,20 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filename(path)
+        source_list = normalize_filenames(path)
+        # Flatten the list if there's only one element because Polars
+        # can't handle glob strings, or compressed CSVs in a single-element list
+        if len(source_list) == 1:
+            source_list = source_list[0]
         table_name = table_name or gen_name("read_csv")
         try:
-            table = pl.scan_csv(path, **kwargs)
+            table = pl.scan_csv(source_list, **kwargs)
             # triggers a schema computation to handle compressed csv inference
             # and raise a compute error
             table.schema  # noqa: B018
         except pl.exceptions.ComputeError:
             # handles compressed csvs
-            table = pl.read_csv(path, **kwargs)
+            table = pl.read_csv(source_list, **kwargs)
 
         self._add_table(table_name, table)
         return self.table(table_name)
@@ -286,6 +298,7 @@ class Backend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or gen_name("read_in_memory")
+
         self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
         return self.table(table_name)
 
@@ -340,16 +353,20 @@ class Backend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pa.RecordBatchReader
+        | pa.RecordBatch
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: ibis.Schema | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        if schema is not None and obj is None:
-            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
-
         if database is not None:
             raise com.IbisError(
                 "Passing `database` to the Polars backend create_table method has no "
@@ -367,14 +384,34 @@ class Backend(BaseBackend, NoUrl):
                 f"Table {name} already exists. Use overwrite=True to clobber existing tables"
             )
 
-        if isinstance(obj, ir.Table):
-            obj = self.to_pyarrow(obj)
+        if schema is not None and obj is None:
+            obj = pl.LazyFrame([], schema=PolarsSchema.from_ibis(schema))
+            self._add_table(name, obj)
+        else:
+            _read_in_memory(obj, name, self)
 
-        if not isinstance(obj, (pl.DataFrame, pl.LazyFrame)):
-            obj = pl.LazyFrame(obj)
-
-        self._add_table(name, obj)
         return self.table(name)
+
+    def create_view(
+        self,
+        name: str,
+        obj: ir.Table,
+        *,
+        database: str | None = None,
+        overwrite: bool = False,
+    ) -> ir.Table:
+        return self.create_table(
+            name, obj=obj, temp=None, database=database, overwrite=overwrite
+        )
+
+    def drop_table(self, name: str, *, force: bool = False) -> None:
+        if name in self._tables:
+            del self._tables[name]
+        elif not force:
+            raise com.IbisError(f"Table {name!r} does not exist")
+
+    def drop_view(self, name: str, *, force: bool = False) -> None:
+        self.drop_table(name, force=force)
 
     def get_schema(self, table_name):
         return self._tables[table_name].schema
@@ -406,7 +443,7 @@ class Backend(BaseBackend, NoUrl):
 
         node = expr.as_table().op()
         node = node.replace(
-            rewrite_join | replace_parameter | bind_unbound_table | rewrite_stringslice,
+            rewrite_join | replace_parameter | bind_unbound_table | lower_stringslice,
             context={"params": params, "backend": self},
         )
 
@@ -526,11 +563,33 @@ class Backend(BaseBackend, NoUrl):
     def _clean_up_cached_table(self, op):
         self._remove_table(op.name)
 
-    def create_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
 
-    def drop_table(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+@lazy_singledispatch
+def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any):
+    raise NotImplementedError(
+        f"The `{_conn.name}` backend currently does not support "
+        f"reading data of {type(source)!r}"
+    )
 
-    def drop_view(self, *_, **__) -> ir.Table:
-        raise NotImplementedError(self.name)
+
+@_read_in_memory.register("ibis.expr.types.Table")
+def _table(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, source.to_polars())
+
+
+@_read_in_memory.register("polars.DataFrame")
+@_read_in_memory.register("polars.LazyFrame")
+def _polars(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, source)
+
+
+@_read_in_memory.register("pyarrow.Table")
+@_read_in_memory.register("pyarrow.RecordBatchReader")
+@_read_in_memory.register("pyarrow.RecordBatch")
+def _pyarrow(source, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, pl.from_arrow(source, **kwargs).lazy())
+
+
+@_read_in_memory.register("pandas.DataFrame")
+def _pandas(source: pd.DataFrame, table_name, _conn, **kwargs: Any):
+    _conn._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())

@@ -3,9 +3,10 @@ from __future__ import annotations
 import itertools
 import operator
 import re
-from collections.abc import Iterable, Iterator, Mapping, Sequence
+from collections import deque
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Callable, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import toolz
 from public import public
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.types as ir
     import ibis.selectors as s
-    from ibis.expr.operations.relations import JoinKind
+    from ibis.expr.operations.relations import JoinKind, Set
     from ibis.expr.schema import SchemaLike
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
@@ -188,6 +189,9 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return IbisDataFrame(self, nan_as_null=nan_as_null, allow_copy=allow_copy)
 
+    def __arrow_c_stream__(self, requested_schema: object | None = None) -> object:
+        return self.to_pyarrow().__arrow_c_stream__(requested_schema)
+
     def __pyarrow_result__(
         self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
     ) -> pa.Table:
@@ -205,12 +209,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.formats.polars import PolarsData
 
         return PolarsData.convert_table(df, self.schema())
-
-    def _bind_reduction_filter(self, where):
-        if where is None or not isinstance(where, Deferred):
-            return where
-
-        return where.resolve(self)
 
     def bind(self, *args, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
@@ -767,6 +765,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         if isinstance(what, slice):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
+        # skip the self.bind call for single column access with strings or ints
+        # because dereferencing has significant overhead
+        elif isinstance(what, str):
+            return ops.Field(self.op(), what).to_expr()
+        elif isinstance(what, int):
+            return ops.Field(self.op(), self.columns[what]).to_expr()
 
         args = [
             self.columns[arg] if isinstance(arg, int) else arg
@@ -1002,67 +1006,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             return ops.SelfReference(self).to_expr()
 
-    def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
-        """Compute the set difference of multiple table expressions.
-
-        The input tables must have identical schemas.
-
-        Parameters
-        ----------
-        table:
-            A table expression
-        *rest:
-            Additional table expressions
-        distinct
-            Only diff distinct rows not occurring in the calling table
-
-        See Also
-        --------
-        [`ibis.difference`](./expression-tables.qmd#ibis.difference)
-
-        Returns
-        -------
-        Table
-            The rows present in `self` that are not present in `tables`.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t1 = ibis.memtable({"a": [1, 2]})
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t2 = ibis.memtable({"a": [2, 3]})
-        >>> t2
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        │     3 │
-        └───────┘
-        >>> t1.difference(t2)
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        └───────┘
-        """
-        node = ops.Difference(self, table, distinct=distinct)
-        for table in rest:
-            node = ops.Difference(node, table, distinct=distinct)
-        return node.to_expr().select(self.columns)
-
     def aggregate(
         self,
         metrics: Sequence[ir.Scalar] | None = (),
@@ -1271,9 +1214,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
-        273
+        ┌─────┐
+        │ 273 │
+        └─────┘
         >>> t.count()
-        344
+        ┌─────┐
+        │ 344 │
+        └─────┘
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
@@ -1677,6 +1624,31 @@ class Table(Expr, _FixedTextJupyterMixin):
         node = ops.Sort(self, keys.values())
         return node.to_expr()
 
+    def _assemble_set_op(
+        self, opcls: type[Set], table: Table, *rest: Table, distinct: bool
+    ) -> Table:
+        """Assemble a set operation expression.
+
+        This exists to workaround an issue in sqlglot where codegen blows the
+        Python stack because of set operation nesting.
+
+        The implementation here uses a queue to balance the operation tree.
+        """
+        queue = deque()
+
+        queue.append(self)
+        queue.append(table)
+        queue.extend(rest)
+
+        while len(queue) > 1:
+            left = queue.popleft()
+            right = queue.popleft()
+            node = opcls(left, right, distinct=distinct)
+            queue.append(node)
+        result = queue.popleft()
+        assert not queue, "items left in queue"
+        return result.to_expr().select(*self.columns)
+
     def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
 
@@ -1746,10 +1718,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     3 │
         └───────┘
         """
-        node = ops.Union(self, table, distinct=distinct)
-        for table in rest:
-            node = ops.Union(node, table, distinct=distinct)
-        return node.to_expr().select(self.columns)
+        return self._assemble_set_op(ops.Union, table, *rest, distinct=distinct)
 
     def intersect(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
@@ -1807,9 +1776,67 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │
         └───────┘
         """
-        node = ops.Intersection(self, table, distinct=distinct)
+        return self._assemble_set_op(ops.Intersection, table, *rest, distinct=distinct)
+
+    def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
+        """Compute the set difference of multiple table expressions.
+
+        The input tables must have identical schemas.
+
+        Parameters
+        ----------
+        table:
+            A table expression
+        *rest:
+            Additional table expressions
+        distinct
+            Only diff distinct rows not occurring in the calling table
+
+        See Also
+        --------
+        [`ibis.difference`](./expression-tables.qmd#ibis.difference)
+
+        Returns
+        -------
+        Table
+            The rows present in `self` that are not present in `tables`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t1 = ibis.memtable({"a": [1, 2]})
+        >>> t1
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        │     2 │
+        └───────┘
+        >>> t2 = ibis.memtable({"a": [2, 3]})
+        >>> t2
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        │     3 │
+        └───────┘
+        >>> t1.difference(t2)
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     1 │
+        └───────┘
+        """
+        node = ops.Difference(self, table, distinct=distinct)
         for table in rest:
-            node = ops.Intersection(node, table, distinct=distinct)
+            node = ops.Difference(node, table, distinct=distinct)
         return node.to_expr().select(self.columns)
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
@@ -2514,13 +2541,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ bar    │
         └────────┘
         >>> t.nunique()
-        2
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> t.nunique(t.a != "foo")
-        1
+        ┌───┐
+        │ 1 │
+        └───┘
         """
-        return ops.CountDistinctStar(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        if where is not None:
+            (where,) = bind(self, where)
+        return ops.CountDistinctStar(self, where=where).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
@@ -2551,13 +2582,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ baz    │
         └────────┘
         >>> t.count()
-        3
+        ┌───┐
+        │ 3 │
+        └───┘
         >>> t.count(t.a != "foo")
-        2
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
-        return ops.CountStar(self, where=self._bind_reduction_filter(where)).to_expr()
+        if where is not None:
+            (where,) = bind(self, where)
+        return ops.CountStar(self, where=where).to_expr()
 
     def dropna(
         self,
@@ -2605,11 +2642,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.count()
-        344
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> t.dropna(["bill_length_mm", "body_mass_g"]).count()
-        342
+        ┌─────┐
+        │ 342 │
+        └─────┘
         >>> t.dropna(how="all").count()  # no rows where all columns are null
-        344
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         if subset is not None:
             subset = self.bind(subset)
@@ -2856,42 +2899,42 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> p = ibis.examples.penguins.fetch()
         >>> p.describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
-        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
-        │ string            │ string  │ int64 │ int64 │ int64  │ string │ … │
-        ├───────────────────┼─────────┼───────┼───────┼────────┼────────┼───┤
-        │ species           │ string  │   344 │     0 │      3 │ Adelie │ … │
-        │ island            │ string  │   344 │     0 │      3 │ Biscoe │ … │
-        │ bill_length_mm    │ float64 │   344 │     2 │    164 │ NULL   │ … │
-        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │ NULL   │ … │
-        │ flipper_length_mm │ int64   │   344 │     2 │     55 │ NULL   │ … │
-        │ body_mass_g       │ int64   │   344 │     2 │     94 │ NULL   │ … │
-        │ sex               │ string  │   344 │    11 │      2 │ male   │ … │
-        │ year              │ int64   │   344 │     0 │      3 │ NULL   │ … │
-        └───────────────────┴─────────┴───────┴───────┴────────┴────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ pos  ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ int8 │ string  │ int64 │ int64 │ int64  │ string │ … │
+        ├───────────────────┼──────┼─────────┼───────┼───────┼────────┼────────┼───┤
+        │ species           │    0 │ string  │   344 │     0 │      3 │ Adelie │ … │
+        │ island            │    1 │ string  │   344 │     0 │      3 │ Biscoe │ … │
+        │ bill_length_mm    │    2 │ float64 │   344 │     2 │    164 │ NULL   │ … │
+        │ bill_depth_mm     │    3 │ float64 │   344 │     2 │     80 │ NULL   │ … │
+        │ flipper_length_mm │    4 │ int64   │   344 │     2 │     55 │ NULL   │ … │
+        │ body_mass_g       │    5 │ int64   │   344 │     2 │     94 │ NULL   │ … │
+        │ sex               │    6 │ string  │   344 │    11 │      2 │ male   │ … │
+        │ year              │    7 │ int64   │   344 │     0 │      3 │ NULL   │ … │
+        └───────────────────┴──────┴─────────┴───────┴───────┴────────┴────────┴───┘
         >>> p.select(s.of_type("numeric")).describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
-        ┃ name              ┃ type    ┃ count ┃ nulls ┃ unique ┃ mean        ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
-        │ string            │ string  │ int64 │ int64 │ int64  │ float64     │ … │
-        ├───────────────────┼─────────┼───────┼───────┼────────┼─────────────┼───┤
-        │ bill_length_mm    │ float64 │   344 │     2 │    164 │   43.921930 │ … │
-        │ bill_depth_mm     │ float64 │   344 │     2 │     80 │   17.151170 │ … │
-        │ flipper_length_mm │ int64   │   344 │     2 │     55 │  200.915205 │ … │
-        │ body_mass_g       │ int64   │   344 │     2 │     94 │ 4201.754386 │ … │
-        │ year              │ int64   │   344 │     0 │      3 │ 2008.029070 │ … │
-        └───────────────────┴─────────┴───────┴───────┴────────┴─────────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ pos  ┃ type    ┃ count ┃ nulls ┃ unique ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ int8 │ string  │ int64 │ int64 │ int64  │ … │
+        ├───────────────────┼──────┼─────────┼───────┼───────┼────────┼───┤
+        │ flipper_length_mm │    2 │ int64   │   344 │     2 │     55 │ … │
+        │ body_mass_g       │    3 │ int64   │   344 │     2 │     94 │ … │
+        │ year              │    4 │ int64   │   344 │     0 │      3 │ … │
+        │ bill_length_mm    │    0 │ float64 │   344 │     2 │    164 │ … │
+        │ bill_depth_mm     │    1 │ float64 │   344 │     2 │     80 │ … │
+        └───────────────────┴──────┴─────────┴───────┴───────┴────────┴───┘
         >>> p.select(s.of_type("string")).describe()
-        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ name    ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
-        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ string  │ string │ int64 │ int64 │ int64  │ string │
-        ├─────────┼────────┼───────┼───────┼────────┼────────┤
-        │ species │ string │   344 │     0 │      3 │ Adelie │
-        │ island  │ string │   344 │     0 │      3 │ Biscoe │
-        │ sex     │ string │   344 │    11 │      2 │ male   │
-        └─────────┴────────┴───────┴───────┴────────┴────────┘
+        ┏━━━━━━━━━┳━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ name    ┃ pos  ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
+        ┡━━━━━━━━━╇━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int8 │ string │ int64 │ int64 │ int64  │ string │
+        ├─────────┼──────┼────────┼───────┼───────┼────────┼────────┤
+        │ sex     │    2 │ string │   344 │    11 │      2 │ male   │
+        │ species │    0 │ string │   344 │     0 │      3 │ Adelie │
+        │ island  │    1 │ string │   344 │     0 │      3 │ Biscoe │
+        └─────────┴──────┴────────┴───────┴───────┴────────┴────────┘
         """
         import ibis.selectors as s
         from ibis import literal as lit
@@ -2900,7 +2943,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         aggs = []
         string_col = False
         numeric_col = False
-        for colname in self.columns:
+        for pos, colname in enumerate(self.columns):
             col = self[colname]
             typ = col.type()
 
@@ -2937,6 +2980,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
             agg = self.agg(
                 name=lit(colname),
+                pos=lit(pos),
                 type=lit(str(typ)),
                 count=col.isnull().count(),
                 nulls=col.isnull().sum(),
@@ -3221,7 +3265,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.count()
-        344
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -3256,7 +3302,9 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        344
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         from ibis.expr.types.joins import Join
 
@@ -4506,6 +4554,63 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.types.temporal_windows import WindowedTable
 
         return WindowedTable(self, time_col)
+
+    def value_counts(self) -> ir.Table:
+        """Compute a frequency table of this table's values.
+
+        Returns
+        -------
+        Table
+            Frequency table of this table's values.
+
+        Examples
+        --------
+        >>> from ibis import examples
+        >>> ibis.options.interactive = True
+        >>> t = examples.penguins.fetch()
+        >>> t.head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+        >>> t.year.value_counts().order_by("year")
+        ┏━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ year_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ int64      │
+        ├───────┼────────────┤
+        │  2007 │        110 │
+        │  2008 │        114 │
+        │  2009 │        120 │
+        └───────┴────────────┘
+        >>> t[["year", "island"]].value_counts().order_by("year", "island")
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Dream     │                46 │
+        │  2007 │ Torgersen │                20 │
+        │  2008 │ Biscoe    │                64 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Torgersen │                16 │
+        │  2009 │ Biscoe    │                60 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Torgersen │                16 │
+        └───────┴───────────┴───────────────────┘
+        """
+        columns = self.columns
+        return self.group_by(columns).agg(
+            lambda t: t.count().name("_".join(columns) + "_count")
+        )
 
 
 @public

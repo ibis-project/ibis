@@ -1,3 +1,5 @@
+"""Logical operations."""
+
 from __future__ import annotations
 
 from public import public
@@ -12,6 +14,8 @@ from ibis.expr.operations.core import Binary, Unary, Value
 
 @public
 class LogicalBinary(Binary):
+    """Base class for logical binary operations."""
+
     left: Value[dt.Boolean]
     right: Value[dt.Boolean]
 
@@ -20,6 +24,8 @@ class LogicalBinary(Binary):
 
 @public
 class Not(Unary):
+    """Logical negation."""
+
     arg: Value[dt.Boolean]
 
     dtype = dt.boolean
@@ -27,21 +33,23 @@ class Not(Unary):
 
 @public
 class And(LogicalBinary):
-    pass
+    """Logical AND."""
 
 
 @public
 class Or(LogicalBinary):
-    pass
+    """Logical OR."""
 
 
 @public
 class Xor(LogicalBinary):
-    pass
+    """Logical XOR."""
 
 
 @public
 class Comparison(Binary):
+    """Base class for comparison operations."""
+
     left: Value
     right: Value
 
@@ -66,41 +74,43 @@ class Comparison(Binary):
 
 @public
 class Equals(Comparison):
-    pass
+    """Equality comparison."""
 
 
 @public
 class NotEquals(Comparison):
-    pass
+    """Inequality comparison."""
 
 
 @public
 class GreaterEqual(Comparison):
-    pass
+    """Greater than or equal to comparison."""
 
 
 @public
 class Greater(Comparison):
-    pass
+    """Greater than comparison."""
 
 
 @public
 class LessEqual(Comparison):
-    pass
+    """Less than or equal to comparison."""
 
 
 @public
 class Less(Comparison):
-    pass
+    """Less than comparison."""
 
 
 @public
 class IdenticalTo(Comparison):
-    pass
+    """Identity comparison. Considers two NULL values **equal**."""
 
 
 @public
 class Between(Value):
+    """Check if a value is within a range."""
+
     arg: Value
     lower_bound: Value
     upper_bound: Value
@@ -124,6 +134,8 @@ class Between(Value):
 
 @public
 class InValues(Value):
+    """Check if a value is in a set of values."""
+
     value: Value
     options: VarTuple[Value]
 
@@ -137,9 +149,13 @@ class InValues(Value):
 
 @public
 class IfElse(Value):
-    """Ternary case expression, equivalent to.
+    """Ternary case expression.
 
+    Equivalent to
+
+    ```python
     bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
+    ```
 
     Many backends implement this as a built-in function.
     """

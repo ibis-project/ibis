@@ -1,3 +1,5 @@
+"""Reduction operations."""
+
 from __future__ import annotations
 
 from typing import Literal, Optional
@@ -14,6 +16,8 @@ from ibis.expr.operations.relations import Relation  # noqa: TCH001
 
 @public
 class Reduction(Value):
+    """Base class for reduction operations."""
+
     shape = ds.scalar
 
 
@@ -24,6 +28,8 @@ class Filterable(Value):
 
 @public
 class Count(Filterable, Reduction):
+    """Count the number of non-null elements of a column."""
+
     arg: Column[dt.Any]
 
     dtype = dt.int64
@@ -31,6 +37,8 @@ class Count(Filterable, Reduction):
 
 @public
 class CountStar(Filterable, Reduction):
+    """Count the number of rows of a relation."""
+
     arg: Relation
 
     dtype = dt.int64
@@ -42,6 +50,8 @@ class CountStar(Filterable, Reduction):
 
 @public
 class CountDistinctStar(Filterable, Reduction):
+    """Count the number of distinct rows of a relation."""
+
     arg: Relation
 
     dtype = dt.int64
@@ -89,8 +99,8 @@ class BitAnd(Filterable, Reduction):
 
     This can be used to determine which bit flags are set on all elements.
 
-    Resources:
-
+    See Also
+    --------
     * BigQuery [`BIT_AND`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_and)
     * MySQL [`BIT_AND`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-and)
     """
@@ -107,8 +117,8 @@ class BitOr(Filterable, Reduction):
     All elements in an integer column are ORed together. This can be used
     to determine which bit flags are set on any element.
 
-    Resources:
-
+    See Also
+    --------
     * BigQuery [`BIT_OR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_or)
     * MySQL [`BIT_OR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-or)
     """
@@ -125,8 +135,8 @@ class BitXor(Filterable, Reduction):
     All elements in an integer column are XORed together. This can be used
     as a parity checksum of element values.
 
-    Resources:
-
+    See Also
+    --------
     * BigQuery [`BIT_XOR`](https://cloud.google.com/bigquery/docs/reference/standard-sql/aggregate_functions#bit_xor)
     * MySQL [`BIT_XOR`](https://dev.mysql.com/doc/refman/5.7/en/aggregate-functions.html#function_bit-xor)
     """
@@ -138,6 +148,8 @@ class BitXor(Filterable, Reduction):
 
 @public
 class Sum(Filterable, Reduction):
+    """Compute the sum of a column."""
+
     arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute
@@ -164,6 +176,8 @@ class Sum(Filterable, Reduction):
 
 @public
 class Mean(Filterable, Reduction):
+    """Compute the mean of a column."""
+
     arg: Column[dt.Numeric | dt.Boolean]
 
     @attribute
@@ -187,16 +201,20 @@ class QuantileBase(Filterable, Reduction):
 
 @public
 class Median(QuantileBase):
-    pass
+    """Compute the median of a column."""
 
 
 @public
 class Quantile(QuantileBase):
+    """Compute the quantile of a column."""
+
     quantile: Value[dt.Numeric]
 
 
 @public
 class MultiQuantile(Filterable, Reduction):
+    """Compute multiple quantiles of a column."""
+
     arg: Column
     quantile: Value[dt.Array[dt.Numeric]]
 
@@ -208,8 +226,9 @@ class MultiQuantile(Filterable, Reduction):
         return dt.Array(dtype)
 
 
-@public
 class VarianceBase(Filterable, Reduction):
+    """Base class for variance and standard deviation."""
+
     arg: Column[dt.Numeric | dt.Boolean]
     how: Literal["sample", "pop"]
 
@@ -223,17 +242,17 @@ class VarianceBase(Filterable, Reduction):
 
 @public
 class StandardDev(VarianceBase):
-    pass
+    """Compute the standard deviation of a column."""
 
 
 @public
 class Variance(VarianceBase):
-    pass
+    """Compute the variance of a column."""
 
 
 @public
 class Correlation(Filterable, Reduction):
-    """Coefficient of correlation of a set of number pairs."""
+    """Correlation coefficient of two columns."""
 
     left: Column[dt.Numeric | dt.Boolean]
     right: Column[dt.Numeric | dt.Boolean]
@@ -244,7 +263,7 @@ class Correlation(Filterable, Reduction):
 
 @public
 class Covariance(Filterable, Reduction):
-    """Covariance of a set of number pairs."""
+    """Covariance of two columns."""
 
     left: Column[dt.Numeric | dt.Boolean]
     right: Column[dt.Numeric | dt.Boolean]
@@ -255,6 +274,8 @@ class Covariance(Filterable, Reduction):
 
 @public
 class Mode(Filterable, Reduction):
+    """Compute the mode of a column."""
+
     arg: Column
 
     dtype = rlz.dtype_like("arg")
@@ -262,6 +283,8 @@ class Mode(Filterable, Reduction):
 
 @public
 class Max(Filterable, Reduction):
+    """Compute the maximum of a column."""
+
     arg: Column
 
     dtype = rlz.dtype_like("arg")
@@ -269,6 +292,8 @@ class Max(Filterable, Reduction):
 
 @public
 class Min(Filterable, Reduction):
+    """Compute the minimum of a column."""
+
     arg: Column
 
     dtype = rlz.dtype_like("arg")
@@ -276,6 +301,8 @@ class Min(Filterable, Reduction):
 
 @public
 class ArgMax(Filterable, Reduction):
+    """Compute the index of the maximum value in a column."""
+
     arg: Column
     key: Column
 
@@ -284,6 +311,8 @@ class ArgMax(Filterable, Reduction):
 
 @public
 class ArgMin(Filterable, Reduction):
+    """Compute the index of the minimum value in a column."""
+
     arg: Column
     key: Column
 
@@ -292,10 +321,7 @@ class ArgMin(Filterable, Reduction):
 
 @public
 class ApproxCountDistinct(Filterable, Reduction):
-    """Approximate number of unique values using HyperLogLog algorithm.
-
-    Impala offers the NDV built-in function for this.
-    """
+    """Approximate number of unique values."""
 
     arg: Column
 
@@ -314,6 +340,8 @@ class ApproxMedian(Filterable, Reduction):
 
 @public
 class GroupConcat(Filterable, Reduction):
+    """Concatenate strings in a group with a given separator character."""
+
     arg: Column
     sep: Value[dt.String]
 
@@ -322,6 +350,8 @@ class GroupConcat(Filterable, Reduction):
 
 @public
 class CountDistinct(Filterable, Reduction):
+    """Count the number of distinct values in a column."""
+
     arg: Column
 
     dtype = dt.int64
@@ -329,6 +359,8 @@ class CountDistinct(Filterable, Reduction):
 
 @public
 class ArrayCollect(Filterable, Reduction):
+    """Collect values into an array."""
+
     arg: Column
 
     @attribute
@@ -338,6 +370,8 @@ class ArrayCollect(Filterable, Reduction):
 
 @public
 class All(Filterable, Reduction):
+    """Check if all values in a column are true."""
+
     arg: Column[dt.Boolean]
 
     dtype = dt.boolean
@@ -345,6 +379,8 @@ class All(Filterable, Reduction):
 
 @public
 class Any(Filterable, Reduction):
+    """Check if any value in a column is true."""
+
     arg: Column[dt.Boolean]
 
     dtype = dt.boolean

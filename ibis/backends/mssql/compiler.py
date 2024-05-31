@@ -23,10 +23,8 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
-    rewrite_sample_as_filter,
 )
 from ibis.common.deferred import var
-from ibis.expr.rewrites import rewrite_stringslice
 
 y = var("y")
 start = var("start")
@@ -59,68 +57,64 @@ class MSSQLCompiler(SQLGlotCompiler):
     dialect = MSSQL
     type_mapper = MSSQLType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         rewrite_rows_range_order_by_window,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
     copy_func_args = True
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.ApproxMedian,
-            ops.ArgMax,
-            ops.ArgMin,
-            ops.ArrayCollect,
-            ops.Array,
-            ops.ArrayDistinct,
-            ops.ArrayFlatten,
-            ops.ArrayMap,
-            ops.ArraySort,
-            ops.ArrayUnion,
-            ops.BitAnd,
-            ops.BitOr,
-            ops.BitXor,
-            ops.Covariance,
-            ops.CountDistinctStar,
-            ops.DateAdd,
-            ops.DateDiff,
-            ops.DateSub,
-            ops.EndsWith,
-            ops.First,
-            ops.IntervalAdd,
-            ops.IntervalFromInteger,
-            ops.IntervalMultiply,
-            ops.IntervalSubtract,
-            ops.IsInf,
-            ops.IsNan,
-            ops.Last,
-            ops.LPad,
-            ops.Levenshtein,
-            ops.Map,
-            ops.Median,
-            ops.Mode,
-            ops.MultiQuantile,
-            ops.NthValue,
-            ops.Quantile,
-            ops.RegexExtract,
-            ops.RegexReplace,
-            ops.RegexSearch,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.RPad,
-            ops.StartsWith,
-            ops.StringSplit,
-            ops.StringToDate,
-            ops.StringToTimestamp,
-            ops.StructColumn,
-            ops.TimestampAdd,
-            ops.TimestampDiff,
-            ops.TimestampSub,
-            ops.Unnest,
-        )
+    UNSUPPORTED_OPS = (
+        ops.ApproxMedian,
+        ops.ArgMax,
+        ops.ArgMin,
+        ops.ArrayCollect,
+        ops.Array,
+        ops.ArrayDistinct,
+        ops.ArrayFlatten,
+        ops.ArrayMap,
+        ops.ArraySort,
+        ops.ArrayUnion,
+        ops.BitAnd,
+        ops.BitOr,
+        ops.BitXor,
+        ops.Covariance,
+        ops.CountDistinctStar,
+        ops.DateAdd,
+        ops.DateDiff,
+        ops.DateSub,
+        ops.EndsWith,
+        ops.First,
+        ops.IntervalAdd,
+        ops.IntervalFromInteger,
+        ops.IntervalMultiply,
+        ops.IntervalSubtract,
+        ops.IsInf,
+        ops.IsNan,
+        ops.Last,
+        ops.LPad,
+        ops.Levenshtein,
+        ops.Map,
+        ops.Median,
+        ops.Mode,
+        ops.MultiQuantile,
+        ops.NthValue,
+        ops.Quantile,
+        ops.RegexExtract,
+        ops.RegexReplace,
+        ops.RegexSearch,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.RPad,
+        ops.StartsWith,
+        ops.StringSplit,
+        ops.StringToDate,
+        ops.StringToTimestamp,
+        ops.StructColumn,
+        ops.TimestampAdd,
+        ops.TimestampDiff,
+        ops.TimestampSub,
+        ops.Unnest,
     )
 
     SIMPLE_OPS = {
@@ -149,12 +143,6 @@ class MSSQLCompiler(SQLGlotCompiler):
     @property
     def NEG_INF(self):
         return self.f.double("-Infinity")
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-        return func(*args)
 
     @staticmethod
     def _generate_groups(groups):

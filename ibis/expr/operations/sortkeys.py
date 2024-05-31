@@ -26,7 +26,7 @@ _is_ascending = {
 # as a columnar operation too
 @public
 class SortKey(Value):
-    """A sort operation."""
+    """A sort key."""
 
     # TODO(kszucs): rename expr to arg or something else except expr
     expr: Value

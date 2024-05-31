@@ -6,10 +6,9 @@ import functools
 import importlib.metadata
 import keyword
 import re
-import sys
 import urllib.parse
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 from urllib.parse import parse_qs, urlparse
 
 import ibis
@@ -21,7 +20,7 @@ from ibis import util
 from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
 
     import pandas as pd
     import polars as pl
@@ -903,6 +902,17 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         For some backends, the tables may be files in a directory,
         or other equivalent entities in a SQL database.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         like
@@ -913,17 +923,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
 
         Returns
         -------
@@ -938,6 +937,17 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     ) -> ir.Table:
         """Construct a table expression.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         name
@@ -948,17 +958,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
 
         Returns
         -------
@@ -1296,10 +1295,7 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
 
     """
 
-    if sys.version_info < (3, 10):
-        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
-    else:
-        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
+    entrypoints = importlib.metadata.entry_points(group="ibis.backends")
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 

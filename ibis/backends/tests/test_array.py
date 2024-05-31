@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from collections import Counter
 from datetime import datetime
 
 import numpy as np
@@ -28,6 +29,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2SyntaxError,
     Py4JJavaError,
     PySparkAnalysisException,
+    SnowflakeProgrammingError,
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
@@ -115,6 +117,16 @@ def test_array_repeat(con):
     expected = np.array([1.0, 2.0, 1.0, 2.0])
 
     assert np.array_equal(result, expected)
+
+
+@pytest.mark.notimpl(["flink", "polars"], raises=com.OperationNotDefinedError)
+def test_array_repeat_column(con):
+    t = ibis.memtable({"x": [[1.0, 2.0]]}, schema=ibis.schema({"x": "array<float64>"}))
+    expr = (t.x * 2).name("tmp")
+
+    result = con.execute(expr.name("tmp")).iat[0]
+    expected = np.array([1.0, 2.0, 1.0, 2.0])
+    assert Counter(result) == Counter(expected)
 
 
 def test_array_concat(con):
@@ -418,14 +430,7 @@ def test_array_slice(backend, start, stop):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "sqlite",
-    ],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.broken(
     ["risingwave"],
@@ -465,11 +470,17 @@ def test_array_slice(backend, start, stop):
         functools.partial(lambda x, y: x + y, y=1),
         ibis._ + 1,
     ],
+    ids=["lambda", "partial", "deferred"],
 )
 @pytest.mark.broken(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -485,14 +496,7 @@ def test_array_map(con, input, output, func):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "flink",
-        "pandas",
-        "polars",
-        "snowflake",
-    ],
+    ["dask", "datafusion", "flink", "pandas", "polars"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -533,6 +537,12 @@ def test_array_map(con, input, output, func):
         functools.partial(lambda x, y: x > y, y=1),
         ibis._ > 1,
     ],
+    ids=["lambda", "partial", "deferred"],
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -1138,14 +1148,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "dask",
-        "pandas",
-    ],
+    ["datafusion", "flink", "polars", "dask", "pandas"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
@@ -1153,6 +1156,11 @@ def test_unnest_empty_array(con):
     "risingwave",
     raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
@@ -1166,17 +1174,13 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "polars",
-        "snowflake",
-        "sqlite",
-        "dask",
-        "pandas",
-        "sqlite",
-    ],
+    ["datafusion", "flink", "polars", "sqlite", "dask", "pandas", "sqlite"],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    ["snowflake"],
+    raises=SnowflakeProgrammingError,
+    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_complex_array_map(con):
     def upper(token):

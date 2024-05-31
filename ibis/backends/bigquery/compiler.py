@@ -18,10 +18,8 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_sample_as_filter,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
-from ibis.expr.rewrites import rewrite_stringslice
 
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
@@ -31,35 +29,31 @@ class BigQueryCompiler(SQLGlotCompiler):
     type_mapper = BigQueryType
     udf_type_mapper = BigQueryUDFType
     rewrites = (
-        rewrite_sample_as_filter,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_rank,
-        rewrite_stringslice,
         *SQLGlotCompiler.rewrites,
     )
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.CountDistinctStar,
-            ops.DateDiff,
-            ops.ExtractAuthority,
-            ops.ExtractFile,
-            ops.ExtractFragment,
-            ops.ExtractHost,
-            ops.ExtractPath,
-            ops.ExtractProtocol,
-            ops.ExtractQuery,
-            ops.ExtractUserInfo,
-            ops.FindInSet,
-            ops.Median,
-            ops.Quantile,
-            ops.MultiQuantile,
-            ops.RegexSplit,
-            ops.RowID,
-            ops.TimestampBucket,
-            ops.TimestampDiff,
-        )
+    UNSUPPORTED_OPS = (
+        ops.CountDistinctStar,
+        ops.DateDiff,
+        ops.ExtractAuthority,
+        ops.ExtractFile,
+        ops.ExtractFragment,
+        ops.ExtractHost,
+        ops.ExtractPath,
+        ops.ExtractProtocol,
+        ops.ExtractQuery,
+        ops.ExtractUserInfo,
+        ops.FindInSet,
+        ops.Median,
+        ops.Quantile,
+        ops.MultiQuantile,
+        ops.RegexSplit,
+        ops.RowID,
+        ops.TimestampBucket,
+        ops.TimestampDiff,
     )
 
     NAN = sge.Cast(
@@ -127,14 +121,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimestampFromYMDHMS: "datetime",
         ops.TimestampNow: "current_timestamp",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        func = self.f[funcname]
-
-        if where is not None:
-            args = tuple(self.if_(where, arg, NULL) for arg in args)
-
-        return func(*args, dialect=self.dialect)
 
     @staticmethod
     def _minimize_spec(start, end, spec):
@@ -396,6 +382,9 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract(self.v.isoweek, arg)
+
+    def visit_ExtractIsoYear(self, op, *, arg):
+        return self.f.extract(self.v.isoyear, arg)
 
     def visit_ExtractMillisecond(self, op, *, arg):
         return self.f.extract(self.v.millisecond, arg)
@@ -676,7 +665,7 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:
-        return "_".join(_NAME_REGEX.findall(name)) or "tmp"
+        return "_".join(map(str.strip, _NAME_REGEX.findall(name))) or "tmp"
 
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:

@@ -6,6 +6,7 @@ import contextlib
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -16,7 +17,7 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog, NoUrl
+from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.backends.trino.compiler import TrinoCompiler
@@ -25,16 +26,30 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
     import pandas as pd
+    import polars as pl
     import pyarrow as pa
 
     import ibis.expr.operations as ops
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "trino"
     compiler = TrinoCompiler()
     supports_create_or_replace = False
     supports_temporary_tables = False
+
+    def _from_url(self, url: str, **kwargs):
+        url = urlparse(url)
+        catalog, db = url.path.strip("/").split("/")
+        self.do_connect(
+            user=url.username or None,
+            password=url.password or None,
+            host=url.hostname or None,
+            port=url.port or None,
+            database=catalog,
+            schema=db,
+        )
+        return self
 
     def raw_sql(self, query: str | sg.Expression) -> Any:
         """Execute a raw SQL query."""
@@ -343,7 +358,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
     def create_table(
         self,
         name: str,
-        obj: pd.DataFrame | pa.Table | ir.Table | None = None,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -421,15 +441,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
+        temp_memtable_view = None
         if obj is not None:
-            import pandas as pd
-            import pyarrow as pa
-            import pyarrow_hotfix  # noqa: F401
-
-            if isinstance(obj, (pd.DataFrame, pa.Table)):
-                table = ibis.memtable(obj, schema=schema)
-            else:
+            if isinstance(obj, ir.Table):
                 table = obj
+            else:
+                table = ibis.memtable(obj, schema=schema)
+                temp_memtable_view = table.op().name
 
             self._run_pre_execute_hooks(table)
 
@@ -472,6 +490,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema, No
                         actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
                     ).sql(self.name)
                 )
+
+        if temp_memtable_view is not None:
+            self.drop_table(temp_memtable_view)
 
         return self.table(orig_table_ref.name)
 

@@ -20,20 +20,18 @@ class RisingwaveCompiler(PostgresCompiler):
     dialect = RisingWave
     type_mapper = RisingWaveType
 
-    UNSUPPORTED_OPERATIONS = frozenset(
-        (
-            ops.Arbitrary,
-            ops.DateFromYMD,
-            ops.Mode,
-            ops.RandomUUID,
-            *(
-                op
-                for op in ALL_OPERATIONS
-                if issubclass(
-                    op, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp, ops.GeoUnaryUnion)
-                )
-            ),
-        )
+    UNSUPPORTED_OPS = (
+        ops.Arbitrary,
+        ops.DateFromYMD,
+        ops.Mode,
+        ops.RandomUUID,
+        *(
+            op
+            for op in ALL_OPERATIONS
+            if issubclass(
+                op, (ops.GeoSpatialUnOp, ops.GeoSpatialBinOp, ops.GeoUnaryUnion)
+            )
+        ),
     )
 
     SIMPLE_OPS = {

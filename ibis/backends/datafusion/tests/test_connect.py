@@ -25,13 +25,17 @@ def test_none_config():
 
 def test_str_config(name_to_path):
     config = {name: str(path) for name, path in name_to_path.items()}
-    conn = ibis.datafusion.connect(config)
+    # if path.endswith((".parquet", ".csv", ".csv.gz")) connect triggers register
+    with pytest.warns(FutureWarning, match="v9.1"):
+        conn = ibis.datafusion.connect(config)
     assert sorted(conn.list_tables()) == sorted(name_to_path)
 
 
 def test_path_config(name_to_path):
     config = name_to_path
-    conn = ibis.datafusion.connect(config)
+    # if path.endswith((".parquet", ".csv", ".csv.gz")) connect triggers register
+    with pytest.warns(FutureWarning, match="v9.1"):
+        conn = ibis.datafusion.connect(config)
     assert sorted(conn.list_tables()) == sorted(name_to_path)
 
 

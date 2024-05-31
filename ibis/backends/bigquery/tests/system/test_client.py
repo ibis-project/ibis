@@ -186,7 +186,8 @@ def test_repr_struct_of_array_of_struct():
 
 
 def test_raw_sql(con):
-    assert con.raw_sql("SELECT 1").fetchall() == [(1,)]
+    result = con.raw_sql("SELECT 1").result()
+    assert [row.values() for row in result] == [(1,)]
 
 
 def test_parted_column_rename(parted_alltypes):
@@ -385,6 +386,8 @@ def test_fully_qualified_memtable_compile(project_id, dataset_id):
     sql = new_bq_con.compile(t)
     assert new_bq_con._session_dataset is not None
     assert project_id in sql
+
+    assert f"`{project_id}`.`{new_bq_con._session_dataset.dataset_id}`.`" in sql
 
 
 def test_create_table_with_options(con):

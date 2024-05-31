@@ -366,7 +366,7 @@ def to_sql(
     # the default pretty dialect for expressions
     if dialect is None:
         try:
-            backend = expr._find_backend()
+            backend = expr._find_backend(use_default=True)
         except com.IbisError:
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends

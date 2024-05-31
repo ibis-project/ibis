@@ -11,7 +11,7 @@ from sqlglot.dialects import DuckDB
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 
 _INTERVAL_SUFFIXES = {
@@ -33,6 +33,13 @@ class DuckDBCompiler(SQLGlotCompiler):
     dialect = DuckDB
     type_mapper = DuckDBType
 
+    agg = AggGen(supports_filter=True)
+
+    LOWERED_OPS = {
+        ops.Sample: None,
+        ops.StringSlice: None,
+    }
+
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
         ops.ArrayPosition: "list_indexof",
@@ -40,13 +47,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",
         ops.EndsWith: "suffix",
-        ops.Hash: "hash",
+        ops.ExtractIsoYear: "isoyear",
         ops.IntegerRange: "range",
         ops.TimestampRange: "range",
         ops.MapLength: "cardinality",
         ops.Mode: "mode",
         ops.TimeFromHMS: "make_time",
-        ops.TypeOf: "typeof",
         ops.GeoPoint: "st_point",
         ops.GeoAsText: "st_astext",
         ops.GeoArea: "st_area",
@@ -79,12 +85,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
     }
-
-    def _aggregate(self, funcname: str, *args, where):
-        expr = self.f[funcname](*args)
-        if where is not None:
-            return sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
@@ -461,6 +461,14 @@ class DuckDBCompiler(SQLGlotCompiler):
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
 
+    def visit_Hash(self, op, *, arg):
+        # duckdb's hash() returns a uint64, but ops.Hash is supposed to be int64
+        # So do HASH(x)::BITSTRING::BIGINT
+        raw = self.f.hash(arg)
+        bitstring = sg.cast(sge.convert(raw), to=sge.DataType.Type.BIT, copy=False)
+        int64 = sg.cast(bitstring, to=sge.DataType.Type.BIGINT, copy=False)
+        return int64
+
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
@@ -486,3 +494,6 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.uuid()
+
+    def visit_TypeOf(self, op, *, arg):
+        return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")

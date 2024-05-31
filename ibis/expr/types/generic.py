@@ -1046,7 +1046,9 @@ class Value(Expr):
         │ b      │     5 │
         └────────┴───────┘
         >>> t.value.collect()
-        [1, 2, ... +3]
+        ┌────────────────┐
+        │ [1, 2, ... +3] │
+        └────────────────┘
         >>> type(t.value.collect())
         <class 'ibis.expr.types.arrays.ArrayScalar'>
 
@@ -1074,9 +1076,7 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        return ops.ArrayCollect(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1100,7 +1100,9 @@ class Value(Expr):
         >>> one = ibis.literal(1)
         >>> two = ibis.literal(2)
         >>> two.identical_to(one + one)
-        True
+        ┌──────┐
+        │ True │
+        └──────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -1144,16 +1146,22 @@ class Value(Expr):
         │           36.7 │          19.3 │
         └────────────────┴───────────────┘
         >>> t.bill_length_mm.group_concat()
-        '39.1,39.5,40.3,36.7'
+        ┌───────────────────────┐
+        │ '39.1,39.5,40.3,36.7' │
+        └───────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ")
-        '39.1: 39.5: 40.3: 36.7'
+        ┌──────────────────────────┐
+        │ '39.1: 39.5: 40.3: 36.7' │
+        └──────────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ", where=t.bill_depth_mm > 18)
-        '39.1: 36.7'
+        ┌──────────────┐
+        │ '39.1: 36.7' │
+        └──────────────┘
         """
         return ops.GroupConcat(
-            self, sep=sep, where=self._bind_reduction_filter(where)
+            self, sep=sep, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def __hash__(self) -> int:
@@ -1356,7 +1364,7 @@ class Column(Value, _FixedTextJupyterMixin):
         max_rows
             Maximum number of rows to display
         max_length
-           Maximum length for pretty-printed arrays and maps.
+            Maximum length for pretty-printed arrays and maps.
         max_string
             Maximum length for pretty-printed strings.
         max_depth
@@ -1485,24 +1493,34 @@ class Column(Value, _FixedTextJupyterMixin):
                 "base table references to a projection"
             )
 
-    def _bind_reduction_filter(self, where):
-        rels = self.op().relations
-        if isinstance(where, Deferred):
-            if len(rels) == 0:
-                raise com.IbisInputError(
-                    "Unable to bind deferred expression to a table because "
-                    "the expression doesn't depend on any tables"
-                )
-            elif len(rels) == 1:
-                (table,) = rels
-                return where.resolve(table.to_expr())
-            else:
+    def _bind_to_parent_table(self, value) -> Value | None:
+        """Bind an expr to the parent table of `self`."""
+        if value is None:
+            return None
+        if isinstance(value, (Deferred, str)) or callable(value):
+            op = self.op()
+            if len(op.relations) != 1:
+                # TODO: I don't think this line can ever be hit by a valid
+                # expression, since it would require a column expression to
+                # directly depend on multiple tables. Currently some invalid
+                # expressions (like t1.a.argmin(t2.b)) aren't caught at
+                # construction time though, so we keep the check in for now.
                 raise com.RelationError(
-                    "Cannot bind deferred expression to a table because the "
-                    "expression depends on multiple tables"
+                    f"Unable to bind `{value!r}` - the current expression"
+                    f"depends on multiple tables."
                 )
-        else:
-            return where
+            table = next(iter(op.relations)).to_expr()
+
+            if isinstance(value, str):
+                return table[value]
+            elif isinstance(value, Deferred):
+                return value.resolve(table)
+            else:
+                value = value(table)
+
+        if not isinstance(value, Value):
+            return literal(value)
+        return value
 
     def __deferred_repr__(self):
         return f"<column[{self.type()}]>"
@@ -1540,12 +1558,16 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
-        94
+        ┌────┐
+        │ 94 │
+        └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
-        55
+        ┌────┐
+        │ 55 │
+        └────┘
         """
         return ops.ApproxCountDistinct(
-            self, where=self._bind_reduction_filter(where)
+            self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def approx_median(
@@ -1581,13 +1603,15 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        4030
+        ┌──────┐
+        │ 4030 │
+        └──────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        3700
+        ┌──────┐
+        │ 3700 │
+        └──────┘
         """
-        return ops.ApproxMedian(
-            self, where=self._bind_reduction_filter(where)
-        ).to_expr()
+        return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column.
@@ -1608,11 +1632,15 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
-        3800
+        ┌──────┐
+        │ 3800 │
+        └──────┘
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
-        5550
+        ┌──────┐
+        │ 5550 │
+        └──────┘
         """
-        return ops.Mode(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def max(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column.
@@ -1633,11 +1661,15 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.max()
-        6300
+        ┌──────┐
+        │ 6300 │
+        └──────┘
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
-        4800
+        ┌──────┐
+        │ 4800 │
+        └──────┘
         """
-        return ops.Max(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def min(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column.
@@ -1658,11 +1690,16 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.min()
-        2700
+        ┌──────┐
+        │ 2700 │
+        └──────┘
         >>> t.body_mass_g.min(where=t.species == "Adelie")
-        2850
+        ┌──────┐
+        │ 2850 │
+        └──────┘
+
         """
-        return ops.Min(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
@@ -1685,12 +1722,16 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmax(t.body_mass_g)
-        'Gentoo'
+        ┌──────────┐
+        │ 'Gentoo' │
+        └──────────┘
         >>> t.species.argmax(t.body_mass_g, where=t.island == "Dream")
-        'Chinstrap'
+        ┌─────────────┐
+        │ 'Chinstrap' │
+        └─────────────┘
         """
         return ops.ArgMax(
-            self, key=key, where=self._bind_reduction_filter(where)
+            self, key=key, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1714,13 +1755,17 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmin(t.body_mass_g)
-        'Chinstrap'
+        ┌─────────────┐
+        │ 'Chinstrap' │
+        └─────────────┘
 
         >>> t.species.argmin(t.body_mass_g, where=t.island == "Biscoe")
-        'Adelie'
+        ┌──────────┐
+        │ 'Adelie' │
+        └──────────┘
         """
         return ops.ArgMin(
-            self, key=key, where=self._bind_reduction_filter(where)
+            self, key=key, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def median(self, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1746,7 +1791,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the median of `bill_depth_mm`
 
         >>> t.bill_depth_mm.median()
-        17.3
+        ┌──────┐
+        │ 17.3 │
+        └──────┘
         >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
         ...     ibis.desc("median_bill_depth")
         ... )
@@ -1776,7 +1823,7 @@ class Column(Value, _FixedTextJupyterMixin):
         │ Torgersen │ Adelie         │
         └───────────┴────────────────┘
         """
-        return ops.Median(self, where=where).to_expr()
+        return ops.Median(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def quantile(
         self,
@@ -1810,7 +1857,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the 99th percentile of `bill_depth`
 
         >>> t.bill_depth_mm.quantile(0.99)
-        21.1
+        ┌──────┐
+        │ 21.1 │
+        └──────┘
         >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
         ...     ibis.desc("p99_bill_depth")
         ... )
@@ -1846,7 +1895,7 @@ class Column(Value, _FixedTextJupyterMixin):
             op = ops.MultiQuantile
         else:
             op = ops.Quantile
-        return op(self, quantile, where=where).to_expr()
+        return op(self, quantile, where=self._bind_to_parent_table(where)).to_expr()
 
     def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
@@ -1867,12 +1916,16 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.nunique()
-        94
+        ┌────┐
+        │ 94 │
+        └────┘
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
-        55
+        ┌────┐
+        │ 55 │
+        └────┘
         """
         return ops.CountDistinct(
-            self, where=self._bind_reduction_filter(where)
+            self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
     def topk(
@@ -1938,7 +1991,7 @@ class Column(Value, _FixedTextJupyterMixin):
                 removed_in="10.0",
                 instead="call `first` or `last` explicitly",
             )
-        return ops.Arbitrary(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.
@@ -1953,7 +2006,7 @@ class Column(Value, _FixedTextJupyterMixin):
         IntegerScalar
             Number of elements in an expression
         """
-        return ops.Count(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def value_counts(self) -> ir.Table:
         """Compute a frequency table.
@@ -2018,11 +2071,15 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.first()
-        'a'
+        ┌─────┐
+        │ 'a' │
+        └─────┘
         >>> t.chars.first(where=t.chars != "a")
-        'b'
+        ┌─────┐
+        │ 'b' │
+        └─────┘
         """
-        return ops.First(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.First(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def last(self, where: ir.BooleanValue | None = None) -> Value:
         """Return the last value of a column.
@@ -2044,11 +2101,15 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.last()
-        'd'
+        ┌─────┐
+        │ 'd' │
+        └─────┘
         >>> t.chars.last(where=t.chars != "d")
-        'c'
+        ┌─────┐
+        │ 'c' │
+        └─────┘
         """
-        return ops.Last(self, where=self._bind_reduction_filter(where)).to_expr()
+        return ops.Last(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.
@@ -2240,9 +2301,13 @@ def null(type: dt.DataType | str | None = None) -> Value:
         ...
     AttributeError: 'NullScalar' object has no attribute 'upper'
     >>> ibis.null(str).upper()
-    None
+    ┌──────┐
+    │ None │
+    └──────┘
     >>> ibis.null(str).upper().isnull()
-    True
+    ┌──────┐
+    │ True │
+    └──────┘
     """
     if type is None:
         type = dt.null

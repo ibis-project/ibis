@@ -355,3 +355,44 @@ def test_list_tables_schema_warning_refactor(con):
         con.list_tables(database=("IBIS_TESTING", "INFORMATION_SCHEMA"), like="TABLE")
         == like_table
     )
+
+
+def test_timestamp_memtable(con):
+    df = pd.DataFrame(
+        {
+            "ts": [
+                pd.Timestamp("1970-01-01 00:00:00"),
+                pd.Timestamp("1970-01-01 00:00:01"),
+                pd.Timestamp("1970-01-01 00:00:02"),
+            ]
+        }
+    )
+    t = ibis.memtable(df)
+    result = con.to_pandas(t)
+    tm.assert_frame_equal(result, df)
+
+
+def test_connect_without_snowflake_url():
+    # We're testing here that the non-URL connection works.
+    # Specifically that a `database` location passed in as "catalog/database"
+    # will be parsed correctly
+    user = os.getenv("SNOWFLAKE_USER")
+    account = os.getenv("SNOWFLAKE_ACCOUNT")
+    catalog = os.getenv("SNOWFLAKE_DATABASE")
+    database = os.getenv("SNOWFLAKE_SCHEMA")
+    warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
+
+    if (password := os.getenv("SNOWFLAKE_PASSWORD")) is None:
+        pytest.skip(reason="No snowflake password set, nothing to do here")
+
+    database = "/".join(filter(None, (catalog, database)))
+
+    nonurlcon = ibis.snowflake.connect(
+        user=user,
+        account=account,
+        database=database,
+        warehouse=warehouse,
+        password=password,
+    )
+
+    assert nonurlcon.list_tables()
