@@ -503,8 +503,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             )
 
         delta_table = DeltaTable(source_table, **kwargs)
-
-        return self.register(delta_table.to_pyarrow_dataset(), table_name=table_name)
+        self.con.register_dataset(table_name, delta_table.to_pyarrow_dataset())
+        return self.table(table_name)
 
     def to_pyarrow_batches(
         self,

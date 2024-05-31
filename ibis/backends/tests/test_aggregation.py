@@ -892,6 +892,11 @@ def test_quantile(
                     raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
+                pytest.mark.xfail_version(
+                    datafusion=["datafusion==38.0.1"],
+                    reason="datafusion FILTER syntax seems broken",
+                    strict=False,  # passes with no filter condition
+                ),
             ],
         ),
         param(
