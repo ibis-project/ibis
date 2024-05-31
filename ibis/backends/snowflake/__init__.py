@@ -1138,13 +1138,13 @@ $$"""
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        table = sg.table(table_name, db=db, catalog=catalog, quoted=True)
         self._run_pre_execute_hooks(obj)
-        query = sg.exp.insert(
-            expression=self.compile(obj),
-            into=table,
-            columns=[sg.to_identifier(col, quoted=True) for col in obj.columns],
-            dialect=self.name,
+
+        query = self._build_insert_query(
+            target=table_name, source=obj, db=db, catalog=catalog
+        )
+        table = sg.table(
+            table_name, db=db, catalog=catalog, quoted=self.compiler.quoted
         )
 
         statements = []

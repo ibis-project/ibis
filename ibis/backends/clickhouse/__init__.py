@@ -423,8 +423,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = sge.insert(self.compile(obj), into=name, dialect=self.name)
-
+        query = self._build_insert_query(target=name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)

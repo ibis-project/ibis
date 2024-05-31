@@ -577,8 +577,12 @@ class Backend(SQLBackend, UrlFromPath):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
-        expr = self._to_sqlglot(obj)
-        insert_stmt = sge.Insert(this=table, expression=expr).sql(self.name)
+
+        query = self._build_insert_query(
+            target=table_name, source=obj, catalog=database
+        )
+        insert_stmt = query.sql(self.name)
+
         with self.begin() as cur:
             if overwrite:
                 cur.execute(f"DELETE FROM {table.sql(self.name)}")
