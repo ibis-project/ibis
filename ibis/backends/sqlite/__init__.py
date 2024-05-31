@@ -578,25 +578,11 @@ class Backend(SQLBackend, UrlFromPath):
 
         self._run_pre_execute_hooks(obj)
 
-        # Compare the columns between the target table and the object to be inserted
-        # If they don't match, assume auto-generated column names and use positional
-        # ordering.
-        columns = (
-            obj.columns
-            if not set(parent_cols := self.get_schema(table_name).names).difference(
-                obj.columns
-            )
-            else parent_cols
+        query = self._build_insert_query(
+            target=table_name, source=obj, catalog=database
         )
+        insert_stmt = query.sql(self.name)
 
-        insert_stmt = sge.insert(
-            expression=self.compile(obj),
-            into=sg.table(table_name, catalog=database, quoted=self.compiler.quoted),
-            columns=[
-                sg.to_identifier(col, quoted=self.compiler.quoted) for col in columns
-            ],
-            dialect=self.compiler.dialect,
-        ).sql(self.name)
         with self.begin() as cur:
             if overwrite:
                 cur.execute(f"DELETE FROM {table.sql(self.name)}")

@@ -423,26 +423,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        # Compare the columns between the target table and the object to be inserted
-        # If they don't match, assume auto-generated column names and use positional
-        # ordering.
-        columns = (
-            obj.columns
-            if not set(parent_cols := self.get_schema(name).names).difference(
-                obj.columns
-            )
-            else parent_cols
-        )
-
-        query = sge.insert(
-            self.compile(obj),
-            into=name,
-            columns=[
-                sg.to_identifier(col, quoted=self.compiler.quoted) for col in columns
-            ],
-            dialect=self.name,
-        )
-
+        query = self._build_insert_query(target=name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)
