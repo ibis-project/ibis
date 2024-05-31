@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
 
     import ibis.expr.types as ir
-    from ibis.expr.types.arrays import ArrayColumn
+    from ibis.expr.types.arrays import ArrayValue
 
 
 @public
@@ -441,8 +441,8 @@ class MapColumn(Column, MapValue):
 @public
 @deferrable
 def map(
-    keys: Iterable[Any] | Mapping[Any, Any] | ArrayColumn,
-    values: Iterable[Any] | ArrayColumn | None = None,
+    keys: Iterable[Any] | Mapping[Any, Any] | ArrayValue,
+    values: Iterable[Any] | ArrayValue | None = None,
 ) -> MapValue:
     """Create a MapValue.
 
