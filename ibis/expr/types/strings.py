@@ -1702,7 +1702,6 @@ class StringValue(Value):
         ┌───┐
         │ 3 │
         └───┘
-
         """
         return ops.Levenshtein(self, other).to_expr()
 
