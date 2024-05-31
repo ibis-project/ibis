@@ -616,6 +616,20 @@ def test_table_info(alltypes):
     assert expr.columns == list(df.columns)
 
 
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid only supports trivial unions",
+)
+def test_table_info_large(con):
+    num_cols = 129
+    col_names = [f"col_{i}" for i in range(num_cols)]
+    t = ibis.memtable({col: [0, 1] for col in col_names})
+    result = con.execute(t.info())
+    assert list(result.name) == col_names
+    assert result.pos.dtype == np.int16
+
+
 @pytest.mark.notimpl(
     [
         "datafusion",
