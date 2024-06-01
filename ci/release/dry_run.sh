@@ -35,14 +35,14 @@ nix develop '.#release' -c git commit -m 'test: semantic-release dry run' --no-v
 unset GITHUB_ACTIONS
 
 nix develop '.#release' -c npx --yes \
-  -p semantic-release \
+  -p "semantic-release@24.0.0" \
   -p "@semantic-release/commit-analyzer" \
   -p "@semantic-release/release-notes-generator" \
   -p "@semantic-release/changelog" \
   -p "@semantic-release/exec" \
   -p "@semantic-release/git" \
   -p "semantic-release-replace-plugin@1.2.0" \
-  -p "conventional-changelog-conventionalcommits@6.1.0" \
+  -p "conventional-changelog-conventionalcommits@8.0.0" \
   semantic-release \
   --ci \
   --dry-run \
