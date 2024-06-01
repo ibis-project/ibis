@@ -10,15 +10,30 @@
 , autoPatchelfHook
 }:
 
+let
+  platforms = {
+    "x86_64-linux" = "linux-amd64";
+    "aarch64-darwin" = "macos";
+  };
+  shas = {
+    "x86_64-linux" = "sha256-X+VgTY649Vo37u8byNzLD+KPVK3MRdySAPN0ZhdBw0g=";
+    "aarch64-darwin" = "sha256-yK0y7gnYWKO5vRBoBtYva3cmIL4ddoeYhn2Gor/NUCs=";
+  };
+  inherit (stdenv.hostPlatform) system;
+in
 stdenv.mkDerivation rec {
   pname = "quarto";
   version = "1.5.13";
   src = fetchurl {
-    url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-linux-amd64.tar.gz";
-    sha256 = "sha256-X+VgTY649Vo37u8byNzLD+KPVK3MRdySAPN0ZhdBw0g=";
+    url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${platforms.${system}}.tar.gz";
+    sha256 = shas.${system};
   };
 
-  nativeBuildInputs = [ autoPatchelfHook makeWrapper ];
+  preUnpack = lib.optionalString stdenv.isDarwin "mkdir ${sourceRoot}";
+  sourceRoot = lib.optionalString stdenv.isDarwin "quarto-${version}";
+  unpackCmd = lib.optionalString stdenv.isDarwin "tar xzf $curSrc --directory=$sourceRoot";
+
+  nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [ makeWrapper ];
 
   preFixup = ''
     wrapProgram $out/bin/quarto \
@@ -51,7 +66,7 @@ stdenv.mkDerivation rec {
     changelog = "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
     license = licenses.gpl2Plus;
     maintainers = with maintainers; [ mrtarantoga ];
-    platforms = [ "x86_64-linux" ];
+    platforms = [ "x86_64-linux" "aarch64-darwin" ];
     sourceProvenance = with sourceTypes; [ binaryNativeCode binaryBytecode ];
   };
 }
