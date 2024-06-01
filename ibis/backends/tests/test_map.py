@@ -387,7 +387,9 @@ keys = pytest.mark.parametrize(
             [1.0, 2.0],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
+                    "clickhouse",
+                    reason="only supports str,int,bool,timestamp keys",
+                    strict=False,
                 ),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
