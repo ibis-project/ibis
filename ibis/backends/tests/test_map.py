@@ -397,7 +397,8 @@ keys = pytest.mark.parametrize(
             [ibis.date(1, 2, 3), ibis.date(4, 5, 6)],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp,float keys"
+                    "clickhouse",
+                    reason="only supports str,int,bool,timestamp,float keys",
                 ),
                 pytest.mark.notimpl(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
@@ -411,7 +412,8 @@ keys = pytest.mark.parametrize(
             [[1, 2], [3, 4]],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp,float keys"
+                    "clickhouse",
+                    reason="only supports str,int,bool,timestamp,float keys",
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
@@ -423,7 +425,8 @@ keys = pytest.mark.parametrize(
             [ibis.struct(dict(a=1)), ibis.struct(dict(a=2))],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse", reason="only supports str,int,bool,timestamp,float keys"
+                    "clickhouse",
+                    reason="only supports str,int,bool,timestamp,float keys",
                 ),
                 pytest.mark.notyet(["pandas", "dask"]),
                 mark_notyet_postgres,
