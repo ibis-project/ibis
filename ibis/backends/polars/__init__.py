@@ -463,7 +463,7 @@ class Backend(BaseBackend, NoUrl):
         return self._get_schema_using_query(sql)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return PolarsSchema.to_ibis(self._context.execute(query).schema)
+        return PolarsSchema.to_ibis(self._context.execute(query, eager=False).schema)
 
     def _to_dataframe(
         self,
