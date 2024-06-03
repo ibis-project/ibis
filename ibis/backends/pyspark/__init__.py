@@ -1165,16 +1165,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df = self._session.sql(expr.compile())
         if self.mode == "batch":
             df = df.write.format(format)
-            if options is not None:
-                for k, v in options.items():
-                    df = df.option(k, v)
+            for k, v in (options or {}).items():
+                df = df.option(k, v)
             df.save(path)
             return None
         sq = df.writeStream.format(format)
         sq = sq.option("path", os.fspath(path))
-        if options is not None:
-            for k, v in options.items():
-                sq = sq.option(k, v)
+        for k, v in (options or {}).items():
+            sq = sq.option(k, v)
         sq.start()
         return sq
 
