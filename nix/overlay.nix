@@ -21,8 +21,8 @@ in
     name = "ibis-testing-data";
     owner = "ibis-project";
     repo = "testing-data";
-    rev = "1922bd4617546b877e66e78bb2b87abeb510cf8e";
-    sha256 = "sha256-l5d7r/6Voy6N2pXq3IivLX3N0tNfKKwsbZXRexzc8Z8=";
+    rev = "6737d1cb5951cabaccd095a3ae62a93dbd11ecb9";
+    sha256 = "sha256-MoVTZPWh4KVlrICYACrgfeLdl/fqoa1iweNg3zUtdrs=";
   };
 
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
@@ -39,7 +39,6 @@ in
     extras = [ ];
   };
 
-  # TODO(cpcloud): remove once https://github.com/NixOS/nixpkgs/pull/232090 is merged
   quarto = pkgs.callPackage ./quarto { };
 
   changelog = pkgs.writeShellApplication {

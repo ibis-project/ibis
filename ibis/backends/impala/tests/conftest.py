@@ -32,7 +32,7 @@ class TestConf(BackendTest):
 
     @property
     def test_files(self) -> Iterable[Path]:
-        return [self.data_dir.joinpath("impala")]
+        return [self.data_dir.joinpath("directory")]
 
     def preload(self):
         env = IbisTestEnv()
@@ -79,7 +79,7 @@ class TestConf(BackendTest):
         (parquet,) = self.test_files
 
         # container path to data
-        prefix = "/user/hive/warehouse/impala/parquet"
+        prefix = "/user/hive/warehouse/directory/parquet"
         for dir in parquet.joinpath("parquet").glob("*"):
             con.drop_table(dir.name, database=database, force=True)
 
