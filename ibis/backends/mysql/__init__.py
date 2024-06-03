@@ -192,7 +192,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         table = util.gen_name(f"{self.name}_metadata")
 
         with self.begin() as cur:
-            cur.execute(f"CREATE TEMPORARY TABLE {table} AS {query}")
+            cur.execute(
+                f"CREATE TEMPORARY TABLE {table} AS SELECT * FROM ({query}) AS tmp LIMIT 0"
+            )
             try:
                 return self.get_schema(table)
             finally:
