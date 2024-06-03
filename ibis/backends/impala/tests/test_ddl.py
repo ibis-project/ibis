@@ -248,7 +248,7 @@ def test_change_format(table):
 
 
 def test_query_avro(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/avro/tpch/region")
+    hdfs_path = pjoin(test_data_dir, "directory/avro/tpch/region")
 
     avro_schema = {
         "fields": [

@@ -13,7 +13,7 @@ from impala.error import HiveServer2Error  # noqa: E402
 
 
 def test_parquet_file_with_name(con, test_data_dir, temp_table):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
+    hdfs_path = pjoin(test_data_dir, "directory/parquet/region")
 
     name = temp_table
     schema = ibis.schema(
@@ -30,7 +30,7 @@ def test_parquet_file_with_name(con, test_data_dir, temp_table):
 
 
 def test_query_parquet_file_with_schema(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
+    hdfs_path = pjoin(test_data_dir, "directory/parquet/region")
 
     schema = ibis.schema(
         [
@@ -54,7 +54,7 @@ def test_query_parquet_file_with_schema(con, test_data_dir):
 
 
 def test_query_parquet_file_like_table(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
+    hdfs_path = pjoin(test_data_dir, "directory/parquet/region")
 
     ex_schema = ibis.schema(
         [
@@ -70,7 +70,7 @@ def test_query_parquet_file_like_table(con, test_data_dir):
 
 
 def test_query_parquet_infer_schema(con, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
+    hdfs_path = pjoin(test_data_dir, "directory/parquet/region")
     table = con.parquet_file(hdfs_path, like_table="region")
 
     # NOTE: the actual schema should have an int16, but bc this is being
@@ -88,7 +88,7 @@ def test_query_parquet_infer_schema(con, test_data_dir):
 
 
 def test_create_table_persist_fails_if_called_twice(con, temp_table, test_data_dir):
-    hdfs_path = pjoin(test_data_dir, "impala/parquet/region")
+    hdfs_path = pjoin(test_data_dir, "directory/parquet/region")
     con.parquet_file(hdfs_path, like_table="region", name=temp_table)
 
     with pytest.raises(HiveServer2Error):
