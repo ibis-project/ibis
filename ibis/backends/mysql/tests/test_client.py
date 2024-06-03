@@ -57,6 +57,13 @@ MYSQL_TYPES = [
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
     param("uuid", dt.uuid, id="uuid"),
+] + [
+    param(
+        f"datetime({scale:d})",
+        dt.Timestamp(scale=scale or None),
+        id=f"datetime{scale:d}",
+    )
+    for scale in range(7)
 ]
 
 
