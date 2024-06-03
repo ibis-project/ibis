@@ -487,8 +487,19 @@ class MySQLType(SqlglotType):
             return dt.Int8(nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_DATETIME(cls) -> dt.Timestamp:
-        return dt.Timestamp(nullable=cls.default_nullable)
+    def _from_sqlglot_DATETIME(cls, scale=None) -> dt.Timestamp:
+        if scale is not None:
+            scale = int(scale.this.this)
+        return dt.Timestamp(
+            # scale of zero means "no scale", which differs from the SQL
+            # standard
+            #
+            # see
+            # https://dev.mysql.com/doc/refman/8.4/en/fractional-seconds.html
+            # for details
+            scale=scale or None,
+            nullable=cls.default_nullable,
+        )
 
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
