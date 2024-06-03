@@ -6,19 +6,12 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import pyspark
+import pyspark.sql.functions as F
 import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import (
-    PandasUDFType,
-    col,
-    from_json,
-    pandas_udf,
-    struct,
-    to_json,
-)
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
 import ibis.common.exceptions as com
@@ -58,7 +51,7 @@ def normalize_filenames(source_list):
     return list(map(util.normalize_filename, source_list))
 
 
-@pandas_udf(returnType=DoubleType(), functionType=PandasUDFType.SCALAR)
+@F.pandas_udf(returnType=DoubleType(), functionType=F.PandasUDFType.SCALAR)
 def unwrap_json_float(s: pd.Series) -> pd.Series:
     import json
 
@@ -83,7 +76,7 @@ def unwrap_json(typ):
 
     type_mapping = {str: StringType(), int: LongType(), bool: BooleanType()}
 
-    @pandas_udf(returnType=type_mapping[typ], functionType=PandasUDFType.SCALAR)
+    @F.pandas_udf(returnType=type_mapping[typ], functionType=F.PandasUDFType.SCALAR)
     def unwrap(s: pd.Series) -> pd.Series:
         def nullify_type_mismatched_value(raw):
             if pd.isna(raw):
@@ -99,7 +92,7 @@ def unwrap_json(typ):
     return unwrap
 
 
-def _format_interval_as_string(interval):
+def _interval_to_string(interval):
     return f"{interval.op().value} {interval.op().dtype.unit.name.lower()}"
 
 
@@ -320,14 +313,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 udf_name = self.compiler.__sql_name__(udf)
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
                 udf_return = PySparkType.from_ibis(udf.dtype)
-                spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.SCALAR)
+                spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
                 self._session.udf.register(udf_name, spark_udf)
 
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.SCALAR)
+            spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
             self._session.udf.register(udf_name, spark_udf)
 
         for udf in node.find(ops.ReductionVectorizedUDF):
@@ -335,7 +328,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
             udf_func = udf.func
             udf_return = PySparkType.from_ibis(udf.return_type)
-            spark_udf = pandas_udf(udf_func, udf_return, PandasUDFType.GROUPED_AGG)
+            spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.GROUPED_AGG)
             self._session.udf.register(udf_name, spark_udf)
 
         for typ in (str, int, bool):
@@ -950,7 +943,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         schema: sch.Schema | None = None,
         options: Mapping[str, str] | None = None,
     ) -> ir.Table:
-        """Register a Kafka topic as a table in the current database.
+        """Register a Kafka topic as a table.
 
         Parameters
         ----------
@@ -979,26 +972,25 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 "Reading from Kafka in batch mode is not supported"
             )
         spark_df = self._session.readStream.format("kafka")
-        if options is not None:
-            for k, v in options.items():
-                spark_df = spark_df.option(k, v)
+        for k, v in (options or {}).items():
+            spark_df = spark_df.option(k, v)
         spark_df = spark_df.load()
 
         # parse the values of the Kafka messages using the provided schema
-        if auto_parse is True:
+        if auto_parse:
             if schema is None:
                 raise com.IbisError(
                     "When auto_parse is True, a schema must be provided to parse the messages"
                 )
             schema = PySparkSchema.from_ibis(schema)
             spark_df = spark_df.select(
-                from_json(col("value").cast("string"), schema).alias("parsed_value")
+                F.from_json(F.col("value").cast("string"), schema).alias("parsed_value")
             ).select("parsed_value.*")
 
         if watermark is not None:
             spark_df = spark_df.withWatermark(
                 watermark.time_col,
-                _format_interval_as_string(watermark.allowed_delay),
+                _interval_to_string(watermark.allowed_delay),
             )
 
         table_name = table_name or util.gen_name("read_kafka")
@@ -1037,13 +1029,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "batch":
             raise NotImplementedError("Writing to Kafka in batch mode is not supported")
         df = self._session.sql(expr.compile())
-        if auto_format is True:
+        if auto_format:
             df = df.select(
-                to_json(struct([col(c).alias(c) for c in df.columns])).alias("value")
+                F.to_json(F.struct([F.col(c).alias(c) for c in df.columns])).alias(
+                    "value"
+                )
             )
         sq = df.writeStream.format("kafka")
-        if options is not None:
-            for k, v in options.items():
-                sq = sq.option(k, v)
+        for k, v in (options or {}).items():
+            sq = sq.option(k, v)
         sq.start()
         return sq
