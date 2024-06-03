@@ -445,17 +445,17 @@ def test_table_fillna_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.fillna({"invalid_col": 0.0})
+        alltypes.fillnull({"invalid_col": 0.0})
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fillna on column 'string_col' of type.*"
+        com.IbisTypeError, match="Cannot fillnull on column 'string_col' of type.*"
     ):
-        alltypes[["int_col", "string_col"]].fillna(0)
+        alltypes[["int_col", "string_col"]].fillnull(0)
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fillna on column 'int_col' of type.*"
+        com.IbisTypeError, match="Cannot fillnull on column 'int_col' of type.*"
     ):
-        alltypes.fillna({"int_col": "oops"})
+        alltypes.fillnull({"int_col": "oops"})
 
 
 @pytest.mark.parametrize(
@@ -475,7 +475,7 @@ def test_table_fillna_mapping(backend, alltypes, replacements):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    result = table.fillna(replacements).execute().reset_index(drop=True)
+    result = table.fillnull(replacements).execute().reset_index(drop=True)
     expected = pd_table.fillna(replacements).reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected, check_dtype=False)
@@ -489,11 +489,11 @@ def test_table_fillna_scalar(backend, alltypes):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    res = table[["int_col", "double_col"]].fillna(0).execute().reset_index(drop=True)
+    res = table[["int_col", "double_col"]].fillnull(0).execute().reset_index(drop=True)
     sol = pd_table[["int_col", "double_col"]].fillna(0).reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
-    res = table[["string_col"]].fillna("missing").execute().reset_index(drop=True)
+    res = table[["string_col"]].fillnull("missing").execute().reset_index(drop=True)
     sol = pd_table[["string_col"]].fillna("missing").reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
@@ -509,14 +509,14 @@ def test_mutate_rename(alltypes):
     assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
 
 
-def test_dropna_invalid(alltypes):
+def test_dropnull_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.dropna(subset=["invalid_col"])
+        alltypes.dropnull(subset=["invalid_col"])
 
     with pytest.raises(ValidationError):
-        alltypes.dropna(how="invalid")
+        alltypes.dropnull(how="invalid")
 
 
 @pytest.mark.parametrize("how", ["any", "all"])
@@ -534,7 +534,7 @@ def test_dropna_invalid(alltypes):
         param(["col_1", "col_3"], id="one-and-three"),
     ],
 )
-def test_dropna_table(backend, alltypes, how, subset):
+def test_dropnull_table(backend, alltypes, how, subset):
     is_two = alltypes.int_col == 2
     is_four = alltypes.int_col == 4
 
@@ -545,8 +545,18 @@ def test_dropna_table(backend, alltypes, how, subset):
     ).select("col_1", "col_2", "col_3")
 
     table_pandas = table.execute()
-    result = table.dropna(subset, how).execute().reset_index(drop=True)
+    result = table.dropnull(subset, how).execute().reset_index(drop=True)
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(drop=True)
+
+    backend.assert_frame_equal(result, expected)
+
+
+# TODO: remove when dropna is fully deprecated
+def test_dropna_depr_warn(backend):
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    expected = ibis.memtable([{"a": 2, "b": "baz"}]).execute().reset_index(drop=True)
+    with pytest.warns(FutureWarning, match="v10.0"):
+        result = t.dropna().execute().reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected)
 
