@@ -21,7 +21,7 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PySparkAnalysisException,
 )
-from ibis.common.exceptions import IbisError, OperationNotDefinedError
+from ibis.common.exceptions import IbisError
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -101,7 +101,7 @@ def test_null_literal(backend, con, field):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave"])
+@pytest.mark.notimpl(["postgres", "risingwave"])
 def test_struct_column(alltypes, df):
     t = alltypes
     expr = t.select(s=ibis.struct(dict(a=t.string_col, b=1, c=t.bigint_col)))
@@ -113,7 +113,7 @@ def test_struct_column(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "postgres", "risingwave", "polars"])
+@pytest.mark.notimpl(["postgres", "risingwave", "polars"])
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from collect"
 )
@@ -253,7 +253,12 @@ def test_keyword_fields(con, nullable):
     raises=PolarsColumnNotFoundError,
     reason="doesn't seem to support IN-style subqueries on structs",
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=OperationNotDefinedError)
+@pytest.mark.notimpl(
+    # https://github.com/pandas-dev/pandas/issues/58909
+    ["pandas", "dask"],
+    raises=TypeError,
+    reason="unhashable type: 'dict'",
+)
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.5"],
     reason="requires pyspark 3.5",
