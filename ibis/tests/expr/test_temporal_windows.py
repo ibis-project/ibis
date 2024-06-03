@@ -62,3 +62,26 @@ def test_window_by_group_by_agg(table, method, by):
         }
     )
     assert expr.schema() == expected_schema
+
+
+@pytest.mark.parametrize(
+    "method",
+    [
+        methodcaller("tumble", size=ibis.interval(minutes=15)),
+        methodcaller(
+            "hop", size=ibis.interval(minutes=15), slide=ibis.interval(minutes=1)
+        ),
+    ],
+    ids=["tumble", "hop"],
+)
+def test_window_by_global_agg(table, method):
+    expr = method(table.window_by(time_col=table.i))
+    expr = expr.agg(a_sum=_.a.sum())
+    expected_schema = ibis.schema(
+        {
+            "window_start": "timestamp",
+            "window_end": "timestamp",
+            "a_sum": "int64",
+        }
+    )
+    assert expr.schema() == expected_schema
