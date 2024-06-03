@@ -623,7 +623,7 @@ def test_table_info(alltypes):
     reason="Druid only supports trivial unions",
 )
 @pytest.mark.xfail(
-    ["flink"], reason="IOException: Insufficient number of network buffers"
+    reason="For flink: IOException - Insufficient number of network buffers"
 )
 def test_table_info_large(con):
     num_cols = 129
