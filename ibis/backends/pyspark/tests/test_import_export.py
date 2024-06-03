@@ -52,8 +52,8 @@ def test_streaming_import_not_implemented(con_streaming, method):
         method(con_streaming)
 
 
-def test_read_csv_directory(con_streaming, awards_players_schema):
-    t = con_streaming.read_csv_directory(
+def test_read_csv_dir(con_streaming, awards_players_schema):
+    t = con_streaming.read_csv_dir(
         "ci/ibis-testing-data/directory/csv/awards_players",
         table_name="t",
         schema=PySparkSchema.from_ibis(awards_players_schema),
@@ -66,8 +66,8 @@ def test_read_csv_directory(con_streaming, awards_players_schema):
     assert pd_df.iloc[0, 0] == 6078
 
 
-def test_read_parquet_directory(con_streaming):
-    t = con_streaming.read_parquet_directory(
+def test_read_parquet_dir(con_streaming):
+    t = con_streaming.read_parquet_dir(
         "ci/ibis-testing-data/directory/parquet/awards_players", table_name="t"
     )
     con_streaming.write_to_memory(t, "n")
@@ -77,10 +77,10 @@ def test_read_parquet_directory(con_streaming):
     assert pd_df.iloc[0, 0] == 6078
 
 
-def test_to_csv_directory(con_streaming, tmp_path):
+def test_to_csv_dir(con_streaming, tmp_path):
     t = con_streaming.table("awards_players")
     path = tmp_path / "out"
-    con_streaming.to_csv_directory(
+    con_streaming.to_csv_dir(
         t.limit(5),
         path=path,
         options={"checkpointLocation": tmp_path / "checkpoint", "header": True},
@@ -90,10 +90,10 @@ def test_to_csv_directory(con_streaming, tmp_path):
     assert len(df) == 5
 
 
-def test_to_parquet_directory(con_streaming, tmp_path):
+def test_to_parquet_dir(con_streaming, tmp_path):
     t = con_streaming.table("awards_players")
     path = tmp_path / "out"
-    con_streaming.to_parquet_directory(
+    con_streaming.to_parquet_dir(
         t.limit(5),
         path=path,
         options={"checkpointLocation": tmp_path / "checkpoint"},
