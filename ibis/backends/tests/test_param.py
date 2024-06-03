@@ -209,10 +209,6 @@ def test_scalar_param_date(backend, alltypes, value):
         "exasol",
     ]
 )
-@pytest.mark.broken(
-    ["polars"],
-    reason="support for this stopped working around 0.20.30; causes a panic on calling vec_hash on list[f64]",
-)
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
