@@ -2596,7 +2596,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountStar(self, where=where).to_expr()
 
-    def dropna(
+    def dropnull(
         self,
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
@@ -2645,27 +2645,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌─────┐
         │ 344 │
         └─────┘
-        >>> t.dropna(["bill_length_mm", "body_mass_g"]).count()
+        >>> t.dropnull(["bill_length_mm", "body_mass_g"]).count()
         ┌─────┐
         │ 342 │
         └─────┘
-        >>> t.dropna(how="all").count()  # no rows where all columns are null
+        >>> t.dropnull(how="all").count()  # no rows where all columns are null
         ┌─────┐
         │ 344 │
         └─────┘
         """
         if subset is not None:
             subset = self.bind(subset)
-        return ops.DropNa(self, how, subset).to_expr()
+        return ops.DropNull(self, how, subset).to_expr()
 
-    def fillna(
+    def fillnull(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
-        ## There is potential lack of type stability with the `fillna` API
+        ## There is potential lack of type stability with the `fillnull` API
 
         For example, different library versions may impact whether a given
         backend promotes integer replacement values to floats.
@@ -2677,6 +2677,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             Value with which to fill nulls. If `replacements` is a mapping, the
             keys are column names that map to their replacement value. If
             passed as a scalar all columns are filled with that value.
+
+        Returns
+        -------
+        Table
+            Table expression
 
         Examples
         --------
@@ -2701,7 +2706,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ NULL   │
         │ …      │
         └────────┘
-        >>> t.fillna({"sex": "unrecorded"}).sex
+        >>> t.fillnull({"sex": "unrecorded"}).sex
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -2719,6 +2724,87 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ unrecorded │
         │ …          │
         └────────────┘
+        """
+        schema = self.schema()
+
+        if isinstance(replacements, Mapping):
+            for col, val in replacements.items():
+                if col not in schema:
+                    columns_formatted = ", ".join(map(repr, schema.names))
+                    raise com.IbisTypeError(
+                        f"Column {col!r} is not found in table. "
+                        f"Existing columns: {columns_formatted}."
+                    ) from None
+
+                col_type = schema[col]
+                val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
+                if not val_type.castable(col_type):
+                    raise com.IbisTypeError(
+                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"value of type {val_type}"
+                    )
+        else:
+            val_type = (
+                replacements.type()
+                if isinstance(replacements, Expr)
+                else dt.infer(replacements)
+            )
+            for col, col_type in schema.items():
+                if col_type.nullable and not val_type.castable(col_type):
+                    raise com.IbisTypeError(
+                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"value of type {val_type} - pass in an explicit mapping "
+                        f"of fill values to `fillna` instead."
+                    )
+        return ops.FillNull(self, replacements).to_expr()
+
+    @deprecated(as_of="10.0", instead="use dropnull instead")
+    def dropna(
+        self,
+        subset: Sequence[str] | str | None = None,
+        how: Literal["any", "all"] = "any",
+    ) -> Table:
+        """Remove rows with null values from the table.
+
+        Parameters
+        ----------
+        subset
+            Columns names to consider when dropping nulls. By default all columns
+            are considered.
+        how
+            Determine whether a row is removed if there is **at least one null
+            value in the row** (`'any'`), or if **all** row values are null
+            (`'all'`).
+
+        Returns
+        -------
+        Table
+            Table expression
+        """
+        if subset is not None:
+            subset = self.bind(subset)
+        return ops.DropNull(self, how, subset).to_expr()
+
+    @deprecated(as_of="10.0", instead="use fillnull instead")
+    def fillna(
+        self,
+        replacements: ir.Scalar | Mapping[str, ir.Scalar],
+    ) -> Table:
+        """Fill null values in a table expression.
+
+        ::: {.callout-note}
+        ## There is potential lack of type stability with the `fillna` API
+
+        For example, different library versions may impact whether a given
+        backend promotes integer replacement values to floats.
+        :::
+
+        Parameters
+        ----------
+        replacements
+            Value with which to fill nulls. If `replacements` is a mapping, the
+            keys are column names that map to their replacement value. If
+            passed as a scalar all columns are filled with that value.
 
         Returns
         -------
@@ -2740,7 +2826,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
         else:
@@ -2752,11 +2838,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             for col, col_type in schema.items():
                 if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
                         f"of fill values to `fillna` instead."
                     )
-        return ops.FillNa(self, replacements).to_expr()
+        return ops.FillNull(self, replacements).to_expr()
 
     def unpack(self, *columns: str) -> Table:
         """Project the struct fields of each of `columns` into `self`.

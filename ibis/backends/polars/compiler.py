@@ -367,8 +367,8 @@ def asof_join(op, **kw):
     return joined
 
 
-@translate.register(ops.DropNa)
-def dropna(op, **kw):
+@translate.register(ops.DropNull)
+def dropnull(op, **kw):
     lf = translate(op.parent, **kw)
 
     if op.subset is None:
@@ -385,8 +385,8 @@ def dropna(op, **kw):
     return lf.drop_nulls(subset)
 
 
-@translate.register(ops.FillNa)
-def fillna(op, **kw):
+@translate.register(ops.FillNull)
+def fillnull(op, **kw):
     table = translate(op.parent, **kw)
 
     columns = []
