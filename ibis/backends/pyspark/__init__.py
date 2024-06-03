@@ -708,7 +708,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of parquet files. "
-                "Please use `read_parquet_directory` instead."
+                "Please use `read_parquet_dir` instead."
             )
         path = util.normalize_filename(path)
         spark_df = self._session.read.parquet(path, **kwargs)
@@ -746,7 +746,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of CSV files. "
-                "Please use `read_csv_directory` instead."
+                "Please use `read_csv_dir` instead."
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
@@ -788,7 +788,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
-                "Please use `read_json_directory` instead."
+                "Please use `read_json_dir` instead."
             )
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
@@ -939,7 +939,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
 
     @util.experimental
-    def read_csv_directory(
+    def read_csv_dir(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV directory as a table in the current database.
@@ -972,13 +972,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             spark_df = self._session.readStream.csv(
                 path, inferSchema=inferSchema, header=header, **kwargs
             )
-        table_name = table_name or util.gen_name("read_csv_directory")
+        table_name = table_name or util.gen_name("read_csv_dir")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
     @util.experimental
-    def read_parquet_directory(
+    def read_parquet_dir(
         self,
         path: str | Path,
         table_name: str | None = None,
@@ -1008,13 +1008,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             spark_df = self._session.read.parquet(path, **kwargs)
         elif self.mode == "streaming":
             spark_df = self._session.readStream.parquet(path, **kwargs)
-        table_name = table_name or util.gen_name("read_parquet_directory")
+        table_name = table_name or util.gen_name("read_parquet_dir")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
 
     @util.experimental
-    def read_json_directory(
+    def read_json_dir(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table in the current database.
@@ -1041,7 +1041,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             spark_df = self._session.read.json(path, **kwargs)
         elif self.mode == "streaming":
             spark_df = self._session.readStream.json(path, **kwargs)
-        table_name = table_name or util.gen_name("read_json_directory")
+        table_name = table_name or util.gen_name("read_json_dir")
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -1070,7 +1070,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return sq
 
     @util.experimental
-    def to_parquet_directory(
+    def to_parquet_dir(
         self,
         expr: ir.Expr,
         path: str | Path,
@@ -1096,7 +1096,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self._to_filesystem_output(expr, "parquet", path, options)
 
     @util.experimental
-    def to_csv_directory(
+    def to_csv_dir(
         self,
         expr: ir.Expr,
         path: str | Path,
