@@ -224,6 +224,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         return cls.rowwise(lambda row: np.array(row, dtype=object), exprs)
 
     @classmethod
+    def visit(cls, op: ops.StructColumn, names, values):
+        return cls.rowwise(lambda row: dict(zip(names, row)), values)
+
+    @classmethod
     def visit(cls, op: ops.ArrayConcat, arg):
         return cls.rowwise(lambda row: np.concatenate(row.values), arg)
 

@@ -161,6 +161,12 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         )
 
     @classmethod
+    def visit(cls, op: ops.StructColumn, names, values):
+        return cls.rowwise(
+            lambda row: dict(zip(names, row)), values, name=op.name, dtype=object
+        )
+
+    @classmethod
     def visit(cls, op: ops.ArrayConcat, arg):
         dtype = PandasType.from_ibis(op.dtype)
         return cls.rowwise(
