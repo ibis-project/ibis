@@ -293,17 +293,17 @@ def test_window_group_by(snapshot):
     snapshot.assert_match(result, "repr.txt")
 
 
-def test_fillna(snapshot):
+def test_fillnull(snapshot):
     t = ibis.table(dict(a="int64", b="string"), name="t")
 
-    expr = t.fillna({"a": 3})
-    snapshot.assert_match(repr(expr), "fillna_dict_repr.txt")
+    expr = t.fillnull({"a": 3})
+    snapshot.assert_match(repr(expr), "fillnull_dict_repr.txt")
 
-    expr = t[["a"]].fillna(3)
-    snapshot.assert_match(repr(expr), "fillna_int_repr.txt")
+    expr = t[["a"]].fillnull(3)
+    snapshot.assert_match(repr(expr), "fillnull_int_repr.txt")
 
-    expr = t[["b"]].fillna("foo")
-    snapshot.assert_match(repr(expr), "fillna_str_repr.txt")
+    expr = t[["b"]].fillnull("foo")
+    snapshot.assert_match(repr(expr), "fillnull_str_repr.txt")
 
 
 def test_asof_join(snapshot):
