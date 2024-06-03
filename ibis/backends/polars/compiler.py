@@ -321,7 +321,7 @@ def join(op, **kw):
     elif how == "outer":
         how = "full"
 
-    joined = left.join(right, on=on, how=how)
+    joined = left.join(right, on=on, how=how, coalesce=False)
 
     try:
         joined = joined.drop(*on)
