@@ -39,7 +39,6 @@ in
     extras = [ ];
   };
 
-  # TODO(cpcloud): remove once https://github.com/NixOS/nixpkgs/pull/232090 is merged
   quarto = pkgs.callPackage ./quarto { };
 
   changelog = pkgs.writeShellApplication {
