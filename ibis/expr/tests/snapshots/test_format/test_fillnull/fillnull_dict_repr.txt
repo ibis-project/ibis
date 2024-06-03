@@ -2,9 +2,6 @@ r0 := UnboundTable: t
   a int64
   b string
 
-r1 := Project[r0]
-  a: r0.a
-
-FillNa[r1]
+FillNull[r0]
   replacements:
-    3
+    a: 3
