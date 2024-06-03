@@ -25,7 +25,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
-from ibis.formats.pyarrow import PyArrowType
+from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
 from ibis.util import deprecated, gen_name, normalize_filename
 
 try:
@@ -114,23 +114,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             pass
 
         try:
-            result = (
-                self.raw_sql(f"DESCRIBE {table.sql(self.name)}")
-                .to_arrow_table()
-                .to_pydict()
-            )
+            df = self.con.table(name)
         finally:
             self.drop_view(name)
-        return sch.Schema(
-            {
-                name: self.compiler.type_mapper.from_string(
-                    type_string, nullable=is_nullable == "YES"
-                )
-                for name, type_string, is_nullable in zip(
-                    result["column_name"], result["data_type"], result["is_nullable"]
-                )
-            }
-        )
+
+        return PyArrowSchema.to_ibis(df.schema())
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
