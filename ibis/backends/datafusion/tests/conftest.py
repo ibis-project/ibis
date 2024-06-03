@@ -16,8 +16,11 @@ class TestConf(BackendTest):
     supports_structs = False
     supports_json = False
     supports_arrays = True
+    supports_tpch = True
     stateful = False
     deps = ("datafusion",)
+    # Query 1 seems to require a bit more room here
+    tpch_absolute_tolerance = 0.11
 
     def _load_data(self, **_: Any) -> None:
         con = self.connection
@@ -34,6 +37,14 @@ class TestConf(BackendTest):
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.datafusion.connect(**kw)
+
+    def load_tpch(self) -> None:
+        con = self.connection
+        for path in self.data_dir.joinpath("tpch", "sf=0.17", "parquet").glob(
+            "*.parquet"
+        ):
+            table_name = path.with_suffix("").name
+            con.read_parquet(path, table_name=table_name)
 
 
 @pytest.fixture(scope="session")

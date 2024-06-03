@@ -1,8 +1,15 @@
 from __future__ import annotations
 
+import pytest
+
 from .conftest import tpch_test
 
 
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="EXISTS subqueries not supported in DataFusion",
+)
 @tpch_test
 def test_tpc_h22(customer, orders):
     """Global Sales Opportunity Query (Q22)

@@ -57,6 +57,8 @@ class BackendTest(abc.ABC):
     "Name of round method to use for rounding test comparisons."
     driver_supports_multiple_statements: bool = False
     "Whether the driver supports executing multiple statements in a single call."
+    tpch_absolute_tolerance: float | None = None
+    "Absolute tolerance for floating point comparisons with pytest.approx in TPC-H correctness tests."
 
     @property
     @abc.abstractmethod

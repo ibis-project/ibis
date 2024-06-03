@@ -1,10 +1,17 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 
 from .conftest import tpch_test
 
 
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="EXISTS subqueries not supported in DataFusion",
+)
 @tpch_test
 def test_tpc_h21(supplier, lineitem, orders, nation):
     """Suppliers Who Kept Orders Waiting Query (Q21)
