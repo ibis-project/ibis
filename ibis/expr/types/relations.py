@@ -2490,7 +2490,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropna(
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropnull(
         ...     "sex"
         ... ).order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
@@ -3785,7 +3785,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_transform=int,
         ...     values_to="rank",
         ...     values_transform=_.cast("int"),
-        ... ).dropna("rank")
+        ... ).dropnull("rank")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━┓
         ┃ artist  ┃ track                   ┃ date_entered ┃ week ┃ rank  ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━┩
