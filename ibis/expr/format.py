@@ -266,7 +266,7 @@ def _sql_query_result(op, query, **kwargs):
 
 @fmt.register(ops.FillNull)
 @fmt.register(ops.DropNull)
-def _fill_na(op, parent, **kwargs):
+def _fill_null(op, parent, **kwargs):
     name = f"{op.__class__.__name__}[{parent}]\n"
     return name + render_fields(kwargs, 1)
 
