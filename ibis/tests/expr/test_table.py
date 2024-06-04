@@ -2197,10 +2197,11 @@ def test_table_bind():
 def test_table_dropna_depr_warn():
     t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
     with pytest.warns(FutureWarning, match="v10.0"):
-        t.dropna().execute().reset_index(drop=True)
+        t.dropna()
 
 
+# TODO: remove when fillna is fully deprecated
 def test_table_fillna_depr_warn():
     t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
     with pytest.warns(FutureWarning, match="v10.0"):
-        t.fillna({"b": "missing"}).b.execute()
+        t.fillna({"b": "missing"})
