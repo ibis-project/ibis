@@ -14,7 +14,6 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
-    ClickHouseDatabaseError,
     PolarsColumnNotFoundError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
@@ -158,28 +157,16 @@ def test_field_access_after_case(con):
     ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
+@pytest.mark.notyet(
+    ["clickhouse"], raises=sg.ParseError, reason="sqlglot fails to parse"
+)
 @pytest.mark.parametrize(
     "nullable",
     [
-        param(
-            True,
-            marks=[
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=ClickHouseDatabaseError,
-                    reason="ClickHouse doesn't support nested nullable types",
-                )
-            ],
-            id="nullable",
-        ),
+        param(True, id="nullable"),
         param(
             False,
             marks=[
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=sg.ParseError,
-                    reason="sqlglot fails to parse",
-                ),
                 pytest.mark.notyet(
                     ["polars"],
                     raises=AssertionError,
