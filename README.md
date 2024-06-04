@@ -56,7 +56,7 @@ Then use Ibis:
 │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │        4250 │ NULL   │  2007 │
 │ …       │ …         │              … │             … │                 … │           … │ …      │     … │
 └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
->>> g = t.group_by(["species", "island"]).agg(count=t.count()).order_by("count")
+>>> g = t.group_by("species", "island").agg(count=t.count()).order_by("count")
 >>> g
 ┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
 ┃ species   ┃ island    ┃ count ┃
