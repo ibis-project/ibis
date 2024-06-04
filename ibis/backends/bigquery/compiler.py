@@ -622,33 +622,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.agg.corr(left, right, where=where)
 
     def visit_TypeOf(self, op, *, arg):
-        name = sg.to_identifier(util.gen_name("bq_typeof"))
-        from_ = self._unnest(self.f.array(self.f.format("%T", arg)), as_=name)
-        ifs = [
-            self.if_(
-                self.f.regexp_contains(name, '^[A-Z]+ "'),
-                self.f.regexp_extract(name, '^([A-Z]+) "'),
-            ),
-            self.if_(self.f.regexp_contains(name, "^-?[0-9]*$"), "INT64"),
-            self.if_(
-                self.f.regexp_contains(
-                    name, r'^(-?[0-9]+[.e].*|CAST\("([^"]*)" AS FLOAT64\))$'
-                ),
-                "FLOAT64",
-            ),
-            self.if_(name.isin(sge.convert("true"), sge.convert("false")), "BOOL"),
-            self.if_(
-                sg.or_(self.f.starts_with(name, '"'), self.f.starts_with(name, "'")),
-                "STRING",
-            ),
-            self.if_(self.f.starts_with(name, 'b"'), "BYTES"),
-            self.if_(self.f.starts_with(name, "["), "ARRAY"),
-            self.if_(self.f.regexp_contains(name, r"^(STRUCT)?\("), "STRUCT"),
-            self.if_(self.f.starts_with(name, "ST_"), "GEOGRAPHY"),
-            self.if_(name.eq(sge.convert("NULL")), "NULL"),
-        ]
-        case = sge.Case(ifs=ifs, default=sge.convert("UNKNOWN"))
-        return sg.select(case).from_(from_).subquery()
+        return self._pudf("typeof", arg)
 
     def visit_Xor(self, op, *, left, right):
         return sg.or_(sg.and_(left, sg.not_(right)), sg.and_(sg.not_(left), right))
@@ -668,10 +642,10 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.count(STAR)
 
     def visit_Degrees(self, op, *, arg):
-        return sge.paren(180 * arg / self.f.acos(-1), copy=False)
+        return self._pudf("degrees", arg)
 
     def visit_Radians(self, op, *, arg):
-        return sge.paren(self.f.acos(-1) * arg / 180, copy=False)
+        return self._pudf("radians", arg)
 
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
@@ -682,46 +656,25 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.f.generate_uuid()
 
     def visit_ExtractFile(self, op, *, arg):
-        name = sg.table(
-            "cw_url_extract_file", db="persistent_udfs", catalog="bigquery-public-data"
-        ).sql(self.dialect)
-        return self.f[name](arg)
+        return self._pudf("cw_url_extract_file", arg)
 
     def visit_ExtractFragment(self, op, *, arg):
-        name = sg.table(
-            "cw_url_extract_fragment",
-            db="persistent_udfs",
-            catalog="bigquery-public-data",
-        ).sql(self.dialect)
-        return self.f[name](arg)
+        return self._pudf("cw_url_extract_fragment", arg)
 
     def visit_ExtractPath(self, op, *, arg):
-        name = sg.table(
-            "cw_url_extract_path", db="persistent_udfs", catalog="bigquery-public-data"
-        ).sql(self.dialect)
-        return self.f[name](arg)
+        return self._pudf("cw_url_extract_path", arg)
 
     def visit_ExtractProtocol(self, op, *, arg):
-        name = sg.table(
-            "cw_url_extract_protocol",
-            db="persistent_udfs",
-            catalog="bigquery-public-data",
-        ).sql(self.dialect)
-        return self.f[name](arg)
+        return self._pudf("cw_url_extract_protocol", arg)
 
     def visit_ExtractQuery(self, op, *, arg, key):
         if key is not None:
-            name = sg.table(
-                "cw_url_extract_parameter",
-                db="persistent_udfs",
-                catalog="bigquery-public-data",
-            ).sql(self.dialect)
-
-            return self.f[name](arg, key)
+            return self._pudf("cw_url_extract_parameter", arg, key)
         else:
-            name = sg.table(
-                "cw_url_extract_query",
-                db="persistent_udfs",
-                catalog="bigquery-public-data",
-            ).sql(self.dialect)
-            return self.f[name](arg)
+            return self._pudf("cw_url_extract_query", arg)
+
+    def _pudf(self, name, *args):
+        name = sg.table(name, db="persistent_udfs", catalog="bigquery-public-data").sql(
+            self.dialect
+        )
+        return self.f[name](*args)
