@@ -108,9 +108,14 @@ class TestConf(BackendTest):
         return ibis.duckdb.connect(**kw)
 
     def load_tpch(self) -> None:
-        """Load the TPC-H dataset."""
-        with self.connection._safe_raw_sql("CALL dbgen(sf=0.17)"):
-            pass
+        """Load TPC-H data."""
+        con = self.connection
+        for path in self.data_dir.joinpath("tpch", "sf=0.17", "parquet").glob(
+            "*.parquet"
+        ):
+            table_name = path.with_suffix("").name
+            # duckdb automatically infers the sf=0.17 as a hive partition
+            con.read_parquet(path, table_name=table_name, hive_partitioning=False)
 
 
 @pytest.fixture(scope="session")
