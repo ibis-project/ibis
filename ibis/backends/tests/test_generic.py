@@ -551,15 +551,6 @@ def test_dropnull_table(backend, alltypes, how, subset):
     backend.assert_frame_equal(result, expected)
 
 
-# TODO: remove when dropna is fully deprecated
-def test_dropna_depr_warn(con, monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", con)
-
-    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
-    with pytest.warns(FutureWarning, match="v10.0"):
-        t.dropna().execute().reset_index(drop=True)
-
-
 @pytest.mark.parametrize(
     "key, df_kwargs",
     [

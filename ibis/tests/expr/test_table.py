@@ -2191,3 +2191,12 @@ def test_table_bind():
 
     with pytest.raises(ValueError, match="¡moo!"):
         t.bind(foo=utter_failure)
+
+
+# TODO: remove when dropna is fully deprecated
+def test_table_dropna_depr_warn(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v10.0"):
+        t.dropna().execute().reset_index(drop=True)
