@@ -622,10 +622,10 @@ def test_table_info(alltypes):
     raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
 )
+@pytest.mark.notyet(
+    ["flink"], reason="IOException - Insufficient number of network buffers"
+)
 def test_table_info_large(con):
-    if con.name == "flink":
-        pytest.xfail(reason="IOException - Insufficient number of network buffers")
-
     num_cols = 129
     col_names = [f"col_{i}" for i in range(num_cols)]
     t = ibis.memtable({col: [0, 1] for col in col_names})
