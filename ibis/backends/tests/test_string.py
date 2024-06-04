@@ -719,14 +719,18 @@ def test_substr_with_null_values(backend, alltypes, df):
             lambda d: d.authority(),
             "user:pass@example.com:80",
             id="authority",
-            marks=[pytest.mark.notyet(["trino"], raises=com.OperationNotDefinedError)],
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery", "trino"], raises=com.OperationNotDefinedError
+                )
+            ],
         ),
         param(
             lambda d: d.userinfo(),
             "user:pass",
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "snowflake", "trino"],
+                    ["bigquery", "clickhouse", "snowflake", "trino"],
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )
@@ -775,7 +779,6 @@ def test_substr_with_null_values(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "duckdb",
         "exasol",
         "mssql",
