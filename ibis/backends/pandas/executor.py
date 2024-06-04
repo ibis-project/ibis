@@ -745,11 +745,11 @@ class PandasExecutor(Dispatched, PandasUtils):
             subset = [col.name for col in op.subset]
         else:
             subset = None
-        return parent.dropnull(how=how, subset=subset)
+        return parent.dropna(how=how, subset=subset)
 
     @classmethod
     def visit(cls, op: ops.FillNull, parent, replacements):
-        return parent.fillnull(replacements)
+        return parent.fillna(replacements)
 
     @classmethod
     def visit(cls, op: ops.InValues, value, options):
