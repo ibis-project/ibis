@@ -358,13 +358,13 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fillna(self, fill_value: Scalar) -> Value:
+    def fillnull(self, fill_value: Scalar) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
         ----------
         fill_value
-            Value with which to replace `NA` values in `self`
+            Value with which to replace `NULL` values in `self`
 
         See Also
         --------
@@ -388,7 +388,7 @@ class Value(Expr):
         │ NULL   │
         │ female │
         └────────┘
-        >>> t.sex.fillna("unrecorded").name("sex")
+        >>> t.sex.fillnull("unrecorded").name("sex")
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -400,6 +400,27 @@ class Value(Expr):
         │ unrecorded │
         │ female     │
         └────────────┘
+
+        Returns
+        -------
+        Value
+            `self` filled with `fill_value` where it is `NULL`
+        """
+        return ops.Coalesce((self, fill_value)).to_expr()
+
+    @deprecated(as_of="10.0", instead="use fillnull instead")
+    def fillna(self, fill_value: Scalar) -> Value:
+        """Replace any null values with the indicated fill value.
+
+        Parameters
+        ----------
+        fill_value
+            Value with which to replace `NA` values in `self`
+
+        See Also
+        --------
+        [`Value.coalesce()`](./expression-generic.qmd#ibis.expr.types.generic.Value.coalesce)
+        [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
 
         Returns
         -------

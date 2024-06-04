@@ -1728,3 +1728,10 @@ def test_in_subquery_shape():
 
     expr = ibis.literal(2).isin(t.a)
     assert expr.op().shape.is_scalar()
+
+
+# TODO: remove when fillna is fully deprecated
+def test_value_fillna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v10.0"):
+        t.b.fillna("missing")
