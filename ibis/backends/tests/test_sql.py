@@ -10,50 +10,44 @@ from ibis.backends.conftest import _get_backends_to_test
 
 sg = pytest.importorskip("sqlglot")
 
-simple_literal = param(ibis.literal(1), id="simple_literal")
-array_literal = param(
-    ibis.array([1]),
-    marks=[
-        pytest.mark.never(
-            ["mysql", "mssql", "oracle", "impala", "sqlite"],
-            raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
-            reason="arrays not supported in the backend",
-        ),
-    ],
-    id="array_literal",
-)
-no_structs = pytest.mark.never(
-    ["impala", "mysql", "sqlite", "mssql", "exasol"],
-    raises=(NotImplementedError, exc.UnsupportedBackendType),
-    reason="structs not supported in the backend",
-)
-no_struct_literals = pytest.mark.notimpl(
-    ["mssql"], reason="struct literals are not yet implemented"
-)
-not_sql = pytest.mark.never(
-    ["pandas", "dask"],
-    raises=(exc.IbisError, NotImplementedError, ValueError),
-    reason="Not a SQL backend",
-)
-no_sql_extraction = pytest.mark.notimpl(
-    ["polars"], reason="Not clear how to extract SQL from the backend"
-)
-
 
 @pytest.mark.parametrize(
     "expr",
     [
-        simple_literal,
-        array_literal,
+        param(ibis.literal(1), id="simple_literal"),
+        param(
+            ibis.array([1]),
+            marks=[
+                pytest.mark.never(
+                    ["mysql", "mssql", "oracle", "impala", "sqlite"],
+                    raises=(exc.OperationNotDefinedError, exc.UnsupportedBackendType),
+                    reason="arrays not supported in the backend",
+                ),
+            ],
+            id="array_literal",
+        ),
         param(
             ibis.struct(dict(a=1)),
-            marks=[no_structs, no_struct_literals],
+            marks=[
+                pytest.mark.never(
+                    ["impala", "mysql", "sqlite", "mssql", "exasol"],
+                    raises=(NotImplementedError, exc.UnsupportedBackendType),
+                    reason="structs not supported in the backend",
+                ),
+                pytest.mark.notimpl(
+                    ["mssql"], reason="struct literals are not yet implemented"
+                ),
+            ],
             id="struct_literal",
         ),
     ],
 )
-@not_sql
-@no_sql_extraction
+@pytest.mark.never(
+    ["pandas", "dask"],
+    raises=(exc.IbisError, NotImplementedError, ValueError),
+    reason="Not a SQL backend",
+)
+@pytest.mark.notimpl(["polars"], reason="Not clear how to extract SQL from the backend")
 def test_literal(backend, expr):
     assert ibis.to_sql(expr, dialect=backend.name())
 
