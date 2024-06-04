@@ -25,7 +25,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
-from ibis.formats.pyarrow import PyArrowType
+from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
 from ibis.util import deprecated, gen_name, normalize_filename
 
 try:
@@ -41,6 +41,25 @@ except ImportError:
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
+
+
+def as_nullable(dtype: dt.DataType) -> dt.DataType:
+    """Recursively convert a possibly non-nullable datatype to a nullable one."""
+    if dtype.is_struct():
+        return dtype.copy(
+            fields={name: as_nullable(typ) for name, typ in dtype.items()},
+            nullable=True,
+        )
+    elif dtype.is_array():
+        return dtype.copy(value_type=as_nullable(dtype.value_type), nullable=True)
+    elif dtype.is_map():
+        return dtype.copy(
+            key_type=as_nullable(dtype.key_type),
+            value_type=as_nullable(dtype.value_type),
+            nullable=True,
+        )
+    else:
+        return dtype.copy(nullable=True)
 
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
@@ -114,23 +133,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             pass
 
         try:
-            result = (
-                self.raw_sql(f"DESCRIBE {table.sql(self.name)}")
-                .to_arrow_table()
-                .to_pydict()
-            )
+            df = self.con.table(name)
         finally:
             self.drop_view(name)
-        return sch.Schema(
-            {
-                name: self.compiler.type_mapper.from_string(
-                    type_string, nullable=is_nullable == "YES"
-                )
-                for name, type_string, is_nullable in zip(
-                    result["column_name"], result["data_type"], result["is_nullable"]
-                )
-            }
-        )
+
+        return PyArrowSchema.to_ibis(df.schema())
 
     def _register_builtin_udfs(self):
         from ibis.backends.datafusion import udfs
@@ -523,7 +530,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         frame = self.con.sql(raw_sql)
 
-        schema = table_expr.schema()
+        schema = sch.Schema(
+            {name: as_nullable(typ) for name, typ in table_expr.schema().items()}
+        )
         names = schema.names
 
         struct_schema = schema.as_struct().to_pyarrow()
@@ -537,15 +546,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                     # cast the struct array to the desired types to work around
                     # https://github.com/apache/arrow-datafusion-python/issues/534
                     .to_struct_array()
-                    .cast(struct_schema)
+                    .cast(struct_schema, safe=False)
                 )
                 for batch in frame.collect()
             )
 
-        return pa.ipc.RecordBatchReader.from_batches(
-            schema.to_pyarrow(),
-            make_gen(),
-        )
+        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), make_gen())
 
     def to_pyarrow(self, expr: ir.Expr, **kwargs: Any) -> pa.Table:
         batch_reader = self.to_pyarrow_batches(expr, **kwargs)
