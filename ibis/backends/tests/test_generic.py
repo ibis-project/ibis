@@ -804,6 +804,51 @@ def test_table_describe(alltypes, selector, expected_columns):
     assert sorted(expr.columns) == sorted(df.columns)
 
 
+@pytest.mark.notimpl(
+    [
+        "datafusion",
+        "bigquery",
+        "impala",
+        "mysql",
+        "mssql",
+        "trino",
+        "flink",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="quantile and mode is not supported",
+)
+@pytest.mark.notimpl(
+    [
+        "exasol",
+        "druid",
+    ],
+    raises=com.OperationNotDefinedError,
+    reason="Mode and StandardDev is not supported",
+)
+@pytest.mark.notyet(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid only supports trivial unions",
+)
+@pytest.mark.notimpl(
+    ["sqlite"],
+    raises=com.OperationNotDefinedError,
+    reason="quantile is not supported",
+)
+@pytest.mark.notimpl(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="Mode is not supported and ORA-02000: missing AS keyword",
+)
+def test_table_describe_large(con):
+    num_cols = 129
+    col_names = [f"col_{i}" for i in range(num_cols)]
+    t = ibis.memtable({col: [0, 1] for col in col_names})
+    result = con.execute(t.describe())
+    assert set(result.name) == set(col_names)
+    assert result.pos.dtype == np.int16
+
+
 @pytest.mark.parametrize(
     ("ibis_op", "pandas_op"),
     [
