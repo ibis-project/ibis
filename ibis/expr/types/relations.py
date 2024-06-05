@@ -2899,42 +2899,42 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> p = ibis.examples.penguins.fetch()
         >>> p.describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
-        ┃ name              ┃ pos  ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
-        │ string            │ int8 │ string  │ int64 │ int64 │ int64  │ string │ … │
-        ├───────────────────┼──────┼─────────┼───────┼───────┼────────┼────────┼───┤
-        │ species           │    0 │ string  │   344 │     0 │      3 │ Adelie │ … │
-        │ island            │    1 │ string  │   344 │     0 │      3 │ Biscoe │ … │
-        │ bill_length_mm    │    2 │ float64 │   344 │     2 │    164 │ NULL   │ … │
-        │ bill_depth_mm     │    3 │ float64 │   344 │     2 │     80 │ NULL   │ … │
-        │ flipper_length_mm │    4 │ int64   │   344 │     2 │     55 │ NULL   │ … │
-        │ body_mass_g       │    5 │ int64   │   344 │     2 │     94 │ NULL   │ … │
-        │ sex               │    6 │ string  │   344 │    11 │      2 │ male   │ … │
-        │ year              │    7 │ int64   │   344 │     0 │      3 │ NULL   │ … │
-        └───────────────────┴──────┴─────────┴───────┴───────┴────────┴────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ pos   ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ int16 │ string  │ int64 │ int64 │ int64  │ string │ … │
+        ├───────────────────┼───────┼─────────┼───────┼───────┼────────┼────────┼───┤
+        │ species           │     0 │ string  │   344 │     0 │      3 │ Adelie │ … │
+        │ island            │     1 │ string  │   344 │     0 │      3 │ Biscoe │ … │
+        │ bill_length_mm    │     2 │ float64 │   344 │     2 │    164 │ NULL   │ … │
+        │ bill_depth_mm     │     3 │ float64 │   344 │     2 │     80 │ NULL   │ … │
+        │ flipper_length_mm │     4 │ int64   │   344 │     2 │     55 │ NULL   │ … │
+        │ body_mass_g       │     5 │ int64   │   344 │     2 │     94 │ NULL   │ … │
+        │ sex               │     6 │ string  │   344 │    11 │      2 │ male   │ … │
+        │ year              │     7 │ int64   │   344 │     0 │      3 │ NULL   │ … │
+        └───────────────────┴───────┴─────────┴───────┴───────┴────────┴────────┴───┘
         >>> p.select(s.of_type("numeric")).describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━┓
-        ┃ name              ┃ pos  ┃ type    ┃ count ┃ nulls ┃ unique ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━┩
-        │ string            │ int8 │ string  │ int64 │ int64 │ int64  │ … │
-        ├───────────────────┼──────┼─────────┼───────┼───────┼────────┼───┤
-        │ flipper_length_mm │    2 │ int64   │   344 │     2 │     55 │ … │
-        │ body_mass_g       │    3 │ int64   │   344 │     2 │     94 │ … │
-        │ year              │    4 │ int64   │   344 │     0 │      3 │ … │
-        │ bill_length_mm    │    0 │ float64 │   344 │     2 │    164 │ … │
-        │ bill_depth_mm     │    1 │ float64 │   344 │     2 │     80 │ … │
-        └───────────────────┴──────┴─────────┴───────┴───────┴────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ pos   ┃ type    ┃ count ┃ nulls ┃ unique ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ int16 │ string  │ int64 │ int64 │ int64  │ … │
+        ├───────────────────┼───────┼─────────┼───────┼───────┼────────┼───┤
+        │ flipper_length_mm │     2 │ int64   │   344 │     2 │     55 │ … │
+        │ body_mass_g       │     3 │ int64   │   344 │     2 │     94 │ … │
+        │ year              │     4 │ int64   │   344 │     0 │      3 │ … │
+        │ bill_length_mm    │     0 │ float64 │   344 │     2 │    164 │ … │
+        │ bill_depth_mm     │     1 │ float64 │   344 │     2 │     80 │ … │
+        └───────────────────┴───────┴─────────┴───────┴───────┴────────┴───┘
         >>> p.select(s.of_type("string")).describe()
-        ┏━━━━━━━━━┳━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ name    ┃ pos  ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
-        ┡━━━━━━━━━╇━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ string  │ int8 │ string │ int64 │ int64 │ int64  │ string │
-        ├─────────┼──────┼────────┼───────┼───────┼────────┼────────┤
-        │ sex     │    2 │ string │   344 │    11 │      2 │ male   │
-        │ species │    0 │ string │   344 │     0 │      3 │ Adelie │
-        │ island  │    1 │ string │   344 │     0 │      3 │ Biscoe │
-        └─────────┴──────┴────────┴───────┴───────┴────────┴────────┘
+        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ name    ┃ pos   ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
+        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ string  │ int16 │ string │ int64 │ int64 │ int64  │ string │
+        ├─────────┼───────┼────────┼───────┼───────┼────────┼────────┤
+        │ sex     │     2 │ string │   344 │    11 │      2 │ male   │
+        │ species │     0 │ string │   344 │     0 │      3 │ Adelie │
+        │ island  │     1 │ string │   344 │     0 │      3 │ Biscoe │
+        └─────────┴───────┴────────┴───────┴───────┴────────┴────────┘
         """
         import ibis.selectors as s
         from ibis import literal as lit
@@ -2980,7 +2980,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
             agg = self.agg(
                 name=lit(colname),
-                pos=lit(pos),
+                pos=lit(pos, type=dt.int16),
                 type=lit(str(typ)),
                 count=col.isnull().count(),
                 nulls=col.isnull().sum(),
