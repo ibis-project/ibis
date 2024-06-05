@@ -50,7 +50,7 @@ def test_window_by_with_non_timestamp_column(table):
     ids=["tumble", "hop"],
 )
 @pytest.mark.parametrize("by", ["g", _.g, ["g"]])
-def test_window_by_group_by_agg(table, method, by):
+def test_window_by_grouped_agg(table, method, by):
     expr = method(table.window_by(time_col=table.i))
     expr = expr.group_by(by).agg(a_sum=_.a.sum())
     expected_schema = ibis.schema(
