@@ -2865,7 +2865,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 nulls=lambda t: t.isna.sum(),
                 non_nulls=lambda t: (1 - t.isna).sum(),
                 null_frac=lambda t: t.isna.mean(),
-                pos=lit(pos),
+                pos=lit(pos, type=dt.int16),
             )
             aggs.append(agg)
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
