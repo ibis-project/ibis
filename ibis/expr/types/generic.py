@@ -410,24 +410,8 @@ class Value(Expr):
 
     @deprecated(as_of="10.0", instead="use fillnull instead")
     def fillna(self, fill_value: Scalar) -> Value:
-        """Replace any null values with the indicated fill value.
-
-        Parameters
-        ----------
-        fill_value
-            Value with which to replace `NA` values in `self`
-
-        See Also
-        --------
-        [`Value.coalesce()`](./expression-generic.qmd#ibis.expr.types.generic.Value.coalesce)
-        [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
-
-        Returns
-        -------
-        Value
-            `self` filled with `fill_value` where it is `NA`
-        """
-        return ops.Coalesce((self, fill_value)).to_expr()
+        """Deprecated - use `fillnull` instead."""
+        return self.fillnull(fill_value)
 
     def nullif(self, null_if_expr: Value) -> Value:
         """Set values to null if they equal the values `null_if_expr`.
