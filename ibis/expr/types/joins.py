@@ -404,7 +404,7 @@ class Join(Table):
     drop = finished(Table.drop)
     dropna = finished(Table.dropna)
     execute = finished(Table.execute)
-    fillna = finished(Table.fillna)
+    fillnull = finished(Table.fillnull)
     filter = finished(Table.filter)
     group_by = finished(Table.group_by)
     intersect = finished(Table.intersect)
