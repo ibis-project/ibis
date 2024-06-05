@@ -166,13 +166,13 @@ def test_regexp(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.NA.fillna(5), 5, id="filled"),
-        param(L(5).fillna(10), 5, id="not_filled"),
+        param(ibis.NA.fillnull(5), 5, id="filled"),
+        param(L(5).fillnull(10), 5, id="not_filled"),
         param(L(5).nullif(5), None, id="nullif_null"),
         param(L(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-def test_fillna_nullif(con, expr, expected):
+def test_fillnull_nullif(con, expr, expected):
     assert con.execute(expr) == expected
 
 
@@ -213,7 +213,7 @@ def test_coalesce_all_na_double(con):
 
 
 def test_numeric_builtins_work(alltypes, df):
-    expr = alltypes.double_col.fillna(0)
+    expr = alltypes.double_col.fillnull(0)
     result = expr.execute()
     expected = df.double_col.fillna(0)
     expected.name = "Coalesce()"
