@@ -290,7 +290,7 @@ class Value(Expr):
         See Also
         --------
         [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
-        [`Value.fillna()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fillna)
+        [`Value.fillnull()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fillnull)
 
         Examples
         --------
