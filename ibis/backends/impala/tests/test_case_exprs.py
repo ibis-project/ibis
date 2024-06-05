@@ -76,16 +76,17 @@ def test_nullif_ifnull(tpch_lineitem, expr_fn, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        pytest.param(lambda t: t.l_quantity.fillna(0), id="fillna_l_quantity"),
+        pytest.param(lambda t: t.l_quantity.fillnull(0), id="fillnull_l_quantity"),
         pytest.param(
-            lambda t: t.l_extendedprice.fillna(0), id="fillna_l_extendedprice"
+            lambda t: t.l_extendedprice.fillnull(0), id="fillnull_l_extendedprice"
         ),
         pytest.param(
-            lambda t: t.l_extendedprice.fillna(0.0), id="fillna_l_extendedprice_double"
+            lambda t: t.l_extendedprice.fillnull(0.0),
+            id="fillnull_l_extendedprice_double",
         ),
     ],
 )
-def test_decimal_fillna_cast_arg(tpch_lineitem, expr_fn, snapshot):
+def test_decimal_fillnull_cast_arg(tpch_lineitem, expr_fn, snapshot):
     expr = expr_fn(tpch_lineitem)
     result = translate(expr)
     snapshot.assert_match(result, "out.sql")
