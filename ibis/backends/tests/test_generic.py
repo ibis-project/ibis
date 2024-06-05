@@ -831,6 +831,11 @@ def test_table_describe(alltypes, selector, expected_columns):
     raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
 )
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="Mode is not supported and ORA-02000: missing AS keyword",
+)
 def test_table_describe_large(con):
     num_cols = 129
     col_names = [f"col_{i}" for i in range(num_cols)]
