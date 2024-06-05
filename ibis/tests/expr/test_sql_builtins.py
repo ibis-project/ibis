@@ -83,9 +83,9 @@ def test_group_concat(functional_alltypes):
 
 
 def test_zero_ifnull(functional_alltypes):
-    dresult = functional_alltypes.double_col.fillna(0)
+    dresult = functional_alltypes.double_col.fillnull(0)
 
-    iresult = functional_alltypes.int_col.fillna(0)
+    iresult = functional_alltypes.int_col.fillnull(0)
 
     assert type(dresult.op()) == ops.Coalesce
     assert type(dresult) == ir.FloatingColumn
@@ -94,17 +94,17 @@ def test_zero_ifnull(functional_alltypes):
     assert type(iresult) == type(iresult)
 
 
-def test_fillna(functional_alltypes):
-    result = functional_alltypes.double_col.fillna(5)
+def test_fillnull(functional_alltypes):
+    result = functional_alltypes.double_col.fillnull(5)
     assert isinstance(result, ir.FloatingColumn)
 
     assert isinstance(result.op(), ops.Coalesce)
 
-    result = functional_alltypes.bool_col.fillna(True)
+    result = functional_alltypes.bool_col.fillnull(True)
     assert isinstance(result, ir.BooleanColumn)
 
     # Highest precedence type
-    result = functional_alltypes.int_col.fillna(functional_alltypes.bigint_col)
+    result = functional_alltypes.int_col.fillnull(functional_alltypes.bigint_col)
     assert isinstance(result, ir.IntegerColumn)
 
 
