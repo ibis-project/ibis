@@ -113,7 +113,7 @@ REDIRECTS = {
     "/community/contribute/01_environment/": "/contribute/01_environment",
     "/community/contribute/02_workflow/": "/contribute/02_workflow/",
     "/community/contribute/03_style/": "/contribute/03_style/",
-    "/community/contribute/05_maintainers_guide/": "/contribute/05_maintainers_guide/",
+    "/community/contribute/04_maintainers_guide/": "/contribute/04_maintainers_guide/",
     "/concept/backends/": "/concepts/backend",
     "/concept/design/": "/concepts/internals",
     "/concept/why_ibis/": "/why",
