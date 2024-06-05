@@ -461,7 +461,9 @@ def test_not_exists(alltypes, df):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = t.mutate(d=t.double_col.fillna(0)).limit(1000).group_by("string_col").size()
+    expr = (
+        t.mutate(d=t.double_col.fillnull(0)).limit(1000).group_by("string_col").size()
+    )
     result = expr.execute().sort_values("string_col").reset_index(drop=True)
     expected = (
         df.assign(d=df.double_col.fillna(0))
