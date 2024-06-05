@@ -2764,53 +2764,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
     ) -> Table:
-        """Remove rows with null values from the table.
+        """Deprecated - use `dropnull` instead."""
 
-        Parameters
-        ----------
-        subset
-            Columns names to consider when dropping nulls. By default all columns
-            are considered.
-        how
-            Determine whether a row is removed if there is **at least one null
-            value in the row** (`'any'`), or if **all** row values are null
-            (`'all'`).
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
         if subset is not None:
             subset = self.bind(subset)
-        return ops.DropNull(self, how, subset).to_expr()
+        return self.dropnull(subset, how)
 
     @deprecated(as_of="10.0", instead="use fillnull instead")
     def fillna(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
-        """Fill null values in a table expression.
+        """Deprecated - use `fillnull` instead."""
 
-        ::: {.callout-note}
-        ## There is potential lack of type stability with the `fillna` API
-
-        For example, different library versions may impact whether a given
-        backend promotes integer replacement values to floats.
-        :::
-
-        Parameters
-        ----------
-        replacements
-            Value with which to fill nulls. If `replacements` is a mapping, the
-            keys are column names that map to their replacement value. If
-            passed as a scalar all columns are filled with that value.
-
-        Returns
-        -------
-        Table
-            Table expression
-        """
         schema = self.schema()
 
         if isinstance(replacements, Mapping):
@@ -2842,7 +2808,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                         f"value of type {val_type} - pass in an explicit mapping "
                         f"of fill values to `fillna` instead."
                     )
-        return ops.FillNull(self, replacements).to_expr()
+        return self.fillnull(replacements)
 
     def unpack(self, *columns: str) -> Table:
         """Project the struct fields of each of `columns` into `self`.
