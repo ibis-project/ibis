@@ -2754,7 +2754,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                     raise com.IbisTypeError(
                         f"Cannot fillnull on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fillna` instead."
+                        f"of fill values to `fillnull` instead."
                     )
         return ops.FillNull(self, replacements).to_expr()
 
@@ -2838,7 +2838,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             for col, col_type in schema.items():
                 if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"Cannot fillna on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
                         f"of fill values to `fillna` instead."
                     )
