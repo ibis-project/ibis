@@ -66,7 +66,7 @@ def test_rows_window(simple_table, assert_sql):
     assert_sql(expr)
 
 
-def test_tumble_window_by_agg(con):
+def test_tumble_window_by_grouped_agg(con):
     t = con.table("functional_alltypes_with_watermark")
     expr = (
         t.window_by(time_col=t.timestamp_col)
@@ -76,3 +76,15 @@ def test_tumble_window_by_agg(con):
     result = expr.to_pandas()
     assert list(result.columns) == ["window_start", "window_end", "string_col", "avg"]
     assert result.shape == (610, 4)
+
+
+def test_tumble_window_by_global_agg(con):
+    t = con.table("functional_alltypes_with_watermark")
+    expr = (
+        t.window_by(time_col=t.timestamp_col)
+        .tumble(size=ibis.interval(seconds=30))
+        .agg(avg=_.float_col.mean())
+    )
+    result = expr.to_pandas()
+    assert list(result.columns) == ["window_start", "window_end", "avg"]
+    assert result.shape == (610, 3)
