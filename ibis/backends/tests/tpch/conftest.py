@@ -92,7 +92,11 @@ def tpch_test(test: Callable[..., ir.Table]):
             left = result.loc[:, column]
             right = expected.loc[:, column]
             assert (
-                pytest.approx(left.values.tolist(), nan_ok=True)
+                pytest.approx(
+                    left.values.tolist(),
+                    nan_ok=True,
+                    abs=backend.tpch_absolute_tolerance,
+                )
                 == right.values.tolist()
             )
 
