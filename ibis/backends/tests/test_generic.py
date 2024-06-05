@@ -813,9 +813,10 @@ def test_table_describe(alltypes, selector, expected_columns):
         "mssql",
         "trino",
         "flink",
+        "sqlite",
     ],
     raises=com.OperationNotDefinedError,
-    reason="quantile and mode is not supported",
+    reason="quantile is not supported",
 )
 @pytest.mark.notimpl(
     [
@@ -823,22 +824,12 @@ def test_table_describe(alltypes, selector, expected_columns):
         "druid",
     ],
     raises=com.OperationNotDefinedError,
-    reason="Mode and StandardDev is not supported",
+    reason="StandardDev is not supported",
 )
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
-)
-@pytest.mark.notimpl(
-    ["sqlite"],
-    raises=com.OperationNotDefinedError,
-    reason="quantile is not supported",
-)
-@pytest.mark.notimpl(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="Mode is not supported and ORA-02000: missing AS keyword",
 )
 def test_table_describe_large(con):
     num_cols = 129
