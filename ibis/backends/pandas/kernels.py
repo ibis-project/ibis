@@ -279,7 +279,7 @@ reductions = {
     ops.Arbitrary: arbitrary,
     ops.CountDistinct: lambda x: x.nunique(),
     ops.ApproxCountDistinct: lambda x: x.nunique(),
-    ops.ArrayCollect: lambda x: x.tolist(),
+    ops.ArrayCollect: lambda x: x.dropna().tolist(),
 }
 
 

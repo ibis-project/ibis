@@ -303,18 +303,7 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
-@pytest.mark.never(
-    "pyspark", reason="pyspark throws away nulls in collect_list", raises=AssertionError
-)
-@pytest.mark.never(
-    "clickhouse",
-    reason="clickhouse throws away nulls in groupArray",
-    raises=AssertionError,
-)
 @pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    "dask", reason="DataFrame.index are different", raises=AssertionError
-)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -326,18 +315,18 @@ def test_unnest_idempotent(backend):
         .aggregate(x=lambda t: t.x.collect())
         .order_by("scalar_column")
     )
-    result = expr.execute()
+    result = expr.execute().reset_index(drop=True)
     expected = (
-        df[["scalar_column", "x"]].sort_values("scalar_column").reset_index(drop=True)
+        df[["scalar_column", "x"]]
+        .assign(x=df.x.map(lambda arr: [i for i in arr if not pd.isna(i)]))
+        .sort_values("scalar_column")
+        .reset_index(drop=True)
     )
     tm.assert_frame_equal(result, expected)
 
 
 @builtin_array
 @pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    "dask", reason="DataFrame.index are different", raises=AssertionError
-)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -350,7 +339,7 @@ def test_unnest_no_nulls(backend):
         .aggregate(x=lambda t: t.y.collect())
         .order_by("scalar_column")
     )
-    result = expr.execute()
+    result = expr.execute().reset_index(drop=True)
     expected = (
         df[["scalar_column", "x"]]
         .explode("x")

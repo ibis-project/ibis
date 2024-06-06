@@ -13,6 +13,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
+from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",
@@ -34,6 +35,11 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     agg = AggGen(supports_filter=True)
+
+    rewrites = (
+        exclude_nulls_from_array_collect,
+        *SQLGlotCompiler.rewrites,
+    )
 
     LOWERED_OPS = {
         ops.Sample: None,
