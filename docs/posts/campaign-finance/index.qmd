@@ -245,7 +245,7 @@ def get_election_type(pgi: StringValue) -> StringValue:
         "E": "recount",
     }
     first_letter = pgi[0]
-    return first_letter.substitute(election_types, else_=ibis.NA)
+    return first_letter.substitute(election_types, else_=ibis.null())
 
 
 cleaned = cleaned.mutate(election_type=get_election_type(_.TRANSACTION_PGI)).drop(

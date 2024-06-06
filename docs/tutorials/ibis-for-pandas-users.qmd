@@ -507,7 +507,7 @@ represented by `NaN`. This can be confusing when working with numeric data,
 since `NaN` is also a valid floating point value (along with `+/-inf`).
 
 In Ibis, we try to be more precise: All data types are nullable, and we use
-`ibis.NA` to represent `NULL` values, and all datatypes have a `.isnull()` method.
+`ibis.null()` to represent `NULL` values, and all datatypes have a `.isnull()` method.
 For floating point values, we use different values for `NaN` and `+/-inf`, and there
 are the additional methods `.isnan()` and `.isinf()`.
 
