@@ -431,3 +431,11 @@ def test_convert_dataframe_with_timezone():
     desired_schema = ibis.schema(dict(time='timestamp("EST")'))
     result = PandasData.convert_table(df.copy(), desired_schema)
     tm.assert_frame_equal(expected, result)
+
+
+@pytest.mark.parametrize(
+    "df", [pd.DataFrame({"a": [{}, {}, {}]}), pd.DataFrame({"a": [{}, None]})]
+)
+def test_empty_struct_not_allowed(df):
+    with pytest.raises(TypeError):
+        PandasData.infer_table(df)

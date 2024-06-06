@@ -170,7 +170,9 @@ class Backend(BasePandasBackend, NoUrl):
             schema = self.schemas[table_name]
         except KeyError:
             df = self.dictionary[table_name]
-            self.schemas[table_name] = schema = PandasData.infer_table(df.head(1))
+            if isinstance(df, dd.DataFrame):
+                df = df.compute()
+            self.schemas[table_name] = schema = PandasData.infer_table(df)
 
         return schema
 

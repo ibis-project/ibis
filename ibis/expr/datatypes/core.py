@@ -838,6 +838,11 @@ class Struct(Parametric, MapSet):
     scalar = "StructScalar"
     column = "StructColumn"
 
+    def __init__(self, fields, **kwargs):
+        if fields is None or len(fields) == 0:
+            raise TypeError("Empty struct type is not supported")
+        super().__init__(fields=fields, **kwargs)
+
     @classmethod
     def from_tuples(
         cls, pairs: Iterable[tuple[str, str | DataType]], nullable: bool = True
