@@ -11,6 +11,7 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
+from ibis.common.annotations import ValidationError
 
 pytestmark = [
     pytest.mark.never(
@@ -37,6 +38,31 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
     ["risingwave"],
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
+
+
+@mark_notimpl_risingwave_hstore
+@pytest.mark.parametrize(
+    "values_factory",
+    [
+        lambda: ({"a": "b"},),
+        lambda: (["a"], ["b"]),
+        lambda: (ibis.map({"a": "b"}),),
+    ],
+)
+def test_map_factory_dict(con, values_factory):
+    vals = values_factory()
+    with pytest.raises(ValidationError):
+        ibis.map(*vals, type="array<string>")
+    assert con.execute(ibis.map(*vals)) == {"a": "b"}
+    assert con.execute(ibis.map(*vals, type="map<string, string>")) == {"a": "b"}
+
+
+def test_map_null(con):
+    with pytest.raises(ValidationError):
+        ibis.map(None)
+    with pytest.raises(ValidationError):
+        ibis.map(None, type="array<string>")
+    assert con.execute(ibis.map(None, type="map<string, string>")) is None
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
@@ -503,6 +529,11 @@ values = pytest.mark.parametrize(
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be null"),
                 mark_notyet_postgres,
+                pytest.mark.notimpl(
+                    "flink",
+                    raises=Py4JJavaError,
+                    reason="Unexpected error in type inference logic of function 'COALESCE'",
+                ),
             ],
             id="struct",
         ),

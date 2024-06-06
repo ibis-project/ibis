@@ -1,18 +1,21 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from public import public
 
+import ibis
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis.common.annotations import ValidationError
 from ibis.common.deferred import deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Mapping
+    from collections.abc import Iterable
 
-    import ibis.expr.types as ir
-    from ibis.expr.types.arrays import ArrayValue
+    import ibis.expr.datatypes as dt
 
 
 @public
@@ -441,8 +444,15 @@ class MapColumn(Column, MapValue):
 @public
 @deferrable
 def map(
-    keys: Iterable[Any] | Mapping[Any, Any] | ArrayValue,
-    values: Iterable[Any] | ArrayValue | None = None,
+    keys: Iterable[Any]
+    | Mapping[Any, Any]
+    | ir.ArrayValue
+    | MapValue
+    | ir.NullValue
+    | None,
+    values: Iterable[Any] | ir.ArrayValue | None = None,
+    *,
+    type: str | dt.DataType | None = None,
 ) -> MapValue:
     """Create a MapValue.
 
@@ -455,6 +465,9 @@ def map(
         Keys of the map or `Mapping`. If `keys` is a `Mapping`, `values` must be `None`.
     values
         Values of the map or `None`. If `None`, the `keys` argument must be a `Mapping`.
+    type
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the Ibis type of `value`. eg `map<string, float>`.
 
     Returns
     -------
@@ -484,16 +497,42 @@ def map(
     │ ['a', 'b']           │ [1, 2]               │
     │ ['b']                │ [3]                  │
     └──────────────────────┴──────────────────────┘
-    >>> ibis.map(t.keys, t.values)
-    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Map(keys, values)    ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━┩
-    │ map<string, int64>   │
-    ├──────────────────────┤
-    │ {'a': 1, 'b': 2}     │
-    │ {'b': 3}             │
-    └──────────────────────┘
+    >>> ibis.map(t.keys, t.values, type="map<string, float>")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Map(keys, Cast(values, array<float64>)) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ map<string, float64>                    │
+    ├─────────────────────────────────────────┤
+    │ {'a': 1.0, 'b': 2.0}                    │
+    │ {'b': 3.0}                              │
+    └─────────────────────────────────────────┘
     """
-    if values is None:
+    from ibis.expr import datatypes as dt
+
+    type = dt.dtype(type) if type is not None else None
+    if type is not None and not isinstance(type, dt.Map):
+        raise ValidationError(f"type must be a map, got {type}")
+
+    if isinstance(keys, Mapping) and values is None:
         keys, values = tuple(keys.keys()), tuple(keys.values())
+
+    if isinstance(keys, ir.Value) and values is None:
+        if type is not None:
+            return keys.cast(type)
+        elif isinstance(keys, MapValue):
+            return keys
+        else:
+            raise ValidationError(
+                f"If no type passed, value must be a map, got {keys.type()}"
+            )
+
+    if keys is None or values is None:
+        if type is None:
+            raise ValidationError("If keys is None/NULL, type must be provided")
+        return ir.null(type)
+
+    k_type = dt.Array(value_type=type.key_type) if type is not None else None
+    v_type = dt.Array(value_type=type.value_type) if type is not None else None
+    keys = ibis.array(keys, type=k_type)
+    values = ibis.array(values, type=v_type)
     return ops.Map(keys, values).to_expr()

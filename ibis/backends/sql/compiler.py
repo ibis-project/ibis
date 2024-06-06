@@ -1019,8 +1019,8 @@ class SQLGlotCompiler(abc.ABC):
             query = sg.select(STAR).from_(query)
         return needle.isin(query=query)
 
-    def visit_Array(self, op, *, exprs):
-        return self.f.array(*exprs)
+    def visit_Array(self, op, *, exprs, dtype):
+        return self.cast(self.f.array(*exprs), dtype)
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(

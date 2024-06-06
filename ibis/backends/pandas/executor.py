@@ -31,6 +31,7 @@ from ibis.backends.pandas.rewrites import (
 )
 from ibis.common.dispatch import Dispatched
 from ibis.common.exceptions import OperationNotDefinedError, UnboundExpressionError
+from ibis.formats.numpy import NumpyType
 from ibis.formats.pandas import PandasData, PandasType
 from ibis.util import any_of, gen_name
 
@@ -49,6 +50,8 @@ class PandasExecutor(Dispatched, PandasUtils):
 
     @classmethod
     def visit(cls, op: ops.Literal, value, dtype):
+        if value is None:
+            return None
         if dtype.is_interval():
             value = pd.Timedelta(value, dtype.unit.short)
         elif dtype.is_array():
@@ -220,8 +223,9 @@ class PandasExecutor(Dispatched, PandasUtils):
         return pd.Series(result, name=op.name)
 
     @classmethod
-    def visit(cls, op: ops.Array, exprs):
-        return cls.rowwise(lambda row: np.array(row, dtype=object), exprs)
+    def visit(cls, op: ops.Array, exprs, dtype):
+        np_type = NumpyType.from_ibis(dtype)
+        return cls.rowwise(lambda row: np.array(row, dtype=np_type), exprs)
 
     @classmethod
     def visit(cls, op: ops.StructColumn, names, values):

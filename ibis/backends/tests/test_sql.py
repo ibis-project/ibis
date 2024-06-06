@@ -31,7 +31,11 @@ sg = pytest.importorskip("sqlglot")
             marks=[
                 pytest.mark.never(
                     ["impala", "mysql", "sqlite", "mssql", "exasol"],
-                    raises=(NotImplementedError, exc.UnsupportedBackendType),
+                    raises=(
+                        exc.OperationNotDefinedError,
+                        NotImplementedError,
+                        exc.UnsupportedBackendType,
+                    ),
                     reason="structs not supported in the backend",
                 ),
                 pytest.mark.notimpl(

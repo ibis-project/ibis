@@ -8,7 +8,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.common.collections import frozendict
+from ibis.common.annotations import ValidationError
 from ibis.expr.operations import Literal
 from ibis.tests.util import assert_pickle_roundtrip
 
@@ -109,9 +109,6 @@ def test_normalized_underlying_value(userinput, literal_type, expected_type):
 def test_struct_literal(value):
     typestr = "struct<field1: string, field2: float64>"
     a = ibis.struct(value, type=typestr)
-    assert a.op().value == frozendict(
-        field1=str(value["field1"]), field2=float(value["field2"])
-    )
     assert a.type() == dt.dtype(typestr)
 
 
@@ -123,7 +120,7 @@ def test_struct_literal(value):
     ],
 )
 def test_struct_literal_non_castable(value):
-    with pytest.raises(TypeError, match="Unable to normalize"):
+    with pytest.raises(ValidationError):
         ibis.struct(value, type="struct<field1: string, field2: float64>")
 
 
@@ -134,8 +131,6 @@ def test_struct_cast_to_empty_struct():
 
 def test_map_literal():
     a = ibis.map(["a", "b"], [1, 2])
-    assert a.op().keys.value == ("a", "b")
-    assert a.op().values.value == (1, 2)
     assert a.type() == dt.dtype("map<string, int8>")
 
 

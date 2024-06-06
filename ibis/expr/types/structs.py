@@ -1,28 +1,33 @@
 from __future__ import annotations
 
-import collections
 from keyword import iskeyword
 from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis.common.annotations import ValidationError
 from ibis.common.deferred import deferrable
 from ibis.common.exceptions import IbisError
-from ibis.expr.types.generic import Column, Scalar, Value, literal
+from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
 
-    import ibis.expr.datatypes as dt
-    import ibis.expr.types as ir
     from ibis.expr.types.typing import V
 
 
 @public
 @deferrable
 def struct(
-    value: Iterable[tuple[str, V]] | Mapping[str, V],
+    value: Iterable[tuple[str, V]]
+    | Mapping[str, V]
+    | StructValue
+    | ir.NullValue
+    | None,
+    *,
     type: str | dt.DataType | None = None,
 ) -> StructValue:
     """Create a struct expression.
@@ -37,8 +42,7 @@ def struct(
         `(str, Value)`.
     type
         An instance of `ibis.expr.datatypes.DataType` or a string indicating
-        the Ibis type of `value`. This is only used if all of the input values
-        are Python literals. eg `struct<a: float, b: string>`.
+        the Ibis type of `value`. eg `struct<a: float, b: string>`.
 
     Returns
     -------
@@ -66,26 +70,51 @@ def struct(
     Create a struct column from a column and a scalar literal
 
     >>> t = ibis.memtable({"a": [1, 2, 3]})
-    >>> ibis.struct([("a", t.a), ("b", "foo")])
-    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ StructColumn()              ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-    │ struct<a: int64, b: string> │
-    ├─────────────────────────────┤
-    │ {'a': 1, 'b': 'foo'}        │
-    │ {'a': 2, 'b': 'foo'}        │
-    │ {'a': 3, 'b': 'foo'}        │
-    └─────────────────────────────┘
+    >>> ibis.struct([("a", t.a), ("b", "foo")], type="struct<a: float, b: string>")
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Cast(StructColumn(), struct<a: float64, b: string>) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ struct<a: float64, b: string>                       │
+    ├─────────────────────────────────────────────────────┤
+    │ {'a': 1.0, 'b': 'foo'}                              │
+    │ {'a': 2.0, 'b': 'foo'}                              │
+    │ {'a': 3.0, 'b': 'foo'}                              │
+    └─────────────────────────────────────────────────────┘
     """
     import ibis.expr.operations as ops
 
+    type = dt.dtype(type) if type is not None else None
+    if type is not None and not isinstance(type, dt.Struct):
+        raise ValidationError(f"type must be an struct, got {type}")
+
+    if isinstance(value, ir.Value):
+        if type is not None:
+            return value.cast(type)
+        elif isinstance(value, StructValue):
+            return value
+        else:
+            raise ValidationError(
+                f"If no type passed, value must be a struct, got {value.type()}"
+            )
+
+    if value is None:
+        if type is None:
+            raise ValidationError("If values is None/NULL, type must be provided")
+        return ir.null(type)
+
     fields = dict(value)
-    if any(isinstance(value, Value) for value in fields.values()):
-        names = tuple(fields.keys())
-        values = tuple(fields.values())
-        return ops.StructColumn(names=names, values=values).to_expr()
-    else:
-        return literal(collections.OrderedDict(fields), type=type)
+    if not fields:
+        raise ValidationError("Struct must have at least one field")
+    names = fields.keys()
+    result = ops.StructColumn(names=names, values=fields.values()).to_expr()
+    if type is not None:
+        if not set(names).issuperset(type.names):
+            raise ValidationError(
+                f"The passed type requires fields {type.names}",
+                f" but only found fields {names}",
+            )
+        result = result.cast(type)
+    return result
 
 
 @public
