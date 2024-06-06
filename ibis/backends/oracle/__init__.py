@@ -550,10 +550,10 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 C.data_type,
                 C.data_precision,
                 C.data_scale,
-                C.nullable.eq("Y"),
+                C.nullable.eq(sge.convert("Y")),
             )
             .from_("all_tab_columns")
-            .where(C.table_name.eq(name))
+            .where(C.table_name.eq(sge.convert(name)))
             .order_by(C.column_id)
             .sql(dialect)
         )

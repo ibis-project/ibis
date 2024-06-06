@@ -50,7 +50,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         query = (
             sg.select("param_value")
             .from_(sg.table("EXA_METADATA", catalog="SYS"))
-            .where(C.param_name.eq("databaseProductVersion"))
+            .where(C.param_name.eq(sge.convert("databaseProductVersion")))
         )
         with self._safe_raw_sql(query) as result:
             [(version,)] = result.fetchall()

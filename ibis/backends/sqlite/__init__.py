@@ -145,14 +145,14 @@ class Backend(SQLBackend, UrlFromPath):
             sg.select("name")
             .from_(F.pragma_table_list())
             .where(
-                C.schema.eq(database),
-                C.type.isin("table", "view"),
+                C.schema.eq(sge.convert(database)),
+                C.type.isin(sge.convert("table"), sge.convert("view")),
                 ~(
                     C.name.isin(
-                        "sqlite_schema",
-                        "sqlite_master",
-                        "sqlite_temp_schema",
-                        "sqlite_temp_master",
+                        sge.convert("sqlite_schema"),
+                        sge.convert("sqlite_master"),
+                        sge.convert("sqlite_temp_schema"),
+                        sge.convert("sqlite_temp_master"),
                     )
                 ),
             )

@@ -319,7 +319,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_UnwrapJSONString(self, op, *, arg):
         return self.if_(
-            self.f.json_typeof(arg).eq("string"),
+            self.f.json_typeof(arg).eq(sge.convert("string")),
             self.f.json_extract_path_text(
                 arg,
                 # this is apparently how you pass in no additional arguments to
@@ -336,7 +336,7 @@ class PostgresCompiler(SQLGlotCompiler):
             arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
         )
         return self.if_(
-            self.f.json_typeof(arg).eq("number"),
+            self.f.json_typeof(arg).eq(sge.convert("number")),
             self.cast(
                 self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL),
                 op.dtype,
@@ -349,12 +349,14 @@ class PostgresCompiler(SQLGlotCompiler):
             arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
         )
         return self.if_(
-            self.f.json_typeof(arg).eq("number"), self.cast(text, op.dtype), NULL
+            self.f.json_typeof(arg).eq(sge.convert("number")),
+            self.cast(text, op.dtype),
+            NULL,
         )
 
     def visit_UnwrapJSONBoolean(self, op, *, arg):
         return self.if_(
-            self.f.json_typeof(arg).eq("boolean"),
+            self.f.json_typeof(arg).eq(sge.convert("boolean")),
             self.cast(
                 self.f.json_extract_path_text(
                     arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")

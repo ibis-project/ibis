@@ -329,8 +329,6 @@ class Backend(SQLBackend, CanCreateDatabase):
                 sg_db.args["quoted"] = False
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
-            # conditions.append(C.table_schema.eq(table_loc))
-
         col = "table_name"
         sql = (
             sg.select(col)

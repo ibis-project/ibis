@@ -223,19 +223,21 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     def visit_UnwrapJSONString(self, op, *, arg):
         return self.if_(
-            self.f.json_type(arg).eq("text"), self.f.json_extract_scalar(arg, "$"), NULL
+            self.f.json_type(arg).eq(sge.convert("text")),
+            self.f.json_extract_scalar(arg, "$"),
+            NULL,
         )
 
     def visit_UnwrapJSONInt64(self, op, *, arg):
         return self.if_(
-            self.f.json_type(arg).eq("integer"),
+            self.f.json_type(arg).eq(sge.convert("integer")),
             self.cast(self.f.json_extract_scalar(arg, "$"), op.dtype),
             NULL,
         )
 
     def visit_UnwrapJSONFloat64(self, op, *, arg):
         return self.if_(
-            self.f.json_type(arg).isin("integer", "real"),
+            self.f.json_type(arg).isin(sge.convert("integer"), sge.convert("real")),
             self.cast(self.f.json_extract_scalar(arg, "$"), op.dtype),
             NULL,
         )
@@ -244,7 +246,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self.if_(
             # isin doesn't work here, with a strange error from sqlite about a
             # misused row value
-            self.f.json_type(arg).isin("true", "false"),
+            self.f.json_type(arg).isin(sge.convert("true"), sge.convert("false")),
             self.cast(self.f.json_extract_scalar(arg, "$"), dt.int64),
             NULL,
         )
