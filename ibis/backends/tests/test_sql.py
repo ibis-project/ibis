@@ -14,9 +14,9 @@ sg = pytest.importorskip("sqlglot")
 @pytest.mark.parametrize(
     "expr",
     [
-        param(ibis.literal(1), id="simple_literal"),
+        param(ibis.literal(432), id="simple_literal"),
         param(
-            ibis.array([1]),
+            ibis.array([432]),
             marks=[
                 pytest.mark.never(
                     ["mysql", "mssql", "oracle", "impala", "sqlite"],
@@ -27,7 +27,7 @@ sg = pytest.importorskip("sqlglot")
             id="array_literal",
         ),
         param(
-            ibis.struct(dict(a=1)),
+            ibis.struct(dict(abc=432)),
             marks=[
                 pytest.mark.never(
                     ["impala", "mysql", "sqlite", "mssql", "exasol"],
@@ -49,7 +49,7 @@ sg = pytest.importorskip("sqlglot")
 )
 @pytest.mark.notimpl(["polars"], reason="Not clear how to extract SQL from the backend")
 def test_literal(backend, expr):
-    assert ibis.to_sql(expr, dialect=backend.name())
+    assert "432" in ibis.to_sql(expr, dialect=backend.name())
 
 
 @pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
