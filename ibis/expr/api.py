@@ -57,7 +57,6 @@ __all__ = (
     "Column",
     "Deferred",
     "Expr",
-    "NA",
     "Scalar",
     "Schema",
     "Table",
@@ -196,35 +195,6 @@ asof_join = ir.Table.asof_join
 e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
-
-NA = null()
-"""The NULL scalar.
-
-This is an untyped NULL. If you want a typed NULL, use eg `ibis.null(str)`.
-
-Examples
---------
->>> import ibis
->>> ibis.options.interactive = True
->>> ibis.NA.isnull()
-┌──────┐
-│ True │
-└──────┘
-
-datatype-specific methods aren't available on `NA`:
-
->>> ibis.NA.upper()  # quartodoc: +EXPECTED_FAILURE
-Traceback (most recent call last):
-  ...
-AttributeError: 'NullScalar' object has no attribute 'upper'
-
-Instead, use the typed `ibis.null`:
-
->>> ibis.null(str).upper().isnull()
-┌──────┐
-│ True │
-└──────┘
-"""
 
 deferred = _
 """Deferred expression object.
