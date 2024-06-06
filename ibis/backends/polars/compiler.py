@@ -275,7 +275,7 @@ def aggregation(op, **kw):
 
     if op.groups:
         # project first to handle computed group by columns
-        lf = (
+        func = (
             lf.with_columns(
                 [translate(arg, **kw).alias(name) for name, arg in op.groups.items()]
             )
@@ -283,13 +283,16 @@ def aggregation(op, **kw):
             .agg
         )
     else:
-        lf = lf.select
+        func = lf.select
 
     if op.metrics:
-        metrics = [translate(arg, **kw).alias(name) for name, arg in op.metrics.items()]
-        lf = lf(metrics)
+        metrics = [
+            translate(arg, in_group_by=bool(op.groups), **kw).alias(name)
+            for name, arg in op.metrics.items()
+        ]
+        return func(metrics)
 
-    return lf
+    return func()
 
 
 @translate.register(PandasRename)
@@ -988,11 +991,16 @@ def array_column(op, **kw):
 
 
 @translate.register(ops.ArrayCollect)
-def array_collect(op, **kw):
+def array_collect(op, in_group_by=False, **kw):
     arg = translate(op.arg, **kw)
     if (where := op.where) is not None:
         arg = arg.filter(translate(where, **kw))
-    return arg
+    out = arg.drop_nulls()
+    if not in_group_by:
+        # Polars' behavior changes for `implode` within a `group_by` currently.
+        # See https://github.com/pola-rs/polars/issues/16756
+        out = out.implode()
+    return out
 
 
 @translate.register(ops.ArrayFlatten)

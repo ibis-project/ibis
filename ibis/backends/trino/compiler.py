@@ -13,7 +13,10 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
-from ibis.backends.sql.rewrites import exclude_unsupported_window_frame_from_ops
+from ibis.backends.sql.rewrites import (
+    exclude_nulls_from_array_collect,
+    exclude_unsupported_window_frame_from_ops,
+)
 
 
 class TrinoCompiler(SQLGlotCompiler):
@@ -25,6 +28,7 @@ class TrinoCompiler(SQLGlotCompiler):
     agg = AggGen(supports_filter=True)
 
     rewrites = (
+        exclude_nulls_from_array_collect,
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )

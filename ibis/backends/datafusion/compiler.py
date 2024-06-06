@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
+from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowType
@@ -24,6 +25,8 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
+
+    rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
 
     agg = AggGen(supports_filter=True)
 

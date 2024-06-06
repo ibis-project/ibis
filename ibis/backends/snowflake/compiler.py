@@ -306,11 +306,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_ArrayContains(self, op, *, arg, other):
         return self.f.array_contains(arg, self.f.to_variant(other))
 
-    def visit_ArrayCollect(self, op, *, arg, where):
-        return self.agg.array_agg(
-            self.f.ifnull(arg, self.f.parse_json("null")), where=where
-        )
-
     def visit_ArrayConcat(self, op, *, arg):
         # array_cat only accepts two arguments
         return self.f.array_flatten(self.f.array(*arg))

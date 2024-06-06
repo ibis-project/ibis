@@ -559,8 +559,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="count_star",
         ),
         param(
-            lambda t, where: t.string_col.collect(where=where),
-            lambda t, where: t.string_col[where].tolist(),
+            lambda t, where: t.string_col.nullif("3").collect(where=where),
+            lambda t, where: t.string_col[t.string_col != "3"][where].tolist(),
             id="collect",
             marks=[
                 pytest.mark.notimpl(
