@@ -571,10 +571,10 @@ quartodoc:
               package: ibis
               dynamic: true
               signature_name: full
+            - DataType
             - Array
             - Binary
             - Boolean
-            - DataType
             - Date
             - Decimal
             - Float16
