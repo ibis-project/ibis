@@ -136,7 +136,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.cast(arg, to)
 
     def visit_Arbitrary(self, op, *, arg, where):
-        cond = ~arg.is_(None)
+        cond = ~arg.is_(NULL)
         if where is not None:
             cond &= where
         return self.agg.first_value(arg, where=cond)
