@@ -1008,12 +1008,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             .from_(sg.table("tables", db="information_schema"))
             .distinct()
             .where(
-                C.table_catalog.eq(catalog).or_(
-                    C.table_catalog.eq(sge.convert("temp"))
-                ),
-                C.table_schema.eq(database),
+                C.table_catalog.isin(sge.convert(catalog), sge.convert("temp")),
+                C.table_schema.eq(sge.convert(database)),
             )
-            .sql(self.name, pretty=True)
+            .sql(self.dialect)
         )
         out = self.con.execute(sql).fetch_arrow_table()
 
