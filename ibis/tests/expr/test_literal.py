@@ -118,14 +118,13 @@ def test_struct_literal(value):
 @pytest.mark.parametrize(
     "value",
     [
-        dict(field1="value1", field3=3.14),  # wrong field name
-        dict(field1="value1"),  # missing field
+        pytest.param(dict(field1="value1", field3=3.14), id="wrong_field"),
+        pytest.param(dict(field1="value1"), id="missing_field"),
     ],
 )
 def test_struct_literal_non_castable(value):
-    typestr = "struct<field1: string, field2: float64>"
     with pytest.raises(TypeError, match="Unable to normalize"):
-        ibis.struct(value, type=typestr)
+        ibis.struct(value, type="struct<field1: string, field2: float64>")
 
 
 def test_struct_cast_to_empty_struct():
@@ -133,18 +132,11 @@ def test_struct_cast_to_empty_struct():
     assert value.type().castable(dt.Struct({}))
 
 
-@pytest.mark.parametrize(
-    "value",
-    [
-        dict(key1="value1", key2="value2"),
-    ],
-)
-def test_map_literal(value):
-    typestr = "map<string, int8>"
+def test_map_literal():
     a = ibis.map(["a", "b"], [1, 2])
     assert a.op().keys.value == ("a", "b")
     assert a.op().values.value == (1, 2)
-    assert a.type() == dt.dtype(typestr)
+    assert a.type() == dt.dtype("map<string, int8>")
 
 
 @pytest.mark.parametrize(
