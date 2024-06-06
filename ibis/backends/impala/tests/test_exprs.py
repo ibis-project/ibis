@@ -632,10 +632,10 @@ def test_unions_with_ctes(con, alltypes):
 @pytest.mark.parametrize(
     ("left", "right", "expected"),
     [
-        (ibis.NA.cast("int64"), ibis.NA.cast("int64"), True),
+        (ibis.null().cast("int64"), ibis.null().cast("int64"), True),
         (L(1), L(1), True),
-        (ibis.NA.cast("int64"), L(1), False),
-        (L(1), ibis.NA.cast("int64"), False),
+        (ibis.null().cast("int64"), L(1), False),
+        (L(1), ibis.null().cast("int64"), False),
         (L(0), L(1), False),
         (L(1), L(0), False),
     ],
