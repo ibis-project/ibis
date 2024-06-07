@@ -408,7 +408,7 @@ class Value(Expr):
         """
         return ops.Coalesce((self, fill_value)).to_expr()
 
-    @deprecated(as_of="10.0", instead="use fill_null instead")
+    @deprecated(as_of="9.1", instead="use fill_null instead")
     def fillna(self, fill_value: Scalar) -> Value:
         """Deprecated - use `fill_null` instead."""
         return self.fill_null(fill_value)
