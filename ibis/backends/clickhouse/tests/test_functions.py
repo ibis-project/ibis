@@ -127,13 +127,13 @@ def test_coalesce(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        (ibis.NA.fillnull(5), 5),
-        (L(5).fillnull(10), 5),
+        (ibis.NA.fill_null(5), 5),
+        (L(5).fill_null(10), 5),
         (L(5).nullif(5), None),
         (L(10).nullif(5), 10),
     ],
 )
-def test_fillnull_nullif(con, expr, expected):
+def test_fill_null_nullif(con, expr, expected):
     result = con.execute(expr)
     if expected is None:
         assert pd.isnull(result)

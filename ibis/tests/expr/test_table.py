@@ -1731,8 +1731,8 @@ def test_unbound_table_using_class_definition():
 
 def test_mutate_chain():
     one = ibis.table([("a", "string"), ("b", "string")], name="t")
-    two = one.mutate(b=lambda t: t.b.fillnull("Short Term"))
-    three = two.mutate(a=lambda t: t.a.fillnull("Short Term"))
+    two = one.mutate(b=lambda t: t.b.fill_null("Short Term"))
+    three = two.mutate(a=lambda t: t.a.fill_null("Short Term"))
 
     values = three.op().values
     assert isinstance(values["a"], ops.Coalesce)
@@ -1743,8 +1743,8 @@ def test_mutate_chain():
     assert three_opt == ops.Project(
         parent=one,
         values={
-            "a": one.a.fillnull("Short Term"),
-            "b": one.b.fillnull("Short Term"),
+            "a": one.a.fill_null("Short Term"),
+            "b": one.b.fill_null("Short Term"),
         },
     )
 

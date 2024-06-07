@@ -2428,7 +2428,7 @@ def coalesce(*args: Any) -> ir.Value:
     See Also
     --------
     [`Value.coalesce()`](#ibis.expr.types.generic.Value.coalesce)
-    [`Value.fillnull()`](#ibis.expr.types.generic.Value.fillnull)
+    [`Value.fill_null()`](#ibis.expr.types.generic.Value.fill_null)
 
     Examples
     --------

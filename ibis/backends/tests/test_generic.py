@@ -118,13 +118,13 @@ def test_boolean_literal(con, backend):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.NA.fillnull(5), 5, id="na_fillnull"),
-        param(ibis.literal(5).fillnull(10), 5, id="non_na_fillnull"),
+        param(ibis.NA.fill_null(5), 5, id="na_fill_null"),
+        param(ibis.literal(5).fill_null(10), 5, id="non_na_fill_null"),
         param(ibis.literal(5).nullif(5), None, id="nullif_null"),
         param(ibis.literal(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-def test_scalar_fillnull_nullif(con, expr, expected):
+def test_scalar_fill_null_nullif(con, expr, expected):
     if expected is None:
         # The exact kind of null value used differs per backend (and version).
         # Example 1: Pandas returns np.nan while BigQuery returns None.
@@ -211,11 +211,11 @@ def test_isna(backend, alltypes, col, value, filt):
         ),
     ],
 )
-def test_column_fillnull(backend, alltypes, value):
+def test_column_fill_null(backend, alltypes, value):
     table = alltypes.mutate(missing=ibis.literal(value).cast("float64"))
     pd_table = table.execute()
 
-    res = table.mutate(missing=table.missing.fillnull(0.0)).execute()
+    res = table.mutate(missing=table.missing.fill_null(0.0)).execute()
     sol = pd_table.assign(missing=pd_table.missing.fillna(0.0))
     backend.assert_frame_equal(res.reset_index(drop=True), sol.reset_index(drop=True))
 
@@ -441,21 +441,21 @@ def test_select_filter_mutate(backend, alltypes, df):
     backend.assert_series_equal(result.float_col, expected.float_col)
 
 
-def test_table_fillnull_invalid(alltypes):
+def test_table_fill_null_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.fillnull({"invalid_col": 0.0})
+        alltypes.fill_null({"invalid_col": 0.0})
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fillnull on column 'string_col' of type.*"
+        com.IbisTypeError, match="Cannot fill_null on column 'string_col' of type.*"
     ):
-        alltypes[["int_col", "string_col"]].fillnull(0)
+        alltypes[["int_col", "string_col"]].fill_null(0)
 
     with pytest.raises(
-        com.IbisTypeError, match="Cannot fillnull on column 'int_col' of type.*"
+        com.IbisTypeError, match="Cannot fill_null on column 'int_col' of type.*"
     ):
-        alltypes.fillnull({"int_col": "oops"})
+        alltypes.fill_null({"int_col": "oops"})
 
 
 @pytest.mark.parametrize(
@@ -467,7 +467,7 @@ def test_table_fillnull_invalid(alltypes):
         param({}, id="empty"),
     ],
 )
-def test_table_fillnull_mapping(backend, alltypes, replacements):
+def test_table_fill_null_mapping(backend, alltypes, replacements):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
         double_col=alltypes.double_col.nullif(3.0),
@@ -475,13 +475,13 @@ def test_table_fillnull_mapping(backend, alltypes, replacements):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    result = table.fillnull(replacements).execute().reset_index(drop=True)
+    result = table.fill_null(replacements).execute().reset_index(drop=True)
     expected = pd_table.fillna(replacements).reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_table_fillnull_scalar(backend, alltypes):
+def test_table_fill_null_scalar(backend, alltypes):
     table = alltypes.mutate(
         int_col=alltypes.int_col.nullif(1),
         double_col=alltypes.double_col.nullif(3.0),
@@ -489,11 +489,11 @@ def test_table_fillnull_scalar(backend, alltypes):
     ).select("id", "int_col", "double_col", "string_col")
     pd_table = table.execute()
 
-    res = table[["int_col", "double_col"]].fillnull(0).execute().reset_index(drop=True)
+    res = table[["int_col", "double_col"]].fill_null(0).execute().reset_index(drop=True)
     sol = pd_table[["int_col", "double_col"]].fillna(0).reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
-    res = table[["string_col"]].fillnull("missing").execute().reset_index(drop=True)
+    res = table[["string_col"]].fill_null("missing").execute().reset_index(drop=True)
     sol = pd_table[["string_col"]].fillna("missing").reset_index(drop=True)
     backend.assert_frame_equal(res, sol, check_dtype=False)
 
@@ -931,12 +931,12 @@ def test_logical_negation_column(backend, alltypes, df, op):
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
 )
 def test_zero_ifnull_literals(con, dtype, zero, expected):
-    assert con.execute(ibis.NA.cast(dtype).fillnull(0)) == zero
-    assert con.execute(ibis.literal(expected, type=dtype).fillnull(0)) == expected
+    assert con.execute(ibis.NA.cast(dtype).fill_null(0)) == zero
+    assert con.execute(ibis.literal(expected, type=dtype).fill_null(0)) == expected
 
 
 def test_zero_ifnull_column(backend, alltypes, df):
-    expr = alltypes.int_col.nullif(1).fillnull(0).name("tmp")
+    expr = alltypes.int_col.nullif(1).fill_null(0).name("tmp")
     result = expr.execute().astype("int32")
     expected = df.int_col.replace(1, 0).rename("tmp").astype("int32")
     backend.assert_series_equal(result, expected)

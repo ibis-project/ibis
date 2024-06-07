@@ -925,8 +925,8 @@ def test_generic_value_api_no_arithmetic(value, operation):
 @pytest.mark.parametrize(
     ("value", "expected"), [(5, dt.int8), (5.4, dt.double), ("abc", dt.string)]
 )
-def test_fillnull_null(value, expected):
-    assert ibis.NA.fillnull(value).type().equals(expected)
+def test_fill_null_null(value, expected):
+    assert ibis.NA.fill_null(value).type().equals(expected)
 
 
 @pytest.mark.parametrize(
