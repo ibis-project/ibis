@@ -65,7 +65,6 @@ jobs:
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
       - name: nix build devShell
-        if: github.event_name == 'push'
         run: |
           set -euo pipefail
 
