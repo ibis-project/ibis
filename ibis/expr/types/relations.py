@@ -2758,7 +2758,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                     )
         return ops.FillNull(self, replacements).to_expr()
 
-    @deprecated(as_of="10.0", instead="use drop_null instead")
+    @deprecated(as_of="9.1", instead="use drop_null instead")
     def dropna(
         self,
         subset: Sequence[str] | str | None = None,
@@ -2770,7 +2770,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             subset = self.bind(subset)
         return self.drop_null(subset, how)
 
-    @deprecated(as_of="10.0", instead="use fill_null instead")
+    @deprecated(as_of="9.1", instead="use fill_null instead")
     def fillna(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
