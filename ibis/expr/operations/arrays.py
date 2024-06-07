@@ -48,7 +48,7 @@ class ArraySlice(Value):
     stop: Optional[Value[dt.Integer]] = None
 
     dtype = rlz.dtype_like("arg")
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -71,13 +71,11 @@ class ArrayConcat(Value):
 
     arg: VarTuple[Value[dt.Array]]
 
+    shape = rlz.shape_like("arg")
+
     @attribute
     def dtype(self):
         return dt.Array(dt.highest_precedence(arg.dtype.value_type for arg in self.arg))
-
-    @attribute
-    def shape(self):
-        return rlz.highest_precedence_shape(self.arg)
 
 
 @public

@@ -77,6 +77,7 @@ def shape_like(name):
     def shape(self):
         args = getattr(self, name)
         args = args if util.is_iterable(args) else [args]
+        args = [a for a in args if a is not None]
         return highest_precedence_shape(args)
 
     return shape

@@ -321,8 +321,7 @@ class SearchedCase(Value):
 
     @attribute
     def shape(self):
-        # TODO(kszucs): can be removed after making Sequence iterable
-        return rlz.highest_precedence_shape(self.cases)
+        return rlz.highest_precedence_shape((*self.cases, *self.results, self.default))
 
     @attribute
     def dtype(self):
