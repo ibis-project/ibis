@@ -384,7 +384,7 @@ def test_decimal_timestamp_builtins(con):
         dc * 2,
         dc**2,
         dc.cast("double"),
-        api.ifelse(table.l_discount > 0, dc * table.l_discount, api.NA),
+        api.ifelse(table.l_discount > 0, dc * table.l_discount, api.null()),
         dc.fill_null(0),
         ts < (ibis.now() + ibis.interval(months=3)),
         ts < (ibis.timestamp("2005-01-01") + ibis.interval(months=3)),
