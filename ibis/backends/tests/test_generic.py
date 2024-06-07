@@ -118,7 +118,7 @@ def test_boolean_literal(con, backend):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.NA.fill_null(5), 5, id="na_fill_null"),
+        param(ibis.null().fill_null(5), 5, id="na_fill_null"),
         param(ibis.literal(5).fill_null(10), 5, id="non_na_fill_null"),
         param(ibis.literal(5).nullif(5), None, id="nullif_null"),
         param(ibis.literal(10).nullif(5), 10, id="nullif_not_null"),
@@ -159,7 +159,10 @@ def test_scalar_fill_null_nullif(con, expr, expected):
             id="nan_col",
         ),
         param(
-            "none_col", ibis.NA.cast("float64"), methodcaller("isnull"), id="none_col"
+            "none_col",
+            ibis.null().cast("float64"),
+            methodcaller("isnull"),
+            id="none_col",
         ),
     ],
 )
@@ -224,8 +227,8 @@ def test_column_fill_null(backend, alltypes, value):
     ("expr", "expected"),
     [
         param(ibis.coalesce(5, None, 4), 5, id="generic"),
-        param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="null_start_end"),
-        param(ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14, id="non_null_last"),
+        param(ibis.coalesce(ibis.null(), 4, ibis.null()), 4, id="null_start_end"),
+        param(ibis.coalesce(ibis.null(), ibis.null(), 3.14), 3.14, id="non_null_last"),
     ],
 )
 def test_coalesce(con, expr, expected):
@@ -539,9 +542,9 @@ def test_drop_null_table(backend, alltypes, how, subset):
     is_four = alltypes.int_col == 4
 
     table = alltypes.mutate(
-        col_1=is_two.ifelse(ibis.NA, alltypes.float_col),
-        col_2=is_four.ifelse(ibis.NA, alltypes.float_col),
-        col_3=(is_two | is_four).ifelse(ibis.NA, alltypes.float_col),
+        col_1=is_two.ifelse(ibis.null(), alltypes.float_col),
+        col_2=is_four.ifelse(ibis.null(), alltypes.float_col),
+        col_3=(is_two | is_four).ifelse(ibis.null(), alltypes.float_col),
     ).select("col_1", "col_2", "col_3")
 
     table_pandas = table.execute()
@@ -931,7 +934,7 @@ def test_logical_negation_column(backend, alltypes, df, op):
     [("int64", 0, 1), ("float64", 0.0, 1.0)],
 )
 def test_zero_ifnull_literals(con, dtype, zero, expected):
-    assert con.execute(ibis.NA.cast(dtype).fill_null(0)) == zero
+    assert con.execute(ibis.null().cast(dtype).fill_null(0)) == zero
     assert con.execute(ibis.literal(expected, type=dtype).fill_null(0)) == expected
 
 
