@@ -78,10 +78,6 @@ con = ibis.pyspark.connect(session=session)
 `ibis.pyspark.connect` is a thin wrapper around [`ibis.backends.pyspark.Backend.do_connect`](#ibis.backends.pyspark.Backend.do_connect).
 :::
 
-::: {.callout-note}
-The `pyspark` backend does not create `SparkSession` objects (unless you [connect using a URL](#ibis.connect-url-format)); you must create a `SparkSession` and pass that to `ibis.pyspark.connect`.
-:::
-
 ### Connection Parameters
 
 ```{python}
