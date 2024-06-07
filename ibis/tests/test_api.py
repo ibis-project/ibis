@@ -69,3 +69,9 @@ import sys
 assert "{module}" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", script], check=True)
+
+
+def test_ibis_na_deprecation_warning():
+    with pytest.warns(DeprecationWarning, match="'ibis.NA' is deprecated as of v9.1"):
+        result = ibis.NA
+        assert result.execute() == ibis.null().execute()
