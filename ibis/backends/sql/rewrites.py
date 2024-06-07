@@ -137,7 +137,7 @@ def fillnull_to_select(_, **kwargs):
 
 
 @replace(p.DropNull)
-def dropnull_to_select(_, **kwargs):
+def drop_null_to_select(_, **kwargs):
     """Rewrite DropNull to a Select node."""
     if _.subset is None:
         columns = [ops.Field(_.parent, name) for name in _.parent.schema.names]
@@ -291,7 +291,7 @@ def sqlize(
         | filter_to_select
         | sort_to_select
         | fillnull_to_select
-        | dropnull_to_select
+        | drop_null_to_select
         | first_to_firstvalue,
         context=context,
     )

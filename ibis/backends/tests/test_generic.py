@@ -509,14 +509,14 @@ def test_mutate_rename(alltypes):
     assert list(result.columns) == ["bool_col", "string_col", "dupe_col"]
 
 
-def test_dropnull_invalid(alltypes):
+def test_drop_null_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.dropnull(subset=["invalid_col"])
+        alltypes.drop_null(subset=["invalid_col"])
 
     with pytest.raises(ValidationError):
-        alltypes.dropnull(how="invalid")
+        alltypes.drop_null(how="invalid")
 
 
 @pytest.mark.parametrize("how", ["any", "all"])
@@ -534,7 +534,7 @@ def test_dropnull_invalid(alltypes):
         param(["col_1", "col_3"], id="one-and-three"),
     ],
 )
-def test_dropnull_table(backend, alltypes, how, subset):
+def test_drop_null_table(backend, alltypes, how, subset):
     is_two = alltypes.int_col == 2
     is_four = alltypes.int_col == 4
 
@@ -545,7 +545,7 @@ def test_dropnull_table(backend, alltypes, how, subset):
     ).select("col_1", "col_2", "col_3")
 
     table_pandas = table.execute()
-    result = table.dropnull(subset, how).execute().reset_index(drop=True)
+    result = table.drop_null(subset, how).execute().reset_index(drop=True)
     expected = table_pandas.dropna(how=how, subset=subset).reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected)

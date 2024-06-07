@@ -368,7 +368,7 @@ def asof_join(op, **kw):
 
 
 @translate.register(ops.DropNull)
-def dropnull(op, **kw):
+def drop_null(op, **kw):
     lf = translate(op.parent, **kw)
 
     if op.subset is None:

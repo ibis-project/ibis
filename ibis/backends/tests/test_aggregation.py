@@ -1466,7 +1466,7 @@ def test_grouped_case(backend, con):
     expr = (
         table.group_by(k="key")
         .aggregate(mx=case_expr.max())
-        .dropnull("k")
+        .drop_null("k")
         .order_by("k")
     )
     result = con.execute(expr)

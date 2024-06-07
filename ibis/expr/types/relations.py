@@ -2490,7 +2490,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropnull(
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().drop_null(
         ...     "sex"
         ... ).order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
@@ -2596,7 +2596,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountStar(self, where=where).to_expr()
 
-    def dropnull(
+    def drop_null(
         self,
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
@@ -2645,11 +2645,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌─────┐
         │ 344 │
         └─────┘
-        >>> t.dropnull(["bill_length_mm", "body_mass_g"]).count()
+        >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
         ┌─────┐
         │ 342 │
         └─────┘
-        >>> t.dropnull(how="all").count()  # no rows where all columns are null
+        >>> t.drop_null(how="all").count()  # no rows where all columns are null
         ┌─────┐
         │ 344 │
         └─────┘
@@ -2758,17 +2758,17 @@ class Table(Expr, _FixedTextJupyterMixin):
                     )
         return ops.FillNull(self, replacements).to_expr()
 
-    @deprecated(as_of="10.0", instead="use dropnull instead")
+    @deprecated(as_of="10.0", instead="use drop_null instead")
     def dropna(
         self,
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
     ) -> Table:
-        """Deprecated - use `dropnull` instead."""
+        """Deprecated - use `drop_null` instead."""
 
         if subset is not None:
             subset = self.bind(subset)
-        return self.dropnull(subset, how)
+        return self.drop_null(subset, how)
 
     @deprecated(as_of="10.0", instead="use fillnull instead")
     def fillna(
@@ -3751,7 +3751,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_transform=int,
         ...     values_to="rank",
         ...     values_transform=_.cast("int"),
-        ... ).dropnull("rank")
+        ... ).drop_null("rank")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━┓
         ┃ artist  ┃ track                   ┃ date_entered ┃ week ┃ rank  ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━┩
