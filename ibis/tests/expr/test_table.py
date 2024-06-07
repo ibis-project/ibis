@@ -123,6 +123,19 @@ def test_table_tab_completion():
     assert items.issuperset(table.columns)
 
 
+def test_keys(table):
+    keys = table.keys()
+    assert keys == table.columns
+
+
+def test_is_mapping(table):
+    m = {**table}
+    expected = {k: table[k] for k in table.columns}
+    assert tuple(m.keys()) == tuple(expected.keys())
+    for k in m:
+        assert m[k].equals(expected[k])
+
+
 def test_getitem_attribute(table):
     result = table.a
     assert_equal(result, table["a"])

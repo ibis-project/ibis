@@ -516,6 +516,24 @@ class Table(Expr, _FixedTextJupyterMixin):
             console_width=console_width,
         )
 
+    def keys(self) -> list[str]:
+        """Return the column names of the table.
+
+        Returns
+        -------
+        list
+            Column names
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.keys()[:3]
+        ['species', 'island', 'bill_length_mm']
+        """
+        return self.columns
+
     def __getitem__(self, what):
         """Select items from a table expression.
 
