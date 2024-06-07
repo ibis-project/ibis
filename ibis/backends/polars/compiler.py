@@ -386,7 +386,7 @@ def drop_null(op, **kw):
 
 
 @translate.register(ops.FillNull)
-def fillnull(op, **kw):
+def fill_null(op, **kw):
     table = translate(op.parent, **kw)
 
     columns = []

@@ -532,7 +532,7 @@ the column name for the value to apply to.
 
 
 ```{python}
-no_null_peng = penguins.fillnull(dict(bill_depth_mm=0, bill_length_mm=0))
+no_null_peng = penguins.fill_null(dict(bill_depth_mm=0, bill_length_mm=0))
 ```
 
 ### Replacing `NULL`s
@@ -542,7 +542,7 @@ for `NULL` values.
 
 
 ```{python}
-bill_length_no_nulls = penguins.bill_length_mm.fillnull(0)
+bill_length_no_nulls = penguins.bill_length_mm.fill_null(0)
 ```
 
 ## Type casts

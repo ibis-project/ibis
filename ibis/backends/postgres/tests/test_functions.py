@@ -335,13 +335,13 @@ def test_regexp_extract(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.NA.fillnull(5), 5, id="filled"),
-        param(L(5).fillnull(10), 5, id="not_filled"),
+        param(ibis.NA.fill_null(5), 5, id="filled"),
+        param(L(5).fill_null(10), 5, id="not_filled"),
         param(L(5).nullif(5), None, id="nullif_null"),
         param(L(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-def test_fillnull_nullif(con, expr, expected):
+def test_fill_null_nullif(con, expr, expected):
     assert con.execute(expr) == expected
 
 
@@ -382,7 +382,7 @@ def test_coalesce_all_na_double(con):
 
 
 def test_numeric_builtins_work(alltypes, df):
-    expr = alltypes.double_col.fillnull(0)
+    expr = alltypes.double_col.fill_null(0)
     result = expr.execute()
     expected = df.double_col.fillna(0)
     expected.name = "Coalesce()"
@@ -671,7 +671,7 @@ def test_subquery(alltypes, df):
     t = alltypes
 
     expr = (
-        t.mutate(d=t.double_col.fillnull(0)).limit(1000).group_by("string_col").size()
+        t.mutate(d=t.double_col.fill_null(0)).limit(1000).group_by("string_col").size()
     )
     result = expr.execute().sort_values("string_col").reset_index(drop=True)
     expected = (

@@ -2658,14 +2658,14 @@ class Table(Expr, _FixedTextJupyterMixin):
             subset = self.bind(subset)
         return ops.DropNull(self, how, subset).to_expr()
 
-    def fillnull(
+    def fill_null(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
-        ## There is potential lack of type stability with the `fillnull` API
+        ## There is potential lack of type stability with the `fill_null` API
 
         For example, different library versions may impact whether a given
         backend promotes integer replacement values to floats.
@@ -2706,7 +2706,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ NULL   │
         │ …      │
         └────────┘
-        >>> t.fillnull({"sex": "unrecorded"}).sex
+        >>> t.fill_null({"sex": "unrecorded"}).sex
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -2740,7 +2740,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
         else:
@@ -2752,9 +2752,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             for col, col_type in schema.items():
                 if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fillnull` instead."
+                        f"of fill values to `fill_null` instead."
                     )
         return ops.FillNull(self, replacements).to_expr()
 
@@ -2770,12 +2770,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             subset = self.bind(subset)
         return self.drop_null(subset, how)
 
-    @deprecated(as_of="10.0", instead="use fillnull instead")
+    @deprecated(as_of="10.0", instead="use fill_null instead")
     def fillna(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
-        """Deprecated - use `fillnull` instead."""
+        """Deprecated - use `fill_null` instead."""
 
         schema = self.schema()
 
@@ -2792,7 +2792,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillnull on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
         else:
@@ -2808,7 +2808,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                         f"value of type {val_type} - pass in an explicit mapping "
                         f"of fill values to `fillna` instead."
                     )
-        return self.fillnull(replacements)
+        return self.fill_null(replacements)
 
     def unpack(self, *columns: str) -> Table:
         """Project the struct fields of each of `columns` into `self`.

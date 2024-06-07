@@ -112,7 +112,7 @@ def sort_to_select(_, **kwargs):
 
 
 @replace(p.FillNull)
-def fillnull_to_select(_, **kwargs):
+def fill_null_to_select(_, **kwargs):
     """Rewrite FillNull to a Select node."""
     if isinstance(_.replacements, Mapping):
         mapping = _.replacements
@@ -290,7 +290,7 @@ def sqlize(
         | project_to_select
         | filter_to_select
         | sort_to_select
-        | fillnull_to_select
+        | fill_null_to_select
         | drop_null_to_select
         | first_to_firstvalue,
         context=context,
