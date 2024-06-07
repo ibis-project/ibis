@@ -5,6 +5,7 @@ from typing import Optional
 
 from public import public
 
+import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
@@ -16,6 +17,9 @@ from ibis.common.temporal import IntervalUnit
 
 @public
 def highest_precedence_shape(nodes):
+    nodes = tuple(nodes)
+    if len(nodes) == 0:
+        return ds.scalar
     return max(node.shape for node in nodes)
 
 

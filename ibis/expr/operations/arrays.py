@@ -20,9 +20,7 @@ class Array(Value):
 
     exprs: VarTuple[Value]
 
-    @attribute
-    def shape(self):
-        return rlz.highest_precedence_shape(self.exprs)
+    shape = rlz.shape_like("exprs")
 
     @attribute
     def dtype(self):
