@@ -229,6 +229,7 @@ jobs:
             additional_deps:
               - "'apache-flink < 1.20.0'"
               - "'pandas < 2.2'"
+              - setuptools
             services:
               - flink
         include:
@@ -250,6 +251,7 @@ jobs:
               additional_deps:
                 - "'apache-flink < 1.20.0'"
                 - "'pandas < 2.2'"
+                - setuptools
               services:
                 - flink
           - os: ubuntu-latest
@@ -400,6 +402,7 @@ jobs:
               additional_deps:
                 - "'apache-flink < 1.20.0'"
                 - "'pandas < 2.2'"
+                - setuptools
               services:
                 - flink
           - os: windows-latest
@@ -412,6 +415,7 @@ jobs:
               additional_deps:
                 - "'apache-flink < 1.20.0'"
                 - "'pandas < 2.2'"
+                - setuptools
               services:
                 - flink
           - os: windows-latest
@@ -686,6 +690,7 @@ jobs:
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
+              - setuptools
     steps:
       - name: checkout
         uses: actions/checkout@v4
