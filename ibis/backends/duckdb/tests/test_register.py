@@ -16,7 +16,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.conftest import LINUX, SANDBOXED
+from ibis.conftest import ARM64, LINUX, MACOS, SANDBOXED
 
 
 def test_read_csv(con, data_dir):
@@ -380,37 +380,33 @@ def test_set_temp_dir(tmp_path):
 
 
 @pytest.mark.xfail(
-    LINUX and SANDBOXED,
+    SANDBOXED and LINUX,
     reason=(
         "nix on linux cannot download duckdb extensions or data due to sandboxing; "
         "duckdb will try to automatically install and load read_parquet"
     ),
     raises=(duckdb.Error, duckdb.IOException),
 )
+@pytest.mark.skipif(
+    SANDBOXED and MACOS and ARM64, reason="raises a RuntimeError on nix macos arm64"
+)
 def test_s3_403_fallback(con, httpserver, monkeypatch):
     # monkeypatch to avoid downloading extensions in tests
     monkeypatch.setattr(con, "_load_extensions", lambda _: True)
 
     # Throw a 403 to trigger fallback to pyarrow.dataset
-    httpserver.expect_request("/myfile").respond_with_data(
-        "Forbidden", status=403, content_type="text/plain"
+    path = "/invalid.parquet"
+    httpserver.expect_request(path).respond_with_data(
+        status=403, content_type="application/vnd.apache.parquet"
     )
 
     # Since the URI is nonsense to pyarrow, expect an error, but raises from
     # pyarrow, which indicates the fallback worked
+    url = httpserver.url_for(path)
     with pytest.raises(pa.lib.ArrowInvalid):
-        con.read_parquet(httpserver.url_for("/myfile"))
+        con.read_parquet(url)
 
 
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<=0.7.1"],
-    reason="""
-the fix for this (issue #5879) caused a serious performance regression in the repr.
-added this xfail in #5959, which also reverted the bugfix that caused the regression.
-
-the issue was fixed upstream in duckdb in https://github.com/duckdb/duckdb/pull/6978
-    """,
-)
 def test_register_numpy_str(con):
     data = pd.DataFrame({"a": [np.str_("xyz"), None]})
     result = con.read_in_memory(data)

@@ -406,7 +406,7 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
     else:
-        pytest.importorskip("deltalake")
+        pytest.importorskip("deltalake", exc_type=ImportError)
 
     t = alltypes.head()
     expected = t.to_pandas()

@@ -15,6 +15,7 @@ SANDBOXED = (
 LINUX = platform.system() == "Linux"
 MACOS = platform.system() == "Darwin"
 WINDOWS = platform.system() == "Windows"
+ARM64 = platform.machine() in ("arm64", "aarch64")
 CI = os.environ.get("CI") is not None
 
 

@@ -32,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-latest # x86_64-linux
         python-version:
           - "3.10"
           - "3.11"
@@ -40,6 +40,8 @@ jobs:
         include:
           - os: ubuntu-arm64-small
             python-version: "3.12"
+          - os: macos-14
+            python-version: "3.10"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -71,4 +73,10 @@ jobs:
           version='${{ matrix.python-version }}'
           host_system="$(nix eval --raw 'nixpkgs#stdenv.hostPlatform.system')"
           flake=".#devShells.${host_system}.ibis${version//./}"
-          nix build "$flake" --fallback --keep-going --print-build-logs
+
+          args=()
+          if [[ "${{ github.event_name }}" != "push" ]]; then
+            args+=("--dry-run")
+          fi
+
+          nix build "$flake" --fallback --keep-going --print-build-logs "${args[@]}"
