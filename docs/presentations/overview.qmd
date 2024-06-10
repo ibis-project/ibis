@@ -400,7 +400,7 @@ We see three approaches:
 pandas clones:
 
 - Modin
-- pandas on Spark
+- pandas API on Spark
   - formerly known as Koalas
 - cuDF
 - Dask (sort of)
