@@ -537,7 +537,7 @@ no_null_peng = penguins.fill_null(dict(bill_depth_mm=0, bill_length_mm=0))
 
 ### Replacing `NULL`s
 
-The Ibis equivalent of pandas `fillna` is `filnull`, this method allows you to specify a replacement value
+The Ibis equivalent of pandas `fillna` is `fill_null`, this method allows you to specify a replacement value
 for `NULL` values.
 
 
