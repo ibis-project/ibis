@@ -72,5 +72,7 @@ assert "{module}" not in sys.modules
 
 
 def test_ibis_na_deprecation_warning():
-    with pytest.warns(DeprecationWarning, match="'ibis.NA' is deprecated as of v9.1"):
+    with pytest.warns(
+        DeprecationWarning, match="The 'ibis.NA' constant is deprecated as of v9.1"
+    ):
         ibis.NA  # noqa: B018
