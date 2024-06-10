@@ -202,7 +202,7 @@ Analyzing 10M+ rows from 4+ data sources.
 ## dataframe lore
 
 ::: {.fragment .fade-in-then-semi-out}
-Dataframes first appeared in the `S` programming language, then evolved into the `R` programming language.
+Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language.
 :::
 
 ::: {.fragment .fade-in-then-semi-out}
@@ -373,22 +373,23 @@ SQL:
 ***Ibis bridges the gap.***
 :::
 
-## dataframe history {.smaller}
+## Python dataframe history {.smaller}
 
 - **pandas** (2008): dataframes in Python
 - **Spark** (2009): distributed dataframes with PySpark
-- **Dask** (2014): distributed pandas dataframes with Python
-- **dplyr** (2014): dataframes in R with SQL-like syntax
+- **Dask** (2014): distributed pandas dataframes
+- **Vaex** (2014): multicore dataframes in Python via C++
 - [**Ibis**]{style="color:#7C65A0"} (2015): dataframes in Python with SQL-like syntax
-- **cuDF** (2017): pandas on GPUs
-- **Modin** (2018): pandas on Ray/Dask
-- **Koalas** (2019): pandas on Spark
+- **cuDF** (2017): pandas API on GPUs
+- **Modin** (2018): pandas API on Ray/Dask
+- **Koalas** (2019): pandas API on Spark, later renamed "pandas API on Spark"
 - **Polars** (2020): multicore dataframes in Python via Rust
 - [**Ibis**]{style="color:#7C65A0"} (2022): Ibis invested in heavily by Voltron Data
 - **Snowpark Python** (2022): PySpark-like dataframes on Snowflake
-- **BigQuery DataFrames** (2023): pandas on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
+- **BigQuery DataFrames** (2023): pandas API on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
+- **Snowpark pandas API** (2024): pandas API on Snowflake
 
-## dataframe history (aside) {.smaller}
+## Python dataframe history (aside) {.smaller}
 
 We see three approaches:
 
@@ -399,11 +400,12 @@ We see three approaches:
 pandas clones:
 
 - Modin
-- pandas on Spark
+- pandas API on Spark
   - formerly known as Koalas
 - cuDF
 - Dask (sort of)
 - BigQuery DataFrames
+- Snowpark pandas API
 :::
 
 ::: {.column width=33%}
