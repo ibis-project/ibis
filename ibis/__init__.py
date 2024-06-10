@@ -139,8 +139,7 @@ def __getattr__(name: str) -> Any:
             DeprecationWarning,
             stacklevel=2,
         )
-        import ibis
 
-        return ibis.null()
+        return null()  # noqa: F405
     else:
         return load_backend(name)
