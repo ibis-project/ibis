@@ -373,7 +373,7 @@ SQL:
 ***Ibis bridges the gap.***
 :::
 
-## dataframe history {.smaller}
+## Python dataframe history {.smaller}
 
 - **pandas** (2008): dataframes in Python
 - **Spark** (2009): distributed dataframes with PySpark
@@ -389,7 +389,7 @@ SQL:
 - **BigQuery DataFrames** (2023): pandas API on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
 - **Snowpark pandas API** (2024): pandas API on Snowflake
 
-## dataframe history (aside) {.smaller}
+## Python dataframe history (aside) {.smaller}
 
 We see three approaches:
 
