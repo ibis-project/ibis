@@ -3545,13 +3545,13 @@ files = [
 
 [[package]]
 name = "leafmap"
-version = "0.30.1"
+version = "0.33.0"
 description = "A Python package for geospatial analysis and interactive mapping in a Jupyter environment."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "leafmap-0.30.1-py2.py3-none-any.whl", hash = "sha256:18223679b47d436cebde1d51aa96061de5f033f0da6eb27681325dafdda74eb5"},
-    {file = "leafmap-0.30.1.tar.gz", hash = "sha256:980caf9ebbb45c2ead56a73531c5204824154d349186e6e8fec5ae69d4035d9c"},
+    {file = "leafmap-0.33.0-py2.py3-none-any.whl", hash = "sha256:72511c0c3d2c7332cfc0a420e73b4b81d425deea57a3ded3795a14458f30c703"},
+    {file = "leafmap-0.33.0.tar.gz", hash = "sha256:18149ef68880af0164447f51e22c81e6e7614d71b9e69f7bb2ace0968604443d"},
 ]
 
 [package.dependencies]
@@ -3577,13 +3577,13 @@ whiteboxgui = "*"
 xyzservices = "*"
 
 [package.extras]
-ai = ["geopandas", "localtileserver", "osmnx", "pytorch-lightning", "rastervision"]
-all = ["PyYAML (==6.0.1)", "black", "black[jupyter]", "bokeh", "boto3", "codespell", "cogeo-mosaic", "deadlink", "earthaccess", "ffmpeg-python", "geopandas", "googledrivedownloader", "gradio", "h5py", "ipygany", "ipysheet", "ipyvtklink", "jupyter-bokeh", "jupyterlab (>=3.0.0)", "keplergl", "laspy", "localtileserver", "lonboard", "mapclassify (>=2.4.0)", "mss", "netcdf4", "osmnx", "owslib", "palettable", "panel", "plotly", "pmtiles", "psycopg2", "pycrs", "pydeck", "pyntcloud[las]", "pyvista-xarray", "rasterio", "rasterstats", "rio-cogeo", "rioxarray", "sqlalchemy", "streamlit-folium", "xarray-leaflet"]
+ai = ["geopandas", "localtileserver (>=0.10.0)", "osmnx", "pytorch-lightning", "rastervision"]
+all = ["PyYAML", "black", "black[jupyter]", "bokeh", "boto3", "cogeo-mosaic", "ffmpeg-python", "geopandas", "gradio", "h5py", "ipygany", "ipysheet", "ipyvtklink", "jupyter-bokeh", "jupyterlab (>=3.0.0)", "keplergl", "laspy", "localtileserver (>=0.10.1)", "lonboard", "mapclassify (>=2.4.0)", "maplibre", "mss", "netcdf4", "osmnx", "owslib", "palettable", "panel", "plotly", "pmtiles", "pre-commit", "psycopg2", "pycrs", "pydeck", "pyntcloud[las]", "pyvista-xarray", "rasterio", "rasterstats", "rio-cogeo", "rioxarray", "sqlalchemy"]
 apps = ["solara", "streamlit-folium", "voila"]
 backends = ["bokeh", "keplergl", "plotly", "pydeck"]
 lidar = ["ipygany", "ipyvtklink", "laspy", "panel", "pyntcloud[las]", "pyvista"]
 pmtiles = ["flask", "flask-cors", "pmtiles"]
-raster = ["jupyter-server-proxy", "localtileserver", "netcdf4", "py3dep", "pynhd", "rio-cogeo", "rioxarray"]
+raster = ["jupyter-server-proxy", "localtileserver (>=0.10.0)", "netcdf4", "py3dep", "pynhd", "rio-cogeo", "rioxarray"]
 sql = ["psycopg2", "sqlalchemy"]
 vector = ["flask", "flask-cors", "geopandas", "lonboard", "mapclassify", "osmnx", "pmtiles"]
 
@@ -8085,4 +8085,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3613d324a066d1a405963af828ebbcf31f2f9b34584c42e583aa177bbc39b2f2"
+content-hash = "dd68225f034d95a85c2eb043ad9d956f840134dabff0c798360781c058d7c7f8"
