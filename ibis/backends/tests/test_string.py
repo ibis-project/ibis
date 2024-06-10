@@ -923,7 +923,7 @@ def test_levenshtein(con, right):
     "expr",
     [
         param(ibis.case().when(True, "%").end(), id="case"),
-        param(ibis.ifelse(True, "%", ibis.NA), id="ifelse"),
+        param(ibis.ifelse(True, "%", ibis.null()), id="ifelse"),
     ],
 )
 def test_no_conditional_percent_escape(con, expr):

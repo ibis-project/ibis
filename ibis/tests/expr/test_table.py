@@ -569,7 +569,7 @@ rand = ibis.random()
 @pytest.mark.parametrize(
     ("key", "expected"),
     [
-        param(ibis.NA, ibis.NA.op(), id="na"),
+        param(ibis.null(), ibis.null().op(), id="na"),
         param(rand, rand.op(), id="random"),
         param(1.0, ibis.literal(1.0).op(), id="float"),
         param(ibis.literal("a"), ibis.literal("a").op(), id="string"),

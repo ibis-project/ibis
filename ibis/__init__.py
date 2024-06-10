@@ -4,6 +4,9 @@ from __future__ import annotations
 
 __version__ = "9.0.0"
 
+import warnings
+from typing import Any
+
 from ibis import examples, util
 from ibis.backends import BaseBackend
 from ibis.common.exceptions import IbisError
@@ -36,7 +39,7 @@ def __dir__() -> list[str]:
     return sorted(out)
 
 
-def __getattr__(name: str) -> BaseBackend:
+def load_backend(name: str) -> BaseBackend:
     """Load backends in a lazy way with `ibis.<backend-name>`.
 
     This also registers the backend options.
@@ -52,6 +55,7 @@ def __getattr__(name: str) -> BaseBackend:
     attribute is "cached", so this function is only called the first time.
 
     """
+
     entry_points = {ep for ep in util.backend_entry_points() if ep.name == name}
 
     if not entry_points:
@@ -125,3 +129,18 @@ def __getattr__(name: str) -> BaseBackend:
         setattr(proxy, name, getattr(backend, name))
 
     return proxy
+
+
+def __getattr__(name: str) -> Any:
+    if name == "NA":
+        warnings.warn(
+            "The 'ibis.NA' constant is deprecated as of v9.1 and will be removed in a future "
+            "version. Use 'ibis.null()' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        import ibis
+
+        return ibis.null()
+    else:
+        return load_backend(name)

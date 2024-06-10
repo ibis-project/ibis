@@ -73,7 +73,7 @@ _STRUCT_LITERAL = ibis.struct(
     _SIMPLE_DICT,
     type="struct<a: int64, b: string, c: float64>",
 )
-_NULL_STRUCT_LITERAL = ibis.NA.cast("struct<a: int64, b: string, c: float64>")
+_NULL_STRUCT_LITERAL = ibis.null().cast("struct<a: int64, b: string, c: float64>")
 
 
 @pytest.mark.notimpl(["postgres", "risingwave"])

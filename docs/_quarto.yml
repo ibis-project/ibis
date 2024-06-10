@@ -298,10 +298,6 @@ quartodoc:
             - name: param
               dynamic: true
               signature_name: full
-            - name: NA
-              # Ideally exposed under `ibis` but that doesn't seem to work??
-              package: ibis.expr.api
-              signature_name: full
             - name: "null"
               dynamic: true
               signature_name: full
