@@ -202,7 +202,7 @@ Analyzing 10M+ rows from 4+ data sources.
 ## dataframe lore
 
 ::: {.fragment .fade-in-then-semi-out}
-Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language (in 1992).
+Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language.
 :::
 
 ::: {.fragment .fade-in-then-semi-out}
