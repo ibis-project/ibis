@@ -29,7 +29,7 @@ def table(mockcon):
         param(lambda x: x.log2(), id="log2"),
         param(lambda x: x.log10(), id="log10"),
         param(lambda x: x.nullif(0), id="nullif_zero"),
-        param(lambda x: x.fillna(0), id="zero_ifnull"),
+        param(lambda x: x.fill_null(0), id="zero_ifnull"),
     ],
 )
 @pytest.mark.parametrize("cname", ["double_col", "int_col"])

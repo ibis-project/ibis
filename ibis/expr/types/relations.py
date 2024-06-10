@@ -2490,7 +2490,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropna(
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().drop_null(
         ...     "sex"
         ... ).order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
@@ -2596,7 +2596,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountStar(self, where=where).to_expr()
 
-    def dropna(
+    def drop_null(
         self,
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
@@ -2645,27 +2645,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌─────┐
         │ 344 │
         └─────┘
-        >>> t.dropna(["bill_length_mm", "body_mass_g"]).count()
+        >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
         ┌─────┐
         │ 342 │
         └─────┘
-        >>> t.dropna(how="all").count()  # no rows where all columns are null
+        >>> t.drop_null(how="all").count()  # no rows where all columns are null
         ┌─────┐
         │ 344 │
         └─────┘
         """
         if subset is not None:
             subset = self.bind(subset)
-        return ops.DropNa(self, how, subset).to_expr()
+        return ops.DropNull(self, how, subset).to_expr()
 
-    def fillna(
+    def fill_null(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
-        ## There is potential lack of type stability with the `fillna` API
+        ## There is potential lack of type stability with the `fill_null` API
 
         For example, different library versions may impact whether a given
         backend promotes integer replacement values to floats.
@@ -2677,6 +2677,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             Value with which to fill nulls. If `replacements` is a mapping, the
             keys are column names that map to their replacement value. If
             passed as a scalar all columns are filled with that value.
+
+        Returns
+        -------
+        Table
+            Table expression
 
         Examples
         --------
@@ -2701,7 +2706,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ NULL   │
         │ …      │
         └────────┘
-        >>> t.fillna({"sex": "unrecorded"}).sex
+        >>> t.fill_null({"sex": "unrecorded"}).sex
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -2719,11 +2724,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ unrecorded │
         │ …          │
         └────────────┘
-
-        Returns
-        -------
-        Table
-            Table expression
         """
         schema = self.schema()
 
@@ -2740,7 +2740,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
         else:
@@ -2752,11 +2752,30 @@ class Table(Expr, _FixedTextJupyterMixin):
             for col, col_type in schema.items():
                 if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fillna` instead."
+                        f"of fill values to `fill_null` instead."
                     )
-        return ops.FillNa(self, replacements).to_expr()
+        return ops.FillNull(self, replacements).to_expr()
+
+    @deprecated(as_of="9.1", instead="use drop_null instead")
+    def dropna(
+        self,
+        subset: Sequence[str] | str | None = None,
+        how: Literal["any", "all"] = "any",
+    ) -> Table:
+        """Deprecated - use `drop_null` instead."""
+
+        return self.drop_null(subset, how)
+
+    @deprecated(as_of="9.1", instead="use fill_null instead")
+    def fillna(
+        self,
+        replacements: ir.Scalar | Mapping[str, ir.Scalar],
+    ) -> Table:
+        """Deprecated - use `fill_null` instead."""
+
+        return self.fill_null(replacements)
 
     def unpack(self, *columns: str) -> Table:
         """Project the struct fields of each of `columns` into `self`.
@@ -3699,7 +3718,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_transform=int,
         ...     values_to="rank",
         ...     values_transform=_.cast("int"),
-        ... ).dropna("rank")
+        ... ).drop_null("rank")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━┓
         ┃ artist  ┃ track                   ┃ date_entered ┃ week ┃ rank  ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━┩

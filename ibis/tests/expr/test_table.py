@@ -1731,8 +1731,8 @@ def test_unbound_table_using_class_definition():
 
 def test_mutate_chain():
     one = ibis.table([("a", "string"), ("b", "string")], name="t")
-    two = one.mutate(b=lambda t: t.b.fillna("Short Term"))
-    three = two.mutate(a=lambda t: t.a.fillna("Short Term"))
+    two = one.mutate(b=lambda t: t.b.fill_null("Short Term"))
+    three = two.mutate(a=lambda t: t.a.fill_null("Short Term"))
 
     values = three.op().values
     assert isinstance(values["a"], ops.Coalesce)
@@ -1743,8 +1743,8 @@ def test_mutate_chain():
     assert three_opt == ops.Project(
         parent=one,
         values={
-            "a": one.a.fillna("Short Term"),
-            "b": one.b.fillna("Short Term"),
+            "a": one.a.fill_null("Short Term"),
+            "b": one.b.fill_null("Short Term"),
         },
     )
 
@@ -2191,3 +2191,17 @@ def test_table_bind():
 
     with pytest.raises(ValueError, match="¡moo!"):
         t.bind(foo=utter_failure)
+
+
+# TODO: remove when dropna is fully deprecated
+def test_table_dropna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.dropna()
+
+
+# TODO: remove when fillna is fully deprecated
+def test_table_fillna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.fillna({"b": "missing"})

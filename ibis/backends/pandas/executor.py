@@ -740,7 +740,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return parent.drop_duplicates()
 
     @classmethod
-    def visit(cls, op: ops.DropNa, parent, how, subset):
+    def visit(cls, op: ops.DropNull, parent, how, subset):
         if op.subset is not None:
             subset = [col.name for col in op.subset]
         else:
@@ -748,7 +748,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return parent.dropna(how=how, subset=subset)
 
     @classmethod
-    def visit(cls, op: ops.FillNa, parent, replacements):
+    def visit(cls, op: ops.FillNull, parent, replacements):
         return parent.fillna(replacements)
 
     @classmethod

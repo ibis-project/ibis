@@ -1220,7 +1220,7 @@ def transform_downloads(extract_downloads):
         )
         .order_by(ibis._.timestamp.desc())
     )
-    downloads = downloads.mutate(ibis._["python"].fillna("").name("python_full"))
+    downloads = downloads.mutate(ibis._["python"].fill_null("").name("python_full"))
     downloads = downloads.mutate(
         f.clean_version(downloads["python_full"], patch=False).name("python")
     )

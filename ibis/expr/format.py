@@ -264,9 +264,9 @@ def _sql_query_result(op, query, **kwargs):
     return top + render_fields({"query": query, "schema": schema}, 1)
 
 
-@fmt.register(ops.FillNa)
-@fmt.register(ops.DropNa)
-def _fill_na(op, parent, **kwargs):
+@fmt.register(ops.FillNull)
+@fmt.register(ops.DropNull)
+def _fill_null(op, parent, **kwargs):
     name = f"{op.__class__.__name__}[{parent}]\n"
     return name + render_fields(kwargs, 1)
 

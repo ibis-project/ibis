@@ -925,8 +925,8 @@ def test_generic_value_api_no_arithmetic(value, operation):
 @pytest.mark.parametrize(
     ("value", "expected"), [(5, dt.int8), (5.4, dt.double), ("abc", dt.string)]
 )
-def test_fillna_null(value, expected):
-    assert ibis.NA.fillna(value).type().equals(expected)
+def test_fill_null_null(value, expected):
+    assert ibis.NA.fill_null(value).type().equals(expected)
 
 
 @pytest.mark.parametrize(
@@ -1728,3 +1728,10 @@ def test_in_subquery_shape():
 
     expr = ibis.literal(2).isin(t.a)
     assert expr.op().shape.is_scalar()
+
+
+# TODO: remove when fillna is fully deprecated
+def test_value_fillna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.b.fillna("missing")

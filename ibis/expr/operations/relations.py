@@ -440,14 +440,14 @@ class DummyTable(Relation):
 
 
 @public
-class FillNa(Simple):
+class FillNull(Simple):
     """Fill null values in the table."""
 
     replacements: typing.Union[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
 
 
 @public
-class DropNa(Simple):
+class DropNull(Simple):
     """Drop null values in the table."""
 
     how: typing.Literal["any", "all"]

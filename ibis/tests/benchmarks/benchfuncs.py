@@ -39,8 +39,8 @@ def is_nan_like(col: ir.Value) -> ir.BooleanValue:
     if not col.type().is_string():
         return col.isnull()
     result = col.isnull()
-    result |= col.lower().isin(NAN_LIKE).fillna(False)
-    result |= ~contains_alphanum(col).fillna(False)
+    result |= col.lower().isin(NAN_LIKE).fill_null(False)
+    result |= ~contains_alphanum(col).fill_null(False)
     return result
 
 
@@ -131,7 +131,7 @@ def norm_whitespace(s: ir.StringValue) -> ir.StringValue:
 
 def to_ascii(s: ir.StringValue) -> ir.StringValue:
     """Remove any non-ascii characters."""
-    # return norm_whitespace(s.fillna("").apply(unidecode).astype(s.dtype))
+    # return norm_whitespace(s.fill_null("").apply(unidecode).astype(s.dtype))
     # We don't have access to the unidecode function, so just strip out
     # non-ascii characters
     s = s.cast("string")
@@ -144,7 +144,7 @@ def num_tokens(s: ir.StringValue) -> ir.IntegerValue:
     s = s.re_replace(r"\s+", " ")
     s = s.strip()
     s = s.nullif("")
-    return s.split(" ").length().fillna(0)
+    return s.split(" ").length().fill_null(0)
 
 
 NAME_COLUMNS = [
@@ -241,8 +241,8 @@ def fix_duplicate_appearances(t: ir.Table) -> ir.Table:
 
 
 def choose_longer(s1: ir.StringColumn, s2: ir.StringColumn) -> ir.StringColumn:
-    l1 = s1.length().fillna(0)
-    l2 = s2.length().fillna(0)
+    l1 = s1.length().fill_null(0)
+    l2 = s2.length().fill_null(0)
     return (l1 > l2).ifelse(s1, s2)
 
 
@@ -277,12 +277,14 @@ def parse_middle(
     b = first.re_extract(pattern, 2).nullif("")
 
     # Deal with "Kay Ellen", "E" should yield "Kay", "Ellen"
-    middle_is_middle = (starts_with(middle, b) | starts_with(b, middle)).fillna(False)
+    middle_is_middle = (starts_with(middle, b) | starts_with(b, middle)).fill_null(
+        False
+    )
     result_first = middle_is_middle.ifelse(a, first)
     result_middle = middle_is_middle.ifelse(choose_longer(b, middle), middle)
 
-    al = a.length().fillna(0)
-    bl = b.length().fillna(0)
+    al = a.length().fill_null(0)
+    bl = b.length().fill_null(0)
     short_long = (al == 1) & (bl > 1)  # A Jones
     long_short = (al > 1) & (bl == 1)  # Alice J
     idx &= short_long | long_short
@@ -290,7 +292,7 @@ def parse_middle(
     # Many rows are of the form first_name="H Daniel", last_name="Hull"
     # where the first token of the first name is actually the
     # first letter of the last name. Catch this.
-    first_is_last = starts_with(last, a).fillna(False)
+    first_is_last = starts_with(last, a).fill_null(False)
     fil = idx & first_is_last
     result_first = fil.ifelse(b, result_first)
     result_middle = fil.ifelse(ibis.null(), result_middle)
@@ -302,8 +304,8 @@ def parse_middle(
     # Correct for when the last name is "A Jones"
     a = last.re_extract(pattern, 1).nullif("")
     b = last.re_extract(pattern, 2).nullif("")
-    al = a.length().fillna(0)
-    bl = b.length().fillna(0)
+    al = a.length().fill_null(0)
+    bl = b.length().fill_null(0)
     idx = (al == 1) & (bl > 1)  # A Jones
     idx &= middle.isnull()
     result_middle = idx.ifelse(a, result_middle)
@@ -325,7 +327,7 @@ def fix_nickname_is_middle(t: ir.Table) -> ir.Table:
     Watch out for when the nickname is probably not related to the middle name,
     Such as with 'Carolyn "Care" c smith' (Care is short for Carolyn, not the middle)
     """
-    todo = starts_with(t["nickname"], t["middle_name"]).fillna(False)
+    todo = starts_with(t["nickname"], t["middle_name"]).fill_null(False)
     # Get rid of the 'Carolyn "Care" c smith' case
     todo &= ~starts_with(t["first_name"], t["middle_name"])
     return t.mutate(middle_name=todo.ifelse(t.nickname, t.middle_name))
@@ -357,7 +359,7 @@ def fix_last_comma_first(t: ir.Table) -> ir.Table:
     a = norm_whitespace(a)
     b = norm_whitespace(b)
     one_each = (num_tokens(a) == 1) & (num_tokens(b) == 1)
-    first_empty = t.first_name.strip().fillna("") == ""
+    first_empty = t.first_name.strip().fill_null("") == ""
     todo = first_empty & one_each
     return t.mutate(
         first_name=todo.ifelse(b, t.first_name),

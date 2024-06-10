@@ -3,8 +3,8 @@ r0 := UnboundTable: t
   b string
 
 r1 := Project[r0]
-  b: r0.b
+  a: r0.a
 
-FillNa[r1]
+FillNull[r1]
   replacements:
-    'foo'
+    3

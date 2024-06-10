@@ -362,7 +362,7 @@ def test_count_name(assert_sql):
     t = ibis.table(dict(a="string", b="bool"), name="t")
 
     expr = t.group_by(t.a).agg(
-        A=t.count(where=~t.b).fillna(0), B=t.count(where=t.b).fillna(0)
+        A=t.count(where=~t.b).fill_null(0), B=t.count(where=t.b).fill_null(0)
     )
     assert_sql(expr)
 

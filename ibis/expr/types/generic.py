@@ -290,7 +290,7 @@ class Value(Expr):
         See Also
         --------
         [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
-        [`Value.fillna()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fillna)
+        [`Value.fill_null()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
 
         Examples
         --------
@@ -358,13 +358,13 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fillna(self, fill_value: Scalar) -> Value:
+    def fill_null(self, fill_value: Scalar) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
         ----------
         fill_value
-            Value with which to replace `NA` values in `self`
+            Value with which to replace `NULL` values in `self`
 
         See Also
         --------
@@ -388,7 +388,7 @@ class Value(Expr):
         │ NULL   │
         │ female │
         └────────┘
-        >>> t.sex.fillna("unrecorded").name("sex")
+        >>> t.sex.fill_null("unrecorded").name("sex")
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -404,9 +404,14 @@ class Value(Expr):
         Returns
         -------
         Value
-            `self` filled with `fill_value` where it is `NA`
+            `self` filled with `fill_value` where it is `NULL`
         """
         return ops.Coalesce((self, fill_value)).to_expr()
+
+    @deprecated(as_of="9.1", instead="use fill_null instead")
+    def fillna(self, fill_value: Scalar) -> Value:
+        """Deprecated - use `fill_null` instead."""
+        return self.fill_null(fill_value)
 
     def nullif(self, null_if_expr: Value) -> Value:
         """Set values to null if they equal the values `null_if_expr`.

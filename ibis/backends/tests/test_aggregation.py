@@ -1464,7 +1464,10 @@ def test_grouped_case(backend, con):
     case_expr = ibis.case().when(table.value < 25, table.value).else_(ibis.null()).end()
 
     expr = (
-        table.group_by(k="key").aggregate(mx=case_expr.max()).dropna("k").order_by("k")
+        table.group_by(k="key")
+        .aggregate(mx=case_expr.max())
+        .drop_null("k")
+        .order_by("k")
     )
     result = con.execute(expr)
     expected = pd.DataFrame({"k": [1, 2], "mx": [10, 20]})
