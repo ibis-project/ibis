@@ -2766,8 +2766,6 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Deprecated - use `drop_null` instead."""
 
-        if subset is not None:
-            subset = self.bind(subset)
         return self.drop_null(subset, how)
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
@@ -2777,37 +2775,6 @@ class Table(Expr, _FixedTextJupyterMixin):
     ) -> Table:
         """Deprecated - use `fill_null` instead."""
 
-        schema = self.schema()
-
-        if isinstance(replacements, Mapping):
-            for col, val in replacements.items():
-                if col not in schema:
-                    columns_formatted = ", ".join(map(repr, schema.names))
-                    raise com.IbisTypeError(
-                        f"Column {col!r} is not found in table. "
-                        f"Existing columns: {columns_formatted}."
-                    ) from None
-
-                col_type = schema[col]
-                val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
-                if not val_type.castable(col_type):
-                    raise com.IbisTypeError(
-                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
-                        f"value of type {val_type}"
-                    )
-        else:
-            val_type = (
-                replacements.type()
-                if isinstance(replacements, Expr)
-                else dt.infer(replacements)
-            )
-            for col, col_type in schema.items():
-                if col_type.nullable and not val_type.castable(col_type):
-                    raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
-                        f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fillna` instead."
-                    )
         return self.fill_null(replacements)
 
     def unpack(self, *columns: str) -> Table:
