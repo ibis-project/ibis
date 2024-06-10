@@ -164,19 +164,28 @@ streets_gdf.crs = "EPSG:26918"
 ```
 
 ```{python}
-import leafmap.deckgl as leafmap  # <1>
+from lonboard import Map, ScatterplotLayer, PathLayer, PolygonLayer
 ```
-
-1. `leafmap.deckgl` allows us to visualize multiple layers
 
 ```{python}
-m = leafmap.Map()
-
-m.add_vector(broad_station_gdf, get_fill_color="blue")
-m.add_vector(sts_near_broad_gdf, get_color="red", opacity=0.5)
-m.add_vector(streets_gdf, get_color="grey", zoom_to_layer=False, opacity=0.3)
+broad_station_layer = ScatterplotLayer.from_geopandas(
+    broad_station_gdf, get_fill_color="blue", get_radius=5
+)
+sts_near_broad_layer = PathLayer.from_geopandas(
+    sts_near_broad_gdf, get_color="red", opacity=0.4, get_width=2
+)
+streets_layer = PathLayer.from_geopandas(streets_gdf, get_color="grey", opacity=0.3)
+m = Map(
+    [
+        broad_station_layer,
+        sts_near_broad_layer,
+        streets_layer,
+    ],
+    view_state={"longitude": -74.01066, "latitude": 40.7069, "zoom": 16}
+)
 m
 ```
+
 
 You can zoom in and out, and hover over the map to check on the street names.
 
@@ -234,15 +243,38 @@ h_near_broad_gdf.crs = "EPSG:26918"
 
 h_street_gdf = h_street.to_pandas()
 h_street_gdf.crs = "EPSG:26918"
+```
 
 
-mh = leafmap.Map()
-mh.add_vector(broad_station_gdf, get_fill_color="orange")
-mh.add_vector(broad_station_zone, get_fill_color="orange", opacity=0.1)
-mh.add_vector(h_near_broad_gdf, get_fill_color="red", opacity=0.5)
-mh.add_vector(h_street_gdf, get_color="blue", opacity=0.3)
-mh.add_vector(streets_gdf, get_color="grey", zoom_to_layer=False, opacity=0.2)
+```{python}
+broad_station_layer = ScatterplotLayer.from_geopandas(
+    broad_station_gdf, get_fill_color="orange", get_radius=5
+)
 
+broad_station_zone_layer = PolygonLayer.from_geopandas(
+    broad_station_zone, get_fill_color="orange", opacity=0.1
+)
+
+h_near_broad_layer = ScatterplotLayer.from_geopandas(
+    h_near_broad_gdf, get_fill_color="red", get_radius=5
+)
+
+h_street_layer = PathLayer.from_geopandas(
+    h_street_gdf, get_color="blue", opacity=0.5, get_width=2
+)
+
+streets_layer = PathLayer.from_geopandas(streets_gdf, get_color="grey", opacity=0.3)
+
+mh = Map(
+    [
+        broad_station_layer,
+        broad_station_zone_layer,
+        h_near_broad_layer,
+        h_street_layer,
+        streets_layer,
+    ],
+    view_state={"longitude": -74.01066, "latitude": 40.7069, "zoom": 16}
+)
 mh
 ```
 
