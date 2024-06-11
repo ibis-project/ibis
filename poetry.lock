@@ -630,38 +630,6 @@ webencodings = "*"
 css = ["tinycss2 (>=1.1.0,<1.3)"]
 
 [[package]]
-name = "bqplot"
-version = "0.12.43"
-description = "Interactive plotting for the Jupyter notebook, using d3.js and ipywidgets."
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "bqplot-0.12.43-py2.py3-none-any.whl", hash = "sha256:65aa2f10bf2e4b500e628d5c1b876e6d2cdc2b82883200e4b1bb65edc17d111b"},
-    {file = "bqplot-0.12.43.tar.gz", hash = "sha256:f2b469d1f03df4f51873cb0406a24b56cdf4a835fc5aa9560776fc636b8b3449"},
-]
-
-[package.dependencies]
-ipywidgets = ">=7.5.0,<9"
-numpy = ">=1.10.4"
-pandas = ">=1.0.0,<3.0.0"
-traitlets = ">=4.3.0"
-traittypes = ">=0.0.6"
-
-[[package]]
-name = "branca"
-version = "0.7.2"
-description = "Generate complex HTML+JS pages with Python"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "branca-0.7.2-py3-none-any.whl", hash = "sha256:853a359c34d08fd06498be762d8be9932750db4049cac11e25dd6f23562e25c2"},
-    {file = "branca-0.7.2.tar.gz", hash = "sha256:ca4c94643ef31b819987ca5bd19c6009ea17b440baa3aac04628545f7a4da023"},
-]
-
-[package.dependencies]
-jinja2 = ">=3"
-
-[[package]]
 name = "build"
 version = "1.2.1"
 description = "A simple, correct Python build frontend"
@@ -1114,20 +1082,6 @@ files = [
 ]
 
 [[package]]
-name = "colour"
-version = "0.1.5"
-description = "converts and manipulates various color representation (HSL, RVB, web, X11, ...)"
-optional = false
-python-versions = "*"
-files = [
-    {file = "colour-0.1.5-py2.py3-none-any.whl", hash = "sha256:33f6db9d564fadc16e59921a56999b79571160ce09916303d35346dddc17978c"},
-    {file = "colour-0.1.5.tar.gz", hash = "sha256:af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee"},
-]
-
-[package.extras]
-test = ["nose"]
-
-[[package]]
 name = "comm"
 version = "0.2.2"
 description = "Jupyter Python Comm implementation, for usage in ipykernel, xeus-python etc."
@@ -1529,7 +1483,7 @@ toml = ["tomli"]
 name = "duckdb"
 version = "1.0.0"
 description = "DuckDB in-process database"
-optional = false
+optional = true
 python-versions = ">=3.7.0"
 files = [
     {file = "duckdb-1.0.0-cp310-cp310-macosx_12_0_arm64.whl", hash = "sha256:4a8ce2d1f9e1c23b9bab3ae4ca7997e9822e21563ff8f646992663f66d050211"},
@@ -1801,27 +1755,6 @@ s3 = ["boto3 (>=1.3.1)"]
 test = ["fiona[s3]", "pytest (>=7)", "pytest-cov", "pytz"]
 
 [[package]]
-name = "folium"
-version = "0.16.0"
-description = "Make beautiful maps with Leaflet.js & Python"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "folium-0.16.0-py2.py3-none-any.whl", hash = "sha256:ba72505db18bef995c880da19457d2b10c931db8059af5f6ccec9310d262b584"},
-    {file = "folium-0.16.0.tar.gz", hash = "sha256:2585ee9253dc758d3a365534caa6fb5fa0c244646db4dc5819afc67bbd4daabb"},
-]
-
-[package.dependencies]
-branca = ">=0.6.0"
-jinja2 = ">=2.9"
-numpy = "*"
-requests = "*"
-xyzservices = "*"
-
-[package.extras]
-testing = ["pytest"]
-
-[[package]]
 name = "fonttools"
 version = "4.53.0"
 description = "Tools to manipulate font files"
@@ -2045,37 +1978,6 @@ requests = "*"
 [package.extras]
 crc = ["crcmod"]
 gcsfuse = ["fusepy"]
-
-[[package]]
-name = "gdown"
-version = "5.2.0"
-description = "Google Drive Public File/Folder Downloader"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "gdown-5.2.0-py3-none-any.whl", hash = "sha256:33083832d82b1101bdd0e9df3edd0fbc0e1c5f14c9d8c38d2a35bf1683b526d6"},
-    {file = "gdown-5.2.0.tar.gz", hash = "sha256:2145165062d85520a3cd98b356c9ed522c5e7984d408535409fd46f94defc787"},
-]
-
-[package.dependencies]
-beautifulsoup4 = "*"
-filelock = "*"
-requests = {version = "*", extras = ["socks"]}
-tqdm = "*"
-
-[package.extras]
-test = ["build", "mypy", "pytest", "pytest-xdist", "ruff", "twine", "types-requests", "types-setuptools"]
-
-[[package]]
-name = "geojson"
-version = "3.1.0"
-description = "Python bindings and utilities for GeoJSON"
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "geojson-3.1.0-py3-none-any.whl", hash = "sha256:68a9771827237adb8c0c71f8527509c8f5bef61733aa434cefc9c9d4f0ebe8f3"},
-    {file = "geojson-3.1.0.tar.gz", hash = "sha256:58a7fa40727ea058efc28b0e9ff0099eadf6d0965e04690830208d3ef571adac"},
-]
 
 [[package]]
 name = "geopandas"
@@ -2759,38 +2661,6 @@ files = [
 ]
 
 [[package]]
-name = "ipyevents"
-version = "2.0.2"
-description = "A custom widget for returning mouse and keyboard events to Python"
-optional = false
-python-versions = ">=3.6"
-files = [
-    {file = "ipyevents-2.0.2-py3-none-any.whl", hash = "sha256:60c2a9e992bdc41e8577aa27e57b124efafa48a59a3bff886029fe5700d546b3"},
-    {file = "ipyevents-2.0.2.tar.gz", hash = "sha256:26e878b0c5854bc8b6bd6a2bd2c89b314ebe86fda642f4d2434051545bab258f"},
-]
-
-[package.dependencies]
-ipywidgets = ">=7.6.0"
-
-[package.extras]
-docs = ["jupyterlab (>=3)", "nbsphinx", "sphinx"]
-test = ["nbval", "pytest", "pytest-cov"]
-
-[[package]]
-name = "ipyfilechooser"
-version = "0.6.0"
-description = "Python file chooser widget for use in Jupyter/IPython in conjunction with ipywidgets"
-optional = false
-python-versions = "*"
-files = [
-    {file = "ipyfilechooser-0.6.0-py3-none-any.whl", hash = "sha256:4555c24b30b819c91dc0ae5e6f7e4cf8f90e5cca531a9209a1fe4deee288d5c5"},
-    {file = "ipyfilechooser-0.6.0.tar.gz", hash = "sha256:41df9e4395a924f8e1b78e2804dbe5066dc3fdc233fb07fecfcdc2a0c9a7d8d3"},
-]
-
-[package.dependencies]
-ipywidgets = "*"
-
-[[package]]
 name = "ipykernel"
 version = "6.29.4"
 description = "IPython Kernel for Jupyter"
@@ -2822,24 +2692,6 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx", "sphinx-autodoc-typehint
 pyqt5 = ["pyqt5"]
 pyside6 = ["pyside6"]
 test = ["flaky", "ipyparallel", "pre-commit", "pytest (>=7.0)", "pytest-asyncio (>=0.23.5)", "pytest-cov", "pytest-timeout"]
-
-[[package]]
-name = "ipyleaflet"
-version = "0.19.1"
-description = "A Jupyter widget for dynamic Leaflet maps"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "ipyleaflet-0.19.1-py3-none-any.whl", hash = "sha256:ffb90f67576c22c85438490bb32af1f30de88993bfb5dc167503e3a278252139"},
-    {file = "ipyleaflet-0.19.1.tar.gz", hash = "sha256:3454dbc0d360150516ea2a3ab4109503ceb9b7347fa1746a6cafd889075a0ff8"},
-]
-
-[package.dependencies]
-branca = ">=0.5.0"
-ipywidgets = ">=7.6.0,<9"
-jupyter-leaflet = ">=0.19,<0.20"
-traittypes = ">=0.2.1,<3"
-xyzservices = ">=2021.8.1"
 
 [[package]]
 name = "ipython"
@@ -2878,20 +2730,6 @@ parallel = ["ipyparallel"]
 qtconsole = ["qtconsole"]
 test = ["pickleshare", "pytest", "pytest-asyncio (<0.22)", "testpath"]
 test-extra = ["curio", "ipython[test]", "matplotlib (!=3.2.0)", "nbformat", "numpy (>=1.23)", "pandas", "trio"]
-
-[[package]]
-name = "ipytree"
-version = "0.2.2"
-description = "A Tree Widget using jsTree"
-optional = false
-python-versions = "*"
-files = [
-    {file = "ipytree-0.2.2-py2.py3-none-any.whl", hash = "sha256:744dc1a02c3ec26df8a5ecd87d085a67dc8232a1def6048834403ddcf3b64143"},
-    {file = "ipytree-0.2.2.tar.gz", hash = "sha256:d53d739bbaaa45415733cd06e0dc420a2af3d173438617db472a517bc7a61e56"},
-]
-
-[package.dependencies]
-ipywidgets = ">=7.5.0,<9"
 
 [[package]]
 name = "ipywidgets"
@@ -3189,17 +3027,6 @@ traitlets = ">=5.3"
 cli = ["click", "rich"]
 docs = ["jupyterlite-sphinx", "myst-parser", "pydata-sphinx-theme", "sphinxcontrib-spelling"]
 test = ["click", "pre-commit", "pytest (>=7.0)", "pytest-asyncio (>=0.19.0)", "pytest-console-scripts", "rich"]
-
-[[package]]
-name = "jupyter-leaflet"
-version = "0.19.1"
-description = "ipyleaflet extensions for JupyterLab and Jupyter Notebook"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "jupyter_leaflet-0.19.1-py3-none-any.whl", hash = "sha256:8001a7304e9262394b8f896003539438467bed712bb9330dd65785bd9a5f8add"},
-    {file = "jupyter_leaflet-0.19.1.tar.gz", hash = "sha256:f4c1ab7a8b2c91d01a0940d1bab6543c57e91dca6425789632780eef7d58b266"},
-]
 
 [[package]]
 name = "jupyter-lsp"
@@ -3542,50 +3369,6 @@ files = [
     {file = "kiwisolver-1.4.5-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:11d011a7574eb3b82bcc9c1a1d35c1d7075677fdd15de527d91b46bd35e935ee"},
     {file = "kiwisolver-1.4.5.tar.gz", hash = "sha256:e57e563a57fb22a142da34f38acc2fc1a5c864bc29ca1517a88abc963e60d6ec"},
 ]
-
-[[package]]
-name = "leafmap"
-version = "0.32.1"
-description = "A Python package for geospatial analysis and interactive mapping in a Jupyter environment."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "leafmap-0.32.1-py2.py3-none-any.whl", hash = "sha256:39cb51ee4d03db940f8cc5e82c4f979d6188b21952dc02a17d83bca069096eb8"},
-    {file = "leafmap-0.32.1.tar.gz", hash = "sha256:556df11fd5bf7916cdc02121623ffc1aa1e1fc91f0e7ae818f6816600cfb4708"},
-]
-
-[package.dependencies]
-bqplot = "*"
-colour = "*"
-duckdb = "*"
-folium = "*"
-gdown = "*"
-geojson = "*"
-ipyevents = "*"
-ipyfilechooser = "*"
-ipyleaflet = "*"
-ipywidgets = "*"
-matplotlib = "*"
-numpy = "*"
-pandas = "*"
-plotly = "*"
-pyshp = "*"
-pystac-client = "*"
-python-box = "*"
-scooby = "*"
-whiteboxgui = "*"
-xyzservices = "*"
-
-[package.extras]
-ai = ["geopandas", "localtileserver (>=0.10.0)", "osmnx", "pytorch-lightning", "rastervision"]
-all = ["PyYAML", "black", "black[jupyter]", "bokeh", "boto3", "cogeo-mosaic", "ffmpeg-python", "geopandas", "gradio", "h5py", "ipygany", "ipysheet", "ipyvtklink", "jupyter-bokeh", "jupyterlab (>=3.0.0)", "keplergl", "laspy", "localtileserver (>=0.10.1)", "lonboard", "mapclassify (>=2.4.0)", "maplibre", "mss", "netcdf4", "osmnx", "owslib", "palettable", "panel", "plotly", "pmtiles", "pre-commit", "psycopg2", "pycrs", "pydeck", "pyntcloud[las]", "pyvista-xarray", "rasterio", "rasterstats", "rio-cogeo", "rioxarray", "sqlalchemy"]
-apps = ["solara", "streamlit-folium", "voila"]
-backends = ["bokeh", "keplergl", "plotly", "pydeck"]
-lidar = ["ipygany", "ipyvtklink", "laspy", "panel", "pyntcloud[las]", "pyvista"]
-pmtiles = ["flask", "flask-cors", "pmtiles"]
-raster = ["jupyter-server-proxy", "localtileserver (>=0.10.0)", "netcdf4", "py3dep", "pynhd", "rio-cogeo", "rioxarray"]
-sql = ["psycopg2", "sqlalchemy"]
-vector = ["flask", "flask-cors", "geopandas", "lonboard", "mapclassify", "osmnx", "pmtiles"]
 
 [[package]]
 name = "locket"
@@ -5608,29 +5391,6 @@ files = [
 ]
 
 [[package]]
-name = "pyshp"
-version = "2.3.1"
-description = "Pure Python read/write support for ESRI Shapefile format"
-optional = false
-python-versions = ">=2.7"
-files = [
-    {file = "pyshp-2.3.1-py2.py3-none-any.whl", hash = "sha256:67024c0ccdc352ba5db777c4e968483782dfa78f8e200672a90d2d30fd8b7b49"},
-    {file = "pyshp-2.3.1.tar.gz", hash = "sha256:4caec82fd8dd096feba8217858068bacb2a3b5950f43c048c6dc32a3489d5af1"},
-]
-
-[[package]]
-name = "pysocks"
-version = "1.7.1"
-description = "A Python SOCKS client module. See https://github.com/Anorov/PySocks for more information."
-optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
-files = [
-    {file = "PySocks-1.7.1-py27-none-any.whl", hash = "sha256:08e69f092cc6dbe92a0fdd16eeb9b9ffbc13cadfe5ca4c7bd92ffb078b293299"},
-    {file = "PySocks-1.7.1-py3-none-any.whl", hash = "sha256:2725bd0a9925919b9b51739eea5f9e2bae91e83288108a9ad338b2e3a4435ee5"},
-    {file = "PySocks-1.7.1.tar.gz", hash = "sha256:3f8804571ebe159c380ac6de37643bb4685970655d3bba243530d6558b799aa0"},
-]
-
-[[package]]
 name = "pyspark"
 version = "3.5.1"
 description = "Apache Spark Python API"
@@ -5649,49 +5409,6 @@ ml = ["numpy (>=1.15)"]
 mllib = ["numpy (>=1.15)"]
 pandas-on-spark = ["numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=4.0.0)"]
 sql = ["numpy (>=1.15)", "pandas (>=1.0.5)", "pyarrow (>=4.0.0)"]
-
-[[package]]
-name = "pystac"
-version = "1.10.1"
-description = "Python library for working with the SpatioTemporal Asset Catalog (STAC) specification"
-optional = false
-python-versions = ">=3.9"
-files = [
-    {file = "pystac-1.10.1-py3-none-any.whl", hash = "sha256:a7c31b3dacc44dfc955d9da8c7351c7b5b99100254b36301a1e312709b51bf2f"},
-    {file = "pystac-1.10.1.tar.gz", hash = "sha256:4617fe5315a79785f79b616b8ac248ba3d4d561457c8300b34573309715808cd"},
-]
-
-[package.dependencies]
-jsonschema = {version = ">=4.18,<5.0", optional = true, markers = "extra == \"validation\""}
-python-dateutil = ">=2.7.0"
-
-[package.extras]
-bench = ["asv (>=0.6.0,<0.7.0)", "packaging (>=24.0,<25.0)", "virtualenv (>=20.22,<21.0)"]
-docs = ["Sphinx (>=6.2,<7.0)", "boto3 (>=1.28,<2.0)", "ipython (>=8.12,<9.0)", "jinja2 (<4.0)", "jupyter (>=1.0,<2.0)", "nbsphinx (>=0.9.0,<0.10.0)", "pydata-sphinx-theme (>=0.13,<1.0)", "rasterio (>=1.3,<2.0)", "shapely (>=2.0,<3.0)", "sphinx-autobuild (==2024.2.4)", "sphinx-design (>=0.5.0,<0.6.0)", "sphinxcontrib-fulltoc (>=1.2,<2.0)"]
-jinja2 = ["jinja2 (<4.0)"]
-orjson = ["orjson (>=3.5)"]
-test = ["black (>=24.0,<25.0)", "codespell (>=2.2,<3.0)", "coverage (>=7.2,<8.0)", "doc8 (>=1.1,<2.0)", "html5lib (>=1.1,<2.0)", "jinja2 (<4.0)", "jsonschema (>=4.18,<5.0)", "mypy (>=1.2,<2.0)", "orjson (>=3.8,<4.0)", "pre-commit (>=3.2,<4.0)", "pytest (>=8.0,<9.0)", "pytest-cov (>=5.0,<6.0)", "pytest-mock (>=3.10,<4.0)", "pytest-recording (>=0.13.0,<0.14.0)", "requests-mock (>=1.11,<2.0)", "ruff (==0.3.4)", "types-html5lib (>=1.1,<2.0)", "types-jsonschema (>=4.18,<5.0)", "types-orjson (>=3.6,<4.0)", "types-python-dateutil (>=2.8,<3.0)", "types-urllib3 (>=1.26,<2.0)"]
-urllib3 = ["urllib3 (>=1.26)"]
-validation = ["jsonschema (>=4.18,<5.0)"]
-
-[[package]]
-name = "pystac-client"
-version = "0.8.2"
-description = "Python library for working with SpatioTemporal Asset Catalog (STAC) APIs."
-optional = false
-python-versions = ">=3.9"
-files = [
-    {file = "pystac_client-0.8.2-py3-none-any.whl", hash = "sha256:9cb85e10107f5a971e2ac7fc05d046b7a2a3f31dc68bf898024d4bcaec2b01db"},
-]
-
-[package.dependencies]
-pystac = {version = ">=1.10.0", extras = ["validation"]}
-python-dateutil = ">=2.8.2"
-requests = ">=2.28.2"
-
-[package.extras]
-dev = ["black (>=24.0,<25.0)", "codespell (>=2.3.0,<2.4.0)", "coverage (>=7.2,<8.0)", "doc8 (>=1.1.1,<1.2.0)", "importlib-metadata (>=7.0,<8.0)", "mypy (>=1.2,<2.0)", "orjson (>=3.8,<4.0)", "pre-commit (>=3.2,<4.0)", "pytest (>=8.0,<9.0)", "pytest-benchmark (>=4.0.0,<4.1.0)", "pytest-console-scripts (>=1.4.0,<1.5.0)", "pytest-cov (>=5.0,<6.0)", "pytest-recording (>=0.13,<1.0)", "recommonmark (>=0.7.1,<0.8.0)", "requests-mock (>=1.12,<2.0)", "ruff (==0.4.6)", "tomli (>=2.0,<3.0)", "types-python-dateutil (>=2.8.19,<2.10.0)", "types-requests (>=2.31.0,<2.32.0)", "urllib3 (<2)"]
-docs = ["Sphinx (>=7.3,<8.0)", "boto3 (>=1.26,<2.0)", "cartopy (>=0.21,<1.0)", "geojson (>=3.1.0,<3.2.0)", "geopandas (>=0.14.0,<0.15.0)", "geoviews (>=1.9,<2.0)", "hvplot (>=0.10.0,<0.11.0)", "ipykernel (>=6.22,<7.0)", "ipython (>=8.12,<9.0)", "jinja2 (<4.0)", "matplotlib (>=3.8,<4.0)", "myst-parser (>=3.0,<4.0)", "nbsphinx (>=0.9,<1.0)", "pydata-sphinx-theme (>=0.13,<1.0)", "pygeoif (>=1.0,<2.0)", "scipy (>=1.10,<2.0)", "sphinxcontrib-fulltoc (>=1.2,<2.0)"]
 
 [[package]]
 name = "pytest"
@@ -5874,38 +5591,6 @@ pytest = ">=7.0.0"
 psutil = ["psutil (>=3.0)"]
 setproctitle = ["setproctitle"]
 testing = ["filelock"]
-
-[[package]]
-name = "python-box"
-version = "7.1.1"
-description = "Advanced Python dictionaries with dot notation access"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "python-box-7.1.1.tar.gz", hash = "sha256:2a3df244a5a79ac8f8447b5d11b5be0f2747d7b141cb2866060081ae9b53cc50"},
-    {file = "python_box-7.1.1-cp310-cp310-macosx_11_0_x86_64.whl", hash = "sha256:81ed1ec0f0ff2370227fc07277c5baca46d190a4747631bad7eb6ab1630fb7d9"},
-    {file = "python_box-7.1.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:8891735b4148e84d348c6eadd2f127152f751c9603e35d43a1f496183a291ac4"},
-    {file = "python_box-7.1.1-cp310-cp310-win_amd64.whl", hash = "sha256:0036fd47d388deaca8ebd65aea905f88ee6ef91d1d8ce34898b66f1824afbe80"},
-    {file = "python_box-7.1.1-cp311-cp311-macosx_10_9_universal2.whl", hash = "sha256:aabf8b9ae5dbc8ba431d8cbe0d4cfe737a25d52d68b0f5f2ff34915c21a2c1db"},
-    {file = "python_box-7.1.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c046608337e723ae4de3206db5d1e1202ed166da2dfdc70c1f9361e72ace5633"},
-    {file = "python_box-7.1.1-cp311-cp311-win_amd64.whl", hash = "sha256:f9266795e9c233874fb5b34fa994054b4fb0371881678e6ec45aec17fc95feac"},
-    {file = "python_box-7.1.1-cp38-cp38-macosx_11_0_x86_64.whl", hash = "sha256:f76b5b7f0cdc07bfdd4200dc24e6e33189bb2ae322137a2b7110fd41891a3157"},
-    {file = "python_box-7.1.1-cp38-cp38-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4ea13c98e05a3ec0ff26f254986a17290b69b5ade209fad081fd628f8fcfaa08"},
-    {file = "python_box-7.1.1-cp38-cp38-win_amd64.whl", hash = "sha256:1b3f346e332dba16df0b0543d319d9e7ce07d93e5ae152175302894352aa2d28"},
-    {file = "python_box-7.1.1-cp39-cp39-macosx_11_0_x86_64.whl", hash = "sha256:24c4ec0ee0278f66321100aaa9c615413da27a14ff43d376a2a3b4665e1d9494"},
-    {file = "python_box-7.1.1-cp39-cp39-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d95e5eec4fc8f3fc5c9cc7347fc2eb4f9187c853d34c90b1658d1eff96cd4eac"},
-    {file = "python_box-7.1.1-cp39-cp39-win_amd64.whl", hash = "sha256:a0f1333c42e81529b6f68c192050df9d4505b803be7ac47f114036b98707f7cf"},
-    {file = "python_box-7.1.1-py3-none-any.whl", hash = "sha256:63b609555554d7a9d4b6e725f8e78ef1717c67e7d386200e03422ad612338df8"},
-]
-
-[package.extras]
-all = ["msgpack", "ruamel.yaml (>=0.17)", "toml"]
-msgpack = ["msgpack"]
-pyyaml = ["PyYAML"]
-ruamel-yaml = ["ruamel.yaml (>=0.17)"]
-toml = ["toml"]
-tomli = ["tomli", "tomli-w"]
-yaml = ["ruamel.yaml (>=0.17)"]
 
 [[package]]
 name = "python-dateutil"
@@ -6401,7 +6086,6 @@ files = [
 certifi = ">=2017.4.17"
 charset-normalizer = ">=2,<4"
 idna = ">=2.5,<4"
-PySocks = {version = ">=1.5.6,<1.5.7 || >1.5.7", optional = true, markers = "extra == \"socks\""}
 urllib3 = ">=1.21.1,<3"
 
 [package.extras]
@@ -6717,20 +6401,6 @@ numpy = ">=1.22.4,<2.3"
 dev = ["cython-lint (>=0.12.2)", "doit (>=0.36.0)", "mypy", "pycodestyle", "pydevtool", "rich-click", "ruff", "types-psutil", "typing_extensions"]
 doc = ["jupyterlite-pyodide-kernel", "jupyterlite-sphinx (>=0.12.0)", "jupytext", "matplotlib (>=3.5)", "myst-nb", "numpydoc", "pooch", "pydata-sphinx-theme (>=0.15.2)", "sphinx (>=5.0.0)", "sphinx-design (>=0.4.0)"]
 test = ["array-api-strict", "asv", "gmpy2", "hypothesis (>=6.30)", "mpmath", "pooch", "pytest", "pytest-cov", "pytest-timeout", "pytest-xdist", "scikit-umfpack", "threadpoolctl"]
-
-[[package]]
-name = "scooby"
-version = "0.10.0"
-description = "A Great Dane turned Python environment detective"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "scooby-0.10.0-py3-none-any.whl", hash = "sha256:0a3d7e304f8ebb16f69ff7f6360c345d7f50b45f2ddbf7c3d18a6a0dc2cb03a6"},
-    {file = "scooby-0.10.0.tar.gz", hash = "sha256:7ea33c262c0cc6a33c6eeeb5648df787be4f22660e53c114e5fff1b811a8854f"},
-]
-
-[package.extras]
-cpu = ["mkl", "psutil"]
 
 [[package]]
 name = "seaborn"
@@ -7371,23 +7041,6 @@ docs = ["myst-parser", "pydata-sphinx-theme", "sphinx"]
 test = ["argcomplete (>=3.0.3)", "mypy (>=1.7.0)", "pre-commit", "pytest (>=7.0,<8.2)", "pytest-mock", "pytest-mypy-testing"]
 
 [[package]]
-name = "traittypes"
-version = "0.2.1"
-description = "Scipy trait types"
-optional = false
-python-versions = "*"
-files = [
-    {file = "traittypes-0.2.1-py2.py3-none-any.whl", hash = "sha256:1340af133810b6eee1a2eb2e988f862b0d12b6c2d16f282aaf3207b782134c2e"},
-    {file = "traittypes-0.2.1.tar.gz", hash = "sha256:be6fa26294733e7489822ded4ae25da5b4824a8a7a0e0c2dccfde596e3489bd6"},
-]
-
-[package.dependencies]
-traitlets = ">=4.2.2"
-
-[package.extras]
-test = ["numpy", "pandas", "pytest", "xarray"]
-
-[[package]]
 name = "trino"
 version = "0.328.0"
 description = "Client for the Trino distributed SQL Engine"
@@ -7638,37 +7291,6 @@ MarkupSafe = ">=2.1.1"
 watchdog = ["watchdog (>=2.3)"]
 
 [[package]]
-name = "whitebox"
-version = "2.3.4"
-description = "An advanced geospatial data analysis platform"
-optional = false
-python-versions = "*"
-files = [
-    {file = "whitebox-2.3.4-py2.py3-none-any.whl", hash = "sha256:4322c5a3b42f1f04a3c80640253b672242e0aefb6b6dea70752f00a220f6d7ed"},
-    {file = "whitebox-2.3.4.tar.gz", hash = "sha256:3479c8127b1928dd0457b6680b9ee4469d0735b2bb220178c678af303d868ef0"},
-]
-
-[package.dependencies]
-Click = ">=6.0"
-
-[[package]]
-name = "whiteboxgui"
-version = "2.3.0"
-description = "An interactive GUI for whitebox-tools in a Jupyter-based environment"
-optional = false
-python-versions = ">=3.5"
-files = [
-    {file = "whiteboxgui-2.3.0-py2.py3-none-any.whl", hash = "sha256:f226783efaba1af1cd55f98bba743da590bccf4dd6cbba519f6c879993b57631"},
-    {file = "whiteboxgui-2.3.0.tar.gz", hash = "sha256:c59dfccb244bc2d7b9ff77c63a81b77d0e1b4a6fc19476449e450e0da009a754"},
-]
-
-[package.dependencies]
-ipyfilechooser = "*"
-ipytree = "*"
-ipywidgets = "*"
-whitebox = "*"
-
-[[package]]
 name = "widgetsnbextension"
 version = "4.0.11"
 description = "Jupyter interactive widgets for Jupyter Notebook"
@@ -7867,17 +7489,6 @@ files = [
     {file = "xxhash-3.4.1-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:9ecb6c987b62437c2f99c01e97caf8d25660bf541fe79a481d05732e5236719c"},
     {file = "xxhash-3.4.1-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:696b4e18b7023527d5c50ed0626ac0520edac45a50ec7cf3fc265cd08b1f4c03"},
     {file = "xxhash-3.4.1.tar.gz", hash = "sha256:0379d6cf1ff987cd421609a264ce025e74f346e3e145dd106c0cc2e3ec3f99a9"},
-]
-
-[[package]]
-name = "xyzservices"
-version = "2024.6.0"
-description = "Source of XYZ tiles providers"
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "xyzservices-2024.6.0-py3-none-any.whl", hash = "sha256:fecb2508f0f2b71c819aecf5df2c03cef001c56a4b49302e640f3b34710d25e4"},
-    {file = "xyzservices-2024.6.0.tar.gz", hash = "sha256:58c1bdab4257d2551b9ef91cd48571f77b7c4d2bc45bf5e3c05ac97b3a4d7282"},
 ]
 
 [[package]]
@@ -8089,4 +7700,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "beb45a05e79111eafe4722fea1084569aead589cd3e4cf4e5b900708bd91afd5"
+content-hash = "0c0c40f5373ddd48a99af6b3e6df5a0ecea75b063ec555ac384299ba639cd6ad"
