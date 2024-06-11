@@ -62,6 +62,10 @@ jobs:
       - name: install poetry
         run: pip install 'poetry==1.8.3'
 
+      - name: add homebrew to path
+        if: matrix.os == 'ubuntu-latest'
+        run: eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os != 'windows-latest'
         run: brew install gcc graphviz geos freetds
