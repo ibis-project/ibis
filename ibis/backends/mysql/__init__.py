@@ -24,6 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.compiler import MySQLCompiler
+from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
 
@@ -189,16 +190,15 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(databases, like)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        table = util.gen_name(f"{self.name}_metadata")
-
         with self.begin() as cur:
-            cur.execute(
-                f"CREATE TEMPORARY TABLE {table} AS SELECT * FROM ({query}) AS tmp LIMIT 0"
+            cur.execute(f"SELECT * FROM ({query}) AS tmp LIMIT 0")
+
+            return sch.Schema(
+                {
+                    field.name: _type_from_cursor_info(descr, field)
+                    for descr, field in zip(cur.description, cur._result.fields)
+                }
             )
-            try:
-                return self.get_schema(table)
-            finally:
-                cur.execute(f"DROP TABLE {table}")
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
