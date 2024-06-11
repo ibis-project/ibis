@@ -49,8 +49,13 @@ def test_numeric(t):
 
 @pytest.mark.parametrize(
     ("obj", "expected"),
-    [(dt.Array, ("c", "g")), ("float", ("e",)), (dt.Decimal(3, 1), ("f",))],
-    ids=["type", "string", "instance"],
+    [
+        (dt.Array, ("c", "g")),
+        ("float", ("e",)),
+        (dt.Decimal(3, 1), ("f",)),
+        (int, ("a",)),
+    ],
+    ids=["dtype", "string", "instance", "type"],
 )
 def test_of_type(t, obj, expected):
     assert t.select(s.of_type(obj)).equals(t.select(*expected))
