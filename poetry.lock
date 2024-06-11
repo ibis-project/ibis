@@ -170,13 +170,13 @@ trio = ["trio (>=0.23)"]
 
 [[package]]
 name = "anywidget"
-version = "0.7.1"
+version = "0.9.11"
 description = "custom jupyter widgets made easy"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "anywidget-0.7.1-py3-none-any.whl", hash = "sha256:17828c6e255a7066c960636cbda045d55b08c996a2fc4e886e4c8507db6e9407"},
-    {file = "anywidget-0.7.1.tar.gz", hash = "sha256:1c4cb51063f8ec5172b8c8efb1bfb79861d340c3491220d56b8c2a6aa8db3b3d"},
+    {file = "anywidget-0.9.11-py3-none-any.whl", hash = "sha256:b5dfaed080cab0fd6bca0f444bae0717336d8d55cee09713856ec44b39bf2c7a"},
+    {file = "anywidget-0.9.11.tar.gz", hash = "sha256:58dded8e86ec27ce28760c9457317663113d9af608947ee6a8d0ecb528b22cdc"},
 ]
 
 [package.dependencies]
@@ -186,7 +186,7 @@ typing-extensions = ">=4.2.0"
 
 [package.extras]
 dev = ["comm (>=0.1.0)", "watchfiles (>=0.18.0)"]
-test = ["black[jupyter]", "ipython (<8.13)", "msgspec", "pydantic", "pytest", "pytest-cov", "ruff"]
+test = ["ipython (<8.13)", "msgspec", "mypy (==1.10.0)", "pydantic", "pytest", "pytest-cov", "ruff"]
 
 [[package]]
 name = "appdirs"
@@ -3600,23 +3600,27 @@ files = [
 
 [[package]]
 name = "lonboard"
-version = "0.4.0"
+version = "0.9.1"
 description = "Python library for fast, interactive geospatial vector data visualization in Jupyter."
 optional = false
-python-versions = ">=3.8,<4.0"
+python-versions = "<4.0,>=3.8"
 files = [
-    {file = "lonboard-0.4.0-py3-none-any.whl", hash = "sha256:2c521805c05db4c8efdbd7cb19174d3f5e1c43723b7c6db358b2f158d96e671f"},
-    {file = "lonboard-0.4.0.tar.gz", hash = "sha256:c60ccaa5ac06ad2fdad88e146cc2206389d59e0dd4d53bd6de8bab26cae81e7c"},
+    {file = "lonboard-0.9.1-py3-none-any.whl", hash = "sha256:df2a9cee9b1210520e0b705e310f87cc60f4f7f2df5a880ea437aac9b3f2fa64"},
+    {file = "lonboard-0.9.1.tar.gz", hash = "sha256:e3b6c0056b936fcf9c0952086997812c1d5235ba4551fa4f984ee20beab9c94f"},
 ]
 
 [package.dependencies]
-anywidget = ">=0.7.1,<0.8.0"
+anywidget = ">=0.9.0,<0.10.0"
 geopandas = ">=0.13"
 matplotlib = ">=3.7,<4.0"
 palettable = ">=3.3.3,<4.0.0"
 pandas = ">=2,<3"
 pyarrow = ">=14.0.1"
 shapely = ">=2,<3"
+typing-extensions = {version = ">=4.6.0,<5.0.0", markers = "python_version < \"3.12\""}
+
+[package.extras]
+cli = ["click (>=8.1.7,<9.0.0)", "pyogrio (>=0.7.2,<0.8.0)"]
 
 [[package]]
 name = "lz4"
