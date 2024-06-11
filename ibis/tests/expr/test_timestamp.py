@@ -106,7 +106,7 @@ def test_greater_comparison_pandas_timestamp(alltypes):
 
 def test_timestamp_precedence():
     ts = ibis.literal(datetime.now())
-    highest_type = rlz.highest_precedence_dtype([ibis.NA.op(), ts.op()])
+    highest_type = rlz.highest_precedence_dtype([ibis.null().op(), ts.op()])
     assert highest_type == dt.timestamp
 
 

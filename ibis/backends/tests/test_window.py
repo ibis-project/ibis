@@ -637,7 +637,7 @@ def test_simple_ungrouped_unbound_following_window(
 @pytest.mark.xfail_version(datafusion=["datafusion==35"])
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
     t = alltypes[alltypes.double_col < 50].order_by("id")
-    w = ibis.window(rows=(0, None), order_by=ibis.NA)
+    w = ibis.window(rows=(0, None), order_by=ibis.null())
     expr = t.double_col.sum().over(w).name("double_col")
     # hard to reproduce this in pandas, so just test that it actually executes
     expr.execute()

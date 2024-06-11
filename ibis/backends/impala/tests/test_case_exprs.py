@@ -100,6 +100,6 @@ def test_identical_to(mockcon, snapshot):
 
 
 def test_identical_to_special_case(snapshot):
-    expr = ibis.NA.cast("int64").identical_to(ibis.NA.cast("int64")).name("tmp")
+    expr = ibis.null().cast("int64").identical_to(ibis.null().cast("int64")).name("tmp")
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
