@@ -362,9 +362,13 @@ class TrinoCompiler(SQLGlotCompiler):
         return self.f.array_join(arg, sep)
 
     def visit_First(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(self.agg.array_agg(arg, where=where), 1)
 
     def visit_Last(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(self.agg.array_agg(arg, where=where), -1)
 
     def visit_ArrayZip(self, op, *, arg):

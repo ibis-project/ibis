@@ -487,30 +487,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: t.double_col.first(where=where),
-            lambda t, where: t.double_col[where].iloc[0],
-            id="first",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid", "impala", "mssql", "mysql", "oracle"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-            ],
-        ),
-        param(
-            lambda t, where: t.double_col.last(where=where),
-            lambda t, where: t.double_col[where].iloc[-1],
-            id="last",
-            marks=[
-                pytest.mark.notimpl(
-                    ["druid", "impala", "mssql", "mysql", "oracle"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-            ],
-        ),
-        param(
             lambda t, where: t.bigint_col.bit_and(where=where),
             lambda t, where: np.bitwise_and.reduce(t.bigint_col[where].values),
             id="bit_and",
@@ -639,6 +615,36 @@ def test_reduction_ops(
     except TypeError:  # assert_allclose only handles numerics
         # if we're not testing numerics, then the arrays should be exactly equal
         np.testing.assert_array_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["druid", "impala", "mssql", "mysql", "oracle"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.parametrize("method", ["first", "last"])
+@pytest.mark.parametrize("filtered", [False, True])
+def test_first_last(backend, alltypes, method, filtered):
+    # `first` and `last` effectively choose an arbitrary value when no
+    # additional order is specified. *Most* backends will result in the
+    # first/last element in a column being selected (at least when operating on
+    # a leaf table), but that's really not guaranteed. These operations need an
+    # order to be meaningful.
+    #
+    # To sanely test this we create a column that is a mix of nulls and a
+    # single value (or a single value after filtering is applied).
+    if filtered:
+        new = alltypes.int_col.cases([(3, 30), (4, 40)])
+        where = _.int_col == 3
+    else:
+        new = (alltypes.int_col == 3).ifelse(30, None)
+        where = None
+
+    t = alltypes.mutate(new=new)
+
+    expr = getattr(t.new, method)(where=where)
+    res = expr.execute()
+    assert res == 30
 
 
 @pytest.mark.notimpl(

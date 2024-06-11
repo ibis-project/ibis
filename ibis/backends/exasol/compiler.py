@@ -53,11 +53,9 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.DateFromYMD,
         ops.DayOfWeekIndex,
         ops.ElementWiseVectorizedUDF,
-        ops.First,
         ops.IntervalFromInteger,
         ops.IsInf,
         ops.IsNan,
-        ops.Last,
         ops.Levenshtein,
         ops.Median,
         ops.MultiQuantile,
@@ -90,6 +88,8 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.Log10: "log10",
         ops.All: "min",
         ops.Any: "max",
+        ops.First: "first_value",
+        ops.Last: "last_value",
     }
 
     @staticmethod
