@@ -41,11 +41,8 @@ jobs:
       - name: install poetry
         run: pip install 'poetry==1.8.3'
 
-      - name: update apt-get
-        run: sudo apt-get update -y -q
-
       - name: install system dependencies
-        run: sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
+        run: brew install gcc graphviz unixodbc geos freetds
 
       - name: check consistency with pyproject.toml
         run: poetry check --lock

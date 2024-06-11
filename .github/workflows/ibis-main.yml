@@ -63,12 +63,8 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install ${{ matrix.os }} system dependencies
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev
+        if: matrix.os != 'windows-latest'
+        run: brew install gcc graphviz geos freetds
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'windows-latest'
@@ -114,11 +110,7 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install system dependencies
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -y -qq
-          sudo apt-get install -y -q build-essential libgeos-dev
+        run: brew install gcc geos
 
       - name: install ibis
         # install duckdb and geospatial because of https://github.com/ibis-project/ibis/issues/4856
@@ -134,11 +126,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: install system dependencies
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -y -q
-          sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
+        run: brew install gcc graphviz geos freetds unixodbc
 
       - name: checkout
         uses: actions/checkout@v4

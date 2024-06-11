@@ -143,7 +143,7 @@ jobs:
               - geospatial
               - polars
             sys-deps:
-              - libgeos-dev
+              - geos
           - name: postgres
             title: PostgreSQL
             extras:
@@ -152,7 +152,7 @@ jobs:
             services:
               - postgres
             sys-deps:
-              - libgeos-dev
+              - geos
           - name: postgres
             title: PostgreSQL + Torch
             extras:
@@ -164,7 +164,7 @@ jobs:
             services:
               - postgres
             sys-deps:
-              - libgeos-dev
+              - geos
           - name: risingwave
             title: Risingwave
             serial: true
@@ -182,7 +182,7 @@ jobs:
               - kudu
             sys-deps:
               - cmake
-              - ninja-build
+              - ninja
           - name: mssql
             title: MS SQL Server
             extras:
@@ -191,9 +191,8 @@ jobs:
             services:
               - mssql
             sys-deps:
-              - freetds-dev
-              - unixodbc-dev
-              - tdsodbc
+              - freetds
+              - unixodbc
           - name: trino
             title: Trino
             extras:
@@ -267,7 +266,7 @@ jobs:
                 - kudu
               sys-deps:
                 - cmake
-                - ninja-build
+                - ninja
         exclude:
           - os: windows-latest
             backend:
@@ -280,7 +279,7 @@ jobs:
               services:
                 - mysql
               sys-deps:
-                - libgeos-dev
+                - geos
           - os: windows-latest
             backend:
               name: clickhouse
@@ -300,7 +299,7 @@ jobs:
               services:
                 - postgres
               sys-deps:
-                - libgeos-dev
+                - geos
           - os: windows-latest
             backend:
               name: risingwave
@@ -323,7 +322,7 @@ jobs:
               services:
                 - postgres
               sys-deps:
-                - libgeos-dev
+                - geos
           # TODO(deepyaman): Test whether this works upon releasing https://github.com/cloudera/impyla/commit/bf1f94c3c4106ded6267d2485c1e939775a6a87f
           - os: ubuntu-latest
             python-version: "3.12"
@@ -338,7 +337,7 @@ jobs:
                 - kudu
               sys-deps:
                 - cmake
-                - ninja-build
+                - ninja
           - os: windows-latest
             backend:
               name: impala
@@ -351,7 +350,7 @@ jobs:
                 - kudu
               sys-deps:
                 - cmake
-                - ninja-build
+                - ninja
           - os: windows-latest
             backend:
               name: mssql
@@ -362,9 +361,8 @@ jobs:
               services:
                 - mssql
               sys-deps:
-                - freetds-dev
-                - unixodbc-dev
-                - tdsodbc
+                - freetds
+                - unixodbc
           - os: windows-latest
             backend:
               name: trino
@@ -430,11 +428,7 @@ jobs:
     steps:
       - name: update and install system dependencies
         if: matrix.os == 'ubuntu-latest' && matrix.backend.sys-deps != null
-        run: |
-          set -euo pipefail
-
-          sudo apt-get update -qq -y
-          sudo apt-get install -qq -y build-essential ${{ join(matrix.backend.sys-deps, ' ') }}
+        run: brew install gcc ${{ join(matrix.backend.sys-deps, ' ') }}
 
       - name: install sqlite
         if: matrix.os == 'windows-latest' && matrix.backend.name == 'sqlite'
@@ -603,9 +597,7 @@ jobs:
 
       - name: install libgeos for shapely
         if: matrix.backend.name == 'postgres'
-        run: |
-          sudo apt-get update -y -qq
-          sudo apt-get install -qq -y build-essential libgeos-dev
+        run: brew install gcc geos
 
       - uses: extractions/setup-just@v2
         env:

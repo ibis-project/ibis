@@ -33,7 +33,7 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install system dependencies
-        run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
+        run: brew install gcc geos freetds unixodbc
 
       - name: install ibis
         run: poetry install --without dev --without docs --all-extras
