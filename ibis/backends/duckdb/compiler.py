@@ -461,6 +461,16 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg, pattern, replacement, "g", dialect=self.dialect
         )
 
+    def visit_First(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.first(arg, where=where)
+
+    def visit_Last(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.last(arg, where=where)
+
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
         funcname = f"percentile_{suffix}"

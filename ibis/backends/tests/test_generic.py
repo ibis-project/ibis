@@ -1403,10 +1403,6 @@ def test_pivot_wider(backend):
     reason="backend doesn't implement deduplication",
 )
 @pytest.mark.notimpl(
-    ["exasol"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function last(double precision) does not exist, do you mean left or least",
@@ -1456,10 +1452,6 @@ def test_distinct_on_keep(backend, on, keep):
     ["druid", "impala", "oracle"],
     raises=(NotImplementedError, OracleDatabaseError, com.OperationNotDefinedError),
     reason="arbitrary not implemented in the backend",
-)
-@pytest.mark.notimpl(
-    ["exasol"],
-    raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
     ["polars"],

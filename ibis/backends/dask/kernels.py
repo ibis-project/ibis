@@ -16,6 +16,14 @@ rowwise = {
     ops.DateAdd: lambda row: row["left"] + row["right"],
 }
 
+
+def maybe_pandas_reduction(func):
+    def inner(df):
+        return df.reduction(func) if isinstance(df, dd.Series) else func(df)
+
+    return inner
+
+
 reductions = {
     **pandas_kernels.reductions,
     ops.Mode: lambda x: x.mode().loc[0],
@@ -23,10 +31,10 @@ reductions = {
     ops.BitAnd: lambda x: x.reduction(np.bitwise_and.reduce),
     ops.BitOr: lambda x: x.reduction(np.bitwise_or.reduce),
     ops.BitXor: lambda x: x.reduction(np.bitwise_xor.reduce),
+    ops.Arbitrary: lambda x: x.reduction(pandas_kernels.first),
     # Window functions are calculated locally using pandas
-    ops.Last: lambda x: x.compute().iloc[-1] if isinstance(x, dd.Series) else x.iat[-1],
-    ops.First: lambda x: x.loc[0] if isinstance(x, dd.Series) else x.iat[0],
-    ops.Arbitrary: lambda x: x.reduction(pandas_kernels.arbitrary),
+    ops.Last: maybe_pandas_reduction(pandas_kernels.last),
+    ops.First: maybe_pandas_reduction(pandas_kernels.first),
 }
 
 serieswise = {
