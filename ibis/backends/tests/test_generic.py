@@ -1407,6 +1407,10 @@ def test_pivot_wider(backend):
     raises=PsycoPg2InternalError,
     reason="function last(double precision) does not exist, do you mean left or least",
 )
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+)
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
 
@@ -1467,6 +1471,10 @@ def test_distinct_on_keep(backend, on, keep):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="function first(double precision) does not exist",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
 )
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _

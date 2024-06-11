@@ -623,7 +623,22 @@ def test_reduction_ops(
 )
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.parametrize("method", ["first", "last"])
-@pytest.mark.parametrize("filtered", [False, True])
+@pytest.mark.parametrize(
+    "filtered",
+    [
+        param(
+            False,
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                )
+            ],
+        ),
+        True,
+    ],
+)
 def test_first_last(backend, alltypes, method, filtered):
     # `first` and `last` effectively choose an arbitrary value when no
     # additional order is specified. *Most* backends will result in the
