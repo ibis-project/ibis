@@ -264,7 +264,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
         else:
             dtype = dt.dtype(dtype)
             predicate = lambda col: col.type() == dtype
-    elif inspect.isclass(dtype):
+    elif inspect.isclass(dtype) and issubclass(dtype, dt.DataType):
         predicate = lambda col: isinstance(col.type(), dtype)
     else:
         dtype = dt.dtype(dtype)
