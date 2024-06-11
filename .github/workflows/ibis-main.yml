@@ -128,8 +128,6 @@ jobs:
         run: poetry run python -c 'import shapely.geometry, duckdb'
 
   test_doctests:
-    # FIXME(kszucs): re-enable this build
-    if: false
     name: Doctests
     runs-on: ubuntu-latest
     steps:
