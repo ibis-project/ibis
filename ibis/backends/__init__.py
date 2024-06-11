@@ -20,7 +20,7 @@ from ibis import util
 from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
 
     import pandas as pd
     import polars as pl
@@ -1050,23 +1050,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""
-
-    def add_operation(self, operation: ops.Node) -> Callable:
-        """Add a translation function to the backend for a specific operation.
-
-        Operations are defined in `ibis.expr.operations`, and a translation
-        function receives the translator object and an expression as
-        parameters, and returns a value depending on the backend.
-        """
-        if not hasattr(self, "compiler"):
-            raise RuntimeError("Only SQL-based backends support `add_operation`")
-
-        def decorator(translation_function: Callable) -> None:
-            self.compiler.translator_class.add_operation(
-                operation, translation_function
-            )
-
-        return decorator
 
     @abc.abstractmethod
     def create_table(

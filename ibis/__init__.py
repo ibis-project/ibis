@@ -95,7 +95,6 @@ def __getattr__(name: str) -> BaseBackend:
     # - connect
     # - compile
     # - has_operation
-    # - add_operation
     # - _from_url
     # - _to_sqlglot
     #
@@ -116,7 +115,6 @@ def __getattr__(name: str) -> BaseBackend:
     proxy.connect = connect
     proxy.compile = backend.compile
     proxy.has_operation = backend.has_operation
-    proxy.add_operation = backend.add_operation
     proxy.name = name
     proxy._from_url = backend._from_url
     proxy._to_sqlglot = backend._to_sqlglot
