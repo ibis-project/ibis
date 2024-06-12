@@ -1509,8 +1509,8 @@ def test_distinct_on_keep_is_none(backend, on):
 )
 def test_hash(backend, alltypes, dtype):
     # check that multiple executions return the same result
-    h1 = getattr(alltypes, f"{dtype}_col").hash().execute(limit=20)
-    h2 = getattr(alltypes, f"{dtype}_col").hash().execute(limit=20)
+    h1 = alltypes[f"{dtype}_col"].hash().execute(limit=20)
+    h2 = alltypes[f"{dtype}_col"].hash().execute(limit=20)
     backend.assert_series_equal(h1, h2)
     # check that the result is a signed 64-bit integer, no nulls
     assert h1.dtype == "i8"
