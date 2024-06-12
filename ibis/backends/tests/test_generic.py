@@ -1505,7 +1505,40 @@ def test_distinct_on_keep_is_none(backend, on):
     ]
 )
 @pytest.mark.parametrize(
-    "dtype", ["smallint", "int", "bigint", "float", "double", "string"]
+    "dtype",
+    [
+        param(
+            "smallint",
+            marks=pytest.mark.notyet(
+                ["bigquery"], reason="only supports bytes and strings"
+            ),
+        ),
+        param(
+            "int",
+            marks=pytest.mark.notyet(
+                ["bigquery"], reason="only supports bytes and strings"
+            ),
+        ),
+        param(
+            "bigint",
+            marks=pytest.mark.notyet(
+                ["bigquery"], reason="only supports bytes and strings"
+            ),
+        ),
+        param(
+            "float",
+            marks=pytest.mark.notyet(
+                ["bigquery"], reason="only supports bytes and strings"
+            ),
+        ),
+        param(
+            "double",
+            marks=pytest.mark.notyet(
+                ["bigquery"], reason="only supports bytes and strings"
+            ),
+        ),
+        "string",
+    ],
 )
 def test_hash(backend, alltypes, dtype):
     # check that multiple executions return the same result
