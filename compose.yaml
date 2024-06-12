@@ -9,7 +9,7 @@ services:
       retries: 10
       test:
         - CMD-SHELL
-        - wget -qO- 'http://localhost:8123/?query=SELECT%201' # SELECT 1
+        - wget -qO- 'http://127.0.0.1:8123/?query=SELECT%201' # SELECT 1
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
