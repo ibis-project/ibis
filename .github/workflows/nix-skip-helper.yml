@@ -31,7 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-latest
+          - ubuntu-latest # x86_64-linux
         python-version:
           - "3.10"
           - "3.11"
@@ -39,5 +39,7 @@ jobs:
         include:
           - os: ubuntu-arm64-small
             python-version: "3.12"
+          - os: macos-14
+            python-version: "3.10"
     steps:
       - run: echo "No build required"
