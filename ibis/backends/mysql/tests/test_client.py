@@ -52,11 +52,9 @@ MYSQL_TYPES = [
     # mariadb doesn't have a distinct json type
     param("json", dt.string, id="json"),
     param("enum('small', 'medium', 'large')", dt.string, id="enum"),
-    param("inet6", dt.inet, id="inet"),
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
-    param("uuid", dt.uuid, id="uuid"),
 ] + [
     param(
         f"datetime({scale:d})",
@@ -83,6 +81,33 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
 
     t = con.table(raw_name)
     assert t.schema() == expected_schema
+
+
+@pytest.mark.parametrize(
+    ("mysql_type", "get_schema_expected_type", "table_expected_type"),
+    [
+        param("inet6", dt.string, dt.inet, id="inet"),
+        param("uuid", dt.string, dt.uuid, id="uuid"),
+    ],
+)
+def test_get_schema_from_query_special_cases(
+    con, mysql_type, get_schema_expected_type, table_expected_type
+):
+    raw_name = ibis.util.guid()
+    name = sg.to_identifier(raw_name, quoted=True).sql("mysql")
+    get_schema_expected_schema = ibis.schema(dict(x=get_schema_expected_type))
+    table_expected_schema = ibis.schema(dict(x=table_expected_type))
+
+    # temporary tables get cleaned up by the db when the session ends, so we
+    # don't need to explicitly drop the table
+    with con.begin() as c:
+        c.execute(f"CREATE TEMPORARY TABLE {name} (x {mysql_type})")
+
+    result_schema = con._get_schema_using_query(f"SELECT * FROM {name}")
+    assert result_schema == get_schema_expected_schema
+
+    t = con.table(raw_name)
+    assert t.schema() == table_expected_schema
 
 
 @pytest.mark.parametrize("coltype", ["TINYBLOB", "MEDIUMBLOB", "BLOB", "LONGBLOB"])
