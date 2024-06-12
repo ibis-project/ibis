@@ -885,23 +885,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         return self.table(table_name)
 
     def read_delta(
-        self,
-        source_table: str,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, source_table: str, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
         source_table
-            The data source. Must be a directory
-            containing a Delta Lake table.
+            The data source. Must be a directory containing a Delta Lake table.
         table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to deltalake.DeltaTable.
+            An optional name to use for the created table. This defaults to a
+            generated name.
+        kwargs
+            Additional keyword arguments passed to the `delta` extension's
+            `delta_scan` function.
 
         Returns
         -------
@@ -913,20 +910,24 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         table_name = table_name or util.gen_name("read_delta")
 
-        try:
-            from deltalake import DeltaTable
-        except ImportError:
-            raise ImportError(
-                "The deltalake extra is required to use the "
-                "read_delta method. You can install it using pip:\n\n"
-                "pip install 'ibis-framework[deltalake]'\n"
-            )
+        # always try to load the delta extension
+        extensions = ["delta"]
 
-        delta_table = DeltaTable(source_table, **kwargs)
+        # delta handles s3 itself, not with httpfs
+        if source_table.startswith(("http://", "https://")):
+            extensions.append("httpfs")
 
-        return self.read_in_memory(
-            delta_table.to_pyarrow_dataset(), table_name=table_name
+        self._load_extensions(extensions)
+
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
+        self._create_temp_view(
+            table_name,
+            sg.select(STAR).from_(self.compiler.f.delta_scan(source_table, *options)),
         )
+
+        return self.table(table_name)
 
     def list_tables(
         self,
