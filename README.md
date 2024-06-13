@@ -29,7 +29,8 @@ You can `pip install` Ibis with a backend and example data:
 pip install 'ibis-framework[duckdb,examples]'
 ```
 
-> [!TIP]
+> 💡 **Tip**
+>
 > See the [installation guide](https://ibis-project.org/install) for more installation options.
 
 Then use Ibis:
@@ -71,7 +72,8 @@ Then use Ibis:
 └───────────┴───────────┴───────┘
 ```
 
-> [!TIP]
+> 💡 **Tip**
+>
 > See the [getting started tutorial](https://ibis-project.org/tutorials/getting_started) for a full introduction to Ibis.
 
 ## Python + SQL: better together
@@ -165,7 +167,7 @@ Ibis broadly supports two types of backend:
 1. SQL-generating backends
 2. DataFrame-generating backends
 
-![Ibis backend types](docs/images/backends.png)
+![Ibis backend types](https://raw.githubusercontent.com/ibis-project/ibis/main/docs/images/backends.png)
 
 ## Portability
 
@@ -202,7 +204,8 @@ You can also read from common file formats like CSV or Apache Parquet:
 
 This allows you to iterate locally and deploy remotely by changing a single line of code.
 
-> [!TIP]
+> 💡 **Tip**
+>
 > Check out [the blog on backend agnostic arrays](https://ibis-project.org/posts/backend-agnostic-arrays/) for one example using the same code across DuckDB and BigQuery.
 
 ## Community and contributing
