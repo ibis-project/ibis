@@ -447,3 +447,6 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_ExtractIsoYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
+
+    def visit_DummyTable(self, op, *, values):
+        return sg.select(*self._cleanup_names(values), copy=False).from_("dual")
