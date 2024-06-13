@@ -493,7 +493,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     ) -> None:
         f = self.compiler.f
         query = (
-            sg.select(f.unnest(f.list_append(C.aliases, C.extension_name)))
+            sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
             .from_(f.duckdb_extensions())
             .where(sg.and_(C.installed, C.loaded))
         )
