@@ -74,9 +74,9 @@ jobs:
           host_system="$(nix eval --raw 'nixpkgs#stdenv.hostPlatform.system')"
           flake=".#devShells.${host_system}.ibis${version//./}"
 
-          args=()
+          args=("--fallback" "--keep-going" "--print-build-logs")
           if [[ "${{ github.event_name }}" != "push" ]]; then
             args+=("--dry-run")
           fi
 
-          nix build "$flake" --fallback --keep-going --print-build-logs "${args[@]}"
+          nix build "$flake" "${args[@]}"
