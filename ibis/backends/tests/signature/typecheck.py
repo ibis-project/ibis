@@ -9,6 +9,7 @@ Utilities for typed interfaces.
 
 from __future__ import annotations
 
+from functools import partial
 from inspect import Parameter, Signature
 from itertools import starmap, takewhile, zip_longest
 
@@ -28,7 +29,9 @@ def complement(f):
     return not_f
 
 
-def compatible(impl_sig: Signature, iface_sig: Signature) -> bool:
+def compatible(
+    impl_sig: Signature, iface_sig: Signature, check_annotations: bool = True
+) -> bool:
     """Check whether ``impl_sig`` is compatible with ``iface_sig``.
 
     Parameters
@@ -37,6 +40,8 @@ def compatible(impl_sig: Signature, iface_sig: Signature) -> bool:
         The signature of the implementation function.
     iface_sig
         The signature of the interface function.
+    check_annotations
+        Whether to also compare signature annotations (default) vs only parameter names.
 
     In general, an implementation is compatible with an interface if any valid
     way of passing parameters to the interface method is also valid for the
@@ -63,10 +68,12 @@ def compatible(impl_sig: Signature, iface_sig: Signature) -> bool:
             positionals_compatible(
                 takewhile(is_positional, impl_sig.parameters.values()),
                 takewhile(is_positional, iface_sig.parameters.values()),
+                check_annotations=check_annotations,
             ),
             keywords_compatible(
                 valfilter(complement(is_positional), impl_sig.parameters),
                 valfilter(complement(is_positional), iface_sig.parameters),
+                check_annotations=check_annotations,
             ),
         ]
     )
@@ -84,29 +91,38 @@ def has_default(arg):
     return arg.default is not Parameter.empty
 
 
-def params_compatible(impl, iface):
+def params_compatible(impl, iface, check_annotations=True):
     if impl is None:
         return False
 
     if iface is None:
         return has_default(impl)
 
-    return (
+    checks = (
         impl.name == iface.name
         and impl.kind == iface.kind
         and has_default(impl) == has_default(iface)
-        and annotations_compatible(impl, iface)
     )
 
+    if check_annotations:
+        checks = checks and annotations_compatible(impl, iface)
 
-def positionals_compatible(impl_positionals, iface_positionals):
+    return checks
+
+
+def positionals_compatible(impl_positionals, iface_positionals, check_annotations=True):
+    params_compat = partial(params_compatible, check_annotations=check_annotations)
     return all(
-        starmap(params_compatible, zip_longest(impl_positionals, iface_positionals))
+        starmap(
+            params_compat,
+            zip_longest(impl_positionals, iface_positionals),
+        )
     )
 
 
-def keywords_compatible(impl_keywords, iface_keywords):
-    return all(starmap(params_compatible, dzip(impl_keywords, iface_keywords).values()))
+def keywords_compatible(impl_keywords, iface_keywords, check_annotations=True):
+    params_compat = partial(params_compatible, check_annotations=check_annotations)
+    return all(starmap(params_compat, dzip(impl_keywords, iface_keywords).values()))
 
 
 def annotations_compatible(impl, iface):
