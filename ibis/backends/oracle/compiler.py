@@ -450,3 +450,17 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_DummyTable(self, op, *, values):
         return sg.select(*self._cleanup_names(values), copy=False).from_("dual")
+
+    def visit_JoinLink(self, op, *, how, table, predicates):
+        def _rewrite_bools(pred):
+            if isinstance(pred, sge.Boolean):
+                if bool(pred.this):
+                    return sge.convert(1).eq(1)
+                else:
+                    return sge.convert(1).eq(0)
+            return pred
+
+        if predicates:
+            predicates = tuple(map(_rewrite_bools, predicates))
+
+        return super().visit_JoinLink(op, how=how, table=table, predicates=predicates)
