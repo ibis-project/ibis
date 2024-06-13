@@ -14,7 +14,7 @@ from ibis.backends.bigquery.datatypes import BigQuerySchema, BigQueryType
 NATIVE_PARTITION_COL = "_PARTITIONTIME"
 
 
-def schema_from_bigquery_table(table):
+def schema_from_bigquery_table(table, *, wildcard: bool):
     schema = BigQuerySchema.to_ibis(table.schema)
 
     # Check for partitioning information
@@ -25,6 +25,9 @@ def schema_from_bigquery_table(table):
         # Only add a new column if it's not already a column in the schema
         if partition_field not in schema:
             schema |= {partition_field: dt.Timestamp(timezone="UTC")}
+
+    if wildcard:
+        schema |= {"_TABLE_SUFFIX": dt.string}
 
     return schema
 

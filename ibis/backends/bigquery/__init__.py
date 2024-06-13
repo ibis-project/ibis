@@ -593,7 +593,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         node = ops.DatabaseTable(
             table.name,
-            schema=schema_from_bigquery_table(bq_table),
+            # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix
+            schema=schema_from_bigquery_table(bq_table, wildcard=table.name[-1] == "*"),
             source=self,
             namespace=ops.Namespace(database=dataset, catalog=project),
         )
@@ -740,9 +741,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._log(sql)
         query = self.raw_sql(sql, params=params, **kwargs)
 
-        result = self.fetch_from_query(query, expr.as_table().schema())
+        schema = expr.as_table().schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+        result = self.fetch_from_query(query, schema)
 
-        return expr.__pandas_result__(result)
+        return expr.__pandas_result__(result, schema=schema)
 
     def insert(
         self,
@@ -787,7 +789,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         arrow_t = self._query_to_arrow(query)
         df = arrow_t.to_pandas(timestamp_as_object=True)
-        return BigQueryPandasData.convert_table(df, schema)
+        return BigQueryPandasData.convert_table(
+            df, schema - ibis.schema({"_TABLE_SUFFIX": "string"})
+        )
 
     def _query_to_arrow(
         self,
@@ -876,7 +880,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ),
             name,
         )
-        return schema_from_bigquery_table(self.client.get_table(table_ref))
+        return schema_from_bigquery_table(
+            self.client.get_table(table_ref),
+            # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix
+            wildcard=name[-1] == "*",
+        )
 
     def list_databases(
         self, like: str | None = None, catalog: str | None = None

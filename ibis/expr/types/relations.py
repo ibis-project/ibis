@@ -200,10 +200,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return data_mapper.convert_table(table, self.schema())
 
-    def __pandas_result__(self, df: pd.DataFrame) -> pd.DataFrame:
+    def __pandas_result__(
+        self, df: pd.DataFrame, schema: sch.Schema | None = None
+    ) -> pd.DataFrame:
         from ibis.formats.pandas import PandasData
 
-        return PandasData.convert_table(df, self.schema())
+        return PandasData.convert_table(df, self.schema() if schema is None else schema)
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
         from ibis.formats.polars import PolarsData
