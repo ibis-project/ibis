@@ -434,3 +434,11 @@ def test_create_temp_table_from_scratch(project_id, dataset_id):
     df = con.tables.functional_alltypes.limit(1)
     t = con.create_table(name, obj=df, temp=True)
     assert len(t.execute()) == 1
+
+
+def test_table_suffix():
+    con = ibis.connect("bigquery://ibis-gbq")
+    t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
+    expr = t.filter(t._TABLE_SUFFIX == "1929", t.max != 9999.9).head(1)
+    result = expr.execute()
+    assert not result.empty
