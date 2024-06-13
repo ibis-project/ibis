@@ -91,3 +91,7 @@ def main():
     # record to the Algolia index.  If the object ID already exists, it gets
     # updated with the new fields in the record dict
     index.save_objects(records)
+
+
+if __name__ == "__main__":
+    main()
