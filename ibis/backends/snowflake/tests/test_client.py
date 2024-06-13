@@ -272,6 +272,39 @@ def test_insert(con):
     con.insert(name, expected, overwrite=True)
     assert t.count().execute() == 3
 
+    name = gen_name("test_insert")
+
+    t = con.create_table(
+        name,
+        schema=ibis.schema(
+            {
+                "ID": "int",
+                "NAME": "string",
+                "SCORE_1": "float",
+                "SCORE_2": "float",
+                "SCORE_3": "float",
+                "AGE": "int",
+            }
+        ),
+        temp=True,
+        overwrite=True,
+    )
+    con.insert(
+        name,
+        obj=[
+            {
+                "ID": 10000,
+                "NAME": "....",
+                "SCORE_1": 0.2,
+                "SCORE_2": 0.5,
+                "SCORE_3": 0.75,
+                "AGE": 1000,
+            }
+        ],
+    )
+    assert t.columns == ["ID", "NAME", "SCORE_1", "SCORE_2", "SCORE_3", "AGE"]
+    assert t.count().execute() == 1
+
 
 def test_compile_does_not_make_requests(con, mocker):
     astronauts = con.table("astronauts")
