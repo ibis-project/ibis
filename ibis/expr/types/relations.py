@@ -1615,6 +1615,50 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     3 │ a      │     4 │
         │     2 │ B      │     6 │
         └───────┴────────┴───────┘
+
+        [Selectors](./selectors.qmd) are allowed as sort keys and are a concise way to sort by
+        multiple columns matching some criteria
+
+        >>> import ibis.selectors as s
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> penguins[["year", "island"]].value_counts().order_by(s.startswith("year"))
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2007 │ Torgersen │                20 │
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Dream     │                46 │
+        │  2008 │ Torgersen │                16 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Biscoe    │                64 │
+        │  2009 │ Torgersen │                16 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Biscoe    │                60 │
+        └───────┴───────────┴───────────────────┘
+
+        Use the [`across`](./selectors.qmd#ibis.selectors.across) selector to
+        apply a specific order to multiple columns
+
+        >>> penguins[["year", "island"]].value_counts().order_by(
+        ...     s.across(s.startswith("year"), _.desc())
+        ... )
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2009 │ Biscoe    │                60 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Torgersen │                16 │
+        │  2008 │ Biscoe    │                64 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Torgersen │                16 │
+        │  2007 │ Dream     │                46 │
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Torgersen │                20 │
+        └───────┴───────────┴───────────────────┘
         """
         keys = self.bind(*by)
         keys = unwrap_aliases(keys)
