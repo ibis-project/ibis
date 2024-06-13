@@ -306,8 +306,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 C.data_precision,
                 C.data_scale,
                 sg.case()
-                .when(C.nullable.eq(sge.convert("Y")), sge.convert("Y"))
-                .else_(sge.convert("N"))
+                .when(C.nullable.eq(sge.convert("Y")), sge.convert(1))
+                .else_(sge.convert(0))
                 .as_("nullable"),
             )
             .from_(sg.table("all_tab_columns"))
@@ -330,7 +330,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 type_string=type_string,
                 precision=precision,
                 scale=scale,
-                nullable=nullable == "Y",
+                nullable=bool(nullable),
             )
             for name, type_string, precision, scale, nullable in results
         }
@@ -554,8 +554,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 C.data_precision,
                 C.data_scale,
                 sg.case()
-                .when(C.nullable.eq(sge.convert("Y")), sge.convert("Y"))
-                .else_(sge.convert("N"))
+                .when(C.nullable.eq(sge.convert("Y")), sge.convert(1))
+                .else_(sge.convert(0))
                 .as_("nullable"),
             )
             .from_("all_tab_columns")
@@ -582,7 +582,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 type_string=type_string,
                 precision=precision,
                 scale=scale,
-                nullable=nullable == "Y",
+                nullable=bool(nullable),
             )
             schema[name] = typ
 

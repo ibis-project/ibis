@@ -454,7 +454,7 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_JoinLink(self, op, *, how, table, predicates):
         def _rewrite_bools(pred):
             if isinstance(pred, sge.Boolean):
-                if bool(pred.this):
+                if pred.this:
                     return sge.convert(1).eq(1)
                 else:
                     return sge.convert(1).eq(0)
