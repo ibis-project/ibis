@@ -11,6 +11,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends.tests.errors import SnowflakeProgrammingError
 
 
 @udf.scalar.builtin
@@ -93,7 +94,14 @@ def test_builtin_agg_udf(con):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(reason="a reason that cannot be determined")
+@pytest.mark.xfail(
+    reason=(
+        "000603 (XX000): "
+        "SQL execution internal error: "
+        "Processing aborted due to error 300010:2392087340; incident 4953102."
+    ),
+    raises=SnowflakeProgrammingError,
+)
 def test_xgboost_model(con):
     from ibis import _
 
@@ -225,13 +233,7 @@ def snowpark_session():
                 session.clear_imports()
 
 
-@pytest.mark.parametrize(
-    "execute_as",
-    [
-        "owner",
-        "caller",
-    ],
-)
+@pytest.mark.parametrize("execute_as", ["owner", "caller"])
 def test_ibis_inside_snowpark(snowpark_session, execute_as):
     import snowflake.snowpark as sp
 
