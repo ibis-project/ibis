@@ -624,3 +624,18 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
     def _clean_up_cached_table(self, op):
         self._clean_up_tmp_table(op.name)
+
+    def _to_sqlglot(
+        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
+        table_expr = expr.as_table()
+        conversions = {
+            name: ibis.ifelse(table_expr[name], 1, 0)
+            for name, typ in table_expr.schema().items()
+            if typ.is_boolean()
+        }
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super()._to_sqlglot(table_expr, limit=limit, params=params)
