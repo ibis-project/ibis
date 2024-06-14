@@ -699,7 +699,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self, expr: ir.Expr, /, *, limit: str | None = None, params=None, **kwargs: Any
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)

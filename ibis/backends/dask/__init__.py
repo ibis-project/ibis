@@ -80,6 +80,8 @@ class Backend(BasePandasBackend, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: dict | None = None,
         limit: int | None = None,
         **kwargs,

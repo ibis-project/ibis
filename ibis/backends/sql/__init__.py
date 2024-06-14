@@ -170,6 +170,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = None,
         params=None,
         pretty: bool = False,
