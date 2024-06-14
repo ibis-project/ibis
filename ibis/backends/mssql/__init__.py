@@ -309,7 +309,7 @@ GO"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
@@ -340,7 +340,7 @@ GO"""
         return sg.to_identifier(name, quoted=True).sql(self.dialect)
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
