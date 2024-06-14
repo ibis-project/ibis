@@ -1084,7 +1084,7 @@ $$ {defn["source"]} $$"""
         return self.table(table)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read a Parquet file into an ibis table, using Snowflake.
 

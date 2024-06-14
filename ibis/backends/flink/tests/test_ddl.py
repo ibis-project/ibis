@@ -526,7 +526,7 @@ def test_read_parquet(con, data_dir, tmp_path, table_name, functional_alltypes_s
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name
     table = con.read_parquet(
-        path=tmp_path / fname.name,
+        tmp_path / fname.name,
         schema=functional_alltypes_schema,
         table_name=table_name,
     )

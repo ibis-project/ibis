@@ -824,7 +824,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_parquet(
         self,
-        source_list: str | Iterable[str],
+        path: str | Iterable[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -832,7 +834,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -848,7 +850,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = util.normalize_filenames(source_list)
+        source_list = util.normalize_filenames(path)
 
         table_name = table_name or util.gen_name("read_parquet")
 

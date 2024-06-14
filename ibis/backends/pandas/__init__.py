@@ -121,13 +121,18 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_parquet(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a parquet file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -145,7 +150,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_parquet")
-        df = pd.read_parquet(source, **kwargs)
+        df = pd.read_parquet(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 

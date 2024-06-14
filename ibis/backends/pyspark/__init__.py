@@ -746,6 +746,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:

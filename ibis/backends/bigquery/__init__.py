@@ -246,7 +246,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
 
