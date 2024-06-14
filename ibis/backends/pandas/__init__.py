@@ -175,7 +175,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
         """
         return self._filter_with_like(list(self.dictionary.keys()), like)
 
-    def table(self, name: str, schema: sch.Schema | None = None):
+    def table(self, name: str, /, *, schema: sch.Schema | None = None):
         inferred_schema = self.get_schema(name)
         overridden_schema = {**inferred_schema, **(schema or {})}
         return ops.DatabaseTable(name, overridden_schema, self).to_expr()

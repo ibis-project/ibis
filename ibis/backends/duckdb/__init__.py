@@ -285,7 +285,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self.drop_table(op.name)
 
     def table(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self, name: str, /, *, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 

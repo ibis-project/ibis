@@ -71,7 +71,7 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
+    def table(self, name: str, /, *, _schema: sch.Schema | None = None) -> ir.Table:
         schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
