@@ -10,7 +10,6 @@ from ibis.backends import (
     CanCreateDatabase,
     CanListCatalog,
     CanListDatabase,
-    _FileIOHandler,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.signature.typecheck import compatible
@@ -23,7 +22,6 @@ for module in [
     CanCreateDatabase,
     CanListCatalog,
     CanListDatabase,
-    _FileIOHandler,
 ]:
     methods = list(filter(lambda x: not x.startswith("_"), dir(module)))
     for method in methods:
@@ -65,7 +63,7 @@ def test_signatures_sql_backends(base_cls, method, backend_sql_cls):
             f"Method {method} in {base_cls} isn't callable, can't grab signature"
         )
 
-    base_sig = inspect.signature(getattr(base_method))
+    base_sig = inspect.signature(base_method)
     backend_sig = inspect.signature(getattr(backend_sql_cls, method))
 
     # Usage is compatible(implementation_signature, defined_interface_signature, ...)
