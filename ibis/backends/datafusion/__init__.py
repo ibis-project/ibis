@@ -482,13 +482,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(table_name)
 
     def read_delta(
-        self, source_table: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -503,7 +503,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             The just-registered table
 
         """
-        source_table = normalize_filename(source_table)
+        source_table = normalize_filename(path)
 
         table_name = table_name or gen_name("read_delta")
 

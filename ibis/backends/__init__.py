@@ -413,13 +413,13 @@ class _FileIOHandler:
         )
 
     def read_delta(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Register a Delta Lake table in the current database.
 
         Parameters
         ----------
-        source
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
