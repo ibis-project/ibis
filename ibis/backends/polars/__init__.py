@@ -307,6 +307,8 @@ class Backend(BaseBackend, NoUrl):
     def read_parquet(
         self,
         path: str | Path | Iterable[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
