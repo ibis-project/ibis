@@ -489,6 +489,8 @@ class Backend(BaseBackend, NoUrl):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,

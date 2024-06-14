@@ -361,7 +361,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             expr, params=params, pretty=pretty
         )  # Discard `limit` and other kwargs.
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
+    def execute(self, expr: ir.Expr, /, **kwargs: Any) -> Any:
         """Execute an expression."""
         self._register_udfs(expr)
 

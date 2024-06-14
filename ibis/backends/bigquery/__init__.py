@@ -712,7 +712,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._log(sql)
         return sql
 
-    def execute(self, expr, params=None, limit="default", **kwargs):
+    def execute(self, expr, /, *, params=None, limit="default", **kwargs):
         """Compile and execute the given Ibis expression.
 
         Compile and execute Ibis expression using this backend client

@@ -97,6 +97,8 @@ class Backend(BasePandasBackend, NoUrl):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: str = "default",
         **kwargs,

@@ -313,7 +313,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 class Backend(BasePandasBackend):
     name = "pandas"
 
-    def execute(self, query, params=None, limit="default", **kwargs):
+    def execute(self, expr, /, *, params=None, limit="default", **kwargs):
         from ibis.backends.pandas.executor import PandasExecutor
 
         if limit != "default" and limit is not None:
@@ -322,15 +322,15 @@ class Backend(BasePandasBackend):
                 "pandas backend"
             )
 
-        if not isinstance(query, ir.Expr):
+        if not isinstance(expr, ir.Expr):
             raise TypeError(
-                f"`query` has type {type(query).__name__!r}, expected ibis.expr.types.Expr"
+                f"`expr` has type {type(expr).__name__!r}, expected ibis.expr.types.Expr"
             )
 
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
 
-        return PandasExecutor.execute(query.op(), backend=self, params=params)
+        return PandasExecutor.execute(expr.op(), backend=self, params=params)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())

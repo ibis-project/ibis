@@ -267,6 +267,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping | None = None,
         limit: str | None = "default",
         **kwargs: Any,

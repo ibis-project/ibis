@@ -364,7 +364,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(map(itemgetter(0), out), like)
 
     def execute(
-        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+        self, expr: ir.Expr, /, *, limit: str | None = "default", **kwargs: Any
     ) -> Any:
         """Execute an expression."""
 

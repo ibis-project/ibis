@@ -416,6 +416,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping | None = None,
         limit: str | None = "default",
         **kwargs: Any,

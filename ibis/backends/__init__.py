@@ -1083,7 +1083,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
 
-    def execute(self, expr: ir.Expr) -> Any:
+    def execute(self, expr: ir.Expr, /) -> Any:
         """Execute an expression."""
 
     @abc.abstractmethod

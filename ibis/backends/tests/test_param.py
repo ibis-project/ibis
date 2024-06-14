@@ -207,5 +207,5 @@ def test_scalar_param_date(backend, alltypes, value):
 def test_scalar_param_nested(con):
     param = ibis.param("struct<x: array<struct<y: array<double>>>>")
     value = OrderedDict([("x", [OrderedDict([("y", [1.0, 2.0, 3.0])])])])
-    result = con.execute(param, {param: value})
+    result = con.execute(param, params={param: value})
     assert pytest.approx(result["x"][0]["y"]) == np.array([1.0, 2.0, 3.0])
