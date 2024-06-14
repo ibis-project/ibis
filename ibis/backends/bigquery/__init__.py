@@ -690,6 +690,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = None,
         params=None,
         pretty: bool = True,

@@ -189,7 +189,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         return schema
 
-    def compile(self, expr, *args, **kwargs):
+    def compile(self, expr, /, **kwargs):
         return expr
 
     def create_table(

@@ -350,6 +350,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
         **_: Any,

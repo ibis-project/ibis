@@ -1076,6 +1076,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, Any] | None = None,
     ) -> Any:
         """Compile an expression."""
