@@ -342,7 +342,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         cursor.execute(query, **kwargs)
         return cursor
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         expr = (
             sg.select(STAR)
             .from_(sg.table("databases", db="sys"))
@@ -364,7 +364,7 @@ GO"""
         with self._safe_ddl(create_stmt):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_ddl(
             sge.Drop(
                 kind="DATABASE",

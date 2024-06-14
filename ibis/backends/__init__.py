@@ -588,7 +588,7 @@ class _FileIOHandler:
 
 class CanListCatalog(abc.ABC):
     @abc.abstractmethod
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         """List existing catalogs in the current connection.
 
         ::: {.callout-note}
@@ -624,7 +624,7 @@ class CanListCatalog(abc.ABC):
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Create a new catalog.
 
         ::: {.callout-note}
@@ -648,7 +648,7 @@ class CanCreateCatalog(CanListCatalog):
         """
 
     @abc.abstractmethod
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Drop a catalog with name `name`.
 
         ::: {.callout-note}
