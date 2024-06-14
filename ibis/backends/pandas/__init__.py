@@ -235,6 +235,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -244,7 +245,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )
 
-    def drop_view(self, name: str, *, force: bool = False) -> None:
+    def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
     def drop_table(self, name: str, /, *, force: bool = False) -> None:

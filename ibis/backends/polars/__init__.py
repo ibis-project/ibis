@@ -400,6 +400,7 @@ class Backend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -415,7 +416,7 @@ class Backend(BaseBackend, NoUrl):
         elif not force:
             raise com.IbisError(f"Table {name!r} does not exist")
 
-    def drop_view(self, name: str, *, force: bool = False) -> None:
+    def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
     def get_schema(self, table_name):

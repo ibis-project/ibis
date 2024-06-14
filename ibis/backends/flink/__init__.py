@@ -481,7 +481,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             # which may not be ideal. We plan to get back to this later.
             # Ref: https://github.com/ibis-project/ibis/pull/7479#discussion_r1416237088
             return self.create_view(
-                name=name,
+                name,
                 obj=dataframe,
                 schema=schema,
                 database=database,
@@ -582,6 +582,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
         *,
         schema: sch.Schema | None = None,
@@ -635,7 +636,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if overwrite and self.list_views(like=name, temp=temp):
             self.drop_view(
-                name=name,
+                name,
                 database=database,
                 catalog=catalog,
                 temp=temp,
@@ -679,6 +680,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,

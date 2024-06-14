@@ -1132,6 +1132,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         schema: str | None = None,
@@ -1158,6 +1159,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         schema: str | None = None,
         database: str | None = None,

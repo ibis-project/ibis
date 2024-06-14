@@ -236,6 +236,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -263,6 +264,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         schema: str | None = None,
