@@ -351,7 +351,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     ) -> str:
         return super()._to_sqlglot(expr, params=params)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
+    def execute(self, expr: ir.Expr, /, **kwargs: Any) -> Any:
         """Execute an expression."""
         self._register_udfs(expr)
 
