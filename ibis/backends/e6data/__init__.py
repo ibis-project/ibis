@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 class Backend(SQLBackend, CanCreateDatabase):
-    name = "e6data"
+    name = "mysql"
     compiler = E6DataCompiler()
     supports_create_or_replace = False
 
@@ -44,7 +44,67 @@ class Backend(SQLBackend, CanCreateDatabase):
     def version(self):
         matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.server_version)
         return ".".join(matched.groups())
+    def _from_url(self, url: str, **kwargs):
+        """Connect to a backend using a URL `url`.
 
+        Parameters
+        ----------
+        url
+            URL with which to connect to a backend.
+        kwargs
+            Additional keyword arguments
+
+        Returns
+        -------
+        BaseBackend
+            A backend instance
+
+        """
+
+        url = urlparse(url)
+        database, *_ = url.path[1:].split("/", 1)
+        query_params = parse_qs(url.query)
+        connect_args = {
+            "user": url.username,
+            "password": url.password or "",
+            "host": url.hostname,
+            "database": database or "",
+            "catalog_name": "",
+        }
+
+        for name, value in query_params.items():
+            if len(value) > 1:
+                connect_args[name] = value
+            elif len(value) == 1:
+                connect_args[name] = value[0]
+            else:
+                raise com.IbisError(f"Invalid URL parameter: {name}")
+
+        kwargs.update(connect_args)
+        self._convert_kwargs(kwargs)
+
+        if "user" in kwargs and not kwargs["user"]:
+            del kwargs["user"]
+
+        if "host" in kwargs and not kwargs["host"]:
+            del kwargs["host"]
+
+        if "database" in kwargs and not kwargs["database"]:
+            del kwargs["database"]
+
+        if "password" in kwargs and kwargs["password"] is None:
+            del kwargs["password"]
+        
+        if "catalog_name" in kwargs and not kwargs["catalog_name"]:
+            del kwargs["catalog_name"]
+
+        return self.connect(**kwargs)
+
+    @cached_property
+    def version(self):
+        matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.server_version)
+        return ".".join(matched.groups())
+    
     def do_connect(
         self,
         host: str,
@@ -88,14 +148,15 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> t
        
         """
-        self._connection = Connection(
+        self.con = Connection(
             host=host,
             port=port,
             username=username,
             password=password,
-            database=database
+            database=database,
+            catalog=catalog_name,
         )
-        self.catalog_name = catalog_name
+    
 
     @property
     def current_database(self) -> str:
