@@ -11,7 +11,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
-from ibis.backends.tests.errors import SnowflakeProgrammingError
 
 
 @udf.scalar.builtin
@@ -94,14 +93,6 @@ def test_builtin_agg_udf(con):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(
-    reason=(
-        "000603 (XX000): "
-        "SQL execution internal error: "
-        "Processing aborted due to error 300010:2392087340; incident 4953102."
-    ),
-    raises=SnowflakeProgrammingError,
-)
 def test_xgboost_model(con):
     from ibis import _
 
@@ -112,12 +103,19 @@ def test_xgboost_model(con):
         carat_scaled: float, cut_encoded: int, color_encoded: int, clarity_encoded: int
     ) -> int:
         import sys
+        from pathlib import Path
 
         import joblib
         import pandas as pd
 
-        import_dir = sys._xoptions.get("snowflake_import_directory")
-        model = joblib.load(f"{import_dir}model.joblib")
+        import_dir = Path(sys._xoptions.get("snowflake_import_directory"))
+        assert import_dir.exists(), import_dir
+
+        model_path = import_dir / "model.joblib"
+        assert model_path.exists(), model_path
+
+        model = joblib.load(model_path)
+
         df = pd.concat(
             [carat_scaled, cut_encoded, color_encoded, clarity_encoded], axis=1
         )
