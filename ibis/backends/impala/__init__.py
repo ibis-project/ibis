@@ -726,7 +726,9 @@ class Backend(SQLBackend):
     def insert(
         self,
         table_name,
-        obj=None,
+        /,
+        obj,
+        *,
         database=None,
         overwrite=False,
         partition=None,

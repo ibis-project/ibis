@@ -550,7 +550,9 @@ class Backend(SQLBackend, UrlFromPath):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
