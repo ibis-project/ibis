@@ -88,6 +88,7 @@ shapely = { version = ">=2,<3", optional = true }
 # issues with versions <3.0.2
 snowflake-connector-python = { version = ">=3.0.2,<4,!=3.3.0b1", optional = true }
 trino = { version = ">=0.321,<1", optional = true }
+e6data-python-connector = { version = "2.2.0" }
 
 [tool.poetry.group.dev.dependencies]
 codespell = { version = ">=2.2.6,<3", extras = [
@@ -154,6 +155,7 @@ dask = ["dask", "regex", "packaging"]
 datafusion = ["datafusion"]
 druid = ["pydruid"]
 duckdb = ["duckdb"]
+e6data = ["e6data-python-connector","pymysql"]
 exasol = ["pyexasol"]
 flink = []
 impala = ["impyla"]
@@ -182,6 +184,7 @@ dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
+e6data = "ibis.backends.e6data"
 exasol = "ibis.backends.exasol"
 flink = "ibis.backends.flink"
 impala = "ibis.backends.impala"
