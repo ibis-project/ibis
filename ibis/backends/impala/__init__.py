@@ -297,7 +297,7 @@ class Backend(SQLBackend):
             [(db,)] = cur.fetchall()
         return db
 
-    def create_database(self, name, path=None, force=False):
+    def create_database(self, name, /, *, path=None, force=False):
         """Create a new Impala database.
 
         Parameters
@@ -313,7 +313,7 @@ class Backend(SQLBackend):
         statement = CreateDatabase(name, path=path, can_exist=force)
         self._safe_exec_sql(statement)
 
-    def drop_database(self, name, force=False):
+    def drop_database(self, name, /, *, force=False):
         """Drop an Impala database.
 
         Parameters

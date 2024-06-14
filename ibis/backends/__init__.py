@@ -675,7 +675,7 @@ class CanCreateCatalog(CanListCatalog):
 class CanListDatabase(abc.ABC):
     @abc.abstractmethod
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         """List existing databases in the current connection.
 
@@ -716,7 +716,7 @@ class CanListDatabase(abc.ABC):
 class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Create a database named `name` in `catalog`.
 
@@ -734,7 +734,7 @@ class CanCreateDatabase(CanListDatabase):
 
     @abc.abstractmethod
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop the database with `name` in `catalog`.
 
@@ -778,7 +778,7 @@ class CanCreateSchema(CanListSchema):
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        self.create_database(name=name, catalog=database, force=force)
+        self.create_database(name, catalog=database, force=force)
 
     @util.deprecated(
         instead="Use `drop_database` instead", as_of="9.0", removed_in="10.0"
@@ -786,7 +786,7 @@ class CanCreateSchema(CanListSchema):
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        self.drop_database(name=name, catalog=database, force=force)
+        self.drop_database(name, catalog=database, force=force)
 
 
 class BaseBackend(abc.ABC, _FileIOHandler):

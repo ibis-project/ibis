@@ -436,6 +436,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        /,
         *,
         catalog: str | None = None,
         path: str | Path | None = None,
@@ -473,7 +474,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 pass
 
     def drop_database(
-        self, name: str, *, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> Any:
         """Drop a Spark database.
 

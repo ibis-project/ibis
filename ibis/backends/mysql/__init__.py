@@ -237,14 +237,14 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         return sch.Schema(fields)
 
-    def create_database(self, name: str, force: bool = False) -> None:
+    def create_database(self, name: str, /, *, force: bool = False) -> None:
         sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
             self.name
         )
         with self.begin() as cur:
             cur.execute(sql)
 
-    def drop_database(self, name: str, force: bool = False) -> None:
+    def drop_database(self, name: str, /, *, force: bool = False) -> None:
         sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
             self.name
         )
