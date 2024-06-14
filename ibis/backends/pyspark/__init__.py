@@ -767,7 +767,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_json(
         self,
-        source_list: str | Sequence[str],
+        path: str | Sequence[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -775,7 +777,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of JSON files, or an
             iterable of JSON files.
         table_name
@@ -796,7 +798,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
                 "Please use `read_json_directory` instead."
             )
-        source_list = normalize_filenames(source_list)
+        source_list = normalize_filenames(path)
         spark_df = self._session.read.json(source_list, **kwargs)
         table_name = table_name or util.gen_name("read_json")
 

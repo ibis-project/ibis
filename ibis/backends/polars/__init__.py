@@ -209,7 +209,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table.
 

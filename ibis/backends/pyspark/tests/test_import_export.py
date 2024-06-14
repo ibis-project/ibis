@@ -11,7 +11,7 @@ import pytest
         methodcaller("read_delta", path="test.delta"),
         methodcaller("read_csv", "test.csv"),
         methodcaller("read_parquet", "test.parquet"),
-        methodcaller("read_json", source_list="test.json"),
+        methodcaller("read_json", "test.json"),
     ],
 )
 def test_streaming_import_not_implemented(con_streaming, method):

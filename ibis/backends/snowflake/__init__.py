@@ -955,7 +955,7 @@ $$"""
         return self.table(table)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table, using Snowflake.
 
