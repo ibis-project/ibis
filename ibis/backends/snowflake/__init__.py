@@ -1179,7 +1179,9 @@ $$ {defn["source"]} $$"""
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,

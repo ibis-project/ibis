@@ -860,7 +860,9 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,

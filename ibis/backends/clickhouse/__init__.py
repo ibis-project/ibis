@@ -412,8 +412,10 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def insert(
         self,
-        name: str,
+        table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
+        *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
         **kwargs: Any,
@@ -422,18 +424,18 @@ class Backend(SQLBackend, CanCreateDatabase):
         import pyarrow as pa
 
         if overwrite:
-            self.truncate_table(name)
+            self.truncate_table(table_name)
 
         if isinstance(obj, pa.Table):
-            return self.con.insert_arrow(name, obj, settings=settings, **kwargs)
+            return self.con.insert_arrow(table_name, obj, settings=settings, **kwargs)
         elif isinstance(obj, pd.DataFrame):
             return self.con.insert_arrow(
-                name, pa.Table.from_pandas(obj), settings=settings, **kwargs
+                table_name, pa.Table.from_pandas(obj), settings=settings, **kwargs
             )
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = self._build_insert_from_table(target=name, source=obj)
+        query = self._build_insert_from_table(target=table_name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)
