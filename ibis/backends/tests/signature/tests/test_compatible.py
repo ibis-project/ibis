@@ -27,6 +27,10 @@ def a4(posarg: int, other_kwarg=True, **kwargs: Any): ...
 def b4(posarg: str, **kwargs: Any): ...
 
 
+def a5(posarg: int, /): ...
+def b5(posarg2: str, /): ...
+
+
 @pytest.mark.parametrize(
     "a, b, check_annotations",
     [
@@ -111,6 +115,12 @@ def test_sigs_compatible(a, b, check_annotations):
             b3,
             True,
             id="annotations different but parity in annotations",
+        ),
+        param(
+            a5,
+            b5,
+            False,
+            id="names different, but positional only",
         ),
     ],
 )
