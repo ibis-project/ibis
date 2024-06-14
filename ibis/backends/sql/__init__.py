@@ -109,6 +109,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def table(
         self,
         name: str,
+        /,
+        *,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> ir.Table:

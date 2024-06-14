@@ -449,7 +449,9 @@ class Backend(SQLBackend):
         stmt = DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 
-    def table(self, name: str, database: str | None = None, **kwargs: Any) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: str | None = None, **kwargs: Any
+    ) -> ir.Table:
         expr = super().table(name, database=database, **kwargs)
         return ImpalaTable(expr.op())
 

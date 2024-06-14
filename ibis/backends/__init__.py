@@ -973,7 +973,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def table(
-        self, name: str, database: tuple[str, str] | str | None = None
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 

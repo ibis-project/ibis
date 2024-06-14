@@ -241,6 +241,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         catalog: str | None = None,
     ) -> ir.Table:
@@ -672,7 +674,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         else:
             raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
 
-        return self.table(name=name, database=database, catalog=catalog)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,

@@ -579,7 +579,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.raw_sql(stmt.sql(self.name))
 
     def table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
         table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
