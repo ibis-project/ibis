@@ -8,7 +8,7 @@ import pytest
 @pytest.mark.parametrize(
     "method",
     [
-        methodcaller("read_delta", path="test.delta"),
+        methodcaller("read_delta", "test.delta"),
         methodcaller("read_csv", "test.csv"),
         methodcaller("read_parquet", "test.parquet"),
         methodcaller("read_json", "test.json"),

@@ -896,7 +896,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_delta(
         self,
-        source_table: str,
+        path: str,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -904,7 +906,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -919,7 +921,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table.
 
         """
-        source_table = util.normalize_filenames(source_table)[0]
+        source_table = util.normalize_filenames(path)[0]
 
         table_name = table_name or util.gen_name("read_delta")
 

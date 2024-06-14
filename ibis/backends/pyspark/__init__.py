@@ -649,6 +649,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_delta(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
