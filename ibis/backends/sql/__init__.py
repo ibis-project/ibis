@@ -286,6 +286,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
@@ -494,7 +496,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         ).sql(self.dialect)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> None:
         """Delete all rows from a table.
 

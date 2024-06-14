@@ -532,9 +532,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: (
-            ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
-        ) = None,
+        /,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
