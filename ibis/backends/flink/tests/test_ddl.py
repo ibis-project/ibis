@@ -354,7 +354,7 @@ def test_create_view(
     assert temp_table in con.list_tables()
 
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=False,
         temp=temp,
@@ -366,7 +366,7 @@ def test_create_view(
     # Try to re-create the same view with `force=False`
     with pytest.raises(Py4JJavaError):
         con.create_view(
-            name=temp_view,
+            temp_view,
             obj=table,
             force=False,
             temp=temp,
@@ -376,7 +376,7 @@ def test_create_view(
 
     # Try to re-create the same view with `force=True`
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=True,
         temp=temp,
@@ -386,7 +386,7 @@ def test_create_view(
 
     # Overwrite the view
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=False,
         temp=temp,
@@ -394,7 +394,7 @@ def test_create_view(
     )
     assert view_list == sorted(con.list_tables())
 
-    con.drop_view(name=temp_view, temp=temp, force=True)
+    con.drop_view(temp_view, temp=temp, force=True)
     assert temp_view not in con.list_tables()
 
 

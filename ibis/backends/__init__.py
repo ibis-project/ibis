@@ -1170,6 +1170,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -1198,7 +1199,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a view.
 

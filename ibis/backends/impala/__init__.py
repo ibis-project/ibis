@@ -435,6 +435,7 @@ class Backend(SQLBackend):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -445,7 +446,7 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement)
         return self.table(name, database=database)
 
-    def drop_view(self, name, database=None, force=False):
+    def drop_view(self, name, /, *, database=None, force=False):
         stmt = DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 

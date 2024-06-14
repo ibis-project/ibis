@@ -560,6 +560,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
