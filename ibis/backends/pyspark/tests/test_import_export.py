@@ -13,7 +13,7 @@ from ibis.backends.pyspark.datatypes import PySparkSchema
     "method",
     [
         methodcaller("read_delta", path="test.delta"),
-        methodcaller("read_csv", source_list="test.csv"),
+        methodcaller("read_csv", "test.csv"),
         methodcaller("read_parquet", path="test.parquet"),
         methodcaller("read_json", source_list="test.json"),
     ],

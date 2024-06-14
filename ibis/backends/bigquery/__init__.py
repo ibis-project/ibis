@@ -274,7 +274,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 

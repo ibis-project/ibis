@@ -507,7 +507,7 @@ def test_insert_simple_select(con, tempdir_sink_configs):
 def test_read_csv(con, awards_players_schema, csv_source_configs, table_name):
     source_configs = csv_source_configs("awards_players")
     table = con.read_csv(
-        path=source_configs["path"],
+        source_configs["path"],
         schema=awards_players_schema,
         table_name=table_name,
     )

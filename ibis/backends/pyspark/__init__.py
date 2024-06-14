@@ -782,7 +782,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -790,7 +792,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -813,7 +815,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source_list = normalize_filenames(source_list)
+        source_list = normalize_filenames(path)
         spark_df = self._session.read.csv(
             source_list, inferSchema=inferSchema, header=header, **kwargs
         )

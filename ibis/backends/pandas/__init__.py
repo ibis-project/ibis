@@ -87,13 +87,18 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return client.table(name)
 
     def read_csv(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a CSV file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source. Can be a local or remote file, pathlike objects
             also accepted.
         table_name
@@ -111,7 +116,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_csv")
-        df = pd.read_csv(source, **kwargs)
+        df = pd.read_csv(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 

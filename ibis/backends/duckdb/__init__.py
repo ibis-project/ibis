@@ -636,7 +636,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         columns: Mapping[str, str | dt.DataType] | None = None,
         types: Mapping[str, str | dt.DataType] | None = None,
@@ -646,9 +648,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
-            The data source(s). May be a path to a file or directory of CSV
-            files, or an iterable of CSV files.
+        path
+            The data source(s). May be a path to a file or directory of CSV files, or an
+            iterable of CSV files.
         table_name
             An optional name to use for the created table. This defaults to a
             sequentially generated name.
@@ -713,7 +715,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         │     2.0 │     3.0 │ <POINT (2 3)>        │
         └─────────┴─────────┴──────────────────────┘
         """
-        source_list = util.normalize_filenames(source_list)
+        source_list = util.normalize_filenames(path)
 
         if not table_name:
             table_name = util.gen_name("read_csv")

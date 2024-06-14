@@ -362,14 +362,15 @@ class _FileIOHandler:
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current backend.
 
         Parameters
         ----------
         path
-            The data source. A string or Path to the CSV file.
+            The data source(s). A string or Path to the CSV file or directory
+            containing CSV files.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.

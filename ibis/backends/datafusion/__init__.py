@@ -426,7 +426,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             self.con.register_dataset(name=name, dataset=empty_dataset)
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current database.
 

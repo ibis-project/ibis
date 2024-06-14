@@ -790,8 +790,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_csv(
         self,
         path: str | Path,
-        schema: sch.Schema | None = None,
+        /,
+        *,
         table_name: str | None = None,
+        schema: sch.Schema | None = None,
     ) -> ir.Table:
         """Register a csv file as a table in the current database.
 
@@ -799,11 +801,11 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         ----------
         path
             The data source.
-        schema
-            The schema for the new table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
+        schema
+            The schema for the new table.
 
         Returns
         -------
