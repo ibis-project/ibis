@@ -666,6 +666,7 @@ $$""".format(**self._get_udf_source(udf_node))
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -772,6 +773,8 @@ $$""".format(**self._get_udf_source(udf_node))
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:

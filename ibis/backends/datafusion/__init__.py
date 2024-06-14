@@ -567,6 +567,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -672,7 +673,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(name, database=database)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> None:
         """Delete all rows from a table.
 

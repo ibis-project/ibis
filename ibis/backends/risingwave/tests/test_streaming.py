@@ -68,7 +68,7 @@ def test_mv_on_table_with_connector(con):
         "datagen.split.num": "1",
     }
     tblc = con.create_table(
-        name=tblc_name,
+        tblc_name,
         obj=None,
         schema=schema,
         connector_properties=connector_properties,

@@ -896,7 +896,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 
@@ -1056,6 +1056,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
@@ -1095,6 +1096,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,

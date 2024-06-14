@@ -125,7 +125,7 @@ def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_c
         tbl_properties = None
 
     new_table = con.create_table(
-        name=temp_table,
+        temp_table,
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
@@ -142,7 +142,7 @@ def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_c
             match=r"An error occurred while calling o\d+\.createTemporaryView",
         ):
             new_table = con.create_table(
-                name=temp_table,
+                temp_table,
                 obj=employee_df,
                 schema=schema,
                 tbl_properties=tbl_properties,
@@ -168,7 +168,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
         tbl_properties = None
 
     new_table = con.create_table(
-        name=temp_table,
+        temp_table,
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
@@ -181,7 +181,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
 
         # force recreate the same table a second time should succeed
         new_table = con.create_table(
-            name=temp_table,
+            temp_table,
             obj=employee_df,
             schema=schema,
             tbl_properties=tbl_properties,
@@ -286,7 +286,7 @@ def test_create_view(
     con, temp_table, awards_players_schema, csv_source_configs, temp_view, temp
 ):
     table = con.create_table(
-        name=temp_table,
+        temp_table,
         schema=awards_players_schema,
         tbl_properties=csv_source_configs("awards_players"),
     )
@@ -340,7 +340,7 @@ def test_create_view(
 def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs):
     table_name = temp_table
     con.create_table(
-        name=table_name,
+        table_name,
         schema=awards_players_schema,
         tbl_properties=csv_source_configs("awards_players"),
     )

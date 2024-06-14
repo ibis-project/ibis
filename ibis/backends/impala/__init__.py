@@ -450,6 +450,7 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -759,7 +760,7 @@ class Backend(SQLBackend):
         )
 
     def drop_table(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop an Impala table.
 
@@ -782,7 +783,7 @@ class Backend(SQLBackend):
         statement = DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters

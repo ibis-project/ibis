@@ -528,7 +528,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src):
             pass
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         ident = sg.table(name, db=database).sql(self.name)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
@@ -590,6 +590,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table

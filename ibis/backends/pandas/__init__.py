@@ -195,6 +195,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -246,7 +247,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def drop_view(self, name: str, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
-    def drop_table(self, name: str, *, force: bool = False) -> None:
+    def drop_table(self, name: str, /, *, force: bool = False) -> None:
         if not force and name in self.dictionary:
             raise com.IbisError(
                 "Cannot drop existing table. Call drop_table with force=True to drop existing table."

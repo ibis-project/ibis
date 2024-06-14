@@ -903,6 +903,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def list_tables(
         self,
+        *,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
@@ -953,6 +954,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -1106,6 +1108,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         schema: str | None = None,
         database: tuple[str | str] | str | None = None,

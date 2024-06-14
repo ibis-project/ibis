@@ -362,6 +362,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -440,7 +441,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if overwrite:
             if self.list_tables(like=name, temp=temp):
                 self.drop_table(
-                    name=name,
+                    name,
                     catalog=catalog,
                     database=database,
                     temp=temp,
@@ -518,6 +519,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -754,7 +756,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         }
 
         return self.create_table(
-            name=table_name,
+            table_name,
             schema=schema,
             tbl_properties=tbl_properties,
         )
