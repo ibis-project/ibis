@@ -176,16 +176,6 @@ def column(op, **_):
     return pl.col(op.name)
 
 
-@translate.register(ops.SortKey)
-def sort_key(op, **kw):
-    arg = translate(op.expr, **kw)
-    descending = op.descending
-    try:
-        return arg.sort(descending=descending)
-    except TypeError:  # pragma: no cover
-        return arg.sort(reverse=descending)  # pragma: no cover
-
-
 @translate.register(ops.Project)
 def project(op, **kw):
     lf = translate(op.parent, **kw)
