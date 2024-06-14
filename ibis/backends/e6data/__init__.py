@@ -244,7 +244,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         try:
             cursor.execute(query, **kwargs)
         except Exception:
-            con.rollback()
             cursor.close()
             raise
         else:
