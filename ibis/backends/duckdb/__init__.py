@@ -661,7 +661,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -669,7 +671,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -685,7 +687,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = util.normalize_filenames(source_list)
+        source_list = util.normalize_filenames(path)
 
         if not table_name:
             table_name = util.gen_name("read_csv")

@@ -165,6 +165,8 @@ class Backend(BaseBackend, NoUrl):
     def read_csv(
         self,
         path: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:

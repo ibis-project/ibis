@@ -108,13 +108,18 @@ class Backend(BasePandasBackend, NoUrl):
         return DaskExecutor.execute(expr.op(), backend=self, params=params)
 
     def read_csv(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a CSV file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source. Can be a local or remote file, pathlike objects
             also accepted.
         table_name
@@ -132,7 +137,7 @@ class Backend(BasePandasBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_csv")
-        df = dd.read_csv(source, **kwargs)
+        df = dd.read_csv(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 
