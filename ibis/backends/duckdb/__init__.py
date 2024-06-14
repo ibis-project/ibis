@@ -591,7 +591,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     @util.experimental
     def read_json(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs,
     ) -> ir.Table:
@@ -603,7 +605,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             File or list of files
         table_name
             Optional table name
@@ -626,9 +628,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._create_temp_view(
             table_name,
             sg.select(STAR).from_(
-                self.compiler.f.read_json_auto(
-                    util.normalize_filenames(source_list), *options
-                )
+                self.compiler.f.read_json_auto(util.normalize_filenames(path), *options)
             ),
         )
 

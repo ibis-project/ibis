@@ -553,7 +553,7 @@ def test_read_json(con, data_dir, tmp_path, table_name, functional_alltypes_sche
     path = tmp_path / "functional_alltypes.json"
     df.to_json(path, orient="records", lines=True, date_format="iso")
     table = con.read_json(
-        path=path, schema=functional_alltypes_schema, table_name=table_name
+        path, schema=functional_alltypes_schema, table_name=table_name
     )
 
     try:
