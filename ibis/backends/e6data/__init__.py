@@ -26,6 +26,7 @@ from ibis.backends import CanCreateDatabase
 from ibis.backends.e6data.compiler import E6DataCompiler 
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import TRUE, C
+from e6data_python_connector import Connection
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -34,63 +35,10 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
-
 class Backend(SQLBackend, CanCreateDatabase):
     name = "e6data"
     compiler = E6DataCompiler()
     supports_create_or_replace = False
-
-    def _from_url(self, url: str, **kwargs):
-        """Connect to a backend using a URL `url`.
-
-        Parameters
-        ----------
-        url
-            URL with which to connect to a backend.
-        kwargs
-            Additional keyword arguments
-
-        Returns
-        -------
-        BaseBackend
-            A backend instance
-
-        """
-
-        url = urlparse(url)
-        database, *_ = url.path[1:].split("/", 1)
-        query_params = parse_qs(url.query)
-        connect_args = {
-            "user": url.username,
-            "password": url.password or "",
-            "host": url.hostname,
-            "database": database or "",
-        }
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                connect_args[name] = value
-            elif len(value) == 1:
-                connect_args[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
-
-        kwargs.update(connect_args)
-        self._convert_kwargs(kwargs)
-
-        if "user" in kwargs and not kwargs["user"]:
-            del kwargs["user"]
-
-        if "host" in kwargs and not kwargs["host"]:
-            del kwargs["host"]
-
-        if "database" in kwargs and not kwargs["database"]:
-            del kwargs["database"]
-
-        if "password" in kwargs and kwargs["password"] is None:
-            del kwargs["password"]
-
-        return self.connect(**kwargs)
 
     @cached_property
     def version(self):
@@ -99,32 +47,31 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def do_connect(
         self,
-        host: str = "localhost",
-        user: str | None = None,
-        password: str | None = None,
-        port: int = 3306,
-        database: str | None = None,
-        autocommit: bool = True,
+        host: str,
+        port: int,
+        username: str,
+        password: str,
+        database: str,
+        catalog_name: str,
         **kwargs,
     ) -> None:
         """Create an Ibis client using the passed connection parameters.
 
-        Parameters
-        ----------
-        host
+          host
             Hostname
-        user
-            Username
-        password
-            Password
-        port
+          port
             Port
-        database
+          username
+            Username
+          password
+            Password
+          database
             Database to connect to
-        autocommit
-            Autocommit mode
-        kwargs
-            Additional keyword arguments passed to `pymysql.connect`
+          catalog_name
+          Catalog name
+          kwargs
+            Additional keyword arguments
+       
 
         Examples
         --------
@@ -139,42 +86,16 @@ class Backend(SQLBackend, CanCreateDatabase):
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        MySQLTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : int8
-            tinyint_col : int8
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+       
         """
-        con = pymysql.connect(
-            user=user,
+        self._connection = Connection(
             host=host,
             port=port,
+            username=username,
             password=password,
-            database=database,
-            autocommit=autocommit,
-            conv=pymysql.converters.conversions,
-            **kwargs,
+            database=database
         )
-
-        with contextlib.closing(con.cursor()) as cur:
-            try:
-                cur.execute("SET @@session.time_zone = 'UTC'")
-            except Exception as e:  # noqa: BLE001
-                warnings.warn(f"Unable to set session timezone to UTC: {e}")
-
-        self.con = con
+        self.catalog_name = catalog_name
 
     @property
     def current_database(self) -> str:
