@@ -8,6 +8,7 @@ from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import toolz
 from pytest import param
@@ -597,6 +598,38 @@ def test_order_by_random(alltypes):
     assert len(r2) == 5
     # Ensure that multiple executions returns different results
     assert not r1.equals(r2)
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.parametrize(
+    "op, expected",
+    [
+        param("desc", {"a": [1, 2, 3], "b": ["foo", "baz", None]}),
+        param("asc", {"a": [2, 1, 3], "b": ["baz", "foo", None]}),
+    ],
+)
+def test_order_by_nulls_default(con, op, expected):
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    result = con.execute(t.order_by(getattr(t["b"], op)()))
+    expected = pd.DataFrame(expected)
+
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.parametrize(
+    "op, nulls_first, expected",
+    [
+        param("desc", True, {"a": [3, 1, 2], "b": [None, "foo", "baz"]}),
+        param("asc", True, {"a": [3, 2, 1], "b": [None, "baz", "foo"]}),
+    ],
+)
+def test_order_by_nulls(con, op, nulls_first, expected):
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    result = con.execute(t.order_by(getattr(t["b"], op)(nulls_first=nulls_first)))
+    expected = pd.DataFrame(expected)
+
+    tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notyet(

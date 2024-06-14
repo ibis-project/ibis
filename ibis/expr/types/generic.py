@@ -1199,13 +1199,13 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-    def asc(self) -> ir.Value:
+    def asc(self, nulls_first: bool = False) -> ir.Value:
         """Sort an expression ascending."""
-        return ops.SortKey(self, ascending=True).to_expr()
+        return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
-    def desc(self) -> ir.Value:
+    def desc(self, nulls_first: bool = False) -> ir.Value:
         """Sort an expression descending."""
-        return ops.SortKey(self, ascending=False).to_expr()
+        return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
