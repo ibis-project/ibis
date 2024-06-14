@@ -407,6 +407,19 @@ def backend_cls(request) -> BaseBackend:
     return cls
 
 
+@pytest.fixture(
+    params=_get_backends_to_test(discard=("dask", "pandas", "polars")),
+    scope="session",
+)
+def backend_sql_cls(request, data_dir, tmp_path_factory, worker_id):
+    """Return the uninstantiated backend class, unconnected.
+
+    SQL backends only.
+    This is used for signature checking and nothing should be executed."""
+    cls = _get_backend_cls(request.param)
+    return cls
+
+
 @pytest.fixture(params=_get_backends_to_test(), scope="session")
 def backend(request, data_dir, tmp_path_factory, worker_id) -> BackendTest:
     """Return an instance of BackendTest, loaded with data."""
