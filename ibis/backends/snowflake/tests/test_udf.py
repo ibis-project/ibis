@@ -11,7 +11,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
-from ibis.backends.tests.errors import SnowflakeProgrammingError
 
 
 @udf.scalar.builtin
