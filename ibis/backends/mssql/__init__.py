@@ -286,7 +286,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             con.commit()
             return cursor
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         name = self._quote(name)
         create_stmt = (
             f"""\
@@ -301,7 +301,7 @@ GO"""
         with self._safe_raw_sql(create_stmt):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         name = self._quote(name)
         if_exists = "IF EXISTS " * force
 
