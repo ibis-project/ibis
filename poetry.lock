@@ -170,13 +170,13 @@ trio = ["trio (>=0.23)"]
 
 [[package]]
 name = "anywidget"
-version = "0.9.11"
+version = "0.9.12"
 description = "custom jupyter widgets made easy"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "anywidget-0.9.11-py3-none-any.whl", hash = "sha256:b5dfaed080cab0fd6bca0f444bae0717336d8d55cee09713856ec44b39bf2c7a"},
-    {file = "anywidget-0.9.11.tar.gz", hash = "sha256:58dded8e86ec27ce28760c9457317663113d9af608947ee6a8d0ecb528b22cdc"},
+    {file = "anywidget-0.9.12-py3-none-any.whl", hash = "sha256:e54e4564e7dca2fd5ebfdca67790209fd6c91b650245aad88e54e26a204b75f9"},
+    {file = "anywidget-0.9.12.tar.gz", hash = "sha256:25855b2496dc6541356b6d26ca0c9f9525203bb7cf2817f84b93bfe3f53cf81e"},
 ]
 
 [package.dependencies]
@@ -1428,17 +1428,17 @@ files = [
 
 [[package]]
 name = "deltalake"
-version = "0.18.0"
+version = "0.18.1"
 description = "Native Delta Lake Python binding based on delta-rs with Pandas integration"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "deltalake-0.18.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:3122b2b8b9754579641766a716c72fe9950cab403fdcdeac885c963a4d26bdec"},
-    {file = "deltalake-0.18.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:9ddbba2dad0a6e7d4f3a9ba6fe1318a5c9263673a902ddc6c9843dde23fbaab6"},
-    {file = "deltalake-0.18.0-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8ae4963c98f59d7792d7de599c45e1232d922720970061d6a9c9c47e15ee2675"},
-    {file = "deltalake-0.18.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:cbfe9430e0053bf3bf50e4737c5b8c8549dbc6b8229b02574562c620d407bc66"},
-    {file = "deltalake-0.18.0-cp38-abi3-win_amd64.whl", hash = "sha256:71a2424425ea7e267743c9f0845246f54bd2c1335a59a04b3fb39c8b72657869"},
-    {file = "deltalake-0.18.0.tar.gz", hash = "sha256:7f5e74e5b7c3e36eba7adea9d60b69928cec8d6a3b249ecdfad1dc001980e08b"},
+    {file = "deltalake-0.18.1-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:eea574f2f755a8378d75d33461d30ae562aad9d511f567aec6000904f67d13b4"},
+    {file = "deltalake-0.18.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:74b89e3b8cdfdd23d0f17465ab008b9f19882dc7497c6a8ea3d78d8be2bf893f"},
+    {file = "deltalake-0.18.1-cp38-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:52c636137e77172b6ace4c916857678e2e88a4782cfac7a21e7fc4f0f45519b1"},
+    {file = "deltalake-0.18.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:aa049c74979e7905c6631d9df6d419cbaf37cd07de3f0b3e3733d3f835930f5f"},
+    {file = "deltalake-0.18.1-cp38-abi3-win_amd64.whl", hash = "sha256:b8d7648fac6b4f0165173b516b3f43c0ae550bce6d6492d6016c3700c52dcb31"},
+    {file = "deltalake-0.18.1.tar.gz", hash = "sha256:aa49822a4d559d138aee5bae3e529b231dd2dc2f1fcc6272f32853c99597c867"},
 ]
 
 [package.dependencies]
@@ -1679,13 +1679,13 @@ tests = ["asttokens (>=2.1.0)", "coverage", "coverage-enable-subprocess", "ipyth
 
 [[package]]
 name = "fastjsonschema"
-version = "2.19.1"
+version = "2.20.0"
 description = "Fastest Python implementation of JSON schema"
 optional = false
 python-versions = "*"
 files = [
-    {file = "fastjsonschema-2.19.1-py3-none-any.whl", hash = "sha256:3672b47bc94178c9f23dbb654bf47440155d4db9df5f7bc47643315f9c405cd0"},
-    {file = "fastjsonschema-2.19.1.tar.gz", hash = "sha256:e3126a94bdc4623d3de4485f8d468a12f02a67921315ddc87836d6e456dc789d"},
+    {file = "fastjsonschema-2.20.0-py3-none-any.whl", hash = "sha256:5875f0b0fa7a0043a91e93a9b8f793bcbbba9691e7fd83dca95c28ba26d21f0a"},
+    {file = "fastjsonschema-2.20.0.tar.gz", hash = "sha256:3d48fc5300ee96f5d116f10fe6f28d938e6008f59a6a025c2649475b87f76a23"},
 ]
 
 [package.extras]
@@ -1693,18 +1693,18 @@ devel = ["colorama", "json-spec", "jsonschema", "pylint", "pytest", "pytest-benc
 
 [[package]]
 name = "filelock"
-version = "3.14.0"
+version = "3.15.1"
 description = "A platform independent file lock."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "filelock-3.14.0-py3-none-any.whl", hash = "sha256:43339835842f110ca7ae60f1e1c160714c5a6afd15a2873419ab185334975c0f"},
-    {file = "filelock-3.14.0.tar.gz", hash = "sha256:6ea72da3be9b8c82afd3edcf99f2fffbb5076335a5ae4d03248bb5b6c3eae78a"},
+    {file = "filelock-3.15.1-py3-none-any.whl", hash = "sha256:71b3102950e91dfc1bb4209b64be4dc8854f40e5f534428d8684f953ac847fac"},
+    {file = "filelock-3.15.1.tar.gz", hash = "sha256:58a2549afdf9e02e10720eaa4d4470f56386d7a6f72edd7d0596337af8ed7ad8"},
 ]
 
 [package.extras]
 docs = ["furo (>=2023.9.10)", "sphinx (>=7.2.6)", "sphinx-autodoc-typehints (>=1.25.2)"]
-testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8.0.1)", "pytest (>=7.4.3)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)", "pytest-timeout (>=2.2)"]
+testing = ["covdefaults (>=2.3)", "coverage (>=7.3.2)", "diff-cover (>=8.0.1)", "pytest (>=7.4.3)", "pytest-asyncio (>=0.21)", "pytest-cov (>=4.1)", "pytest-mock (>=3.12)", "pytest-timeout (>=2.2)"]
 typing = ["typing-extensions (>=4.8)"]
 
 [[package]]
@@ -2146,13 +2146,13 @@ grpc = ["grpcio (>=1.38.0,<2.0dev)", "grpcio-status (>=1.38.0,<2.0.dev0)"]
 
 [[package]]
 name = "google-cloud-storage"
-version = "2.16.0"
+version = "2.17.0"
 description = "Google Cloud Storage API client library"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "google-cloud-storage-2.16.0.tar.gz", hash = "sha256:dda485fa503710a828d01246bd16ce9db0823dc51bbca742ce96a6817d58669f"},
-    {file = "google_cloud_storage-2.16.0-py2.py3-none-any.whl", hash = "sha256:91a06b96fb79cf9cdfb4e759f178ce11ea885c79938f89590344d079305f5852"},
+    {file = "google-cloud-storage-2.17.0.tar.gz", hash = "sha256:49378abff54ef656b52dca5ef0f2eba9aa83dc2b2c72c78714b03a1a95fe9388"},
+    {file = "google_cloud_storage-2.17.0-py2.py3-none-any.whl", hash = "sha256:5b393bc766b7a3bc6f5407b9e665b2450d36282614b7945e570b3480a456d1e1"},
 ]
 
 [package.dependencies]
@@ -2248,13 +2248,13 @@ testing = ["pytest"]
 
 [[package]]
 name = "google-resumable-media"
-version = "2.7.0"
+version = "2.7.1"
 description = "Utilities for Google Media Downloads and Resumable Uploads"
 optional = false
-python-versions = ">= 3.7"
+python-versions = ">=3.7"
 files = [
-    {file = "google-resumable-media-2.7.0.tar.gz", hash = "sha256:5f18f5fa9836f4b083162064a1c2c98c17239bfda9ca50ad970ccf905f3e625b"},
-    {file = "google_resumable_media-2.7.0-py2.py3-none-any.whl", hash = "sha256:79543cfe433b63fd81c0844b7803aba1bb8950b47bedf7d980c38fa123937e08"},
+    {file = "google-resumable-media-2.7.1.tar.gz", hash = "sha256:eae451a7b2e2cdbaaa0fd2eb00cc8a1ee5e95e16b55597359cbc3d27d7d90e33"},
+    {file = "google_resumable_media-2.7.1-py2.py3-none-any.whl", hash = "sha256:103ebc4ba331ab1bfdac0250f8033627a2cd7cde09e7ccff9181e31ba4315b2c"},
 ]
 
 [package.dependencies]
@@ -2370,13 +2370,13 @@ test = ["objgraph", "psutil"]
 
 [[package]]
 name = "griffe"
-version = "0.45.3"
+version = "0.46.0"
 description = "Signatures for entire Python programs. Extract the structure, the frame, the skeleton of your project, to generate API documentation or find breaking changes in your API."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "griffe-0.45.3-py3-none-any.whl", hash = "sha256:ed1481a680ae3e28f91a06e0d8a51a5c9b97555aa2527abc2664447cc22337d6"},
-    {file = "griffe-0.45.3.tar.gz", hash = "sha256:02ee71cc1a5035864b97bd0dbfff65c33f6f2c8854d3bd48a791905c2b8a44b9"},
+    {file = "griffe-0.46.0-py3-none-any.whl", hash = "sha256:7804a22aa981e442bcb3ff1365268cee590e40c6b68388075d3e1287b7d817ca"},
+    {file = "griffe-0.46.0.tar.gz", hash = "sha256:8b3b913f70cad7dfe410094b180181e00fec282f60e47cf8bcce187139f099e5"},
 ]
 
 [package.dependencies]
@@ -2528,13 +2528,13 @@ tests = ["freezegun", "pytest", "pytest-cov"]
 
 [[package]]
 name = "hypothesis"
-version = "6.103.1"
+version = "6.103.2"
 description = "A library for property-based testing"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "hypothesis-6.103.1-py3-none-any.whl", hash = "sha256:d3c959fab6233e78867499e2117ae9db8dc40eeed936d71a2cfc7b6094972e74"},
-    {file = "hypothesis-6.103.1.tar.gz", hash = "sha256:d299d5c21d6408eab3be670c94c974f3acf0b511c61fe81804b09091e393ee1f"},
+    {file = "hypothesis-6.103.2-py3-none-any.whl", hash = "sha256:629b7cdeca8c225933739f99879caba21949000d2c919c8b4585e01048b3bc73"},
+    {file = "hypothesis-6.103.2.tar.gz", hash = "sha256:83504e31e90a0d7d6e8eb93e51525dc1a48d79c932a50ad6035e29f8295328cd"},
 ]
 
 [package.dependencies]
@@ -2882,13 +2882,13 @@ files = [
 
 [[package]]
 name = "jsonpointer"
-version = "2.4"
+version = "3.0.0"
 description = "Identify specific nodes in a JSON document (RFC 6901)"
 optional = false
-python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*, !=3.6.*"
+python-versions = ">=3.7"
 files = [
-    {file = "jsonpointer-2.4-py2.py3-none-any.whl", hash = "sha256:15d51bba20eea3165644553647711d150376234112651b4f1811022aecad7d7a"},
-    {file = "jsonpointer-2.4.tar.gz", hash = "sha256:585cee82b70211fa9e6043b7bb89db6e1aa49524340dde8ad6b63206ea689d88"},
+    {file = "jsonpointer-3.0.0-py2.py3-none-any.whl", hash = "sha256:13e088adc14fca8b6aa8177c044e12701e6ad4b28ff10e65f2267a90109c9942"},
+    {file = "jsonpointer-3.0.0.tar.gz", hash = "sha256:2b2d729f2091522d61c3b31f82e11870f60b68f43fbc705cb76bf4b832af59ef"},
 ]
 
 [[package]]
@@ -3099,13 +3099,13 @@ test = ["jupyter-server (>=2.0.0)", "pytest (>=7.0)", "pytest-jupyter[server] (>
 
 [[package]]
 name = "jupyterlab"
-version = "4.2.1"
+version = "4.2.2"
 description = "JupyterLab computational environment"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jupyterlab-4.2.1-py3-none-any.whl", hash = "sha256:6ac6e3827b3c890e6e549800e8a4f4aaea6a69321e2240007902aa7a0c56a8e4"},
-    {file = "jupyterlab-4.2.1.tar.gz", hash = "sha256:a10fb71085a6900820c62d43324005046402ffc8f0fde696103e37238a839507"},
+    {file = "jupyterlab-4.2.2-py3-none-any.whl", hash = "sha256:59ee9b839f43308c3dfd55d72d1f1a299ed42a7f91f2d1afe9c12a783f9e525f"},
+    {file = "jupyterlab-4.2.2.tar.gz", hash = "sha256:a534b6a25719a92a40d514fb133a9fe8f0d9981b0bbce5d8a5fcaa33344a3038"},
 ]
 
 [package.dependencies]
@@ -3119,6 +3119,7 @@ jupyter-server = ">=2.4.0,<3"
 jupyterlab-server = ">=2.27.1,<3"
 notebook-shim = ">=0.2"
 packaging = "*"
+setuptools = ">=40.1.0"
 tomli = {version = ">=1.2.2", markers = "python_version < \"3.11\""}
 tornado = ">=6.2.0"
 traitlets = "*"
@@ -3665,13 +3666,13 @@ typing = ["pandas-stubs", "pyright (==1.1.364)"]
 
 [[package]]
 name = "more-itertools"
-version = "10.2.0"
+version = "10.3.0"
 description = "More routines for operating on iterables, beyond itertools"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "more-itertools-10.2.0.tar.gz", hash = "sha256:8fccb480c43d3e99a00087634c06dd02b0d50fbf088b380de5a41a015ec239e1"},
-    {file = "more_itertools-10.2.0-py3-none-any.whl", hash = "sha256:686b06abe565edfab151cb8fd385a05651e1fdf8f0a14191e4439283421f8684"},
+    {file = "more-itertools-10.3.0.tar.gz", hash = "sha256:e5d93ef411224fbcef366a6e8ddc4c5781bc6359d43412a65dd5964e46111463"},
+    {file = "more_itertools-10.3.0-py3-none-any.whl", hash = "sha256:ea6a02e24a9161e51faad17a8782b92a0df82c12c1c8886fec7f0c3fa1a1b320"},
 ]
 
 [[package]]
@@ -4667,13 +4668,13 @@ twisted = ["twisted"]
 
 [[package]]
 name = "prompt-toolkit"
-version = "3.0.46"
+version = "3.0.47"
 description = "Library for building powerful interactive command lines in Python"
 optional = false
 python-versions = ">=3.7.0"
 files = [
-    {file = "prompt_toolkit-3.0.46-py3-none-any.whl", hash = "sha256:45abe60a8300f3c618b23c16c4bb98c6fc80af8ce8b17c7ae92db48db3ee63c1"},
-    {file = "prompt_toolkit-3.0.46.tar.gz", hash = "sha256:869c50d682152336e23c4db7f74667639b5047494202ffe7670817053fd57795"},
+    {file = "prompt_toolkit-3.0.47-py3-none-any.whl", hash = "sha256:0d7bfa67001d5e39d02c224b663abc33687405033a8c422d0d675a5a13361d10"},
+    {file = "prompt_toolkit-3.0.47.tar.gz", hash = "sha256:1e1b29cb58080b1e69f207c893a1a7bf16d127a5c30c9d17a25a5d77792e5360"},
 ]
 
 [package.dependencies]
@@ -4963,13 +4964,13 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "2.7.3"
+version = "2.7.4"
 description = "Data validation using Python type hints"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pydantic-2.7.3-py3-none-any.whl", hash = "sha256:ea91b002777bf643bb20dd717c028ec43216b24a6001a280f83877fd2655d0b4"},
-    {file = "pydantic-2.7.3.tar.gz", hash = "sha256:c46c76a40bb1296728d7a8b99aa73dd70a48c3510111ff290034f860c99c419e"},
+    {file = "pydantic-2.7.4-py3-none-any.whl", hash = "sha256:ee8538d41ccb9c0a9ad3e0e5f07bf15ed8015b481ced539a1759d8cc89ae90d0"},
+    {file = "pydantic-2.7.4.tar.gz", hash = "sha256:0c84efd9548d545f63ac0060c1e4d39bb9b14db8b3c0652338aecc07b5adec52"},
 ]
 
 [package.dependencies]
@@ -5838,13 +5839,13 @@ cffi = {version = "*", markers = "implementation_name == \"pypy\""}
 
 [[package]]
 name = "quartodoc"
-version = "0.7.3"
+version = "0.7.4"
 description = "Generate API documentation with Quarto."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "quartodoc-0.7.3-py3-none-any.whl", hash = "sha256:697a0d919d5bd4ff169b67bbd1a201b2f0699ea3de6ea4bb0cd97a884edefead"},
-    {file = "quartodoc-0.7.3.tar.gz", hash = "sha256:6d8c7266ede844cebc9980c29956701f4b65e882daaa860a0f1391c539913f20"},
+    {file = "quartodoc-0.7.4-py3-none-any.whl", hash = "sha256:41c7140f57342b4c46a3965cbcc31922be038110512770f4be66eceb4e31c83b"},
+    {file = "quartodoc-0.7.4.tar.gz", hash = "sha256:fe94d373f11a640a020f42a94f857d95dfcd1bb2c3fe7db1923af5be124eab8f"},
 ]
 
 [package.dependencies]
@@ -6291,28 +6292,28 @@ pyasn1 = ">=0.1.3"
 
 [[package]]
 name = "ruff"
-version = "0.4.8"
+version = "0.4.9"
 description = "An extremely fast Python linter and code formatter, written in Rust."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "ruff-0.4.8-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:7663a6d78f6adb0eab270fa9cf1ff2d28618ca3a652b60f2a234d92b9ec89066"},
-    {file = "ruff-0.4.8-py3-none-macosx_11_0_arm64.whl", hash = "sha256:eeceb78da8afb6de0ddada93112869852d04f1cd0f6b80fe464fd4e35c330913"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:aad360893e92486662ef3be0a339c5ca3c1b109e0134fcd37d534d4be9fb8de3"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:284c2e3f3396fb05f5f803c9fffb53ebbe09a3ebe7dda2929ed8d73ded736deb"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:a7354f921e3fbe04d2a62d46707e569f9315e1a613307f7311a935743c51a764"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:72584676164e15a68a15778fd1b17c28a519e7a0622161eb2debdcdabdc71883"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:9678d5c9b43315f323af2233a04d747409d1e3aa6789620083a82d1066a35199"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:704977a658131651a22b5ebeb28b717ef42ac6ee3b11e91dc87b633b5d83142b"},
-    {file = "ruff-0.4.8-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d05f8d6f0c3cce5026cecd83b7a143dcad503045857bc49662f736437380ad45"},
-    {file = "ruff-0.4.8-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:6ea874950daca5697309d976c9afba830d3bf0ed66887481d6bca1673fc5b66a"},
-    {file = "ruff-0.4.8-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:fc95aac2943ddf360376be9aa3107c8cf9640083940a8c5bd824be692d2216dc"},
-    {file = "ruff-0.4.8-py3-none-musllinux_1_2_i686.whl", hash = "sha256:384154a1c3f4bf537bac69f33720957ee49ac8d484bfc91720cc94172026ceed"},
-    {file = "ruff-0.4.8-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:e9d5ce97cacc99878aa0d084c626a15cd21e6b3d53fd6f9112b7fc485918e1fa"},
-    {file = "ruff-0.4.8-py3-none-win32.whl", hash = "sha256:6d795d7639212c2dfd01991259460101c22aabf420d9b943f153ab9d9706e6a9"},
-    {file = "ruff-0.4.8-py3-none-win_amd64.whl", hash = "sha256:e14a3a095d07560a9d6769a72f781d73259655919d9b396c650fc98a8157555d"},
-    {file = "ruff-0.4.8-py3-none-win_arm64.whl", hash = "sha256:14019a06dbe29b608f6b7cbcec300e3170a8d86efaddb7b23405cb7f7dcaf780"},
-    {file = "ruff-0.4.8.tar.gz", hash = "sha256:16d717b1d57b2e2fd68bd0bf80fb43931b79d05a7131aa477d66fc40fbd86268"},
+    {file = "ruff-0.4.9-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:b262ed08d036ebe162123170b35703aaf9daffecb698cd367a8d585157732991"},
+    {file = "ruff-0.4.9-py3-none-macosx_11_0_arm64.whl", hash = "sha256:98ec2775fd2d856dc405635e5ee4ff177920f2141b8e2d9eb5bd6efd50e80317"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4555056049d46d8a381f746680db1c46e67ac3b00d714606304077682832998e"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:e91175fbe48f8a2174c9aad70438fe9cb0a5732c4159b2a10a3565fea2d94cde"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:0e8e7b95673f22e0efd3571fb5b0cf71a5eaaa3cc8a776584f3b2cc878e46bff"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_ppc64.manylinux2014_ppc64.whl", hash = "sha256:2d45ddc6d82e1190ea737341326ecbc9a61447ba331b0a8962869fcada758505"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:78de3fdb95c4af084087628132336772b1c5044f6e710739d440fc0bccf4d321"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:06b60f91bfa5514bb689b500a25ba48e897d18fea14dce14b48a0c40d1635893"},
+    {file = "ruff-0.4.9-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:88bffe9c6a454bf8529f9ab9091c99490578a593cc9f9822b7fc065ee0712a06"},
+    {file = "ruff-0.4.9-py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:673bddb893f21ab47a8334c8e0ea7fd6598ecc8e698da75bcd12a7b9d0a3206e"},
+    {file = "ruff-0.4.9-py3-none-musllinux_1_2_armv7l.whl", hash = "sha256:8c1aff58c31948cc66d0b22951aa19edb5af0a3af40c936340cd32a8b1ab7438"},
+    {file = "ruff-0.4.9-py3-none-musllinux_1_2_i686.whl", hash = "sha256:784d3ec9bd6493c3b720a0b76f741e6c2d7d44f6b2be87f5eef1ae8cc1d54c84"},
+    {file = "ruff-0.4.9-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:732dd550bfa5d85af8c3c6cbc47ba5b67c6aed8a89e2f011b908fc88f87649db"},
+    {file = "ruff-0.4.9-py3-none-win32.whl", hash = "sha256:8064590fd1a50dcf4909c268b0e7c2498253273309ad3d97e4a752bb9df4f521"},
+    {file = "ruff-0.4.9-py3-none-win_amd64.whl", hash = "sha256:e0a22c4157e53d006530c902107c7f550b9233e9706313ab57b892d7197d8e52"},
+    {file = "ruff-0.4.9-py3-none-win_arm64.whl", hash = "sha256:5d5460f789ccf4efd43f265a58538a2c24dbce15dbf560676e430375f20a8198"},
+    {file = "ruff-0.4.9.tar.gz", hash = "sha256:f1cb0828ac9533ba0135d148d214e284711ede33640465e706772645483427e3"},
 ]
 
 [[package]]
@@ -6458,7 +6459,7 @@ win32 = ["pywin32"]
 name = "setuptools"
 version = "70.0.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
-optional = true
+optional = false
 python-versions = ">=3.8"
 files = [
     {file = "setuptools-70.0.0-py3-none-any.whl", hash = "sha256:54faa7f2e8d2d11bcd2c07bed282eef1046b5c080d1c32add737d7b5817b1ad4"},
