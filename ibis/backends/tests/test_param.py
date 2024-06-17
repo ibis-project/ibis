@@ -200,7 +200,6 @@ def test_scalar_param_date(backend, alltypes, value):
         "postgres",
         "risingwave",
         "datafusion",
-        "clickhouse",
         "sqlite",
         "impala",
         "oracle",
