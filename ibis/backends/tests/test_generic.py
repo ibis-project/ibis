@@ -1061,7 +1061,7 @@ def test_int_scalar(alltypes):
     expr = alltypes.int_col.min()
     result = expr.execute()
     assert expr.type() == dt.int32
-    assert result.dtype == np.int32
+    assert isinstance(result, int)
 
 
 @pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
