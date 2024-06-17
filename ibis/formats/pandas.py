@@ -164,7 +164,10 @@ class PandasData(DataMapper):
     @classmethod
     def convert_scalar(cls, obj, dtype):
         df = PandasData.convert_table(obj, sch.Schema({obj.columns[0]: dtype}))
-        return df.iat[0, 0]
+        value = df.iat[0, 0]
+        with contextlib.suppress(AttributeError):
+            return value.tolist()
+        return value
 
     @classmethod
     def convert_GeoSpatial(cls, s, dtype, pandas_type):
