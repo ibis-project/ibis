@@ -74,6 +74,7 @@ def main():
     records = []
     for qmd in API_QMDS:
         # For each QMD file, get the table-section of the methods, anchors, and descriptions
+        print(f"Scraping {qmd} for API methods...")  # noqa:T201
         with open(qmd) as f:
             methods = _grab_qmd_methods(f.read())
 
@@ -90,6 +91,7 @@ def main():
     # If the object IDs are new (which typically should be) this adds a new
     # record to the Algolia index.  If the object ID already exists, it gets
     # updated with the new fields in the record dict
+    print(f"Uploading {len(records)} records to {index.name=}")  # noqa:T201
     index.save_objects(records)
 
 
