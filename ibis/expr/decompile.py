@@ -238,7 +238,7 @@ def table_column(op, rel, name):
 
 
 @translate.register(ops.SortKey)
-def sort_key(op, expr, ascending):
+def sort_key(op, expr, ascending, **kwargs):
     if ascending:
         return f"{expr}.asc()"
     else:
