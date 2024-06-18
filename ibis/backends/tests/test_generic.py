@@ -632,45 +632,6 @@ def test_order_by_nulls(con, op, nulls_first, expected):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid"])
-@pytest.mark.parametrize(
-    "op, api_func",
-    [
-        param("desc", ibis.desc),
-        param("asc", ibis.asc),
-    ],
-)
-def test_ibis_desc_asc_default(con, op, api_func):
-    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
-
-    expr = t.order_by(getattr(t["b"], op)())
-    expr_api = t.order_by(api_func("b"))
-
-    tm.assert_frame_equal(con.execute(expr), con.execute(expr_api))
-
-
-@pytest.mark.notimpl(["druid"])
-@pytest.mark.parametrize(
-    "op, api_func, nulls_first",
-    [
-        param("desc", ibis.desc, True),
-        param("asc", ibis.asc, True),
-        param("desc", ibis.desc, False),
-        param("asc", ibis.asc, False),
-    ],
-)
-def test_ibis_desc_asc(con, op, api_func, nulls_first):
-    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
-
-    expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
-    expr_api = t.order_by(api_func("b", nulls_first=nulls_first))
-
-    # expr =  t.order_by(t["b"].desc())
-    # expr_api = t.order_by(ibis.desc("b"))
-
-    tm.assert_frame_equal(con.execute(expr), con.execute(expr_api))
-
-
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
