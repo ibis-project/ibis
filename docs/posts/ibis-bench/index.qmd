@@ -30,6 +30,14 @@ backends).
 
 Let's delve straight into the results.
 
+:::{.callout-tip}
+We'll only look at a subset of the data in this blog. All the data is public, so
+you can follow along with the code and visualize the data yourself.
+
+You can also see the [Ibis benchmarking Streamlit
+app](https://ibis-bench.streamlit.app) for further analysis.
+:::
+
 ```{python}
 #| echo: false
 #| code-fold: true
