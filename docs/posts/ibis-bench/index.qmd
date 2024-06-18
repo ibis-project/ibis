@@ -28,58 +28,18 @@ backends).
 
 ## Results and analysis
 
-Let's delve straight into the results. There are some visualizatoins provided
-[in a Streamlit app](https://ibis-bench.streamlit.app) that you can explore. For
-the rest of this section, we'll walk through the data and some of the key
-takeaways. The data is stored publicly and you can analyze it yourself, too!
-
-:::{.callout-note title="TLDR: takeaways" collapse="true"}
-
-### Ibis provides a unified API
-
-Ibis can ideally be a standard Python dataframe library that decouples the API
-from the execution engine. This allows users or organizations to write queries
-once and easily switch between the engine that is best for their use case. In
-this benchmark, we see Ibis running on three great single-node options: DuckDB,
-DataFusion, and Polars.
-
-### DuckDB is impressive
-
-DuckDB is often the fastest in the results. More impressive was its ability to
-complete all queries operating on ~128GBs of data with only 8GBs of memory on a
-compute instance. This was unexpected and particularly impressive.
-
-### Benchmarking is hard and specific
-
-This benchmark is a point in time -- run on specific versions of each Python
-package, specific hardware, and with various considerations. The primary ones
-include:
-
-- TPC-H data was generated via DuckDB and stored as compressed Parquet files
-- all data was downloaded to the compute instance on a local disk
-- decimals were converted to floats before running the queries for all systems
-- writing TPC-H SQL queries as dataframe code can be challenging; we tried to
- keep it fair between Ibis and Polars
-
-### Performance converges over time
-
-Everything in this benchmark is open source, actively maintained, and has
-thriving communities. Any issue identified or performance gap is likely to be
-addressed over time. Outside of architectural differences (which none of these
-execution engines fundamentally have), performance is likely to converge over
-time.
-
-See the [performance converges over time](#performance-converges-over-time)
-section for more discussion.
-:::
+Let's delve straight into the results.
 
 ```{python}
 #| echo: false
 #| code-fold: true
 import warnings
 
+# this is to ignore a GCP warning
 warnings.simplefilter("ignore")
 ```
+
+### Reading the data
 
 To follow along, install the required Python packages:
 
@@ -111,7 +71,7 @@ import plotly.express as px
 px.defaults.template = "plotly_dark"
 
 ibis.options.interactive = True
-ibis.options.repr.interactive.max_rows = 40
+ibis.options.repr.interactive.max_rows = 22
 ibis.options.repr.interactive.max_length = 22
 ibis.options.repr.interactive.max_columns = None
 
@@ -146,7 +106,7 @@ t = (
 t.head()
 ```
 
-We'll create a second table with details on each instance type including the CPU
+We'll also create a table with details on each instance type including the CPU
 type, number of cores, and memory in gigabytes:
 
 ```{python}
@@ -227,8 +187,8 @@ sfs
 A scale factor is roughly the size of the data in memory in gigabytes. For
 example, a scale factor of 1 means the data is roughly 1GB in memory.
 
-Stored on disk in Parquet format, the data is smaller -- about 0.38GB for scale
-factor 1 with the compression settings used in this benchmark.
+Stored on disk in (compressed) Parquet format, the data is smaller -- about
+0.38GB for scale factor 1 with the compression settings used in this benchmark.
 :::
 
 We can look at the total execution time by scale factor:
@@ -246,111 +206,7 @@ c = px.bar(
 c
 ```
 
-We ran on the following systems:
-
-```{python}
-systems = sorted(t.distinct(on="system")["system"].to_pyarrow().to_pylist())
-systems
-```
-
-:::{.callout-note title="What is a system?" collapse="true"}
-For convenience in this benchmark, a 'system' is defined as a hyphen-separated
-naming convention where:
-
-- `ibis-*`: Ibis was used
-    - `ibis-<backend>`: Ibis dataframe code was used with the given backend
-    - `ibis-<backend>-sql`: SQL code was used via Ibis on the given backend
-- `polars-*`: Polars was used
-    - `polars-lazy`: Polars was used with the LazyFrames API
-:::
-
-We can look at the total execution time by system:
-
-```{python}
-#| code-fold: true
-#| code-summary: "Show bar plot code"
-c = px.bar(
-    t.group_by("system").agg(total_seconds=t["execution_seconds"].sum()),
-    x="system",
-    y="total_seconds",
-    color="system",
-    category_orders={"system": systems},
-    title="total execution time by system",
-)
-c
-```
-
-We ran on the following instance types:
-
-```{python}
-instance_types = sorted(
-    t.distinct(on="instance_type")["instance_type"].to_pyarrow().to_pylist(),
-    key=lambda x: (x.split("-")[0], int(x.split("-")[-1]))
-    if "-" in x
-    else ("z" + x[3], 0),
-)
-instance_types
-```
-
-:::{.callout-note title="What is an instance type?" collapse="true"}
-An instance type is the compute the benchmark was run on. This consists of two
-MacBook Pro laptops (one work and one personal) and a number of Google Cloud
-Compute Engine instances.
-
-For cloud VMs, the instance type is in the form of `<family>-<type>-<cores>`,
-where:
-
-- `family` specifies the CPU architecture (Intel X, AMD Y)
-- `type` modifies the CPU to memory ratio (only `standard` is used with a 1:4)
-- `cores` is the number of vCPUs
-
-For example, `n2d-standard-2` is a Google Cloud Compute Engine instance with an
-AMD EPYC processor, 2 vCPUs, and 8GB of memory.
-:::
-
-We can look at the total execution time by instance type:
-
-```{python}
-#| code-fold: true
-#| code-summary: "Show bar plot code"
-c = px.bar(
-    t.group_by("instance_type")
-    .agg(total_seconds=t["execution_seconds"].sum())
-    .join(instance_details, "instance_type"),
-    x="instance_type",
-    y="total_seconds",
-    color="cpu_type",
-    hover_data=["cpu_cores", "memory_gbs"],
-    # category_orders={"instance_type": instance_types},
-    category_orders={
-        "instance_type": instance_types,
-        "cpu_type": cpu_types,
-    },
-    title="total execution time by instance type",
-)
-c
-```
-
-Unsurprisingly, this is inversely correlated with the number of CPU cores and
-(more importantly) memory for the instance type:
-
-```{python}
-#| code-fold: true
-#| code-summary: "Show bar plot code"
-c = px.bar(
-    instance_details,
-    x="instance_type",
-    y="memory_gbs",
-    color="cpu_type",
-    hover_data=["cpu_cores", "memory_gbs"],
-    category_orders={
-        "instance_type": instance_types,
-        "cpu_type": cpu_types,
-    },
-    title="memory by instance type",
-)
-c
-```
+You can see this is roughly linear as expected.
 
 We ran on the following queries:
 
@@ -382,7 +238,384 @@ c = px.bar(
 c
 ```
 
-In theory, this should all lead to:
+This gives us a sense of the relative complexity of the queries.
+
+We ran on the following instance types:
+
+```{python}
+instance_types = sorted(
+    t.distinct(on="instance_type")["instance_type"].to_pyarrow().to_pylist(),
+    key=lambda x: (x.split("-")[0], int(x.split("-")[-1]))
+    if "-" in x
+    else ("z" + x[3], 0),
+)
+instance_types
+```
+
+:::{.callout-note title="What is an instance type?" collapse="true"}
+An instance type is the compute the benchmark was run on. This consists of two
+MacBook Pro laptops (one work and one personal) and a number of Google Cloud
+Compute Engine instances.
+
+For cloud VMs, the instance type is in the form of `<family>-<type>-<cores>`,
+where:
+
+- `<family>` specifies the CPU architecture (Intel X, AMD Y)
+- `<type>` modifies the CPU to memory ratio (only `standard` is used with a 1:4)
+- `<cores>` is the number of vCPUs
+
+For example, `n2d-standard-2` is a Google Cloud Compute Engine instance with an
+AMD EPYC processor, 2 vCPUs, and 8GB of memory.
+:::
+
+We can look at the total execution time by instance type:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show bar plot code"
+c = px.bar(
+    t.group_by("instance_type")
+    .agg(total_seconds=t["execution_seconds"].sum())
+    .join(instance_details, "instance_type"),
+    x="instance_type",
+    y="total_seconds",
+    color="cpu_type",
+    hover_data=["cpu_cores", "memory_gbs"],
+    category_orders={
+        "instance_type": instance_types,
+        "cpu_type": cpu_types,
+    },
+    title="total execution time by instance type",
+)
+c
+```
+
+Unsurprisingly, this is inversely correlated with the number of CPU cores and
+(crucially) memory:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show bar plot code"
+c = px.bar(
+    instance_details,
+    x="instance_type",
+    y="memory_gbs",
+    color="cpu_type",
+    hover_data=["cpu_cores", "memory_gbs"],
+    category_orders={
+        "instance_type": instance_types,
+        "cpu_type": cpu_types,
+    },
+    title="memory by instance type",
+)
+c
+```
+
+We ran on the following systems:
+
+```{python}
+systems = sorted(t.distinct(on="system")["system"].to_pyarrow().to_pylist())
+systems
+```
+
+:::{.callout-note title="What is a system?" collapse="true"}
+For convenience in this benchmark, a 'system' is defined as a hyphen-separated
+naming convention where:
+
+- `ibis-*`: Ibis API was used
+    - `ibis-<backend>`: Ibis dataframe code was used with the given backend
+    - `ibis-<backend>-sql`: SQL code was used via Ibis on the given backend
+- `polars-*`: Polars API was used
+    - `polars-lazy`: Polars was used with the LazyFrames API
+:::
+
+We can look at the total execution time by system:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show bar plot code"
+c = px.bar(
+    t.group_by("system").agg(
+        total_seconds=t["execution_seconds"].sum(),
+        seconds_per_query=t["execution_seconds"].mean(),
+        num_records=t.count(),
+    ),
+    x="system",
+    y="num_records",
+    color="system",
+    category_orders={"system": systems},
+    title="total execution time by system",
+)
+c
+```
+
+:::{.callout-warning title="This can be misleading!"}
+At this point, we have to dig deeper into the data to understand the takeaways.
+You might look at the above and think `ibis-polars` is the fastest all-around,
+but it's not! It's actually missing about half the queries outright and often
+fails runs when the scale factor is relatively large compared to the available
+system memory.
+
+`ibis-datafusion` and `ibis-datafusion-sql` are also missing a few queries.
+`polars-lazy` works on all queries. All fail on some runs when the scale factor
+is relatively large compared to the available system memory.
+:::
+
+### Execution time by system, scale factor, instance type, and query
+
+We'll start by aggregating the data over the dimensions we care about:
+
+:::{.callout-tip}
+Each query was run 3 times, so you can take the min or max if you prefer.
+:::
+
+```{python}
+agg = (
+    t.group_by("instance_type", "system", "sf", "n_partitions", "query_number")
+    .agg(
+        mean_execution_seconds=t["execution_seconds"].mean(),
+    )
+    .join(instance_details, "instance_type")
+)
+agg.head(3)
+```
+
+There's a lot of data and it's difficult to visualize all at once. We'll build
+up our understanding with a few plots.
+
+```{python}
+# | code-fold: true
+# | code-summary: "Show code for timings_plot"
+def timings_plot(
+    agg,
+    sf_filter=128,
+    systems_filter=systems,
+    instances_filter=[instance for instance in instance_types if "laptop" in instance],
+    queries_filter=query_numbers,
+    log_y=True,
+):
+    data = (
+        agg.filter(agg["sf"] == sf_filter)
+        .filter(agg["system"].isin(systems_filter))
+        .filter(agg["instance_type"].isin(instances_filter))
+        .filter(agg["query_number"].isin(queries_filter))
+    )
+
+    c = px.bar(
+        data,
+        x="query_number",
+        y="mean_execution_seconds",
+        log_y=log_y,
+        color="system",
+        barmode="group",
+        pattern_shape="instance_type",
+        category_orders={
+            "system": systems,
+            "instance_type": instance_types,
+        },
+        hover_data=["cpu_type", "cpu_cores", "memory_gbs"],
+        title=f"sf: {sf_filter}",
+    )
+
+    return c
+```
+
+First, let's take a look at a scale factor, system, query, and family of
+instance types:
+
+```{python}
+sf_filter = 128
+systems_filter = ["ibis-duckdb"]
+instances_filter = [
+    instance for instance in instance_types if instance.startswith("n2d")
+]
+queries_filter = [1]
+log_y = False
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+From left to right, we have increasing instance resources (CPU cores and memory
+-- you can hover over the data to see the details). You can also zoom and select
+specific labels to focus on. We notice that, as expected, queries execute faster
+when given more resources.
+
+Now let's add a second system:
+
+```{python}
+systems_filter = ["ibis-duckdb", "ibis-duckdb-sql"]
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+:::{.callout-note title="Ibis dataframe code vs Ibis SQL code"}
+`ibis-duckdb` is running the TPC-H queries written as Ibis dataframe code. The
+`ibis-duckdb-sql` system is running the same queries but written as SQL code
+passed into `.sql()` in Ibis as strings. The intent is to see if Ibis dataframe
+code is introducing any significant overhead. While ideally we'd run on the
+backend's Python client without Ibis in the mix, this keeps the benchmarking
+process simple and should serve as a decent proxy.
+:::
+
+In this case, we do see that Ibis dataframe code is adding some overhead. But,
+this is a single data point -- let's expand to the first 7 queries:
+
+:::{.callout-tip}
+From here, we'll set `log_y=True` due to the wide range of execution times.
+
+We also look at the first 7 queries due to limited horizontal space in the blog.
+Analyze and visualize the data yourself for all 22 queries! Or [see the
+Ibis benchmarking Streamlit app](https://ibis-bench.streamlit.app).
+:::
+
+```{python}
+log_y = True
+queries_filter = range(1, 7+1)
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+This tells a different story. Sometimes Ibis dataframe code is a bit faster,
+sometimes a bit slower. Let's compute the totals:
+
+```{python}
+(
+    agg.filter(agg["sf"] == sf_filter)
+    .filter(agg["system"].isin(systems_filter))
+    .filter(agg["instance_type"].isin(instances_filter))
+    .filter(agg["query_number"].isin(queries_filter))
+    .group_by("system")
+    .agg(
+        total_execution_seconds=agg["mean_execution_seconds"].sum(),
+        total_queries=ibis._.count(),
+    )
+    .mutate(
+        seconds_per_query=ibis._["total_execution_seconds"] / ibis._["total_queries"]
+    )
+)
+```
+
+Ibis dataframe code is a little faster overall, but this is on a subset of
+queries and scale factors and instance types. More analysis and profiling would
+be needed to make a definitive statement, but in general we can be happy that
+DuckDB does a great job optimizing the SQL Ibis generates and that Ibis
+dataframe code isn't adding significant overhead.
+
+Let's repeat this for DataFusion:
+
+```{python}
+systems_filter = ["ibis-datafusion", "ibis-datafusion-sql"]
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+We see a similar story. Let's confirm with a table:
+
+```{python}
+(
+    agg.filter(agg["sf"] == sf_filter)
+    .filter(agg["system"].isin(systems_filter))
+    .filter(agg["instance_type"].isin(instances_filter))
+    .filter(agg["query_number"].isin(queries_filter))
+    .group_by("system")
+    .agg(
+        total_execution_seconds=agg["mean_execution_seconds"].sum(),
+        total_queries=ibis._.count(),
+    )
+    .mutate(
+        seconds_per_query=ibis._["total_execution_seconds"] / ibis._["total_queries"]
+    )
+)
+```
+
+This time Ibis dataframe code is a bit slower overall. **However, also notice
+two queries are missing from `ibis-datafusion-sql`**. These are query 7 on
+`n2d-standard-2` and `n2d-standard-4` (the two instances with the least memory).
+We'll investigate failing queries more thoroughly in the next section.
+
+First, let's look at Polars:
+
+```{python}
+systems_filter = ["ibis-polars", "polars-lazy"]
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+A lot of queries are missing from `ibis-polars` and `polars-lazy`. These are
+failing due to the high scale factor and limited memory on the instances.
+
+Let's look at a lower scale factor and my MacBooks (Polars tended to perform
+better on these):
+
+```{python}
+sf_filter = 64
+instances_filter = [
+    instance for instance in instance_types if "laptop" in instance
+]
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+We see a similar pattern as above -- some queries are a little faster on
+`ibis-polars`, though some are **much** slower. In particular queries 1 and 2
+tend to have a lot of overhead.
+
+```{python}
+(
+    agg.filter(agg["sf"] == sf_filter)
+    .filter(agg["system"].isin(systems_filter))
+    .filter(agg["instance_type"].isin(instances_filter))
+    .filter(agg["query_number"].isin(queries_filter))
+    .group_by("system")
+    .agg(
+        total_execution_seconds=agg["mean_execution_seconds"].sum(),
+        total_queries=ibis._.count(),
+    )
+    .mutate(
+        seconds_per_query=ibis._["total_execution_seconds"] / ibis._["total_queries"]
+    )
+)
+```
+
+Let's now compare all systems across a single instance type and query:
+
+```{python}
+sf_filter = 128
+instances_filter = ["n2d-standard-32"]
+systems_filter = systems
+queries_filter = [1]
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+And then the first 7 queries:
+
+```{python}
+queries_filter = range(1, 7+1)
+
+timings_plot(agg, sf_filter, systems_filter, instances_filter, queries_filter, log_y)
+```
+
+:::{.callout-warning title="Lots of data, missing data"}
+There is a lot of data and it's easy to summarize and visualize it in a way that
+favors a given system. There's a lot of missing data that needs to be accounted
+for, as it often indicates a query that failed due to memory pressure.
+
+Each system has strengths and weaknesses. See [the discussion section
+below](#why-duckdb-datafusion-and-polars).
+
+See the [Ibis benchmarking Streamlit app](https://ibis-bench.streamlit.app) for
+further analysis, or query the data yourself!
+:::
+
+## Failing queries
+
+In theory, we should have:
+
+:::{.callout-note}
+To reduce noise in the results, each query was run three times per
+configuration.
+:::
 
 ```{python}
 runs_per_query = 3
@@ -391,11 +624,6 @@ total_runs_theoretical = (
 )
 f"total runs (theoretical): {total_runs_theoretical:,}"
 ```
-
-:::{.callout-note}
-To reduce noise in the results, each query was run three times per
-configuration.
-:::
 
 But we have:
 
@@ -408,10 +636,6 @@ f"total runs (actual): {total_runs_actual:,}"
 f"missing runs: {total_runs_theoretical - total_runs_actual:,}"
 ```
 
-These runs are not actually "missing", but rather failed.
-
-### Failing queries
-
 The presence of a row of data indicates that the query ran successfully. It
 follows the lack of a row of data means the query did not run successfully. This
 can happen broadly for two reasons:
@@ -421,11 +645,11 @@ can happen broadly for two reasons:
 
 The first may be an issue in Ibis or the backend. The second is usually due to memory pressure.
 
-#### Queries that don't work on a given system
-
 We can look at the query numbers that never appear in the data for a given system:
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to get failing queries"
 failing = t.group_by("system").agg(
     present_queries=ibis._["query_number"].collect().unique().sort()
 )
@@ -445,6 +669,8 @@ failing = (
 failing
 ```
 
+And plot that:
+
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to create a bar plot of the number of successful queries by system and instance type"
@@ -462,7 +688,120 @@ c = px.bar(
 c
 ```
 
-#### Queries that failed for a given system, scale factor, and instance type
+### Failing DataFusion queries
+
+There are some queries failing for DataFusion via Ibis (as dataframe or SQL
+code). We believe this is due to a [single issue in DataFusion that's already
+been fixed](https://github.com/apache/datafusion/issues/10830), so all should be
+working in [the next iteration of this benchmark coming soon](#next-steps).
+
+The current exception you'll get on these queries looks like:
+
+```
+Exception: This feature is not implemented: Physical plan does not support logical expression InSubquery(InSubquery { expr: Column(Column { relation: None, name: "ps_suppkey" }), subquery: <subquery>, negated: false })
+```
+
+### Failing Polars queries
+
+There are several queries failing for Polars via Ibis. These are all due to the
+lack of scalar subquery support, resulting in an error like:
+
+```
+OperationNotDefinedError: No translation rule for <class 'ibis.expr.operations.subqueries.ScalarSubquery'>
+```
+
+We additionally run on the Polars API directly, with their translation of TPC-H
+SQL queries into Polars dataframe code, given the high number of failing queries
+for the Polars backend on the SQL code with scalar subqueries Ibis generates.
+
+### Failing queries due to memory pressure
+
+Many additional queries fail due to memory pressure at higher scale factors with
+insufficient resources. Impressively, the exception here is DuckDB.
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to get table of failing queries"
+def failing_queries(agg, sf, instance_type):
+    failing = (
+        t.filter(t["sf"] == sf)
+        .filter(t["instance_type"] == instance_type)
+        .group_by("system")
+        .agg(present_queries=ibis._["query_number"].collect().unique().sort())
+    )
+    failing = (
+        failing.mutate(
+            failing_queries=t.distinct(on="query_number")["query_number"]
+            .collect()
+            .filter(lambda x: ~failing["present_queries"].contains(x))
+        )
+        .mutate(
+            num_failing_queries=ibis._["failing_queries"].length(),
+            num_successful_queries=ibis._["present_queries"].length(),
+        )
+        .drop("present_queries")
+        .order_by("num_failing_queries", "system")
+    )
+
+    return failing
+```
+
+Let's look at the failing queries on the largest `n2d` instance::
+
+```{python}
+sf = 128
+instance_type = "n2d-standard-32"
+
+failing = failing_queries(agg, sf, instance_type)
+failing
+```
+
+```{python}
+# | code-fold: true
+# | code-summary: "Show code to create a bar plot of the number of successful queries by system"
+c = px.bar(
+    failing,
+    x="system",
+    y="num_successful_queries",
+    category_orders={
+        "system": systems,
+        "query_number": query_numbers,
+    },
+    color="system",
+    title="completed queries",
+)
+c
+```
+
+And the smallest:
+
+```{python}
+instance_type = "n2d-standard-2"
+
+failing = failing_queries(agg, sf, instance_type)
+failing
+```
+
+```{python}
+# | code-fold: true
+# | code-summary: "Show code to create a bar plot of the number of successful queries by system"
+c = px.bar(
+    failing,
+    x="system",
+    y="num_successful_queries",
+    category_orders={
+        "system": systems,
+        "query_number": query_numbers,
+    },
+    color="system",
+    title="completed queries",
+)
+c
+```
+
+A lot of queries are failing on the smallest instance due to memory pressure.
+
+We can create a single visualization across the `n2d` instances:
 
 ```{python}
 #| code-fold: true
@@ -510,92 +849,228 @@ c = px.bar(
 c
 ```
 
-#### Average execution time by query, system, scale factor, and instance type
+Within each system, from left to right, we have decreasing resources (vCPUs and
+memory). We can see how each system performs on the same queries with different
+resources.
 
-Let's create an aggregated table with the mean execution time for each query, system, scale factor, and instance type:
-
-```{python}
-agg = (
-    t.group_by("instance_type", "system", "sf", "n_partitions", "query_number")
-    .agg(
-        mean_execution_seconds=t["execution_seconds"].mean(),
-    )
-    .order_by(
-        ibis.asc("instance_type"),
-        ibis.desc("sf"),
-        ibis.asc("query_number"),
-        ibis.asc("system"),
-        ibis.asc("mean_execution_seconds"),
-    )
-)
-agg.head(6)
-```
-
-```{python}
-#| code-fold: true
-#| code-summary: "Show code to create a bar plot of the mean execution time by query"
-def timings_plot(agg, sf, instance_type, max_query_number, log_y=True):
-    data = (
-        agg.filter(agg["sf"] == sf)
-        .filter(agg["instance_type"] == instance_type)
-        .filter(agg["query_number"] <= max_query_number)
-    )
-
-    c = px.bar(
-        data,
-        x="query_number",
-        y="mean_execution_seconds",
-        log_y=log_y,
-        color="system",
-        barmode="group",
-        category_orders={"system": systems},
-        title=f"sf: {sf}, instance_type: {instance_type}",
-    )
-
-    return c
-```
-
-:::{.callout-note title="See the dashboard for more complete visualizations"}
-Below we'll zoom in on a single scale factor, compute instance, and limit
-ourselves to the first 7 queries. This is primarily due to space limitations in
-the blog post.
-
-The [`ibis-bench` dashboard](https://ibis-bench.streamlit.app) has more complete
-visualizations and allows you to explore the data in more detail.
+:::{.callout-warning title="Data is aggregated"}
+Keep in mind data is aggregated over three runs of each query. For DuckDB, there
+was actually a single failure on the smallest instance for query 9, out of six
+runs across the two systems.
 :::
 
-Let's look at how each system performed on my work laptop:
+## Methodology review, considerations, and discussion
 
-```{python}
-sf = 128
-instance_type = "work laptop"
-max_query_number = 7
+Benchmarking is fraught: it's easy to get wrong and ship your bias in the
+results. We don't want to end up as [Figure 1 in "Fair Benchmarking Considered
+Difficult: Common Pitfalls In Database Performance
+Testing"](https://hannes.muehleisen.org/publications/DBTEST2018-performance-testing.pdf):
 
-c = timings_plot(agg, sf, instance_type, max_query_number)
-c
-```
+![Figure 1](figure1.png)
 
-And on a Google Cloud Compute Engine instance with 32 vCPUs and 128GB of memory:
+To do this, we'll:
 
-```{python}
-instance_type = "n2d-standard-32"
+- note key considerations
+- acknowledge our (my) biases and background
+- explain our goals with this benchmark
+- point to existing benchmarks and discuss differences
 
-c = timings_plot(agg, sf, instance_type, max_query_number)
-c
-```
+### Key considerations
 
-And on a Google Cloud Compute Engine instance with 2 vCPUs and 8GB of memory:
+**The best benchmark is your own workload(s) on your own data**. TPC-H is a set
+of queries representing some typical business intelligence workloads consisting
+of filtering, aggregation, and joins. It's a great starting point for
+benchmarking OLAP engines, but it's not your workload. It does not test string
+manipulation, windows, user-defined functions (UDFs), and much more.
 
-```{python}
-instance_type = "n2d-standard-2"
+We are also running a derivate of TPC-H, not the official TPC-H benchmark. TPC-H
+defines SQL queries, which have been translated to dataframe code for Polars and
+Ibis. How these queries are written may affect the results. Polars has, since
+running this benchmark, updated their TPC-H queries. For Ibis, the first ten
+queries were translated by hand from the Polars queries, with the rest copied
+directly from an existing source.
 
-c = timings_plot(agg, sf, instance_type, max_query_number)
-c
-```
+Additional considerations include:
+
+- data is generated as a Parquet file per table
+    - standard DuckDB Parquet writer is used (snappy compression, ~100k row
+     group size, etc.)
+    - data is always downloaded onto a compute instance (no cloud storage reads)
+- decimal types are converted to floats after reading
+    - this is done to avoid several issues experienced
+- Polars is run with the lazy API and without the streaming engine
+    - this is per recommendation of the Polars team
+    - the streaming engine is being rewritten and should improve out-of-core
+     performance
+- all queries were run three times per configuration
+
+If you have any questions or concerns, feel free to [open an
+issue](https://github.com/lostmygithubaccount/ibis-bench/issues/new) or comment
+on this blog below.
+
+### My background and biases
+
+We'll switch to singular pronouns for this section: my name is Cody and I'm a
+Senior Technical Product Manager at Voltron Data to work on the Ibis project.
+Voltron Data is a venture-backed series A startup that supports several open
+source projects (namely Apache Arrow, Ibis, and Substrait), provides commercial
+support for these projects, and offers a distributed GPU-accelerated query
+engine named Theseus.
+
+The Ibis project is a self-governed open source project, with several
+maintainers employed by Voltron Data but contributors from various
+organizations. I am a contributor to Ibis and paid by Voltron Data to work on it
+-- I am very heavily biased toward Ibis.
+
+:::{.callout-note title="Additional Voltron Data biases" collapse="true"}
+[Voltron Data has written its benchmarking
+methodology](https://voltrondata.com/benchmarks/methodology) that partially
+inspires ours here.
+
+It's not uncommon to receive some skepticism around Voltron Data's support for
+Ibis -- are we building a SaaS platform that will lock users into our query
+engine?
+
+The short answer is no, and hopefully it's a convincing one for a few reasons:
+
+1. Voltron Data does not control or own the Ibis project
+2. Wes McKinney, a cofounder (and former CTO) of Voltron Data, created Ibis and
+ is a strong advocate for the composable data ecossytem.
+1. Voltron Data itself is a strong advocate for the composable data ecosystem
+ and invests heavily in open source projects throughout it.
+1. Voltron Data's Theseus query engine **is not for 99.9% of Ibis users**
+
+The last point is the big one that explains the financial incentives: it would
+not make sense for Voltron Data to try to lock users into Theseus via Ibis
+because Theseus is a distributed GPU query engine for the biggest of big data
+workloads. Rather than create yet another Python dataframe library that only
+works with Theseus, Voltron Data invests in Ibis as a standard that can work on
+any query engine at any scale -- DuckDB, DataFusion, Polars, etc. at the <1TB
+scale, Trino, PySpark, Snowflake, etc. at the 1TB-10TB scale, and Theseus at the
+10TB+ scale.
+
+You can read a longer answer in ["Why does Voltron Data support
+Ibis?"](../why-voda-supports-ibis/index.qmd)
+
+Further, **Voltron Data does not own the Ibis project**. It is a self-governed
+open source project. While 3/5 of the streering committee members are employed
+by Voltron Data, we are actively seeking to diversify the project's governance.
+:::
+
+### Our goals
+
+We have the following goals for this benchmark:
+
+1. Easy to reproduce
+2. Measure performance of best single-node modern OLAP engines
+3. Identify Ibis and/or backend performance issues and/or feature gaps
+
+### The TPC-H benchmark
+
+From the [TPC-H benchmark website](http://www.tpc.org/tpch):
+
+> The TPC-H is a decision support benchmark. It consists of a suite of business
+> oriented ad-hoc queries and concurrent data modifications. The queries and the
+> data populating the database have been chosen to have broad industry-wide
+> relevance. This benchmark illustrates decision support systems that examine
+> large volumes of data, execute queries with a high degree of complexity, and
+> give answers to critical business questions.
+
+The data consists of eight tables (customer, lineitem, nation, orders, part,
+partsupp, region, supplier) and 22 queries. The queries are designed to test a
+database's performance on a variety of tasks, including filtering, aggregation,
+and joins.
+
+#### Other benchmarks
+
+The [Polars company ran the TPC-H benchmark with results published on their
+blog](https://pola.rs/posts/benchmarks/). They compare DuckDB, Polars, pandas,
+Dask, and Modin on a couple of compute instances and one scale factor.
+
+[Coiled ran the TPC-H benchmark on Spark, Dask, DuckDB, and
+Polars](https://docs.coiled.io/blog/tpch.html). They "run benchmarks derived
+from the TPC-H benchmark suite on a variety of scales, hardware architectures,
+and dataframe projects, notably Apache Spark, Dask, DuckDB, and Polars. No
+project wins." They use much higher scales and distributed engines. We focus on
+single-node OLAP engines that can run through Ibis.
+
+### Why DuckDB, DataFusion, and Polars?
+
+For this benchmark, we focus on three single-node modern OLAP engines based on
+Apache Arrow: DuckDB, DataFusion, and Polars. Each has slightly different use
+cases and goals, with all providing great options as backends for Ibis.
+Benchmarking these three should be relatively "apples to apples": none are
+distributed engines (like PySpark) or single-thread and limited to in-memory
+data (like pandas).
+
+:::{.callout-note title="Honorable mention: chDB" collapse="true"}
+"[chDB](https://github.com/chdb-io/chdb) is an in-process SQL OLAP Engine
+powered by ClickHouse". While ClickHouse isn't based on Apache Arrow, this would
+be another great single-node OLAP engine to benchmark. We don't because it's not
+currently a backend for Ibis, though [there has been work done to make it
+one](https://github.com/ibis-project/ibis/pull/8497).
+
+If you're interested in contributing to Ibis, a new backend like chDB could be a
+great project for you!
+:::
+
+#### DuckDB
+
+"DuckDB is a high-performance analytical database system. It is designed to be
+fast, reliable, portable, and easy to use. DuckDB provides a rich SQL dialect,
+with support far beyond basic SQL."
+
+It is a full database system with an on-disk format -- sqlite for OLAP.
+
+#### DataFusion
+
+"Apache DataFusion is a very fast, extensible query engine for building
+high-quality data-centric systems in Rust, using the Apache Arrow in-memory
+format."
+
+It is a composable set of query engine libraries often used for building other
+query engines, databases, or libraries. For instance, DataFusion is used to
+accelerate Apache Spark through the [Apache DataFusion
+Comet](https://github.com/apache/datafusion-comet) project.
+
+#### Polars
+
+"Polars is a DataFrame interface on top of an OLAP Query Engine implemented in
+Rust using Apache Arrow Columnar Format as the memory model."
+
+Polars is an OLAP query engine with a Rust and Python dataframe API aimed at
+replacing pandas workloads with much better performance.
+
+### Performance converges over time
+
+Let's look at some quotes from ["Perf is not
+enough"](https://motherduck.com/blog/perf-is-not-enough) by Jordan Tigani of
+MotherDuck:
+
+> If you take a bunch of databases, all actively maintained, and iterate them
+> out a few years, **performance is going to converge**. If Clickhouse is applying
+> a technique that gives it an advantage for scan speed today, Snowflake will
+> likely have that within a year or two. If Snowflake adds incrementally
+> materialized views, BigQuery will soon follow. It is unlikely that important
+> performance differences will persist over time.
+>
+> As clever as the engineers working for any of these companies are, none of
+> them possess any magic incantations or things that cannot be replicated
+> elsewhere. Each database uses a different bag of tricks in order to get good
+> performance. One might compile queries to machine code, another might cache data
+> on local SSDs, and a third might use specialized network hardware to do
+> shuffles. **Given time, all of these techniques can be implemented by anyone. If
+> they work well, they likely will show up everywhere.**
+
+This is extra true for open source databases (or query engines), especially when
+they're in part based on the same underlying technology (e.g. Apache Arrow). If
+DuckDB adds a feature that improves performance, it's likely that DataFusion and
+Polars will follow suit -- they can go read the source code and specific commits
+to see how it was done.
 
 ## Reproducing the benchmark
 
-The source code for [`ibis-bench` is available on
+The source code for [is available on
 GitHub](https://github.com/lostmygithubaccount/ibis-bench/tree/v2.0.0).
 
 ### A TPC-H benchmark on 6 systems in 3 commands
@@ -920,184 +1395,11 @@ res
 Finally, we write the result to a Parquet file. We are measuring the
 execution time in seconds of calling the query and writing the results to disk.
 
-## Methodology review, considerations, and discussion
-
-Benchmarking is fraught: it's easy to get wrong and ship your bias in the
-results. We don't want to end up as [Figure 1 in "Fair Benchmarking Considered
-Difficult: Common Pitfalls In Database Performance
-Testing"](https://hannes.muehleisen.org/publications/DBTEST2018-performance-testing.pdf):
-
-![Figure 1](figure1.png)
-
-To do this, we'll:
-
-- acknowledge our (my) biases and background
-- explain our goals with this benchmark
-- point to existing benchmarks and discuss differences
-
-### My background and biases
-
-We'll switch to singular pronouns for this section: my name is Cody and I'm a
-Senior Technical Product Manager at Voltron Data to work on the Ibis project.
-Voltron Data is a venture-backed series A startup that supports several open
-source projects (namely Apache Arrow, Ibis, and Substrait), provides commercial
-support for these projects, and offers a distributed GPU-accelerated query
-engine named Theseus.
-
-The Ibis project is a self-governed open source project, with several
-maintainers employed by Voltron Data but contributors various organizations. I
-am a contributor to Ibis and paid by Voltron Data to work on it -- I am very
-heavily biased toward Ibis.
-
-:::{.callout-note title="Additional Voltron Data biases" collapse="true"}
-Something something [Voltron Data has written its benchmarking
-methodology](https://voltrondata.com/benchmarks/methodology)...
-
-It's not uncommon to receive some skepticism around Voltron Data's support for
-Ibis -- are we building a SaaS platform that will lock users into our query
-engine?
-
-The short answer is no, and hopefully it's a convincing one for a few reasons:
-
-1. Wes McKinney, a cofounder (and former CTO) of Voltron Data, created Ibis and
- is a strong advocate for the composable data ecossytem.
-2. Voltron Data itself is a strong advocate for the composable data ecosystem
- and invests heavily in open source projects throughout it.
-3. Voltron Data's Theseus query engine **is not for 99.9% of Ibis users**
-
-The last point is the big one that explains the financial incentives: it would
-not make sense for Voltron Data to try to lock users into Theseus via Ibis
-because Theseus is a distributed GPU query engine for the biggest of big data
-workloads. Rather than create yet another Python dataframe library that only
-works with Theseus, Voltron Data invests in Ibis as a standard that can work on
-any query engine at any scale -- DuckDB, DataFusion, Polars, etc. at the <1TB
-scale, Trino, PySpark, Snowflake, etc. at the 1TB-10TB scale, and Theseus at the
-10TB+ scale.
-
-You can read a longer answer in ["Why does Voltron Data support
-Ibis?"](../why-voda-supports-ibis/index.qmd)
-
-Further, **Voltron Data does not own the Ibis project**. It is a self-governed
-open source project. While 3/5 of the streering committee members are employed
-by Voltron Data, we are actively seeking to diversify the project's governance.
-:::
-
-### Our goals
-
-1. Easy to reproduce
-2. Measure performance of best single-node modern OLAP engines
-3. Identify Ibis and backend performance or feature gaps
-
-### The TPC-H benchmark
-
-From the [TPC-H benchmark website](http://www.tpc.org/tpch):
-
-> The TPC-H is a decision support benchmark. It consists of a suite of business
-> oriented ad-hoc queries and concurrent data modifications. The queries and the
-> data populating the database have been chosen to have broad industry-wide
-> relevance. This benchmark illustrates decision support systems that examine
-> large volumes of data, execute queries with a high degree of complexity, and
-> give answers to critical business questions.
-
-The data consists of eight tables (customer, lineitem, nation, orders, part,
-partsupp, region, supplier) and 22 queries. The queries are designed to test a
-database's performance on a variety of tasks, including filtering, aggregation,
-and joins.
-
-#### Other benchmarks
-
-The [Polars company ran the TPC-H benchmark with results published on their
-blog](https://pola.rs/posts/benchmarks/). They compare DuckDB, Polars, pandas,
-Dask, and Modin on a couple of compute instances and one scale factor.
-
-[Coiled ran the TPC-H benchmark on Spark, Dask, DuckDB, and
-Polars](https://docs.coiled.io/blog/tpch.html). They "run benchmarks derived
-from the TPC-H benchmark suite on a variety of scales, hardware architectures,
-and dataframe projects, notably Apache Spark, Dask, DuckDB, and Polars. No
-project wins."
-
-They use much higher scales and distributed engines. We focus on single-node
-OLAP engines that can run through Ibis.
-
-### Why DuckDB, DataFusion, and Polars?
-
-For this benchmark, we'll focus on three single-node modern OLAP engines based
-on Apache Arrow: DuckDB, DataFusion, and Polars. Each has slightly different use
-cases and goals, with all providing great options as backends for Ibis.
-Benchmarking these three should be relatively "apples to apples": none are
-distributed engines (like PySpark) or single-thread and limited to in-memory
-data (like pandas).
-
-:::{.callout-note title="Honorable mention: chDB" collapse="true"}
-"[chDB](https://github.com/chdb-io/chdb) is an in-process SQL OLAP Engine
-powered by ClickHouse". While ClickHouse isn't based on Apache Arrow, this would
-be another great single-node OLAP engine to benchmark. We don't because it's not
-currently a backend for Ibis, though [there has been work done to make it
-one](https://github.com/ibis-project/ibis/pull/8497).
-
-If you're interested in contributing to Ibis, a new backend like chDB could be a
-great project for you!
-:::
-
-#### DuckDB
-
-"DuckDB is a high-performance analytical database system. It is designed to be
-fast, reliable, portable, and easy to use. DuckDB provides a rich SQL dialect,
-with support far beyond basic SQL."
-
-#### DataFusion
-
-"Apache DataFusion is a very fast, extensible query engine for building
-high-quality data-centric systems in Rust, using the Apache Arrow in-memory
-format."
-
-#### Polars
-
-"Polars is a DataFrame interface on top of an OLAP Query Engine implemented in
-Rust using Apache Arrow Columnar Format as the memory model."
-
-### Which system is the best?
-
-While each can be used as an Ibis backend, they have different priorities use
-cases. DuckDB is a full database with an on-disk format -- sometimes referred to
-as sqlite for OLAP. DataFusion is a composable set of Rust libraries often used
-for building other query engines, databases, or libraries. Polars is an OLAP
-query engine with a Rust and Python dataframe APIs aimed at replacing pandas
-workloads with much better performance.
-
-DuckDB and DataFusion have Python clients but are primarily used via SQL.
-
-### Performance converges over time
-
-Let's look at some quotes from ["Perf is not
-enough"](https://motherduck.com/blog/perf-is-not-enough) by Jordan Tigani of
-MotherDuck:
-
-> If you take a bunch of databases, all actively maintained, and iterate them
-> out a few years, **performance is going to converge**. If Clickhouse is applying
-> a technique that gives it an advantage for scan speed today, Snowflake will
-> likely have that within a year or two. If Snowflake adds incrementally
-> materialized views, BigQuery will soon follow. It is unlikely that important
-> performance differences will persist over time.
->
-> As clever as the engineers working for any of these companies are, none of
-> them possess any magic incantations or things that cannot be replicated
-> elsewhere. Each database uses a different bag of tricks in order to get good
-> performance. One might compile queries to machine code, another might cache data
-> on local SSDs, and a third might use specialized network hardware to do
-> shuffles. **Given time, all of these techniques can be implemented by anyone. If
-> they work well, they likely will show up everywhere.**
-
-This is extra true for open source databases (or query engines), especially when
-they're in part based on the same underlying technology (e.g. Apache Arrow). If
-DuckDB adds a feature that improves performance, it's likely that DataFusion and
-Polars will follow suit -- they can go read the source code and specific commits
-to see how it was done.
-
 ## Next steps
 
 We'll re-run this benchmark soon with updated Polars TPC-H queries and using
-newer versions. Polars v1.0.0 should release soon.
+newer versions. Polars v1.0.0 should release soon. A new DataFusion version that
+fixes the remaining failing queries is also expected soon.
 
 If you spot anything wrong, have any questions, or want to share your own
 analysis, feel free to share below!
