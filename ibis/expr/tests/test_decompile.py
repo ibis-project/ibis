@@ -69,7 +69,7 @@ def test_basic(expr, expected):
     rendered = decompile(expr)
 
     locals_ = {}
-    exec(rendered, {}, locals_)
+    exec(rendered, {}, locals_)  # noqa: S102
     restored = locals_["result"]
 
     if isinstance(expected, ir.Expr):

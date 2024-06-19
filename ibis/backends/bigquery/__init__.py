@@ -54,7 +54,7 @@ EXTERNAL_DATA_SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 CLIENT_ID = "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleusercontent.com"
-CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
+CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"  # noqa: S105
 
 
 def _create_user_agent(application_name: str) -> str:

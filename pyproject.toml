@@ -384,6 +384,7 @@ select = [
   "UP",  # pyupgrade
   "W",   # pycodestyle
   "YTT", # flake8-2020
+  "S",   # flake8-bandit
 ]
 ignore = [
   "B028",    # required stacklevel argument to warn
@@ -432,6 +433,7 @@ ignore = [
   "SIM300",  # yoda conditions
   "UP007",   # Optional[str] -> str | None
   "UP038",   # non-pep604-isinstance, results in slower code
+  "S101",    # ignore "Use of `assert` detected"
 ]
 # none of these codes will be automatically fixed by ruff
 unfixable = [
@@ -446,7 +448,12 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.per-file-ignores]
 "*test*.py" = [
-  "D", # ignore all docstring lints in tests
+  "D",    # ignore all docstring lints in tests
+  "S301", # pickle is allowed in tests
+  "S603", # ignore subprocess untrusted input warnings in test files, input is under control of ibis
+  "S607", # ignore subprocess untrusted exe path warnings in test files, input is under control of ibis
+  "S608", # ignore sql injection warnings in test files, input is under control of ibis
+  "S108", # /tmp usage refers to hdfs path
 ]
 "{docs,ci}/**/*.py" = ["INP001"]
 "{ci/release/verify_release,docs/**/*_impl}.py" = [

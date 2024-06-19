@@ -90,7 +90,7 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    response = requests.get(args.input_data_url)
+    response = requests.get(args.input_data_url, timeout=600)
     response.raise_for_status()
     input_data = response.json()
     db_path = Path(args.output_directory).joinpath("geography.duckdb")

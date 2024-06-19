@@ -82,7 +82,7 @@ def add_movielens_example(
         raw_bytes = source_zip.read_bytes()
     else:
         resp = requests.get(
-            f"https://files.grouplens.org/datasets/movielens/{filename}"
+            f"https://files.grouplens.org/datasets/movielens/{filename}", timeout=600
         )
         resp.raise_for_status()
         raw_bytes = resp.content
@@ -135,7 +135,7 @@ def add_nycflights13_example(data_path: Path, *, metadata: Metadata) -> None:
                 table = con.read_csv(BASE_URL.format(filename))
                 table.to_parquet(parquet_path, codec="zstd")
         else:
-            resp = requests.get(BASE_URL.format(filename))
+            resp = requests.get(BASE_URL.format(filename), timeout=600)
             resp.raise_for_status()
             raw_bytes = resp.content
 
@@ -172,7 +172,7 @@ def add_zones_geojson(data_path: Path) -> None:
     file_path = Path(file_name)
 
     if not file_path.exists():
-        urlretrieve(url, data_path / file_path)
+        urlretrieve(url, filename=data_path / file_path)  # noqa: S310
 
 
 def add_imdb_example(data_path: Path) -> None:
@@ -307,8 +307,9 @@ def main(parser):
     add_nycflights13_example(data_path, metadata=metadata)
 
     print("Adding R examples...")  # noqa: T201
+
     # generate data from R
-    subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])
+    subprocess.check_call(["Rscript", str(EXAMPLES_DIRECTORY / "gen_examples.R")])  # noqa: S603, S607
 
     verify_case(parser, metadata)
 

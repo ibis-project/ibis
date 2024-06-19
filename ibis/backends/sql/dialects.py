@@ -392,7 +392,7 @@ class RisingWave(Postgres):
         TABLE_HINTS = False
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
-        PARAMETER_TOKEN = "$"
+        PARAMETER_TOKEN = "$"  # noqa: S105
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True
