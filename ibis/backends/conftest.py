@@ -5,7 +5,6 @@ import importlib
 import importlib.metadata
 import itertools
 import operator
-import platform
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -421,13 +420,13 @@ def pytest_runtest_call(item):
         failing_specs = []
         for spec in specs:
             req = Requirement(spec)
-            if req.specifier.contains(importlib.import_module(req.name).__version__):
+            if req.specifier.contains(
+                importlib.import_module(req.name).__version__
+            ) and ((not req.marker) or req.marker.evaluate()):
                 failing_specs.append(spec)
         reason = f"{backend} backend test fails with {backend}{specs}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
-        if platforms := kwargs.pop("platforms", ()):
-            kwargs["condition"] = any(platform.system() == p for p in platforms)
         if failing_specs:
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
