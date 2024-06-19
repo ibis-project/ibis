@@ -103,10 +103,10 @@ Now we can upload these packages and make them available.
 ::: {.callout-info}
 ## More permanent solutions to packaging
 
-The code here is relies on a Snowpark session and would only allow Ibis to
-work on Snowflake during that session context, I would like to provide users
-with a more permanent solution. I am experimenting with this with uploading
-the packages in a stage in the `IBIS_UDFS` catalog.
+The code here relies on a Snowpark session and only permits Ibis to function
+within the context of that session. It's possible that a more permanent
+solution could be achieved with a `put` or `put_stream` method rather than
+using the `add_import` method.
 :::
 
 ## Testing!
