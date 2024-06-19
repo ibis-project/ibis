@@ -98,15 +98,34 @@ os.chdir(d.name)
 add_packages(d.name, session)
 ```
 
-Now we can upload these packages and make them available.
+We can now register a stored procedure that imports these modules and is able
+to reference some of the additional dependencies that are already available.
+
+```python
+session.sproc.register(
+        ibis_sproc,
+        return_type=T.StructType(),
+        name="THE_IBIS_SPROC",
+        imports=["ibis", "parsy", "pyarrow_hotfix", "sqlglot", "rich"],
+        packages=[
+            "snowflake-snowpark-python",
+            "toolz",
+            "atpublic",
+            "bidict",
+            "pyarrow",
+            "pandas",
+            "numpy",
+        ],
+)
+```
 
 ::: {.callout-info}
 ## More permanent solutions to packaging
 
-The code here relies on a Snowpark session and only permits Ibis to function
-within the context of that session. It's possible that a more permanent
-solution could be achieved with a `put` or `put_stream` method rather than
-using the `add_import` method.
+It's possible that a more permanent solution could be achieved with a `put` or
+`put_stream` method rather than using the `add_import` method. This would allow
+for the packages to be referenced across multiple stored procedures or other
+places within the Snowflake platform.
 :::
 
 ## Testing!
