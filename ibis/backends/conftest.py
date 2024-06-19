@@ -5,6 +5,7 @@ import importlib
 import importlib.metadata
 import itertools
 import operator
+import platform
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -417,6 +418,7 @@ def pytest_runtest_call(item):
 
         provided_reason = kwargs.pop("reason", None)
         specs = kwargs.pop(backend)
+
         failing_specs = []
         for spec in specs:
             req = Requirement(spec)
@@ -426,7 +428,15 @@ def pytest_runtest_call(item):
         if provided_reason is not None:
             reason += f"; {provided_reason}"
         if failing_specs:
-            item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
+            item.add_marker(
+                pytest.mark.xfail(
+                    condition=any(
+                        platform.system() == p for p in kwargs.pop("platforms", ())
+                    ),
+                    reason=reason,
+                    **kwargs,
+                )
+            )
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope="session")

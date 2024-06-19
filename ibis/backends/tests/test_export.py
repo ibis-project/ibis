@@ -445,6 +445,11 @@ def test_arrow_timestamp_with_time_zone(alltypes):
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
 )
+@pytest.mark.xfail_version(
+    duckdb=["numpy>=2"],
+    platforms=["Windows"],
+    reason="torch on windows doesn't seem to expose the _ARRAY_API symbol",
+)
 def test_to_torch(alltypes):
     import ibis.selectors as s
 
