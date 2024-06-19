@@ -1216,13 +1216,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
-        ┌─────┐
-        │ 273 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(273) │
+        └───────────────┘
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
@@ -2587,13 +2587,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ bar    │
         └────────┘
         >>> t.nunique()
-        ┌───┐
-        │ 2 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(2) │
+        └─────────────┘
         >>> t.nunique(t.a != "foo")
-        ┌───┐
-        │ 1 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(1) │
+        └─────────────┘
         """
         if where is not None:
             (where,) = bind(self, where)
@@ -2628,13 +2628,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ baz    │
         └────────┘
         >>> t.count()
-        ┌───┐
-        │ 3 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(3) │
+        └─────────────┘
         >>> t.count(t.a != "foo")
-        ┌───┐
-        │ 2 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(2) │
+        └─────────────┘
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
@@ -2688,17 +2688,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
-        ┌─────┐
-        │ 342 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(342) │
+        └───────────────┘
         >>> t.drop_null(how="all").count()  # no rows where all columns are null
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         """
         if subset is not None:
             subset = self.bind(subset)
@@ -3330,9 +3330,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -3367,9 +3367,9 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         """
         from ibis.expr.types.joins import Join
 

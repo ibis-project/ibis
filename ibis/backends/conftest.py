@@ -418,7 +418,6 @@ def pytest_runtest_call(item):
 
         provided_reason = kwargs.pop("reason", None)
         specs = kwargs.pop(backend)
-
         failing_specs = []
         for spec in specs:
             req = Requirement(spec)
@@ -427,16 +426,10 @@ def pytest_runtest_call(item):
         reason = f"{backend} backend test fails with {backend}{specs}"
         if provided_reason is not None:
             reason += f"; {provided_reason}"
+        if platforms := kwargs.pop("platforms", ()):
+            kwargs["condition"] = any(platform.system() == p for p in platforms)
         if failing_specs:
-            item.add_marker(
-                pytest.mark.xfail(
-                    condition=any(
-                        platform.system() == p for p in kwargs.pop("platforms", ())
-                    ),
-                    reason=reason,
-                    **kwargs,
-                )
-            )
+            item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope="session")
