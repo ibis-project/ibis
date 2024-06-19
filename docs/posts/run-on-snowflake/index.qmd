@@ -1,0 +1,115 @@
+---
+title: "Ibis - Now flying on Snowflake"
+author:
+  - Phillip Cloud
+  - Tyler White
+error: false
+date: "2024-06-19"
+categories:
+  - blog
+  - new feature
+  - snowflake
+---
+
+Ibis allows you to push down compute operations on your data where it lives,
+with the performance being as powerful as the backend you're connected to. But
+what happens if Ibis is running… inside the backend you're connected to? 
+
+In this post, we will discuss how we got Ibis running on a Snowflake virtual
+warehouse. 
+
+## But first - Why would we even want to do this? 
+
+Snowflake has released several features to enable users to execute native
+Python code on the platform. These features include a new notebook development
+interface, Streamlit in Snowflake, the Native App framework, and Python within
+functions and stored procedures. 
+
+If users could use Ibis directly within the platform, developers could more
+easily switch between a local execution engine during development and
+efficiently deploy and operationalize that same code on Snowflake. 
+
+But this isn't without its challenges; there were a few things we needed to
+figure out, and these are the questions we will answer throughout the post.
+- How can we get an Ibis connection to Snowflake - from in Snowflake?
+- How can we use third-party packages in Snowflake?
+- How are we going to test this to ensure it works?
+
+### Getting the Ibis connection
+
+The release of Ibis 9.0 includes the introduction of a new method,
+`from_snowpark` to provide users with a convenient mechanism to take an
+existing Snowpark session to create an Ibis backend connection to Snowflake.
+
+Here's how this usually looks:
+
+```python
+from snowflake.snowpark import Session
+import ibis
+
+session = sp.Session.builder.create()
+con = ibis.snowflake.from_snowpark(session)
+```
+
+This connection uses the same session within Snowflake, so temporary objects
+can be accessed using Snowpark or Ibis in the same process! The contexts of
+stored procedures already have a "session" available, meaning we can use this
+new method and start writing Ibis expressions. 
+
+### Uploading third-party packages
+
+Snowflake has many packages already made available out of the box through the
+Snowflake Anaconda channel, but unfortunately, Ibis and a few of its
+dependencies aren't available. Packages containing pure Python code can be
+uploaded to stages for use within the platform, so we devised a clever solution
+to upload and reference these to get them working. 
+
+```python
+import os
+import shutil
+import tempfile
+
+def add_packages(d, session):
+    import parsy
+    import pyarrow_hotfix
+    import rich
+    import sqlglot
+    import ibis
+
+    for module in (ibis, parsy, pyarrow_hotfix, rich, sqlglot):
+        pkgname = module.__name__
+        pkgpath = os.path.join(d, pkgname)
+        shutil.copytree(os.path.dirname(module.__file__), pkgpath)
+        session.add_import(pkgname, import_path=pkgname)
+
+d = tempfile.TemporaryDirectory()
+os.chdir(d.name)
+add_packages(d.name, session)
+```
+
+With this code in place, we can upload these packages and make them available…
+
+** notes**
+
+The code here is relies on a Snowpark session and would only allow Ibis to
+work on Snowflake during that session context, I would like to provide users
+with a more permanent solution. I am experimenting with this with uploading
+the packages in a stage in the `IBIS_UDFs` catalog.
+
+### Testing!
+
+While this is a clever solution, we must ensure it works consistently. A
+special unit test has been written for this exact case! The test creates a
+stored procedure by adding the necessary imports to the Snowpark session.
+Within the stored procedure, we define an Ibis expression, and we use the Ibis
+`to_sql` method to extract the generated SQL to pass to Snowpark to return a
+Snowpark DataFrame!
+
+### Conclusion
+
+While it's usually pretty easy to add new backends with Ibis, this was the
+first instance of supporting an additional interface to an existing backend.
+
+We hope you take this for a spin! If you run into any challenges or want
+additional support, open an [issue](https://github.com/ibis-project/ibis/issues)
+or join us on [Zulip](https://ibis-project.zulipchat.com/) and let us know!
