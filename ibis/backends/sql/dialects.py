@@ -337,7 +337,7 @@ def _create_sql(self, expression: sge.Create) -> str:
             )
     return self.create_sql(expression)
 
-
+Hack around https://github.com/tobymao/sqlglot/issues/3684
 Oracle.NULL_ORDERING = "nulls_are_large"
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
