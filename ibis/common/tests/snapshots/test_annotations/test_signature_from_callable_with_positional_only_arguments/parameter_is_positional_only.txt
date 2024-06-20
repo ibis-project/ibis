@@ -1,3 +1,0 @@
-test(1, b=2) 'b' parameter is positional only, but was passed as a keyword
-
-Expected signature: test(a: int, b: int, /, c: int = 1)
