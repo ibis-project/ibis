@@ -913,7 +913,6 @@ def test_ungrouped_unbounded_window(
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notimpl(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
