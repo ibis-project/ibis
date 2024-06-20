@@ -6,6 +6,7 @@ import decimal
 
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 import pytz
 
@@ -186,8 +187,9 @@ def test_repr_struct_of_array_of_struct():
 
 
 def test_raw_sql(con):
-    result = con.raw_sql("SELECT 1").result()
-    assert [row.values() for row in result] == [(1,)]
+    result = con.raw_sql("SELECT 1 as a").to_arrow()
+    expected = pa.Table.from_pydict({"a": [1]})
+    assert result.equals(expected)
 
 
 def test_parted_column_rename(parted_alltypes):
