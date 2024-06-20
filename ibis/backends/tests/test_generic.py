@@ -607,12 +607,12 @@ def test_order_by_random(alltypes):
         param("desc", {"a": [1, 2, 3], "b": ["foo", "baz", None]}),
         param("asc", {"a": [2, 1, 3], "b": ["baz", "foo", None]}),
     ],
+    ids=["desc", "asc"],
 )
 def test_order_by_nulls_default(con, op, expected):
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
-    result = con.execute(t.order_by(getattr(t["b"], op)()))
-    expected = pd.DataFrame(expected)
-
+    result = con.execute(t.order_by(getattr(t["b"], op)())).reset_index(drop=True)
+    expected = pd.DataFrame(expected).reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
 
@@ -628,8 +628,8 @@ def test_order_by_nulls_default(con, op, expected):
 def test_order_by_nulls(con, op, nulls_first, expected):
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
     expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
-    result = con.execute(expr)
-    expected = pd.DataFrame(expected)
+    result = con.execute(expr).reset_index(drop=True)
+    expected = pd.DataFrame(expected).reset_index(drop=True)
 
     tm.assert_frame_equal(result, expected)
 

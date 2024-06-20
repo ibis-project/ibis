@@ -364,10 +364,17 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         # 2. sort the dataframe using those columns
         # 3. drop the sort key columns
         ascending = [key.ascending for key in op.keys]
+        na_pos_dict = {True: "first", False: "last"}
+        na_position = na_pos_dict[all(key.nulls_first for key in op.keys)]
+
         newcols = {gen_name("sort_key"): col for col in keys}
         names = list(newcols.keys())
         df = parent.assign(**newcols)
-        df = df.sort_values(by=names, ascending=ascending)
+        df = df.sort_values(
+            by=names,
+            ascending=ascending,
+            na_position=na_position,
+        )
         return df.drop(names, axis=1)
 
     @classmethod
