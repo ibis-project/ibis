@@ -74,12 +74,24 @@ def test_con_source(source, expected):
         user=TRINO_USER,
         host=TRINO_HOST,
         port=TRINO_PORT,
-        password=TRINO_PASS,
+        auth=TRINO_PASS,
         database="hive",
         schema="default",
         source=source,
     )
     assert con.con.source == expected
+
+
+def test_deprecated_password_parameter():
+    with pytest.warns(FutureWarning, match="The `password` parameter is deprecated"):
+        ibis.trino.connect(
+            user=TRINO_USER,
+            host=TRINO_HOST,
+            port=TRINO_PORT,
+            password=TRINO_PASS,
+            database="hive",
+            schema="default",
+        )
 
 
 @pytest.mark.parametrize(

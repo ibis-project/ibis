@@ -142,7 +142,7 @@ class TestConf(ServiceBackendTest):
             host=TRINO_HOST,
             port=TRINO_PORT,
             user=TRINO_USER,
-            password=TRINO_PASS,
+            auth=TRINO_PASS,
             database="memory",
             schema="default",
             **kw,

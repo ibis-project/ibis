@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
@@ -43,11 +44,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         catalog, db = url.path.strip("/").split("/")
         self.do_connect(
             user=url.username or None,
-            password=url.password or None,
+            auth=url.password or None,
             host=url.hostname or None,
             port=url.port or None,
             database=catalog,
             schema=db,
+            **kwargs,
         )
         return self
 
@@ -253,6 +255,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         schema: str | None = None,
         source: str | None = None,
         timezone: str = "UTC",
+        auth: str | None = None,
         **kwargs,
     ) -> None:
         """Connect to Trino.
@@ -262,7 +265,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         user
             Username to connect with
         password
-            Password to connect with
+            Password to connect with. Mutually exclusive with `auth`.
         host
             Hostname of the Trino server
         port
@@ -275,6 +278,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             Application name passed to Trino
         timezone
             Timezone to use for the connection
+        auth
+            Authentication method to use for the connection. Mutually exclusive
+            with `password`.
         kwargs
             Additional keyword arguments passed directly to the
             `trino.dbapi.connect` API.
@@ -298,15 +304,24 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
 
         """
+        if password is not None:
+            if auth is not None:
+                raise ValueError(
+                    "Cannot specify both `auth` and `password` when connecting to Trino"
+                )
+            warnings.warn(
+                "The `password` parameter is deprecated and will be removed in 10.0; use `auth` instead",
+                FutureWarning,
+            )
         self.con = trino.dbapi.connect(
             user=user,
-            auth=password,
             host=host,
             port=port,
             catalog=database,
             schema=schema,
             source=source or "ibis",
             timezone=timezone,
+            auth=auth or password,
             **kwargs,
         )
 
