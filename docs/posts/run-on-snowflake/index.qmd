@@ -32,7 +32,7 @@ efficiently deploy and operationalize that same code on Snowflake.
 But this isn't without its challenges; there were a few things we needed to
 figure out, and these are the questions we will answer throughout the post.
 
-- How can we get an Ibis connection to Snowflake - from in Snowflake?
+- How can we get an Ibis connection to Snowflake - from within Snowflake?
 - How can we use third-party packages in Snowflake?
 - How are we going to test this to ensure it works?
 
