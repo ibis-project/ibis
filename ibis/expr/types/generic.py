@@ -1106,9 +1106,9 @@ class Value(Expr):
         >>> one = ibis.literal(1)
         >>> two = ibis.literal(2)
         >>> two.identical_to(one + one)
-        ┌──────┐
-        │ True │
-        └──────┘
+        ┌──────────┐
+        │ np.True_ │
+        └──────────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -1572,13 +1572,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
-        ┌────┐
-        │ 94 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(94) │
+        └──────────────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
-        ┌────┐
-        │ 55 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(55) │
+        └──────────────┘
         """
         return ops.ApproxCountDistinct(
             self, where=self._bind_to_parent_table(where)
@@ -1617,13 +1617,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        ┌──────┐
-        │ 4030 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(4030) │
+        └────────────────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        ┌──────┐
-        │ 3700 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(3700) │
+        └────────────────┘
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1646,13 +1646,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
-        ┌──────┐
-        │ 3800 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(3800) │
+        └────────────────┘
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
-        ┌──────┐
-        │ 5550 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(5550) │
+        └────────────────┘
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1675,13 +1675,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.max()
-        ┌──────┐
-        │ 6300 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(6300) │
+        └────────────────┘
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
-        ┌──────┐
-        │ 4800 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(4800) │
+        └────────────────┘
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1704,14 +1704,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.min()
-        ┌──────┐
-        │ 2700 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(2700) │
+        └────────────────┘
         >>> t.body_mass_g.min(where=t.species == "Adelie")
-        ┌──────┐
-        │ 2850 │
-        └──────┘
-
+        ┌────────────────┐
+        │ np.int64(2850) │
+        └────────────────┘
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1805,9 +1804,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the median of `bill_depth_mm`
 
         >>> t.bill_depth_mm.median()
-        ┌──────┐
-        │ 17.3 │
-        └──────┘
+        ┌──────────────────┐
+        │ np.float64(17.3) │
+        └──────────────────┘
         >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
         ...     ibis.desc("median_bill_depth")
         ... )
@@ -1871,9 +1870,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the 99th percentile of `bill_depth`
 
         >>> t.bill_depth_mm.quantile(0.99)
-        ┌──────┐
-        │ 21.1 │
-        └──────┘
+        ┌──────────────────┐
+        │ np.float64(21.1) │
+        └──────────────────┘
         >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
         ...     ibis.desc("p99_bill_depth")
         ... )
@@ -1930,13 +1929,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.nunique()
-        ┌────┐
-        │ 94 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(94) │
+        └──────────────┘
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
-        ┌────┐
-        │ 55 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(55) │
+        └──────────────┘
         """
         return ops.CountDistinct(
             self, where=self._bind_to_parent_table(where)
@@ -2319,9 +2318,9 @@ def null(type: dt.DataType | str | None = None) -> Value:
     │ None │
     └──────┘
     >>> ibis.null(str).upper().isnull()
-    ┌──────┐
-    │ True │
-    └──────┘
+    ┌──────────┐
+    │ np.True_ │
+    └──────────┘
     """
     if type is None:
         type = dt.null

@@ -252,12 +252,11 @@ def param(type: dt.DataType) -> ir.Scalar:
     ... )
     >>> expr = t.filter(t.date_col >= start).value.sum()
     >>> expr.execute(params={start: date(2013, 1, 1)})
-    6.0
+    np.float64(6.0)
     >>> expr.execute(params={start: date(2013, 1, 2)})
-    5.0
+    np.float64(5.0)
     >>> expr.execute(params={start: date(2013, 1, 3)})
-    3.0
-
+    np.float64(3.0)
     """
     return ops.ScalarParameter(type).to_expr()
 
@@ -2376,7 +2375,6 @@ def where(cond, true_expr, false_expr) -> ir.Value:
     -------
     Value : ir.Value
         The value of `true_expr` if `arg` is `True` else `false_expr`
-
     """
     return ifelse(cond, true_expr, false_expr)
 
@@ -2405,10 +2403,9 @@ def coalesce(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.coalesce(None, 4, 5)
-    ┌───┐
-    │ 4 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(4) │
+    └────────────┘
     """
     return ops.Coalesce(args).to_expr()
 
@@ -2432,10 +2429,9 @@ def greatest(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.greatest(None, 4, 5)
-    ┌───┐
-    │ 5 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(5) │
+    └────────────┘
     """
     return ops.Greatest(args).to_expr()
 
@@ -2459,9 +2455,8 @@ def least(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.least(None, 4, 5)
-    ┌───┐
-    │ 4 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(4) │
+    └────────────┘
     """
     return ops.Least(args).to_expr()

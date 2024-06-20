@@ -105,7 +105,7 @@ class TestConf(BackendTest):
             pd.DataFrame(
                 {
                     "a": np.arange(10, dtype=float),
-                    "b": [3.0, np.NaN] * 5,
+                    "b": [3.0, np.nan] * 5,
                     "key": list("ddeefffggh"),
                 }
             )
@@ -255,7 +255,7 @@ def con(data_dir, tmp_path_factory, worker_id):
 
     df_nulls = con._session.createDataFrame(
         [
-            ["k1", np.NaN, "Alfred", None],
+            ["k1", np.nan, "Alfred", None],
             ["k1", 3.0, None, "joker"],
             ["k2", 27.0, "Batman", "batmobile"],
             ["k2", None, "Catwoman", "motorcycle"],
