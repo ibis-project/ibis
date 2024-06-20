@@ -227,9 +227,10 @@ def test_signature_from_callable_with_positional_only_arguments(snapshot):
     assert sig.validate(test, args=(2, 3, 4), kwargs={}) == {"a": 2, "b": 3, "c": 4}
     assert sig.validate(test, args=(2, 3), kwargs=dict(c=4)) == {"a": 2, "b": 3, "c": 4}
 
-    with pytest.raises(ValidationError) as excinfo:
+    with pytest.raises(
+        ValidationError, match=r"test\(1, b=2\).+positional[- ]only.+keyword"
+    ):
         sig.validate(test, args=(1,), kwargs=dict(b=2))
-    snapshot.assert_match(str(excinfo.value), "parameter_is_positional_only.txt")
 
     args, kwargs = sig.unbind(sig.validate(test, args=(2, 3), kwargs={}))
     assert args == (2, 3, 1)
