@@ -611,9 +611,11 @@ def test_order_by_random(alltypes):
 )
 def test_order_by_nulls_default(con, op, expected):
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
-    result = con.execute(t.order_by(getattr(t["b"], op)())).reset_index(drop=True)
-    expected = pd.DataFrame(expected).reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
+    expr = t.order_by(getattr(t["b"], op)())
+    result = con.execute(expr).reset_index(drop=True)
+    expected = pd.DataFrame(expected)
+
+    tm.assert_frame_equal(result.replace({np.nan: None}), expected)
 
 
 @pytest.mark.notimpl(["druid"])
@@ -629,9 +631,9 @@ def test_order_by_nulls(con, op, nulls_first, expected):
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
     expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
     result = con.execute(expr).reset_index(drop=True)
-    expected = pd.DataFrame(expected).reset_index(drop=True)
+    expected = pd.DataFrame(expected)
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(result.replace({np.nan: None}), expected)
 
 
 @pytest.mark.notyet(
