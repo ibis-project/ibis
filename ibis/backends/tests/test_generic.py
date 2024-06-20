@@ -623,10 +623,12 @@ def test_order_by_nulls_default(con, op, expected):
         param("desc", True, {"a": [3, 1, 2], "b": [None, "foo", "baz"]}),
         param("asc", True, {"a": [3, 2, 1], "b": [None, "baz", "foo"]}),
     ],
+    ids=["desc", "asc"],
 )
 def test_order_by_nulls(con, op, nulls_first, expected):
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
-    result = con.execute(t.order_by(getattr(t["b"], op)(nulls_first=nulls_first)))
+    expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
+    result = con.execute(expr)
     expected = pd.DataFrame(expected)
 
     tm.assert_frame_equal(result, expected)
