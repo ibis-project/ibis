@@ -273,6 +273,8 @@ class Flink(Hive):
 
 
 class Impala(Hive):
+    NULL_ORDERING = "nulls_are_large"
+
     class Generator(Hive.Generator):
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("ndv"),
