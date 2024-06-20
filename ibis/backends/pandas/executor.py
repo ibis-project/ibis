@@ -69,7 +69,7 @@ class PandasExecutor(Dispatched, PandasUtils):
             return arg
 
     @classmethod
-    def visit(cls, op: ops.SortKey, expr, ascending):
+    def visit(cls, op: ops.SortKey, expr, ascending, nulls_first):
         return expr
 
     @classmethod
