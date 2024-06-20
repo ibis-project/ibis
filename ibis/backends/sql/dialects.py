@@ -338,6 +338,7 @@ def _create_sql(self, expression: sge.Create) -> str:
     return self.create_sql(expression)
 
 
+Oracle.NULL_ORDERING = "nulls_are_large"
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
     sge.LogicalAnd: rename_func("min"),
