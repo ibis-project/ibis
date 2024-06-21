@@ -29,6 +29,7 @@ from ibis.conftest import WINDOWS
 from ibis.util import promote_tuple
 
 if TYPE_CHECKING:
+    from ibis.backends import BaseBackend
     from ibis.backends.tests.base import BackendTest
 
 
@@ -429,6 +430,35 @@ def pytest_runtest_call(item):
             reason += f"; {provided_reason}"
         if failing_specs:
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
+
+
+def _get_backend_cls(backend_str: str):
+    """Convert a backend string to the test class for the backend."""
+    backend_mod = importlib.import_module(f"ibis.backends.{backend_str}")
+    return backend_mod.Backend
+
+
+@pytest.fixture(params=_get_backends_to_test(), scope="session")
+def backend_cls(request) -> BaseBackend:
+    """Return the uninstantiated backend class, unconnected.
+
+    This is used for signature checking and nothing should be executed."""
+
+    cls = _get_backend_cls(request.param)
+    return cls
+
+
+@pytest.fixture(
+    params=_get_backends_to_test(discard=("dask", "pandas", "polars")),
+    scope="session",
+)
+def backend_sql_cls(request, data_dir, tmp_path_factory, worker_id):
+    """Return the uninstantiated backend class, unconnected.
+
+    SQL backends only.
+    This is used for signature checking and nothing should be executed."""
+    cls = _get_backend_cls(request.param)
+    return cls
 
 
 @pytest.fixture(params=_get_backends_to_test(), scope="session")

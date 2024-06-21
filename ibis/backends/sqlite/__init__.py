@@ -387,6 +387,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -501,6 +502,8 @@ class Backend(SQLBackend, UrlFromPath):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
@@ -515,6 +518,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -547,7 +551,9 @@ class Backend(SQLBackend, UrlFromPath):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:

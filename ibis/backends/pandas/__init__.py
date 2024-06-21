@@ -87,13 +87,18 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return client.table(name)
 
     def read_csv(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a CSV file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source. Can be a local or remote file, pathlike objects
             also accepted.
         table_name
@@ -111,18 +116,23 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_csv")
-        df = pd.read_csv(source, **kwargs)
+        df = pd.read_csv(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 
     def read_parquet(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a parquet file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -140,7 +150,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_parquet")
-        df = pd.read_parquet(source, **kwargs)
+        df = pd.read_parquet(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 
@@ -165,7 +175,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
         """
         return self._filter_with_like(list(self.dictionary.keys()), like)
 
-    def table(self, name: str, schema: sch.Schema | None = None):
+    def table(self, name: str, /, *, schema: sch.Schema | None = None):
         inferred_schema = self.get_schema(name)
         overridden_schema = {**inferred_schema, **(schema or {})}
         return ops.DatabaseTable(name, overridden_schema, self).to_expr()
@@ -179,12 +189,13 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
         return schema
 
-    def compile(self, expr, *args, **kwargs):
+    def compile(self, expr, /, **kwargs):
         return expr
 
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -224,6 +235,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -233,10 +245,10 @@ class BasePandasBackend(BaseBackend, NoUrl):
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )
 
-    def drop_view(self, name: str, *, force: bool = False) -> None:
+    def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
-    def drop_table(self, name: str, *, force: bool = False) -> None:
+    def drop_table(self, name: str, /, *, force: bool = False) -> None:
         if not force and name in self.dictionary:
             raise com.IbisError(
                 "Cannot drop existing table. Call drop_table with force=True to drop existing table."
@@ -320,7 +332,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
 class Backend(BasePandasBackend):
     name = "pandas"
 
-    def execute(self, query, params=None, limit="default", **kwargs):
+    def execute(self, expr, /, *, params=None, limit="default", **kwargs):
         from ibis.backends.pandas.executor import PandasExecutor
 
         if limit != "default" and limit is not None:
@@ -329,15 +341,15 @@ class Backend(BasePandasBackend):
                 "pandas backend"
             )
 
-        if not isinstance(query, ir.Expr):
+        if not isinstance(expr, ir.Expr):
             raise TypeError(
-                f"`query` has type {type(query).__name__!r}, expected ibis.expr.types.Expr"
+                f"`expr` has type {type(expr).__name__!r}, expected ibis.expr.types.Expr"
             )
 
         params = params or {}
         params = {k.op() if isinstance(k, ir.Expr) else k: v for k, v in params.items()}
 
-        return PandasExecutor.execute(query.op(), backend=self, params=params)
+        return PandasExecutor.execute(expr.op(), backend=self, params=params)
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr.execute())

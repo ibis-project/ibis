@@ -646,7 +646,7 @@ $$"""
                     with contextlib.suppress(Exception):
                         shutil.rmtree(tmpdir.name)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
         quoted = self.compiler.quoted
@@ -664,7 +664,7 @@ $$"""
             # so we switch back to the original database and schema
             cur.execute(use_stmt)
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         if name == current_catalog:
             raise com.UnsupportedOperationError(
@@ -679,7 +679,7 @@ $$"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
@@ -719,7 +719,7 @@ $$"""
             return cur
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if self.current_database == name and (
             catalog is None or self.current_catalog == catalog
@@ -739,6 +739,7 @@ $$"""
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -847,7 +848,7 @@ $$"""
         return self.table(name, database=(catalog, db))
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the Snowflake backend.
 
@@ -955,7 +956,7 @@ $$"""
         return self.table(table)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table, using Snowflake.
 
@@ -1027,7 +1028,7 @@ $$"""
         return self.table(table)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read a Parquet file into an ibis table, using Snowflake.
 
@@ -1096,7 +1097,9 @@ $$"""
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,

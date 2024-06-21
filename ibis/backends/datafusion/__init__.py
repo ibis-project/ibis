@@ -227,13 +227,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         result = self.con.sql(code).to_pydict()
         return self._filter_with_like(result["table_catalog"], like)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_raw_sql(
             sge.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
         ):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
             "DataFusion does not support dropping databases"
         )
@@ -247,7 +247,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         )
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         # not actually a table, but this is how sqlglot represents schema names
         db_name = sg.table(name, db=catalog)
@@ -255,7 +255,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         db_name = sg.table(name, db=catalog)
         with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
@@ -411,7 +411,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             self.con.register_dataset(name=name, dataset=empty_dataset)
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current database.
 
@@ -439,7 +439,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(table_name)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
 
@@ -467,13 +467,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(table_name)
 
     def read_delta(
-        self, source_table: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -488,7 +488,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             The just-registered table
 
         """
-        source_table = normalize_filename(source_table)
+        source_table = normalize_filename(path)
 
         table_name = table_name or gen_name("read_delta")
 
@@ -553,7 +553,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         arrow_table = batch_reader.read_all()
         return expr.__pyarrow_result__(arrow_table)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any):
+    def execute(self, expr: ir.Expr, /, **kwargs: Any):
         batch_reader = self.to_pyarrow_batches(expr, **kwargs)
         return expr.__pandas_result__(
             batch_reader.read_pandas(timestamp_as_object=True)
@@ -562,6 +562,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -667,7 +668,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(name, database=database)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> None:
         """Delete all rows from a table.
 

@@ -205,6 +205,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
     def list_tables(
         self,
+        *,
         like: str | None = None,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
@@ -337,6 +338,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -430,9 +432,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 cur.execute(insert_stmt)
 
             if overwrite:
-                self.drop_table(
-                    name=final_table.name, database=final_table.db, force=True
-                )
+                self.drop_table(final_table.name, database=final_table.db, force=True)
                 cur.execute(
                     f"ALTER TABLE IF EXISTS {initial_table.sql(self.name)} RENAME TO {final_table.sql(self.name)}"
                 )
@@ -452,6 +452,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:

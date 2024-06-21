@@ -337,7 +337,7 @@ class _FileIOHandler:
         }
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current backend.
 
@@ -362,14 +362,15 @@ class _FileIOHandler:
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current backend.
 
         Parameters
         ----------
         path
-            The data source. A string or Path to the CSV file.
+            The data source(s). A string or Path to the CSV file or directory
+            containing CSV files.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
@@ -387,7 +388,7 @@ class _FileIOHandler:
         )
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table in the current backend.
 
@@ -412,13 +413,13 @@ class _FileIOHandler:
         )
 
     def read_delta(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Register a Delta Lake table in the current database.
 
         Parameters
         ----------
-        source
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -550,7 +551,7 @@ class _FileIOHandler:
 
 class CanListCatalog(abc.ABC):
     @abc.abstractmethod
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         """List existing catalogs in the current connection.
 
         ::: {.callout-note}
@@ -586,7 +587,7 @@ class CanListCatalog(abc.ABC):
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Create a new catalog.
 
         ::: {.callout-note}
@@ -610,7 +611,7 @@ class CanCreateCatalog(CanListCatalog):
         """
 
     @abc.abstractmethod
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Drop a catalog with name `name`.
 
         ::: {.callout-note}
@@ -637,7 +638,7 @@ class CanCreateCatalog(CanListCatalog):
 class CanListDatabase(abc.ABC):
     @abc.abstractmethod
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         """List existing databases in the current connection.
 
@@ -678,7 +679,7 @@ class CanListDatabase(abc.ABC):
 class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Create a database named `name` in `catalog`.
 
@@ -696,7 +697,7 @@ class CanCreateDatabase(CanListDatabase):
 
     @abc.abstractmethod
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop the database with `name` in `catalog`.
 
@@ -740,7 +741,7 @@ class CanCreateSchema(CanListSchema):
     def create_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        self.create_database(name=name, catalog=database, force=force)
+        self.create_database(name, catalog=database, force=force)
 
     @util.deprecated(
         instead="Use `drop_database` instead", as_of="9.0", removed_in="10.0"
@@ -748,7 +749,7 @@ class CanCreateSchema(CanListSchema):
     def drop_schema(
         self, name: str, database: str | None = None, force: bool = False
     ) -> None:
-        self.drop_database(name=name, catalog=database, force=force)
+        self.drop_database(name, catalog=database, force=force)
 
 
 class BaseBackend(abc.ABC, _FileIOHandler):
@@ -895,7 +896,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 
@@ -933,7 +934,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def table(
-        self, name: str, database: tuple[str, str] | str | None = None
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -1041,6 +1042,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, Any] | None = None,
     ) -> Any:
         """Compile an expression."""
@@ -1054,13 +1057,14 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
         raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
 
-    def execute(self, expr: ir.Expr) -> Any:
+    def execute(self, expr: ir.Expr, /) -> Any:
         """Execute an expression."""
 
     @abc.abstractmethod
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
@@ -1100,6 +1104,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,
@@ -1139,6 +1144,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -1167,7 +1173,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     @abc.abstractmethod
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a view.
 

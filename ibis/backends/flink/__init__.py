@@ -101,6 +101,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         db_properties: dict | None = None,
         catalog: str | None = None,
         force: bool = False,
@@ -126,7 +128,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self.raw_sql(statement.compile())
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop a database with name `name`.
 
@@ -225,6 +227,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         catalog: str | None = None,
     ) -> ir.Table:
@@ -331,6 +335,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
         **_: Any,
@@ -345,7 +351,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     ) -> str:
         return super()._to_sqlglot(expr, params=params)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
+    def execute(self, expr: ir.Expr, /, **kwargs: Any) -> Any:
         """Execute an expression."""
         self._register_udfs(expr)
 
@@ -358,6 +364,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -436,7 +443,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if overwrite:
             if self.list_tables(like=name, temp=temp):
                 self.drop_table(
-                    name=name,
+                    name,
                     catalog=catalog,
                     database=database,
                     temp=temp,
@@ -474,7 +481,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             # which may not be ideal. We plan to get back to this later.
             # Ref: https://github.com/ibis-project/ibis/pull/7479#discussion_r1416237088
             return self.create_view(
-                name=name,
+                name,
                 obj=dataframe,
                 schema=schema,
                 database=database,
@@ -514,6 +521,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -574,6 +582,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
         *,
         schema: sch.Schema | None = None,
@@ -627,7 +636,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if overwrite and self.list_views(like=name, temp=temp):
             self.drop_view(
-                name=name,
+                name,
                 database=database,
                 catalog=catalog,
                 temp=temp,
@@ -666,11 +675,12 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         else:
             raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
 
-        return self.table(name=name, database=database, catalog=catalog)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -750,7 +760,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         }
 
         return self.create_table(
-            name=table_name,
+            table_name,
             schema=schema,
             tbl_properties=tbl_properties,
         )
@@ -758,6 +768,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -786,8 +798,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_csv(
         self,
         path: str | Path,
-        schema: sch.Schema | None = None,
+        /,
+        *,
         table_name: str | None = None,
+        schema: sch.Schema | None = None,
     ) -> ir.Table:
         """Register a csv file as a table in the current database.
 
@@ -795,11 +809,11 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         ----------
         path
             The data source.
-        schema
-            The schema for the new table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
+        schema
+            The schema for the new table.
 
         Returns
         -------
@@ -814,6 +828,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_json(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -842,7 +858,9 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,

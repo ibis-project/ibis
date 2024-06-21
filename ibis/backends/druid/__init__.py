@@ -147,6 +147,7 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -156,7 +157,7 @@ class Backend(SQLBackend):
     ) -> ir.Table:
         raise NotImplementedError()
 
-    def drop_table(self, *args, **kwargs):
+    def drop_table(self, name: str, /, **kwargs):
         raise NotImplementedError()
 
     def list_tables(

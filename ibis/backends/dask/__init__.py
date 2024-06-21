@@ -80,6 +80,8 @@ class Backend(BasePandasBackend, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: dict | None = None,
         limit: int | None = None,
         **kwargs,
@@ -95,6 +97,8 @@ class Backend(BasePandasBackend, NoUrl):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: str = "default",
         **kwargs,
@@ -108,13 +112,18 @@ class Backend(BasePandasBackend, NoUrl):
         return DaskExecutor.execute(expr.op(), backend=self, params=params)
 
     def read_csv(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a CSV file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source. Can be a local or remote file, pathlike objects
             also accepted.
         table_name
@@ -132,18 +141,23 @@ class Backend(BasePandasBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_csv")
-        df = dd.read_csv(source, **kwargs)
+        df = dd.read_csv(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 
     def read_parquet(
-        self, source: str | pathlib.Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | pathlib.Path,
+        /,
+        *,
+        table_name: str | None = None,
+        **kwargs: Any,
     ):
         """Register a parquet file as a table in the current session.
 
         Parameters
         ----------
-        source
+        path
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -161,7 +175,7 @@ class Backend(BasePandasBackend, NoUrl):
 
         """
         table_name = table_name or util.gen_name("read_parquet")
-        df = dd.read_parquet(source, **kwargs)
+        df = dd.read_parquet(path, **kwargs)
         self.dictionary[table_name] = df
         return self.table(table_name)
 

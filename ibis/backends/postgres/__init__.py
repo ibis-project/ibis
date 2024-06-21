@@ -628,7 +628,7 @@ $$""".format(**self._get_udf_source(udf_node))
                 pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None and catalog != self.current_catalog:
             raise exc.UnsupportedOperationError(
@@ -643,6 +643,8 @@ $$""".format(**self._get_udf_source(udf_node))
     def drop_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
@@ -664,6 +666,7 @@ $$""".format(**self._get_udf_source(udf_node))
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -770,6 +773,8 @@ $$""".format(**self._get_udf_source(udf_node))
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:

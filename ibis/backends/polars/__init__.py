@@ -71,7 +71,7 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
+    def table(self, name: str, /, *, _schema: sch.Schema | None = None) -> ir.Table:
         schema = PolarsSchema.to_ibis(self._tables[name].schema)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
@@ -165,6 +165,8 @@ class Backend(BaseBackend, NoUrl):
     def read_csv(
         self,
         path: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -207,7 +209,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table.
 
@@ -239,7 +241,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_delta(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake as a table in the current database.
 
@@ -305,6 +307,8 @@ class Backend(BaseBackend, NoUrl):
     def read_parquet(
         self,
         path: str | Path | Iterable[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -353,6 +357,7 @@ class Backend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -395,6 +400,7 @@ class Backend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -404,13 +410,13 @@ class Backend(BaseBackend, NoUrl):
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )
 
-    def drop_table(self, name: str, *, force: bool = False) -> None:
+    def drop_table(self, name: str, /, *, force: bool = False) -> None:
         if name in self._tables:
             del self._tables[name]
         elif not force:
             raise com.IbisError(f"Table {name!r} does not exist")
 
-    def drop_view(self, name: str, *, force: bool = False) -> None:
+    def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
     def get_schema(self, table_name):
@@ -434,7 +440,12 @@ class Backend(BaseBackend, NoUrl):
         return operation in op_classes or issubclass(operation, op_classes)
 
     def compile(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **_: Any
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Expr, object] | None = None,
+        **_: Any,
     ):
         if params is None:
             params = dict()
@@ -485,6 +496,8 @@ class Backend(BaseBackend, NoUrl):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,

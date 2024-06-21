@@ -289,7 +289,7 @@ class Backend(SQLBackend):
             [(db,)] = cur.fetchall()
         return db
 
-    def create_database(self, name, path=None, force=False):
+    def create_database(self, name, /, *, path=None, force=False):
         """Create a new Impala database.
 
         Parameters
@@ -305,7 +305,7 @@ class Backend(SQLBackend):
         statement = CreateDatabase(name, path=path, can_exist=force)
         self._safe_exec_sql(statement)
 
-    def drop_database(self, name, force=False):
+    def drop_database(self, name, /, *, force=False):
         """Drop an Impala database.
 
         Parameters
@@ -427,6 +427,7 @@ class Backend(SQLBackend):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -437,17 +438,20 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement)
         return self.table(name, database=database)
 
-    def drop_view(self, name, database=None, force=False):
+    def drop_view(self, name, /, *, database=None, force=False):
         stmt = DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 
-    def table(self, name: str, database: str | None = None, **kwargs: Any) -> ir.Table:
+    def table(
+        self, name: str, /, *, database: str | None = None, **kwargs: Any
+    ) -> ir.Table:
         expr = super().table(name, database=database, **kwargs)
         return ImpalaTable(expr.op())
 
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -723,7 +727,9 @@ class Backend(SQLBackend):
     def insert(
         self,
         table_name,
-        obj=None,
+        /,
+        obj,
+        *,
         database=None,
         overwrite=False,
         partition=None,
@@ -757,7 +763,7 @@ class Backend(SQLBackend):
         )
 
     def drop_table(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop an Impala table.
 
@@ -780,7 +786,7 @@ class Backend(SQLBackend):
         statement = DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters

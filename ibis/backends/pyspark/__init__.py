@@ -352,6 +352,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping | None = None,
         limit: str | None = "default",
         **kwargs: Any,
@@ -372,6 +374,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        /,
         *,
         catalog: str | None = None,
         path: str | Path | None = None,
@@ -409,7 +412,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 pass
 
     def drop_database(
-        self, name: str, *, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> Any:
         """Drop a Spark database.
 
@@ -467,9 +470,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
-        obj: (
-            ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
-        ) = None,
+        /,
+        obj: ir.Table
+        | pd.DataFrame
+        | pa.Table
+        | pl.DataFrame
+        | pl.LazyFrame
+        | None = None,
         *,
         schema: sch.Schema | None = None,
         database: str | None = None,
@@ -548,6 +555,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -649,6 +657,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_delta(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -685,6 +695,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -721,7 +733,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -729,7 +743,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -752,7 +766,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source_list = normalize_filenames(source_list)
+        source_list = normalize_filenames(path)
         spark_df = self._session.read.csv(
             source_list, inferSchema=inferSchema, header=header, **kwargs
         )
@@ -763,7 +777,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_json(
         self,
-        source_list: str | Sequence[str],
+        path: str | Sequence[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -771,7 +787,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of JSON files, or an
             iterable of JSON files.
         table_name
@@ -792,7 +808,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
                 "Please use `read_json_directory` instead."
             )
-        source_list = normalize_filenames(source_list)
+        source_list = normalize_filenames(path)
         spark_df = self._session.read.json(source_list, **kwargs)
         table_name = table_name or util.gen_name("read_json")
 

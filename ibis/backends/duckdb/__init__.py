@@ -124,6 +124,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -285,7 +286,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self.drop_table(op.name)
 
     def table(
-        self, name: str, schema: str | None = None, database: str | None = None
+        self, name: str, /, *, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -519,7 +520,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._load_extensions([extension], force_install=force_install)
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise exc.UnsupportedOperationError(
@@ -531,7 +532,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise exc.UnsupportedOperationError(
@@ -616,7 +617,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     @util.experimental
     def read_json(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs,
     ) -> ir.Table:
@@ -628,7 +631,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             File or list of files
         table_name
             Optional table name
@@ -651,9 +654,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._create_temp_view(
             table_name,
             sg.select(STAR).from_(
-                self.compiler.f.read_json_auto(
-                    util.normalize_filenames(source_list), *options
-                )
+                self.compiler.f.read_json_auto(util.normalize_filenames(path), *options)
             ),
         )
 
@@ -661,7 +662,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        path: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -669,7 +672,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -685,7 +688,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = util.normalize_filenames(source_list)
+        source_list = util.normalize_filenames(path)
 
         if not table_name:
             table_name = util.gen_name("read_csv")
@@ -786,7 +789,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_parquet(
         self,
-        source_list: str | Iterable[str],
+        path: str | Iterable[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -794,7 +799,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        path
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -810,7 +815,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table
 
         """
-        source_list = util.normalize_filenames(source_list)
+        source_list = util.normalize_filenames(path)
 
         table_name = table_name or util.gen_name("read_parquet")
 
@@ -892,7 +897,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
     def read_delta(
         self,
-        source_table: str,
+        path: str,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -900,7 +907,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -915,7 +922,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             The just-registered table.
 
         """
-        source_table = util.normalize_filenames(source_table)[0]
+        source_table = util.normalize_filenames(path)[0]
 
         table_name = table_name or util.gen_name("read_delta")
 
@@ -1378,6 +1385,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping | None = None,
         limit: str | None = "default",
         **_: Any,

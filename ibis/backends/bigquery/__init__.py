@@ -247,7 +247,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
 
@@ -275,7 +275,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
@@ -304,7 +304,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
 
@@ -505,6 +505,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
@@ -532,6 +534,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def drop_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
@@ -547,7 +551,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.raw_sql(stmt.sql(self.name))
 
     def table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
 
@@ -697,7 +701,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self, expr: ir.Expr, /, *, limit: str | None = None, params=None, **kwargs: Any
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
@@ -713,7 +717,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._log(sql)
         return sql
 
-    def execute(self, expr, params=None, limit="default", **kwargs):
+    def execute(self, expr, /, *, params=None, limit="default", **kwargs):
         """Compile and execute the given Ibis expression.
 
         Compile and execute Ibis expression using this backend client
@@ -760,7 +764,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
@@ -872,6 +878,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def list_tables(
         self,
+        *,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
@@ -922,6 +929,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -1075,6 +1083,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         schema: str | None = None,
         database: tuple[str | str] | str | None = None,
@@ -1096,6 +1105,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         schema: str | None = None,
@@ -1122,6 +1132,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         schema: str | None = None,
         database: str | None = None,

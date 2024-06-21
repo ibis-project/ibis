@@ -286,7 +286,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             con.commit()
             return cursor
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         name = self._quote(name)
         create_stmt = (
             f"""\
@@ -301,7 +301,7 @@ GO"""
         with self._safe_raw_sql(create_stmt):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         name = self._quote(name)
         if_exists = "IF EXISTS " * force
 
@@ -309,7 +309,7 @@ GO"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
@@ -340,7 +340,7 @@ GO"""
         return sg.to_identifier(name, quoted=True).sql(self.dialect)
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
@@ -436,6 +436,7 @@ GO"""
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table

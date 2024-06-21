@@ -221,14 +221,14 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         return sch.Schema(fields)
 
-    def create_database(self, name: str, force: bool = False) -> None:
+    def create_database(self, name: str, /, *, force: bool = False) -> None:
         sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
             self.name
         )
         with self.begin() as cur:
             cur.execute(sql)
 
-    def drop_database(self, name: str, force: bool = False) -> None:
+    def drop_database(self, name: str, /, *, force: bool = False) -> None:
         sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
             self.name
         )
@@ -348,7 +348,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(map(itemgetter(0), out), like)
 
     def execute(
-        self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
+        self, expr: ir.Expr, /, *, limit: str | None = "default", **kwargs: Any
     ) -> Any:
         """Execute an expression."""
 
@@ -365,6 +365,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table

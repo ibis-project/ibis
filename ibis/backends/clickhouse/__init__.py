@@ -371,6 +371,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = "default",
         external_tables: Mapping[str, pd.DataFrame] | None = None,
         **kwargs: Any,
@@ -402,8 +404,10 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def insert(
         self,
-        name: str,
+        table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
+        *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
         **kwargs: Any,
@@ -412,18 +416,18 @@ class Backend(SQLBackend, CanCreateDatabase):
         import pyarrow as pa
 
         if overwrite:
-            self.truncate_table(name)
+            self.truncate_table(table_name)
 
         if isinstance(obj, pa.Table):
-            return self.con.insert_arrow(name, obj, settings=settings, **kwargs)
+            return self.con.insert_arrow(table_name, obj, settings=settings, **kwargs)
         elif isinstance(obj, pd.DataFrame):
             return self.con.insert_arrow(
-                name, pa.Table.from_pandas(obj), settings=settings, **kwargs
+                table_name, pa.Table.from_pandas(obj), settings=settings, **kwargs
             )
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = self._build_insert_query(target=name, source=obj)
+        query = self._build_insert_query(target=table_name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)
@@ -510,7 +514,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                 pass
 
     def create_database(
-        self, name: str, *, force: bool = False, engine: str = "Atomic"
+        self, name: str, /, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
         src = sge.Create(
             this=sg.to_identifier(name),
@@ -523,12 +527,12 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src):
             pass
 
-    def drop_database(self, name: str, *, force: bool = False) -> None:
+    def drop_database(self, name: str, /, *, force: bool = False) -> None:
         src = sge.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
         with self._safe_raw_sql(src):
             pass
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         ident = sg.table(name, db=database).sql(self.name)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
@@ -536,6 +540,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         engine: str = "MergeTree",
         **kwargs: Any,
@@ -564,6 +570,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def read_csv(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         engine: str = "MergeTree",
         **kwargs: Any,
@@ -586,6 +594,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -746,6 +755,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,

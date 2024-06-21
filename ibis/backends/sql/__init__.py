@@ -107,6 +107,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def table(
         self,
         name: str,
+        /,
+        *,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> ir.Table:
@@ -168,6 +170,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = None,
         params=None,
         pretty: bool = False,
@@ -232,6 +236,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -255,6 +260,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         schema: str | None = None,
@@ -280,6 +286,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping | None = None,
         limit: str | None = "default",
         **kwargs: Any,
@@ -301,6 +309,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
@@ -380,7 +390,9 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def insert(
         self,
         table_name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
@@ -460,7 +472,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         return query
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self, name: str, /, *, database: str | None = None, schema: str | None = None
     ) -> None:
         """Delete all rows from a table.
 
