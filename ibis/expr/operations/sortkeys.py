@@ -10,18 +10,6 @@ from ibis.expr.operations.core import Value
 # TODO(kszucs): move the content of this file to generic.py
 
 
-_is_ascending = {
-    "asc": True,
-    "ascending": True,
-    "desc": False,
-    "descending": False,
-    0: False,
-    1: True,
-    False: False,
-    True: True,
-}
-
-
 # TODO(kszucs): consider to limit its shape to Columnar, we could treat random()
 # as a columnar operation too
 @public
