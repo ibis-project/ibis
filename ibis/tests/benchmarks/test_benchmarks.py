@@ -4,6 +4,7 @@ import copy
 import functools
 import inspect
 import itertools
+import math
 import os
 import string
 from operator import attrgetter, itemgetter
@@ -865,3 +866,21 @@ def test_large_union_construct(benchmark, many_tables):
 def test_large_union_compile(benchmark, many_tables):
     expr = ibis.union(*many_tables)
     assert benchmark(ibis.to_sql, expr) is not None
+
+
+@pytest.fixture(scope="session")
+def lots_of_tables(tmp_path_factory):
+    duckdb = pytest.importorskip("duckdb")
+    db = str(tmp_path_factory.mktemp("data") / "lots_of_tables.ddb")
+    n = 100_000
+    d = int(math.log10(n))
+    sql = ";".join(f"CREATE TABLE t{i:0>{d}} (x TINYINT)" for i in range(n))
+    with duckdb.connect(db) as con:
+        con.execute(sql)
+    return ibis.duckdb.connect(db)
+
+
+def test_memtable_register(lots_of_tables, benchmark):
+    t = ibis.memtable({"x": [1, 2, 3]})
+    result = benchmark(lots_of_tables.execute, t)
+    assert len(result) == 3
