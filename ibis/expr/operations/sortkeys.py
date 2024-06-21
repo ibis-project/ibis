@@ -19,7 +19,7 @@ class SortKey(Value):
     # TODO(kszucs): rename expr to arg or something else except expr
     expr: Value
     ascending: bool = True
-    nulls_first: bool = False
+    nulls_first: bool = True
 
     dtype = rlz.dtype_like("expr")
     shape = rlz.shape_like("expr")
