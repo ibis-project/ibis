@@ -252,10 +252,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             pass
         return self.table(name, database=(catalog, db))
 
-    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
-        for memtable in expr.op().find(ops.InMemoryTable):
-            self._register_in_memory_table(memtable)
-
     def drop_view(
         self,
         name: str,
