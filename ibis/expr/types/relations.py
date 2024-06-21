@@ -4681,6 +4681,58 @@ class Table(Expr, _FixedTextJupyterMixin):
             lambda t: t.count().name("_".join(columns) + "_count")
         )
 
+    def unnest(
+        self, column, offset: str | None = None, keep_empty: bool = False
+    ) -> Table:
+        """Unnest an array `column` from a table.
+
+        Parameters
+        ----------
+        column
+            Array column to unnest.
+        offset
+            Name of the resulting index column.
+        keep_empty
+            Keep empty array values as `NULL` in the output table.
+
+        Returns
+        -------
+        Table
+            Table with the array column `column` unnested.
+
+        See Also
+        --------
+        [`ArrayColumn.unnest`](#ibis.expr.types.arrays.ArrayColumn.unnest)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+
+        Construct a table expression with an array column.
+
+        >>> t = ibis.memtable({"x": [[1, 2], [], None, [3, 4, 5]]})
+
+        Unnest the array column `x`.
+
+        >>> t.unnest(_.x)
+
+        Unnest the array column `x` with an offset. The `offset` parameter is
+        the name of the resulting index column.
+
+        >>> t.unnest(t.x, offset="idx")
+
+        Unnest the array column `x` keep empty array values as `NULL` in the
+        output table.
+
+        >>> t.unnest("x", keep_empty=True)
+        """
+        (column,) = self.bind(column)
+        return ops.TableUnnest(
+            parent=self, column=column, offset=offset, keep_empty=keep_empty
+        ).to_expr()
+
 
 @public
 class CachedTable(Table):

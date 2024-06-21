@@ -488,4 +488,27 @@ class Distinct(Simple):
     """Compute the distinct rows of a table."""
 
 
+@public
+class TableUnnest(Simple):
+    """Cross join unnest operation."""
+
+    column: Value[dt.Array]
+    offset: typing.Union[str, None]
+    keep_empty: bool
+
+    @attribute
+    def schema(self):
+        column = self.column
+        offset = self.offset
+
+        base = self.parent.schema.fields.copy()
+
+        base[column.name] = column.dtype.value_type
+
+        if offset is not None:
+            base[offset] = dt.int64
+
+        return Schema(base)
+
+
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()

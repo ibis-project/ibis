@@ -290,7 +290,18 @@ class ArrayValue(Value):
 
         ::: {.callout-note}
         ## Rows with empty arrays are dropped in the output.
+        To preserve empty arrays as `NULL`s in the output, use
+        [`Table.unnest`](#ibis.expr.types.relations.Table.unnest).
         :::
+
+        Returns
+        -------
+        ir.Value
+            Unnested array
+
+        See Also
+        --------
+        [`Table.unnest`](#ibis.expr.types.relations.Table.unnest)
 
         Examples
         --------
@@ -318,11 +329,6 @@ class ArrayValue(Value):
         │     3 │
         │     3 │
         └───────┘
-
-        Returns
-        -------
-        ir.Value
-            Unnested array
         """
         expr = ops.Unnest(self).to_expr()
         try:
