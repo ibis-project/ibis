@@ -12,6 +12,13 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends.mysql.tests.conftest import (
+    IBIS_TEST_MYSQL_DB,
+    MYSQL_HOST,
+    MYSQL_PASS,
+    MYSQL_USER,
+)
+from ibis.backends.tests.errors import MySQLOperationalError
 from ibis.util import gen_name
 
 MYSQL_TYPES = [
@@ -234,3 +241,10 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert mysql_tables.issubset(con.list_tables(database="mysql"))
     assert mysql_tables.issubset(con.list_tables(database=("mysql",)))
+
+
+def test_invalid_port():
+    port = 4000
+    url = f"mysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{port}/{IBIS_TEST_MYSQL_DB}"
+    with pytest.raises(MySQLOperationalError):
+        ibis.connect(url)

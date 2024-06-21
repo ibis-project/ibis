@@ -66,6 +66,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             "password": url.password or "",
             "host": url.hostname,
             "database": database or "",
+            "port": url.port or None,
         }
 
         for name, value in query_params.items():
@@ -90,6 +91,9 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if "password" in kwargs and kwargs["password"] is None:
             del kwargs["password"]
+
+        if "port" in kwargs and kwargs["port"] is None:
+            del kwargs["port"]
 
         return self.connect(**kwargs)
 
