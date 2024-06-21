@@ -10,18 +10,6 @@ from ibis.expr.operations.core import Value
 # TODO(kszucs): move the content of this file to generic.py
 
 
-_is_ascending = {
-    "asc": True,
-    "ascending": True,
-    "desc": False,
-    "descending": False,
-    0: False,
-    1: True,
-    False: False,
-    True: True,
-}
-
-
 # TODO(kszucs): consider to limit its shape to Columnar, we could treat random()
 # as a columnar operation too
 @public
@@ -36,19 +24,13 @@ class SortKey(Value):
     shape = rlz.shape_like("expr")
 
     @classmethod
-    def __coerce__(cls, value, T=None, S=None):
-        if isinstance(value, tuple):
-            key, asc = value
-        else:
-            key, asc = value, True
-
-        asc = _is_ascending[asc]
+    def __coerce__(cls, key, T=None, S=None):
         key = super().__coerce__(key, T=T, S=S)
 
         if isinstance(key, cls):
             return key
         else:
-            return cls(key, asc)
+            return cls(key)
 
     @property
     def name(self) -> str:
