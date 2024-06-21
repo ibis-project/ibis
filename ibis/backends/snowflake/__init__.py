@@ -35,6 +35,7 @@ from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
 from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compiler import STAR
 from ibis.backends.sql.datatypes import SnowflakeType
 
 if TYPE_CHECKING:
@@ -873,7 +874,8 @@ $$"""
         # https://docs.snowflake.com/en/sql-reference/sql/put#optional-parameters
         threads = min((os.cpu_count() or 2) // 2, 99)
         table = table_name or ibis.util.gen_name("read_csv_snowflake")
-        quoted = self.compiler.quoted
+        compiler = self.compiler
+        quoted = compiler.quoted
         qtable = sg.to_identifier(table, quoted=quoted)
 
         parse_header = header = kwargs.pop("parse_header", True)
@@ -904,7 +906,7 @@ $$"""
             if str(path).startswith("https://"):
                 with tempfile.NamedTemporaryFile() as tmp:
                     tmpname = tmp.name
-                    urlretrieve(path, filename=tmpname)
+                    urlretrieve(path, filename=tmpname)  # noqa: S310
                     tmp.flush()
                     cur.execute(
                         f"PUT 'file://{tmpname}' @{stage} PARALLEL = {threads:d}"
@@ -916,33 +918,53 @@ $$"""
 
             # handle setting up the schema in python because snowflake is
             # broken for csv globs: it cannot parse the result of the following
-            # query in  USING TEMPLATE
-            (info,) = cur.execute(
-                f"""
-                SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
-                WITHIN GROUP (ORDER BY ORDER_ID ASC)
-                FROM TABLE(
-                    INFER_SCHEMA(
-                        LOCATION => '@{stage}',
-                        FILE_FORMAT => '{file_format}'
+            # query in USING TEMPLATE
+            query = sg.select(
+                sge.WithinGroup(
+                    this=sge.ArrayAgg(this=sge.StarMap(this=STAR)),
+                    expression=sge.Order(
+                        expressions=[sge.Ordered(this=sg.column("ORDER_ID"))]
+                    ),
+                )
+            ).from_(
+                compiler.f.anon.TABLE(
+                    compiler.f.anon.INFER_SCHEMA(
+                        sge.Kwarg(
+                            this=compiler.v.LOCATION,
+                            expression=sge.convert(f"@{stage}"),
+                        ),
+                        sge.Kwarg(
+                            this=compiler.v.FILE_FORMAT,
+                            expression=sge.convert(file_format),
+                        ),
                     )
                 )
-                """
-            ).fetchone()
-            columns = ", ".join(
-                "{} {}{}".format(
-                    sg.to_identifier(field["COLUMN_NAME"], quoted=quoted).sql(
-                        self.name
-                    ),
-                    field["TYPE"],
-                    " NOT NULL" if not field["NULLABLE"] else "",
-                )
-                for field in json.loads(info)
             )
+            (info,) = cur.execute(query.sql(self.dialect)).fetchone()
             stmts = [
                 # create a temporary table using the stage and format inferred
                 # from the CSV
-                f"CREATE TEMP TABLE {qtable} ({columns})",
+                sge.Create(
+                    kind="TABLE",
+                    this=sge.Schema(
+                        this=qtable,
+                        expressions=[
+                            sge.ColumnDef(
+                                this=sg.to_identifier(
+                                    field["COLUMN_NAME"], quoted=quoted
+                                ),
+                                kind=field["TYPE"],
+                                constraints=(
+                                    [sge.NotNullColumnConstraint()]
+                                    if not field["NULLABLE"]
+                                    else None
+                                ),
+                            )
+                            for field in json.loads(info)
+                        ],
+                    ),
+                    properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+                ).sql(self.dialect),
                 # load the CSV into the table
                 f"""
                 COPY INTO {qtable}
@@ -979,7 +1001,8 @@ $$"""
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
         table = table_name or util.gen_name("read_json_snowflake")
-        qtable = sg.to_identifier(table, quoted=self.compiler.quoted)
+        quoted = self.compiler.quoted
+        qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
 
         kwargs.setdefault("strip_outer_array", True)
@@ -994,6 +1017,28 @@ $$"""
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = {file_format}",
         ]
 
+        compiler = self.compiler
+        query = sg.select(
+            sge.WithinGroup(
+                this=sge.ArrayAgg(this=sge.StarMap(this=STAR)),
+                expression=sge.Order(
+                    expressions=[sge.Ordered(this=sg.column("ORDER_ID"))]
+                ),
+            )
+        ).from_(
+            compiler.f.anon.TABLE(
+                compiler.f.anon.INFER_SCHEMA(
+                    sge.Kwarg(
+                        this=compiler.v.LOCATION,
+                        expression=sge.convert(f"@{stage}"),
+                    ),
+                    sge.Kwarg(
+                        this=compiler.v.FILE_FORMAT,
+                        expression=sge.convert(file_format),
+                    ),
+                )
+            )
+        )
         with self._safe_raw_sql(";\n".join(stmts)) as cur:
             cur.execute(
                 f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
@@ -1001,25 +1046,19 @@ $$"""
             cur.execute(
                 ";\n".join(
                     [
-                        f"""
-                        CREATE TEMP TABLE {qtable}
-                        USING TEMPLATE (
-                            SELECT ARRAY_AGG(OBJECT_CONSTRUCT(*))
-                            WITHIN GROUP (ORDER BY ORDER_ID ASC)
-                            FROM TABLE(
-                                INFER_SCHEMA(
-                                    LOCATION => '@{stage}',
-                                    FILE_FORMAT => '{file_format}'
-                                )
-                            )
-                        )
-                        """,
+                        f"CREATE TEMP TABLE {qtable} USING TEMPLATE ({query.sql(self.dialect)})",
                         # load the JSON file into the table
-                        f"""
-                        COPY INTO {qtable}
-                        FROM @{stage}
-                        MATCH_BY_COLUMN_NAME = {str(match_by_column_name).upper()}
-                        """,
+                        sge.Copy(
+                            this=qtable,
+                            kind=True,
+                            files=[sge.Table(this=sge.Var(this=f"@{stage}"))],
+                            params=[
+                                sge.CopyParameter(
+                                    this=self.compiler.v.MATCH_BY_COLUMN_NAME,
+                                    expression=sge.convert(match_by_column_name),
+                                )
+                            ],
+                        ).sql(self.dialect),
                     ]
                 )
             )
@@ -1060,7 +1099,7 @@ $$"""
         stage = util.gen_name("read_parquet_stage")
         table = table_name or util.gen_name("read_parquet_snowflake")
         quoted = self.compiler.quoted
-        qtable = sg.to_identifier(table, quoted=quoted)
+        qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
 
         kwargs.setdefault("USE_LOGICAL_TYPE", True)
@@ -1069,27 +1108,52 @@ $$"""
         )
 
         type_mapper = self.compiler.type_mapper
-        names_types = [
-            (name, type_mapper.to_string(typ), typ.nullable)
-            for name, typ in schema.items()
-        ]
-
-        snowflake_schema = ", ".join(
-            f"{sg.to_identifier(col, quoted=quoted)} {typ}{' NOT NULL' * (not is_nullable)}"
-            for col, typ, is_nullable in names_types
-        )
-
-        cols = ", ".join(f"$1:{col}::{typ}" for col, typ, _ in names_types)
 
         stmts = [
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
-            f"CREATE TEMP TABLE {qtable} ({snowflake_schema})",
+            sge.Create(
+                kind="TABLE",
+                this=sge.Schema(
+                    this=qtable,
+                    expressions=[
+                        sge.ColumnDef(
+                            this=sg.to_identifier(col, quoted=quoted),
+                            kind=type_mapper.from_ibis(typ),
+                            constraints=(
+                                [sge.NotNullColumnConstraint()]
+                                if not typ.nullable
+                                else None
+                            ),
+                        )
+                        for col, typ in schema.items()
+                    ],
+                ),
+                properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+            ).sql(self.dialect),
         ]
 
         query = ";\n".join(stmts)
+
+        param = sge.Parameter(this=sge.convert(1))
+        copy_select = (
+            sg.select(
+                *(
+                    sg.cast(
+                        self.compiler.f.get_path(param, sge.convert(col)),
+                        type_mapper.from_ibis(typ),
+                    )
+                    for col, typ in schema.items()
+                )
+            )
+            .from_(sge.Table(this=sge.Var(this=f"@{stage}")))
+            .subquery()
+        )
+        copy_query = sge.Copy(this=qtable, kind=True, files=[copy_select]).sql(
+            self.dialect
+        )
         with self._safe_raw_sql(query) as cur:
             cur.execute(f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}")
-            cur.execute(f"COPY INTO {qtable} FROM (SELECT {cols} FROM @{stage})")
+            cur.execute(copy_query)
 
         return self.table(table)
 
@@ -1140,7 +1204,7 @@ $$"""
 
         self._run_pre_execute_hooks(obj)
 
-        query = self._build_insert_query(
+        query = self._build_insert_from_table(
             target=table_name, source=obj, db=db, catalog=catalog
         )
         table = sg.table(

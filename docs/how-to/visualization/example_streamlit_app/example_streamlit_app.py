@@ -13,7 +13,8 @@ st.title("Yummy Data :bacon:")
 @st.cache_data
 def get_emoji():
     resp = requests.get(
-        "https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json"
+        "https://raw.githubusercontent.com/omnidan/node-emoji/master/lib/emoji.json",
+        timeout=60,
     )
     resp.raise_for_status()
     emojis = resp.json()

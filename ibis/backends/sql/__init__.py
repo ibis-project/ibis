@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from functools import partial
 from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
@@ -427,14 +428,14 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
         self._run_pre_execute_hooks(obj)
 
-        query = self._build_insert_query(
+        query = self._build_insert_from_table(
             target=table_name, source=obj, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
             pass
 
-    def _build_insert_query(
+    def _build_insert_from_table(
         self, *, target: str, source, db: str | None = None, catalog: str | None = None
     ):
         compiler = self.compiler
@@ -458,6 +459,55 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             dialect=compiler.dialect,
         )
         return query
+
+    def _build_insert_template(
+        self,
+        name,
+        *,
+        schema: sch.Schema,
+        catalog: str | None = None,
+        columns: bool = False,
+        placeholder: str = "?",
+    ) -> str:
+        """Builds an INSERT INTO table VALUES query string with placeholders.
+
+        Parameters
+        ----------
+        name
+            Name of the table to insert into
+        schema
+            Ibis schema of the table to insert into
+        catalog
+            Catalog name of the table to insert into
+        columns
+            Whether to render the columns to insert into
+        placeholder
+            Placeholder string. Can be a format string with a single `{i}` spec.
+
+        Returns
+        -------
+        str
+            The query string
+        """
+        quoted = self.compiler.quoted
+        return sge.insert(
+            sge.Values(
+                expressions=[
+                    sge.Tuple(
+                        expressions=[
+                            sge.Var(this=placeholder.format(i=i))
+                            for i in range(len(schema))
+                        ]
+                    )
+                ]
+            ),
+            into=sg.table(name, catalog=catalog, quoted=quoted),
+            columns=(
+                map(partial(sg.to_identifier, quoted=quoted), schema.keys())
+                if columns
+                else None
+            ),
+        ).sql(self.dialect)
 
     def truncate_table(
         self, name: str, database: str | None = None, schema: str | None = None

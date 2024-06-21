@@ -562,9 +562,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             ).sql(self.name, pretty=True)
 
             data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join("?" * len(schema))
-            table = sg.table(name, quoted=quoted).sql(self.name)
-            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            insert_stmt = self._build_insert_template(name, schema=schema)
             with self.begin() as cur:
                 cur.execute(create_stmt)
                 for row in data:

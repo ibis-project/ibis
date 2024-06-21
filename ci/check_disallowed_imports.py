@@ -14,7 +14,7 @@ CURRENT_DIR = pathlib.Path(__file__).parent.absolute()
 def generate_dependency_graph(*args):
     command = ("pydeps", "--show-deps", *args)
     print(f"Running: {' '.join(command)}")  # noqa: T201
-    result = subprocess.check_output(command, text=True)
+    result = subprocess.check_output(command, text=True)  # noqa: S603
     return json.loads(result)
 
 

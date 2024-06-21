@@ -193,7 +193,7 @@ def evaluate_annotations(
     for k, v in annots.items():
         if isinstance(v, str):
             try:
-                v = eval(v, globalns, localns)
+                v = eval(v, globalns, localns)  # noqa: S307
             except NameError:
                 if not best_effort:
                     raise

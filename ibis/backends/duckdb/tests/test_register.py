@@ -166,7 +166,9 @@ def test_temp_directory(tmp_path):
 @pytest.fixture(scope="session")
 def pgurl():  # pragma: no cover
     pgcon = ibis.postgres.connect(
-        user="postgres", password="postgres", host="localhost"
+        user="postgres",
+        password="postgres",  # noqa: S106
+        host="localhost",
     )
 
     df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
@@ -193,7 +195,11 @@ def test_read_postgres(con, pgurl):  # pragma: no cover
 
 @pytest.fixture(scope="session")
 def mysqlurl():  # pragma: no cover
-    mysqlcon = ibis.mysql.connect(user="ibis", password="ibis", database="ibis_testing")
+    mysqlcon = ibis.mysql.connect(
+        user="ibis",
+        password="ibis",  # noqa: S106
+        database="ibis_testing",
+    )
 
     df = pd.DataFrame({"x": [1.0, 2.0, 3.0, 1.0], "y": ["a", "b", "c", "a"]})
     s = ibis.schema(dict(x="float64", y="str"))

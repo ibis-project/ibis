@@ -10,6 +10,7 @@ from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 
+import numpy as np
 import oracledb
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -501,16 +502,18 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                     this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
                 ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-            ).sql(self.name, pretty=True)
+            ).sql(self.name)
 
-            data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join(f":{i}" for i, _ in enumerate(schema))
-            table = sg.table(name, quoted=quoted).sql(self.name)
-            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            data = op.data.to_frame().replace({np.nan: None})
+            insert_stmt = self._build_insert_template(
+                name, schema=schema, placeholder=":{i:d}"
+            )
             with self.begin() as cur:
                 cur.execute(create_stmt)
-                for row in data:
-                    cur.execute(insert_stmt, row)
+                for start, end in util.chunks(len(data), chunk_size=128):
+                    cur.executemany(
+                        insert_stmt, list(data.iloc[start:end].itertuples(index=False))
+                    )
 
         atexit.register(self._clean_up_tmp_table, name)
 

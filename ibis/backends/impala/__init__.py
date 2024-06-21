@@ -1239,9 +1239,7 @@ class Backend(SQLBackend):
             ).sql(self.name, pretty=True)
 
             data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join("?" * len(schema))
-            table = sg.table(name, quoted=quoted).sql(self.name)
-            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            insert_stmt = self._build_insert_template(name, schema=schema)
             with self._safe_raw_sql(create_stmt) as cur:
                 for row in data:
                     cur.execute(insert_stmt, row)

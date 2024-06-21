@@ -6,8 +6,6 @@ import contextlib
 import datetime
 import struct
 from contextlib import closing
-from functools import partial
-from itertools import repeat
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 
@@ -25,7 +23,7 @@ from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.mssql.compiler import MSSQLCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compiler import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -287,25 +285,35 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             return cursor
 
     def create_catalog(self, name: str, force: bool = False) -> None:
-        name = self._quote(name)
+        expr = (
+            sg.select(STAR)
+            .from_(sg.table("databases", db="sys"))
+            .where(C.name.eq(sge.convert(name)))
+        )
+        stmt = sge.Create(
+            kind="DATABASE", this=sg.to_identifier(name, quoted=self.compiler.quoted)
+        ).sql(self.dialect)
         create_stmt = (
             f"""\
-IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = {name})
+IF NOT EXISTS ({expr.sql(self.dialect)})
 BEGIN
-  CREATE DATABASE {name};
+  {stmt};
 END;
 GO"""
             if force
-            else f"CREATE DATABASE {name}"
+            else stmt
         )
         with self._safe_raw_sql(create_stmt):
             pass
 
     def drop_catalog(self, name: str, force: bool = False) -> None:
-        name = self._quote(name)
-        if_exists = "IF EXISTS " * force
-
-        with self._safe_raw_sql(f"DROP DATABASE {if_exists}{name}"):
+        with self._safe_raw_sql(
+            sge.Drop(
+                kind="DATABASE",
+                this=sg.to_identifier(name, quoted=self.compiler.quoted),
+                exists=force,
+            )
+        ):
             pass
 
     def create_database(
@@ -313,31 +321,44 @@ GO"""
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
+        quoted = self.compiler.quoted
 
-        name = self._quote(name)
+        expr = (
+            sg.select(STAR)
+            .from_(sg.table("schemas", db="sys"))
+            .where(C.name.eq(sge.convert(name)))
+        )
+        stmt = sge.Create(
+            kind="SCHEMA", this=sg.to_identifier(name, quoted=quoted)
+        ).sql(self.dialect)
 
         create_stmt = (
             f"""\
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = {name})
+IF NOT EXISTS ({expr.sql(self.dialect)})
 BEGIN
-  CREATE SCHEMA {name};
+  {stmt};
 END;
 GO"""
             if force
-            else f"CREATE SCHEMA {name}"
+            else stmt
         )
 
         with self.begin() as cur:
             if should_switch_catalog:
-                cur.execute(f"USE {self._quote(catalog)}")
+                cur.execute(
+                    sge.Use(this=sg.to_identifier(catalog, quoted=quoted)).sql(
+                        self.dialect
+                    )
+                )
 
             cur.execute(create_stmt)
 
             if should_switch_catalog:
-                cur.execute(f"USE {self._quote(current_catalog)}")
-
-    def _quote(self, name: str):
-        return sg.to_identifier(name, quoted=True).sql(self.dialect)
+                cur.execute(
+                    sge.Use(this=sg.to_identifier(current_catalog, quoted=quoted)).sql(
+                        self.dialect
+                    )
+                )
 
     def drop_database(
         self, name: str, catalog: str | None = None, force: bool = False
@@ -345,18 +366,30 @@ GO"""
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
 
-        name = self._quote(name)
-
-        if_exists = "IF EXISTS " * force
+        quoted = self.compiler.quoted
 
         with self.begin() as cur:
             if should_switch_catalog:
-                cur.execute(f"USE {self._quote(catalog)}")
+                cur.execute(
+                    sge.Use(this=sg.to_identifier(catalog, quoted=quoted)).sql(
+                        self.dialect
+                    )
+                )
 
-            cur.execute(f"DROP SCHEMA {if_exists}{name}")
+            cur.execute(
+                sge.Drop(
+                    kind="SCHEMA",
+                    exists=force,
+                    this=sg.to_identifier(name, quoted=quoted),
+                ).sql(self.dialect)
+            )
 
             if should_switch_catalog:
-                cur.execute(f"USE {self._quote(current_catalog)}")
+                cur.execute(
+                    sge.Use(this=sg.to_identifier(current_catalog, quoted=quoted)).sql(
+                        self.dialect
+                    )
+                )
 
     def list_tables(
         self,
@@ -570,19 +603,11 @@ GO"""
 
             df = op.data.to_frame()
             data = df.itertuples(index=False)
-            cols = ", ".join(
-                ident.sql(self.dialect)
-                for ident in map(
-                    partial(sg.to_identifier, quoted=quoted), schema.keys()
-                )
-            )
-            specs = ", ".join(repeat("?", len(schema)))
-            table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.dialect)} ({cols}) VALUES ({specs})"
 
+            insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
             with self._safe_raw_sql(create_stmt) as cur:
                 if not df.empty:
-                    cur.executemany(sql, data)
+                    cur.executemany(insert_stmt, data)
 
     def _to_sqlglot(
         self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
