@@ -46,8 +46,8 @@ session and create an Ibis Snowflake backend instance with it.
 Here's what this looks like:
 
 ```python
-from snowflake.snowpark import Session
 import ibis
+import snowflake.snowpark as sp
 
 session = sp.Session.builder.create()
 con = ibis.snowflake.from_snowpark(session)
@@ -104,7 +104,7 @@ to reference some of the additional dependencies that are already available.
 ```python
 session.sproc.register(
         ibis_sproc,
-        return_type=T.StructType(),
+        return_type=sp.types.StructType(),
         name="THE_IBIS_SPROC",
         imports=["ibis", "parsy", "pyarrow_hotfix", "sqlglot", "rich"],
         packages=[
