@@ -880,6 +880,7 @@ def lots_of_tables(tmp_path_factory):
     return ibis.duckdb.connect(db)
 
 
+@pytest.mark.timeout(60)
 def test_memtable_register(lots_of_tables, benchmark):
     t = ibis.memtable({"x": [1, 2, 3]})
     result = benchmark(lots_of_tables.execute, t)
