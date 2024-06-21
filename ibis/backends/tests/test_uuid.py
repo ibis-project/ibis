@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import uuid
 
+import pyarrow as pa
 import pytest
 
 import ibis
@@ -63,3 +64,17 @@ def test_uuid_unique_each_row(con):
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
     )
     assert expr.execute() == 2
+
+
+@pytest.mark.notimpl(
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["clickhouse", "postgres", "trino"],
+    reason="Expected bytes, got a 'UUID' object. https://github.com/ibis-project/ibis/issues/8902",
+    raises=pa.lib.ArrowTypeError,
+)
+@pytest.mark.notimpl(["pandas", "dask"], raises=com.OperationNotDefinedError)
+def test_uuid_to_pyarrow(con):
+    con.to_pyarrow(ibis.uuid())

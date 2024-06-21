@@ -24,6 +24,7 @@ from ibis.backends.flink.ddl import (
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
+from ibis.formats.pyarrow import PyArrowData
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -940,7 +941,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         limit: int | str | None = None,
         **kwargs: Any,
     ):
-        import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
 
         ibis_table = expr.as_table()
@@ -963,9 +963,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         # TODO (mehmet): `limit` is discarded in `execute()`. Is this intentional?
         df = df.head(limit)
 
-        ibis_schema = ibis_table.schema()
-        arrow_schema = ibis_schema.to_pyarrow()
-        arrow_table = pa.Table.from_pandas(df, schema=arrow_schema)
+        arrow_table = PyArrowData.convert_table(df, ibis_table.schema())
         return arrow_table.to_reader()
 
     def _from_ibis_table_to_pyflink_table(self, table: ir.Table) -> Table | None:
