@@ -36,19 +36,13 @@ class SortKey(Value):
     shape = rlz.shape_like("expr")
 
     @classmethod
-    def __coerce__(cls, value, T=None, S=None):
-        if isinstance(value, tuple):
-            key, asc = value
-        else:
-            key, asc = value, True
-
-        asc = _is_ascending[asc]
+    def __coerce__(cls, key, T=None, S=None):
         key = super().__coerce__(key, T=T, S=S)
 
         if isinstance(key, cls):
             return key
         else:
-            return cls(key, asc)
+            return cls(key)
 
     @property
     def name(self) -> str:
