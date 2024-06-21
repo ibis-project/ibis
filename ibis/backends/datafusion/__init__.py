@@ -410,11 +410,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             empty_dataset = ds.dataset([], schema=schema.to_pyarrow())
             self.con.register_dataset(name=name, dataset=empty_dataset)
 
-    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
-        if self.supports_in_memory_tables:
-            for memtable in expr.op().find(ops.InMemoryTable):
-                self._register_in_memory_table(memtable)
-
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:

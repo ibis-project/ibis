@@ -1551,10 +1551,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             }
         )
 
-    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
-        for memtable in expr.op().find(ops.InMemoryTable):
-            self._register_in_memory_table(memtable)
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():

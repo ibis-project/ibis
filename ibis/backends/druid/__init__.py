@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
+    import ibis.expr.operations as ops
     import ibis.expr.types as ir
 
 
@@ -179,7 +180,7 @@ class Backend(SQLBackend):
             tables = result.fetchall()
         return self._filter_with_like([table.TABLE_NAME for table in tables], like=like)
 
-    def _register_in_memory_tables(self, expr):
+    def _register_in_memory_table(self, op: ops.InMemoryTable):
         """No-op. Table are inlined, for better or worse."""
 
     def _cursor_batches(

@@ -1018,9 +1018,15 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 
-    def _register_in_memory_tables(self, expr: ir.Expr):
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
+        for memtable in expr.op().find(ops.InMemoryTable):
+            self._register_in_memory_table(memtable)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable):
         if self.supports_in_memory_tables:
-            raise NotImplementedError(self.name)
+            raise NotImplementedError(
+                f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
+            )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
