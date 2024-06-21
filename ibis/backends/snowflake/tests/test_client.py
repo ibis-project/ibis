@@ -242,6 +242,13 @@ def test_read_parquet(con, data_dir):
 
     assert t.timestamp_col.type().is_timestamp()
 
+    with pytest.raises(IOError):
+        con.read_parquet(path, table_name=t.op().name)
+
+    t = con.read_parquet(path, table_name=t.op().name, overwrite=True)
+
+    assert t.timestamp_col.type().is_timestamp()
+
 
 def test_array_repr(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
