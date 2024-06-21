@@ -10,6 +10,7 @@ import re
 from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import parse_qs, urlparse
 
+import google.api_core.exceptions
 import google.auth.credentials
 import google.cloud.bigquery as bq
 import google.cloud.bigquery_storage_v1 as bqstorage
@@ -171,10 +172,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         raw_name = op.name
 
-        project = self._session_dataset.project
-        dataset = self._session_dataset.dataset_id
+        session_dataset = self._session_dataset
+        project = session_dataset.project
+        dataset = session_dataset.dataset_id
 
-        if raw_name not in self.list_tables(database=(project, dataset)):
+        table_ref = bq.TableReference(session_dataset, raw_name)
+        try:
+            self.client.get_table(table_ref)
+        except google.api_core.exceptions.NotFound:
             table_id = sg.table(
                 raw_name, db=dataset, catalog=project, quoted=False
             ).sql(dialect=self.name)
