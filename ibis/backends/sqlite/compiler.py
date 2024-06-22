@@ -312,7 +312,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self._temporal_truncate(self.f.date, arg, unit)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
-        return self._temporal_truncate(self.f.datetime, arg, unit)
+        return self._temporal_truncate(self.f.anon.datetime, arg, unit)
 
     def visit_DateArithmetic(self, op, *, left, right):
         unit = op.right.dtype.unit
