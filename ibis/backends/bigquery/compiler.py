@@ -280,7 +280,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         elif dtype.is_date():
             return self.f.datefromparts(value.year, value.month, value.day)
         elif dtype.is_time():
-            return self.f.time(value.hour, value.minute, value.second)
+            return self.f.anon.time(value.hour, value.minute, value.second)
         elif dtype.is_binary():
             return sge.Cast(
                 this=sge.convert(value.hex()),
