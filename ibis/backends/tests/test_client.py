@@ -129,7 +129,11 @@ def test_create_table(backend, con, temp_table, func, sch):
                     ["pyspark", "trino", "exasol", "risingwave"],
                     reason="No support for temp tables",
                 ),
-                pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
+                pytest.mark.notyet(
+                    ["mssql"],
+                    reason="Can't rename temp tables",
+                    raises=ValueError,
+                ),
                 pytest.mark.broken(
                     ["bigquery"],
                     reason="tables created with temp=True cause a 404 on retrieval",
@@ -1722,7 +1726,6 @@ def test_json_to_pyarrow(con):
     assert result == expected
 
 
-@pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(
     ["risingwave", "exasol"],
     raises=com.UnsupportedOperationError,

@@ -134,3 +134,21 @@ def test_list_tables_schema_warning_refactor(con):
 
     assert con.list_tables(database="msdb.dbo", like="restore") == restore_tables
     assert con.list_tables(database=("msdb", "dbo"), like="restore") == restore_tables
+
+
+def test_create_temp_table_from_obj(con):
+    obj = {"team": ["john", "joe"]}
+
+    t = con.create_table("team", obj, temp=True)
+
+    t2 = con.table("##team", database="tempdb.dbo")
+
+    assert t.to_pyarrow().equals(t2.to_pyarrow())
+
+    persisted_from_temp = con.create_table("fuhreal", t2)
+
+    assert "fuhreal" in con.list_tables()
+
+    assert persisted_from_temp.to_pyarrow().equals(t2.to_pyarrow())
+
+    con.drop_table("fuhreal")
