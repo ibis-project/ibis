@@ -240,7 +240,10 @@ def table_column(op, rel, name):
 @translate.register(ops.SortKey)
 def sort_key(op, expr, ascending, nulls_first):
     method = "asc" if ascending else "desc"
-    return f"{expr}.{method}(nulls_first={nulls_first})"
+    call = f"{expr}.{method}"
+    if nulls_first:
+        return f"{call}(nulls_first={nulls_first})"
+    return f"{call}()"
 
 
 @translate.register(ops.Reduction)
