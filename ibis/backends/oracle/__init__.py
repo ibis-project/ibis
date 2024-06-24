@@ -9,6 +9,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import numpy as np
 import oracledb
@@ -160,7 +161,14 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         oracledb.defaults.fetch_decimals = True
 
     def _from_url(self, url: str, **kwargs):
-        return self.do_connect(user=url.username, password=url.password, dsn=url.host)
+        url = urlparse(url)
+        self.do_connect(
+            user=url.username,
+            password=url.password,
+            database=url.path.removeprefix("/"),
+        )
+
+        return self
 
     @property
     def current_database(self) -> str:
