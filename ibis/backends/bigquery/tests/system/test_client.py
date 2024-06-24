@@ -119,9 +119,8 @@ def test_subquery_scalar_params(alltypes):
     t = alltypes
     p = ibis.param("timestamp").name("my_param")
     expr = (
-        t[["float_col", "timestamp_col", "int_col", "string_col"]][
-            lambda t: t.timestamp_col < p
-        ]
+        t.select("float_col", "timestamp_col", "string_col")
+        .filter(lambda t: t.timestamp_col < p)
         .group_by("string_col")
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()
