@@ -610,6 +610,7 @@ def test_order_by_random(alltypes):
     ids=["desc", "asc"],
 )
 def test_order_by_nulls_default(con, op, expected):
+    # default nulls_first is False
     t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
     expr = t.order_by(getattr(t["b"], op)())
     result = con.execute(expr).reset_index(drop=True)
@@ -634,6 +635,89 @@ def test_order_by_nulls(con, op, nulls_first, expected):
     expected = pd.DataFrame(expected)
 
     tm.assert_frame_equal(result.replace({np.nan: None}), expected)
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.parametrize(
+    "op1, nf1, op2, nf2, expected",
+    [
+        param(
+            "asc",
+            False,
+            "desc",
+            False,
+            {
+                "col1": [1, 1, 1, 2, 3, 3, None],
+                "col2": ["c", "a", None, "B", "a", "D", "a"],
+            },
+        ),
+        param(
+            "asc",
+            True,
+            "desc",
+            True,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", None, "c", "a", "B", "a", "D"],
+            },
+        ),
+        param(
+            "asc",
+            True,
+            "desc",
+            False,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", "c", "a", None, "B", "a", "D"],
+            },
+        ),
+        param(
+            "asc",
+            True,
+            "asc",
+            True,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", None, "a", "c", "B", "D", "a"],
+            },
+        ),
+        param(
+            "asc",
+            True,
+            "asc",
+            False,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", "a", "c", None, "B", "D", "a"],
+            },
+        ),
+    ],
+    ids=["asc-desc-ff", "asc-desc-tt", "asc-desc-tf", "asc-asc-tt", "asc-desc-tf"],
+)
+def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
+    t = ibis.memtable(
+        {
+            "col1": [1, 3, 2, 1, 3, 1, None],
+            "col2": ["a", "a", "B", "c", "D", None, "a"],
+        }
+    )
+    expr = t.order_by(
+        [
+            getattr(t["col1"], op1)(nulls_first=nf1),
+            getattr(t["col2"], op2)(nulls_first=nf2),
+        ]
+    )
+
+    if con.name == "pandas" and (nf1 != nf2):
+        with pytest.raises(
+            ValueError, match="pandas does not support different columns ordering"
+        ):
+            result = con.execute(expr).reset_index(drop=True)
+    else:
+        result = con.execute(expr).reset_index(drop=True)
+        expected = pd.DataFrame(expected)
+
+        tm.assert_frame_equal(result({np.nan: None}), expected)
 
 
 @pytest.mark.notyet(
