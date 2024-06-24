@@ -165,9 +165,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         return database
 
     def list_databases(self, like: str | None = None) -> list[str]:
-        # In MySQL, "database" and "schema" are synonymous
-        with self._safe_raw_sql("SHOW DATABASES") as cur:
-            databases = list(map(itemgetter(0), cur.fetchall()))
+        # In MySQL syntax, "database" and "schema" are synonymous
+    
+        databases = self.con.get_schema_names() 
         return self._filter_with_like(databases, like)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
@@ -220,10 +220,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         try:
             yield cur
         except Exception:
-            con.rollback()
             raise
-        else:
-            con.commit()
         finally:
             cur.close()
 
@@ -242,6 +239,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         cursor = con.cursor()
 
         try:
+            print("Query: ", query)
             cursor.execute(query, **kwargs)
         except Exception:
             cursor.close()
@@ -319,6 +317,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             .sql(self.name)
         )
 
+        print("SQL List Tables: ", sql)
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()
 
