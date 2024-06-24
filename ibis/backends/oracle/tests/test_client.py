@@ -71,3 +71,9 @@ def test_list_tables_schema_warning_refactor(con):
         assert con.list_tables(schema="SYS", like="EXU8OPT") == ["EXU8OPT"]
 
     assert con.list_tables(database="SYS", like="EXU8OPT") == ["EXU8OPT"]
+
+
+def test_from_url(con):
+    new_con = ibis.connect("oracle://ibis:ibis@localhost:1521/IBIS_TESTING")
+
+    assert new_con.list_tables()
