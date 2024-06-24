@@ -27,11 +27,12 @@ derivate of the TPC-H benchmark.
 
 [The TPC-H benchmark](https://www.tpc.org/tpch) is a benchmark for databases
 and, [increasingly](https://docs.coiled.io/blog/tpch),
-[dataframes](https://pola.rs/posts/benchmarks)!  It consists of 22 queries
-across 8 tables. The queries are designed to test the performance of a database
-(or dataframe!) on a variety of tasks including filtering, aggregation, and
-joins.  SQL queries are defined by the TPC-H benchmark. We run the SQL queries
-and equivalent dataframe code via Ibis and Polars APIs.
+[dataframes](https://pola.rs/posts/benchmarks)! It consists of 22 queries
+across 8 tables. The SQL (or dataframe) code representing the queries is
+designed to test the performance of a query engine on a variety of tasks
+including filtering, aggregation, and joins. SQL queries are defined by the
+TPC-H benchmark. We run the SQL queries and equivalent dataframe code via Ibis
+and Polars APIs.
 
 The data for the benchmark can be generated at any scale factor, which roughly
 corresponds to the size of the data in memory in gigabytes. For instance, a
@@ -93,7 +94,7 @@ and query 16 fails through SQL. Note that [all TPC-H SQL queries successfully
 run through DataFusion
 directly](https://github.com/apache/datafusion-benchmarks) -- Ibis generates SQL
 that [hits a bug with DataFusion that has already been
-fixed](https://github.com/apache/datafusion/issues/10830).  We expect these
+fixed](https://github.com/apache/datafusion/issues/10830). We expect these
 queries to work in the next iteration of this benchmark coming soon.
 
 #### Failing Polars queries
@@ -624,7 +625,7 @@ this is a single data point -- let's expand to the first 7 queries:
 From here, we'll set `log_y=True` due to the wide range of execution times.
 
 We also look at the first 7 queries due to limited horizontal space on this
-website.  Analyze and visualize the data yourself for all 22 queries! Or [see
+website. Analyze and visualize the data yourself for all 22 queries! Or [see
 the Ibis benchmarking Streamlit app](https://ibis-bench.streamlit.app).
 :::
 
