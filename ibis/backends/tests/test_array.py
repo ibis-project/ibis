@@ -1447,6 +1447,9 @@ def test_table_unnest_with_keep_empty(con):
     ["datafusion", "pandas", "polars", "dask", "flink", "pyspark"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notyet(
+    ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
+)
 def test_table_unnest_column_expr(backend):
     t = backend.array_types
     expr = t.unnest(t.y.map(lambda v: v.cast("str") + "'s").name("plural"))
