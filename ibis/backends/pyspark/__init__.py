@@ -267,23 +267,43 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             ]
         return self._filter_with_like(databases, like)
 
-    def list_tables(
-        self, like: str | None = None, database: str | None = None
+    def list(
+        self,
+        like: str | None = None,
+        database: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database.
+        """
+
+        return self.list_tables(like=like, database=database) + self.list_views(
+            like=like, database=database
+        )
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
 
         Parameters
         ----------
         like
             A pattern to use for listing tables.
         database
-            Database to list tables from. Default behavior is to show tables in
-            the current catalog and database.
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
+            Database to list tables from. Default behavior is to show
+            tables in the current database.
         """
+        view_set = set(self.list_views(database=database))
+
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
         with self._active_catalog(catalog):
@@ -292,8 +312,38 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 for row in self._session.sql(
                     f"SHOW TABLES IN {db or self.current_database}"
                 ).collect()
+                if row.tableName not in view_set
             ]
+
         return self._filter_with_like(tables, like)
+
+    def list_views(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            Database to list views from. Default behavior is to show
+            views in the current database.
+        """
+
+        view_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(view_loc)
+        with self._active_catalog(catalog):
+            views = [
+                row.viewName
+                for row in self._session.sql(
+                    f"SHOW VIEWS IN {db or self.current_database}"
+                ).collect()
+            ]
+
+        return self._filter_with_like(views, like)
 
     def _wrap_udf_to_return_pandas(self, func, output_dtype):
         def wrapper(*args):

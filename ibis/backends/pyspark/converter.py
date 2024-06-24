@@ -30,6 +30,7 @@ class PySparkPandasData(PandasData):
                     return value.astimezone(tz).replace(tzinfo=None)
                 except TypeError:
                     return value.tz_localize(tz).replace(tzinfo=None)
+
         else:
             tz = normalize_timezone(dtype.timezone)
 

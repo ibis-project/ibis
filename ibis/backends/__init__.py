@@ -31,21 +31,28 @@ if TYPE_CHECKING:
 __all__ = ("BaseBackend", "connect")
 
 
-class TablesAccessor(collections.abc.Mapping):
-    """A mapping-like object for accessing tables off a backend.
+# TODO (mehmet): Given that we are dedicating "table" to
+# the actual tables (excluding views), do we need to add `TabularsAccessor`
+# and add `all/tabulars/relations()` in `BaseBackend`.
 
-    Tables may be accessed by name using either index or attribute access:
+
+class TabularsAccessor(collections.abc.Mapping):
+    """A mapping-like object for accessing tabulars off a backend.
+
+    A tabular is a table or a view. They may be accessed by name using
+    either index or attribute access:
 
     Examples
     --------
     >>> con = ibis.sqlite.connect("example.db")
-    >>> people = con.tables["people"]  # access via index
-    >>> people = con.tables.people  # access via attribute
-
+    >>> people = con.tabulars["people"]  # access via index
+    >>> people = con.tabulars.people  # access via attribute
     """
 
     def __init__(self, backend: BaseBackend):
         self._backend = backend
+        self._list = self._backend.list
+        self.repr_heading = "Tabulars"
 
     def __getitem__(self, name) -> ir.Table:
         try:
@@ -62,29 +69,65 @@ class TablesAccessor(collections.abc.Mapping):
             raise AttributeError(name) from exc
 
     def __iter__(self) -> Iterator[str]:
-        return iter(sorted(self._backend.list_tables()))
+        return iter(sorted(self._list()))
 
     def __len__(self) -> int:
-        return len(self._backend.list_tables())
+        return len(self._list())
 
     def __dir__(self) -> list[str]:
         o = set()
         o.update(dir(type(self)))
         o.update(
             name
-            for name in self._backend.list_tables()
+            for name in self._list()
             if name.isidentifier() and not keyword.iskeyword(name)
         )
         return list(o)
 
     def __repr__(self) -> str:
-        tables = self._backend.list_tables()
-        rows = ["Tables", "------"]
-        rows.extend(f"- {name}" for name in sorted(tables))
-        return "\n".join(rows)
+        return "\n".join(
+            [f"{self.repr_heading}", "------"]
+            + [f"- {name}" for name in sorted(self._list())]
+        )
 
     def _ipython_key_completions_(self) -> list[str]:
-        return self._backend.list_tables()
+        return self._list()
+
+
+class TablesAccessor(TabularsAccessor):
+    """A mapping-like object for accessing tables off a backend.
+
+    Tables may be accessed by name using either index or attribute access:
+
+    Examples
+    --------
+    >>> con = ibis.sqlite.connect("example.db")
+    >>> people = con.tables["people"]  # access via index
+    >>> people = con.tables.people  # access via attribute
+    """
+
+    def __init__(self, backend: BaseBackend):
+        super().__init__(backend)
+        self._list = self._backend.list_tables
+        self.repr_heading = "Tables"
+
+
+class ViewsAccessor(TabularsAccessor):
+    """A mapping-like object for accessing views off a backend.
+
+    Views may be accessed by name using either index or attribute access:
+
+    Examples
+    --------
+    >>> con = ibis.sqlite.connect("example.db")
+    >>> people = con.views["people"]  # access via index
+    >>> people = con.views.people  # access via attribute
+    """
+
+    def __init__(self, backend: BaseBackend):
+        super().__init__(backend)
+        self._list = self._backend.list_views
+        self.repr_heading = "Views"
 
 
 class _FileIOHandler:
@@ -867,7 +910,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def _filter_with_like(values: Iterable[str], like: str | None = None) -> list[str]:
         """Filter names with a `like` pattern (regex).
 
-        The methods `list_databases` and `list_tables` accept a `like`
+        The methods `list_databases` and `list_tables/views` accept a `like`
         argument, which filters the returned tables with tables that match the
         provided pattern.
 
@@ -967,6 +1010,22 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
 
     @functools.cached_property
+    def tabulars(self):
+        """An accessor for tabulars in the database.
+
+        A tabular is a table or a view.  They may be accessed by name
+        using either index or attribute access:
+
+        Examples
+        --------
+        >>> con = ibis.sqlite.connect("example.db")
+        >>> people = con.tabulars["people"]  # access via index
+        >>> people = con.tabulars.people  # access via attribute
+
+        """
+        return TabularsAccessor(self)
+
+    @functools.cached_property
     def tables(self):
         """An accessor for tables in the database.
 
@@ -980,6 +1039,21 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         """
         return TablesAccessor(self)
+
+    @functools.cached_property
+    def views(self):
+        """An accessor for views in the database.
+
+        Views may be accessed by name using either index or attribute access:
+
+        Examples
+        --------
+        >>> con = ibis.sqlite.connect("example.db")
+        >>> people = con.views["people"]  # access via index
+        >>> people = con.views.people  # access via attribute
+
+        """
+        return ViewsAccessor(self)
 
     @property
     @abc.abstractmethod

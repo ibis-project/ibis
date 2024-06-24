@@ -398,9 +398,9 @@ def test_nullable_input_output(con, temp_table):
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
-    tables = ddl_con.list_tables()
+    tabulars = ddl_con.list()
 
-    if table_name in tables or (table_name := table_name.upper()) in tables:
+    if table_name in tabulars or (table_name := table_name.upper()) in tabulars:
         expr = ddl_con.table(table_name)
     else:
         raise ValueError(f"table `{table_name}` does not exist")
@@ -410,7 +410,7 @@ def test_create_drop_view(ddl_con, temp_view):
     # create a new view
     ddl_con.create_view(temp_view, expr)
     # check if the view was created
-    assert temp_view in ddl_con.list_tables()
+    assert temp_view in ddl_con.list()
 
     t_expr = ddl_con.table(table_name)
     v_expr = ddl_con.table(temp_view)

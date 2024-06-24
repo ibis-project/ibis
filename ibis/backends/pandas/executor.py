@@ -290,6 +290,7 @@ class PandasExecutor(Dispatched, PandasUtils):
             def agg(df):
                 indices = func(df[key.name])
                 return df[arg.name].iloc[indices]
+
         else:
 
             def agg(df):
@@ -316,6 +317,7 @@ class PandasExecutor(Dispatched, PandasUtils):
 
             def agg(df):
                 return df[left.name].corr(df[right.name])
+
         else:
 
             def agg(df):
@@ -333,6 +335,7 @@ class PandasExecutor(Dispatched, PandasUtils):
 
             def agg(df):
                 return df[left.name].cov(df[right.name], ddof=ddof)
+
         else:
 
             def agg(df):
@@ -349,6 +352,7 @@ class PandasExecutor(Dispatched, PandasUtils):
 
             def agg(df):
                 return sep.join(df[arg.name].astype(str))
+
         else:
 
             def agg(df):

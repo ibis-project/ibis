@@ -112,11 +112,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         return sg.select(
             *(
-                self.compiler.f.st_aswkb(
-                    sg.column(col, quoted=self.compiler.quoted)
-                ).as_(col)
-                if col in geocols
-                else col
+                (
+                    self.compiler.f.st_aswkb(
+                        sg.column(col, quoted=self.compiler.quoted)
+                    ).as_(col)
+                    if col in geocols
+                    else col
+                )
                 for col in table_expr.columns
             )
         ).from_(sql.subquery())
@@ -934,13 +936,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             delta_table.to_pyarrow_dataset(), table_name=table_name
         )
 
-    def list_tables(
+    def list(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List tables and views.
+        """List the names of tables and views in the database.
 
         ::: {.callout-note}
         ## Ibis does not use the word `schema` to refer to database hierarchy.
@@ -963,9 +965,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             By default uses the current `database` (`self.current_database`) and
             `catalog` (`self.current_catalog`).
 
-            To specify a table in a separate catalog, you can pass in the
+            To specify a table/view in a separate catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
         schema
             [deprecated] Schema name. If not passed, uses the current schema.
 
@@ -979,18 +992,18 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         >>> import ibis
         >>> con = ibis.duckdb.connect()
         >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
-        >>> con.list_tables()
+        >>> con.list()
         ['foo']
         >>> bar = con.create_view("bar", foo)
-        >>> con.list_tables()
-        ['bar', 'foo']
+        >>> con.list()
+        ['foo', 'bar']
         >>> con.create_database("my_database")
-        >>> con.list_tables(database="my_database")
+        >>> con.list(database="my_database")
         []
         >>> with con.begin() as c:
         ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
         <...>
-        >>> con.list_tables(database="my_database")
+        >>> con.list(database="my_database")
         ['baz']
 
         """
@@ -1012,6 +1025,139 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                 C.table_schema.eq(sge.convert(database)),
             )
             .sql(self.dialect)
+        )
+        out = self.con.execute(sql).fetch_arrow_table()
+
+        return self._filter_with_like(out[col].to_pylist(), like)
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            Regex to filter by table name.
+        database
+            Database location. If not passed, uses the current database.
+
+            By default uses the current `database` (`self.current_database`) and
+            `catalog` (`self.current_catalog`).
+
+            To specify a table in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] Schema name. If not passed, uses the current schema.
+
+        Returns
+        -------
+        list[str]
+            List of table names.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
+        >>> con.list_tables()
+        ['foo']
+        >>> bar = con.create_view("bar", foo)
+        >>> con.list_tables()
+        ['foo']
+        >>> con.list_views()
+        ['bar']
+        >>> con.create_database("my_database")
+        >>> con.list_tables(database="my_database")
+        []
+        >>> with con.begin() as c:
+        ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        <...>
+        >>> con.list_tables(database="my_database")
+        ['baz']
+
+        """
+        tables_and_views = self.list(like=like, database=database, schema=schema)
+        views = self.list_views(like=like, database=database, schema=schema)
+
+        # Duckdb does not allow creating a table and a view
+        # with the same name.
+        return list(set(tables_and_views) - set(views))
+
+    def list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+        schema: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            Regex to filter by table name.
+        database
+            Database location. If not passed, uses the current database.
+
+            ::: {.callout-note}
+            ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+            A collection of tables/views is referred to as a `database`.
+            A collection of `database` is referred to as a `catalog`.
+
+            These terms are mapped onto the corresponding features in each
+            backend (where available), regardless of whether the backend itself
+            uses the same terminology.
+            :::
+        schema
+            [deprecated] Schema name. If not passed, uses the current schema.
+
+        Returns
+        -------
+        list[str]
+            List of view names.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
+        >>> con.list_tables()
+        ['foo']
+        >>> bar = con.create_view("bar", foo)
+        >>> con.list_tables()
+        ['foo']
+        >>> con.list_views()
+        ['bar']
+        """
+        table_loc = self._warn_and_create_table_loc(database, schema)
+
+        database = self.compiler.f.current_schema()
+        if table_loc is not None:
+            database = table_loc.db or database
+
+        col = "view_name"
+        sql = (
+            sg.select(col)
+            .from_(sg.table("duckdb_views"))
+            .distinct()
+            .where(C.schema_name.eq(database))
+            .sql(self.name, pretty=True)
         )
         out = self.con.execute(sql).fetch_arrow_table()
 

@@ -197,19 +197,13 @@ class Backend(SQLBackend, CanCreateDatabase):
             databases = []
         return self._filter_with_like(databases, like)
 
-    def list_tables(
-        self, like: str | None = None, database: str | None = None
+    def _list_tables_or_views(
+        self,
+        views: bool,
+        like: str | None = None,
+        database: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
+        """Helper function for `list_tables/views()`."""
 
         query = sg.select(C.name).from_(sg.table("tables", db="system"))
 
@@ -218,7 +212,8 @@ class Backend(SQLBackend, CanCreateDatabase):
         else:
             database = sge.convert(database)
 
-        query = query.where(C.database.eq(database).or_(C.is_temporary))
+        view_cond = C.engine.eq("View") if views else C.engine.neq("View")
+        query = query.where(C.database.eq(database).or_(C.is_temporary), view_cond)
 
         with self._safe_raw_sql(query) as result:
             results = result.result_columns
@@ -228,6 +223,67 @@ class Backend(SQLBackend, CanCreateDatabase):
         else:
             tables = []
         return self._filter_with_like(tables, like)
+
+    def list(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database.
+        """
+        return self.list_tables(like=like, database=database) + self.list_views(
+            like=like, database=database
+        )
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to
+            show tables in the current database.
+        """
+        return self._list_tables_or_views(
+            views=False,
+            like=like,
+            database=database,
+        )
+
+    def list_views(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            Database to list views from. Default behavior is to
+            show views in the current database.
+        """
+        return self._list_tables_or_views(
+            views=True,
+            like=like,
+            database=database,
+        )
 
     def _normalize_external_tables(self, external_tables=None) -> ExternalData | None:
         """Merge registered external tables with any new external tables."""
@@ -456,6 +512,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         external_data = self._normalize_external_tables(external_tables)
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name, pretty=True)
+
         self._log(query)
         return self.con.query(query, external_data=external_data, **kwargs)
 

@@ -271,7 +271,7 @@ def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_pat
     with pytest.warns(FutureWarning, match="v9.1"):
         # ibis.connect uses con.register
         con = ibis.connect(tmp_path / f"out.{extension}")
-    t = next(iter(con.tables.values()))
+    t = next(iter(con.tabulars.values()))
     assert not t.head().execute().empty
 
 

@@ -59,15 +59,80 @@ def test_catalog_consistency(backend, con):
         assert current_catalog in catalogs
 
 
-def test_list_tables(con):
-    tables = con.list_tables()
-    assert isinstance(tables, list)
-    # only table that is guaranteed to be in all backends
+def test_list(con):
+    tabulars = con.list()
+    assert isinstance(tabulars, list)
+
+    # Only tabular that is guaranteed to be in all backends
     key = "functional_alltypes"
-    assert key in tables or key.upper() in tables
-    assert all(isinstance(table, str) for table in tables)
+    assert key in tabulars or key.upper() in tabulars
+    assert all(isinstance(tabular, str) for tabular in tabulars)
+
+    assert set(con.list_tables()) <= set(tabulars)
 
 
+@pytest.mark.broken(
+    ["bigquery"],
+    raises=AssertionError,
+    reason=(
+        "Bigquery does not allow for listing only the views. "
+        "See the TODO added in the docstring of `list_tables()` "
+        "for more context"
+    ),
+)
+@pytest.mark.broken(
+    ["pyspark"],
+    raises=AssertionError,
+    reason=(
+        "All test tables, including `functional_alltypes` are "
+        "created as views for pyspark backend."
+    ),
+)
+@pytest.mark.broken(
+    ["flink"],
+    raises=AssertionError,
+    reason="In Flink backend, we create in-memory objects as views",
+)
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "druid", "impala", "pandas", "polars", "trino"],
+    raises=AttributeError,
+    reason="Backend does not implement `list_views()`",
+)
+def test_list_tables(ddl_con):
+    table_name = "functional_alltypes"
+    tables = ddl_con.list_tables()
+    assert isinstance(tables, list)
+    assert table_name in tables
+
+    assert table_name not in ddl_con.list_views()
+
+
+@pytest.mark.notimpl(
+    ["dask", "datafusion", "impala", "pandas", "polars", "trino"],
+    raises=AttributeError,
+    reason="Backend does not implement `list_views()`",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Druid does not allow creating views",
+)
+def test_list_views(ddl_con, temp_view):
+    expr = ddl_con.table("functional_alltypes")
+    ddl_con.create_view(temp_view, expr)
+
+    views = ddl_con.list_views()
+    assert isinstance(views, list)
+    assert temp_view in views
+
+    assert temp_view not in ddl_con.list_tables()
+
+
+@pytest.mark.broken(
+    ["flink", "pyspark"],
+    raises=AssertionError,
+    reason="Backend creates the (in-memory) test tables as views",
+)
 def test_tables_accessor_mapping(con):
     if con.name == "snowflake":
         pytest.skip("snowflake sometimes counts more tables than are around")
@@ -99,6 +164,11 @@ def test_tables_accessor_getattr(con):
         con.tables._private_attr  # noqa: B018
 
 
+@pytest.mark.broken(
+    ["flink", "pyspark"],
+    raises=AssertionError,
+    reason="Backend creates the (in-memory) test tables as views",
+)
 def test_tables_accessor_tab_completion(con):
     name = "functional_alltypes"
     attrs = dir(con.tables)
@@ -109,6 +179,11 @@ def test_tables_accessor_tab_completion(con):
     assert name in keys
 
 
+@pytest.mark.broken(
+    ["flink", "pyspark"],
+    raises=AssertionError,
+    reason="Backend creates the (in-memory) test tables as views",
+)
 def test_tables_accessor_repr(con):
     name = "functional_alltypes"
     result = repr(con.tables)

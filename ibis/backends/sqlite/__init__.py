@@ -123,21 +123,14 @@ class Backend(SQLBackend, UrlFromPath):
 
         return sorted(self._filter_with_like(results, like))
 
-    def list_tables(
+    def _list_tables_or_views(
         self,
+        views: bool,
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """Helper function for `list_tables/views()`."""
 
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
         if database is None:
             database = "main"
 
@@ -146,7 +139,7 @@ class Backend(SQLBackend, UrlFromPath):
             .from_(F.pragma_table_list())
             .where(
                 C.schema.eq(sge.convert(database)),
-                C.type.isin(sge.convert("table"), sge.convert("view")),
+                C.type.isin(sge.convert("view") if views else sge.convert("table")),
                 ~(
                     C.name.isin(
                         sge.convert("sqlite_schema"),
@@ -162,6 +155,70 @@ class Backend(SQLBackend, UrlFromPath):
             results = [r[0] for r in cur.fetchall()]
 
         return sorted(self._filter_with_like(results, like))
+
+    def list(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables and views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables/views.
+        database
+            Database to list tables/views from. Default behavior is to
+            show tables/views in the current database.
+        """
+
+        return self.list_tables(like=like, database=database) + self.list_views(
+            like=like, database=database
+        )
+
+    def list_tables(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of tables in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show
+            tables in the current database.
+        """
+
+        return self._list_tables_or_views(
+            views=False,
+            like=like,
+            database=database,
+        )
+
+    def list_views(
+        self,
+        like: str | None = None,
+        database: str | None = None,
+    ) -> list[str]:
+        """List the names of views in the database.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing views.
+        database
+            Database to list views from. Default behavior is to show
+            views in the current database.
+        """
+
+        return self._list_tables_or_views(
+            views=True,
+            like=like,
+            database=database,
+        )
 
     def _parse_type(self, typ: str, nullable: bool) -> dt.DataType:
         typ = typ.lower()

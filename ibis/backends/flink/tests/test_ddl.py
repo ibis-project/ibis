@@ -27,8 +27,8 @@ def tempdir_sink_configs():
 
 @pytest.mark.parametrize("temp", [True, False])
 def test_list_tables(con, temp):
-    assert len(con.list_tables(temp=temp))
-    assert con.list_tables(catalog="default_catalog", database="default_database")
+    assert len(con.list(temp=temp))
+    assert con.list(catalog="default_catalog", database="default_database")
 
 
 def test_create_table_from_schema(
@@ -132,7 +132,7 @@ def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_c
         temp=True,
     )
     try:
-        assert temp_table in con.list_tables()
+        assert temp_table in con.list()
         if schema is not None:
             assert new_table.schema() == schema
 
@@ -175,7 +175,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
         temp=True,
     )
     try:
-        assert temp_table in con.list_tables()
+        assert temp_table in con.list()
         if schema is not None:
             assert new_table.schema() == schema
 
@@ -188,7 +188,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
             temp=True,
             overwrite=True,
         )
-        assert temp_table in con.list_tables()
+        assert temp_table in con.list()
         if schema is not None:
             assert new_table.schema() == schema
     finally:
@@ -299,7 +299,7 @@ def test_create_view(
         temp=temp,
         overwrite=False,
     )
-    view_list = sorted(con.list_tables())
+    view_list = sorted(con.list_views())
     assert temp_view in view_list
 
     # Try to re-create the same view with `force=False`
@@ -311,7 +311,7 @@ def test_create_view(
             temp=temp,
             overwrite=False,
         )
-    assert view_list == sorted(con.list_tables())
+    assert view_list == sorted(con.list_views())
 
     # Try to re-create the same view with `force=True`
     con.create_view(
@@ -321,7 +321,7 @@ def test_create_view(
         temp=temp,
         overwrite=False,
     )
-    assert view_list == sorted(con.list_tables())
+    assert view_list == sorted(con.list_views())
 
     # Overwrite the view
     con.create_view(
@@ -331,10 +331,10 @@ def test_create_view(
         temp=temp,
         overwrite=True,
     )
-    assert view_list == sorted(con.list_tables())
+    assert view_list == sorted(con.list_views())
 
     con.drop_view(name=temp_view, temp=temp, force=True)
-    assert temp_view not in con.list_tables()
+    assert temp_view not in con.list_views()
 
 
 def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs):
