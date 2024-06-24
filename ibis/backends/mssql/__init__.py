@@ -133,6 +133,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
+        # TODO: this is brittle and should be improved. We want to be able to
+        # identify if a given table is a temp table and update the search
+        # location accordingly.
+        if name.startswith("ibis_cache_"):
+            catalog, database = ("tempdb", "dbo")
+            name = "##" + name
         conditions = [sg.column("table_name").eq(sge.convert(name))]
 
         if database is not None:
@@ -481,20 +487,56 @@ GO"""
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
+        """Create a new table.
+
+        Parameters
+        ----------
+        name
+            Name of the new table.
+        obj
+            An Ibis table expression or pandas table that will be used to
+            extract the schema and the data of the new table. If not provided,
+            `schema` must be given.
+        schema
+            The schema for the new table. Only one of `schema` or `obj` can be
+            provided.
+        database
+            Name of the database where the table will be created, if not the
+            default.
+
+            To specify a location in a separate catalog, you can pass in the
+            catalog and database as a string `"catalog.database"`, or as a tuple of
+            strings `("catalog", "database")`.
+        temp
+            Whether a table is temporary or not.
+            All created temp tables are "Global Temporary Tables". They will be
+            created in "tempdb.dbo" and will be prefixed with "##".
+        overwrite
+            Whether to clobber existing data.
+            `overwrite` and `temp` cannot be used together with MSSQL.
+
+        Returns
+        -------
+        Table
+            The table that was created.
+
+        """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
+        if temp and overwrite:
+            raise ValueError(
+                "MSSQL doesn't support overwriting temp tables, create a new temp table instead."
             )
-        else:
-            database = None
+
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
 
         properties = []
 
         if temp:
             properties.append(sge.TemporaryProperty())
+            catalog, db = None, None
 
         temp_memtable_view = None
         if obj is not None:
@@ -528,8 +570,10 @@ GO"""
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        raw_table = sg.table(temp_name, catalog=database, quoted=False)
+        table = sg.table(
+            "#" * temp + temp_name, catalog=catalog, db=db, quoted=self.compiler.quoted
+        )
+        raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
         target = sge.Schema(this=table, expressions=column_defs)
 
         create_stmt = sge.Create(
@@ -538,11 +582,22 @@ GO"""
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
-        raw_this = sg.table(name, catalog=database, quoted=False)
+        this = sg.table(name, catalog=catalog, db=db, quoted=self.compiler.quoted)
+        raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                # You can specify that a table is temporary for the sqlglot `Create` but not
+                # for the subsequent `Insert`, so we need to shove a `#` in
+                # front of the table identifier.
+                _table = sg.table(
+                    "##" * temp + temp_name,
+                    catalog=catalog,
+                    db=db,
+                    quoted=self.compiler.quoted,
+                )
+                insert_stmt = sge.Insert(this=_table, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -558,11 +613,17 @@ GO"""
             # for in-memory reads
             if temp_memtable_view is not None:
                 self.drop_table(temp_memtable_view)
-            return self.table(name, database=database)
+            return self.table(
+                "##" * temp + name,
+                database=("tempdb" * temp or catalog, "dbo" * temp or db),
+            )
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
-            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+            name,
+            schema=schema,
+            source=self,
+            namespace=ops.Namespace(catalog=catalog, database=db),
         ).to_expr()
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
