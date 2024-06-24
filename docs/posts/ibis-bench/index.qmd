@@ -48,7 +48,7 @@ backends, including these three. We run [SQL
 code](https://github.com/lostmygithubaccount/ibis-bench/blob/v2.0.0/src/ibis_bench/queries/sql.py)
 through Ibis in addition to [dataframe
 code](https://github.com/lostmygithubaccount/ibis-bench/blob/v2.0.0/src/ibis_bench/queries/ibis.py)
-to get a sense of any overhead in Ibis dataframe code. 
+to get a sense of any overhead in Ibis dataframe code.
 
 :::{.callout-note}
 Ibis dataframe code generates SQL for the DuckDB and DataFusion backends and
