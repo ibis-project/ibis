@@ -662,3 +662,70 @@ class SnowflakeCompiler(SQLGlotCompiler):
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(
+            util.gen_name("table_unnest_column"), quoted=quoted
+        )
+
+        sep = sge.convert(util.guid())
+        null_sentinel = sge.convert(util.guid())
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+
+        selcols = []
+
+        opcol = op.column
+        opname = opcol.name
+        overlaps_with_parent = opname in op.parent.schema
+        computed_column = self.cast(
+            self.f.nullif(column_alias, null_sentinel), opcol.dtype.value_type
+        ).as_(opname, quoted=quoted)
+
+        if overlaps_with_parent:
+            selcols.append(
+                sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+            )
+        else:
+            selcols.append(sge.Column(this=STAR, table=table))
+            selcols.append(computed_column)
+
+        if offset is not None:
+            offset = sg.to_identifier(offset, quoted=quoted)
+            selcols.append(offset)
+
+        alias = sge.TableAlias(
+            this=sg.to_identifier(util.gen_name("table_unnest"), quoted=quoted),
+            columns=[column_alias],
+        )
+
+        # there has to be a better way
+        param = sg.to_identifier(util.gen_name("table_unnest_param"))
+        column = self.f.transform(
+            column,
+            sge.Lambda(
+                this=self.f.coalesce(self.cast(param, dt.string), null_sentinel),
+                expressions=[param],
+            ),
+        )
+        empty_array = self.f.array()
+        split = self.f.coalesce(
+            self.f.nullif(
+                self.f.split(
+                    self.f.array_to_string(self.f.nullif(column, empty_array), sep), sep
+                ),
+                empty_array,
+            ),
+            self.f.array(null_sentinel),
+        )
+
+        unnest = sge.Unnest(expressions=[split], alias=alias, offset=offset)
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
+        )
