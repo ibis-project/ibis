@@ -1,7 +1,7 @@
 ---
 title: "Ibis benchmarking: DuckDB, DataFusion, Polars"
 author: "Cody Peterson"
-date: "2024-06-23"
+date: "2024-06-24"
 image: "figure1.png"
 categories:
     - benchmark
@@ -15,8 +15,8 @@ categories:
 ## Key considerations
 
 The purpose of this post is to explore some benchmarking data with Ibis. We'll
-compare a few modern query engines, explore the Ibis API as a great choice for
-each of them, and discuss the results.
+compare three modern single-node query engines, explore the Ibis API as a great
+choice for each of them, and discuss the results.
 
 ### The benchmark
 
@@ -48,9 +48,12 @@ backends, including these three. We run [SQL
 code](https://github.com/lostmygithubaccount/ibis-bench/blob/v2.0.0/src/ibis_bench/queries/sql.py)
 through Ibis in addition to [dataframe
 code](https://github.com/lostmygithubaccount/ibis-bench/blob/v2.0.0/src/ibis_bench/queries/ibis.py)
-to get a sense of any overhead in Ibis dataframe code. Note that Ibis dataframe
-code generates SQL for the DuckDB and DataFusion backends and generates
-dataframe code for the Polars backend.
+to get a sense of any overhead in Ibis dataframe code. 
+
+:::{.callout-note}
+Ibis dataframe code generates SQL for the DuckDB and DataFusion backends and
+generates Polars API dataframe code for the Polars backend.
+:::
 
 :::{.callout-note title="Honorable mention: chDB" collapse="true"}
 [chDB](https://github.com/chdb-io/chdb) would be another great single-node OLAP
@@ -67,10 +70,10 @@ support](#failing-polars-queries). Due to this and relatively experimental SQL
 support in Polars, we've opted to run on [the Polars API
 directly](https://github.com/lostmygithubaccount/ibis-bench/blob/v2.0.0/src/ibis_bench/queries/polars.py)
 in this iteration of the benchmark. This is done with the LazyFrames API **and
-no streaming engine** (per the Polars team's recommendation, as the current
-streaming engine is being rewritten). This also allows us to compare the
-performance of the Polars backend through Ibis with the Polars API directly for
-the queries that do succeed.
+no streaming engine** ([per the Polars team's
+recommendation](https://github.com/pola-rs/polars/issues/16694#issuecomment-2146668559)).
+This also allows us to compare the performance of the Polars backend through
+Ibis with the Polars API directly for the queries that do succeed.
 
 #### Failing queries
 
@@ -101,8 +104,7 @@ code. These all fail due to lack of scalar subquery support in the backend. I've
 and discussion.
 
 :::{.callout-tip title="Interested in contributing?"}
-Interesting in contributing to Ibis? Increasing coverage of operations for a
-backend is a great place to start!
+Increasing coverage of operations for a backend is a great place to start!
 :::
 
 ### How queries are written
@@ -128,11 +130,10 @@ code](https://github.com/lostmygithubaccount/ibis-bench/tree/v2.0.0) and
 short:
 
 - data is generated as a Parquet file per table
-    - standard DuckDB Parquet writer is used (snappy compression, ~100k row
-     group size, etc.)
+    - standard DuckDB Parquet writer is used
     - data is always downloaded onto a compute instance (no cloud storage reads)
 - decimal types are converted to floats after reading
-    - this is done to avoid several issues experienced
+    - works around several issues
     - in the next iteration of this benchmark, we'll use the `decimal` type
 - each query is run three times per configuration (system, scale factor, instance type)
 - we measure the time to write the results of the query to a Parquet file
@@ -937,9 +938,9 @@ used as a more performant alternative to pandas.
 
 All three make great Ibis backends and you can switch between them in a single
 line of code. This let's you write your code once and run it on the engine
-that's best for your use case. If you newer, better engine comes along you'll
-likely be able to use that too. And you can scale up and out across the 20+
-backends Ibis supports as needed.
+that's best for your use case. If a better engine comes along you'll likely be
+able to use that too. And you can scale up and out across the 20+ backends Ibis
+supports as needed.
 
 TPC-H is a decent benchmark *for what it benchmarks, which is limited*. We're
 not running window functions, doing timeseries analysis, or feature engineering
@@ -947,7 +948,7 @@ for machine learning. We're not using nested data types. We're not performing
 regexes or using LLMs in UDFs...
 
 It's easy to summarize and visualize benchmarking data in a way that favors a
-given system. You should favor the system that works best for you.
+given system. You should favor the system that works best for your use case.
 
 ### Performance converges over time
 
