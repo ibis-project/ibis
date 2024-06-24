@@ -646,3 +646,24 @@ def test_unnest(snapshot):
 )
 def test_field_names_strip_whitespace(fieldname, expected):
     assert BigQueryCompiler._gen_valid_name(fieldname) == expected
+
+
+def test_subquery_scalar_params(snapshot):
+    t = ibis.table(
+        schema={
+            "float_col": "float64",
+            "timestamp_col": "timestamp",
+            "string_col": "string",
+        },
+        name="alltypes",
+    )
+    p = ibis.param("timestamp").name("my_param")
+    expr = (
+        t.filter(lambda t: t.timestamp_col < p)
+        .group_by("string_col")
+        .aggregate(foo=lambda t: t.float_col.sum())
+        .foo.count()
+        .name("count")
+    )
+    result = ibis.to_sql(expr, params={p: "20140101"}, dialect="bigquery")
+    snapshot.assert_match(result, "out.sql")

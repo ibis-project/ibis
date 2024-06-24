@@ -115,21 +115,6 @@ def test_different_partition_col_name(monkeypatch, con):
     assert col in parted_alltypes.columns
 
 
-def test_subquery_scalar_params(alltypes):
-    t = alltypes
-    p = ibis.param("timestamp").name("my_param")
-    expr = (
-        t.select("float_col", "timestamp_col", "string_col")
-        .filter(lambda t: t.timestamp_col < p)
-        .group_by("string_col")
-        .aggregate(foo=lambda t: t.float_col.sum())
-        .foo.count()
-        .name("count")
-    )
-    result = expr.compile(params={p: "20140101"})
-    assert "datetime('2014-01-01T00:00:00')" in result
-
-
 def test_repr_struct_of_array_of_struct():
     name = "foo"
     p = ibis.param("struct<x: array<struct<y: array<double>>>>").name(name)

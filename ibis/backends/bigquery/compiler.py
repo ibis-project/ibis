@@ -111,6 +111,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.RegexReplace: "regexp_replace",
         ops.RegexSearch: "regexp_contains",
         ops.Time: "time",
+        ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
         ops.ExtractHost: "net.host",
     }
@@ -269,9 +270,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             raise NotImplementedError("`end` not implemented for BigQuery string find")
         return self.f.strpos(arg, substr)
 
-    def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
-        return self.f.anon.TIME(hours, minutes, seconds)
-
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
@@ -284,9 +282,9 @@ class BigQueryCompiler(SQLGlotCompiler):
             funcname = "DATETIME" if dtype.timezone is None else "TIMESTAMP"
             return self.f.anon[funcname](value.isoformat())
         elif dtype.is_date():
-            return self.f.datefromparts(value.year, value.month, value.day)
+            return self.f.date_from_parts(value.year, value.month, value.day)
         elif dtype.is_time():
-            return self.f.anon.TIME(value.hour, value.minute, value.second)
+            return self.f.time_from_parts(value.hour, value.minute, value.second)
         elif dtype.is_binary():
             return sge.Cast(
                 this=sge.convert(value.hex()),
