@@ -600,7 +600,9 @@ class PandasExecutor(Dispatched, PandasUtils):
         elif not any(nulls_first):
             na_position = "last"
         else:
-            raise ValueError("pandas does not support different columns ordering")
+            raise ValueError(
+                "pandas does not support specifying null ordering for individual columns"
+            )
 
         newcols = {gen_name("sort_key"): col for col in keys}
         names = list(newcols.keys())

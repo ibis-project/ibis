@@ -708,9 +708,10 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
         ]
     )
 
-    if con.name == "pandas" and (nf1 != nf2):
+    if (con.name in ("pandas", "dask")) and (nf1 != nf2):
         with pytest.raises(
-            ValueError, match="pandas does not support different columns ordering"
+            ValueError,
+            match=f"{con.name} does not support specifying null ordering for individual column",
         ):
             result = con.execute(expr).reset_index(drop=True)
     else:
