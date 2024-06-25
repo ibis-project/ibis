@@ -1420,11 +1420,11 @@ def test_union(
     setops_relation_error_message,
 ):
     result = setops_table_foo.union(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Union)
-    assert not result.op().parent.distinct
+    assert isinstance(result.op(), ops.Union)
+    assert not result.op().distinct
 
     result = setops_table_foo.union(setops_table_bar, distinct=True)
-    assert result.op().parent.distinct
+    assert result.op().distinct
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.union(setops_table_baz)
@@ -1437,7 +1437,7 @@ def test_intersection(
     setops_relation_error_message,
 ):
     result = setops_table_foo.intersect(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Intersection)
+    assert isinstance(result.op(), ops.Intersection)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.intersect(setops_table_baz)
@@ -1450,7 +1450,7 @@ def test_difference(
     setops_relation_error_message,
 ):
     result = setops_table_foo.difference(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Difference)
+    assert isinstance(result.op(), ops.Difference)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.difference(setops_table_baz)

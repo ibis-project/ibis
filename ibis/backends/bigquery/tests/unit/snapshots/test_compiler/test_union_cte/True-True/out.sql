@@ -11,21 +11,13 @@ SELECT
 FROM (
   SELECT
     *
-  FROM (
-    SELECT
-      *
-    FROM (
-      SELECT
-        *
-      FROM `t1` AS `t2`
-      UNION DISTINCT
-      SELECT
-        *
-      FROM `t1` AS `t4`
-    ) AS `t5`
-  ) AS `t6`
+  FROM `t1` AS `t2`
   UNION DISTINCT
   SELECT
     *
-  FROM `t1` AS `t3`
-) AS `t7`
+  FROM `t1` AS `t4`
+) AS `t5`
+UNION DISTINCT
+SELECT
+  *
+FROM `t1` AS `t3`
