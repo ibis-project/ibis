@@ -650,6 +650,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
                 "col1": [1, 1, 1, 2, 3, 3, None],
                 "col2": ["c", "a", None, "B", "a", "D", "a"],
             },
+            id="asc-desc-ff",
         ),
         param(
             "asc",
@@ -660,6 +661,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
                 "col1": [None, 1, 1, 1, 2, 3, 3],
                 "col2": ["a", None, "c", "a", "B", "a", "D"],
             },
+            id="asc-desc-tt",
         ),
         param(
             "asc",
@@ -670,6 +672,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
                 "col1": [None, 1, 1, 1, 2, 3, 3],
                 "col2": ["a", "c", "a", None, "B", "a", "D"],
             },
+            id="asc-desc-tf",
         ),
         param(
             "asc",
@@ -680,6 +683,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
                 "col1": [None, 1, 1, 1, 2, 3, 3],
                 "col2": ["a", None, "a", "c", "B", "D", "a"],
             },
+            id="asc-asc-tt",
         ),
         param(
             "asc",
@@ -690,9 +694,9 @@ def test_order_by_nulls(con, op, nulls_first, expected):
                 "col1": [None, 1, 1, 1, 2, 3, 3],
                 "col2": ["a", "a", "c", None, "B", "D", "a"],
             },
+            id="asc-asc-tf",
         ),
     ],
-    ids=["asc-desc-ff", "asc-desc-tt", "asc-desc-tf", "asc-asc-tt", "asc-desc-tf"],
 )
 def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
     t = ibis.memtable(
