@@ -1693,7 +1693,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             queue.append(node)
         result = queue.popleft()
         assert not queue, "items left in queue"
-        return result.to_expr().select(*self.columns)
+        return result.to_expr()
 
     def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
@@ -1883,7 +1883,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         node = ops.Difference(self, table, distinct=distinct)
         for table in rest:
             node = ops.Difference(node, table, distinct=distinct)
-        return node.to_expr().select(self.columns)
+        return node.to_expr()
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
     def to_array(self) -> ir.Column:

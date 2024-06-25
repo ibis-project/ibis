@@ -18,12 +18,8 @@ WITH "t1" AS (
 )
 SELECT
   *
-FROM (
-  SELECT
-    *
-  FROM "t5" AS "t6"
-  UNION ALL
-  SELECT
-    *
-  FROM "t5" AS "t7"
-) AS "t8"
+FROM "t5" AS "t6"
+UNION ALL
+SELECT
+  *
+FROM "t5" AS "t7"

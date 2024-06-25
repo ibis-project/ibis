@@ -7,12 +7,8 @@ WITH "t1" AS (
 )
 SELECT
   *
-FROM (
-  SELECT
-    *
-  FROM "t1" AS "t2"
-  UNION ALL
-  SELECT
-    *
-  FROM "t1" AS "t2"
-) AS "t3"
+FROM "t1" AS "t2"
+UNION ALL
+SELECT
+  *
+FROM "t1" AS "t2"
