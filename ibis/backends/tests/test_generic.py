@@ -700,7 +700,12 @@ def test_order_by_nulls(con, op, nulls_first, expected):
 )
 def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
     t = ibis.memtable(
-        {"col1": [1, 3, 2, 1, 3, 1, None], "col2": ["a", "a", "B", "c", "D", None, "a"]}
+        {
+            # this is here because pandas converts None to nan, but of course
+            # only for numeric types, because that's totally reasonable
+            "col1": pd.Series([1, 3, 2, 1, 3, 1, None], dtype="object"),
+            "col2": ["a", "a", "B", "c", "D", None, "a"],
+        }
     )
     expr = t.order_by(
         getattr(t["col1"], op1)(nulls_first=nf1),
@@ -717,7 +722,9 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
         result = con.execute(expr).reset_index(drop=True)
         expected = pd.DataFrame(expected)
 
-        tm.assert_frame_equal(result, expected)
+        tm.assert_frame_equal(
+            result.replace({np.nan: None}), expected.replace({np.nan: None})
+        )
 
 
 @pytest.mark.notyet(
