@@ -8,12 +8,8 @@ SELECT
   "t11"."total_amount" AS "customer_lifetime_value"
 FROM (
   SELECT
-    "t10"."customer_id",
-    "t10"."first_name",
-    "t10"."last_name",
-    "t10"."first_order",
-    "t10"."most_recent_order",
-    "t10"."number_of_orders"
+    "t10".*
+    EXCLUDE ("customer_id_right")
   FROM (
     SELECT
       "t3"."customer_id",

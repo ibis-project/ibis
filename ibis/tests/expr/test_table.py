@@ -1869,25 +1869,23 @@ def test_drop():
     assert t.drop() is t
 
     res = t.drop("a")
-    assert res.equals(t.select("b", "c", "d"))
+    assert res.schema() == t.select("b", "c", "d").schema()
 
     res = t.drop("a", "b")
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
-    assert res.equals(t.select("c", "d"))
-
-    assert res.equals(t.drop(s.matches("a|b")))
+    assert res.schema() == t.drop(s.matches("a|b")).schema()
 
     res = t.drop(_.a)
-    assert res.equals(t.select("b", "c", "d"))
+    assert res.schema() == t.select("b", "c", "d").schema()
 
     res = t.drop(_.a, _.b)
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
     res = t.drop(_.a, "b")
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
-    with pytest.raises(KeyError):
+    with pytest.raises(com.IbisTypeError):
         t.drop("e")
 
 

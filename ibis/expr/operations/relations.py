@@ -146,6 +146,26 @@ class Simple(Relation):
 
 
 @public
+class DropColumns(Relation):
+    parent: Relation
+    columns_to_drop: VarTuple[str]
+
+    @attribute
+    def schema(self):
+        schema = self.parent.schema.fields.copy()
+        for column in self.columns_to_drop:
+            del schema[column]
+        return Schema(schema)
+
+    @attribute
+    def values(self):
+        fields = self.parent.fields.copy()
+        for column in self.columns_to_drop:
+            del fields[column]
+        return fields
+
+
+@public
 class Reference(Relation):
     _uid_counter = itertools.count()
     parent: Relation

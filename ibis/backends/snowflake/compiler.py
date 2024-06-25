@@ -654,3 +654,11 @@ class SnowflakeCompiler(SQLGlotCompiler):
                 this=table, kind=how, on=on, match_condition=match_condition
             )
         return super().visit_JoinLink(op, how=how, table=table, predicates=predicates)
+
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        quoted = self.quoted
+        excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
+        star = sge.Star(**{"except": excludes})
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        column = sge.Column(this=star, table=table)
+        return sg.select(column).from_(parent)

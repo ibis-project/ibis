@@ -2479,23 +2479,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │               193 │        3450 │ female │  2007 │
         └───────────┴───────────────────┴─────────────┴────────┴───────┘
         """
-        from ibis import selectors as s
-
         if not fields:
             # no-op if nothing to be dropped
             return self
 
-        fields = tuple(
-            field.resolve(self) if isinstance(field, Deferred) else field
-            for field in fields
+        columns_to_drop = tuple(
+            map(operator.methodcaller("get_name"), self.bind(*fields))
         )
-
-        if missing_fields := {f for f in fields if isinstance(f, str)}.difference(
-            self.schema().names
-        ):
-            raise KeyError(f"Fields not in table: {sorted(missing_fields)}")
-
-        return self.select(~s._to_selector(fields))
+        return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
     def filter(
         self,

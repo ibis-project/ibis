@@ -1512,6 +1512,19 @@ class SQLGlotCompiler(abc.ABC):
             f"{type(op).__name__!r} operation is not supported in the {self.dialect} backend"
         )
 
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        # the generated query will be huge for wide tables
+        #
+        # TODO: figure out a way to produce an IR that only contains exactly
+        # what is used
+        parent_alias = parent.alias_or_name
+        quoted = self.quoted
+        columns_to_keep = (
+            sg.column(column, table=parent_alias, quoted=quoted)
+            for column in op.schema.names
+        )
+        return sg.select(*columns_to_keep).from_(parent)
+
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to
 # autogenerate the base class implementations as well.
