@@ -1391,7 +1391,7 @@ def test_zip_unnest_lift(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink", "pyspark"],
+    ["datafusion", "pandas", "polars", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -1407,7 +1407,7 @@ def test_table_unnest(backend, colspec):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink", "pyspark"],
+    ["datafusion", "pandas", "polars", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
 def test_table_unnest_with_offset(backend):
@@ -1423,17 +1423,17 @@ def test_table_unnest_with_offset(backend):
     idx = iter(df.idx.values)
     expected = (
         df.assign(**{col: df[col].map(lambda v: v[next(idx)])})
-        .sort_values(["idx", "y"])
+        .sort_values(["idx", col])
         .reset_index(drop=True)[["idx", col]]
     )
 
-    expr = t.unnest(col, offset="idx")[["idx", col]].order_by("idx", "y")
+    expr = t.unnest(col, offset="idx")[["idx", col]].order_by("idx", col)
     result = expr.execute()
     tm.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink", "pyspark"],
+    ["datafusion", "pandas", "polars", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
 def test_table_unnest_with_keep_empty(con):
@@ -1444,7 +1444,7 @@ def test_table_unnest_with_keep_empty(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink", "pyspark"],
+    ["datafusion", "pandas", "polars", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
