@@ -850,12 +850,12 @@ def test_column_access(benchmark, many_cols, getter):
     benchmark(getter, many_cols)
 
 
-@pytest.fixture(scope="module")
-def many_tables():
+@pytest.fixture(scope="module", params=[1000, 10000])
+def many_tables(request):
     num_cols = 10
-    num_tables = 1000
     return [
-        ibis.table({f"c{i}": "int" for i in range(num_cols)}) for _ in range(num_tables)
+        ibis.table({f"c{i}": "int" for i in range(num_cols)})
+        for _ in range(request.param)
     ]
 
 
@@ -863,6 +863,7 @@ def test_large_union_construct(benchmark, many_tables):
     assert benchmark(lambda args: ibis.union(*args), many_tables) is not None
 
 
+@pytest.mark.timeout(180)
 def test_large_union_compile(benchmark, many_tables):
     expr = ibis.union(*many_tables)
     assert benchmark(ibis.to_sql, expr) is not None
