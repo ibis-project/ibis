@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from operator import methodcaller
+from operator import attrgetter, methodcaller
 
 import numpy.testing as npt
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -168,10 +169,33 @@ def test_geospatial_start_point(lines, lines_gdf):
 
 
 # this one takes a bit longer than the rest.
-def test_geospatial_unary_union(zones, zones_gdf):
+@pytest.mark.parametrize(
+    "expected_func",
+    [
+        param(
+            attrgetter("unary_union"),
+            marks=pytest.mark.xfail(
+                condition=vparse(gpd.__version__) >= vparse("1"),
+                raises=Warning,
+                reason="unary_union property is deprecated",
+            ),
+            id="version<1",
+        ),
+        param(
+            methodcaller("union_all"),
+            marks=pytest.mark.xfail(
+                condition=vparse(gpd.__version__) < vparse("1"),
+                raises=AttributeError,
+                reason="union_all doesn't exist",
+            ),
+            id="version>=1",
+        ),
+    ],
+)
+def test_geospatial_unary_union(zones, zones_gdf, expected_func):
     unary_union = zones.geom.unary_union().name("unary_union")
     # this returns a shapely geometry object
-    gp_unary_union = zones_gdf.geometry.unary_union
+    gp_unary_union = expected_func(zones_gdf.geometry)
 
     # using set_precision because https://github.com/duckdb/duckdb_spatial/issues/189
     assert shapely.equals(
