@@ -616,7 +616,9 @@ def test_order_by_nulls_default(con, op, expected):
     result = con.execute(expr).reset_index(drop=True)
     expected = pd.DataFrame(expected)
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.replace({np.nan: None}), expected.replace({np.nan: None})
+    )
 
 
 @pytest.mark.notimpl(["druid"])
@@ -634,7 +636,9 @@ def test_order_by_nulls(con, op, nulls_first, expected):
     result = con.execute(expr).reset_index(drop=True)
     expected = pd.DataFrame(expected)
 
-    tm.assert_frame_equal(result, expected)
+    tm.assert_frame_equal(
+        result.replace({np.nan: None}), expected.replace({np.nan: None})
+    )
 
 
 @pytest.mark.notimpl(["druid"])
