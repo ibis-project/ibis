@@ -507,10 +507,9 @@ c = px.bar(
     t.group_by("system").agg(
         total_seconds=t["execution_seconds"].sum(),
         seconds_per_query=t["execution_seconds"].mean(),
-        num_records=t.count(),
     ),
     x="system",
-    y="num_records",
+    y="total_seconds",
     color="system",
     category_orders={"system": systems},
     title="total execution time by system",
@@ -938,10 +937,10 @@ engines. Polars is an OLAP query engine with a Python dataframe API that can be
 used as a more performant alternative to pandas.
 
 All three make great Ibis backends and you can switch between them in a single
-line of code. This let's you write your code once and run it on the engine
-that's best for your use case. If a better engine comes along you'll likely be
-able to use that too. And you can scale up and out across the 20+ backends Ibis
-supports as needed.
+line of code. This lets you write your code once and run it on the engine that's
+best for your use case. If a better engine comes along you'll likely be able to
+use that too. And you can scale up and out across the 20+ backends Ibis supports
+as needed.
 
 TPC-H is a decent benchmark *for what it benchmarks, which is limited*. We're
 not running window functions, doing timeseries analysis, or feature engineering
