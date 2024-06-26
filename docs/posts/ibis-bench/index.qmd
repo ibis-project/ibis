@@ -510,7 +510,7 @@ c = px.bar(
         num_records=t.count(),
     ),
     x="system",
-    y="num_records",
+    y="total_seconds",
     color="system",
     category_orders={"system": systems},
     title="total execution time by system",
