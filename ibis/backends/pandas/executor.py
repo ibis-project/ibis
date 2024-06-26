@@ -602,6 +602,10 @@ class PandasExecutor(Dispatched, PandasUtils):
         return df.drop(columns=names)
 
     @classmethod
+    def visit(cls, op: ops.DropColumns, parent, columns_to_drop):
+        return parent.drop(columns=list(columns_to_drop))
+
+    @classmethod
     def visit(cls, op: PandasAggregate, parent, groups, metrics):
         if groups:
             parent = parent.groupby([col.name for col in groups.values()])

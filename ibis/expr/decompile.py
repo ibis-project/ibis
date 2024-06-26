@@ -187,6 +187,11 @@ def distinct(op, parent):
     return f"{parent}.distinct()"
 
 
+@translate.register(ops.DropColumns)
+def drop(op, parent, columns_to_drop):
+    return f"{parent}.drop({_inline(map(repr, columns_to_drop))})"
+
+
 @translate.register(ops.SelfReference)
 def self_reference(op, parent, identifier):
     return f"{parent}.view()"

@@ -1361,3 +1361,9 @@ def execute_timestamp_range(op, **kw):
     start = translate(op.start, **kw)
     stop = translate(op.stop, **kw)
     return pl.datetime_ranges(start, stop, f"{step}{unit}", closed="left")
+
+
+@translate.register(ops.DropColumns)
+def execute_drop_columns(op, **kw):
+    parent = translate(op.parent, **kw)
+    return parent.drop(op.columns_to_drop)

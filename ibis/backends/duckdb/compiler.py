@@ -521,3 +521,29 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_TypeOf(self, op, *, arg):
         return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")
+
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        quoted = self.quoted
+        # duckdb doesn't support specifying the table name of the column name
+        # to drop, e.g., in SELECT t.* EXCLUDE (t.a) FROM t, the t.a bit
+        #
+        # technically it's not necessary, here's why
+        #
+        # if the table is specified then it's unambiguous when there are overlapping
+        # column names, say, from a join, for example
+        # (assuming t and s both have a column named `a`)
+        #
+        # SELECT t.* EXCLUDE (a), s.* FROM t JOIN s ON id
+        #
+        # This would exclude t.a and include s.a
+        #
+        # if it's a naked star projection from a join, like
+        #
+        # SELECT * EXCLUDE (a) FROM t JOIN s ON id
+        #
+        # then that means "exclude all columns named `a`"
+        excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
+        star = sge.Star(**{"except": excludes})
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        column = sge.Column(this=star, table=table)
+        return sg.select(column).from_(parent)

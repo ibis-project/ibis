@@ -6,6 +6,7 @@ import inspect
 import itertools
 import math
 import os
+import random
 import string
 from operator import attrgetter, itemgetter
 
@@ -13,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from packaging.version import parse as vparse
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -886,3 +888,31 @@ def test_memtable_register(lots_of_tables, benchmark):
     t = ibis.memtable({"x": [1, 2, 3]})
     result = benchmark(lots_of_tables.execute, t)
     assert len(result) == 3
+
+
+@pytest.fixture(params=[10, 100, 1_000, 10_000], scope="module")
+def wide_table(request):
+    num_cols = request.param
+    return ibis.table(name="t", schema={f"a{i}": "int" for i in range(num_cols)})
+
+
+@pytest.fixture(
+    params=[param(0.01, id="1"), param(0.5, id="50"), param(0.99, id="99")],
+    scope="module",
+)
+def cols_to_drop(wide_table, request):
+    perc_cols_to_drop = request.param
+    total_cols = len(wide_table.columns)
+    ncols = math.floor(perc_cols_to_drop * total_cols)
+    cols_to_drop = random.sample(range(total_cols), ncols)
+    return [f"a{i}" for i in cols_to_drop]
+
+
+def test_wide_drop_construct(benchmark, wide_table, cols_to_drop):
+    benchmark(wide_table.drop, *cols_to_drop)
+
+
+def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
+    benchmark(
+        lambda expr: ibis.to_sql(expr, dialect="duckdb"), wide_table.drop(*cols_to_drop)
+    )
