@@ -559,8 +559,8 @@ def _memtable_from_polars_dataframe(
     ).to_expr()
 
 
-def _deferred_method_call(expr, method_name):
-    method = operator.methodcaller(method_name)
+def _deferred_method_call(expr, method_name, **kwargs):
+    method = operator.methodcaller(method_name, **kwargs)
     if isinstance(expr, str):
         value = _[expr]
     elif isinstance(expr, Deferred):
@@ -572,13 +572,15 @@ def _deferred_method_call(expr, method_name):
     return method(value)
 
 
-def desc(expr: ir.Column | str) -> ir.Value:
+def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
     ----------
     expr
         The expression or column name to use for sorting
+    nulls_first
+        Bool to indicate weather to put NULL values first or not.
 
     See Also
     --------
@@ -608,16 +610,18 @@ def desc(expr: ir.Column | str) -> ir.Value:
         An expression
 
     """
-    return _deferred_method_call(expr, "desc")
+    return _deferred_method_call(expr, "desc", nulls_first=nulls_first)
 
 
-def asc(expr: ir.Column | str) -> ir.Value:
+def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
     ----------
     expr
         The expression or column name to use for sorting
+    nulls_first
+        Bool to indicate weather to put NULL values first or not.
 
     See Also
     --------
@@ -647,7 +651,7 @@ def asc(expr: ir.Column | str) -> ir.Value:
         An expression
 
     """
-    return _deferred_method_call(expr, "asc")
+    return _deferred_method_call(expr, "asc", nulls_first=nulls_first)
 
 
 def preceding(value) -> ir.Value:

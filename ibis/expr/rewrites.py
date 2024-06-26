@@ -309,9 +309,12 @@ def window_merge_frames(_, window):
 
     order_keys = {}
     for sort_key in window.orderings + _.order_by:
-        order_keys[sort_key.expr] = sort_key.ascending
-    order_by = (ops.SortKey(k, v) for k, v in order_keys.items())
+        order_keys[sort_key.expr] = sort_key.ascending, sort_key.nulls_first
 
+    order_by = (
+        ops.SortKey(expr, ascending=ascending, nulls_first=nulls_first)
+        for expr, (ascending, nulls_first) in order_keys.items()
+    )
     return _.copy(start=start, end=end, group_by=group_by, order_by=order_by)
 
 

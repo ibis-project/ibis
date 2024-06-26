@@ -10,5 +10,5 @@ SELECT
   `t0`.`i`,
   `t0`.`j`,
   `t0`.`k`,
-  `t0`.`f` / SUM(`t0`.`f`) OVER (ORDER BY NULL ASC NULLS LAST) AS `normed_f`
+  `t0`.`f` / SUM(`t0`.`f`) OVER (ORDER BY NULL ASC) AS `normed_f`
 FROM `alltypes` AS `t0`

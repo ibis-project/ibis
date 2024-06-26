@@ -10,5 +10,5 @@ SELECT
   `t0`.`i`,
   `t0`.`j`,
   `t0`.`k`,
-  ROW_NUMBER() OVER (PARTITION BY `t0`.`g` ORDER BY `t0`.`f` ASC NULLS LAST) - 1 AS `foo`
+  ROW_NUMBER() OVER (PARTITION BY `t0`.`g` ORDER BY `t0`.`f` ASC) - 1 AS `foo`
 FROM `alltypes` AS `t0`

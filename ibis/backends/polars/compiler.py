@@ -227,10 +227,9 @@ def sort(op, **kw):
 
     by = list(newcols.keys())
     descending = [key.descending for key in op.keys]
-    try:
-        lf = lf.sort(by, descending=descending, nulls_last=True)
-    except TypeError:  # pragma: no cover
-        lf = lf.sort(by, reverse=descending, nulls_last=True)  # pragma: no cover
+    nulls_last = [not key.nulls_first for key in op.keys]
+
+    lf = lf.sort(by, descending=descending, nulls_last=nulls_last)
 
     return lf.drop(*by)
 

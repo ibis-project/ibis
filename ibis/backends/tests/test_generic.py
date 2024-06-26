@@ -8,6 +8,7 @@ from operator import invert, methodcaller, neg
 
 import numpy as np
 import pandas as pd
+import pandas.testing as tm
 import pytest
 import toolz
 from pytest import param
@@ -597,6 +598,142 @@ def test_order_by_random(alltypes):
     assert len(r2) == 5
     # Ensure that multiple executions returns different results
     assert not r1.equals(r2)
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.parametrize(
+    "op, expected",
+    [
+        param("desc", {"a": [1, 2, 3], "b": ["foo", "baz", None]}),
+        param("asc", {"a": [2, 1, 3], "b": ["baz", "foo", None]}),
+    ],
+    ids=["desc", "asc"],
+)
+def test_order_by_nulls_default(con, op, expected):
+    # default nulls_first is False
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    expr = t.order_by(getattr(t["b"], op)())
+    result = con.execute(expr).reset_index(drop=True)
+    expected = pd.DataFrame(expected)
+
+    tm.assert_frame_equal(
+        result.replace({np.nan: None}), expected.replace({np.nan: None})
+    )
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.parametrize(
+    "op, nulls_first, expected",
+    [
+        param("desc", True, {"a": [3, 1, 2], "b": [None, "foo", "baz"]}),
+        param("asc", True, {"a": [3, 2, 1], "b": [None, "baz", "foo"]}),
+    ],
+    ids=["desc", "asc"],
+)
+def test_order_by_nulls(con, op, nulls_first, expected):
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
+    result = con.execute(expr).reset_index(drop=True)
+    expected = pd.DataFrame(expected)
+
+    tm.assert_frame_equal(
+        result.replace({np.nan: None}), expected.replace({np.nan: None})
+    )
+
+
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.broken(
+    ["exasol", "mssql", "mysql"],
+    raises=AssertionError,
+    reason="someone decided a long time ago that 'A' = 'a' is true in these systems",
+)
+@pytest.mark.parametrize(
+    "op1, nf1, op2, nf2, expected",
+    [
+        param(
+            "asc",
+            False,
+            "desc",
+            False,
+            {
+                "col1": [1, 1, 1, 2, 3, 3, None],
+                "col2": ["c", "a", None, "B", "a", "D", "a"],
+            },
+            id="asc-desc-ff",
+        ),
+        param(
+            "asc",
+            True,
+            "desc",
+            True,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", None, "c", "a", "B", "a", "D"],
+            },
+            id="asc-desc-tt",
+        ),
+        param(
+            "asc",
+            True,
+            "desc",
+            False,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", "c", "a", None, "B", "a", "D"],
+            },
+            id="asc-desc-tf",
+        ),
+        param(
+            "asc",
+            True,
+            "asc",
+            True,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", None, "a", "c", "B", "D", "a"],
+            },
+            id="asc-asc-tt",
+        ),
+        param(
+            "asc",
+            True,
+            "asc",
+            False,
+            {
+                "col1": [None, 1, 1, 1, 2, 3, 3],
+                "col2": ["a", "a", "c", None, "B", "D", "a"],
+            },
+            id="asc-asc-tf",
+        ),
+    ],
+)
+def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
+    t = ibis.memtable(
+        {
+            # this is here because pandas converts None to nan, but of course
+            # only for numeric types, because that's totally reasonable
+            "col1": pd.Series([1, 3, 2, 1, 3, 1, None], dtype="object"),
+            "col2": ["a", "a", "B", "c", "D", None, "a"],
+        }
+    )
+    expr = t.order_by(
+        getattr(t["col1"], op1)(nulls_first=nf1),
+        getattr(t["col2"], op2)(nulls_first=nf2),
+    )
+
+    if (con.name in ("pandas", "dask")) and (nf1 != nf2):
+        with pytest.raises(
+            ValueError,
+            match=f"{con.name} does not support specifying null ordering for individual column",
+        ):
+            con.execute(expr)
+    else:
+        result = con.execute(expr).reset_index(drop=True)
+        expected = pd.DataFrame(expected)
+
+        tm.assert_frame_equal(
+            result.replace({np.nan: None}), expected.replace({np.nan: None})
+        )
 
 
 @pytest.mark.notyet(
