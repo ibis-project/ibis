@@ -416,7 +416,6 @@ def rewrite_join_chain_for_semi_anti_join(_, y=None):
         # table.join(inner_join, predicates=..., how="semi/anti")
         link = link.replace(
             rebase_predicates_on_table_underlying_join_reference,
-            # filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinTable),
             filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinReference),
         )
 

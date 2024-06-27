@@ -27,6 +27,7 @@ from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
 
+
 T = TypeVar("T")
 
 Unaliased = Annotated[T, ~InstanceOf(Alias)]
