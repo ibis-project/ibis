@@ -16,7 +16,6 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     OracleDatabaseError,
     PsycoPg2InternalError,
-    PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
@@ -802,18 +801,7 @@ def test_parse_url(con, result_func, expected):
 @pytest.mark.parametrize(
     ("inp, expected"),
     [
-        param(
-            None,
-            None,
-            id="none",
-            marks=[
-                pytest.mark.notyet(
-                    ["druid"],
-                    raises=PyDruidProgrammingError,
-                    reason="illegal use of NULL",
-                )
-            ],
-        ),
+        param(None, None, id="none"),
         param(
             "",
             "",
