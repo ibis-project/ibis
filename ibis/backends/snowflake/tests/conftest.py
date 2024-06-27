@@ -90,28 +90,47 @@ class TestConf(BackendTest):
     supports_map = True
     deps = ("snowflake.connector",)
     supports_tpch = True
+    supports_tpcds = True
 
-    def load_tpch(self) -> None:
-        """No-op, snowflake already defines these in `SNOWFLAKE_SAMPLE_DATA`."""
+    def _load_tpc(self, *, suite, scale_factor) -> None:
+        """Create views of data in the TPC-H catalog that ships with Trino.
 
-    def h(self, name: str):
-        name = name.upper()
-        t = self.connection.table(name, database="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1")
-        return t.rename("snake_case")
+        This method create relations that have column names prefixed with the
+        first one (or two in the case of partsupp -> ps) character table name
+        to match the DuckDB TPC-H query conventions.
+        """
+        con = self.connection
+        schema = f"tpc{suite}"
 
-    def _transform_tpch_sql(self, parsed):
-        def add_catalog_and_schema(node):
-            if isinstance(node, sg.exp.Table):
-                return node.__class__(
-                    db="TPCH_SF1",
-                    catalog="SNOWFLAKE_SAMPLE_DATA",
-                    **{
-                        k: v for k, v in node.args.items() if k not in ("db", "catalog")
-                    },
+        con.create_database(schema, force=True)
+
+        parquet_dir = self.data_dir.joinpath(schema, f"sf={scale_factor}", "parquet")
+        assert parquet_dir.exists(), parquet_dir
+
+        tables = frozenset(con.list_tables(database=("IBIS_TESTING", schema)))
+        for path in parquet_dir.glob("*.parquet"):
+            table_name = path.with_suffix("").name
+            if table_name not in tables:
+                con.create_table(
+                    table_name,
+                    con.read_parquet(path),
+                    database=f'IBIS_TESTING."{schema}"',
                 )
+
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
+        def quote(node):
+            if isinstance(node, sg.exp.Identifier):
+                return sg.to_identifier(node.name, quoted=True)
+            return node
+
+        def add_catalog_and_schema(node):
+            if isinstance(node, sg.exp.Table) and node.name in leaves:
+                node.args["db"] = sg.to_identifier(f"tpc{suite}")
+                node.args["catalog"] = sg.to_identifier("IBIS_TESTING")
             return node
 
         result = parsed.transform(add_catalog_and_schema)
+        result = result.transform(quote)
         return result
 
     def _load_data(self, **_: Any) -> None:

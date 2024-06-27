@@ -18,6 +18,7 @@ class TestConf(BackendTest):
     supports_json = False
     supports_arrays = True
     supports_tpch = True
+    supports_tpcds = True
     stateful = False
     deps = ("datafusion",)
     # Query 1 seems to require a bit more room here
@@ -39,20 +40,14 @@ class TestConf(BackendTest):
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.datafusion.connect(**kw)
 
-    def load_tpch(self) -> None:
-        """Load TPC-H data."""
-        self.tpch_tables = frozenset(self._load_tpc(suite="h", scale_factor="0.17"))
-
     def _load_tpc(self, *, suite, scale_factor):
         con = self.connection
         schema = f"tpc{suite}"
         con.create_database(schema)
-        tables = set()
         for path in self.data_dir.joinpath(
             schema, f"sf={scale_factor}", "parquet"
         ).glob("*.parquet"):
             table_name = path.with_suffix("").name
-            tables.add(table_name)
             con.con.sql(
                 # datafusion can't create an external table in a specific schema it seems
                 # so hack around that by
@@ -68,13 +63,12 @@ class TestConf(BackendTest):
                 f"CREATE TABLE {schema}.{table_name} AS SELECT * FROM {table_name}"
             )
             con.con.sql(f"DROP TABLE {table_name}")
-        return tables
 
-    def _transform_tpch_sql(self, parsed):
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
         def add_catalog_and_schema(node):
-            if isinstance(node, sg.exp.Table) and node.name in self.tpch_tables:
+            if isinstance(node, sg.exp.Table) and node.name in leaves:
                 return node.__class__(
-                    catalog="tpch",
+                    catalog=f"tpc{suite}",
                     **{k: v for k, v in node.args.items() if k != "catalog"},
                 )
             return node

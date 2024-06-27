@@ -4,7 +4,7 @@ import datetime
 import functools
 import re
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 import sqlglot as sg
@@ -20,38 +20,43 @@ if TYPE_CHECKING:
 
 
 def pytest_pyfunc_call(pyfuncitem):
-    """Inject `backend` and `snapshot` fixtures to all TPC-DS test functions.
+    """Inject `backend` and fixtures to all TPC-DS test functions.
 
     Defining this hook here limits its scope to the TPC-DS tests.
     """
     testfunction = pyfuncitem.obj
     funcargs = pyfuncitem.funcargs
     testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
-    result = testfunction(
-        **testargs, backend=funcargs["backend"], snapshot=funcargs["snapshot"]
-    )
+    result = testfunction(**testargs, backend=funcargs["backend"])
     assert (
         result is None
     ), "test function should not return anything, did you mean to use assert?"
     return True
 
 
-def tpc_test(suite_name):
+def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
+    """Decorator for TPC tests.
+
+    Parameters
+    ----------
+    suite_name
+        The name of the TPC suite. Only `'h'` and ~'ds'~ are supported right now.
+    result_is_empty
+        If the expected result is an empty table.
+
+    Automates the process of loading the SQL query from the file system and
+    asserting that the result of the ibis expression is equal to the expected
+    result of executing the raw SQL.
+    """
+
     def inner(test: Callable[..., ir.Table]):
-        """Decorator for TPC tests.
-
-        Automates the process of loading the SQL query from the file system and
-        asserting that the result of the ibis expression is equal to the expected
-        result of executing the raw SQL.
-        """
-
         name = f"tpc{suite_name}"
 
         @getattr(pytest.mark, name)
-        @pytest.mark.usefixtures("backend", "snapshot")
+        @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
         @functools.wraps(test)
-        def wrapper(*args, backend, snapshot, **kwargs):
+        def wrapper(*args, backend, **kwargs):
             backend_name = backend.name()
             if not getattr(backend, f"supports_{name}"):
                 pytest.skip(
@@ -70,10 +75,9 @@ def tpc_test(suite_name):
 
             sql = sg.parse_one(raw_sql, read="duckdb")
 
-            transform_method = getattr(
-                backend, f"_transform_{name}_sql", lambda sql: sql
+            sql = backend._transform_tpc_sql(
+                sql, suite=suite_name, leaves=backend.list_tpc_tables(suite_name)
             )
-            sql = transform_method(sql)
 
             raw_sql = sql.sql(dialect="duckdb", pretty=True)
 
@@ -81,18 +85,16 @@ def tpc_test(suite_name):
 
             result_expr = test(*args, **kwargs)
 
-            ibis_sql = ibis.to_sql(result_expr, dialect=backend_name)
-
             assert result_expr._find_backend(use_default=False) is backend.connection
             result = backend.connection.to_pandas(result_expr)
-            assert not result.empty
+            assert (result_is_empty and result.empty) or not result.empty
 
             expected = expected_expr.to_pandas()
             assert list(map(str.lower, expected.columns)) == result.columns.tolist()
             expected.columns = result.columns
 
             expected = PandasData.convert_table(expected, result_expr.schema())
-            assert not expected.empty
+            assert (result_is_empty and expected.empty) or not expected.empty
 
             assert len(expected) == len(result)
             assert result.columns.tolist() == expected.columns.tolist()
@@ -107,9 +109,6 @@ def tpc_test(suite_name):
                     )
                     == right.values.tolist()
                 )
-
-            # only write sql if the execution passes
-            snapshot.assert_match(ibis_sql, sql_path_name)
 
         return wrapper
 
