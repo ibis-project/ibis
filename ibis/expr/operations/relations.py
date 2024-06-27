@@ -299,7 +299,7 @@ class Aggregate(Relation):
     """Aggregate a table by a set of group by columns and metrics."""
 
     parent: Relation
-    groups: FrozenOrderedDict[str, Unaliased[Column]]
+    groups: FrozenOrderedDict[str, Unaliased[Value]]
     metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
 
     def __init__(self, parent, groups, metrics):

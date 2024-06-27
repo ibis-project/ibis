@@ -1553,3 +1553,39 @@ def test_group_by_expr(backend, con):
         dict(n="int32", c="int64")
     )
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        ibis.literal("a"),
+        param(
+            ibis.null("str"),
+            marks=[
+                pytest.mark.notimpl(
+                    ["pandas", "dask"],
+                    reason="nulls are discarded by default in group bys",
+                    raises=IndexError,
+                ),
+                pytest.mark.notyet(
+                    ["druid"],
+                    raises=PyDruidProgrammingError,
+                    reason=(
+                        "druid resists typed nulls for reasons unrelated to grouping,"
+                        " and this is compiled as an untyped NULL "
+                        "which of course isn't allowed in a group by"
+                    ),
+                ),
+            ],
+        ),
+    ],
+    ids=["string", "null"],
+)
+@pytest.mark.notyet(
+    ["mssql"], raises=PyODBCProgrammingError, reason="not supported by the database"
+)
+def test_group_by_scalar(alltypes, df, value):
+    expr = alltypes.group_by(key=value).agg(n=lambda t: t.count())
+    result = expr.execute()
+    n = result["n"].values[0].item()
+    assert n == len(df)
