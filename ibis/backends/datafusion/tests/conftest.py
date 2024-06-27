@@ -20,7 +20,7 @@ class TestConf(BackendTest):
     stateful = False
     deps = ("datafusion",)
     # Query 1 seems to require a bit more room here
-    tpch_absolute_tolerance = 0.11
+    tpc_absolute_tolerance = 0.11
 
     def _load_data(self, **_: Any) -> None:
         con = self.connection

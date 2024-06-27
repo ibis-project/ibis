@@ -94,7 +94,7 @@ class TestConf(BackendTest):
     def load_tpch(self) -> None:
         """No-op, snowflake already defines these in `SNOWFLAKE_SAMPLE_DATA`."""
 
-    def _tpch_table(self, name: str):
+    def h(self, name: str):
         name = name.upper()
         t = self.connection.table(name, database="SNOWFLAKE_SAMPLE_DATA.TPCH_SF1")
         return t.rename("snake_case")
