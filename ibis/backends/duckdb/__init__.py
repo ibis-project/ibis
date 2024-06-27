@@ -7,7 +7,6 @@ import contextlib
 import os
 import urllib
 import warnings
-from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -493,16 +492,27 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     ) -> None:
         f = self.compiler.f
         query = (
-            sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
-            .from_(f.duckdb_extensions())
-            .where(sg.and_(C.installed, C.loaded))
+            sg.select(STAR)
+            .from_(
+                sg.select(
+                    f.explode(f.list_append(C.aliases, C.extension_name)).as_("name"),
+                    C.installed,
+                    C.loaded,
+                )
+                .from_(f.duckdb_extensions())
+                .subquery()
+            )
+            .where(~sg.and_(C.installed, C.loaded), C.name.isin(*extensions))
         )
+
         with self._safe_raw_sql(query) as cur:
-            installed = map(itemgetter(0), cur.fetchall())
-            # Install and load all other extensions
-            todo = frozenset(extensions).difference(installed)
-            for extension in todo:
+            data = cur.fetchall()
+
+        # Install and load extensions that need it
+        for extension, installed, loaded in data:
+            if not installed or force_install:
                 cur.install_extension(extension, force_install=force_install)
+            if not loaded:
                 cur.load_extension(extension)
 
     def load_extension(self, extension: str, force_install: bool = False) -> None:
