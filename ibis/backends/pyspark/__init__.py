@@ -1169,9 +1169,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         expr: ir.Expr,
         format: str,
         path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
     ) -> StreamingQuery | None:
-        df = self._session.sql(expr.compile())
+        df = self._session.sql(expr.compile(params=params, limit=limit))
         if self.mode == "batch":
             df = df.write.format(format)
             for k, v in (options or {}).items():
@@ -1190,6 +1192,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self,
         expr: ir.Expr,
         path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
     ) -> StreamingQuery | None:
         """Write the results of executing the given expression to a parquet directory.
@@ -1200,6 +1204,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The ibis expression to execute and persist to parquet.
         path
             The data source. A string or Path to the parquet directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
         options
             Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
 
@@ -1209,13 +1218,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
         """
         self._run_pre_execute_hooks(expr)
-        return self._to_filesystem_output(expr, "parquet", path, options)
+        return self._to_filesystem_output(expr, "parquet", path, params, limit, options)
 
     @util.experimental
     def to_csv_dir(
         self,
         expr: ir.Expr,
         path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
     ) -> StreamingQuery | None:
         """Write the results of executing the given expression to a CSV directory.
@@ -1226,6 +1237,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The ibis expression to execute and persist to CSV.
         path
             The data source. A string or Path to the CSV directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
         options
             Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
 
@@ -1235,4 +1251,4 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
         """
         self._run_pre_execute_hooks(expr)
-        return self._to_filesystem_output(expr, "csv", path, options)
+        return self._to_filesystem_output(expr, "csv", path, params, limit, options)
