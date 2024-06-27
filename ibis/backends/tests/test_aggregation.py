@@ -1567,15 +1567,6 @@ def test_group_by_expr(backend, con):
                     reason="nulls are discarded by default in group bys",
                     raises=IndexError,
                 ),
-                pytest.mark.notyet(
-                    ["druid"],
-                    raises=PyDruidProgrammingError,
-                    reason=(
-                        "druid resists typed nulls for reasons unrelated to grouping,"
-                        " and this is compiled as an untyped NULL "
-                        "which of course isn't allowed in a group by"
-                    ),
-                ),
             ],
         ),
     ],

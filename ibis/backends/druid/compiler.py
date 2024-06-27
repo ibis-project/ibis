@@ -146,7 +146,12 @@ class DruidCompiler(SQLGlotCompiler):
 
     def visit_Literal(self, op, *, value, dtype):
         if value is None:
-            return NULL
+            # types that cannot be cast to NULL are null, and temporal types
+            # and druid doesn't have a bytes type so don't cast that
+            if dtype.is_null() or dtype.is_temporal() or dtype.is_binary():
+                return NULL
+            else:
+                return self.cast(NULL, dtype)
         return super().visit_Literal(op, value=value, dtype=dtype)
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
