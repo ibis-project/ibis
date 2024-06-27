@@ -944,6 +944,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_kafka(
         self,
         table_name: str | None = None,
+        *,
         watermark: Watermark | None = None,
         auto_parse: bool = False,
         schema: sch.Schema | None = None,
@@ -1007,8 +1008,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_kafka(
         self,
         expr: ir.Expr,
+        *,
         auto_format: bool = False,
         options: Mapping[str, str] | None = None,
+        params: Mapping | None = None,
+        limit: str | None = "default",
     ) -> StreamingQuery:
         """Write the results of executing the given expression to a Kafka topic.
 
@@ -1026,6 +1030,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         options
             PySpark Kafka write arguments.
             https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
 
         Returns
         -------
@@ -1034,7 +1043,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         if self.mode == "batch":
             raise NotImplementedError("Writing to Kafka in batch mode is not supported")
-        df = self._session.sql(expr.compile())
+        df = self._session.sql(expr.compile(params=params, limit=limit))
         if auto_format:
             df = df.select(
                 F.to_json(F.struct([F.col(c).alias(c) for c in df.columns])).alias(
