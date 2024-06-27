@@ -22,6 +22,7 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
+from ibis.expr.operations.logical import IfElse
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
@@ -197,8 +198,8 @@ class JoinLink(Node):
 
 @public
 class JoinChain(Relation):
-    first: JoinTable
-    rest: VarTuple[JoinLink | Where]
+    first: Reference
+    rest: VarTuple[JoinLink | IfElse]
     values: FrozenOrderedDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):

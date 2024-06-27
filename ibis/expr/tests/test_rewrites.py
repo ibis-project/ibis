@@ -5,7 +5,7 @@ import pytest
 import ibis
 import ibis.expr.operations as ops
 from ibis.expr.rewrites import (
-    rebase_predicates_on_table_underlying_jointable,
+    rebase_predicates_on_table_underlying_join_reference,
     rewrite_join_chain_for_semi_anti_join,
     simplify,
 )
@@ -140,12 +140,12 @@ def semi_or_anti_join(t, t2, predicates, request):
     )
 
 
-def test_rebase_predicates_on_table_underlying_jointable(semi_or_anti_join):
+def test_rebase_predicates_on_table_underlying_join_reference(semi_or_anti_join):
     join_chain = semi_or_anti_join.op()
     for join_link in join_chain.rest:
         for pred in join_link.predicates:
             table_underlying_join_table = pred.left.rel.parent
-            pred = pred.replace(rebase_predicates_on_table_underlying_jointable)
+            pred = pred.replace(rebase_predicates_on_table_underlying_join_reference)
             assert pred.left.rel == table_underlying_join_table
 
 
@@ -215,7 +215,7 @@ def test_rewrite_join_chain_for_semi_anti_join(semi_or_anti_join):
     filter_ = join_chain.replace(rewrite_join_chain_for_semi_anti_join)
     assert not filter_.find(ops.JoinChain)
     assert not filter_.find(ops.JoinLink)
-    assert not filter_.find(ops.JoinTable)
+    assert not filter_.find(ops.JoinReference)
 
     assert_on_filter_replacing_join_chain(join_chain, filter_)
 
@@ -250,7 +250,7 @@ def test_rewrite_join_chain_for_semi_anti_join_for_inner_join_dot_semi_anti_join
 
     assert len(filter_.find(ops.JoinChain)) == 1
     assert len(filter_.find(ops.JoinLink)) == 1
-    assert len(filter_.find(ops.JoinTable)) == 2
+    assert len(filter_.find(ops.JoinReference)) == 2
 
     assert_on_filter_replacing_join_chain(join_chain, filter_)
 
@@ -276,6 +276,6 @@ def test_rewrite_join_chain_for_semi_anti_join_for_semi_anti_join_dot_inner_join
 
     assert len(filter_.find(ops.JoinChain)) == 1
     assert len(filter_.find(ops.JoinLink)) == 1
-    assert len(filter_.find(ops.JoinTable)) == 2
+    assert len(filter_.find(ops.JoinReference)) == 2
 
     assert_on_filter_replacing_join_chain(join_chain, filter_)

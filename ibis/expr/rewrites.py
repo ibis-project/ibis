@@ -377,7 +377,7 @@ def simplify(node):
 
 
 @replace(p.Comparison)
-def rebase_predicates_on_table_underlying_jointable(_):
+def rebase_predicates_on_table_underlying_join_reference(_):
     left, right = _.left, _.right
     left_table = left.rel.parent
     right_table = right.rel.parent
@@ -393,9 +393,8 @@ def rewrite_join_chain_for_semi_anti_join(_, y=None):
     # error raised for `test_many_subqueries()`.
     # Is there a cleaner way to address this?
 
-    links = _.find_topmost(ops.JoinLink)
     semi_anti_links, new_links = [], []
-    for link in links:
+    for link in _.rest:
         if link.how in {"semi", "anti"}:
             semi_anti_links.append(link)
         else:
@@ -416,17 +415,18 @@ def rewrite_join_chain_for_semi_anti_join(_, y=None):
         # a table is semi/anti-joined with an inner-join as
         # table.join(inner_join, predicates=..., how="semi/anti")
         link = link.replace(
-            rebase_predicates_on_table_underlying_jointable,
-            filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinTable),
+            rebase_predicates_on_table_underlying_join_reference,
+            # filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinTable),
+            filter=AnyOf(p.JoinLink | p.Comparison | p.Field | p.JoinReference),
         )
 
         # Rebase predicates on `node` if the underlying table for
         # a predicate lies within the tree starting at `node`.
         # TODO (mehmet): Is there a cleaner way to do this?
         # Perhaps using `.replace()`?
+        relations_under_node = node.find(ops.Relation)
         predicates = []
         for pred in link.predicates:
-            relations_under_node = node.find(ops.Relation)
             if pred.left.rel in relations_under_node:
                 pred = pred.copy(left=pred.left.copy(rel=node))
             if pred.right.rel in relations_under_node:

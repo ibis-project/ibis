@@ -119,6 +119,9 @@ def prepare_predicates(
 ):
     """Bind and dereference predicates to the left and right tables.
 
+    # TODO (mehmet): It seems `ops.JoinTable` got removed by this docstring
+    # still refers to it.
+
     The responsibility of this function is twofold:
     1. Convert the various input values to valid predicates, including binding.
     2. Dereference the predicates one of the ops.JoinTable(s) in the join chain
@@ -267,7 +270,7 @@ class Join(Table):
             predicates=preds,
             equalities=self._equalities,
             left_fields=chain.values,
-            right_fields=right_fields,
+            right_fields=right.fields,
             left_template=lname,
             right_template=rname,
         )

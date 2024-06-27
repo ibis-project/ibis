@@ -15,9 +15,9 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
-    rewrite_sample_as_filter,
+)
+from ibis.expr.rewrites import (
     rewrite_join_chain_for_semi_anti_join,
-    rewrite_stringslice,
 )
 
 
@@ -60,6 +60,7 @@ class FlinkCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_rank,
+        rewrite_join_chain_for_semi_anti_join,
         *SQLGlotCompiler.rewrites,
     )
 
