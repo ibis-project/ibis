@@ -846,9 +846,13 @@ def test_groupby_convenience(table):
     assert_equal(expr, expected)
 
 
-@pytest.mark.parametrize("group", [[], (), None])
+@pytest.mark.parametrize(
+    "group",
+    [[], (), None, s.startswith("over9000")],
+    ids=["list", "tuple", "none", "selector"],
+)
 def test_group_by_nothing(table, group):
-    with pytest.raises(com.IbisInputError):
+    with pytest.raises(ValidationError):
         table.group_by(group)
 
 
@@ -1693,13 +1697,6 @@ def test_group_by_key_function():
     t = ibis.table([("a", "timestamp"), ("b", "string"), ("c", "double")])
     expr = t.group_by(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
     assert expr.columns == ["new_key", "foo"]
-
-
-def test_group_by_no_keys():
-    t = ibis.table([("a", "timestamp"), ("b", "string"), ("c", "double")])
-
-    with pytest.raises(com.IbisInputError):
-        t.group_by(s.startswith("x")).aggregate(foo=t.c.mean())
 
 
 def test_unbound_table_name():
