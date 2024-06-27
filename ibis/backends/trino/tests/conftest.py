@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 import sqlglot as sg
@@ -67,11 +67,18 @@ class TestConf(ServiceBackendTest):
                 check=True,
             )
 
+    def _tpc_table(self, name: str, benchmark: Literal["h", "ds"]):
+        if not getattr(self, f"supports_tpc{benchmark}"):
+            pytest.skip(
+                f"{self.name()} backend does not support testing TPC-{benchmark.upper()}"
+            )
+        return self.connection.table(name, database=f"hive.ibis_tpc{benchmark}_sf1")
+
     def _transform_tpch_sql(self, parsed):
         def add_catalog_and_schema(node):
             if isinstance(node, sg.exp.Table):
                 catalog = "hive"
-                db = "ibis_sf1"
+                db = "ibis_tpch_sf1"
                 return node.__class__(
                     db=db,
                     catalog=catalog,
@@ -93,7 +100,7 @@ class TestConf(ServiceBackendTest):
         """
         con = self.connection
         catalog = "hive"
-        database = "ibis_sf1"
+        database = "ibis_tpch_sf1"
 
         tables = con.list_tables(database=("tpch", "tiny"))
         con.create_database(database, catalog=catalog, force=True)
@@ -125,10 +132,10 @@ class TestConf(ServiceBackendTest):
 
                 c.execute(sql)
 
-    def _tpch_table(self, name: str):
+    def h(self, name: str):
         from ibis import _
 
-        table = self.connection.table(name, database=("hive", "ibis_sf1"))
+        table = self.connection.table(name, database=("hive", "ibis_tpch_sf1"))
         table = table.mutate(s.across(s.of_type("double"), _.cast("decimal(15, 2)")))
         return table
 

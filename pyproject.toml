@@ -339,6 +339,7 @@ markers = [
   "sqlite: SQLite tests",
   "trino: Trino tests",
   "tpch: TPC-H tests",
+  "tpcds: TPC-DS tests",
 ]
 
 [tool.pydeps]
