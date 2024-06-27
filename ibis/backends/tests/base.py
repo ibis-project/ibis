@@ -309,7 +309,7 @@ class BackendTest(abc.ABC):
         return self.connection.table(name, database=f"tpc{benchmark}")
 
     def h(self, name: str) -> ir.Table:
-        return self._tpch_table(name, "h")
+        return self._tpc_table(name, "h")
 
     def ds(self, name: str) -> ir.Table:
         return self._tpc_table(name, "ds")
