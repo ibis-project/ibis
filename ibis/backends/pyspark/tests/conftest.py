@@ -353,7 +353,6 @@ def con(data_dir, tmp_path_factory, worker_id):
 
 @pytest.fixture(scope="session")
 def con_streaming(data_dir, tmp_path_factory, worker_id):
-    pytest.set_trace()
     backend_test = TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
     return backend_test.connection
 
