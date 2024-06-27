@@ -84,10 +84,10 @@ def tpc_test(suite_name):
             ibis_sql = ibis.to_sql(result_expr, dialect=backend_name)
 
             assert result_expr._find_backend(use_default=False) is backend.connection
-            result = backend.connection.execute(result_expr)
+            result = backend.connection.to_pandas(result_expr)
             assert not result.empty
 
-            expected = expected_expr.execute()
+            expected = expected_expr.to_pandas()
             assert list(map(str.lower, expected.columns)) == result.columns.tolist()
             expected.columns = result.columns
 
