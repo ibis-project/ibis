@@ -35,7 +35,6 @@ class TestConf(ServiceBackendTest):
     reduction_tolerance = 1e-7
     stateful = True
     service_name = "exasol"
-    supports_tpch = False
     force_sort = True
     deps = ("pyexasol",)
 
