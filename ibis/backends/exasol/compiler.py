@@ -73,6 +73,7 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
+        ops.StructColumn,
         ops.TimeDelta,
         ops.TimestampAdd,
         ops.TimestampBucket,
