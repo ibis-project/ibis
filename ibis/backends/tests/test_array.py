@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
     TrinoUserError,
 )
+from ibis.common.annotations import ValidationError
 from ibis.common.collections import frozendict
 
 pytestmark = [
@@ -70,6 +71,85 @@ pytestmark = [
 # NB: We don't check whether results are numpy arrays or lists because this
 # varies across backends. At some point we should unify the result type to be
 # list.
+
+
+def test_array_factory(con):
+    a = ibis.array([1, 2, 3])
+    assert a.type() == dt.Array(value_type=dt.Int8)
+    assert con.execute(a) == [1, 2, 3]
+
+    a2 = ibis.array(a)
+    assert a.type() == dt.Array(value_type=dt.Int8)
+    assert con.execute(a2) == [1, 2, 3]
+
+
+@pytest.mark.broken(
+    ["pandas", "dask"],
+    raises=AssertionError,
+    reason="results in [1, 2, 3]",
+)
+def test_array_factory_typed(con):
+    typed = ibis.array([1, 2, 3], type="array<string>")
+    assert con.execute(typed) == ["1", "2", "3"]
+
+    typed2 = ibis.array(ibis.array([1, 2, 3]), type="array<string>")
+    assert con.execute(typed2) == ["1", "2", "3"]
+
+
+@pytest.mark.notimpl("flink", raises=Py4JJavaError)
+@pytest.mark.notimpl(["pandas", "dask"], raises=ValueError)
+def test_array_factory_empty(con):
+    with pytest.raises(ValidationError):
+        ibis.array([])
+
+    empty_typed = ibis.array([], type="array<string>")
+    assert empty_typed.type() == dt.Array(value_type=dt.string)
+    assert con.execute(empty_typed) == []
+
+
+@pytest.mark.notyet(
+    "clickhouse", raises=ClickHouseDatabaseError, reason="nested types can't be NULL"
+)
+@pytest.mark.notyet(
+    "flink", raises=Py4JJavaError, reason="Parameters must be of the same type"
+)
+def test_array_factory_null(con):
+    with pytest.raises(ValidationError):
+        ibis.array(None)
+    with pytest.raises(ValidationError):
+        ibis.array(None, type="int64")
+    none_typed = ibis.array(None, type="array<string>")
+    assert none_typed.type() == dt.Array(value_type=dt.string)
+    assert con.execute(none_typed) is None
+
+    nones = ibis.array([None, None], type="array<string>")
+    assert nones.type() == dt.Array(value_type=dt.string)
+    assert con.execute(nones) == [None, None]
+
+    # Execute a real value here, so the backends that don't support arrays
+    # actually xfail as we expect them to.
+    # Otherwise would have to @mark.xfail every test in this file besides this one.
+    assert con.execute(ibis.array([1, 2])) == [1, 2]
+
+
+@pytest.mark.broken(
+    ["datafusion", "flink", "polars"],
+    raises=AssertionError,
+    reason="[None, 1] executes to [np.nan, 1.0]",
+)
+@pytest.mark.broken(
+    ["pandas", "dask"],
+    raises=AssertionError,
+    reason="even with explicit cast, results in [None, 1]",
+)
+def test_array_factory_null_mixed(con):
+    none_and_val = ibis.array([None, 1])
+    assert none_and_val.type() == dt.Array(value_type=dt.Int8)
+    assert con.execute(none_and_val) == [None, 1]
+
+    none_and_val_typed = ibis.array([None, 1], type="array<string>")
+    assert none_and_val_typed.type() == dt.Array(value_type=dt.String)
+    assert con.execute(none_and_val_typed) == [None, "1"]
 
 
 def test_array_column(backend, alltypes, df):
@@ -1354,11 +1434,6 @@ def test_unnest_range(con):
             id="array",
             marks=[
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
-                pytest.mark.broken(
-                    ["polars"],
-                    reason="expression input not supported with nested arrays",
-                    raises=TypeError,
-                ),
             ],
         ),
     ],

@@ -30,7 +30,7 @@ class DaskUtils(PandasUtils):
 
     @classmethod
     def asseries(cls, value, like=None):
-        """Ensure that value is a pandas Series object, broadcast if necessary."""
+        """Ensure that value is a dask Series object, broadcast if necessary."""
 
         if isinstance(value, dd.Series):
             return value
@@ -50,7 +50,7 @@ class DaskUtils(PandasUtils):
         elif isinstance(value, pd.Series):
             return dd.from_pandas(value, npartitions=1)
         elif like is not None:
-            if isinstance(value, (tuple, list, dict)):
+            if isinstance(value, (tuple, list, dict, np.ndarray)):
                 fn = lambda df: pd.Series([value] * len(df), index=df.index)
             else:
                 fn = lambda df: pd.Series(value, index=df.index)

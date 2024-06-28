@@ -1019,8 +1019,20 @@ class SQLGlotCompiler(abc.ABC):
             query = sg.select(STAR).from_(query)
         return needle.isin(query=query)
 
-    def visit_Array(self, op, *, exprs):
-        return self.f.array(*exprs)
+    def visit_Array(self, op, *, exprs, dtype):
+        if not exprs:
+            return self.cast(self.f.array(), dtype)
+
+        def maybe_cast(ibis_val, sg_expr):
+            if ibis_val.dtype == dtype.value_type:
+                return sg_expr
+            else:
+                return self.cast(sg_expr, dtype.value_type)
+
+        cast_exprs = [
+            maybe_cast(ibis_val, sg_expr) for ibis_val, sg_expr in zip(op.exprs, exprs)
+        ]
+        return self.f.array(*cast_exprs)
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(

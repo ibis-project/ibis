@@ -19,14 +19,15 @@ class Array(Value):
     """Construct an array."""
 
     exprs: VarTuple[Value]
+    dtype: Optional[dt.Array] = None
 
-    @attribute
-    def shape(self):
-        return rlz.highest_precedence_shape(self.exprs)
+    shape = rlz.shape_like("exprs")
 
-    @attribute
-    def dtype(self):
-        return dt.Array(rlz.highest_precedence_dtype(self.exprs))
+    def __init__(self, exprs, dtype: dt.Array | None = None):
+        # If len(exprs) == 0, the caller is responsible for providing a dtype
+        if dtype is None:
+            dtype = dt.Array(rlz.highest_precedence_dtype(exprs))
+        super().__init__(exprs=exprs, dtype=dtype)
 
 
 @public

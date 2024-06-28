@@ -28,6 +28,7 @@ from ibis.backends.pandas.rewrites import (
     plan,
 )
 from ibis.common.exceptions import UnboundExpressionError, UnsupportedOperationError
+from ibis.formats.numpy import NumpyType
 from ibis.formats.pandas import PandasData, PandasType
 from ibis.util import gen_name
 
@@ -155,9 +156,10 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         return cls.partitionwise(mapper, kwargs, name=op.name, dtype=dtype)
 
     @classmethod
-    def visit(cls, op: ops.Array, exprs):
+    def visit(cls, op: ops.Array, exprs, dtype):
+        np_type = NumpyType.from_ibis(dtype)
         return cls.rowwise(
-            lambda row: np.array(row, dtype=object), exprs, name=op.name, dtype=object
+            lambda row: np.array(row, dtype=np_type), exprs, name=op.name, dtype=object
         )
 
     @classmethod

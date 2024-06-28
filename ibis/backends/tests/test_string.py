@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     OracleDatabaseError,
     PsycoPg2InternalError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
@@ -835,6 +836,11 @@ def test_capitalize(con, inp, expected):
         assert pd.isnull(result)
 
 
+@pytest.mark.never(
+    ["exasol", "impala", "mssql", "mysql", "sqlite"],
+    reason="Backend doesn't support arrays",
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
+)
 @pytest.mark.notimpl(
     [
         "dask",
@@ -842,13 +848,13 @@ def test_capitalize(con, inp, expected):
         "polars",
         "oracle",
         "flink",
-        "sqlite",
-        "mssql",
-        "mysql",
-        "exasol",
-        "impala",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.broken(
+    "druid",
+    raises=PyDruidProgrammingError,
+    reason="ibis.array() has a cast, and we compile the dtype to 'VARCHAR[] instead of 'ARRAY<STRING>' as needed",
 )
 def test_array_string_join(con):
     s = ibis.array(["a", "b", "c"])

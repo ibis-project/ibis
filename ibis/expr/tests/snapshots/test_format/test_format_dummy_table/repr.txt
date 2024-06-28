@@ -1,2 +1,2 @@
 DummyTable
-  foo: Array([1])
+  foo: Array(exprs=[1], dtype=array<int8>)

@@ -49,7 +49,9 @@ class PandasExecutor(Dispatched, PandasUtils):
 
     @classmethod
     def visit(cls, op: ops.Literal, value, dtype):
-        if dtype.is_interval():
+        if value is None:
+            value = None
+        elif dtype.is_interval():
             value = pd.Timedelta(value, dtype.unit.short)
         elif dtype.is_array():
             value = np.array(value)
@@ -220,7 +222,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return pd.Series(result, name=op.name)
 
     @classmethod
-    def visit(cls, op: ops.Array, exprs):
+    def visit(cls, op: ops.Array, exprs, dtype):
         return cls.rowwise(lambda row: np.array(row, dtype=object), exprs)
 
     @classmethod

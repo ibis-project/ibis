@@ -87,25 +87,27 @@ def literal(op, **_):
     value = op.value
     dtype = op.dtype
 
-    if dtype.is_array():
-        value = pl.Series("", value)
-        typ = PolarsType.from_ibis(dtype)
-        val = pl.lit(value, dtype=typ)
-        return val.implode()
+    # There are some interval types that _make_duration() can handle,
+    # but PolarsType.from_ibis can't, so we need to handle them here.
+    if dtype.is_interval():
+        return _make_duration(value, dtype)
+
+    typ = PolarsType.from_ibis(dtype)
+    if value is None:
+        return pl.lit(None, dtype=typ)
+    elif dtype.is_array():
+        return pl.lit(pl.Series("", value).implode(), dtype=typ)
     elif dtype.is_struct():
         values = [
             pl.lit(v, dtype=PolarsType.from_ibis(dtype[k])).alias(k)
             for k, v in value.items()
         ]
         return pl.struct(values)
-    elif dtype.is_interval():
-        return _make_duration(value, dtype)
     elif dtype.is_null():
         return pl.lit(value)
     elif dtype.is_binary():
         return pl.lit(value)
     else:
-        typ = PolarsType.from_ibis(dtype)
         return pl.lit(op.value, dtype=typ)
 
 
@@ -974,9 +976,12 @@ def array_concat(op, **kw):
 
 
 @translate.register(ops.Array)
-def array_column(op, **kw):
-    cols = [translate(col, **kw) for col in op.exprs]
-    return pl.concat_list(cols)
+def array_literal(op, **kw):
+    pdt = PolarsType.from_ibis(op.dtype)
+    if op.exprs:
+        return pl.concat_list([translate(col, **kw) for col in op.exprs]).cast(pdt)
+    else:
+        return pl.lit([], dtype=pdt)
 
 
 @translate.register(ops.ArrayCollect)

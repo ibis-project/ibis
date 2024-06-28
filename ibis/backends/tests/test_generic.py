@@ -1431,13 +1431,12 @@ def test_many_subqueries(con, snapshot):
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")
 
 
-@pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["datafusion", "impala", "mssql", "mysql", "sqlite"],
+    ["datafusion", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
-    raises=com.OperationNotDefinedError,
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
+@pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.broken(
     ["trino"],
     reason="invalid code generated for unnesting a struct",
