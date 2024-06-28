@@ -36,7 +36,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     )
 
     UNSUPPORTED_OPS = (
-        ops.CountDistinctStar,
         ops.DateDiff,
         ops.ExtractAuthority,
         ops.ExtractUserInfo,
@@ -644,6 +643,23 @@ class BigQueryCompiler(SQLGlotCompiler):
         if where is not None:
             return self.f.countif(where)
         return self.f.count(STAR)
+
+    def visit_CountDistinctStar(self, op, *, where, arg):
+        # Bigquery does not support count(distinct a,b,c) or count(distinct (a, b, c))
+        # as expressions must be "groupable":
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#group_by_grouping_item
+        #
+        # Instead, convert the entire expression to a string
+        # SELECT COUNT(DISTINCT concat(to_json_string(a), to_json_string(b)))
+        # This works with an array of datatypes which generates a unique string
+        # https://cloud.google.com/bigquery/docs/reference/standard-sql/json_functions#json_encodings
+        row = sge.Concat(
+            expressions=[
+                self.f.to_json_string(sg.column(x, quoted=self.quoted))
+                for x in op.arg.schema.keys()
+            ]
+        )
+        return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
     def visit_Degrees(self, op, *, arg):
         return self._pudf("degrees", arg)
