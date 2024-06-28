@@ -5,7 +5,7 @@ from __future__ import annotations
 import contextlib
 import json
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 
 import pydruid.db
 import sqlglot as sg
@@ -61,7 +61,7 @@ class Backend(SQLBackend):
         query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
-            "password": url.password,
+            "password": unquote_plus(url.password),
             "host": url.hostname,
             "path": url.path,
             "port": url.port,

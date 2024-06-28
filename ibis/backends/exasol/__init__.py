@@ -5,7 +5,7 @@ import contextlib
 import datetime
 import re
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 
 import pyexasol
 import sqlglot as sg
@@ -105,7 +105,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
-            "password": url.password,
+            "password": unquote_plus(url.password),
             "schema": url.path[1:] or None,
             "host": url.hostname,
             "port": url.port,

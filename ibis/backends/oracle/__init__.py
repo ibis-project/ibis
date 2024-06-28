@@ -9,7 +9,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+from urllib.parse import unquote_plus, urlparse
 
 import numpy as np
 import oracledb
@@ -164,7 +164,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         url = urlparse(url)
         self.do_connect(
             user=url.username,
-            password=url.password,
+            password=unquote_plus(url.password),
             database=url.path.removeprefix("/"),
         )
 

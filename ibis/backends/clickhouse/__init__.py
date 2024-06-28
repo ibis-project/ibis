@@ -6,7 +6,7 @@ import glob
 from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 
 import clickhouse_connect as cc
 import pyarrow as pa
@@ -82,7 +82,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         connect_args = {
             "user": url.username,
-            "password": url.password or "",
+            "password": unquote_plus(url.password) or "",
             "host": url.hostname,
             "database": database or "",
         }

@@ -17,7 +17,7 @@ from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
-from urllib.request import urlretrieve
+from urllib.request import unquote_plus, urlretrieve
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
@@ -116,7 +116,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             (warehouse,) = query_params.pop("warehouse", (None,))
             connect_args = {
                 "user": url.username,
-                "password": url.password or "",
+                "password": unquote_plus(url.password) or "",
                 "account": url.hostname,
                 "warehouse": warehouse,
                 "database": database or "",
