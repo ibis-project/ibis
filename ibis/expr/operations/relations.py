@@ -22,7 +22,7 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
-from ibis.expr.operations.logical import IfElse
+from ibis.expr.operations.logical import IfElse  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
