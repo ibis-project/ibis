@@ -16,8 +16,8 @@ import warnings
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
-from urllib.request import unquote_plus, urlretrieve
+from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.request import urlretrieve
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
