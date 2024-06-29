@@ -281,8 +281,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
-    def _clean_up_cached_table(self, op):
-        self.drop_table(op.name)
+    def _clean_up_cached_table(self, name):
+        self.drop_table(name)
 
     def table(
         self, name: str, schema: str | None = None, database: str | None = None

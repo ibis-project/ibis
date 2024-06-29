@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import functools
-from collections import Counter, defaultdict
+from collections import namedtuple
 from typing import TYPE_CHECKING, Any
-
-from bidict import bidict
+from weakref import finalize, ref
 
 from ibis.common.exceptions import IbisError
 
@@ -29,8 +28,11 @@ def memoize(func: Callable) -> Callable:
     return wrapper
 
 
+CacheEntry = namedtuple("CacheEntry", ["name", "ref", "finalizer"])
+
+
 class RefCountedCache:
-    """A cache with reference-counted keys.
+    """A cache with (implicitly) reference-counted values.
 
     We could implement `MutableMapping`, but the `__setitem__` implementation
     doesn't make sense and the `len` and `__iter__` methods aren't used.
@@ -47,56 +49,50 @@ class RefCountedCache:
         generate_name: Callable[[], str],
         key: Callable[[Any], Any],
     ) -> None:
-        self.cache = bidict()
-        # Somehow mypy needs a type hint here
-        self.refs: Counter = Counter()
         self.populate = populate
         self.lookup = lookup
         self.finalize = finalize
-        # Somehow mypy needs a type hint here
-        self.names: defaultdict = defaultdict(generate_name)
+        self.generate_name = generate_name
         self.key = key or (lambda x: x)
 
+        self.cache: dict[Any, CacheEntry] = dict()
+
     def get(self, key, default=None):
-        try:
-            return self[key]
-        except KeyError:
-            return default
+        if (res := self.cache.get(key)) is not None:
+            return res.ref()
+        return default
 
     def __getitem__(self, key):
-        result = self.cache[key]
-        self.refs[key] += 1
-        return result
+        return self.cache[key].ref()
 
-    def store(self, input) -> None:
+    def store(self, input):
         """Compute and store a reference to `key`."""
         key = self.key(input)
-        name = self.names[key]
+        name = self.generate_name()
         self.populate(name, input)
-        self.cache[key] = self.lookup(name)
-        # nothing outside of this instance has referenced this key yet, so the
-        # refcount is zero
-        #
-        # in theory it's possible to call store -> delitem which would raise an
-        # exception, but in practice this doesn't happen because the only call
-        # to store is immediately followed by a call to getitem.
-        self.refs[key] = 0
+        cached = self.lookup(name)
+        finalizer = finalize(cached, self._release, key)
+        finalizer.atexit = False
 
-    def __delitem__(self, key) -> None:
-        # we need to remove the expression representing the computed physical
-        # table as well as the expression that was used to create that table
-        #
-        # bidict automatically handles this for us; without it we'd have to do
-        # to the bookkeeping ourselves with two dicts
-        if (inv_key := self.cache.inverse.get(key)) is None:
-            raise IbisError(
-                "Key has already been released. Did you call "
-                "`.release()` twice on the same expression?"
-            )
+        self.cache[key] = CacheEntry(name, ref(cached), finalizer)
 
-        self.refs[inv_key] -= 1
-        assert self.refs[inv_key] >= 0, f"refcount is negative: {self.refs[inv_key]:d}"
+        return cached
 
-        if not self.refs[inv_key]:
-            del self.cache[inv_key], self.refs[inv_key]
-            self.finalize(key)
+    def release(self, name: str) -> None:
+        # Could be sped up with an inverse dictionary,
+        # but explicit release is discouraged, anyway
+        for key, entry in self.cache.items():
+            if entry.name == name:
+                self._release(key)
+                return
+
+        raise IbisError(
+            "Key has already been released. Did you call "
+            "`.release()` twice on the same expression?"
+        )
+
+    def _release(self, key) -> None:
+        entry = self.cache.pop(key)
+        self.finalize(entry.name)
+        if entry.finalizer.alive:
+            entry.finalizer.detach()

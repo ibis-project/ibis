@@ -627,5 +627,5 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             with contextlib.suppress(oracledb.DatabaseError):
                 bind.execute(f'DROP TABLE "{name}"')
 
-    def _clean_up_cached_table(self, op):
-        self._clean_up_tmp_table(op.name)
+    def _clean_up_cached_table(self, name):
+        self._clean_up_tmp_table(name)

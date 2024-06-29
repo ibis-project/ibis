@@ -638,8 +638,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
 
-    def _clean_up_cached_table(self, op):
-        name = op.name
+    def _clean_up_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached

@@ -1144,9 +1144,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
-    def _clean_up_cached_table(self, op):
+    def _clean_up_cached_table(self, name):
         self.drop_table(
-            op.name,
+            name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
         )
 
