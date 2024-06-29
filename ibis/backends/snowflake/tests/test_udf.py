@@ -276,6 +276,7 @@ def test_ibis_inside_snowpark(snowpark_session, execute_as):
             "snowflake-snowpark-python",
             "toolz",
             "atpublic",
+            "bidict",
             "pyarrow",
             "pandas",
             "numpy",

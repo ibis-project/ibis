@@ -3,8 +3,9 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  # - apache-flink
+  - apache-flink
   - atpublic >=2.3
+  - bidict >=0.22.1
   - black >=22.1.0,<25
   - clickhouse-connect >=0.5.23
   - dask >=2022.9.1
@@ -95,8 +96,7 @@ dependencies:
   - ruff >=0.1.8
   - taplo
   - tqdm >=4.66.1
-  - lonboard
   - just
   - pip
-  # - pip:
-  #     - lonboard==0.4.0
+  - pip:
+      - lonboard==0.4.0
