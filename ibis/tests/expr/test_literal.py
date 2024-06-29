@@ -127,11 +127,6 @@ def test_struct_literal_non_castable(value):
         ibis.struct(value, type="struct<field1: string, field2: float64>")
 
 
-def test_struct_cast_to_empty_struct():
-    value = ibis.struct({"a": 1, "b": 2.0})
-    assert value.type().castable(dt.Struct({}))
-
-
 def test_map_literal():
     a = ibis.map(["a", "b"], [1, 2])
     assert a.op().keys.value == ("a", "b")

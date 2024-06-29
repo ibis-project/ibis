@@ -831,12 +831,22 @@ class Interval(Parametric):
 
 @public
 class Struct(Parametric, MapSet):
-    """Structured values."""
+    """A nested type with ordered fields of any type, analogous to a dataclass in Python.
+
+    eg a Struct might have a field a of type int64 and a field b of type string.
+    """
 
     fields: FrozenOrderedDict[str, DataType]
 
     scalar = "StructScalar"
     column = "StructColumn"
+
+    def __init__(self, fields, nullable=True):
+        # We could do this validation in a type annotation, but I thought this
+        # was common enough to warrant a nicer error message.
+        if not fields:
+            raise TypeError("Structs require at least one field")
+        super().__init__(fields=fields, nullable=nullable)
 
     @classmethod
     def from_tuples(
