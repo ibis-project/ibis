@@ -835,6 +835,11 @@ def test_capitalize(con, inp, expected):
         assert pd.isnull(result)
 
 
+@pytest.mark.never(
+    ["exasol", "impala", "mssql", "mysql", "sqlite"],
+    reason="Backend doesn't support arrays",
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
+)
 @pytest.mark.notimpl(
     [
         "dask",
@@ -842,11 +847,6 @@ def test_capitalize(con, inp, expected):
         "polars",
         "oracle",
         "flink",
-        "sqlite",
-        "mssql",
-        "mysql",
-        "exasol",
-        "impala",
     ],
     raises=com.OperationNotDefinedError,
 )

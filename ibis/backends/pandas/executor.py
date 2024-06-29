@@ -49,7 +49,9 @@ class PandasExecutor(Dispatched, PandasUtils):
 
     @classmethod
     def visit(cls, op: ops.Literal, value, dtype):
-        if dtype.is_interval():
+        if value is None:
+            value = None
+        elif dtype.is_interval():
             value = pd.Timedelta(value, dtype.unit.short)
         elif dtype.is_array():
             value = np.array(value)
@@ -218,6 +220,11 @@ class PandasExecutor(Dispatched, PandasUtils):
         choicelist = [i for i, _ in enumerate(haystack)]
         result = np.select(condlist, choicelist, default=-1)
         return pd.Series(result, name=op.name)
+
+    @classmethod
+    def visit(cls, op: ops.EmptyArray, dtype):
+        pdt = PandasType.from_ibis(dtype)
+        return np.array([], dtype=pdt)
 
     @classmethod
     def visit(cls, op: ops.Array, exprs):

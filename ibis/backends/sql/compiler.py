@@ -1019,6 +1019,9 @@ class SQLGlotCompiler(abc.ABC):
             query = sg.select(STAR).from_(query)
         return needle.isin(query=query)
 
+    def visit_EmptyArray(self, op, *, dtype):
+        return self.cast(self.f.array(), dtype)
+
     def visit_Array(self, op, *, exprs):
         return self.f.array(*exprs)
 
