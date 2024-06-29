@@ -1837,13 +1837,13 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2024.6.0"
+version = "2024.6.1"
 description = "File-system specification"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "fsspec-2024.6.0-py3-none-any.whl", hash = "sha256:58d7122eb8a1a46f7f13453187bfea4972d66bf01618d37366521b1998034cee"},
-    {file = "fsspec-2024.6.0.tar.gz", hash = "sha256:f579960a56e6d8038a9efc8f9c77279ec12e6299aa86b0769a7e9c46b94527c2"},
+    {file = "fsspec-2024.6.1-py3-none-any.whl", hash = "sha256:3cb443f8bcd2efb31295a5b9fdb02aee81d8452c80d28f97a6d0959e6cee101e"},
+    {file = "fsspec-2024.6.1.tar.gz", hash = "sha256:fad7d7e209dd4c1208e3bbfda706620e0da5142bebbd9c384afb95b07e798e49"},
 ]
 
 [package.extras]
@@ -1876,19 +1876,19 @@ tqdm = ["tqdm"]
 
 [[package]]
 name = "gcsfs"
-version = "2024.6.0"
+version = "2024.6.1"
 description = "Convenient Filesystem interface over GCS"
 optional = true
 python-versions = ">=3.8"
 files = [
-    {file = "gcsfs-2024.6.0-py2.py3-none-any.whl", hash = "sha256:92c9239167bd1e209b662b6f4ab71974f276118779c55360215cce5e0098ca7f"},
-    {file = "gcsfs-2024.6.0.tar.gz", hash = "sha256:27bd490d7a9dd641d5f6f4ea0b18fabdcfa6129b84ebdb22b23e3460ded1aa8c"},
+    {file = "gcsfs-2024.6.1-py2.py3-none-any.whl", hash = "sha256:13fd18095425e54e248870594fd155812723966b1bda3b102b3a5c44ec436a03"},
+    {file = "gcsfs-2024.6.1.tar.gz", hash = "sha256:e8858c7a893b2265e9bfce2fe270a024a2e348c74c23528801db388fc0224ed7"},
 ]
 
 [package.dependencies]
 aiohttp = "<4.0.0a0 || >4.0.0a0,<4.0.0a1 || >4.0.0a1"
 decorator = ">4.1.2"
-fsspec = "2024.6.0"
+fsspec = "2024.6.1"
 google-auth = ">=1.2"
 google-auth-oauthlib = "*"
 google-cloud-storage = "*"
@@ -6725,18 +6725,18 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "25.3.0"
+version = "25.4.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.3.0-py3-none-any.whl", hash = "sha256:1cca732e7c2ba4fe86665d8e05d7af49b3f2a5e7ec45a8f3ab0649d4207351b9"},
-    {file = "sqlglot-25.3.0.tar.gz", hash = "sha256:c4ce5e38148c29f3bb19d8dcf1bfaaa4833eb283e9e6771e39a7e90dd6b79a0c"},
+    {file = "sqlglot-25.4.0-py3-none-any.whl", hash = "sha256:c8eb1b45ff7e3382639012aca050a3d40c373049c2d2d47393bf23666135c8bb"},
+    {file = "sqlglot-25.4.0.tar.gz", hash = "sha256:12f198afd0b5d5722be9eecb1f364e4e01cb63935086f1b3af1b333b22b78254"},
 ]
 
 [package.extras]
 dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "ruff (==0.4.3)", "types-python-dateutil", "typing-extensions"]
-rs = ["sqlglotrs (==0.2.7)"]
+rs = ["sqlglotrs (==0.2.8)"]
 
 [[package]]
 name = "stack-data"
@@ -7681,4 +7681,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "2764b71a0cc589939f1e466aeb325f93ad77771c0795fbcfdc77ffec1304549f"
+content-hash = "e538ac00f32af8c9c3040f30542c2eada46299907a787f36faa79898439d5bd5"
