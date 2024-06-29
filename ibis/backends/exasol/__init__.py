@@ -105,7 +105,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
-            "password": unquote_plus(url.password),
+            "password": unquote_plus(url.password)
+            if url.password is not None
+            else None,
             "schema": url.path[1:] or None,
             "host": url.hostname,
             "port": url.port,

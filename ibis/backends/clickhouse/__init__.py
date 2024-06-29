@@ -82,7 +82,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         connect_args = {
             "user": url.username,
-            "password": unquote_plus(url.password) or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
         }

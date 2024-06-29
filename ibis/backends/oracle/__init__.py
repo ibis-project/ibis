@@ -164,7 +164,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         url = urlparse(url)
         self.do_connect(
             user=url.username,
-            password=unquote_plus(url.password),
+            password=unquote_plus(url.password) if url.password is not None else None,
             database=url.path.removeprefix("/"),
         )
 

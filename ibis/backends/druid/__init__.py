@@ -61,7 +61,9 @@ class Backend(SQLBackend):
         query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
-            "password": unquote_plus(url.password),
+            "password": unquote_plus(url.password)
+            if url.password is not None
+            else None,
             "host": url.hostname,
             "path": url.path,
             "port": url.port,

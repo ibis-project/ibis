@@ -71,7 +71,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
-            "password": unquote_plus(url.password) or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
             "schema": schema[0] if schema else "",

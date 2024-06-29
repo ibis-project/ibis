@@ -116,7 +116,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             (warehouse,) = query_params.pop("warehouse", (None,))
             connect_args = {
                 "user": url.username,
-                "password": unquote_plus(url.password) or "",
+                "password": unquote_plus(url.password or ""),
                 "account": url.hostname,
                 "warehouse": warehouse,
                 "database": database or "",

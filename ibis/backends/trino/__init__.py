@@ -44,7 +44,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         catalog, db = url.path.strip("/").split("/")
         self.do_connect(
             user=url.username or None,
-            auth=unquote_plus(url.password) or None,
+            auth=unquote_plus(url.password) if url.password is not None else None,
             host=url.hostname or None,
             port=url.port or None,
             database=catalog,

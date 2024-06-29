@@ -62,7 +62,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
-            "password": unquote_plus(url.password) or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
             "port": url.port or None,
