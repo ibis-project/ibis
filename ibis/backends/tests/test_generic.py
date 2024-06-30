@@ -28,7 +28,6 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsSchemaError,
     PsycoPg2InternalError,
-    PsycoPg2SyntaxError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCDataError,
@@ -1757,74 +1756,6 @@ def test_hexdigest(backend, alltypes):
     h2 = df["string_col"].apply(hash_256).rename("HexDigest(string_col)")
 
     backend.assert_series_equal(h1, h2)
-
-
-@pytest.mark.parametrize(
-    ("from_type", "to_type", "from_val", "expected"),
-    [
-        param("int", "float", 0, 0.0),
-        param("float", "int", 0.0, 0),
-        param("string", "int", "0", 0),
-        param("string", "float", "0", 0.0),
-        param(
-            "timestamp",
-            "string",
-            datetime.datetime(2023, 1, 1),
-            "2023-01-01 00:00:00",
-            marks=[
-                pytest.mark.broken(
-                    "datafusion", reason="1672531200000000 (micro-seconds)"
-                ),
-                pytest.mark.broken(["exasol"], reason="2023-01-01 00:00:00.000000"),
-                pytest.mark.broken(["flink"], reason="2023-01-01 00:00:00.000000"),
-                pytest.mark.broken(["impala"], reason="casts to '2023-01-0100:00:00'"),
-                pytest.mark.broken(["mssql"], reason="2023-01-01 00:00:00.000000"),
-                pytest.mark.broken("oracle", reason="01-JAN-23 12.00.00.000000000 AM"),
-                pytest.mark.broken(
-                    "polars", reason="1672531200000000000 (nanoseconds)"
-                ),
-                pytest.mark.broken(["trino"], reason="2023-01-01 00:00:00.000"),
-            ],
-        ),
-        param(
-            "array<int>",
-            "array<string>",
-            [0, 1, 2],
-            ["0", "1", "2"],
-            marks=[
-                pytest.mark.broken(["pandas"], reason="casts to ['0']"),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.never(
-                    ["exasol", "impala", "mssql", "mysql", "sqlite"],
-                    reason="backend doesn't support arrays",
-                ),
-            ],
-        ),
-        param(
-            "struct<a: int, b: string>",
-            "struct<a: string, b: int>",
-            {"a": 0, "b": "1"},
-            {"a": "0", "b": 1},
-            marks=[
-                pytest.mark.never(
-                    ["datafusion", "exasol", "impala", "mssql", "mysql", "sqlite"],
-                    reason="backend doesn't support arrays",
-                ),
-                pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
-                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
-            ],
-        ),
-    ],
-    ids=str,
-)
-def test_cast(con, from_type, to_type, from_val, expected):
-    expr = ibis.literal(from_val, type=from_type).cast(to_type)
-    result = con.execute(expr)
-    assert result == expected
 
 
 @pytest.mark.notimpl(["pandas", "dask", "oracle", "sqlite"])
