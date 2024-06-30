@@ -58,12 +58,16 @@ class RefCountedCache:
         self.cache: dict[Any, CacheEntry] = dict()
 
     def get(self, key, default=None):
-        if (res := self.cache.get(key)) is not None:
-            return res.ref()
+        if (entry := self.cache.get(key)) is not None:
+            op = entry.ref()
+            return op if op is not None else default
         return default
 
     def __getitem__(self, key):
-        return self.cache[key].ref()
+        op = self.cache[key].ref()
+        if op is None:
+            raise KeyError(key)
+        return op
 
     def store(self, input):
         """Compute and store a reference to `key`."""
