@@ -215,8 +215,7 @@ def test_coalesce_all_na_double(con):
 def test_numeric_builtins_work(alltypes, df):
     expr = alltypes.double_col.fill_null(0)
     result = expr.execute()
-    expected = df.double_col.fillna(0)
-    expected.name = "Coalesce()"
+    expected = df.double_col.fillna(0).rename(expr.get_name())
     tm.assert_series_equal(result, expected)
 
 
