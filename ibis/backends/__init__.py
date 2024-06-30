@@ -1369,18 +1369,12 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")
 
-    if kwargs:
-        # If there are kwargs (either explicit or from the query string),
-        # re-add them to the parsed URL
-        query = urllib.parse.urlencode(kwargs)
-        parsed = parsed._replace(query=query)
-
     if scheme in ("postgres", "postgresql"):
         # Treat `postgres://` and `postgresql://` the same
         scheme = "postgres"
 
     # Convert all arguments back to a single URL string
-    url = parsed.geturl()
+    url = parsed._replace(query="").geturl()
     if "://" not in url:
         # urllib may roundtrip `duckdb://` to `duckdb:`. Here we re-add the
         # missing `//`.
@@ -1391,7 +1385,7 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     except AttributeError:
         raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
-    return backend._from_url(url, **orig_kwargs)
+    return backend._from_url(url, **kwargs)
 
 
 class UrlFromPath:
