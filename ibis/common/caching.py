@@ -32,7 +32,7 @@ CacheEntry = namedtuple("CacheEntry", ["name", "ref", "finalizer"])
 
 
 class RefCountedCache:
-    """A cache with (implicitly) reference-counted values.
+    """A cache with implicitly reference-counted values.
 
     We could implement `MutableMapping`, but the `__setitem__` implementation
     doesn't make sense and the `len` and `__iter__` methods aren't used.
