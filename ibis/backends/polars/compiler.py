@@ -976,6 +976,13 @@ def array_concat(op, **kw):
 @translate.register(ops.Array)
 def array_column(op, **kw):
     cols = [translate(col, **kw) for col in op.exprs]
+    # Workaround for https://github.com/pola-rs/polars/issues/17294
+    # pl.concat_list(Iterable[T]) results in pl.List[T], EXCEPT when T is a
+    # pl.List, in which case pl.concat_list(Iterable[pl.List[T]]) results in pl.List[T].
+    # If polars ever supports a more consistent array constructor,
+    # we should switch to that.
+    if op.dtype.value_type.is_array():
+        cols = [c.implode() for c in cols]
     return pl.concat_list(cols)
 
 
