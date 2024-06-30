@@ -31,6 +31,7 @@ from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -112,23 +113,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         treat_nan_as_null: bool = False
 
-    def _from_url(self, url: str, **kwargs) -> Backend:
+    def _from_url(self, url: ParseResult, **kwargs) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
-        from urllib.parse import parse_qs, urlparse
-
-        url = urlparse(url)
-        query_params = parse_qs(url.query)
-        params = query_params.copy()
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                params[name] = value
-            elif len(value) == 1:
-                params[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
-
-        conf = SparkConf().setAll(params.items())
+        conf = SparkConf().setAll(kwargs.items())
 
         if database := url.path[1:]:
             conf = conf.set("spark.sql.warehouse.dir", str(Path(database).absolute()))

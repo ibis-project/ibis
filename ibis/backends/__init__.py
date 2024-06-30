@@ -9,7 +9,6 @@ import re
 import urllib.parse
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import parse_qs, urlparse
 
 import ibis
 import ibis.common.exceptions as exc
@@ -21,6 +20,7 @@ from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -1352,6 +1352,11 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     orig_kwargs = kwargs.copy()
     kwargs = dict(urllib.parse.parse_qsl(parsed.query))
 
+    # convert single parameter lists value to single values
+    for name, value in kwargs.items():
+        if len(value) == 1:
+            kwargs[name] = value[0]
+
     if scheme == "file":
         path = parsed.netloc + parsed.path
         # Merge explicit kwargs with query string, explicit kwargs
@@ -1369,29 +1374,21 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")
 
-    if scheme in ("postgres", "postgresql"):
-        # Treat `postgres://` and `postgresql://` the same
-        scheme = "postgres"
-
-    # Convert all arguments back to a single URL string
-    url = parsed._replace(query="").geturl()
-    if "://" not in url:
-        # urllib may roundtrip `duckdb://` to `duckdb:`. Here we re-add the
-        # missing `//`.
-        url = url.replace(":", "://", 1)
+    # Treat `postgres://` and `postgresql://` the same
+    scheme = scheme.replace("postgresql", "postgres")
 
     try:
         backend = getattr(ibis, scheme)
     except AttributeError:
         raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
-    return backend._from_url(url, **kwargs)
+    return backend._from_url(parsed, **kwargs)
 
 
 class UrlFromPath:
     __slots__ = ()
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -1407,7 +1404,6 @@ class UrlFromPath:
             A backend instance
 
         """
-        url = urlparse(url)
         netloc = url.netloc
         parts = list(filter(None, (netloc, url.path[bool(netloc) :])))
         database = Path(*parts) if parts and parts != [":memory:"] else ":memory:"
@@ -1418,16 +1414,6 @@ class UrlFromPath:
         elif isinstance(database, Path):
             database = database.absolute()
 
-        query_params = parse_qs(url.query)
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise exc.IbisError(f"Invalid URL parameter: {name}")
-
         self._convert_kwargs(kwargs)
         return self.connect(database=database, **kwargs)
 
@@ -1437,7 +1423,7 @@ class NoUrl:
 
     name: str
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
         """Connect to the backend with empty url.
 
         Parameters

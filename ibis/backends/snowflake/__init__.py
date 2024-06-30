@@ -16,7 +16,7 @@ import warnings
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.parse import unquote_plus
 from urllib.request import urlretrieve
 
 import pyarrow as pa
@@ -40,6 +40,7 @@ from ibis.backends.sql.datatypes import SnowflakeType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -92,7 +93,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
         with contextlib.suppress(KeyError):
             kwargs["account"] = kwargs.pop("host")
 
-    def _from_url(self, url: str, **kwargs):
+    def _from_url(self, url: ParseResult, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -108,12 +109,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             A backend instance
 
         """
-
-        url = urlparse(url)
         if url.path:
             database, schema = url.path[1:].split("/", 1)
-            query_params = parse_qs(url.query)
-            (warehouse,) = query_params.pop("warehouse", (None,))
+            warehouse = kwargs.pop("warehouse", None)
             connect_args = {
                 "user": url.username,
                 "password": unquote_plus(url.password or ""),
@@ -124,15 +122,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             }
         else:
             connect_args = {}
-            query_params = {}
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                connect_args[name] = value
-            elif len(value) == 1:
-                connect_args[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
 
         session_parameters = kwargs.setdefault("session_parameters", {})
 
