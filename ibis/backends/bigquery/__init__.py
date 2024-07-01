@@ -8,7 +8,6 @@ import glob
 import os
 import re
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.parse import parse_qs, urlparse
 
 import google.api_core.exceptions
 import google.auth.credentials
@@ -41,6 +40,7 @@ from ibis.backends.sql.datatypes import BigQueryType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from pathlib import Path
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -332,12 +332,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
-    def _from_url(self, url: str, **kwargs):
-        result = urlparse(url)
-        params = parse_qs(result.query)
+    def _from_url(self, url: ParseResult, **kwargs):
         return self.connect(
-            project_id=result.netloc or params.get("project_id", [""])[0],
-            dataset_id=result.path[1:] or params.get("dataset_id", [""])[0],
+            project_id=url.netloc or kwargs.get("project_id", [""])[0],
+            dataset_id=url.path[1:] or kwargs.get("dataset_id", [""])[0],
             **kwargs,
         )
 

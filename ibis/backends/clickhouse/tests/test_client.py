@@ -352,11 +352,10 @@ def test_create_table_no_syntax_error(con):
 def test_password_with_bracket():
     password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}['
     quoted_pass = quote_plus(password)
-    with pytest.raises(cc.driver.exceptions.DatabaseError) as e:
-        ibis.clickhouse.connect(
-            host=os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost"),
-            user=os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default"),
-            port=int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123)),
-            password=quoted_pass,
-        )
-    assert "password is incorrect" in str(e.value)
+    host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
+    user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
+    port = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123))
+    with pytest.raises(
+        cc.driver.exceptions.DatabaseError, match="password is incorrect"
+    ):
+        ibis.clickhouse.connect(host=host, user=user, port=port, password=quoted_pass)

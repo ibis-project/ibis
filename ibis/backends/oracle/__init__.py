@@ -9,7 +9,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import numpy as np
 import oracledb
@@ -29,6 +29,8 @@ from ibis.backends.sql import STAR, SQLBackend
 from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
+    from urllib.parse import ParseResult
+
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -160,12 +162,12 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         # Set to ensure decimals come back as decimals
         oracledb.defaults.fetch_decimals = True
 
-    def _from_url(self, url: str, **kwargs):
-        url = urlparse(url)
+    def _from_url(self, url: ParseResult, **kwargs):
         self.do_connect(
             user=url.username,
             password=unquote_plus(url.password) if url.password is not None else None,
             database=url.path.removeprefix("/"),
+            **kwargs,
         )
 
         return self

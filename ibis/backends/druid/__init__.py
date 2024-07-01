@@ -5,12 +5,11 @@ from __future__ import annotations
 import contextlib
 import json
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import pydruid.db
 import sqlglot as sg
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.druid.compiler import DruidCompiler
@@ -20,6 +19,7 @@ from ibis.backends.sql.datatypes import DruidType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import pyarrow as pa
@@ -40,7 +40,7 @@ class Backend(SQLBackend):
             [(version,)] = result.fetchall()
         return version
 
-    def _from_url(self, url: str, **kwargs):
+    def _from_url(self, url: ParseResult, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -56,9 +56,6 @@ class Backend(SQLBackend):
             A backend instance
 
         """
-
-        url = urlparse(url)
-        query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
             "password": unquote_plus(url.password)
@@ -67,15 +64,8 @@ class Backend(SQLBackend):
             "host": url.hostname,
             "path": url.path,
             "port": url.port,
-        } | kwargs
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
+            **kwargs,
+        }
 
         self._convert_kwargs(kwargs)
 

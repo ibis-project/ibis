@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import datetime
 import decimal
+from urllib.parse import urlparse
 
 import pandas as pd
 import pandas.testing as tm
@@ -428,3 +429,10 @@ def test_table_suffix():
     expr = t.filter(t._TABLE_SUFFIX == "1929", t.max != 9999.9).head(1)
     result = expr.execute()
     assert not result.empty
+
+
+def test_parameters_in_url_connect(mocker):
+    spy = mocker.spy(ibis.bigquery, "_from_url")
+    parsed = urlparse("bigquery://ibis-gbq?location=us-east1")
+    ibis.connect("bigquery://ibis-gbq?location=us-east1")
+    spy.assert_called_once_with(parsed, location="us-east1")

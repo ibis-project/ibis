@@ -7,7 +7,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -25,6 +25,7 @@ from ibis.backends.trino.compiler import TrinoCompiler
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -39,8 +40,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     supports_create_or_replace = False
     supports_temporary_tables = False
 
-    def _from_url(self, url: str, **kwargs):
-        url = urlparse(url)
+    def _from_url(self, url: ParseResult, **kwargs):
         catalog, db = url.path.strip("/").split("/")
         self.do_connect(
             user=url.username or None,

@@ -8,7 +8,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import numpy as np
 import pymysql
@@ -29,6 +29,7 @@ from ibis.backends.sql.compiler import STAR, TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -40,7 +41,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     compiler = MySQLCompiler()
     supports_create_or_replace = False
 
-    def _from_url(self, url: str, **kwargs):
+    def _from_url(self, url: ParseResult, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -56,10 +57,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             A backend instance
 
         """
-
-        url = urlparse(url)
         database, *_ = url.path[1:].split("/", 1)
-        query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
             "password": unquote_plus(url.password or ""),
@@ -67,14 +65,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             "database": database or "",
             "port": url.port or None,
         }
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                connect_args[name] = value
-            elif len(value) == 1:
-                connect_args[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
 
         kwargs.update(connect_args)
         self._convert_kwargs(kwargs)

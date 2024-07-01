@@ -5,7 +5,7 @@ import contextlib
 import datetime
 import re
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, unquote_plus, urlparse
+from urllib.parse import unquote_plus
 
 import pyexasol
 import sqlglot as sg
@@ -25,6 +25,7 @@ from ibis.backends.sql.compiler import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -99,10 +100,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         with self.begin() as con:
             con.execute(f"ALTER SESSION SET TIME_ZONE = {timezone!r}")
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
         """Construct an ibis backend from a URL."""
-        url = urlparse(url)
-        query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
             "password": unquote_plus(url.password)
@@ -111,15 +110,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             "schema": url.path[1:] or None,
             "host": url.hostname,
             "port": url.port,
-        } | kwargs
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
+            **kwargs,
+        }
 
         self._convert_kwargs(kwargs)
 
