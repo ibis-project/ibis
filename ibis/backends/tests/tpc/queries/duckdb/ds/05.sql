@@ -5,12 +5,17 @@ WITH ssr AS
           sum(return_amt) AS returns_,
           sum(net_loss) AS profit_loss
    FROM
-     (SELECT ss_sold_date_sk AS date_sk,
+     (SELECT ss_store_sk AS store_sk,
+             ss_sold_date_sk AS date_sk,
              ss_ext_sales_price AS sales_price,
-             ss_net_profit AS profit
+             ss_net_profit AS profit,
+             cast(0 AS decimal(7,2)) AS return_amt,
+             cast(0 AS decimal(7,2)) AS net_loss
       FROM store_sales
       UNION ALL SELECT sr_store_sk AS store_sk,
                        sr_returned_date_sk AS date_sk,
+                       cast(0 AS decimal(7,2)) AS sales_price,
+                       cast(0 AS decimal(7,2)) AS profit,
                        sr_return_amt AS return_amt,
                        sr_net_loss AS net_loss
       FROM store_returns ) salesreturns,
@@ -27,12 +32,17 @@ WITH ssr AS
           sum(return_amt) AS returns_,
           sum(net_loss) AS profit_loss
    FROM
-     (SELECT cs_sold_date_sk AS date_sk,
+     (SELECT cs_catalog_page_sk AS page_sk,
+             cs_sold_date_sk AS date_sk,
              cs_ext_sales_price AS sales_price,
-             cs_net_profit AS profit
+             cs_net_profit AS profit,
+             cast(0 AS decimal(7,2)) AS return_amt,
+             cast(0 AS decimal(7,2)) AS net_loss
       FROM catalog_sales
       UNION ALL SELECT cr_catalog_page_sk AS page_sk,
                        cr_returned_date_sk AS date_sk,
+                       cast(0 AS decimal(7,2)) AS sales_price,
+                       cast(0 AS decimal(7,2)) AS profit,
                        cr_return_amount AS return_amt,
                        cr_net_loss AS net_loss
       FROM catalog_returns ) salesreturns,
@@ -49,7 +59,8 @@ WITH ssr AS
           sum(return_amt) AS returns_,
           sum(net_loss) AS profit_loss
    FROM
-     (SELECT ws_sold_date_sk AS date_sk,
+     (SELECT ws_web_site_sk AS wsr_web_site_sk,
+             ws_sold_date_sk AS date_sk,
              ws_ext_sales_price AS sales_price,
              ws_net_profit AS profit,
              cast(0 AS decimal(7,2)) AS return_amt,

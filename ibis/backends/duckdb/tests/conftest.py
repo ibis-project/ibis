@@ -115,42 +115,20 @@ class TestConf(BackendTest):
         con.con.execute(f"CREATE OR REPLACE SCHEMA {schema}")
         parquet_dir = self.data_dir.joinpath(schema, f"sf={scale_factor}", "parquet")
         assert parquet_dir.exists(), parquet_dir
-        tables = set()
         for path in parquet_dir.glob("*.parquet"):
             table_name = path.with_suffix("").name
-            tables.add(table_name)
             # duckdb automatically infers the sf= as a hive partition so we
             # need to disable it
             con.con.execute(
                 f"CREATE OR REPLACE VIEW {schema}.{table_name} AS "
                 f"FROM read_parquet({str(path)!r}, hive_partitioning=false)"
             )
-        return tables
 
-    def load_tpch(self) -> None:
-        """Load TPC-H data."""
-        self.tpch_tables = frozenset(self._load_tpc(suite="h", scale_factor="0.17"))
-
-    def load_tpcds(self) -> None:
-        """Load TPC-DS data."""
-        self.tpcds_tables = frozenset(self._load_tpc(suite="ds", scale_factor="0.2"))
-
-    def _transform_tpch_sql(self, parsed):
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
         def add_catalog_and_schema(node):
-            if isinstance(node, sg.exp.Table) and node.name in self.tpch_tables:
+            if isinstance(node, sg.exp.Table) and node.name in leaves:
                 return node.__class__(
-                    catalog="tpch",
-                    **{k: v for k, v in node.args.items() if k != "catalog"},
-                )
-            return node
-
-        return parsed.transform(add_catalog_and_schema)
-
-    def _transform_tpcds_sql(self, parsed):
-        def add_catalog_and_schema(node):
-            if isinstance(node, sg.exp.Table) and node.name in self.tpcds_tables:
-                return node.__class__(
-                    catalog="tpcds",
+                    catalog=f"tpc{suite}",
                     **{k: v for k, v in node.args.items() if k != "catalog"},
                 )
             return node

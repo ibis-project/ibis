@@ -113,7 +113,7 @@ class BackendTest(abc.ABC):
     def connect(*, tmpdir, worker_id, **kw: Any):
         """Return a connection with data loaded from `data_dir`."""
 
-    def _transform_tpch_sql(self, parsed):
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
         return parsed
 
     def _load_data(self, **_: Any) -> None:
@@ -139,6 +139,14 @@ class BackendTest(abc.ABC):
         if not fn.exists():
             self.stateless_load(**kw)
             fn.touch()
+
+    def load_tpch(self) -> None:
+        """Load TPC-H data."""
+        self._load_tpc(suite="h", scale_factor="0.17")
+
+    def load_tpcds(self) -> None:
+        """Load TPC-DS data."""
+        self._load_tpc(suite="ds", scale_factor="0.2")
 
     @classmethod
     def load_data(
@@ -313,6 +321,12 @@ class BackendTest(abc.ABC):
 
     def ds(self, name: str) -> ir.Table:
         return self._tpc_table(name, "ds")
+
+    def list_tpc_tables(self, suite: Literal["h", "ds"]) -> frozenset[str]:
+        return frozenset(
+            path.with_suffix("").name
+            for path in self.data_dir.joinpath(f"tpc{suite}").rglob("*.parquet")
+        )
 
 
 class ServiceBackendTest(BackendTest):

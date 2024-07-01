@@ -15,8 +15,7 @@ WITH cross_items AS
                ics.i_category_id
         FROM catalog_sales,
              item ics,
-             date_dim d2
-      WHERE cs_item_sk = ics.i_item_sk
+             date_dim d2 WHERE cs_item_sk = ics.i_item_sk
         AND cs_sold_date_sk = d2.d_date_sk
         AND d2.d_year BETWEEN 1999 AND 1999 + 2 INTERSECT
         SELECT iws.i_brand_id,
@@ -24,8 +23,7 @@ WITH cross_items AS
                iws.i_category_id
         FROM web_sales,
              item iws,
-             date_dim d3
-      WHERE ws_item_sk = iws.i_item_sk
+             date_dim d3 WHERE ws_item_sk = iws.i_item_sk
         AND ws_sold_date_sk = d3.d_date_sk
         AND d3.d_year BETWEEN 1999 AND 1999 + 2) sq1
    WHERE i_brand_id = brand_id

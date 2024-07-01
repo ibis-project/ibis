@@ -5,7 +5,7 @@ FROM catalog_sales cs1,
      date_dim,
      customer_address,
      call_center
-WHERE d_date BETWEEN '2002-02-01' AND cast('2002-04-02' AS date)
+WHERE d_date BETWEEN cast('2002-02-01' AS date) AND cast('2002-04-02' AS date)
   AND cs1.cs_ship_date_sk = d_date_sk
   AND cs1.cs_ship_addr_sk = ca_address_sk
   AND ca_state = 'GA'
