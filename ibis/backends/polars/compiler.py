@@ -87,12 +87,7 @@ def literal(op, **_):
     value = op.value
     dtype = op.dtype
 
-    if dtype.is_array():
-        value = pl.Series("", value)
-        typ = PolarsType.from_ibis(dtype)
-        val = pl.lit(value, dtype=typ)
-        return val.implode()
-    elif dtype.is_struct():
+    if dtype.is_struct():
         values = [
             pl.lit(v, dtype=PolarsType.from_ibis(dtype[k])).alias(k)
             for k, v in value.items()
@@ -106,7 +101,7 @@ def literal(op, **_):
         return pl.lit(value)
     else:
         typ = PolarsType.from_ibis(dtype)
-        return pl.lit(op.value, dtype=typ)
+        return pl.lit(value, dtype=typ)
 
 
 _TIMESTAMP_SCALE_TO_UNITS = {
@@ -971,6 +966,12 @@ def array_concat(op, **kw):
         result = result.list.concat(arg)
 
     return result
+
+
+@translate.register(ops.EmptyArray)
+def empty_array(op, **kw):
+    pdt = PolarsType.from_ibis(op.dtype)
+    return pl.lit([], dtype=pdt)
 
 
 @translate.register(ops.Array)

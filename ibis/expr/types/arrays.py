@@ -5,15 +5,16 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.types as ir
+from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable
-
-    import ibis.expr.types as ir
-    from ibis.expr.types.typing import V
 
 import ibis.common.exceptions as com
 
@@ -1073,7 +1074,11 @@ class ArrayColumn(Column, ArrayValue):
 
 @public
 @deferrable
-def array(values: Iterable[V]) -> ArrayValue:
+def array(
+    values: ArrayValue | Iterable | ir.NullValue | None,
+    *,
+    type: str | dt.DataType | None = None,
+) -> ArrayValue:
     """Create an array expression.
 
     If any values are [column expressions](../concepts/datatypes.qmd) the
@@ -1084,6 +1089,9 @@ def array(values: Iterable[V]) -> ArrayValue:
     ----------
     values
         An iterable of Ibis expressions or Python literals
+    type
+        An instance of `ibis.expr.datatypes.DataType` or a string indicating
+        the Ibis type of `value`. eg `array<float>`.
 
     Returns
     -------
@@ -1114,15 +1122,49 @@ def array(values: Iterable[V]) -> ArrayValue:
     │ [3, 42, ... +1]      │
     └──────────────────────┘
 
-    >>> ibis.array([t.a, 42 + ibis.literal(5)])
+    >>> ibis.array([t.a, 42 + ibis.literal(5)], type="array<float>")
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
     ┃ Array()              ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<int64>         │
+    │ array<float64>       │
     ├──────────────────────┤
-    │ [1, 47]              │
-    │ [2, 47]              │
-    │ [3, 47]              │
+    │ [1.0, 47.0]          │
+    │ [2.0, 47.0]          │
+    │ [3.0, 47.0]          │
     └──────────────────────┘
     """
-    return ops.Array(tuple(values)).to_expr()
+    type = dt.dtype(type) if type is not None else None
+    if type is not None and not isinstance(type, dt.Array):
+        raise ValidationError(f"type must be an array, got {type}")
+
+    if isinstance(values, ir.Value):
+        if type is not None:
+            return values.cast(type)
+        elif isinstance(values, ArrayValue):
+            return values
+        else:
+            raise ValidationError(
+                f"If no type passed, values must be an array, got {values.type()}"
+            )
+
+    if values is None:
+        if type is None:
+            raise ValidationError("If values is None/NULL, type must be provided")
+        return ir.null(type)
+
+    values = tuple(values)
+    if len(values) == 0:
+        if type is None:
+            raise ValidationError("If values is empty, type must be provided")
+        return ops.EmptyArray(type).to_expr()
+    else:
+        value_type = type.value_type if type is not None else None
+        values = [_value(v, value_type) for v in values]
+        return ops.Array(values).to_expr()
+
+
+def _value(x, type) -> ir.Value:
+    if isinstance(x, (ir.Value, Deferred)):
+        return x.cast(type) if type is not None else x
+    else:
+        return ibis.literal(x, type=type)

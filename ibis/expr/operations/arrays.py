@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from public import public
 
@@ -10,19 +10,26 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.patterns import Length  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Unary, Value
 
 
 @public
+class EmptyArray(Value):
+    """Construct an array with 0 elements."""
+
+    dtype: dt.Array
+    shape = ds.scalar
+
+
+@public
 class Array(Value):
-    """Construct an array."""
+    """Construct an array with 1+ elements. Use `EmptyArray` for empty arrays."""
 
-    exprs: VarTuple[Value]
+    exprs: Annotated[VarTuple[Value], Length(at_least=1)]
 
-    @attribute
-    def shape(self):
-        return rlz.highest_precedence_shape(self.exprs)
+    shape = rlz.shape_like("exprs")
 
     @attribute
     def dtype(self):
