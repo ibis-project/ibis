@@ -1370,12 +1370,11 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc")
     )
-    with pytest.warns(DeprecationWarning):
-        with non_cached_table.cache() as cached_table:
-            backend.assert_frame_equal(
-                non_cached_table.to_pandas(), cached_table.to_pandas()
-            )
-        assert non_cached_table.op() not in con._query_cache.cache
+    with non_cached_table.cache() as cached_table:
+        backend.assert_frame_equal(
+            non_cached_table.to_pandas(), cached_table.to_pandas()
+        )
+    assert non_cached_table.op() not in con._query_cache.cache
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -1484,17 +1483,13 @@ def test_persist_expression_release(con, alltypes):
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 3")
     )
     cached_table = non_cached_table.cache()
-    with pytest.warns(DeprecationWarning):
-        cached_table.release()
+    cached_table.release()
 
     assert non_cached_table.op() not in con._query_cache.cache
 
-    with (
-        pytest.raises(
-            com.IbisError,
-            match=r".+Did you call `\.release\(\)` twice on the same expression\?",
-        ),
-        pytest.warns(DeprecationWarning),
+    with pytest.raises(
+        com.IbisError,
+        match=r".+Did you call `\.release\(\)` twice on the same expression\?",
     ):
         cached_table.release()
 
