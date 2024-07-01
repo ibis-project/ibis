@@ -1352,14 +1352,7 @@ def test_unnest_range(con):
             [[1], ibis.literal([2])],
             [[1], [2]],
             id="array",
-            marks=[
-                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
-                pytest.mark.broken(
-                    ["polars"],
-                    reason="expression input not supported with nested arrays",
-                    raises=TypeError,
-                ),
-            ],
+            marks=[pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest)],
         ),
     ],
 )
