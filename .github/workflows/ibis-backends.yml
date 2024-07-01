@@ -531,7 +531,7 @@ jobs:
             title: Dask
             deps:
               required:
-                - "numpy@1.23.2"
+                - "numpy@1.23.5"
                 - "pyarrow@10.0.1"
               optional:
                 - "dask[array,dataframe]@2022.9.1"
@@ -542,7 +542,7 @@ jobs:
             title: PostgreSQL
             deps:
               required:
-                - "numpy@1.23.2"
+                - "numpy@1.23.5"
                 - "pyarrow@10.0.1"
               optional:
                 - "psycopg2@2.8.4"
@@ -560,7 +560,7 @@ jobs:
               title: PostgreSQL
               deps:
                 required:
-                  - "numpy@1.23.2"
+                  - "numpy@1.23.5"
                   - "pyarrow@10.0.1"
                 optional:
                   - "psycopg2@2.8.4"
@@ -577,7 +577,7 @@ jobs:
               title: PostgreSQL
               deps:
                 required:
-                  - "numpy@1.23.2"
+                  - "numpy@1.23.5"
                   - "pyarrow@10.0.1"
                 optional:
                   - "psycopg2@2.8.4"
@@ -594,7 +594,7 @@ jobs:
               title: Dask
               deps:
                 required:
-                  - "numpy@1.23.2"
+                  - "numpy@1.23.5"
                   - "pyarrow@10.0.1"
                 optional:
                   - "dask[array,dataframe]@2022.9.1"
