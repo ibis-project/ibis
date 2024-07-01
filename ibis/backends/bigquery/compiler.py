@@ -659,7 +659,9 @@ class BigQueryCompiler(SQLGlotCompiler):
                 for x in op.arg.schema.keys()
             ]
         )
-        return self.agg.count(sge.Distinct(expressions=[row]), where=where)
+        if where is not None:
+            row = self.if_(where, row, NULL)
+        return self.f.count(sge.Distinct(expressions=[row]))
 
     def visit_Degrees(self, op, *, arg):
         return self._pudf("degrees", arg)
