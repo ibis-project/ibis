@@ -87,7 +87,7 @@ def test_zero_ifnull(functional_alltypes):
 
     iresult = functional_alltypes.int_col.fill_null(0)
 
-    assert type(dresult.op()) == ops.Coalesce
+    assert type(dresult.op()) is ops.Coalesce
     assert type(dresult) == ir.FloatingColumn
 
     # Impala upconverts all ints to bigint. Hmm.
@@ -113,8 +113,8 @@ def test_ceil_floor(functional_alltypes, lineitem):
     fresult = functional_alltypes.double_col.floor()
     assert isinstance(cresult, ir.IntegerColumn)
     assert isinstance(fresult, ir.IntegerColumn)
-    assert type(cresult.op()) == ops.Ceil
-    assert type(fresult.op()) == ops.Floor
+    assert type(cresult.op()) is ops.Ceil
+    assert type(fresult.op()) is ops.Floor
 
     cresult = ibis.literal(1.2345).ceil()
     fresult = ibis.literal(1.2345).floor()
@@ -134,7 +134,7 @@ def test_ceil_floor(functional_alltypes, lineitem):
 def test_sign(functional_alltypes, lineitem):
     result = functional_alltypes.double_col.sign()
     assert isinstance(result, ir.FloatingColumn)
-    assert type(result.op()) == ops.Sign
+    assert type(result.op()) is ops.Sign
 
     result = ibis.literal(1.2345).sign()
     assert isinstance(result, ir.FloatingScalar)
@@ -171,8 +171,8 @@ def test_round(functional_alltypes, lineitem):
 
 def _check_unary_op(expr, fname, ex_op, ex_type):
     result = getattr(expr, fname)()
-    assert type(result.op()) == ex_op
-    assert type(result) == ex_type
+    assert type(result.op()) is ex_op
+    assert type(result) is ex_type
 
 
 def test_coalesce_instance_method(sql_table):

@@ -255,11 +255,11 @@ def extract_ctes(node):
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
-    for node, dependents in g.invert().items():
-        if isinstance(node, ops.View) or (
-            len(dependents) > 1 and isinstance(node, cte_types)
+    for op, dependents in g.invert().items():
+        if isinstance(op, ops.View) or (
+            len(dependents) > 1 and isinstance(op, cte_types)
         ):
-            result.append(node)
+            result.append(op)
 
     return result
 

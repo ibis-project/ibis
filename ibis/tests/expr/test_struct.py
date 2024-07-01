@@ -72,13 +72,13 @@ def test_unpack_from_table(t):
 def test_lift_join(t, s):
     join = t.join(s, t.d == s.a.g)
     result = join.a_right.lift()
-    with join_tables(join) as (t, s):
+    with join_tables(join) as (tt, ss):
         expected = ops.JoinChain(
-            first=t,
+            first=tt,
             rest=[
-                ops.JoinLink("inner", s, [t.d == s.a.g]),
+                ops.JoinLink("inner", ss, [tt.d == ss.a.g]),
             ],
-            values={"f": s.a.f, "g": s.a.g},
+            values={"f": ss.a.f, "g": ss.a.g},
         )
         assert result.op() == expected
 

@@ -113,14 +113,14 @@ class DaskUtils(PandasUtils):
     def partitionwise(cls, func, operands, name, dtype):
         cols = {}
         kwargs = {}
-        for name, operand in operands.items():
+        for opname, operand in operands.items():
             if isinstance(operand, (tuple, list)):
                 for i, v in enumerate(operand):
-                    cols[f"{name}_{i}"] = v
-                kwargs[name] = tuple(f"{name}_{i}" for i in range(len(operand)))
+                    cols[f"{opname}_{i}"] = v
+                kwargs[opname] = tuple(f"{opname}_{i}" for i in range(len(operand)))
             else:
-                cols[name] = operand
-                kwargs[name] = name
+                cols[opname] = operand
+                kwargs[opname] = opname
 
         def mapper(df):
             unpacked = {}

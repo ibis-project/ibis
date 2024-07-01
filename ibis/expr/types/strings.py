@@ -409,8 +409,6 @@ class StringValue(Value):
         """
         return ops.Capitalize(self).to_expr()
 
-    initcap = capitalize
-
     @util.deprecated(
         instead="use the `capitalize` method", as_of="9.0", removed_in="10.0"
     )
@@ -634,8 +632,6 @@ class StringValue(Value):
         └──────────────┘
         """
         return ops.Repeat(self, n).to_expr()
-
-    __mul__ = __rmul__ = repeat
 
     def translate(self, from_str: StringValue, to_str: StringValue) -> StringValue:
         """Replace `from_str` characters in `self` characters in `to_str`.

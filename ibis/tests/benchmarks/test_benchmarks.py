@@ -704,8 +704,6 @@ def ddb(tmp_path_factory):
 
     N = 20_000_000
 
-    con = duckdb.connect()
-
     path = str(tmp_path_factory.mktemp("duckdb") / "data.ddb")
     sql = (
         lambda var, table, n=N: f"""
@@ -719,9 +717,9 @@ def ddb(tmp_path_factory):
         """
     )
 
-    with duckdb.connect(path) as con:
-        con.execute(sql("x", table="t1"))
-        con.execute(sql("y", table="t2"))
+    with duckdb.connect(path) as cur:
+        cur.execute(sql("x", table="t1"))
+        cur.execute(sql("y", table="t2"))
     return path
 
 
