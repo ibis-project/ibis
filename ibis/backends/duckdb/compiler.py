@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.util import gen_name
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",
@@ -547,3 +548,55 @@ class DuckDBCompiler(SQLGlotCompiler):
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
+
+        opname = op.column.name
+        overlaps_with_parent = opname in op.parent.schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        selcols = []
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+
+        if offset is not None:
+            # TODO: clean this up once WITH ORDINALITY is supported in DuckDB
+            # no need for struct_extract once that's upstream
+            column = self.f.list_zip(column, self.f.range(self.f.len(column)))
+            extract = self.f.struct_extract(column_alias, 1).as_(opname, quoted=quoted)
+
+            if overlaps_with_parent:
+                replace = sge.Column(this=sge.Star(replace=[extract]), table=table)
+                selcols.append(replace)
+            else:
+                selcols.append(sge.Column(this=STAR, table=table))
+                selcols.append(extract)
+
+            selcols.append(
+                self.f.struct_extract(column_alias, 2).as_(offset, quoted=quoted)
+            )
+        elif overlaps_with_parent:
+            selcols.append(
+                sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+            )
+        else:
+            selcols.append(sge.Column(this=STAR, table=table))
+            selcols.append(computed_column)
+
+        unnest = sge.Unnest(
+            expressions=[column],
+            alias=sge.TableAlias(
+                this=sg.to_identifier(gen_name("table_unnest"), quoted=quoted),
+                columns=[column_alias],
+            ),
+        )
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
+        )

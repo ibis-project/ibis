@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from collections import Counter
 
 import pandas as pd
 import pandas.testing as tm
@@ -429,3 +430,11 @@ def test_connect_without_snowflake_url():
     )
 
     assert nonurlcon.list_tables()
+
+
+def test_table_unnest_with_empty_strings(con):
+    t = ibis.memtable({"x": [["", ""], [""], [], None]})
+    expected = Counter(["", "", "", None, None])
+    expr = t.unnest(t.x)["x"]
+    result = con.execute(expr)
+    assert Counter(result.values) == expected

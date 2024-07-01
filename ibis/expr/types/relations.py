@@ -4681,6 +4681,149 @@ class Table(Expr, _FixedTextJupyterMixin):
             lambda t: t.count().name("_".join(columns) + "_count")
         )
 
+    def unnest(
+        self, column, offset: str | None = None, keep_empty: bool = False
+    ) -> Table:
+        """Unnest an array `column` from a table.
+
+        When unnesting an existing column the newly unnested column replaces
+        the existing column.
+
+        Parameters
+        ----------
+        column
+            Array column to unnest.
+        offset
+            Name of the resulting index column.
+        keep_empty
+            Keep empty array values as `NULL` in the output table, as well as
+            existing `NULL` values.
+
+        Returns
+        -------
+        Table
+            Table with the array column `column` unnested.
+
+        See Also
+        --------
+        [`ArrayValue.unnest`](./expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.unnest)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+
+        Construct a table expression with an array column.
+
+        >>> t = ibis.memtable({"x": [[1, 2], [], None, [3, 4, 5]], "y": [1, 2, 3, 4]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ x                    ┃ y     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2]               │     1 │
+        │ []                   │     2 │
+        │ NULL                 │     3 │
+        │ [3, 4, ... +1]       │     4 │
+        └──────────────────────┴───────┘
+
+        Unnest the array column `x`, replacing the **existing** `x` column.
+
+        >>> t.unnest("x")
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     1 │     1 │
+        │     2 │     1 │
+        │     3 │     4 │
+        │     4 │     4 │
+        │     5 │     4 │
+        └───────┴───────┘
+
+        Unnest the array column `x` with an offset. The `offset` parameter is
+        the name of the resulting index column.
+
+        >>> t.unnest(t.x, offset="idx")
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │ int64 │
+        ├───────┼───────┼───────┤
+        │     1 │     1 │     0 │
+        │     2 │     1 │     1 │
+        │     3 │     4 │     0 │
+        │     4 │     4 │     1 │
+        │     5 │     4 │     2 │
+        └───────┴───────┴───────┘
+
+        Unnest the array column `x` keep empty array values as `NULL` in the
+        output table.
+
+        >>> t.unnest(_.x, offset="idx", keep_empty=True)
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │ int64 │
+        ├───────┼───────┼───────┤
+        │     1 │     1 │     0 │
+        │     2 │     1 │     1 │
+        │     3 │     4 │     0 │
+        │     4 │     4 │     1 │
+        │     5 │     4 │     2 │
+        │  NULL │     2 │  NULL │
+        │  NULL │     3 │  NULL │
+        └───────┴───────┴───────┘
+
+        If you need to preserve the row order of the preserved empty arrays or
+        null values use
+        [`row_number`](./expression-tables.qmd#ibis.row_number) to
+        create an index column before calling `unnest`.
+
+        >>> (
+        ...     t.mutate(original_row=ibis.row_number())
+        ...     .unnest("x", offset="idx", keep_empty=True)
+        ...     .relocate("original_row")
+        ...     .order_by("original_row")
+        ... )
+        ┏━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ original_row ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64        │ int64 │ int64 │ int64 │
+        ├──────────────┼───────┼───────┼───────┤
+        │            0 │     1 │     1 │     0 │
+        │            0 │     2 │     1 │     1 │
+        │            1 │  NULL │     2 │  NULL │
+        │            2 │  NULL │     3 │  NULL │
+        │            3 │     3 │     4 │     0 │
+        │            3 │     4 │     4 │     1 │
+        │            3 │     5 │     4 │     2 │
+        └──────────────┴───────┴───────┴───────┘
+
+        You can also unnest more complex expressions, and the resulting column
+        will be projected as the last expression in the result.
+
+        >>> t.unnest(_.x.map(lambda v: v + 1).name("plus_one"))
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
+        ┃ x                    ┃ y     ┃ plus_one ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
+        │ array<int64>         │ int64 │ int64    │
+        ├──────────────────────┼───────┼──────────┤
+        │ [1, 2]               │     1 │        2 │
+        │ [1, 2]               │     1 │        3 │
+        │ [3, 4, ... +1]       │     4 │        4 │
+        │ [3, 4, ... +1]       │     4 │        5 │
+        │ [3, 4, ... +1]       │     4 │        6 │
+        └──────────────────────┴───────┴──────────┘
+        """
+        (column,) = self.bind(column)
+        return ops.TableUnnest(
+            parent=self, column=column, offset=offset, keep_empty=keep_empty
+        ).to_expr()
+
 
 @public
 class CachedTable(Table):

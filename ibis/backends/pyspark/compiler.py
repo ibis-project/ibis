@@ -452,3 +452,68 @@ class PySparkCompiler(SQLGlotCompiler):
             return self.f.sha2(arg, int(how[-3:]))
         else:
             raise NotImplementedError(f"No available hashing function for {how}")
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
+
+        opname = op.column.name
+        parent_schema = op.parent.schema
+        overlaps_with_parent = opname in parent_schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        parent_alias = parent.alias_or_name
+
+        selcols = []
+
+        if overlaps_with_parent:
+            column_alias_or_name = column.alias_or_name
+            selcols.extend(
+                sg.column(col, table=parent_alias, quoted=quoted)
+                if col != column_alias_or_name
+                else computed_column
+                for col in parent_schema.names
+            )
+        else:
+            selcols.append(
+                sge.Column(
+                    this=STAR, table=sg.to_identifier(parent_alias, quoted=quoted)
+                )
+            )
+            selcols.append(computed_column)
+
+        alias_columns = []
+
+        if offset is not None:
+            offset = sg.column(offset, quoted=quoted)
+            selcols.append(offset)
+            alias_columns.append(offset)
+
+        alias_columns.append(column_alias)
+
+        # four possible functions
+        #
+        # explode: unnest
+        # explode_outer: unnest preserving empties and nulls
+        # posexplode: unnest with index
+        # posexplode_outer: unnest with index preserving empties and nulls
+        funcname = (
+            ("pos" if offset is not None else "")
+            + "explode"
+            + ("_outer" if keep_empty else "")
+        )
+
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .lateral(
+                sge.Lateral(
+                    this=self.f[funcname](column),
+                    view=True,
+                    alias=sge.TableAlias(columns=alias_columns),
+                )
+            )
+        )

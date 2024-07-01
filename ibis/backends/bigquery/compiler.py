@@ -690,3 +690,47 @@ class BigQueryCompiler(SQLGlotCompiler):
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
         column = sge.Column(this=star, table=table)
         return sg.select(column).from_(parent)
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(
+            util.gen_name("table_unnest_column"), quoted=quoted
+        )
+
+        selcols = []
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+
+        opname = op.column.name
+        overlaps_with_parent = opname in op.parent.schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        # replace the existing column if the unnested column hasn't been
+        # renamed
+        #
+        # e.g., table.unnest("x")
+        if overlaps_with_parent:
+            selcols.append(
+                sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+            )
+        else:
+            selcols.append(sge.Column(this=STAR, table=table))
+            selcols.append(computed_column)
+
+        if offset is not None:
+            offset = sg.to_identifier(offset, quoted=quoted)
+            selcols.append(offset)
+
+        unnest = sge.Unnest(
+            expressions=[column],
+            alias=sge.TableAlias(columns=[column_alias]),
+            offset=offset,
+        )
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
+        )

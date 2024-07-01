@@ -286,11 +286,22 @@ class ArrayValue(Value):
     __mul__ = __rmul__ = repeat
 
     def unnest(self) -> ir.Value:
-        """Flatten an array into a column.
+        """Unnest an array into a column.
 
         ::: {.callout-note}
-        ## Rows with empty arrays are dropped in the output.
+        ## Empty arrays and `NULL`s are dropped in the output.
+        To preserve empty arrays as `NULL`s as well as existing `NULL` values,
+        use [`Table.unnest`](./expression-tables.qmd#ibis.expr.types.relations.Table.unnest).
         :::
+
+        Returns
+        -------
+        ir.Value
+            Unnested array
+
+        See Also
+        --------
+        [`Table.unnest`](./expression-tables.qmd#ibis.expr.types.relations.Table.unnest)
 
         Examples
         --------
@@ -318,11 +329,6 @@ class ArrayValue(Value):
         │     3 │
         │     3 │
         └───────┘
-
-        Returns
-        -------
-        ir.Value
-            Unnested array
         """
         expr = ops.Unnest(self).to_expr()
         try:
