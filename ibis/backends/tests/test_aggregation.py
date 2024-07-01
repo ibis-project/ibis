@@ -713,7 +713,7 @@ def test_arbitrary(backend, alltypes, df, filtered):
     ],
 )
 @pytest.mark.notyet(
-    ["bigquery", "druid", "mssql", "oracle", "sqlite", "flink"],
+    ["druid", "mssql", "oracle", "sqlite", "flink"],
     raises=(
         OracleDatabaseError,
         com.UnsupportedOperationError,
