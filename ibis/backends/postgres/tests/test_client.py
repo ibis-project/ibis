@@ -385,8 +385,8 @@ def test_password_with_bracket():
     password = f"{IBIS_POSTGRES_PASS}["
     quoted_pass = quote_plus(password)
     url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
-    with pytest.raises(PsycoPg2OperationalError) as e:
+    with pytest.raises(
+        PsycoPg2OperationalError,
+        match=f'password authentication failed for user "{IBIS_POSTGRES_USER}"',
+    ):
         ibis.connect(url)
-    assert f'password authentication failed for user "{IBIS_POSTGRES_USER}"' in str(
-        e.value
-    )
