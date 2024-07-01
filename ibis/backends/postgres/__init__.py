@@ -9,7 +9,7 @@ from functools import partial
 from itertools import takewhile
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 
 import numpy as np
 import pandas as pd
@@ -71,7 +71,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
-            "password": url.password or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
             "schema": schema[0] if schema else "",

@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import quote_plus
 
 import hypothesis as h
 import hypothesis.strategies as st
@@ -377,4 +378,15 @@ def test_infoschema_dtypes(con):
     assert (
         con.table("triggers", database="information_schema").select("created").schema()
         == triggers_created_schema
+    )
+
+
+def test_password_with_bracket():
+    password = f"{IBIS_POSTGRES_PASS}["
+    quoted_pass = quote_plus(password)
+    url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
+    with pytest.raises(PsycoPg2OperationalError) as e:
+        ibis.connect(url)
+    assert f'password authentication failed for user "{IBIS_POSTGRES_USER}"' in str(
+        e.value
     )

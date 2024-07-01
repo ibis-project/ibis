@@ -7,7 +7,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urlparse
+from urllib.parse import unquote_plus, urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -44,7 +44,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         catalog, db = url.path.strip("/").split("/")
         self.do_connect(
             user=url.username or None,
-            auth=url.password or None,
+            auth=unquote_plus(url.password) if url.password is not None else None,
             host=url.hostname or None,
             port=url.port or None,
             database=catalog,

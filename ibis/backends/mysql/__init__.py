@@ -8,7 +8,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote_plus, urlparse
 
 import numpy as np
 import pymysql
@@ -62,7 +62,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
-            "password": url.password or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
             "port": url.port or None,
