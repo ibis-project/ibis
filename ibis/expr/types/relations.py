@@ -2542,8 +2542,21 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.rewrites import flatten_predicates, rewrite_filter_input
 
         preds = self.bind(*predicates)
-        preds = unwrap_aliases(preds)
-        preds = flatten_predicates(list(preds.values()))
+
+        # we can't use `unwrap_aliases` here because that function
+        # deduplicates based on name alone
+        #
+        # it's perfectly valid to repeat a filter, even if it might be
+        # useless, so enforcing uniquely named expressions here doesn't make
+        # sense
+        #
+        # instead, compute all distinct unaliased predicates
+        result = toolz.unique(
+            node.arg if isinstance(node := value.op(), ops.Alias) else node
+            for value in preds
+        )
+
+        preds = flatten_predicates(list(result))
         preds = list(map(rewrite_filter_input, preds))
         if not preds:
             raise com.IbisInputError("You must pass at least one predicate to filter")

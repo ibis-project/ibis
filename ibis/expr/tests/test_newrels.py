@@ -1737,3 +1737,14 @@ def test_projections_with_different_field_order_are_unequal():
     t2 = t.select(b=2, a=1)
 
     assert not t1.equals(t2)
+
+
+def test_filters_are_allowed_to_have_the_same_name():
+    t = ibis.table({"a": "int64", "b": "string"}, name="t")
+    f1 = t.filter(t.a > 1, t.a > 1)
+    f2 = t.filter(t.a > 1)
+    f3 = t.filter((t.a > 1).name("a"))
+    f4 = t.filter((t.a > 1).name("a"), (t.a > 1).name("b"))
+    assert f1.equals(f2)
+    assert f1.equals(f3)
+    assert f1.equals(f4)
