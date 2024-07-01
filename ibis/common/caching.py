@@ -76,7 +76,6 @@ class RefCountedCache:
         self.populate(name, input)
         cached = self.lookup(name)
         finalizer = finalize(cached, self._release, key)
-        finalizer.atexit = False
 
         self.cache[key] = CacheEntry(name, ref(cached), finalizer)
 
