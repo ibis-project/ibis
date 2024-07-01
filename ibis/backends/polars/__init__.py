@@ -72,7 +72,7 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
-        schema = PolarsSchema.to_ibis(self._tables[name].schema)
+        schema = PolarsSchema.to_ibis(self._tables[name].collect_schema())
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     @deprecated(
@@ -198,7 +198,7 @@ class Backend(BaseBackend, NoUrl):
             table = pl.scan_csv(source_list, **kwargs)
             # triggers a schema computation to handle compressed csv inference
             # and raise a compute error
-            table.schema  # noqa: B018
+            table.collect_schema()
         except pl.exceptions.ComputeError:
             # handles compressed csvs
             table = pl.read_csv(source_list, **kwargs)
@@ -463,7 +463,8 @@ class Backend(BaseBackend, NoUrl):
         return self._get_schema_using_query(sql)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return PolarsSchema.to_ibis(self._context.execute(query, eager=False).schema)
+        lazy_frame = self._context.execute(query, eager=False)
+        return PolarsSchema.to_ibis(lazy_frame.collect_schema())
 
     def _to_dataframe(
         self,
@@ -477,10 +478,8 @@ class Backend(BaseBackend, NoUrl):
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
-            df = lf.fetch(limit, streaming=streaming)
-        else:
-            df = lf.collect(streaming=streaming)
-        return df
+            lf = lf.limit(limit)
+        return lf.collect(streaming=streaming)
 
     def execute(
         self,

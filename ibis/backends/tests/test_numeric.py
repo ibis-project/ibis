@@ -259,6 +259,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
+                "polars": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -303,6 +304,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
+                "polars": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -571,7 +573,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=TypeError)
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()
     result = con.execute(expr)
