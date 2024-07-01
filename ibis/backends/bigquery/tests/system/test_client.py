@@ -436,3 +436,11 @@ def test_parameters_in_url_connect(mocker):
     parsed = urlparse("bigquery://ibis-gbq?location=us-east1")
     ibis.connect("bigquery://ibis-gbq?location=us-east1")
     spy.assert_called_once_with(parsed, location="us-east1")
+
+
+def test_complex_column_name(con):
+    expr = ibis.literal(1).name(
+        "StringToTimestamp_StringConcat_date_string_col_' America_New_York'_'%F %Z'"
+    )
+    result = con.to_pandas(expr)
+    assert result == 1

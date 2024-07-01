@@ -1748,3 +1748,19 @@ def test_filters_are_allowed_to_have_the_same_name():
     assert f1.equals(f2)
     assert f1.equals(f3)
     assert f1.equals(f4)
+
+
+def test_projections_with_similar_expressions_have_different_names():
+    t = ibis.table({"a": "string", "b": "string"}, name="t")
+
+    a = t.a.fill_null("")
+    b = t.b.fill_null("")
+    assert a.op().name != b.op().name
+
+    expr = t.select(a, b)
+    fields = expr.op().fields
+
+    assert a.op().name in fields
+    assert b.op().name in fields
+
+    assert expr.schema() == ibis.schema({a.op().name: "string", b.op().name: "string"})

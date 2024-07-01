@@ -5,5 +5,5 @@ SELECT
     WHEN 10 <= `t0`.`f`
     THEN 1
     ELSE CAST(NULL AS TINYINT)
-  END AS DOUBLE) AS `Cast(Bucket(f), float64)`
+  END AS DOUBLE) AS `Cast(Bucket(f, ()), float64)`
 FROM `alltypes` AS `t0`
