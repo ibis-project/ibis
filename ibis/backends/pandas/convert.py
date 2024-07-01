@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
 
@@ -25,7 +26,7 @@ class PandasConverter(DataMapper):
 
     @classmethod
     def convert_default(cls, s, dtype, pandas_type):
-        if pandas_type == object:
+        if pandas_type == np.object_:
             func = lambda x: x if x is pd.NA else dt.normalize(dtype, x)
             return s.map(func, na_action="ignore").astype(pandas_type)
         else:

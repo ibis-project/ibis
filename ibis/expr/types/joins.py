@@ -369,9 +369,9 @@ class Join(Table):
         rname: str = "{name}_right",
     ):
         left = self.join(right, how="cross", predicates=(), lname=lname, rname=rname)
-        for right in rest:
+        for table in rest:
             left = left.join(
-                right, how="cross", predicates=(), lname=lname, rname=rname
+                table, how="cross", predicates=(), lname=lname, rname=rname
             )
         return left
 

@@ -1881,8 +1881,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┘
         """
         node = ops.Difference(self, table, distinct=distinct)
-        for table in rest:
-            node = ops.Difference(node, table, distinct=distinct)
+        for expr in rest:
+            node = ops.Difference(node, expr, distinct=distinct)
         return node.to_expr()
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
