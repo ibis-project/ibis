@@ -1,7 +1,7 @@
 ---
 title: "Querying 1TB of data in Python on a laptop"
 author: "Cody Peterson"
-date: "2024-07-08"
+date: "2024-07-03"
 image: ibis-duckdb-sort.gif
 categories:
     - benchmark
@@ -147,10 +147,6 @@ than RAM.
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to explore the lineitem table"
-sf = 1
-n = 1
-data_dir = f"tpch_data/parquet/sf={sf}/n={n}"
-
 table_name = "lineitem"
 data = f"{data_dir}/{table_name}/*.parquet"
 
@@ -372,7 +368,7 @@ ibis.get_backend().raw_sql("PRAGMA disable_progress_bar;");
 t = ibis.read_parquet(data)
 
 df = (
-    t.sample(fraction=0.01)
+    t.sample(fraction=0.0001)
     .order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"])
     .to_pandas()
 )
@@ -385,7 +381,7 @@ df.head(3)
 t = ibis.read_parquet(data)
 
 df = (
-    t.sample(fraction=0.01)
+    t.sample(fraction=0.0001)
     .order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"])
     .to_polars()
 )
@@ -558,8 +554,9 @@ memory. More investigation would be needed to determine the work needed for all
 22 queries to pass under these conditions.
 
 `polars-lazy` only completed 14/22 queries, with 8 failing due lack of memory.
-The [new streaming engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design) will likely
-help with this.
+The [new streaming
+engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design) will
+likely help with this.
 
 Let's plot execution time for each query and system:
 
