@@ -1228,8 +1228,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
         op = expr.op()
         if (result := self._query_cache.get(op)) is None:
-            self._query_cache.store(expr)
-            result = self._query_cache[op]
+            result = self._query_cache.store(expr)
         return ir.CachedTable(result)
 
     def _release_cached(self, expr: ir.CachedTable) -> None:
@@ -1241,12 +1240,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Cached expression to release
 
         """
-        del self._query_cache[expr.op()]
+        self._query_cache.release(expr.op().name)
 
     def _load_into_cache(self, name, expr):
         raise NotImplementedError(self.name)
 
-    def _clean_up_cached_table(self, op):
+    def _clean_up_cached_table(self, name):
         raise NotImplementedError(self.name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:

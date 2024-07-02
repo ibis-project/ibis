@@ -3552,9 +3552,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         """Cache the provided expression.
 
         All subsequent operations on the returned expression will be performed
-        on the cached data. Use the
+        on the cached data. The lifetime of the cached table is tied to its
+        python references (ie. it is released once the last reference to it is
+        garbage collected). Alternatively, use the
         [`with`](https://docs.python.org/3/reference/compound_stmts.html#with)
-        statement to limit the lifetime of a cached table.
+        statement or call the `.release()` method for more control.
 
         This method is idempotent: calling it multiple times in succession will
         return the same value as the first call.
