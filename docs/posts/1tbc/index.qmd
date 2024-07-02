@@ -553,7 +553,7 @@ those queries would complete, only 2 queries would be failing due to lack of
 memory. More investigation would be needed to determine the work needed for all
 22 queries to pass under these conditions.
 
-`polars-lazy` only completed 14/22 queries, with 8 failing due lack of memory.
+`polars-lazy` only completed 13/22 queries, with 8 failing due lack of memory.
 The [new streaming
 engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design) will
 likely help with this.
@@ -587,7 +587,7 @@ pivoted data including relative speed differences between the systems:
 #| code-fold: true
 #| code-summary: "Show code to great_table pivoted aggregated benchmark data"
 color_palette = "viridis"
-na_color = "yellow"
+na_color = "black"
 style_color = "cyan"
 
 tbl = (
