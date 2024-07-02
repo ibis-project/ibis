@@ -1468,10 +1468,6 @@ def test_persist_expression_repeated_cache(alltypes, con):
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
