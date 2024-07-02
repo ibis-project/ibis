@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+import sys
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any
 from weakref import finalize, ref
@@ -88,6 +89,10 @@ class RefCountedCache:
 
     def _release(self, key) -> None:
         entry = self.cache.pop(key)
-        self.finalize(entry.name)
-        if entry.finalizer.alive:
-            entry.finalizer.detach()
+        try:
+            self.finalize(entry.name)
+        except Exception:
+            # suppress exceptions during interpreter shutdown
+            if not sys.is_finalizing():
+                raise
+        entry.finalizer.detach()
