@@ -1,5 +1,5 @@
 ---
-title: "Querying 1TB of data in Python on a laptop"
+title: "Querying 1TB on a laptop with Python dataframes"
 author: "Cody Peterson"
 date: "2024-07-03"
 image: ibis-duckdb-sort.gif
