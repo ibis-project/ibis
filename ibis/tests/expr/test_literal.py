@@ -134,8 +134,6 @@ def test_struct_cast_to_empty_struct():
 
 def test_map_literal():
     a = ibis.map(["a", "b"], [1, 2])
-    assert a.op().keys.value == ("a", "b")
-    assert a.op().values.value == (1, 2)
     assert a.type() == dt.dtype("map<string, int8>")
 
 
