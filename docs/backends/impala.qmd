@@ -373,7 +373,7 @@ render_methods(
 ```
 
 To address a specific partition in any method that is partition
-specific, you can either use a dict with the partition key names and
+Specifically, you can either use a dict with the partition key names and
 values, or pass a list of the partition values:
 
 ```python
