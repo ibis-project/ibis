@@ -237,11 +237,11 @@ class BasePandasBackend(BaseBackend, NoUrl):
         self.drop_table(name, force=force)
 
     def drop_table(self, name: str, *, force: bool = False) -> None:
-        if not force and name in self.dictionary:
-            raise com.IbisError(
-                "Cannot drop existing table. Call drop_table with force=True to drop existing table."
-            )
-        del self.dictionary[name]
+        try:
+            del self.dictionary[name]
+        except KeyError:
+            if not force:
+                raise com.IbisError(f"Table {name} does not exist") from None
 
     def _convert_object(self, obj: Any) -> Any:
         return _convert_object(obj, self)
