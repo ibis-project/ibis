@@ -701,7 +701,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
             param = sg.to_identifier(util.gen_name("arr_enum"))
             func = sge.Lambda(this=param - 1, expressions=[param])
             return select.join(
-                self.f.arrayMap(func, self.f.arrayEnumerate(column_alias)).as_(offset)
+                self.f.arrayMap(func, self.f.arrayEnumerate(column)).as_(offset)
             )
 
         return select
