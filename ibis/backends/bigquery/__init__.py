@@ -1148,6 +1148,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.drop_table(
             name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
+            force=True,
         )
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):
