@@ -1024,9 +1024,7 @@ def test_create_table_in_memory(con, obj, table_name, monkeypatch):
 
     assert result.equals(t.to_pyarrow())
 
-    with contextlib.suppress(NotImplementedError):
-        # polars doesn't have drop_table
-        con.drop_table(table_name, force=True)
+    con.drop_table(table_name, force=True)
 
 
 def test_default_backend_option(con, monkeypatch):
