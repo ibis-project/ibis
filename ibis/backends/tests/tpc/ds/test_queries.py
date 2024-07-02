@@ -7,9 +7,15 @@ import pytest
 from ibis import _, date, ifelse, null
 from ibis import literal as lit
 from ibis import selectors as s
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.backends.tests.tpc.conftest import tpc_test
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("ds")
 def test_01(store_returns, date_dim, store, customer):
     customer_total_return = (
@@ -220,6 +226,11 @@ def test_05(
     raise NotImplementedError()
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("ds")
 def test_06(customer_address, customer, store_sales, date_dim, item):
     return (
@@ -743,6 +754,11 @@ def test_09(store_sales, reason):
 @pytest.mark.broken(
     ["datafusion"], reason="Exception: Optimizer rule 'scalar_subquery_to_join' failed"
 )
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 def test_10(
     customer,
     customer_address,
@@ -1015,11 +1031,16 @@ def test_15(catalog_sales, customer, customer_address, date_dim):
     )
 
 
-@tpc_test("ds")
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @pytest.mark.notyet(
     ["datafusion"],
     reason="Error during planning: Correlated column is not allowed in predicate",
 )
+@tpc_test("ds")
 def test_16(catalog_sales, date_dim, customer_address, call_center, catalog_returns):
     return (
         catalog_sales.join(date_dim, [("cs_ship_date_sk", "d_date_sk")])

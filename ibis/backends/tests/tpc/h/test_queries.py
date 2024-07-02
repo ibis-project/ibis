@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.backends.tests.tpc.conftest import add_date, tpc_test
 
 
@@ -39,6 +40,11 @@ def test_01(lineitem):
     return q
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("h")
 def test_02(part, supplier, partsupp, nation, region):
     """Minimum Cost Supplier Query (Q2)"""
@@ -110,6 +116,11 @@ def test_03(customer, orders, lineitem):
     return q
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("h")
 def test_04(orders, lineitem):
     """Order Priority Checking Query (Q4)"""
@@ -409,6 +420,7 @@ def test_12(orders, lineitem):
     return q
 
 
+@pytest.mark.broken(["clickhouse"], reason="broken sqlglot codegen")
 @tpc_test("h")
 def test_13(customer, orders):
     """Customer Distribution Query (Q13)
@@ -522,6 +534,11 @@ def test_16(partsupp, part, supplier):
     return q
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("h")
 def test_17(lineitem, part):
     """Small-Quantity-Order Revenue Query (Q17)
@@ -628,6 +645,11 @@ def test_19(lineitem, part):
     return q
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("h")
 def test_20(supplier, nation, partsupp, part, lineitem):
     """Potential Part Promotion Query (Q20)
@@ -671,6 +693,11 @@ def test_20(supplier, nation, partsupp, part, lineitem):
     ["datafusion"],
     raises=Exception,
     reason="EXISTS subqueries not supported in DataFusion",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
 )
 @tpc_test("h")
 def test_21(supplier, lineitem, orders, nation):
@@ -722,6 +749,11 @@ def test_21(supplier, lineitem, orders, nation):
     ["datafusion"],
     raises=Exception,
     reason="EXISTS subqueries not supported in DataFusion",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
 )
 @tpc_test("h")
 def test_22(customer, orders):
