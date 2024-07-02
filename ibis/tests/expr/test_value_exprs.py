@@ -294,6 +294,7 @@ def test_value_counts(table, string_col):
     bool_clause = table[string_col].notin(["1", "4", "7"])
     expr = table[bool_clause][string_col].value_counts()
     assert isinstance(expr, ir.Table)
+    assert expr.columns == ["g", "g_count"]
 
 
 def test_isin_notin_scalars():
