@@ -151,9 +151,9 @@ def pandas_df():
             "array_of_float64": [[1.0, 2.0], [3.0], []],
             "array_of_int64": [[1, 2], [], [3]],
             "array_of_strings": [["a", "b"], [], ["c"]],
-            "map_of_strings_integers": [{"a": 1, "b": 2}, None, {}],
-            "map_of_integers_strings": [{}, None, {1: "a", 2: "b"}],
-            "map_of_complex_values": [None, {"a": [1, 2, 3], "b": []}, {}],
+            "map_of_strings_integers": [{"a": 1, "b": 2}, {}, None],
+            "map_of_integers_strings": [{1: "a", 2: "b"}, {}, None],
+            "map_of_complex_values": [{"a": [1, 2, 3], "b": []}, {}, None],
         }
     )
 

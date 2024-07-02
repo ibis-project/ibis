@@ -22,6 +22,13 @@ def s():
     return ibis.table(dict(a="struct<f: float, g: string>"), name="s")
 
 
+@pytest.mark.parametrize("val", [{}, []])
+@pytest.mark.parametrize("typ", [None, "struct<>"])
+def test_struct_factory_empty(val, typ):
+    with pytest.raises(TypeError):
+        ibis.struct(val, type=typ)
+
+
 def test_struct_operations():
     value = OrderedDict(
         [
