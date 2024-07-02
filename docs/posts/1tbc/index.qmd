@@ -1,8 +1,8 @@
 ---
 title: "Querying 1TB of data in Python on a laptop"
 author: "Cody Peterson"
-date: "2024-07-01"
-#image: ibis-duckdb-sort.gif
+date: "2024-07-08"
+image: ibis-duckdb-sort.gif
 categories:
     - benchmark
     - duckdb
@@ -31,11 +31,6 @@ pandas'"](https://wesmckinney.com/blog/apache-arrow-pandas-internals):
 
 Today with Ibis you can reliably and efficiently process a 1TB dataset on a
 laptop with <1/10th the RAM.
-
-:::{.callout-note title="How does Ibis work? Separation of query from engine"
- collapse="true"}
-Well...
-:::
 
 ## Exploring the data with Python dataframes
 
@@ -109,8 +104,8 @@ We can compute and visualize the sizes of the tables in the TPC-H data (as
 compressed Parquet files on disk):
 
 ```{python}
-# | code-fold: true
-# | code-summary: "Show code to get sizes of tables in TPC-H data"
+#| code-fold: true
+#| code-summary: "Show code to get sizes of tables in TPC-H data"
 def get_dir_size(path):
     from pathlib import Path
 
@@ -122,8 +117,8 @@ names = [os.path.basename(table) for table in tables]
 
 tmp = ibis.memtable({"name": names, "size": sizes})
 tmp = tmp.mutate(size_gb=tmp["size"] / (1024**3))
-tmp = tmp.order_by(ibis.desc("size_gb"))
 tmp = tmp.mutate(size_gb_mem=tmp["size_gb"] * 11 / 5)
+tmp = tmp.order_by(ibis.desc("size_gb"))
 
 c = px.bar(
     tmp,
@@ -136,8 +131,6 @@ c = px.bar(
         "size_gb": "size (GB on-disk in compressed Parquet files)",
         "size_gb_mem": "size (approximate GB in memory)",
     },
-    # color="size_gb",
-    # color_continuous_scale="viridis",
 )
 
 print(
@@ -224,17 +217,16 @@ df.head(3).collect(streaming=True)
 
 :::
 
-Ibis, with the default backend of DuckDB, can display the first few rows. Polars (lazy)
-can handle this in regular and streaming mode. Both pandas and Polars (eager) crash
-the kernel as they must load all the data into memory to construct their
-dataframes. Since this table is at ~6X larger than our 96GiB of RAM, we can't
-load it all.
+Ibis, with the default backend of DuckDB, can display the first few rows. Polars
+(lazy) can too in regular and streaming mode.  For lazily computation, an
+underlying query engine has the opportunity to determine a subset of data to be
+read into memory that satisfies a given query. For example, to display any three
+rows from the `lineitem` table it can just read the first three rows from the
+first Parquet file in the dataset.
 
-For lazily computed Python dataframes, an underlying query engine has the
-opportunity to determine a subset of data to be read into memory that satisfies
-a given query. For example, to display any three rows from the `lineitem` table
-it can just read the first three rows from the first Parquet file in the
-dataset.
+Both pandas and Polars (eager) crash Python as they must load all the data into
+memory to construct their dataframes. This is expected because the table in
+memory ~6X larger than our 96GiB of RAM.
 
 :::{.callout-tip title="Visualize the Ibis expression tree" collapse="true"}
 
@@ -275,6 +267,8 @@ t = ibis.read_parquet(data)
 t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3)
 ```
 
+![CPU/RAM while Ibis with the DuckDB backend sorting](ibis-duckdb-sort.gif)
+
 ## Ibis (DataFusion)
 
 ```{python}
@@ -282,6 +276,8 @@ ibis.set_backend("datafusion")
 t = ibis.read_parquet(data)
 t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3)
 ```
+
+![CPU/RAM while Ibis with the DataFusion backend sorting](ibis-datafusion-sort.gif)
 
 ## Polars (lazy)
 
@@ -301,6 +297,8 @@ Click here for more info.
 View Jupyter log for further details.
 ```
 
+![CPU/RAM while Polars with the lazy API sorting](polars-lazy-sort.gif)
+
 ## Polars (lazy, streaming)
 
 ```{.python}
@@ -317,6 +315,8 @@ PanicException: called `Result::unwrap()` on an `Err` value: IO { error: Os {
  code: 28, kind: StorageFull, message: "No space left on device" }, msg: None }
 ```
 
+![CPU/RAM while Polars with the lazy API, streaming engine sorting](polars-lazy-streaming-sort.gif)
+
 :::
 
 :::{.callout-tip title="Visualize the Ibis expression tree" collapse="true"}
@@ -331,12 +331,25 @@ to_graph(t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3))
 
 :::
 
-
 Ibis with the DuckDB and DataFusion backends complete this in about 2 minutes
 each. Polars (lazy) crashes the kernel after about 2 minutes with its default
 mode and panicks in streaming mode.
 
-TODO more exposition
+**Streaming is an overloaded term here**. In the context of Ibis, a streaming
+backend refers to a near real-time data processing engine like [Apache
+Flink](https://ibis-project.org/backends/flink) or
+[RisingWave](https://ibis-project.org/backends/risingwave). In the context of
+Polars, streaming is a separate engine from the default that can handle
+larger-than-memory data. This general paradigm is already used by DuckDB and
+DataFusion, hence their ability to complete the above query. [The Polars team
+does not recommend using their current streaming engine for
+benchmarking](https://github.com/pola-rs/polars/issues/16694#issuecomment-2146668559)
+and has [announced a new version of their streaming
+engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design).
+
+As we'll see in the benchmark result, some queries will fail to complete with
+Polars and DataFusion. These queries are killed by the operating system due to a
+lack of memory.
 
 :::{.callout-tip title="Sampling large datasets with Ibis" collapse="true"}
 If we want to work with pandas or Polars dataframes at larger scales, we can use
@@ -452,15 +465,9 @@ fs = gcsfs.GCSFileSystem()
 ibis.get_backend().register_filesystem(fs)
 
 t = (
-    # ibis.read_parquet(
-    #    "gs://ibis-bench/1tbc/cache/file_id=*.parquet",
-    # )
-    ibis.read_json(
-        "bench_logs_v2/raw_json/file_id=*.json",
+    ibis.read_parquet(
+        "gs://ibis-bench/1tbc/cache/file_id=*.parquet",
     )
-    # ibis.read_parquet(
-    #     "bench_logs_v4/cache/file_id=*.parquet",
-    # )
     .select(
         "system",
         "sf",
@@ -538,8 +545,9 @@ agg3 = (
 agg3
 ```
 
-`ibis-duckdb` completed 22/22 queries **in under 30 minutes**. If you need to
-run batch data jobs on a similar amount of data, a laptop might be all you need!
+`ibis-duckdb` completed all 22/22 queries **in under 30 minutes**. If you need
+to run batch data jobs on a similar amount of data, a laptop might be all you
+need!
 
 `ibis-datafusion` only completed 17/22 queries, though recall [3 are failing due
 to a bug that's already been
@@ -636,15 +644,17 @@ You can use the code above to further explore and visualize the results.
 ## Why does this matter?
 
 The ability to run all 1TB TPC-H queries on a relatively standard laptop with
-minimal setup represents a significant shift in the Python data ecosystem.
+minimal setup represents a significant shift in the Python data ecosystem that
+benefits individual data practitioners and organizations.
 
 ### Scale up, then scale out
 
-While distributed OLAP query engines have their place, the threshold for
-considering them against a single-node OLAP query engine has been raised
-drastically over the last few years. You can [see how much DuckDB has improved
-over the years](https://duckdb.org/2024/06/26/benchmarks-over-time) and it shows
-in this benchmark.
+Distributed systems are hard and introduce complexity for data workloads. While
+distributed OLAP query engines have their place, the threshold for considering
+them against a single-node OLAP query engine has been raised drastically over
+the last few years. You can [see how much DuckDB has improved over the
+years](https://duckdb.org/2024/06/26/benchmarks-over-time) and it shows in this
+benchmark.
 
 It's a good idea to start with a single node and see how far you can get. You'll
 need to consider the tradeoffs for your own situation to make a decision. With
@@ -673,14 +683,11 @@ fairly easy to add!
 
 ### It's efficient
 
-A composable data system with a modern single-node OLAP query engine can likely
-scale vertically to handle workloads into 10TB+ range, though you're likely to
-hit storage or network bottlenecks before hitting compute bottlenecks for real
-workloads. Still, how much money does your organization spend on data
-transformation per terabyte? Using [the GCP pricing
-calculator](https://cloud.google.com/products/calculator) we'll sample the
-monthly cost of some cloud instances and solid-state hard drive space. Hover
-over to see the vCPUs and RAM for each instance.
+How much money does your organization spend on data transformation per terabyte?
+Using [the GCP pricing calculator](https://cloud.google.com/products/calculator)
+we'll sample the monthly cost of some cloud instances including a few TBs of
+solid-state hard drive space. Hover over to see the vCPUs and RAM for each
+instance.
 
 ```{python}
 #| code-fold: true
@@ -698,7 +705,7 @@ t = ibis.memtable(
     {
         "name": list(data.keys()),
         "vCPUs": [v["vCPUs"] for v in data.values()],
-        "RAM": [v["RAM"] for v in data.values()],
+        "RAM (GBs)": [v["RAM"] for v in data.values()],
         "cost": [v["cost"] for v in data.values()],
     }
 ).order_by("cost")
@@ -708,15 +715,25 @@ c = px.bar(
     x="name",
     y="cost",
     title="Monthly cost (USD) of various GCP instances",
-    hover_data=["vCPUs", "RAM"],
+    hover_data=["vCPUs", "RAM (GBs)"],
 )
 c
 ```
 
-For ~$1,600/month we can get a machine with more CPU cores and RAM than our
-laptop in this post. This cost also assumes you're running the machine 24/7 --
-if you only needed to run a workload similar to the benchmark here, you'd only
-need to the machine on for <1 hour per day using Ibis (DuckDB backend).
+For ~$1,600/month we can get a machine with more CPU cores and RAM than the
+laptop benchmarked in this post. This cost assumes you're running the machine
+24/7 -- if you only needed to run a workload similar to the benchmark here,
+you'd only need to run the machine <1 hour per day using Ibis with the default
+DuckDB backend. This can serve as a good anchor when evaluating your cost of
+compute for data.
+
+A composable data system with Python dataframe and SQL user experiences can
+scale vertically to handle workloads into 10TB+ range with modern single-node
+OLAP query engines. If you need a distributed query engine or a better
+single-node query engine for your workload materializes, you can swap them out
+without changing your queries. However, note that with vertical scaling you're
+likely to hit storage or network bottlenecks before compute bottlenecks on real
+workloads.
 
 ## Next steps
 
