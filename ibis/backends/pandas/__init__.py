@@ -275,8 +275,8 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in cls._get_operations()
 
-    def _clean_up_cached_table(self, op):
-        del self.dictionary[op.name]
+    def _clean_up_cached_table(self, name):
+        del self.dictionary[name]
 
     def to_pyarrow(
         self,

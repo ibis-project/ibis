@@ -1345,31 +1345,6 @@ def test_create_table_timestamp(con, temp_table):
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
-def test_persist_expression_ref_count(backend, con, alltypes):
-    non_persisted_table = alltypes.mutate(test_column=ibis.literal("calculation"))
-    persisted_table = non_persisted_table.cache()
-
-    op = non_persisted_table.op()
-
-    # ref count is unaffected without a context manager
-    assert con._query_cache.refs[op] == 1
-    backend.assert_frame_equal(
-        non_persisted_table.to_pandas(), persisted_table.to_pandas()
-    )
-    assert con._query_cache.refs[op] == 1
-
-
-@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
-@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
-@pytest.mark.never(
-    ["risingwave"],
-    raises=com.UnsupportedOperationError,
-    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
-)
 def test_persist_expression(backend, alltypes):
     non_persisted_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_calc=ibis.literal("xyz")
@@ -1391,7 +1366,7 @@ def test_persist_expression(backend, alltypes):
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
-def test_persist_expression_contextmanager(backend, alltypes):
+def test_persist_expression_contextmanager(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc")
     )
@@ -1399,6 +1374,7 @@ def test_persist_expression_contextmanager(backend, alltypes):
         backend.assert_frame_equal(
             non_cached_table.to_pandas(), cached_table.to_pandas()
         )
+    assert non_cached_table.op() not in con._query_cache.cache
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -1417,12 +1393,12 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     op = non_cached_table.op()
-    with non_cached_table.cache() as cached_table:
-        backend.assert_frame_equal(
-            non_cached_table.to_pandas(), cached_table.to_pandas()
-        )
-        assert con._query_cache.refs[op] == 1
-    assert con._query_cache.refs[op] == 0
+    cached_table = non_cached_table.cache()
+    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+
+    assert op in con._query_cache.cache
+    del cached_table
+    assert op not in con._query_cache.cache
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -1441,29 +1417,28 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     op = non_cached_table.op()
-    with non_cached_table.cache() as cached_table:
-        backend.assert_frame_equal(
-            non_cached_table.to_pandas(), cached_table.to_pandas()
-        )
+    cached_table = non_cached_table.cache()
 
-        name1 = cached_table.op().name
+    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
-        with non_cached_table.cache() as nested_cached_table:
-            name2 = nested_cached_table.op().name
-            assert not nested_cached_table.to_pandas().empty
+    name = cached_table.op().name
+    nested_cached_table = non_cached_table.cache()
 
-            # there are two refs to the uncached expression
-            assert con._query_cache.refs[op] == 2
+    # cached tables are identical and reusing the same op
+    assert cached_table.op() is nested_cached_table.op()
+    # table is cached
+    assert op in con._query_cache.cache
 
-        # one ref to the uncached expression was removed by the context manager
-        assert con._query_cache.refs[op] == 1
+    # deleting the first reference, leaves table in cache
+    del nested_cached_table
+    assert op in con._query_cache.cache
 
-    # no refs left after the outer context manager exits
-    assert con._query_cache.refs[op] == 0
+    # deleting the last reference, releases table from cache
+    del cached_table
+    assert op not in con._query_cache.cache
 
-    # assert that tables have been dropped
-    assert name1 not in con.list_tables()
-    assert name2 not in con.list_tables()
+    # assert that table has been dropped
+    assert name not in con.list_tables()
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -1477,20 +1452,22 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
-def test_persist_expression_repeated_cache(alltypes):
+def test_persist_expression_repeated_cache(alltypes, con):
     non_cached_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
-    with non_cached_table.cache() as cached_table:
-        with cached_table.cache() as nested_cached_table:
-            assert not nested_cached_table.to_pandas().empty
+    cached_table = non_cached_table.cache()
+    nested_cached_table = cached_table.cache()
+    name = cached_table.op().name
+
+    assert not nested_cached_table.to_pandas().empty
+
+    del nested_cached_table, cached_table
+
+    assert name not in con.list_tables()
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -1503,13 +1480,11 @@ def test_persist_expression_release(con, alltypes):
     )
     cached_table = non_cached_table.cache()
     cached_table.release()
-    assert con._query_cache.refs[non_cached_table.op()] == 0
 
-    with pytest.raises(
-        com.IbisError,
-        match=r".+Did you call `\.release\(\)` twice on the same expression\?",
-    ):
-        cached_table.release()
+    assert non_cached_table.op() not in con._query_cache.cache
+
+    # a second release does not hurt
+    cached_table.release()
 
     with pytest.raises(Exception, match=cached_table.op().name):
         cached_table.execute()

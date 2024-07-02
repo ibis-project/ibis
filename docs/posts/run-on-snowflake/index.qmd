@@ -111,7 +111,6 @@ session.sproc.register(
             "snowflake-snowpark-python",
             "toolz",
             "atpublic",
-            "bidict",
             "pyarrow",
             "pandas",
             "numpy",
