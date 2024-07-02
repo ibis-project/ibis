@@ -122,6 +122,12 @@ down *backends:
         docker compose rm {{ backends }} --force --stop --volumes
     fi
 
+# stop all containers, prune networks, and remove all volumes
+stop *backends:
+    just down {{ backends }}
+    docker network prune -f
+    docker volume prune -af
+
 # tail logs for one or more services
 tail *services:
     docker compose logs --follow {{ services }}
