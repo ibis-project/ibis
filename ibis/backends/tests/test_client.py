@@ -1487,11 +1487,8 @@ def test_persist_expression_release(con, alltypes):
 
     assert non_cached_table.op() not in con._query_cache.cache
 
-    with pytest.raises(
-        com.IbisError,
-        match=r".+Did you call `\.release\(\)` twice on the same expression\?",
-    ):
-        cached_table.release()
+    # a second release does not hurt
+    cached_table.release()
 
     with pytest.raises(Exception, match=cached_table.op().name):
         cached_table.execute()

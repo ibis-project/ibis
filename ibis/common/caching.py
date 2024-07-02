@@ -5,8 +5,6 @@ from collections import namedtuple
 from typing import TYPE_CHECKING, Any
 from weakref import finalize, ref
 
-from ibis.common.exceptions import IbisError
-
 if TYPE_CHECKING:
     from collections.abc import Callable
 
@@ -82,17 +80,11 @@ class RefCountedCache:
         return cached
 
     def release(self, name: str) -> None:
-        # Could be sped up with an inverse dictionary,
-        # but explicit release is discouraged, anyway
+        # Could be sped up with an inverse dictionary
         for key, entry in self.cache.items():
             if entry.name == name:
                 self._release(key)
                 return
-
-        raise IbisError(
-            "Key has already been released. Did you call "
-            "`.release()` twice on the same expression?"
-        )
 
     def _release(self, key) -> None:
         entry = self.cache.pop(key)
