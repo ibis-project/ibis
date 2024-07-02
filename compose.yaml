@@ -341,6 +341,7 @@ services:
       - druid
 
   oracle:
+    platform: linux/amd64
     image: gvenzl/oracle-free:23.4-slim
     environment:
       ORACLE_PASSWORD: ibis
