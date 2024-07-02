@@ -44,6 +44,7 @@ serieswise = {
     ),
     ops.TimestampFromUNIX: lambda arg, unit: dd.to_datetime(arg, unit=unit.short),
     ops.DayOfWeekIndex: lambda arg: dd.to_datetime(arg).dt.dayofweek,
+    ops.IsoDayOfWeekIndex: lambda arg: dd.to_datetime(arg).dt.dayofweek + 1,
     ops.DayOfWeekName: lambda arg: dd.to_datetime(arg).dt.day_name(),
 }
 
