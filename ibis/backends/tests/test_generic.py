@@ -2482,3 +2482,8 @@ def test_value_counts_on_tables(backend, df):
     )
     expected = expected.sort_values(expected.columns.tolist()).reset_index(drop=True)
     backend.assert_frame_equal(result, expected, check_dtype=False)
+
+def test_api_table_name_consistent(con, backend):
+    t = ibis.memtable({"x": [1]})
+    con.create_table(name="my-table", obj=t, temp=True)
+    con.table(t.get_name())
