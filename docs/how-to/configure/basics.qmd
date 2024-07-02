@@ -13,7 +13,7 @@ t = ibis.examples.penguins.fetch()  # <2>
 
 ## Overview
 
-Ibis configuration happens through the `ibis.options` attribute. Attributes can be got and set like class attributes.
+Ibis configuration happens through the `ibis.options` attribute. Attributes can be read and written like class attributes.
 
 ## Interactive mode
 
