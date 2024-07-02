@@ -3,7 +3,7 @@
 Ibis exists in a broader composable data ecosystem. [The Composable Codex by
 Voltron Data](https://voltrondata.com/codex) is the result of years of
 experience and hours of writing by experts in the field, providing an in-depth
-introduction of composable data systems. We'll take a look at:
+introduction to composable data systems. We'll take a look at:
 
 - [Apache Arrow](https://github.com/apache/arrow)
 - [Apache Arrow Database Connectivity (ADBC)](https://arrow.apache.org/adbc/current/index.html)
