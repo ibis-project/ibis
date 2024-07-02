@@ -1,7 +1,7 @@
 ---
 title: "Querying 1TB on a laptop with Python dataframes"
 author: "Cody Peterson"
-date: "2024-07-03"
+date: "2024-07-08"
 image: ibis-duckdb-sort.gif
 categories:
     - benchmark
@@ -307,11 +307,13 @@ df = pl.scan_parquet(data)
 ```
 
 ```html
-PanicException: called `Result::unwrap()` on an `Err` value: IO { error: Os {
- code: 28, kind: StorageFull, message: "No space left on device" }, msg: None }
+PanicException: called `Result::unwrap()` on an `Err` value: "SendError(..)"
 ```
 
 ![CPU/RAM while Polars with the lazy API, streaming engine sorting](polars-lazy-streaming-sort.gif)
+
+See [issue on
+GitHub](https://github.com/pola-rs/polars/issues/17289#issuecomment-2200469528).
 
 :::
 
@@ -586,7 +588,7 @@ pivoted data including relative speed differences between the systems:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to great_table pivoted aggregated benchmark data"
-color_palette = "viridis"
+color_palette = "plasma"
 na_color = "black"
 style_color = "cyan"
 
