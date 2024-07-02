@@ -68,7 +68,7 @@ class Strftime(Value):
     arg: Value[dt.Temporal]
     format_str: Value[dt.String]
 
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
     dtype = dt.string
 
 
@@ -79,7 +79,7 @@ class StringToTimestamp(Value):
     arg: Value[dt.String]
     format_str: Value[dt.String]
 
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
     dtype = dt.Timestamp(timezone="UTC")
 
 
@@ -90,7 +90,7 @@ class StringToDate(Value):
     arg: Value[dt.String]
     format_str: Value[dt.String]
 
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
     dtype = dt.date
 
 
