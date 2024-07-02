@@ -22,6 +22,7 @@ from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.pretty import to_rich
+from ibis.expr.types.temporal import TimestampColumn
 from ibis.selectors import Selector
 from ibis.util import deprecated
 
@@ -58,10 +59,10 @@ def _regular_join_method(
     def f(  # noqa: D417
         self: ir.Table,
         right: ir.Table,
-        predicates: str
-        | Sequence[
-            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue
-        ] = (),
+        predicates: (
+            str
+            | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
+        ) = (),
         *,
         lname: str = "",
         rname: str = "{name}_right",
@@ -220,7 +221,6 @@ class Table(Expr, _FixedTextJupyterMixin):
                 args = ()
             else:
                 args = util.promote_list(args[0])
-
         # bind positional arguments
         values = []
         for arg in args:
@@ -2200,10 +2200,12 @@ class Table(Expr, _FixedTextJupyterMixin):
     )
     def relabel(
         self,
-        substitutions: Mapping[str, str]
-        | Callable[[str], str | None]
-        | str
-        | Literal["snake_case", "ALL_CAPS"],
+        substitutions: (
+            Mapping[str, str]
+            | Callable[[str], str | None]
+            | str
+            | Literal["snake_case", "ALL_CAPS"]
+        ),
     ) -> Table:
         """Deprecated in favor of `Table.rename`."""
         if isinstance(substitutions, Mapping):
@@ -2212,11 +2214,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def rename(
         self,
-        method: str
-        | Callable[[str], str | None]
-        | Literal["snake_case", "ALL_CAPS"]
-        | Mapping[str, str]
-        | None = None,
+        method: (
+            str
+            | Callable[[str], str | None]
+            | Literal["snake_case", "ALL_CAPS"]
+            | Mapping[str, str]
+            | None
+        ) = None,
         /,
         **substitutions: str,
     ) -> Table:
@@ -3076,17 +3080,19 @@ class Table(Expr, _FixedTextJupyterMixin):
     def join(
         left: Table,
         right: Table,
-        predicates: str
-        | Sequence[
+        predicates: (
             str
-            | ir.BooleanColumn
-            | Literal[True]
-            | Literal[False]
-            | tuple[
-                str | ir.Column | ir.Deferred,
-                str | ir.Column | ir.Deferred,
+            | Sequence[
+                str
+                | ir.BooleanColumn
+                | Literal[True]
+                | Literal[False]
+                | tuple[
+                    str | ir.Column | ir.Deferred,
+                    str | ir.Column | ir.Deferred,
+                ]
             ]
-        ] = (),
+        ) = (),
         how: JoinKind = "inner",
         *,
         lname: str = "",
@@ -3630,9 +3636,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
-        names_transform: Callable[[str], ir.Value]
-        | Mapping[str, Callable[[str], ir.Value]]
-        | None = None,
+        names_transform: (
+            Callable[[str], ir.Value] | Mapping[str, Callable[[str], ir.Value]] | None
+        ) = None,
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
     ) -> Table:
@@ -4606,23 +4612,19 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return relocated
 
-    def window_by(self, time_col: ir.Value) -> WindowedTable:
-        """Create a windowing table-valued function (TVF) expression.
-
-        Windowing table-valued functions (TVF) assign rows of a table to windows
-        based on a time attribute column in the table.
-
-        Parameters
-        ----------
-        time_col
-            Column of the table that will be mapped to windows.
-
-        Returns
-        -------
-        WindowedTable
-            WindowedTable expression.
-        """
+    def window_by(
+        self,
+        time_col: str | ir.Value,
+    ) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
+
+        time_col = next(iter(self.bind(time_col)))
+
+        # validate time_col is a timestamp column
+        if not isinstance(time_col, TimestampColumn):
+            raise com.IbisInputError(
+                f"`time_col` must be a timestamp column, got {time_col.type()}"
+            )
 
         return WindowedTable(self, time_col)
 

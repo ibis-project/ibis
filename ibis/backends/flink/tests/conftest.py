@@ -13,6 +13,25 @@ from ibis.backends.tests.data import array_types, json_types, struct_types, topk
 if TYPE_CHECKING:
     from pyflink.table import StreamTableEnvironment
 
+TEST_TABLES["functional_alltypes"] = ibis.schema(
+    {
+        "id": "int32",
+        "bool_col": "boolean",
+        "tinyint_col": "int8",
+        "smallint_col": "int16",
+        "int_col": "int32",
+        "bigint_col": "int64",
+        "float_col": "float32",
+        "double_col": "float64",
+        "date_string_col": "string",
+        "string_col": "string",
+        "timestamp_col": "timestamp(3)",  # overriding the higher level fixture with precision because Flink's
+        # watermark must use a field of type TIMESTAMP(p) or TIMESTAMP_LTZ(p), where 'p' is from 0 to 3
+        "year": "int32",
+        "month": "int32",
+    }
+)
+
 
 def get_table_env(
     local_env: bool,
@@ -152,24 +171,7 @@ def awards_players_schema():
 
 @pytest.fixture
 def functional_alltypes_schema():
-    return ibis.schema(
-        {
-            "id": "int32",
-            "bool_col": "boolean",
-            "tinyint_col": "int8",
-            "smallint_col": "int16",
-            "int_col": "int32",
-            "bigint_col": "int64",
-            "float_col": "float32",
-            "double_col": "float64",
-            "date_string_col": "string",
-            "string_col": "string",
-            "timestamp_col": "timestamp(3)",  # overriding the higher level fixture with precision because Flink's
-            # watermark must use a field of type TIMESTAMP(p) or TIMESTAMP_LTZ(p), where 'p' is from 0 to 3
-            "year": "int32",
-            "month": "int32",
-        }
-    )
+    return TEST_TABLES["functional_alltypes"]
 
 
 @pytest.fixture
@@ -188,3 +190,33 @@ def csv_source_configs():
         }
 
     return generate_csv_configs
+
+
+@pytest.fixture(scope="session")
+def functional_alltypes_no_header(tmpdir_factory, data_dir):
+    file = tmpdir_factory.mktemp("data") / "functional_alltypes.csv"
+    with (
+        open(data_dir / "csv" / "functional_alltypes.csv") as reader,
+        open(str(file), mode="w") as writer,
+    ):
+        reader.readline()  # read the first line and discard it
+        for line in reader:
+            writer.write(line)
+    return file
+
+
+@pytest.fixture(scope="session", autouse=True)
+def functional_alltypes_with_watermark(con, functional_alltypes_no_header):
+    # create a streaming table with watermark for testing event-time based ops
+    t = con.create_table(
+        "functional_alltypes_with_watermark",
+        schema=TEST_TABLES["functional_alltypes"],
+        tbl_properties={
+            "connector": "filesystem",
+            "path": functional_alltypes_no_header,
+            "format": "csv",
+        },
+        watermark=ibis.watermark("timestamp_col", ibis.interval(seconds=10)),
+        temp=True,
+    )
+    return t
