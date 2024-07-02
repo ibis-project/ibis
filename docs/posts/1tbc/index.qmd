@@ -109,10 +109,12 @@ We can compute and visualize the sizes of the tables in the TPC-H data (as
 compressed Parquet files on disk):
 
 ```{python}
-#| code-fold: true
-#| code-summary: "Show code to get sizes of tables in TPC-H data"
+# | code-fold: true
+# | code-summary: "Show code to get sizes of tables in TPC-H data"
 def get_dir_size(path):
-    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file())
+    from pathlib import Path
+
+    return sum(p.stat().st_size for p in Path(path).rglob("*") if p.is_file())
 
 
 sizes = [get_dir_size(table) for table in tables]
@@ -228,10 +230,11 @@ the kernel as they must load all the data into memory to construct their
 dataframes. Since this table is at ~6X larger than our 96GiB of RAM, we can't
 load it all.
 
-For lazily computed Python dataframes, an underlying query engine can determine
-the potential subset of data that needs to be read into memory for a given
-query. For example, to display any three rows from the `lineitem` table it can
-just read the first three rows from the first Parquet file in the dataset.
+For lazily computed Python dataframes, an underlying query engine has the
+opportunity to determine a subset of data to be read into memory that satisfies
+a given query. For example, to display any three rows from the `lineitem` table
+it can just read the first three rows from the first Parquet file in the
+dataset.
 
 :::{.callout-tip title="Visualize the Ibis expression tree" collapse="true"}
 
