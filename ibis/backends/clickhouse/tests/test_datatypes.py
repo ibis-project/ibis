@@ -244,6 +244,7 @@ def test_array_discovery_clickhouse(con):
             ),
             id="nested",
         ),
+        param("Date32", dt.Date(nullable=False), id="date32"),
         param("DateTime", dt.Timestamp(scale=0, nullable=False), id="datetime"),
         param(
             "DateTime('Europe/Budapest')",
