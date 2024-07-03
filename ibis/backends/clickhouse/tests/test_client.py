@@ -13,6 +13,12 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config, udf
+from ibis.backends.clickhouse.tests.conftest import (
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PASS,
+    CLICKHOUSE_USER,
+    IBIS_TEST_CLICKHOUSE_DB,
+)
 from ibis.util import gen_name
 
 cc = pytest.importorskip("clickhouse_connect")
@@ -359,3 +365,10 @@ def test_password_with_bracket():
         cc.driver.exceptions.DatabaseError, match="password is incorrect"
     ):
         ibis.clickhouse.connect(host=host, user=user, port=port, password=quoted_pass)
+
+
+def test_invalid_port(con):
+    port = 9999
+    url = f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{port}/{IBIS_TEST_CLICKHOUSE_DB}"
+    with pytest.raises(cc.driver.exceptions.DatabaseError):
+        ibis.connect(url)

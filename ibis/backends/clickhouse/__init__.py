@@ -84,6 +84,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
+            "port": url.port,
             **kwargs,
         }
 
