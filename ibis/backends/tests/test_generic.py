@@ -1482,7 +1482,7 @@ def test_pivot_longer(backend):
 
 
 @pytest.mark.xfail_version(
-    datafusion=["datafusion==38.0.1"], reason="internal error about MEDIAN(G) naming"
+    datafusion=["datafusion>=38.0.1"], reason="internal error about MEDIAN(G) naming"
 )
 def test_pivot_wider(backend):
     diamonds = backend.diamonds
