@@ -167,6 +167,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             user=url.username,
             password=unquote_plus(url.password) if url.password is not None else None,
             database=url.path.removeprefix("/"),
+            port=url.port,
             **kwargs,
         )
 

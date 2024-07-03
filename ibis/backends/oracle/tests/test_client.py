@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date  # noqa: TCH003
 
+import oracledb
 import pandas as pd
 import pandas.testing as tm
 import pytest
@@ -9,6 +10,11 @@ import pytest
 import ibis
 import ibis.common.exceptions as exc
 from ibis import udf
+from ibis.backends.oracle.tests.conftest import (
+    ORACLE_HOST,
+    ORACLE_PASS,
+    ORACLE_USER,
+)
 
 
 def test_ibis_is_not_defeated_by_statement_cache(con):
@@ -77,3 +83,13 @@ def test_from_url(con):
     new_con = ibis.connect("oracle://ibis:ibis@localhost:1521/IBIS_TESTING")
 
     assert new_con.list_tables()
+
+
+def test_invalid_port(con):
+    port = 9999
+    url = f"oracle://{ORACLE_USER}:{ORACLE_PASS}@{ORACLE_HOST}:{port}/IBIS_TESTING"
+    with pytest.raises(
+        oracledb.OperationalError,
+        match="DPY-6005: cannot connect to database",
+    ):
+        ibis.connect(url)
