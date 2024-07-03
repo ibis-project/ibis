@@ -1296,16 +1296,16 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-cov", "pytest-rerunfailu
 
 [[package]]
 name = "datafusion"
-version = "38.0.1"
+version = "39.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-38.0.1-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:bbff9ce713586307286688cc0cdb5fec30d542580bf701105422a159f1142e19"},
-    {file = "datafusion-38.0.1-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:1c7eba54e866fd1f85cb83c9300f464c2327e5c54fb9f6f40ccc4bda53e8ad74"},
-    {file = "datafusion-38.0.1-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:bd1ccac3c16822e0c9956e00863328de2f15eae40b096256d349e070769892cc"},
-    {file = "datafusion-38.0.1-cp38-abi3-win_amd64.whl", hash = "sha256:acded6a4c892a6ec654fe426117a998aa5697b5b41fadc370bd78ecc82efd8f9"},
-    {file = "datafusion-38.0.1.tar.gz", hash = "sha256:d117c1670db39e15f66a4181a5cbc44b268ba5306fe97825aa2fbda6397580f2"},
+    {file = "datafusion-39.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:6b6450f41a443c1b30d4f66a4b105e71e489e8e6b8be601798fcb52a6452a44f"},
+    {file = "datafusion-39.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5f6a8c3a69c924e0bfbc8ac1b2cfead1ad941892d9f1f40218c2c47902acf1a8"},
+    {file = "datafusion-39.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:20eb69600e0a18f46b8e89d8ffab3631df4ddd147f449547d3ff5c4c34bce913"},
+    {file = "datafusion-39.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:6a132186805c1c56c2bd63379cdc95ba98b88b9bbdac212655ee2e4bb5e15283"},
+    {file = "datafusion-39.0.0.tar.gz", hash = "sha256:53f65e0e9804b0343a0bd6470c6e924a7ba4a1d6e47c1055215c35dd7c35e128"},
 ]
 
 [package.dependencies]
@@ -7671,4 +7671,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "1fac34606e813b0339a74f308dfc2b1c15c41186e7f782bca53760e2911fda2b"
+content-hash = "4b2a61a9e93f55a0862f4d4524cc28f8556926806d8df8ddaba3e001e50c9773"

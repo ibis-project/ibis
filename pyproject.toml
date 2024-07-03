@@ -59,7 +59,7 @@ dask = { version = ">=2022.9.1,<2024.3.0", optional = true, extras = [
   "array",
   "dataframe",
 ] }
-datafusion = { version = ">=0.6,<39", optional = true }
+datafusion = { version = ">=0.6,<40", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.8.1,<2", optional = true }
