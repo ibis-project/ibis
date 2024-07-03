@@ -281,10 +281,6 @@ def test_07(store_sales, customer_demographics, date_dim, item, promotion):
 
 
 @tpc_test("ds")
-@pytest.mark.broken(
-    ["datafusion"],
-    reason='The left or right side of the join does not have all columns on "on"',
-)
 def test_08(store_sales, date_dim, store, customer_address, customer):
     zip_codes = (
         "24128",
