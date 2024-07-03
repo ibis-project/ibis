@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.sql.datatypes import SqlglotType
 from ibis.util import experimental
 
 
@@ -274,6 +275,19 @@ def convert_in(in_, catalog):
     this = convert(in_.this, catalog=catalog)
     candidates = [convert(expression, catalog) for expression in in_.expressions]
     return this.isin(candidates)
+
+
+@convert.register(sge.Cast)
+def cast(cast, catalog):
+    this = convert(cast.this, catalog)
+    to = convert(cast.to, catalog)
+
+    return this.cast(to)
+
+
+@convert.register(sge.DataType)
+def datatype(datatype, catalog):
+    return SqlglotType().to_ibis(datatype)
 
 
 @public

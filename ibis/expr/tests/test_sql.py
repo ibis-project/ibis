@@ -149,3 +149,54 @@ WHERE first_name IN ('Graham', 'John', 'Terry', 'Eric', 'Michael')"""
     expr = ibis.parse_sql(sql, catalog)
     code = ibis.decompile(expr, format=True)
     snapshot.assert_match(code, "decompiled.py")
+
+
+tpch_catalog = {
+    "lineitem": {
+        "l_orderkey": "int32",
+        "l_partkey": "int32",
+        "l_suppkey": "int32",
+        "l_linenumber": "int32",
+        "l_quantity": "decimal(15, 2)",
+        "l_extendedprice": "decimal(15, 2)",
+        "l_discount": "decimal(15, 2)",
+        "l_tax": "decimal(15, 2)",
+        "l_returnflag": "string",
+        "l_linestatus": "string",
+        "l_shipdate": "date",
+        "l_commitdate": "date",
+        "l_receiptdate": "date",
+        "l_shipinstruct": "string",
+        "l_shipmode": "string",
+        "l_comment": "string",
+    }
+}
+
+
+@pytest.mark.xfail(raises=KeyError, reason="column aliasing issue?")
+def test_parse_sql_tpch1():
+    sql = """
+SELECT
+    l_returnflag,
+    l_linestatus,
+    sum(l_quantity) AS sum_qty,
+    sum(l_extendedprice) AS sum_base_price,
+    sum(l_extendedprice * (1 - l_discount)) AS sum_disc_price,
+    sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,
+    avg(l_quantity) AS avg_qty,
+    avg(l_extendedprice) AS avg_price,
+    avg(l_discount) AS avg_disc,
+    count(*) AS count_order
+FROM
+    lineitem
+WHERE
+    l_shipdate <= CAST('1998-09-02' AS date)
+GROUP BY
+    l_returnflag,
+    l_linestatus
+ORDER BY
+    l_returnflag,
+    l_linestatus;
+    """
+
+    _ = ibis.parse_sql(sql, tpch_catalog)
