@@ -593,7 +593,16 @@ na_color = "black"
 style_color = "cyan"
 
 tbl = (
-    GT(piv2.to_polars())
+    GT(
+        piv2.mutate(**{" ": ibis.literal("")})
+        .select(
+            "query_number",
+            *systems,
+            " ",
+            *list(comparisons.keys()),
+        )
+        .to_polars()
+    )
     .opt_stylize(
         style=1,
         color=style_color,
@@ -603,6 +612,7 @@ tbl = (
         subtitle=md("*on a laptop* (MacBook Pro | Apple M2 Max | 96GiB RAM)"),
     )
     .tab_spanner(label="execution time (seconds)", columns=systems)
+    .tab_spanner(label="   ", columns=" ")
     .tab_spanner(label="relative speed difference†", columns=list(comparisons))
     .tab_source_note(
         source_note=md(
@@ -620,6 +630,10 @@ tbl = (
         domain=[0, agg2["avg_execution_seconds"].max().to_pyarrow().as_py()],
         palette=color_palette,
         na_color=na_color,
+    )
+    .data_color(
+        columns=" ",
+        palette=["#333333", "#333333"],
     )
     .data_color(
         columns=list(comparisons),
