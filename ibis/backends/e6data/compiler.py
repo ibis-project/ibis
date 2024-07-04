@@ -11,8 +11,8 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
-from ibis.backends.sql.datatypes import MySQLType
-from ibis.backends.sql.dialects import MySQL
+from ibis.backends.sql.datatypes import MySQLType, E6DataType
+from ibis.backends.sql.dialects import MySQL, E6data
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
@@ -45,8 +45,8 @@ def rewrite_limit(_, **kwargs):
 class E6DataCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    dialect = MySQL
-    type_mapper = MySQLType
+    dialect = E6data
+    type_mapper = E6DataType
     rewrites = (
         rewrite_limit,
         exclude_unsupported_window_frame_from_ops,
