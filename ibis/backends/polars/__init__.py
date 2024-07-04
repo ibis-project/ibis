@@ -71,8 +71,8 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
-        schema = PolarsSchema.to_ibis(self._tables[name].collect_schema())
+    def table(self, name: str) -> ir.Table:
+        schema = sch.infer(self._tables[name])
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     @deprecated(
@@ -464,7 +464,7 @@ class Backend(BaseBackend, NoUrl):
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         lazy_frame = self._context.execute(query, eager=False)
-        return PolarsSchema.to_ibis(lazy_frame.collect_schema())
+        return sch.infer(lazy_frame)
 
     def _to_dataframe(
         self,
