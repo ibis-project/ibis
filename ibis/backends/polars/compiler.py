@@ -739,7 +739,6 @@ _reductions = {
     ops.Mean: "mean",
     ops.Median: "median",
     ops.Min: "min",
-    ops.Mode: "mode",
     ops.StandardDev: "std",
     ops.Sum: "sum",
     ops.Variance: "var",
@@ -766,6 +765,18 @@ for reduction in _reductions.keys():
         return method(first.filter(reduce(operator.and_, predicates))).cast(
             PolarsType.from_ibis(op.dtype)
         )
+
+
+@translate.register(ops.Mode)
+def execute_mode(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    predicate = arg.is_not_null()
+    if (where := op.where) is not None:
+        predicate &= translate(where, **kw)
+
+    dtype = PolarsType.from_ibis(op.dtype)
+    return arg.filter(predicate).mode().get(0).cast(dtype)
 
 
 @translate.register(ops.Quantile)
