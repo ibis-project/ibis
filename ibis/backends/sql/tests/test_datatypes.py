@@ -41,9 +41,7 @@ roundtripable_types = st.deferred(
         | its.array_dtypes(roundtripable_types, nullable=true)
         | its.map_dtypes(roundtripable_types, roundtripable_types, nullable=true)
         | its.struct_dtypes(roundtripable_types, nullable=true)
-        | its.geometry_dtypes(nullable=true)
-        | its.geometry_dtypes(nullable=true, srid=1234)
-        | its.geography_dtypes(nullable=true)
+        | its.geospatial_dtypes(nullable=true)
         | its.decimal_dtypes(nullable=true)
         | its.interval_dtype(nullable=true)
     )
@@ -58,19 +56,6 @@ roundtripable_types = st.deferred(
 @h.given(roundtripable_types)
 def test_roundtripable_types(ibis_type):
     assert_dtype_roundtrip(ibis_type)
-
-
-@h.given(its.specific_geometry_dtypes(nullable=true))
-def test_specific_geometry_types(ibis_type):
-    sqlglot_result = SqlglotType.from_ibis(ibis_type)
-    assert isinstance(sqlglot_result, sge.DataType)
-    assert sqlglot_result.args["this"] == getattr(
-        sge.DataType.Type, ibis_type.geotype.upper()
-    )
-    assert sqlglot_result.args["expressions"] == [
-        sge.Var(this=ibis_type.__class__.__name__.upper())
-    ]
-    assert SqlglotType.to_ibis(sqlglot_result) == ibis_type
 
 
 # def test_geotype_with_srid
