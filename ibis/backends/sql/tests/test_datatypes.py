@@ -25,27 +25,27 @@ true = st.just(True)
 
 roundtripable_types = st.deferred(
     lambda: (
-        # its.null_dtype
-        # | its.boolean_dtype(nullable=true)
-        # | its.integer_dtypes(nullable=true)
-        # | st.just(dt.Float32(nullable=True))
-        # | st.just(dt.Float64(nullable=True))
-        # | its.string_dtype(nullable=true)
-        # | its.binary_dtype(nullable=true)
-        # | its.json_dtype(nullable=true)
-        # | its.inet_dtype(nullable=true)
-        # | its.uuid_dtype(nullable=true)
-        # | its.date_dtype(nullable=true)
-        # | its.time_dtype(nullable=true)
-        # | its.timestamp_dtype(timezone=st.none(), nullable=true)
-        # | its.array_dtypes(roundtripable_types, nullable=true)
-        # | its.map_dtypes(roundtripable_types, roundtripable_types, nullable=true)
-        # | its.struct_dtypes(roundtripable_types, nullable=true)
-        # | its.geometry_dtypes(nullable=true)
-        its.geometry_dtypes(nullable=true, srid=1234)
-        # | its.geography_dtypes(nullable=true)
-        # | its.decimal_dtypes(nullable=true)
-        # | its.interval_dtype(nullable=true)
+        its.null_dtype
+        | its.boolean_dtype(nullable=true)
+        | its.integer_dtypes(nullable=true)
+        | st.just(dt.Float32(nullable=True))
+        | st.just(dt.Float64(nullable=True))
+        | its.string_dtype(nullable=true)
+        | its.binary_dtype(nullable=true)
+        | its.json_dtype(nullable=true)
+        | its.inet_dtype(nullable=true)
+        | its.uuid_dtype(nullable=true)
+        | its.date_dtype(nullable=true)
+        | its.time_dtype(nullable=true)
+        | its.timestamp_dtype(timezone=st.none(), nullable=true)
+        | its.array_dtypes(roundtripable_types, nullable=true)
+        | its.map_dtypes(roundtripable_types, roundtripable_types, nullable=true)
+        | its.struct_dtypes(roundtripable_types, nullable=true)
+        | its.geometry_dtypes(nullable=true)
+        | its.geometry_dtypes(nullable=true, srid=1234)
+        | its.geography_dtypes(nullable=true)
+        | its.decimal_dtypes(nullable=true)
+        | its.interval_dtype(nullable=true)
     )
 )
 
@@ -64,8 +64,11 @@ def test_roundtripable_types(ibis_type):
 def test_specific_geometry_types(ibis_type):
     sqlglot_result = SqlglotType.from_ibis(ibis_type)
     assert isinstance(sqlglot_result, sge.DataType)
-    assert sqlglot_result == sge.DataType(this=sge.DataType.Type.GEOMETRY)
-    assert SqlglotType.to_ibis(sqlglot_result) == dt.GeoSpatial(
+    assert sqlglot_result.args["this"] == sge.DataType.Type.GEOMETRY
+    assert sqlglot_result.args["expressions"] == [
+        sge.Var(this=ibis_type.__class__.__name__.upper())
+    ]
+    assert SqlglotType.to_ibis(sqlglot_result) == ibis_type.__class__(
         geotype="geometry", nullable=ibis_type.nullable
     )
 
