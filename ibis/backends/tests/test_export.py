@@ -371,6 +371,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
     ],
 )
 def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
+    if backend.name() == "polars":
+        pytest.skip("polars crashes the interpreter")
+
     result = (
         backend.functional_alltypes.limit(1)
         .double_col.cast(dtype)
