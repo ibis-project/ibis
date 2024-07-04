@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
-from ibis.backends.bigquery.compiler import BigQueryCompiler
+from ibis.backends.sql.compilers import BigQueryCompiler
 from ibis.common.annotations import ValidationError
 
 to_sql = ibis.bigquery.compile

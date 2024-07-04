@@ -21,9 +21,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.mssql.compiler import MSSQLCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, C
+from ibis.backends.sql.compilers import MSSQLCompiler
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

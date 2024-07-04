@@ -11,7 +11,6 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import CanCreateDatabase, NoUrl
-from ibis.backends.flink.compiler import FlinkCompiler
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableWithSchema,
@@ -22,6 +21,7 @@ from ibis.backends.flink.ddl import (
     RenameTable,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers import FlinkCompiler
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name

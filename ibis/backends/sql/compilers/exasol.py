@@ -6,7 +6,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ExasolType
 from ibis.backends.sql.dialects import Exasol
 from ibis.backends.sql.rewrites import (

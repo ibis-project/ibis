@@ -24,9 +24,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanListDatabase, CanListSchema
-from ibis.backends.oracle.compiler import OracleCompiler
 from ibis.backends.sql import STAR, SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compilers import OracleCompiler
+from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult

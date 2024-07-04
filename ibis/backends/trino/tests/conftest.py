@@ -11,6 +11,7 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
@@ -208,7 +209,6 @@ def generate_tpc_tables(suite_name, *, data_dir):
         )
         for path in (data_dir / suite_name).rglob("*.parquet")
     }
-    type_mapper = ibis.backends.trino.compiler.TrinoCompiler.type_mapper
     return (
         sge.Create(
             kind="TABLE",
@@ -218,7 +218,7 @@ def generate_tpc_tables(suite_name, *, data_dir):
                 expressions=[
                     sge.ColumnDef(
                         this=sg.to_identifier(col, quoted=True),
-                        kind=type_mapper.from_ibis(dtype),
+                        kind=TrinoType.from_ibis(dtype),
                     )
                     for col, dtype in schema.items()
                 ],

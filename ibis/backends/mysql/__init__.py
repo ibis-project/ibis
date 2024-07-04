@@ -22,10 +22,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
-from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, TRUE, C
+from ibis.backends.sql.compilers import MySQLCompiler
+from ibis.backends.sql.compilers.base import STAR, TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

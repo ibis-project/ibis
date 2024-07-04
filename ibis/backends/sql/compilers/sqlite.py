@@ -4,18 +4,16 @@ import math
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import SQLiteType
 from ibis.backends.sql.dialects import SQLite
 from ibis.common.temporal import DateUnit, IntervalUnit
 
 
-@public
 class SQLiteCompiler(SQLGlotCompiler):
     __slots__ = ()
 

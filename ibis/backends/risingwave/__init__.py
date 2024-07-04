@@ -1,4 +1,4 @@
-"""Risingwave backend."""
+"""RisingWave backend."""
 
 from __future__ import annotations
 
@@ -16,7 +16,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres import Backend as PostgresBackend
-from ibis.backends.risingwave.compiler import RisingwaveCompiler
+from ibis.backends.sql.compilers import RisingWaveCompiler
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def format_properties(props):
 
 class Backend(PostgresBackend):
     name = "risingwave"
-    compiler = RisingwaveCompiler()
+    compiler = RisingWaveCompiler()
     supports_python_udfs = False
 
     def do_connect(
@@ -88,7 +88,7 @@ class Backend(PostgresBackend):
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        RisingwaveTable[table]
+        RisingWaveTable[table]
           name: functional_alltypes
           schema:
             id : int32
@@ -140,7 +140,7 @@ class Backend(PostgresBackend):
         encode_format: str | None = None,
         encode_properties: dict | None = None,
     ):
-        """Create a table in Risingwave.
+        """Create a table in RisingWave.
 
         Parameters
         ----------

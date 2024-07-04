@@ -20,7 +20,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.client import ImpalaTable
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.ddl import (
     CTAS,
     CreateDatabase,
@@ -39,6 +38,7 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers import ImpalaCompiler
 
 if TYPE_CHECKING:
     from collections.abc import Mapping

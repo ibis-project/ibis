@@ -4,12 +4,11 @@ import calendar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import (
+from ibis.backends.sql.compilers.base import (
     FALSE,
     NULL,
     STAR,
@@ -50,7 +49,6 @@ def rewrite_rows_range_order_by_window(_, **kwargs):
     return _.copy(order_by=(_.func.arg,))
 
 
-@public
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 

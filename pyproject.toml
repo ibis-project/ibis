@@ -336,7 +336,7 @@ markers = [
   "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
-  "risingwave: Risingwave tests",
+  "risingwave: RisingWave tests",
   "pyspark: PySpark tests",
   "snowflake: Snowflake tests",
   "sqlite: SQLite tests",

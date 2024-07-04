@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ibis.backends.impala.compiler import ImpalaCompiler
+from ibis.backends.sql.compilers import ImpalaCompiler
 from ibis.tests.expr.mocks import MockBackend
 
 
