@@ -298,11 +298,16 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOMETRY(
-        cls, arg: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: int | None = None
     ) -> sge.DataType:
         if arg is not None:
-            return _geotypes[str(arg).upper()](nullable=cls.default_nullable)
-        return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
+            geotype = _geotypes[str(arg).upper()](nullable=cls.default_nullable)
+            if srid is not None:
+                geotype.srid = srid
+            return geotype
+        return dt.GeoSpatial(
+            geotype="geometry", nullable=cls.default_nullable, srid=srid
+        )
 
     @classmethod
     def _from_sqlglot_GEOGRAPHY(cls) -> sge.DataType:

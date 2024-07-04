@@ -178,8 +178,13 @@ def struct_dtypes(
     return dt.Struct(fields, nullable=draw(nullable))
 
 
-def geometry_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geometry"), nullable=nullable)
+def geometry_dtypes(nullable=_nullable, srid=None):
+    return st.builds(
+        dt.GeoSpatial,
+        geotype=st.just("geometry"),
+        nullable=nullable,
+        srid=st.just(srid),
+    )
 
 
 def geography_dtypes(nullable=_nullable):
