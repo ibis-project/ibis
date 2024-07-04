@@ -58,7 +58,6 @@ def test_roundtripable_types(ibis_type):
     assert_dtype_roundtrip(ibis_type)
 
 
-# def test_geotype_with_srid
 
 
 def test_interval_without_unit():
