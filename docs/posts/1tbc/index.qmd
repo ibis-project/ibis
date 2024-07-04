@@ -310,10 +310,10 @@ df = pl.scan_parquet(data)
 PanicException: called `Result::unwrap()` on an `Err` value: "SendError(..)"
 ```
 
-![CPU/RAM while Polars with the lazy API, streaming engine sorting](polars-lazy-streaming-sort.gif)
+See [GitHub
+issue](https://github.com/pola-rs/polars/issues/17289#issuecomment-2200469528).
 
-See [issue on
-GitHub](https://github.com/pola-rs/polars/issues/17289#issuecomment-2200469528).
+![CPU/RAM while Polars with the lazy API, streaming engine sorting](polars-lazy-streaming-sort.gif)
 
 :::
 
@@ -538,7 +538,7 @@ agg3 = (
         execution_seconds=agg2["avg_execution_seconds"].sum().round(2),
         seconds_per_query=agg2["avg_execution_seconds"].mean().round(2),
     )
-    .order_by("system")
+    .order_by(ibis.desc("queries_completed"))
 )
 agg3
 ```
@@ -587,7 +587,7 @@ pivoted data including relative speed differences between the systems:
 
 ```{python}
 #| code-fold: true
-#| code-summary: "Show code to great_table pivoted aggregated benchmark data"
+#| code-summary: "Show code to create Great Table table from pivoted aggregated benchmark data"
 color_palette = "plasma"
 na_color = "black"
 style_color = "cyan"
