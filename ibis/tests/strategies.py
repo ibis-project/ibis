@@ -178,34 +178,40 @@ def struct_dtypes(
     return dt.Struct(fields, nullable=draw(nullable))
 
 
-def geometry_dtypes(nullable=_nullable, srid=None):
+def geometry_dtypes(nullable=_nullable):
     return st.builds(
         dt.GeoSpatial,
         geotype=st.just("geometry"),
         nullable=nullable,
-        srid=st.just(srid),
+        srid=st.one_of(st.just(None), st.just(4321)),
     )
 
 
 def geography_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable)
+    return st.builds(
+        dt.GeoSpatial,
+        geotype=st.just("geography"),
+        nullable=nullable,
+        srid=st.one_of(st.just(None), st.just(4321)),
+    )
 
 
-def specific_geometry_dtypes(nullable=_nullable):
+def specific_geospatial_dtypes(nullable=_nullable):
     geotype = st.one_of(st.just("geography"), st.just("geometry"))
+    srid = st.one_of(st.just(None), st.just(4321))
     return st.one_of(
-        st.builds(dt.Point, geotype=geotype, nullable=nullable),
-        st.builds(dt.LineString, geotype=geotype, nullable=nullable),
-        st.builds(dt.Polygon, geotype=geotype, nullable=nullable),
-        st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable),
-        st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable),
-        st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable),
+        st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.Polygon, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid),
     )
 
 
 def geospatial_dtypes(nullable=_nullable):
     return st.one_of(
-        specific_geometry_dtypes(nullable=nullable),
+        specific_geospatial_dtypes(nullable=nullable),
         geometry_dtypes(nullable=nullable),
         geography_dtypes(nullable=nullable),
     )
