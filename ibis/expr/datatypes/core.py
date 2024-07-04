@@ -935,7 +935,7 @@ class JSON(Variadic):
 class GeoSpatial(DataType):
     """Geospatial values."""
 
-    geotype: Optional[Literal["geography", "geometry"]] = None
+    geotype: Literal["geography", "geometry"] = "geometry"
     """The specific geospatial type."""
 
     srid: Optional[int] = None
