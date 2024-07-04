@@ -379,9 +379,14 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
+        srid = dtype.srid
+        expressions = [sge.DataTypeParam(this=sge.Literal.number(srid))]
+
         if (geotype := dtype.geotype) is not None:
-            return sge.DataType(this=getattr(typecode, geotype.upper()))
-        return sge.DataType(this=typecode.GEOMETRY)
+            return sge.DataType(
+                this=getattr(typecode, geotype.upper()), expressions=expressions
+            )
+        return sge.DataType(this=typecode.GEOMETRY, expressions=expressions)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
