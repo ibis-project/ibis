@@ -776,6 +776,11 @@ def execute_mode(op, **kw):
         predicate &= translate(where, **kw)
 
     dtype = PolarsType.from_ibis(op.dtype)
+    # `mode` can return more than one value so the additional `get(0)` call is
+    # necessary to enforce aggregation behavior of a scalar value per group
+    #
+    # eventually we may want to support an Ibis API like `modes` that returns a
+    # list of all the modes per group.
     return arg.filter(predicate).mode().get(0).cast(dtype)
 
 
