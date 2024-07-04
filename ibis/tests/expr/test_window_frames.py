@@ -234,7 +234,7 @@ def test_window_api_supports_value_expressions(t):
 
 
 def test_window_api_supports_scalar_order_by(t):
-    window = ibis.window(order_by=ibis.NA)
+    window = ibis.window(order_by=ibis.null())
     expr = t.a.sum().over(window).op()
     expected = ops.WindowFunction(
         t.a.sum(),
@@ -242,7 +242,7 @@ def test_window_api_supports_scalar_order_by(t):
         start=None,
         end=None,
         group_by=(),
-        order_by=(ibis.NA.op(),),
+        order_by=(ibis.null().op(),),
     )
     assert expr == expected
 

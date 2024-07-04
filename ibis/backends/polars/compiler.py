@@ -176,16 +176,6 @@ def column(op, **_):
     return pl.col(op.name)
 
 
-@translate.register(ops.SortKey)
-def sort_key(op, **kw):
-    arg = translate(op.expr, **kw)
-    descending = op.descending
-    try:
-        return arg.sort(descending=descending)
-    except TypeError:  # pragma: no cover
-        return arg.sort(reverse=descending)  # pragma: no cover
-
-
 @translate.register(ops.Project)
 def project(op, **kw):
     lf = translate(op.parent, **kw)
@@ -237,10 +227,9 @@ def sort(op, **kw):
 
     by = list(newcols.keys())
     descending = [key.descending for key in op.keys]
-    try:
-        lf = lf.sort(by, descending=descending, nulls_last=True)
-    except TypeError:  # pragma: no cover
-        lf = lf.sort(by, reverse=descending, nulls_last=True)  # pragma: no cover
+    nulls_last = [not key.nulls_first for key in op.keys]
+
+    lf = lf.sort(by, descending=descending, nulls_last=nulls_last)
 
     return lf.drop(*by)
 
@@ -367,8 +356,8 @@ def asof_join(op, **kw):
     return joined
 
 
-@translate.register(ops.DropNa)
-def dropna(op, **kw):
+@translate.register(ops.DropNull)
+def drop_null(op, **kw):
     lf = translate(op.parent, **kw)
 
     if op.subset is None:
@@ -385,8 +374,8 @@ def dropna(op, **kw):
     return lf.drop_nulls(subset)
 
 
-@translate.register(ops.FillNa)
-def fillna(op, **kw):
+@translate.register(ops.FillNull)
+def fill_null(op, **kw):
     table = translate(op.parent, **kw)
 
     columns = []
@@ -987,6 +976,13 @@ def array_concat(op, **kw):
 @translate.register(ops.Array)
 def array_column(op, **kw):
     cols = [translate(col, **kw) for col in op.exprs]
+    # Workaround for https://github.com/pola-rs/polars/issues/17294
+    # pl.concat_list(Iterable[T]) results in pl.List[T], EXCEPT when T is a
+    # pl.List, in which case pl.concat_list(Iterable[pl.List[T]]) results in pl.List[T].
+    # If polars ever supports a more consistent array constructor,
+    # we should switch to that.
+    if op.dtype.value_type.is_array():
+        cols = [c.implode() for c in cols]
     return pl.concat_list(cols)
 
 
@@ -1371,3 +1367,9 @@ def execute_timestamp_range(op, **kw):
     start = translate(op.start, **kw)
     stop = translate(op.stop, **kw)
     return pl.datetime_ranges(start, stop, f"{step}{unit}", closed="left")
+
+
+@translate.register(ops.DropColumns)
+def execute_drop_columns(op, **kw):
+    parent = translate(op.parent, **kw)
+    return parent.drop(op.columns_to_drop)

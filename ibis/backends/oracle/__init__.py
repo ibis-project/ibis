@@ -9,7 +9,9 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
 
+import numpy as np
 import oracledb
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -27,6 +29,8 @@ from ibis.backends.sql import STAR, SQLBackend
 from ibis.backends.sql.compiler import C
 
 if TYPE_CHECKING:
+    from urllib.parse import ParseResult
+
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -158,8 +162,15 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         # Set to ensure decimals come back as decimals
         oracledb.defaults.fetch_decimals = True
 
-    def _from_url(self, url: str, **kwargs):
-        return self.do_connect(user=url.username, password=url.password, dsn=url.host)
+    def _from_url(self, url: ParseResult, **kwargs):
+        self.do_connect(
+            user=url.username,
+            password=unquote_plus(url.password) if url.password is not None else None,
+            database=url.path.removeprefix("/"),
+            **kwargs,
+        )
+
+        return self
 
     @property
     def current_database(self) -> str:
@@ -501,16 +512,18 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                     this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
                 ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-            ).sql(self.name, pretty=True)
+            ).sql(self.name)
 
-            data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join(f":{i}" for i, _ in enumerate(schema))
-            table = sg.table(name, quoted=quoted).sql(self.name)
-            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            data = op.data.to_frame().replace({np.nan: None})
+            insert_stmt = self._build_insert_template(
+                name, schema=schema, placeholder=":{i:d}"
+            )
             with self.begin() as cur:
                 cur.execute(create_stmt)
-                for row in data:
-                    cur.execute(insert_stmt, row)
+                for start, end in util.chunks(len(data), chunk_size=128):
+                    cur.executemany(
+                        insert_stmt, list(data.iloc[start:end].itertuples(index=False))
+                    )
 
         atexit.register(self._clean_up_tmp_table, name)
 
@@ -616,5 +629,5 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             with contextlib.suppress(oracledb.DatabaseError):
                 bind.execute(f'DROP TABLE "{name}"')
 
-    def _clean_up_cached_table(self, op):
-        self._clean_up_tmp_table(op.name)
+    def _clean_up_cached_table(self, name):
+        self._clean_up_tmp_table(name)

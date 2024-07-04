@@ -60,25 +60,21 @@ SELECT
 FROM (
   SELECT
     *
-  FROM (
-    SELECT
-      *
-    FROM "t5" AS "t6"
-    ORDER BY
-      "t6"."diff" DESC
-    LIMIT 10
-  ) AS "t9"
-  UNION ALL
+  FROM "t5" AS "t6"
+  ORDER BY
+    "t6"."diff" DESC
+  LIMIT 10
+) AS "t9"
+UNION ALL
+SELECT
+  *
+FROM (
   SELECT
     *
-  FROM (
-    SELECT
-      *
-    FROM "t5" AS "t6"
-    WHERE
-      "t6"."diff" < CAST(0 AS TINYINT)
-    ORDER BY
-      "t6"."diff" ASC
-    LIMIT 10
-  ) AS "t10"
-) AS "t11"
+  FROM "t5" AS "t6"
+  WHERE
+    "t6"."diff" < CAST(0 AS TINYINT)
+  ORDER BY
+    "t6"."diff" ASC
+  LIMIT 10
+) AS "t10"

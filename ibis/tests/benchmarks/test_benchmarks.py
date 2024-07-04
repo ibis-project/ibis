@@ -4,7 +4,9 @@ import copy
 import functools
 import inspect
 import itertools
+import math
 import os
+import random
 import string
 from operator import attrgetter, itemgetter
 
@@ -12,6 +14,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from packaging.version import parse as vparse
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -701,8 +704,6 @@ def ddb(tmp_path_factory):
 
     N = 20_000_000
 
-    con = duckdb.connect()
-
     path = str(tmp_path_factory.mktemp("duckdb") / "data.ddb")
     sql = (
         lambda var, table, n=N: f"""
@@ -716,9 +717,9 @@ def ddb(tmp_path_factory):
         """
     )
 
-    with duckdb.connect(path) as con:
-        con.execute(sql("x", table="t1"))
-        con.execute(sql("y", table="t2"))
+    with duckdb.connect(path) as cur:
+        cur.execute(sql("x", table="t1"))
+        cur.execute(sql("y", table="t2"))
     return path
 
 
@@ -849,12 +850,12 @@ def test_column_access(benchmark, many_cols, getter):
     benchmark(getter, many_cols)
 
 
-@pytest.fixture(scope="module")
-def many_tables():
+@pytest.fixture(scope="module", params=[1000, 10000])
+def many_tables(request):
     num_cols = 10
-    num_tables = 1000
     return [
-        ibis.table({f"c{i}": "int" for i in range(num_cols)}) for _ in range(num_tables)
+        ibis.table({f"c{i}": "int" for i in range(num_cols)})
+        for _ in range(request.param)
     ]
 
 
@@ -862,6 +863,54 @@ def test_large_union_construct(benchmark, many_tables):
     assert benchmark(lambda args: ibis.union(*args), many_tables) is not None
 
 
+@pytest.mark.timeout(180)
 def test_large_union_compile(benchmark, many_tables):
     expr = ibis.union(*many_tables)
     assert benchmark(ibis.to_sql, expr) is not None
+
+
+@pytest.fixture(scope="session")
+def lots_of_tables(tmp_path_factory):
+    duckdb = pytest.importorskip("duckdb")
+    db = str(tmp_path_factory.mktemp("data") / "lots_of_tables.ddb")
+    n = 100_000
+    d = int(math.log10(n))
+    sql = ";".join(f"CREATE TABLE t{i:0>{d}} (x TINYINT)" for i in range(n))
+    with duckdb.connect(db) as con:
+        con.execute(sql)
+    return ibis.duckdb.connect(db)
+
+
+@pytest.mark.timeout(120)
+def test_memtable_register(lots_of_tables, benchmark):
+    t = ibis.memtable({"x": [1, 2, 3]})
+    result = benchmark(lots_of_tables.execute, t)
+    assert len(result) == 3
+
+
+@pytest.fixture(params=[10, 100, 1_000, 10_000], scope="module")
+def wide_table(request):
+    num_cols = request.param
+    return ibis.table(name="t", schema={f"a{i}": "int" for i in range(num_cols)})
+
+
+@pytest.fixture(
+    params=[param(0.01, id="1"), param(0.5, id="50"), param(0.99, id="99")],
+    scope="module",
+)
+def cols_to_drop(wide_table, request):
+    perc_cols_to_drop = request.param
+    total_cols = len(wide_table.columns)
+    ncols = math.floor(perc_cols_to_drop * total_cols)
+    cols_to_drop = random.sample(range(total_cols), ncols)
+    return [f"a{i}" for i in cols_to_drop]
+
+
+def test_wide_drop_construct(benchmark, wide_table, cols_to_drop):
+    benchmark(wide_table.drop, *cols_to_drop)
+
+
+def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
+    benchmark(
+        lambda expr: ibis.to_sql(expr, dialect="duckdb"), wide_table.drop(*cols_to_drop)
+    )

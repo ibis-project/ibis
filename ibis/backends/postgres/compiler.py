@@ -15,6 +15,7 @@ from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.util import gen_name
 
 
 class PostgresUDFNode(ops.Value):
@@ -588,3 +589,82 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.cast(arg, op.to)
 
     visit_TryCast = visit_Cast
+
+    def visit_Hash(self, op, *, arg):
+        arg_dtype = op.arg.dtype
+
+        if arg_dtype.is_int16():
+            return self.f.hashint2extended(arg, 0)
+        elif arg_dtype.is_int32():
+            return self.f.hashint4extended(arg, 0)
+        elif arg_dtype.is_int64():
+            return self.f.hashint8extended(arg, 0)
+        elif arg_dtype.is_float32():
+            return self.f.hashfloat4extended(arg, 0)
+        elif arg_dtype.is_float64():
+            return self.f.hashfloat8extended(arg, 0)
+        elif arg_dtype.is_string():
+            return self.f.hashtextextended(arg, 0)
+        elif arg_dtype.is_macaddr():
+            return self.f.hashmacaddr8extended(arg, 0)
+
+        raise com.UnsupportedOperationError(
+            f"Hash({arg_dtype!r}) operation is not supported in the "
+            f"{self.dialect} backend"
+        )
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
+
+        parent_alias = parent.alias_or_name
+
+        opname = op.column.name
+        parent_schema = op.parent.schema
+        overlaps_with_parent = opname in parent_schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        selcols = []
+
+        if overlaps_with_parent:
+            column_alias_or_name = column.alias_or_name
+            selcols.extend(
+                sg.column(col, table=parent_alias, quoted=quoted)
+                if col != column_alias_or_name
+                else computed_column
+                for col in parent_schema.names
+            )
+        else:
+            selcols.append(
+                sge.Column(
+                    this=STAR, table=sg.to_identifier(parent_alias, quoted=quoted)
+                )
+            )
+            selcols.append(computed_column)
+
+        if offset is not None:
+            offset_name = offset
+            offset = sg.to_identifier(offset_name, quoted=quoted)
+            selcols.append((offset - 1).as_(offset_name, quoted=quoted))
+
+        unnest = sge.Unnest(
+            expressions=[column],
+            alias=sge.TableAlias(
+                this=sg.to_identifier(gen_name("table_unnest"), quoted=quoted),
+                columns=[column_alias],
+            ),
+            offset=offset,
+        )
+
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(
+                unnest,
+                on=None if not keep_empty else sge.convert(True),
+                join_type="CROSS" if not keep_empty else "LEFT",
+            )
+        )

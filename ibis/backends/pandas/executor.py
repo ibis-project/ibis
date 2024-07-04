@@ -69,7 +69,7 @@ class PandasExecutor(Dispatched, PandasUtils):
             return arg
 
     @classmethod
-    def visit(cls, op: ops.SortKey, expr, ascending):
+    def visit(cls, op: ops.SortKey, expr, ascending, nulls_first):
         return expr
 
     @classmethod
@@ -593,13 +593,32 @@ class PandasExecutor(Dispatched, PandasUtils):
         # 2. sort the dataframe using those columns
         # 3. drop the sort key columns
         ascending = [key.ascending for key in op.keys]
+        nulls_first = [key.nulls_first for key in op.keys]
+
+        if all(nulls_first):
+            na_position = "first"
+        elif not any(nulls_first):
+            na_position = "last"
+        else:
+            raise ValueError(
+                "pandas does not support specifying null ordering for individual columns"
+            )
+
         newcols = {gen_name("sort_key"): col for col in keys}
         names = list(newcols.keys())
         df = parent.assign(**newcols)
         df = df.sort_values(
-            by=names, ascending=ascending, ignore_index=True, kind="mergesort"
+            by=names,
+            ascending=ascending,
+            na_position=na_position,
+            ignore_index=True,
+            kind="mergesort",
         )
         return df.drop(columns=names)
+
+    @classmethod
+    def visit(cls, op: ops.DropColumns, parent, columns_to_drop):
+        return parent.drop(columns=list(columns_to_drop))
 
     @classmethod
     def visit(cls, op: PandasAggregate, parent, groups, metrics):
@@ -740,7 +759,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return parent.drop_duplicates()
 
     @classmethod
-    def visit(cls, op: ops.DropNa, parent, how, subset):
+    def visit(cls, op: ops.DropNull, parent, how, subset):
         if op.subset is not None:
             subset = [col.name for col in op.subset]
         else:
@@ -748,7 +767,7 @@ class PandasExecutor(Dispatched, PandasUtils):
         return parent.dropna(how=how, subset=subset)
 
     @classmethod
-    def visit(cls, op: ops.FillNa, parent, replacements):
+    def visit(cls, op: ops.FillNull, parent, replacements):
         return parent.fillna(replacements)
 
     @classmethod

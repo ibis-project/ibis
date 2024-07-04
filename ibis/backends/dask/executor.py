@@ -364,10 +364,25 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         # 2. sort the dataframe using those columns
         # 3. drop the sort key columns
         ascending = [key.ascending for key in op.keys]
+        nulls_first = [key.nulls_first for key in op.keys]
+
+        if all(nulls_first):
+            na_position = "first"
+        elif not any(nulls_first):
+            na_position = "last"
+        else:
+            raise ValueError(
+                "dask does not support specifying null ordering for individual columns"
+            )
+
         newcols = {gen_name("sort_key"): col for col in keys}
         names = list(newcols.keys())
         df = parent.assign(**newcols)
-        df = df.sort_values(by=names, ascending=ascending)
+        df = df.sort_values(
+            by=names,
+            ascending=ascending,
+            na_position=na_position,
+        )
         return df.drop(names, axis=1)
 
     @classmethod

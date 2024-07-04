@@ -187,6 +187,11 @@ def distinct(op, parent):
     return f"{parent}.distinct()"
 
 
+@translate.register(ops.DropColumns)
+def drop(op, parent, columns_to_drop):
+    return f"{parent}.drop({_inline(map(repr, columns_to_drop))})"
+
+
 @translate.register(ops.SelfReference)
 def self_reference(op, parent, identifier):
     return f"{parent}.view()"
@@ -238,11 +243,12 @@ def table_column(op, rel, name):
 
 
 @translate.register(ops.SortKey)
-def sort_key(op, expr, ascending):
-    if ascending:
-        return f"{expr}.asc()"
-    else:
-        return f"{expr}.desc()"
+def sort_key(op, expr, ascending, nulls_first):
+    method = "asc" if ascending else "desc"
+    call = f"{expr}.{method}"
+    if nulls_first:
+        return f"{call}(nulls_first={nulls_first})"
+    return f"{call}()"
 
 
 @translate.register(ops.Reduction)

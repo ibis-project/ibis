@@ -406,7 +406,7 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
     else:
-        pytest.importorskip("deltalake")
+        pytest.importorskip("deltalake", exc_type=ImportError)
 
     t = alltypes.head()
     expected = t.to_pandas()
@@ -444,6 +444,10 @@ def test_arrow_timestamp_with_time_zone(alltypes):
 @pytest.mark.notimpl(["druid", "flink"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
+)
+@pytest.mark.xfail_version(
+    duckdb=["numpy>=2; platform_system == 'Windows'"],
+    reason="torch on windows doesn't seem to expose the _ARRAY_API symbol",
 )
 def test_to_torch(alltypes):
     import ibis.selectors as s

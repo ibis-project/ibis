@@ -6,7 +6,7 @@ import glob
 from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import unquote_plus
 
 import clickhouse_connect as cc
 import pyarrow as pa
@@ -32,6 +32,7 @@ from ibis.backends.sql.compiler import C
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
     from pathlib import Path
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -60,7 +61,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -76,24 +77,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             A backend instance
 
         """
-        url = urlparse(url)
         database = url.path[1:]
-        query_params = parse_qs(url.query)
 
         connect_args = {
             "user": url.username,
-            "password": url.password or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
+            **kwargs,
         }
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                connect_args[name] = value
-            elif len(value) == 1:
-                connect_args[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
 
         kwargs.update(connect_args)
         self._convert_kwargs(kwargs)
@@ -423,7 +415,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = self._build_insert_query(target=name, source=obj)
+        query = self._build_insert_from_table(target=name, source=obj)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
         return self.con.command(query.sql(self.name), external_data=external_data)

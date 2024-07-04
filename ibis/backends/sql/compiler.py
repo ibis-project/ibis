@@ -1044,8 +1044,8 @@ class SQLGlotCompiler(abc.ABC):
 
     ### Ordering and window functions
 
-    def visit_SortKey(self, op, *, expr, ascending: bool):
-        return sge.Ordered(this=expr, desc=not ascending)
+    def visit_SortKey(self, op, *, expr, ascending: bool, nulls_first: bool):
+        return sge.Ordered(this=expr, desc=not ascending, nulls_first=nulls_first)
 
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_quantile(arg, 0.5, where=where)
@@ -1511,6 +1511,19 @@ class SQLGlotCompiler(abc.ABC):
         raise com.UnsupportedOperationError(
             f"{type(op).__name__!r} operation is not supported in the {self.dialect} backend"
         )
+
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        # the generated query will be huge for wide tables
+        #
+        # TODO: figure out a way to produce an IR that only contains exactly
+        # what is used
+        parent_alias = parent.alias_or_name
+        quoted = self.quoted
+        columns_to_keep = (
+            sg.column(column, table=parent_alias, quoted=quoted)
+            for column in op.schema.names
+        )
+        return sg.select(*columns_to_keep).from_(parent)
 
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to

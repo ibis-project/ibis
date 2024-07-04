@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.5.1.1763-alpine
+    image: clickhouse/clickhouse-server:24.6.1.4423-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -9,7 +9,7 @@ services:
       retries: 10
       test:
         - CMD-SHELL
-        - wget -qO- 'http://localhost:8123/?query=SELECT%201' # SELECT 1
+        - wget -qO- 'http://127.0.0.1:8123/?query=SELECT%201' # SELECT 1
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
@@ -94,7 +94,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.6.6
+    image: bitnami/minio:2024.6.29
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -156,7 +156,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:449
+    image: trinodb/trino:451
     ports:
       - 8080:8080
     networks:
@@ -199,7 +199,7 @@ services:
       - druid
 
   druid-coordinator:
-    image: apache/druid:29.0.1
+    image: apache/druid:30.0.0
     hostname: coordinator
     container_name: coordinator
     volumes:
@@ -224,7 +224,7 @@ services:
       - druid
 
   druid-broker:
-    image: apache/druid:29.0.1
+    image: apache/druid:30.0.0
     hostname: broker
     container_name: broker
     volumes:
@@ -252,7 +252,7 @@ services:
       - druid
 
   druid-historical:
-    image: apache/druid:29.0.1
+    image: apache/druid:30.0.0
     hostname: historical
     container_name: historical
     volumes:
@@ -279,7 +279,7 @@ services:
       - druid
 
   druid-middlemanager:
-    image: apache/druid:29.0.1
+    image: apache/druid:30.0.0
     hostname: middlemanager
     container_name: middlemanager
     volumes:
@@ -307,7 +307,7 @@ services:
       - druid
 
   druid:
-    image: apache/druid:29.0.1
+    image: apache/druid:30.0.0
     hostname: router
     container_name: router
     volumes:

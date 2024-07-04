@@ -507,7 +507,7 @@ represented by `NaN`. This can be confusing when working with numeric data,
 since `NaN` is also a valid floating point value (along with `+/-inf`).
 
 In Ibis, we try to be more precise: All data types are nullable, and we use
-`ibis.NA` to represent `NULL` values, and all datatypes have a `.isnull()` method.
+`ibis.null()` to represent `NULL` values, and all datatypes have a `.isnull()` method.
 For floating point values, we use different values for `NaN` and `+/-inf`, and there
 are the additional methods `.isnan()` and `.isinf()`.
 
@@ -532,17 +532,17 @@ the column name for the value to apply to.
 
 
 ```{python}
-no_null_peng = penguins.fillna(dict(bill_depth_mm=0, bill_length_mm=0))
+no_null_peng = penguins.fill_null(dict(bill_depth_mm=0, bill_length_mm=0))
 ```
 
 ### Replacing `NULL`s
 
-Both pandas and Ibis have `fillna` methods which allow you to specify a replacement value
+The Ibis equivalent of pandas `fillna` is `fill_null`, this method allows you to specify a replacement value
 for `NULL` values.
 
 
 ```{python}
-bill_length_no_nulls = penguins.bill_length_mm.fillna(0)
+bill_length_no_nulls = penguins.bill_length_mm.fill_null(0)
 ```
 
 ## Type casts

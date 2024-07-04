@@ -409,8 +409,6 @@ class StringValue(Value):
         """
         return ops.Capitalize(self).to_expr()
 
-    initcap = capitalize
-
     @util.deprecated(
         instead="use the `capitalize` method", as_of="9.0", removed_in="10.0"
     )
@@ -634,8 +632,6 @@ class StringValue(Value):
         └──────────────┘
         """
         return ops.Repeat(self, n).to_expr()
-
-    __mul__ = __rmul__ = repeat
 
     def translate(self, from_str: StringValue, to_str: StringValue) -> StringValue:
         """Replace `from_str` characters in `self` characters in `to_str`.
@@ -1542,23 +1538,23 @@ class StringValue(Value):
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"s": ["abc", None]})
         >>> t.s.concat("xyz", "123")
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ StringConcat() ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ string         │
-        ├────────────────┤
-        │ abcxyz123      │
-        │ NULL           │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat((s, 'xyz', '123')) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                          │
+        ├─────────────────────────────────┤
+        │ abcxyz123                       │
+        │ NULL                            │
+        └─────────────────────────────────┘
         >>> t.s + "xyz"
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ StringConcat() ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ string         │
-        ├────────────────┤
-        │ abcxyz         │
-        │ NULL           │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat((s, 'xyz')) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                   │
+        ├──────────────────────────┤
+        │ abcxyz                   │
+        │ NULL                     │
+        └──────────────────────────┘
         """
         return ops.StringConcat((self, other, *args)).to_expr()
 
@@ -1591,25 +1587,25 @@ class StringValue(Value):
         │ bca    │
         └────────┘
         >>> t.s + "z"
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ StringConcat() ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ string         │
-        ├────────────────┤
-        │ abcz           │
-        │ bacz           │
-        │ bcaz           │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat((s, 'z')) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                 │
+        ├────────────────────────┤
+        │ abcz                   │
+        │ bacz                   │
+        │ bcaz                   │
+        └────────────────────────┘
         >>> t.s + t.s
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ StringConcat() ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ string         │
-        ├────────────────┤
-        │ abcabc         │
-        │ bacbac         │
-        │ bcabca         │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat((s, s)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string               │
+        ├──────────────────────┤
+        │ abcabc               │
+        │ bacbac               │
+        │ bcabca               │
+        └──────────────────────┘
         """
         return self.concat(other)
 
@@ -1642,15 +1638,15 @@ class StringValue(Value):
         │ bca    │
         └────────┘
         >>> "z" + t.s
-        ┏━━━━━━━━━━━━━━━━┓
-        ┃ StringConcat() ┃
-        ┡━━━━━━━━━━━━━━━━┩
-        │ string         │
-        ├────────────────┤
-        │ zabc           │
-        │ zbac           │
-        │ zbca           │
-        └────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringConcat(('z', s)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                 │
+        ├────────────────────────┤
+        │ zabc                   │
+        │ zbac                   │
+        │ zbca                   │
+        └────────────────────────┘
         """
         return ops.StringConcat((other, self)).to_expr()
 
@@ -1699,9 +1695,9 @@ class StringValue(Value):
         >>> ibis.options.interactive = True
         >>> s = ibis.literal("kitten")
         >>> s.levenshtein("sitting")
-        ┌───┐
-        │ 3 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(3) │
+        └─────────────┘
         """
         return ops.Levenshtein(self, other).to_expr()
 

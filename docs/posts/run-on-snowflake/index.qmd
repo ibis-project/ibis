@@ -1,0 +1,146 @@
+---
+title: "Ibis - Now flying on Snowflake"
+author:
+  - Phillip Cloud
+  - Tyler White
+error: false
+date: "2024-06-19"
+categories:
+  - blog
+  - new feature
+  - snowflake
+---
+
+Ibis allows you to push down compute operations on your data where it lives,
+with the performance being as powerful as the backend you're connected to. But
+what happens if Ibis is running _inside_ the backend you're connected to?
+
+In this post, we will discuss how we got Ibis running on a Snowflake virtual
+warehouse.
+
+## Why would we want to do this?
+
+Snowflake has released several features to enable users to execute native
+Python code on the platform. These features include a new notebook development
+interface, Streamlit in Snowflake, the Native App framework, and Python within
+functions and stored procedures.
+
+If users could use Ibis directly within the platform, developers could more
+easily switch between a local execution engine during development and
+efficiently deploy and operationalize that same code on Snowflake.
+
+But this isn't without its challenges; there were a few things we needed to
+figure out, and these are the questions we will answer throughout the post.
+
+- How can we get an Ibis connection to Snowflake - from within Snowflake?
+- How can we use third-party packages in Snowflake?
+- How are we going to test this to ensure it works?
+
+## Getting the Ibis connection
+
+The release of Ibis 9.0 includes the introduction of a new method,
+[`from_snowpark`](../../backends/snowflake.qmd#ibis.backends.snowflake.Backend.from_snowpark)
+to provide users with a convenient mechanism to take an existing Snowpark
+session and create an Ibis Snowflake backend instance with it.
+
+Here's what this looks like:
+
+```python
+import ibis
+import snowflake.snowpark as sp
+
+session = sp.Session.builder.create()
+con = ibis.snowflake.from_snowpark(session)
+```
+
+This connection uses the same session within Snowflake, so temporary objects
+can be accessed using Snowpark or Ibis in the same process! The contexts of
+stored procedures already have a session available, meaning we can use this
+new method and start writing Ibis expressions.
+
+The way this works is that Ibis plucks out an attribute on the Snowpark
+session, which gives us the [`snowflake-connector-python`](https://github.com/snowflakedb/snowflake-connector-python) [`SnowflakeConnection`](https://github.com/snowflakedb/snowflake-connector-python/blob/42fa6ebe9404e0e17afdacfcaceb311dda5cde3e/src/snowflake/connector/connection.py#L313) instance used
+by Snowpark.
+
+Since Ibis uses `snowflake-connector-python` for all Snowflake-related
+connection we just reuse that existing instance.
+
+## Uploading third-party packages
+
+Snowflake has many packages already made available out of the box through the
+Snowflake Anaconda channel, but unfortunately, Ibis and a few of its
+dependencies aren't available. Packages containing pure Python code can be
+uploaded to stages for use within the platform, so we devised a clever solution
+to upload and reference these to get them working.
+
+```python
+import os
+import shutil
+import tempfile
+
+
+def add_packages(d, session):
+    import parsy
+    import pyarrow_hotfix
+    import rich
+    import sqlglot
+    import ibis
+
+    for module in (ibis, parsy, pyarrow_hotfix, rich, sqlglot):
+        pkgname = module.__name__
+        pkgpath = os.path.join(d, pkgname)
+        shutil.copytree(os.path.dirname(module.__file__), pkgpath)
+        session.add_import(pkgname, import_path=pkgname)
+
+
+d = tempfile.TemporaryDirectory()
+os.chdir(d.name)
+add_packages(d.name, session)
+```
+
+We can now register a stored procedure that imports these modules and is able
+to reference some of the additional dependencies that are already available.
+
+```python
+session.sproc.register(
+        ibis_sproc,
+        return_type=sp.types.StructType(),
+        name="THE_IBIS_SPROC",
+        imports=["ibis", "parsy", "pyarrow_hotfix", "sqlglot", "rich"],
+        packages=[
+            "snowflake-snowpark-python",
+            "toolz",
+            "atpublic",
+            "pyarrow",
+            "pandas",
+            "numpy",
+        ],
+)
+```
+
+::: {.callout-info}
+## More permanent solutions to packaging
+
+It's possible that a more permanent solution could be achieved with a `put` or
+`put_stream` method rather than using the `add_import` method. This would allow
+for the packages to be referenced across multiple stored procedures or other
+places within the Snowflake platform.
+:::
+
+## Testing!
+
+While this is a clever solution, we must ensure it works consistently. A
+special unit test has been written for this exact case! The test creates a
+stored procedure by adding the necessary imports to the Snowpark session.
+Within the stored procedure, we define an Ibis expression, and we use the Ibis
+`to_sql` method to extract the generated SQL to pass to Snowpark to return a
+Snowpark DataFrame!
+
+## Conclusion
+
+While it's usually pretty easy to add new backends with Ibis, this was the
+first instance of supporting an additional interface to an existing backend.
+
+We hope you take this for a spin! If you run into any challenges or want
+additional support, open an [issue](https://github.com/ibis-project/ibis/issues)
+or join us on [Zulip](https://ibis-project.zulipchat.com/) and let us know!

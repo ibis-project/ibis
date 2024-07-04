@@ -29,7 +29,6 @@ from ibis.backends.tests.errors import (
     PsycoPg2SyntaxError,
     Py4JJavaError,
     PySparkAnalysisException,
-    SnowflakeProgrammingError,
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
@@ -466,11 +465,6 @@ def test_array_slice(backend, start, stop):
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
-@pytest.mark.broken(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="parse error from lambda @ 0700 EDT 2024-05-31",
-)
 def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -527,11 +521,6 @@ def test_array_map(con, input, output, func):
         ibis._ > 1,
     ],
     ids=["lambda", "partial", "deferred"],
-)
-@pytest.mark.broken(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_array_filter(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -1141,11 +1130,6 @@ def test_unnest_empty_array(con):
     raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
-@pytest.mark.broken(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="parse error from lambda @ 0700 EDT 2024-05-31",
-)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -1160,11 +1144,6 @@ def test_array_map_with_conflicting_names(backend, con):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars", "sqlite", "dask", "pandas", "sqlite"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.broken(
-    ["snowflake"],
-    raises=SnowflakeProgrammingError,
-    reason="parse error from lambda @ 0700 EDT 2024-05-31",
 )
 def test_complex_array_map(con):
     def upper(token):
@@ -1373,14 +1352,7 @@ def test_unnest_range(con):
             [[1], ibis.literal([2])],
             [[1], [2]],
             id="array",
-            marks=[
-                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
-                pytest.mark.broken(
-                    ["polars"],
-                    reason="expression input not supported with nested arrays",
-                    raises=TypeError,
-                ),
-            ],
+            marks=[pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest)],
         ),
     ],
 )
@@ -1405,7 +1377,104 @@ def test_zip_unnest_lift(con):
     t = ibis.memtable(data)
     zipped = t.mutate(zipped=t.array1.zip(t.array2))
     unnested = zipped.mutate(unnest=zipped.zipped.unnest())
-    lifted = unnested.unnest.lift()
+    lifted = unnested["unnest"].lift()
     result = con.execute(lifted)
     expected = pd.DataFrame({"f1": [1, 2, 3], "f2": [4, 5, 6]})
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "pandas", "polars", "dask", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize(
+    "colspec",
+    ["y", lambda t: t.y, ibis._.y],
+    ids=["string", "lambda", "deferred"],
+)
+def test_table_unnest(backend, colspec):
+    t = backend.array_types
+    expr = t.unnest(colspec)
+    result = expr.execute()
+    assert set(result["y"].values) == set(t[["y"]].execute().explode("y")["y"].values)
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "pandas", "polars", "dask", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+def test_table_unnest_with_offset(backend):
+    t = backend.array_types
+    col = "y"
+    df = (
+        t[[col]]
+        .execute()
+        .assign(idx=lambda df: df[col].map(lambda v: list(range(len(v)))))[[col, "idx"]]
+        .explode("idx")
+        .assign(idx=lambda df: df["idx"].astype("int64"))
+    )
+    idx = iter(df.idx.values)
+    expected = (
+        df.assign(**{col: df[col].map(lambda v: v[next(idx)])})
+        .sort_values(["idx", col])
+        .reset_index(drop=True)[["idx", col]]
+    )
+
+    expr = t.unnest(col, offset="idx")[["idx", col]].order_by("idx", col)
+    result = expr.execute()
+    tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "pandas", "polars", "dask", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+def test_table_unnest_with_keep_empty(con):
+    t = ibis.memtable(pd.DataFrame({"y": [[], None, ["a"]]}))
+    expr = t.unnest("y", keep_empty=True)["y"]
+    result = con.execute(expr)
+    assert Counter(result.values) == Counter(["a", None, None])
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "pandas", "polars", "dask", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
+)
+def test_table_unnest_column_expr(backend):
+    t = backend.array_types
+    expr = t.unnest(t.y.map(lambda v: v.cast("str") + "'s").name("plural"))
+    result = expr.execute()["plural"]
+    expected = t["y"].execute().explode("y") + "'s"
+    assert set(result.values) == set(expected.replace({np.nan: None}).values)
+
+
+@pytest.mark.notimpl(
+    ["datafusion", "pandas", "polars", "dask", "flink"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["trino"], raises=TrinoUserError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
+@pytest.mark.notyet(
+    ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
+)
+def test_table_unnest_array_of_struct_of_array(con):
+    t = ibis.memtable(
+        {
+            "a": [
+                [{"x": [1, 2, 3]}, {"x": [1, 2]}],
+                [],
+                None,
+                [{"x": [3, 1, 2, 3]}],
+            ]
+        },
+        schema={"a": "array<struct<x: array<int64>>>"},
+    )
+    # two different unnests
+    expr = t.unnest("a").a.x.unnest().name("x").as_table().order_by("x")
+    result = con.execute(expr)
+    expected = pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3]})
     tm.assert_frame_equal(result, expected)

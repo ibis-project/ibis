@@ -7,7 +7,6 @@ import operator
 import os
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, Literal
-from urllib.parse import parse_qs, urlparse
 
 import impala.dbapi as impyla
 import sqlglot as sg
@@ -44,6 +43,7 @@ from ibis.backends.sql import SQLBackend
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from pathlib import Path
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -67,7 +67,7 @@ class Backend(SQLBackend):
 
     supports_in_memory_tables = True
 
-    def _from_url(self, url: str, **kwargs: Any) -> Backend:
+    def _from_url(self, url: ParseResult, **kwargs: Any) -> Backend:
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -83,8 +83,6 @@ class Backend(SQLBackend):
             A backend instance
 
         """
-        url = urlparse(url)
-
         for name in ("username", "hostname", "port", "password"):
             if value := (
                 getattr(url, name, None)
@@ -98,16 +96,6 @@ class Backend(SQLBackend):
         (database,) = url.path[1:].split("/", 1)
         if database:
             kwargs["database"] = database
-
-        query_params = parse_qs(url.query)
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
 
         self._convert_kwargs(kwargs)
         return self.connect(**kwargs)
@@ -1239,9 +1227,7 @@ class Backend(SQLBackend):
             ).sql(self.name, pretty=True)
 
             data = op.data.to_frame().itertuples(index=False)
-            specs = ", ".join("?" * len(schema))
-            table = sg.table(name, quoted=quoted).sql(self.name)
-            insert_stmt = f"INSERT INTO {table} VALUES ({specs})"
+            insert_stmt = self._build_insert_template(name, schema=schema)
             with self._safe_raw_sql(create_stmt) as cur:
                 for row in data:
                     cur.execute(insert_stmt, row)

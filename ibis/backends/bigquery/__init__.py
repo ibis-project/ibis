@@ -8,8 +8,8 @@ import glob
 import os
 import re
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.parse import parse_qs, urlparse
 
+import google.api_core.exceptions
 import google.auth.credentials
 import google.cloud.bigquery as bq
 import google.cloud.bigquery_storage_v1 as bqstorage
@@ -38,13 +38,13 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Mapping
+    from collections.abc import Iterable, Mapping
     from pathlib import Path
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
     import pyarrow as pa
-    from google.cloud.bigquery.table import RowIterator
 
 
 SCOPES = ["https://www.googleapis.com/auth/bigquery"]
@@ -54,7 +54,7 @@ EXTERNAL_DATA_SCOPES = [
     "https://www.googleapis.com/auth/drive",
 ]
 CLIENT_ID = "546535678771-gvffde27nd83kfl6qbrnletqvkdmsese.apps.googleusercontent.com"
-CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"
+CLIENT_SECRET = "iU5ohAF2qcqrujegE3hQ1cPt"  # noqa: S105
 
 
 def _create_user_agent(application_name: str) -> str:
@@ -171,14 +171,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         raw_name = op.name
 
-        project = self._session_dataset.project
-        dataset = self._session_dataset.dataset_id
+        session_dataset = self._session_dataset
+        project = session_dataset.project
+        dataset = session_dataset.dataset_id
 
-        if raw_name not in self.list_tables(database=(project, dataset)):
+        table_ref = bq.TableReference(session_dataset, raw_name)
+        try:
+            self.client.get_table(table_ref)
+        except google.api_core.exceptions.NotFound:
             table_id = sg.table(
                 raw_name, db=dataset, catalog=project, quoted=False
             ).sql(dialect=self.name)
-
             bq_schema = BigQuerySchema.from_ibis(op.schema)
             load_job = self.client.load_table_from_dataframe(
                 op.data.to_frame(),
@@ -329,12 +332,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
-    def _from_url(self, url: str, **kwargs):
-        result = urlparse(url)
-        params = parse_qs(result.query)
+    def _from_url(self, url: ParseResult, **kwargs):
         return self.connect(
-            project_id=result.netloc or params.get("project_id", [""])[0],
-            dataset_id=result.path[1:] or params.get("dataset_id", [""])[0],
+            project_id=url.netloc or kwargs.get("project_id", [""])[0],
+            dataset_id=url.path[1:] or kwargs.get("dataset_id", [""])[0],
             **kwargs,
         )
 
@@ -593,7 +594,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         node = ops.DatabaseTable(
             table.name,
-            schema=schema_from_bigquery_table(bq_table),
+            # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix
+            schema=schema_from_bigquery_table(bq_table, wildcard=table.name[-1] == "*"),
             source=self,
             namespace=ops.Namespace(database=dataset, catalog=project),
         )
@@ -621,14 +623,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             project=self.billing_project,
         )
         return BigQuerySchema.to_ibis(job.schema)
-
-    def _execute(self, stmt, query_parameters=None):
-        job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
-        query = self.client.query(
-            stmt, job_config=job_config, project=self.billing_project
-        )
-        query.result()  # blocks until finished
-        return query
 
     def _to_sqlglot(
         self,
@@ -668,7 +662,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         ).transform(_remove_null_ordering_from_unsupported_window)
         return query
 
-    def raw_sql(self, query: str, params=None):
+    def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
             bigquery_param(
                 param.type(),
@@ -683,7 +677,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         ]
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
-        return self._execute(query, query_parameters=query_parameters)
+
+        job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
+        return self.client.query_and_wait(
+            query,
+            job_config=job_config,
+            project=self.billing_project,
+            page_size=page_size,
+        )
 
     @property
     def current_catalog(self) -> str:
@@ -734,15 +735,25 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             Output from execution
 
         """
+        from ibis.backends.bigquery.converter import BigQueryPandasData
+
         self._run_pre_execute_hooks(expr)
+
+        schema = expr.as_table().schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         query = self.raw_sql(sql, params=params, **kwargs)
 
-        result = self.fetch_from_query(query, expr.as_table().schema())
+        arrow_t = query.to_arrow(
+            progress_bar_type=None, bqstorage_client=self.storage_client
+        )
 
-        return expr.__pandas_result__(result)
+        result = BigQueryPandasData.convert_table(
+            arrow_t.to_pandas(timestamp_as_object=True), schema
+        )
+
+        return expr.__pandas_result__(result, schema=schema)
 
     def insert(
         self,
@@ -782,38 +793,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             overwrite=overwrite,
         )
 
-    def fetch_from_query(self, query, schema):
-        from ibis.backends.bigquery.converter import BigQueryPandasData
-
-        arrow_t = self._query_to_arrow(query)
-        df = arrow_t.to_pandas(timestamp_as_object=True)
-        return BigQueryPandasData.convert_table(df, schema)
-
-    def _query_to_arrow(
-        self,
-        query,
-        *,
-        method: (
-            Callable[[RowIterator], pa.Table | Iterable[pa.RecordBatch]] | None
-        ) = None,
-        chunk_size: int | None = None,
-    ):
-        if method is None:
-            method = lambda result: result.to_arrow(
-                progress_bar_type=None,
-                bqstorage_client=self.storage_client,
-            )
-        query_result = query.result(page_size=chunk_size)
-        # workaround potentially not having the ability to create read sessions
-        # in the dataset project
-        orig_project = query_result._project
-        query_result._project = self.billing_project
-        try:
-            arrow_obj = method(query_result)
-        finally:
-            query_result._project = orig_project
-        return arrow_obj
-
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -827,7 +806,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
         query = self.raw_sql(sql, params=params, **kwargs)
-        table = self._query_to_arrow(query)
+        table = query.to_arrow(
+            progress_bar_type=None, bqstorage_client=self.storage_client
+        )
         return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
@@ -846,14 +827,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
         self._log(sql)
-        query = self.raw_sql(sql, params=params, **kwargs)
-        batch_iter = self._query_to_arrow(
-            query,
-            method=lambda result: result.to_arrow_iterable(
-                bqstorage_client=self.storage_client
-            ),
-            chunk_size=chunk_size,
-        )
+        query = self.raw_sql(sql, params=params, page_size=chunk_size, **kwargs)
+        batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
 
     def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
@@ -876,7 +851,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ),
             name,
         )
-        return schema_from_bigquery_table(self.client.get_table(table_ref))
+        return schema_from_bigquery_table(
+            self.client.get_table(table_ref),
+            # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix
+            wildcard=name[-1] == "*",
+        )
 
     def list_databases(
         self, like: str | None = None, catalog: str | None = None
@@ -1163,10 +1142,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
-    def _clean_up_cached_table(self, op):
+    def _clean_up_cached_table(self, name):
         self.drop_table(
-            op.name,
+            name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
+            force=True,
         )
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):

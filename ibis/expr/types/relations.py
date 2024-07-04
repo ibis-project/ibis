@@ -200,10 +200,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return data_mapper.convert_table(table, self.schema())
 
-    def __pandas_result__(self, df: pd.DataFrame) -> pd.DataFrame:
+    def __pandas_result__(
+        self, df: pd.DataFrame, schema: sch.Schema | None = None
+    ) -> pd.DataFrame:
         from ibis.formats.pandas import PandasData
 
-        return PandasData.convert_table(df, self.schema())
+        return PandasData.convert_table(df, self.schema() if schema is None else schema)
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
         from ibis.formats.polars import PolarsData
@@ -1214,13 +1216,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
-        ┌─────┐
-        │ 273 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(273) │
+        └───────────────┘
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
@@ -1615,6 +1617,50 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     3 │ a      │     4 │
         │     2 │ B      │     6 │
         └───────┴────────┴───────┘
+
+        [Selectors](./selectors.qmd) are allowed as sort keys and are a concise way to sort by
+        multiple columns matching some criteria
+
+        >>> import ibis.selectors as s
+        >>> penguins = ibis.examples.penguins.fetch()
+        >>> penguins[["year", "island"]].value_counts().order_by(s.startswith("year"))
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2007 │ Torgersen │                20 │
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Dream     │                46 │
+        │  2008 │ Torgersen │                16 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Biscoe    │                64 │
+        │  2009 │ Torgersen │                16 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Biscoe    │                60 │
+        └───────┴───────────┴───────────────────┘
+
+        Use the [`across`](./selectors.qmd#ibis.selectors.across) selector to
+        apply a specific order to multiple columns
+
+        >>> penguins[["year", "island"]].value_counts().order_by(
+        ...     s.across(s.startswith("year"), _.desc())
+        ... )
+        ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+        ┃ year  ┃ island    ┃ year_island_count ┃
+        ┡━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+        │ int64 │ string    │ int64             │
+        ├───────┼───────────┼───────────────────┤
+        │  2009 │ Biscoe    │                60 │
+        │  2009 │ Dream     │                44 │
+        │  2009 │ Torgersen │                16 │
+        │  2008 │ Biscoe    │                64 │
+        │  2008 │ Dream     │                34 │
+        │  2008 │ Torgersen │                16 │
+        │  2007 │ Dream     │                46 │
+        │  2007 │ Biscoe    │                44 │
+        │  2007 │ Torgersen │                20 │
+        └───────┴───────────┴───────────────────┘
         """
         keys = self.bind(*by)
         keys = unwrap_aliases(keys)
@@ -1647,7 +1693,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             queue.append(node)
         result = queue.popleft()
         assert not queue, "items left in queue"
-        return result.to_expr().select(*self.columns)
+        return result.to_expr()
 
     def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
@@ -1835,9 +1881,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┘
         """
         node = ops.Difference(self, table, distinct=distinct)
-        for table in rest:
-            node = ops.Difference(node, table, distinct=distinct)
-        return node.to_expr().select(self.columns)
+        for expr in rest:
+            node = ops.Difference(node, expr, distinct=distinct)
+        return node.to_expr()
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
     def to_array(self) -> ir.Column:
@@ -2433,23 +2479,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │               193 │        3450 │ female │  2007 │
         └───────────┴───────────────────┴─────────────┴────────┴───────┘
         """
-        from ibis import selectors as s
-
         if not fields:
             # no-op if nothing to be dropped
             return self
 
-        fields = tuple(
-            field.resolve(self) if isinstance(field, Deferred) else field
-            for field in fields
+        columns_to_drop = tuple(
+            map(operator.methodcaller("get_name"), self.bind(*fields))
         )
-
-        if missing_fields := {f for f in fields if isinstance(f, str)}.difference(
-            self.schema().names
-        ):
-            raise KeyError(f"Fields not in table: {sorted(missing_fields)}")
-
-        return self.select(~s._to_selector(fields))
+        return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
     def filter(
         self,
@@ -2490,7 +2527,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().dropna(
+        >>> t.filter([t.species == "Adelie", t.body_mass_g > 3500]).sex.value_counts().drop_null(
         ...     "sex"
         ... ).order_by("sex")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
@@ -2505,8 +2542,21 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.rewrites import flatten_predicates, rewrite_filter_input
 
         preds = self.bind(*predicates)
-        preds = unwrap_aliases(preds)
-        preds = flatten_predicates(list(preds.values()))
+
+        # we can't use `unwrap_aliases` here because that function
+        # deduplicates based on name alone
+        #
+        # it's perfectly valid to repeat a filter, even if it might be
+        # useless, so enforcing uniquely named expressions here doesn't make
+        # sense
+        #
+        # instead, compute all distinct unaliased predicates
+        result = toolz.unique(
+            node.arg if isinstance(node := value.op(), ops.Alias) else node
+            for value in preds
+        )
+
+        preds = flatten_predicates(list(result))
         preds = list(map(rewrite_filter_input, preds))
         if not preds:
             raise com.IbisInputError("You must pass at least one predicate to filter")
@@ -2541,13 +2591,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ bar    │
         └────────┘
         >>> t.nunique()
-        ┌───┐
-        │ 2 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(2) │
+        └─────────────┘
         >>> t.nunique(t.a != "foo")
-        ┌───┐
-        │ 1 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(1) │
+        └─────────────┘
         """
         if where is not None:
             (where,) = bind(self, where)
@@ -2582,13 +2632,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ baz    │
         └────────┘
         >>> t.count()
-        ┌───┐
-        │ 3 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(3) │
+        └─────────────┘
         >>> t.count(t.a != "foo")
-        ┌───┐
-        │ 2 │
-        └───┘
+        ┌─────────────┐
+        │ np.int64(2) │
+        └─────────────┘
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
@@ -2596,7 +2646,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountStar(self, where=where).to_expr()
 
-    def dropna(
+    def drop_null(
         self,
         subset: Sequence[str] | str | None = None,
         how: Literal["any", "all"] = "any",
@@ -2642,30 +2692,30 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
-        >>> t.dropna(["bill_length_mm", "body_mass_g"]).count()
-        ┌─────┐
-        │ 342 │
-        └─────┘
-        >>> t.dropna(how="all").count()  # no rows where all columns are null
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
+        >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
+        ┌───────────────┐
+        │ np.int64(342) │
+        └───────────────┘
+        >>> t.drop_null(how="all").count()  # no rows where all columns are null
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         """
         if subset is not None:
             subset = self.bind(subset)
-        return ops.DropNa(self, how, subset).to_expr()
+        return ops.DropNull(self, how, subset).to_expr()
 
-    def fillna(
+    def fill_null(
         self,
         replacements: ir.Scalar | Mapping[str, ir.Scalar],
     ) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
-        ## There is potential lack of type stability with the `fillna` API
+        ## There is potential lack of type stability with the `fill_null` API
 
         For example, different library versions may impact whether a given
         backend promotes integer replacement values to floats.
@@ -2677,6 +2727,11 @@ class Table(Expr, _FixedTextJupyterMixin):
             Value with which to fill nulls. If `replacements` is a mapping, the
             keys are column names that map to their replacement value. If
             passed as a scalar all columns are filled with that value.
+
+        Returns
+        -------
+        Table
+            Table expression
 
         Examples
         --------
@@ -2701,7 +2756,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ NULL   │
         │ …      │
         └────────┘
-        >>> t.fillna({"sex": "unrecorded"}).sex
+        >>> t.fill_null({"sex": "unrecorded"}).sex
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -2719,11 +2774,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ unrecorded │
         │ …          │
         └────────────┘
-
-        Returns
-        -------
-        Table
-            Table expression
         """
         schema = self.schema()
 
@@ -2740,7 +2790,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 val_type = val.type() if isinstance(val, Expr) else dt.infer(val)
                 if not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type}"
                     )
         else:
@@ -2752,11 +2802,30 @@ class Table(Expr, _FixedTextJupyterMixin):
             for col, col_type in schema.items():
                 if col_type.nullable and not val_type.castable(col_type):
                     raise com.IbisTypeError(
-                        f"Cannot fillna on column {col!r} of type {col_type} with a "
+                        f"Cannot fill_null on column {col!r} of type {col_type} with a "
                         f"value of type {val_type} - pass in an explicit mapping "
-                        f"of fill values to `fillna` instead."
+                        f"of fill values to `fill_null` instead."
                     )
-        return ops.FillNa(self, replacements).to_expr()
+        return ops.FillNull(self, replacements).to_expr()
+
+    @deprecated(as_of="9.1", instead="use drop_null instead")
+    def dropna(
+        self,
+        subset: Sequence[str] | str | None = None,
+        how: Literal["any", "all"] = "any",
+    ) -> Table:
+        """Deprecated - use `drop_null` instead."""
+
+        return self.drop_null(subset, how)
+
+    @deprecated(as_of="9.1", instead="use fill_null instead")
+    def fillna(
+        self,
+        replacements: ir.Scalar | Mapping[str, ir.Scalar],
+    ) -> Table:
+        """Deprecated - use `fill_null` instead."""
+
+        return self.fill_null(replacements)
 
     def unpack(self, *columns: str) -> Table:
         """Project the struct fields of each of `columns` into `self`.
@@ -3265,9 +3334,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -3302,9 +3371,9 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        ┌─────┐
-        │ 344 │
-        └─────┘
+        ┌───────────────┐
+        │ np.int64(344) │
+        └───────────────┘
         """
         from ibis.expr.types.joins import Join
 
@@ -3483,9 +3552,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         """Cache the provided expression.
 
         All subsequent operations on the returned expression will be performed
-        on the cached data. Use the
+        on the cached data. The lifetime of the cached table is tied to its
+        python references (ie. it is released once the last reference to it is
+        garbage collected). Alternatively, use the
         [`with`](https://docs.python.org/3/reference/compound_stmts.html#with)
-        statement to limit the lifetime of a cached table.
+        statement or call the `.release()` method for more control.
 
         This method is idempotent: calling it multiple times in succession will
         return the same value as the first call.
@@ -3699,7 +3770,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     names_transform=int,
         ...     values_to="rank",
         ...     values_transform=_.cast("int"),
-        ... ).dropna("rank")
+        ... ).drop_null("rank")
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━┳━━━━━━━┓
         ┃ artist  ┃ track                   ┃ date_entered ┃ week ┃ rank  ┃
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━╇━━━━━━━┩
@@ -4611,6 +4682,149 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.group_by(columns).agg(
             lambda t: t.count().name("_".join(columns) + "_count")
         )
+
+    def unnest(
+        self, column, offset: str | None = None, keep_empty: bool = False
+    ) -> Table:
+        """Unnest an array `column` from a table.
+
+        When unnesting an existing column the newly unnested column replaces
+        the existing column.
+
+        Parameters
+        ----------
+        column
+            Array column to unnest.
+        offset
+            Name of the resulting index column.
+        keep_empty
+            Keep empty array values as `NULL` in the output table, as well as
+            existing `NULL` values.
+
+        Returns
+        -------
+        Table
+            Table with the array column `column` unnested.
+
+        See Also
+        --------
+        [`ArrayValue.unnest`](./expression-collections.qmd#ibis.expr.types.arrays.ArrayValue.unnest)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+
+        Construct a table expression with an array column.
+
+        >>> t = ibis.memtable({"x": [[1, 2], [], None, [3, 4, 5]], "y": [1, 2, 3, 4]})
+        >>> t
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ x                    ┃ y     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2]               │     1 │
+        │ []                   │     2 │
+        │ NULL                 │     3 │
+        │ [3, 4, ... +1]       │     4 │
+        └──────────────────────┴───────┘
+
+        Unnest the array column `x`, replacing the **existing** `x` column.
+
+        >>> t.unnest("x")
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     1 │     1 │
+        │     2 │     1 │
+        │     3 │     4 │
+        │     4 │     4 │
+        │     5 │     4 │
+        └───────┴───────┘
+
+        Unnest the array column `x` with an offset. The `offset` parameter is
+        the name of the resulting index column.
+
+        >>> t.unnest(t.x, offset="idx")
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │ int64 │
+        ├───────┼───────┼───────┤
+        │     1 │     1 │     0 │
+        │     2 │     1 │     1 │
+        │     3 │     4 │     0 │
+        │     4 │     4 │     1 │
+        │     5 │     4 │     2 │
+        └───────┴───────┴───────┘
+
+        Unnest the array column `x` keep empty array values as `NULL` in the
+        output table.
+
+        >>> t.unnest(_.x, offset="idx", keep_empty=True)
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │ int64 │
+        ├───────┼───────┼───────┤
+        │     1 │     1 │     0 │
+        │     2 │     1 │     1 │
+        │     3 │     4 │     0 │
+        │     4 │     4 │     1 │
+        │     5 │     4 │     2 │
+        │  NULL │     2 │  NULL │
+        │  NULL │     3 │  NULL │
+        └───────┴───────┴───────┘
+
+        If you need to preserve the row order of the preserved empty arrays or
+        null values use
+        [`row_number`](./expression-tables.qmd#ibis.row_number) to
+        create an index column before calling `unnest`.
+
+        >>> (
+        ...     t.mutate(original_row=ibis.row_number())
+        ...     .unnest("x", offset="idx", keep_empty=True)
+        ...     .relocate("original_row")
+        ...     .order_by("original_row")
+        ... )
+        ┏━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
+        ┃ original_row ┃ x     ┃ y     ┃ idx   ┃
+        ┡━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━┩
+        │ int64        │ int64 │ int64 │ int64 │
+        ├──────────────┼───────┼───────┼───────┤
+        │            0 │     1 │     1 │     0 │
+        │            0 │     2 │     1 │     1 │
+        │            1 │  NULL │     2 │  NULL │
+        │            2 │  NULL │     3 │  NULL │
+        │            3 │     3 │     4 │     0 │
+        │            3 │     4 │     4 │     1 │
+        │            3 │     5 │     4 │     2 │
+        └──────────────┴───────┴───────┴───────┘
+
+        You can also unnest more complex expressions, and the resulting column
+        will be projected as the last expression in the result.
+
+        >>> t.unnest(_.x.map(lambda v: v + 1).name("plus_one"))
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
+        ┃ x                    ┃ y     ┃ plus_one ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
+        │ array<int64>         │ int64 │ int64    │
+        ├──────────────────────┼───────┼──────────┤
+        │ [1, 2]               │     1 │        2 │
+        │ [1, 2]               │     1 │        3 │
+        │ [3, 4, ... +1]       │     4 │        4 │
+        │ [3, 4, ... +1]       │     4 │        5 │
+        │ [3, 4, ... +1]       │     4 │        6 │
+        └──────────────────────┴───────┴──────────┘
+        """
+        (column,) = self.bind(column)
+        return ops.TableUnnest(
+            parent=self, column=column, offset=offset, keep_empty=keep_empty
+        ).to_expr()
 
 
 @public

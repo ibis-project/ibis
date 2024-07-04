@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
+import sqlglot as sg
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
@@ -48,6 +49,7 @@ class TestConf(BackendTest):
     deps = ("duckdb",)
     stateful = False
     supports_tpch = True
+    supports_tpcds = True
     driver_supports_multiple_statements = True
 
     def preload(self):
@@ -107,15 +109,31 @@ class TestConf(BackendTest):
             kw["extension_directory"] = extension_directory
         return ibis.duckdb.connect(**kw)
 
-    def load_tpch(self) -> None:
-        """Load TPC-H data."""
+    def _load_tpc(self, *, suite, scale_factor):
         con = self.connection
-        for path in self.data_dir.joinpath("tpch", "sf=0.17", "parquet").glob(
-            "*.parquet"
-        ):
+        schema = f"tpc{suite}"
+        con.con.execute(f"CREATE OR REPLACE SCHEMA {schema}")
+        parquet_dir = self.data_dir.joinpath(schema, f"sf={scale_factor}", "parquet")
+        assert parquet_dir.exists(), parquet_dir
+        for path in parquet_dir.glob("*.parquet"):
             table_name = path.with_suffix("").name
-            # duckdb automatically infers the sf=0.17 as a hive partition
-            con.read_parquet(path, table_name=table_name, hive_partitioning=False)
+            # duckdb automatically infers the sf= as a hive partition so we
+            # need to disable it
+            con.con.execute(
+                f"CREATE OR REPLACE VIEW {schema}.{table_name} AS "
+                f"FROM read_parquet({str(path)!r}, hive_partitioning=false)"
+            )
+
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
+        def add_catalog_and_schema(node):
+            if isinstance(node, sg.exp.Table) and node.name in leaves:
+                return node.__class__(
+                    catalog=f"tpc{suite}",
+                    **{k: v for k, v in node.args.items() if k != "catalog"},
+                )
+            return node
+
+        return parsed.transform(add_catalog_and_schema)
 
 
 @pytest.fixture(scope="session")

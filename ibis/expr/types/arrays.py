@@ -179,7 +179,7 @@ class ArrayValue(Value):
         └──────────────────────┘
         >>> t.a.concat(t.a)
         ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat()        ┃
+        ┃ ArrayConcat((a, a))  ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━┩
         │ array<int64>         │
         ├──────────────────────┤
@@ -188,38 +188,38 @@ class ArrayValue(Value):
         │ NULL                 │
         └──────────────────────┘
         >>> t.a.concat(ibis.literal([4], type="array<int64>"))
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat()        ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [7, 4]               │
-        │ [3, 4]               │
-        │ [4]                  │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat((a, (4,))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>           │
+        ├────────────────────────┤
+        │ [7, 4]                 │
+        │ [3, 4]                 │
+        │ [4]                    │
+        └────────────────────────┘
 
         `concat` is also available using the `+` operator
 
         >>> [1] + t.a
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat()        ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [1, 7]               │
-        │ [1, 3]               │
-        │ [1]                  │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat(((1,), a)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>           │
+        ├────────────────────────┤
+        │ [1, 7]                 │
+        │ [1, 3]                 │
+        │ [1]                    │
+        └────────────────────────┘
         >>> t.a + [1]
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayConcat()        ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>         │
-        ├──────────────────────┤
-        │ [7, 1]               │
-        │ [3, 1]               │
-        │ [1]                  │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayConcat((a, (1,))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>           │
+        ├────────────────────────┤
+        │ [7, 1]                 │
+        │ [3, 1]                 │
+        │ [1]                    │
+        └────────────────────────┘
         """
         return ops.ArrayConcat((self, other, *args)).to_expr()
 
@@ -286,11 +286,22 @@ class ArrayValue(Value):
     __mul__ = __rmul__ = repeat
 
     def unnest(self) -> ir.Value:
-        """Flatten an array into a column.
+        """Unnest an array into a column.
 
         ::: {.callout-note}
-        ## Rows with empty arrays are dropped in the output.
+        ## Empty arrays and `NULL`s are dropped in the output.
+        To preserve empty arrays as `NULL`s as well as existing `NULL` values,
+        use [`Table.unnest`](./expression-tables.qmd#ibis.expr.types.relations.Table.unnest).
         :::
+
+        Returns
+        -------
+        ir.Value
+            Unnested array
+
+        See Also
+        --------
+        [`Table.unnest`](./expression-tables.qmd#ibis.expr.types.relations.Table.unnest)
 
         Examples
         --------
@@ -318,11 +329,6 @@ class ArrayValue(Value):
         │     3 │
         │     3 │
         └───────┘
-
-        Returns
-        -------
-        ir.Value
-            Unnested array
         """
         expr = ops.Unnest(self).to_expr()
         try:
@@ -944,7 +950,7 @@ class ArrayValue(Value):
         └──────────────────────┴──────────────────────┘
         >>> t.numbers.zip(t.strings)
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayZip()                                    ┃
+        ┃ ArrayZip((numbers, strings))                  ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ array<struct<f1: int64, f2: string>>          │
         ├───────────────────────────────────────────────┤
@@ -1099,7 +1105,7 @@ def array(values: Iterable[V]) -> ArrayValue:
     >>> t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]})
     >>> ibis.array([t.a, 42, ibis.literal(None)])
     ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Array()              ┃
+    ┃ Array((a, 42, None)) ┃
     ┡━━━━━━━━━━━━━━━━━━━━━━┩
     │ array<int64>         │
     ├──────────────────────┤
@@ -1109,14 +1115,14 @@ def array(values: Iterable[V]) -> ArrayValue:
     └──────────────────────┘
 
     >>> ibis.array([t.a, 42 + ibis.literal(5)])
-    ┏━━━━━━━━━━━━━━━━━━━━━━┓
-    ┃ Array()              ┃
-    ┡━━━━━━━━━━━━━━━━━━━━━━┩
-    │ array<int64>         │
-    ├──────────────────────┤
-    │ [1, 47]              │
-    │ [2, 47]              │
-    │ [3, 47]              │
-    └──────────────────────┘
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ Array((a, Add(5, 42))) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ array<int64>           │
+    ├────────────────────────┤
+    │ [1, 47]                │
+    │ [2, 47]                │
+    │ [3, 47]                │
+    └────────────────────────┘
     """
     return ops.Array(tuple(values)).to_expr()

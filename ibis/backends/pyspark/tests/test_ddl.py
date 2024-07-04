@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 from posixpath import join as pjoin
 
 import pytest
@@ -14,7 +15,7 @@ pyspark = pytest.importorskip("pyspark")
 
 
 @pytest.fixture
-def temp_view(con) -> str:
+def temp_view(con):
     name = util.gen_name("view")
     yield name
     con.drop_view(name, force=True)
@@ -42,7 +43,10 @@ def test_drop_non_empty_database(con, alltypes, temp_table_db):
 
 @pytest.fixture
 def temp_base():
-    base = pjoin(f"/tmp/{util.gen_name('pyspark_testing')}", util.gen_name("temp_base"))
+    base = pjoin(
+        f"{tempfile.gettempdir()}/{util.gen_name('pyspark_testing')}",
+        util.gen_name("temp_base"),
+    )
     yield base
     shutil.rmtree(base, ignore_errors=True)
 

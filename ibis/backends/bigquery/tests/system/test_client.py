@@ -3,9 +3,11 @@ from __future__ import annotations
 import collections
 import datetime
 import decimal
+from urllib.parse import urlparse
 
 import pandas as pd
 import pandas.testing as tm
+import pyarrow as pa
 import pytest
 import pytz
 
@@ -114,22 +116,6 @@ def test_different_partition_col_name(monkeypatch, con):
     assert col in parted_alltypes.columns
 
 
-def test_subquery_scalar_params(alltypes):
-    t = alltypes
-    p = ibis.param("timestamp").name("my_param")
-    expr = (
-        t[["float_col", "timestamp_col", "int_col", "string_col"]][
-            lambda t: t.timestamp_col < p
-        ]
-        .group_by("string_col")
-        .aggregate(foo=lambda t: t.float_col.sum())
-        .foo.count()
-        .name("count")
-    )
-    result = expr.compile(params={p: "20140101"})
-    assert "datetime('2014-01-01T00:00:00')" in result
-
-
 def test_repr_struct_of_array_of_struct():
     name = "foo"
     p = ibis.param("struct<x: array<struct<y: array<double>>>>").name(name)
@@ -186,8 +172,9 @@ def test_repr_struct_of_array_of_struct():
 
 
 def test_raw_sql(con):
-    result = con.raw_sql("SELECT 1").result()
-    assert [row.values() for row in result] == [(1,)]
+    result = con.raw_sql("SELECT 1 as a").to_arrow()
+    expected = pa.Table.from_pydict({"a": [1]})
+    assert result.equals(expected)
 
 
 def test_parted_column_rename(parted_alltypes):
@@ -434,3 +421,26 @@ def test_create_temp_table_from_scratch(project_id, dataset_id):
     df = con.tables.functional_alltypes.limit(1)
     t = con.create_table(name, obj=df, temp=True)
     assert len(t.execute()) == 1
+
+
+def test_table_suffix():
+    con = ibis.connect("bigquery://ibis-gbq")
+    t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
+    expr = t.filter(t._TABLE_SUFFIX == "1929", t.max != 9999.9).head(1)
+    result = expr.execute()
+    assert not result.empty
+
+
+def test_parameters_in_url_connect(mocker):
+    spy = mocker.spy(ibis.bigquery, "_from_url")
+    parsed = urlparse("bigquery://ibis-gbq?location=us-east1")
+    ibis.connect("bigquery://ibis-gbq?location=us-east1")
+    spy.assert_called_once_with(parsed, location="us-east1")
+
+
+def test_complex_column_name(con):
+    expr = ibis.literal(1).name(
+        "StringToTimestamp_StringConcat_date_string_col_' America_New_York'_'%F %Z'"
+    )
+    result = con.to_pandas(expr)
+    assert result == 1

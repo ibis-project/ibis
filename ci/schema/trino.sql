@@ -1,5 +1,4 @@
-DROP TABLE IF EXISTS hive.default.diamonds;
-CREATE TABLE hive.default.diamonds (
+CREATE TABLE IF NOT EXISTS hive.default.diamonds (
     "carat" DOUBLE,
     "cut" VARCHAR,
     "color" VARCHAR,
@@ -18,8 +17,7 @@ CREATE TABLE hive.default.diamonds (
 CREATE OR REPLACE VIEW memory.default.diamonds AS
 SELECT * FROM hive.default.diamonds;
 
-DROP TABLE IF EXISTS hive.default.astronauts;
-CREATE TABLE hive.default.astronauts (
+CREATE TABLE IF NOT EXISTS hive.default.astronauts (
     "id" BIGINT,
     "number" BIGINT,
     "nationwide_number" BIGINT,
@@ -52,8 +50,7 @@ CREATE TABLE hive.default.astronauts (
 CREATE OR REPLACE VIEW memory.default.astronauts AS
 SELECT * FROM hive.default.astronauts;
 
-DROP TABLE IF EXISTS hive.default.batting;
-CREATE TABLE hive.default.batting (
+CREATE TABLE IF NOT EXISTS hive.default.batting (
     "playerID" VARCHAR,
     "yearID" BIGINT,
     "stint" BIGINT,
@@ -84,8 +81,7 @@ CREATE TABLE hive.default.batting (
 CREATE OR REPLACE VIEW memory.default.batting AS
 SELECT * FROM hive.default.batting;
 
-DROP TABLE IF EXISTS hive.default.awards_players;
-CREATE TABLE hive.default.awards_players (
+CREATE TABLE IF NOT EXISTS hive.default.awards_players (
     "playerID" VARCHAR,
     "awardID" VARCHAR,
     "yearID" BIGINT,
@@ -93,15 +89,14 @@ CREATE TABLE hive.default.awards_players (
     "tie" VARCHAR,
     "notes" VARCHAR
 ) WITH (
-    external_location = 's3a://trino/awards-players',
+    external_location = 's3a://trino/awards_players',
     format = 'PARQUET'
 );
 
 CREATE OR REPLACE VIEW memory.default.awards_players AS
 SELECT * FROM hive.default.awards_players;
 
-DROP TABLE IF EXISTS hive.default.functional_alltypes;
-CREATE TABLE hive.default.functional_alltypes (
+CREATE TABLE IF NOT EXISTS hive.default.functional_alltypes (
     "id" INTEGER,
     "bool_col" BOOLEAN,
     "tinyint_col" TINYINT,
@@ -116,9 +111,10 @@ CREATE TABLE hive.default.functional_alltypes (
     "year" INTEGER,
     "month" INTEGER
 ) WITH (
-    external_location = 's3a://trino/functional-alltypes',
+    external_location = 's3a://trino/functional_alltypes',
     format = 'PARQUET'
 );
+
 CREATE OR REPLACE VIEW memory.default.functional_alltypes AS
 SELECT * FROM hive.default.functional_alltypes;
 

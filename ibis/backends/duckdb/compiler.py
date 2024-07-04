@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.util import gen_name
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",
@@ -461,6 +462,16 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg, pattern, replacement, "g", dialect=self.dialect
         )
 
+    def visit_First(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.first(arg, where=where)
+
+    def visit_Last(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.last(arg, where=where)
+
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
         funcname = f"percentile_{suffix}"
@@ -511,3 +522,81 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_TypeOf(self, op, *, arg):
         return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")
+
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        quoted = self.quoted
+        # duckdb doesn't support specifying the table name of the column name
+        # to drop, e.g., in SELECT t.* EXCLUDE (t.a) FROM t, the t.a bit
+        #
+        # technically it's not necessary, here's why
+        #
+        # if the table is specified then it's unambiguous when there are overlapping
+        # column names, say, from a join, for example
+        # (assuming t and s both have a column named `a`)
+        #
+        # SELECT t.* EXCLUDE (a), s.* FROM t JOIN s ON id
+        #
+        # This would exclude t.a and include s.a
+        #
+        # if it's a naked star projection from a join, like
+        #
+        # SELECT * EXCLUDE (a) FROM t JOIN s ON id
+        #
+        # then that means "exclude all columns named `a`"
+        excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
+        star = sge.Star(**{"except": excludes})
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        column = sge.Column(this=star, table=table)
+        return sg.select(column).from_(parent)
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
+
+        opname = op.column.name
+        overlaps_with_parent = opname in op.parent.schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        selcols = []
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+
+        if offset is not None:
+            # TODO: clean this up once WITH ORDINALITY is supported in DuckDB
+            # no need for struct_extract once that's upstream
+            column = self.f.list_zip(column, self.f.range(self.f.len(column)))
+            extract = self.f.struct_extract(column_alias, 1).as_(opname, quoted=quoted)
+
+            if overlaps_with_parent:
+                replace = sge.Column(this=sge.Star(replace=[extract]), table=table)
+                selcols.append(replace)
+            else:
+                selcols.append(sge.Column(this=STAR, table=table))
+                selcols.append(extract)
+
+            selcols.append(
+                self.f.struct_extract(column_alias, 2).as_(offset, quoted=quoted)
+            )
+        elif overlaps_with_parent:
+            selcols.append(
+                sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+            )
+        else:
+            selcols.append(sge.Column(this=STAR, table=table))
+            selcols.append(computed_column)
+
+        unnest = sge.Unnest(
+            expressions=[column],
+            alias=sge.TableAlias(
+                this=sg.to_identifier(gen_name("table_unnest"), quoted=quoted),
+                columns=[column_alias],
+            ),
+        )
+        return (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
+        )

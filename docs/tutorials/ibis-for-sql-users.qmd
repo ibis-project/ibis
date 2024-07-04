@@ -522,10 +522,10 @@ ibis.to_sql(expr)
 
 ### Using `NULL` in expressions
 
-To use `NULL` in an expression, either use the special `ibis.NA` value:
+To use `NULL` in an expression, use `ibis.null()` value:
 
 ```{python}
-pos_two = (t.two > 0).ifelse(t.two, ibis.NA)
+pos_two = (t.two > 0).ifelse(t.two, ibis.null())
 expr = t.mutate(two_positive=pos_two)
 ibis.to_sql(expr)
 ```

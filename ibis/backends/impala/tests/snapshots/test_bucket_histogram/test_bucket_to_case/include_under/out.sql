@@ -21,5 +21,5 @@ SELECT
     )
     THEN 3
     ELSE CAST(NULL AS TINYINT)
-  END AS `Bucket(f)`
+  END AS `Bucket(f, ())`
 FROM `alltypes` AS `t0`

@@ -31,6 +31,7 @@ from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -112,23 +113,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         treat_nan_as_null: bool = False
 
-    def _from_url(self, url: str, **kwargs) -> Backend:
+    def _from_url(self, url: ParseResult, **kwargs) -> Backend:
         """Construct a PySpark backend from a URL `url`."""
-        from urllib.parse import parse_qs, urlparse
-
-        url = urlparse(url)
-        query_params = parse_qs(url.query)
-        params = query_params.copy()
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                params[name] = value
-            elif len(value) == 1:
-                params[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
-
-        conf = SparkConf().setAll(params.items())
+        conf = SparkConf().setAll(kwargs.items())
 
         if database := url.path[1:]:
             conf = conf.set("spark.sql.warehouse.dir", str(Path(database).absolute()))
@@ -638,8 +625,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
 
-    def _clean_up_cached_table(self, op):
-        name = op.name
+    def _clean_up_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached
@@ -710,7 +696,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of parquet files. "
-                "Please use `read_parquet_directory` instead."
+                "Please use `read_parquet_dir` instead."
             )
         path = util.normalize_filename(path)
         spark_df = self._session.read.parquet(path, **kwargs)
@@ -748,7 +734,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of CSV files. "
-                "Please use `read_csv_directory` instead."
+                "Please use `read_csv_dir` instead."
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
@@ -790,7 +776,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
-                "Please use `read_json_directory` instead."
+                "Please use `read_json_dir` instead."
             )
         source_list = normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
@@ -863,6 +849,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self,
         expr: ir.Table,
         path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
     ) -> None:
         """Write the results of executing the given expression to a Delta Lake table.
@@ -876,7 +864,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             The ibis expression to execute and persist to a Delta Lake table.
         path
             The data source. A string or Path to the Delta Lake table.
-
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
         **kwargs
             PySpark Delta Lake table write arguments.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.save.html
@@ -886,7 +878,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             raise NotImplementedError(
                 "Writing to a Delta Lake table in streaming mode is not supported"
             )
-        df = self._session.sql(expr.compile())
+        df = self._session.sql(expr.compile(params=params, limit=limit))
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(
@@ -938,6 +930,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_kafka(
         self,
         table_name: str | None = None,
+        *,
         watermark: Watermark | None = None,
         auto_parse: bool = False,
         schema: sch.Schema | None = None,
@@ -1001,8 +994,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_kafka(
         self,
         expr: ir.Expr,
+        *,
         auto_format: bool = False,
         options: Mapping[str, str] | None = None,
+        params: Mapping | None = None,
+        limit: str | None = "default",
     ) -> StreamingQuery:
         """Write the results of executing the given expression to a Kafka topic.
 
@@ -1020,6 +1016,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         options
             PySpark Kafka write arguments.
             https://spark.apache.org/docs/latest/structured-streaming-kafka-integration.html
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
 
         Returns
         -------
@@ -1028,7 +1029,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         if self.mode == "batch":
             raise NotImplementedError("Writing to Kafka in batch mode is not supported")
-        df = self._session.sql(expr.compile())
+        df = self._session.sql(expr.compile(params=params, limit=limit))
         if auto_format:
             df = df.select(
                 F.to_json(F.struct([F.col(c).alias(c) for c in df.columns])).alias(
@@ -1040,3 +1041,200 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             sq = sq.option(k, v)
         sq.start()
         return sq
+
+    @util.experimental
+    def read_csv_dir(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV directory as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.csv.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        inferSchema = kwargs.pop("inferSchema", True)
+        header = kwargs.pop("header", True)
+        path = util.normalize_filename(path)
+        if self.mode == "batch":
+            spark_df = self._session.read.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
+            )
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.csv(
+                path, inferSchema=inferSchema, header=header, **kwargs
+            )
+        table_name = table_name or util.gen_name("read_csv_dir")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    @util.experimental
+    def read_parquet_dir(
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source. A directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        path = util.normalize_filename(path)
+        if self.mode == "batch":
+            spark_df = self._session.read.parquet(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.parquet(path, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet_dir")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    @util.experimental
+    def read_json_dir(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a JSON file as a table in the current database.
+
+        Parameters
+        ----------
+        path
+            The data source. A directory of JSON files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a random generated name.
+        kwargs
+            Additional keyword arguments passed to PySpark loading function.
+            https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.json.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        path = util.normalize_filename(path)
+        if self.mode == "batch":
+            spark_df = self._session.read.json(path, **kwargs)
+        elif self.mode == "streaming":
+            spark_df = self._session.readStream.json(path, **kwargs)
+        table_name = table_name or util.gen_name("read_json_dir")
+
+        spark_df.createOrReplaceTempView(table_name)
+        return self.table(table_name)
+
+    def _to_filesystem_output(
+        self,
+        expr: ir.Expr,
+        format: str,
+        path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        options: Mapping[str, str] | None = None,
+    ) -> StreamingQuery | None:
+        df = self._session.sql(expr.compile(params=params, limit=limit))
+        if self.mode == "batch":
+            df = df.write.format(format)
+            for k, v in (options or {}).items():
+                df = df.option(k, v)
+            df.save(path)
+            return None
+        sq = df.writeStream.format(format)
+        sq = sq.option("path", os.fspath(path))
+        for k, v in (options or {}).items():
+            sq = sq.option(k, v)
+        sq.start()
+        return sq
+
+    @util.experimental
+    def to_parquet_dir(
+        self,
+        expr: ir.Expr,
+        path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        options: Mapping[str, str] | None = None,
+    ) -> StreamingQuery | None:
+        """Write the results of executing the given expression to a parquet directory.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the parquet directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        options
+            Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
+
+        Returns
+        -------
+        StreamingQuery | None
+            Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
+        """
+        self._run_pre_execute_hooks(expr)
+        return self._to_filesystem_output(expr, "parquet", path, params, limit, options)
+
+    @util.experimental
+    def to_csv_dir(
+        self,
+        expr: ir.Expr,
+        path: str | Path,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        options: Mapping[str, str] | None = None,
+    ) -> StreamingQuery | None:
+        """Write the results of executing the given expression to a CSV directory.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to CSV.
+        path
+            The data source. A string or Path to the CSV directory.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        options
+            Additional keyword arguments passed to pyspark.sql.streaming.DataStreamWriter
+
+        Returns
+        -------
+        StreamingQuery | None
+            Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
+        """
+        self._run_pre_execute_hooks(expr)
+        return self._to_filesystem_output(expr, "csv", path, params, limit, options)

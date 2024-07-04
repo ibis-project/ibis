@@ -69,10 +69,18 @@ jobs:
         run: |
           python -m pip install --upgrade algoliasearch
 
-      - name: Create and Upload Index
+      - name: Create and Upload Base Index
         run: |
           python .github/workflows/upload-algolia.py
         env:
           ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
-          ALGOLIA_APP_ID: HS77W8GWM1
+          ALGOLIA_APP_ID: TNU9HG3L41
+          ALGOLIA_INDEX: prod_ibis
+
+      - name: Create and Upload API Records to index
+        run: |
+          python .github/workflows/upload-algolia-api.py
+        env:
+          ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
+          ALGOLIA_APP_ID: TNU9HG3L41
           ALGOLIA_INDEX: prod_ibis

@@ -569,7 +569,7 @@ rand = ibis.random()
 @pytest.mark.parametrize(
     ("key", "expected"),
     [
-        param(ibis.NA, ibis.NA.op(), id="na"),
+        param(ibis.null(), ibis.null().op(), id="na"),
         param(rand, rand.op(), id="random"),
         param(1.0, ibis.literal(1.0).op(), id="float"),
         param(ibis.literal("a"), ibis.literal("a").op(), id="string"),
@@ -846,9 +846,13 @@ def test_groupby_convenience(table):
     assert_equal(expr, expected)
 
 
-@pytest.mark.parametrize("group", [[], (), None])
+@pytest.mark.parametrize(
+    "group",
+    [[], (), None, s.startswith("over9000")],
+    ids=["list", "tuple", "none", "selector"],
+)
 def test_group_by_nothing(table, group):
-    with pytest.raises(com.IbisInputError):
+    with pytest.raises(ValidationError):
         table.group_by(group)
 
 
@@ -1420,11 +1424,11 @@ def test_union(
     setops_relation_error_message,
 ):
     result = setops_table_foo.union(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Union)
-    assert not result.op().parent.distinct
+    assert isinstance(result.op(), ops.Union)
+    assert not result.op().distinct
 
     result = setops_table_foo.union(setops_table_bar, distinct=True)
-    assert result.op().parent.distinct
+    assert result.op().distinct
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.union(setops_table_baz)
@@ -1437,7 +1441,7 @@ def test_intersection(
     setops_relation_error_message,
 ):
     result = setops_table_foo.intersect(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Intersection)
+    assert isinstance(result.op(), ops.Intersection)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.intersect(setops_table_baz)
@@ -1450,7 +1454,7 @@ def test_difference(
     setops_relation_error_message,
 ):
     result = setops_table_foo.difference(setops_table_bar)
-    assert isinstance(result.op().parent, ops.Difference)
+    assert isinstance(result.op(), ops.Difference)
 
     with pytest.raises(RelationError, match=setops_relation_error_message):
         setops_table_foo.difference(setops_table_baz)
@@ -1695,13 +1699,6 @@ def test_group_by_key_function():
     assert expr.columns == ["new_key", "foo"]
 
 
-def test_group_by_no_keys():
-    t = ibis.table([("a", "timestamp"), ("b", "string"), ("c", "double")])
-
-    with pytest.raises(com.IbisInputError):
-        t.group_by(s.startswith("x")).aggregate(foo=t.c.mean())
-
-
 def test_unbound_table_name():
     t = ibis.table([("a", "timestamp")])
     name = t.op().name
@@ -1731,8 +1728,8 @@ def test_unbound_table_using_class_definition():
 
 def test_mutate_chain():
     one = ibis.table([("a", "string"), ("b", "string")], name="t")
-    two = one.mutate(b=lambda t: t.b.fillna("Short Term"))
-    three = two.mutate(a=lambda t: t.a.fillna("Short Term"))
+    two = one.mutate(b=lambda t: t.b.fill_null("Short Term"))
+    three = two.mutate(a=lambda t: t.a.fill_null("Short Term"))
 
     values = three.op().values
     assert isinstance(values["a"], ops.Coalesce)
@@ -1743,8 +1740,8 @@ def test_mutate_chain():
     assert three_opt == ops.Project(
         parent=one,
         values={
-            "a": one.a.fillna("Short Term"),
-            "b": one.b.fillna("Short Term"),
+            "a": one.a.fill_null("Short Term"),
+            "b": one.b.fill_null("Short Term"),
         },
     )
 
@@ -1869,25 +1866,23 @@ def test_drop():
     assert t.drop() is t
 
     res = t.drop("a")
-    assert res.equals(t.select("b", "c", "d"))
+    assert res.schema() == t.select("b", "c", "d").schema()
 
     res = t.drop("a", "b")
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
-    assert res.equals(t.select("c", "d"))
-
-    assert res.equals(t.drop(s.matches("a|b")))
+    assert res.schema() == t.drop(s.matches("a|b")).schema()
 
     res = t.drop(_.a)
-    assert res.equals(t.select("b", "c", "d"))
+    assert res.schema() == t.select("b", "c", "d").schema()
 
     res = t.drop(_.a, _.b)
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
     res = t.drop(_.a, "b")
-    assert res.equals(t.select("c", "d"))
+    assert res.schema() == t.select("c", "d").schema()
 
-    with pytest.raises(KeyError):
+    with pytest.raises(com.IbisTypeError):
         t.drop("e")
 
 
@@ -2191,3 +2186,17 @@ def test_table_bind():
 
     with pytest.raises(ValueError, match="¡moo!"):
         t.bind(foo=utter_failure)
+
+
+# TODO: remove when dropna is fully deprecated
+def test_table_dropna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.dropna()
+
+
+# TODO: remove when fillna is fully deprecated
+def test_table_fillna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.fillna({"b": "missing"})

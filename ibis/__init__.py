@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-__version__ = "9.0.0"
+__version__ = "9.1.0"
+
+import warnings
+from typing import Any
 
 from ibis import examples, util
 from ibis.backends import BaseBackend
@@ -36,7 +39,7 @@ def __dir__() -> list[str]:
     return sorted(out)
 
 
-def __getattr__(name: str) -> BaseBackend:
+def load_backend(name: str) -> BaseBackend:
     """Load backends in a lazy way with `ibis.<backend-name>`.
 
     This also registers the backend options.
@@ -52,6 +55,7 @@ def __getattr__(name: str) -> BaseBackend:
     attribute is "cached", so this function is only called the first time.
 
     """
+
     entry_points = {ep for ep in util.backend_entry_points() if ep.name == name}
 
     if not entry_points:
@@ -95,7 +99,6 @@ def __getattr__(name: str) -> BaseBackend:
     # - connect
     # - compile
     # - has_operation
-    # - add_operation
     # - _from_url
     # - _to_sqlglot
     #
@@ -116,12 +119,25 @@ def __getattr__(name: str) -> BaseBackend:
     proxy.connect = connect
     proxy.compile = backend.compile
     proxy.has_operation = backend.has_operation
-    proxy.add_operation = backend.add_operation
     proxy.name = name
     proxy._from_url = backend._from_url
     proxy._to_sqlglot = backend._to_sqlglot
     # Add any additional methods that should be exposed at the top level
-    for name in getattr(backend, "_top_level_methods", ()):
-        setattr(proxy, name, getattr(backend, name))
+    for attr in getattr(backend, "_top_level_methods", ()):
+        setattr(proxy, attr, getattr(backend, attr))
 
     return proxy
+
+
+def __getattr__(name: str) -> Any:
+    if name == "NA":
+        warnings.warn(
+            "The 'ibis.NA' constant is deprecated as of v9.1 and will be removed in a future "
+            "version. Use 'ibis.null()' instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+        return null()  # noqa: F405
+    else:
+        return load_backend(name)

@@ -70,7 +70,7 @@ def test_builtin_agg_udf(con):
 
 
 @pytest.mark.xfail(
-    condition=vparse(datafusion.__version__) == vparse("38.0.1"),
+    condition=vparse(datafusion.__version__) >= vparse("38.0.1"),
     reason="internal error about MEDIAN(G) naming",
 )
 def test_builtin_agg_udf_filtered(con):

@@ -369,9 +369,9 @@ class Join(Table):
         rname: str = "{name}_right",
     ):
         left = self.join(right, how="cross", predicates=(), lname=lname, rname=rname)
-        for right in rest:
+        for table in rest:
             left = left.join(
-                right, how="cross", predicates=(), lname=lname, rname=rname
+                table, how="cross", predicates=(), lname=lname, rname=rname
             )
         return left
 
@@ -404,7 +404,7 @@ class Join(Table):
     drop = finished(Table.drop)
     dropna = finished(Table.dropna)
     execute = finished(Table.execute)
-    fillna = finished(Table.fillna)
+    fill_null = finished(Table.fill_null)
     filter = finished(Table.filter)
     group_by = finished(Table.group_by)
     intersect = finished(Table.intersect)

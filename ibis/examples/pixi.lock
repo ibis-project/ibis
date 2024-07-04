@@ -27,7 +27,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/aws-checksums-0.1.18-h4466546_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/aws-crt-cpp-0.26.3-h137ae52_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/aws-sdk-cpp-1.11.267-he0cb598_3.conda
-      - conda: https://conda.anaconda.org/conda-forge/noarch/bidict-0.23.1-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/binutils_impl_linux-64-2.40-hf600244_0.conda
       - conda: https://conda.anaconda.org/conda-forge/noarch/blinker-1.7.0-pyhd8ed1ab_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.1.0-py311hb755f60_1.conda
@@ -744,21 +743,6 @@ packages:
   license_family: Apache
   size: 3636564
   timestamp: 1710322529863
-- kind: conda
-  name: bidict
-  version: 0.23.1
-  build: pyhd8ed1ab_0
-  subdir: noarch
-  noarch: python
-  url: https://conda.anaconda.org/conda-forge/noarch/bidict-0.23.1-pyhd8ed1ab_0.conda
-  sha256: cc7af340b9c99fb170032e103546329cd7c280d28ceca74468e19dd8b0539531
-  md5: c9916c3975b19f470218f415701d6362
-  depends:
-  - python >=3.8
-  license: MPL-2.0
-  license_family: MOZILLA
-  size: 31346
-  timestamp: 1708298386480
 - kind: conda
   name: binutils_impl_linux-64
   version: '2.40'
@@ -1752,7 +1736,6 @@ packages:
   md5: a7b3fc66c6248d2e6617337d025a6877
   depends:
   - atpublic >=2.3
-  - bidict >=0.22.1
   - filelock >=3.7.0,<4
   - multipledispatch >=0.6,<2
   - numpy >=1.15,<2

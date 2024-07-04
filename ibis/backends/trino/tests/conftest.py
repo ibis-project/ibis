@@ -2,15 +2,14 @@ from __future__ import annotations
 
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
-import ibis.expr.datatypes as dt
-import ibis.selectors as s
+import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import ServiceBackendTest
 
@@ -43,15 +42,44 @@ class TestConf(ServiceBackendTest):
     supports_structs = True
     supports_map = True
     supports_tpch = True
+    supports_tpcds = True
     deps = ("trino",)
 
     def preload(self):
         # copy files to the minio host
         super().preload()
 
+        for suite in ["tpch", "tpcds"]:
+            for path in self.data_dir.joinpath(suite).rglob("*.parquet"):
+                subprocess.run(
+                    [
+                        "docker",
+                        "compose",
+                        "cp",
+                        str(path),
+                        f"{self.service_name}:{self.data_volume}/{suite}_{path.name}",
+                    ],
+                    check=False,
+                )
+
+                dirname = path.with_suffix("").name
+                subprocess.run(
+                    [
+                        "docker",
+                        "compose",
+                        "exec",
+                        self.service_name,
+                        "mc",
+                        "cp",
+                        f"{self.data_volume}/{suite}_{path.name}",
+                        f"data/trino/{suite}/{dirname}/",
+                    ],
+                    check=True,
+                )
+
         for path in self.test_files:
             # minio doesn't allow underscores in bucket names
-            dirname = path.with_suffix("").name.replace("_", "-")
+            dirname = path.with_suffix("").name
             # copy from minio container to trino minio host
             subprocess.run(
                 [
@@ -62,16 +90,19 @@ class TestConf(ServiceBackendTest):
                     "mc",
                     "cp",
                     f"{self.data_volume}/{path.name}",
-                    f"data/trino/{dirname}/{path.name}",
+                    f"data/trino/{dirname}/",
                 ],
                 check=True,
             )
 
-    def _transform_tpch_sql(self, parsed):
+    def _tpc_table(self, name: str, benchmark: Literal["h", "ds"]):
+        return self.connection.table(name, database=f"hive.tpc{benchmark}")
+
+    def _transform_tpc_sql(self, parsed, *, suite, leaves):
         def add_catalog_and_schema(node):
-            if isinstance(node, sg.exp.Table):
+            if isinstance(node, sg.exp.Table) and node.name in leaves:
                 catalog = "hive"
-                db = "ibis_sf1"
+                db = f"tpc{suite}"
                 return node.__class__(
                     db=db,
                     catalog=catalog,
@@ -84,53 +115,20 @@ class TestConf(ServiceBackendTest):
         result = parsed.transform(add_catalog_and_schema)
         return result
 
-    def load_tpch(self) -> None:
+    def _load_tpc(self, *, suite, **_) -> None:
         """Create views of data in the TPC-H catalog that ships with Trino.
 
         This method create relations that have column names prefixed with the
         first one (or two in the case of partsupp -> ps) character table name
         to match the DuckDB TPC-H query conventions.
         """
-        con = self.connection
-        catalog = "hive"
-        database = "ibis_sf1"
-
-        tables = con.list_tables(database=("tpch", "tiny"))
-        con.create_database(database, catalog=catalog, force=True)
-
-        prefixes = {"partsupp": "ps"}
-
-        # this is the type duckdb uses for numeric columns in TPC-H data
-        decimal_type = dt.Decimal(15, 2)
-
-        with con.begin() as c:
-            for table in tables:
-                prefix = prefixes.get(table, table[0])
-
-                t = (
-                    con.table(table, database=("tpch", "tiny"))
-                    .rename(f"{prefix}_{{}}".format)
-                    # https://github.com/trinodb/trino/issues/19477
-                    .mutate(
-                        s.across(s.of_type(dt.float64), lambda c: c.cast(decimal_type))
-                    )
-                )
-
-                sql = sge.Create(
-                    kind="VIEW",
-                    this=sg.table(table, db=database, catalog=catalog),
-                    expression=self.connection._to_sqlglot(t),
-                    replace=True,
-                ).sql("trino", pretty=True)
-
-                c.execute(sql)
-
-    def _tpch_table(self, name: str):
-        from ibis import _
-
-        table = self.connection.table(name, database=("hive", "ibis_sf1"))
-        table = table.mutate(s.across(s.of_type("double"), _.cast("decimal(15, 2)")))
-        return table
+        suite_name = f"tpc{suite}"
+        sqls = generate_tpc_tables(suite_name, data_dir=self.data_dir)
+        with self.connection.begin() as con:
+            con.execute(f"CREATE SCHEMA IF NOT EXISTS hive.{suite_name}")
+            for stmt in sqls:
+                raw_sql = stmt.sql("trino", pretty=True)
+                con.execute(raw_sql)
 
     @property
     def test_files(self) -> Iterable[Path]:
@@ -142,7 +140,7 @@ class TestConf(ServiceBackendTest):
             host=TRINO_HOST,
             port=TRINO_PORT,
             user=TRINO_USER,
-            password=TRINO_PASS,
+            auth=TRINO_PASS,
             database="memory",
             schema="default",
             **kw,
@@ -199,3 +197,41 @@ def translate():
 
     context = Backend.compiler.make_context()
     return lambda expr: (Backend.compiler.translator_class(expr, context).get_result())
+
+
+def generate_tpc_tables(suite_name, *, data_dir):
+    import pyarrow.parquet as pq
+
+    tables = {
+        path.with_suffix("").name: sch.from_pyarrow_schema(
+            pq.read_metadata(path).schema.to_arrow_schema()
+        )
+        for path in (data_dir / suite_name).rglob("*.parquet")
+    }
+    type_mapper = ibis.backends.trino.compiler.TrinoCompiler.type_mapper
+    return (
+        sge.Create(
+            kind="TABLE",
+            exists=True,
+            this=sge.Schema(
+                this=sg.table(name, db=suite_name, catalog="hive", quoted=True),
+                expressions=[
+                    sge.ColumnDef(
+                        this=sg.to_identifier(col, quoted=True),
+                        kind=type_mapper.from_ibis(dtype),
+                    )
+                    for col, dtype in schema.items()
+                ],
+            ),
+            properties=sge.Properties(
+                expressions=[
+                    sge.Property(
+                        this="external_location",
+                        value=sge.convert(f"s3a://trino/{suite_name}/{name}"),
+                    ),
+                    sge.Property(this="format", value=sge.convert("PARQUET")),
+                ]
+            ),
+        )
+        for name, schema in tables.items()
+    )

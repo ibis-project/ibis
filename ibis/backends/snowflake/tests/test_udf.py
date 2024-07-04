@@ -103,12 +103,19 @@ def test_xgboost_model(con):
         carat_scaled: float, cut_encoded: int, color_encoded: int, clarity_encoded: int
     ) -> int:
         import sys
+        from pathlib import Path
 
         import joblib
         import pandas as pd
 
-        import_dir = sys._xoptions.get("snowflake_import_directory")
-        model = joblib.load(f"{import_dir}model.joblib")
+        import_dir = Path(sys._xoptions.get("snowflake_import_directory"))
+        assert import_dir.exists(), import_dir
+
+        model_path = import_dir / "model.joblib"
+        assert model_path.exists(), model_path
+
+        model = joblib.load(model_path)
+
         df = pd.concat(
             [carat_scaled, cut_encoded, color_encoded, clarity_encoded], axis=1
         )
@@ -224,13 +231,7 @@ def snowpark_session():
                 session.clear_imports()
 
 
-@pytest.mark.parametrize(
-    "execute_as",
-    [
-        "owner",
-        "caller",
-    ],
-)
+@pytest.mark.parametrize("execute_as", ["owner", "caller"])
 def test_ibis_inside_snowpark(snowpark_session, execute_as):
     import snowflake.snowpark as sp
 
@@ -275,7 +276,6 @@ def test_ibis_inside_snowpark(snowpark_session, execute_as):
             "snowflake-snowpark-python",
             "toolz",
             "atpublic",
-            "bidict",
             "pyarrow",
             "pandas",
             "numpy",

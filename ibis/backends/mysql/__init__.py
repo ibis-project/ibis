@@ -5,11 +5,10 @@ from __future__ import annotations
 import contextlib
 import re
 import warnings
-from functools import cached_property, partial
-from itertools import repeat
+from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import unquote_plus
 
 import numpy as np
 import pymysql
@@ -24,11 +23,13 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.compiler import MySQLCompiler
+from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import TRUE, C
+from ibis.backends.sql.compiler import STAR, TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -40,7 +41,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     compiler = MySQLCompiler()
     supports_create_or_replace = False
 
-    def _from_url(self, url: str, **kwargs):
+    def _from_url(self, url: ParseResult, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -56,24 +57,14 @@ class Backend(SQLBackend, CanCreateDatabase):
             A backend instance
 
         """
-
-        url = urlparse(url)
         database, *_ = url.path[1:].split("/", 1)
-        query_params = parse_qs(url.query)
         connect_args = {
             "user": url.username,
-            "password": url.password or "",
+            "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
+            "port": url.port or None,
         }
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                connect_args[name] = value
-            elif len(value) == 1:
-                connect_args[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
 
         kwargs.update(connect_args)
         self._convert_kwargs(kwargs)
@@ -89,6 +80,9 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if "password" in kwargs and kwargs["password"] is None:
             del kwargs["password"]
+
+        if "port" in kwargs and kwargs["port"] is None:
+            del kwargs["port"]
 
         return self.connect(**kwargs)
 
@@ -189,24 +183,34 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(databases, like)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        table = util.gen_name(f"{self.name}_metadata")
-
         with self.begin() as cur:
             cur.execute(
-                f"CREATE TEMPORARY TABLE {table} AS SELECT * FROM ({query}) AS tmp LIMIT 0"
+                sg.select(STAR)
+                .from_(
+                    sg.parse_one(query, dialect=self.dialect).subquery(
+                        sg.to_identifier("tmp", quoted=self.compiler.quoted)
+                    )
+                )
+                .limit(0)
+                .sql(self.dialect)
             )
-            try:
-                return self.get_schema(table)
-            finally:
-                cur.execute(f"DROP TABLE {table}")
+
+            return sch.Schema(
+                {
+                    field.name: _type_from_cursor_info(descr, field)
+                    for descr, field in zip(cur.description, cur._result.fields)
+                }
+            )
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        table = sg.table(name, db=database, catalog=catalog, quoted=True).sql(self.name)
+        table = sg.table(
+            name, db=database, catalog=catalog, quoted=self.compiler.quoted
+        ).sql(self.dialect)
 
         with self.begin() as cur:
-            cur.execute(f"DESCRIBE {table}")
+            cur.execute(sge.Describe(this=table).sql(self.dialect))
             result = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
@@ -493,19 +497,14 @@ class Backend(SQLBackend, CanCreateDatabase):
             )
             create_stmt_sql = create_stmt.sql(self.name)
 
-            columns = schema.keys()
             df = op.data.to_frame()
             # nan can not be used with MySQL
             df = df.replace(np.nan, None)
 
             data = df.itertuples(index=False)
-            cols = ", ".join(
-                ident.sql(self.name)
-                for ident in map(partial(sg.to_identifier, quoted=quoted), columns)
+            sql = self._build_insert_template(
+                name, schema=schema, columns=True, placeholder="%s"
             )
-            specs = ", ".join(repeat("%s", len(columns)))
-            table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
             with self.begin() as cur:
                 cur.execute(create_stmt_sql)
 

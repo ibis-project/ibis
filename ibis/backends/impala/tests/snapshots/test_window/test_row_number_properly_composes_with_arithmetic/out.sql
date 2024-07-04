@@ -11,6 +11,6 @@ SELECT
   `t0`.`j`,
   `t0`.`k`,
   (
-    ROW_NUMBER() OVER (ORDER BY `t0`.`f` ASC NULLS LAST) - 1
+    ROW_NUMBER() OVER (ORDER BY `t0`.`f` ASC) - 1
   ) / 2 AS `new`
 FROM `alltypes` AS `t0`

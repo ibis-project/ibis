@@ -26,7 +26,10 @@ class DataFusionCompiler(SQLGlotCompiler):
     dialect = DataFusion
     type_mapper = DataFusionType
 
-    rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
+    rewrites = (
+        exclude_nulls_from_array_collect,
+        *SQLGlotCompiler.rewrites,
+    )
 
     agg = AggGen(supports_filter=True)
 
@@ -68,8 +71,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.BitXor: "bit_xor",
         ops.Cot: "cot",
         ops.ExtractMicrosecond: "extract_microsecond",
-        ops.First: "first_value",
-        ops.Last: "last_value",
         ops.Median: "median",
         ops.StringLength: "character_length",
         ops.RegexSplit: "regex_split",
@@ -420,6 +421,16 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.if_(
             sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
         )
+
+    def visit_First(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.first_value(arg, where=where)
+
+    def visit_Last(self, op, *, arg, where):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.last_value(arg, where=where)
 
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""

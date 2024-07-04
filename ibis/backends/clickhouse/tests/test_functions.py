@@ -116,8 +116,8 @@ def test_isnull_notnull(con, expr, expected):
     ("expr", "expected"),
     [
         (ibis.coalesce(5, None, 4), 5),
-        (ibis.coalesce(ibis.NA, 4, ibis.NA), 4),
-        (ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14),
+        (ibis.coalesce(ibis.null(), 4, ibis.null()), 4),
+        (ibis.coalesce(ibis.null(), ibis.null(), 3.14), 3.14),
     ],
 )
 def test_coalesce(con, expr, expected):
@@ -127,13 +127,13 @@ def test_coalesce(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        (ibis.NA.fillna(5), 5),
-        (L(5).fillna(10), 5),
+        (ibis.null().fill_null(5), 5),
+        (L(5).fill_null(10), 5),
         (L(5).nullif(5), None),
         (L(10).nullif(5), 10),
     ],
 )
-def test_fillna_nullif(con, expr, expected):
+def test_fill_null_nullif(con, expr, expected):
     result = con.execute(expr)
     if expected is None:
         assert pd.isnull(result)
@@ -150,7 +150,7 @@ def test_fillna_nullif(con, expr, expected):
         (L(datetime(2015, 9, 1, hour=14, minute=48, second=5)), "DateTime"),
         (L(date(2015, 9, 1)), "Date"),
         param(
-            ibis.NA,
+            ibis.null(),
             "Null",
             marks=pytest.mark.xfail(
                 raises=AssertionError,
@@ -418,7 +418,7 @@ def test_numeric_builtins_work(alltypes, df):
 def test_null_column(alltypes):
     t = alltypes
     nrows = t.count().execute()
-    expr = t.mutate(na_column=ibis.NA).na_column
+    expr = t.mutate(na_column=ibis.null()).na_column
     result = expr.execute()
     expected = pd.Series([None] * nrows, name="na_column")
     tm.assert_series_equal(result, expected)

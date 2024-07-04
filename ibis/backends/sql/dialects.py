@@ -273,6 +273,8 @@ class Flink(Hive):
 
 
 class Impala(Hive):
+    NULL_ORDERING = "nulls_are_large"
+
     class Generator(Hive.Generator):
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("ndv"),
@@ -336,6 +338,8 @@ def _create_sql(self, expression: sge.Create) -> str:
     return self.create_sql(expression)
 
 
+# hack around https://github.com/tobymao/sqlglot/issues/3684
+Oracle.NULL_ORDERING = "nulls_are_large"
 Oracle.Generator.TRANSFORMS |= {
     sge.LogicalOr: rename_func("max"),
     sge.LogicalAnd: rename_func("min"),
@@ -392,7 +396,7 @@ class RisingWave(Postgres):
         TABLE_HINTS = False
         QUERY_HINTS = False
         NVL2_SUPPORTED = False
-        PARAMETER_TOKEN = "$"
+        PARAMETER_TOKEN = "$"  # noqa: S105
         TABLESAMPLE_SIZE_IS_ROWS = False
         TABLESAMPLE_SEED_KEYWORD = "REPEATABLE"
         SUPPORTS_SELECT_INTO = True

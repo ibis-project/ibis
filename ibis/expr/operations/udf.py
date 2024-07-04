@@ -239,7 +239,7 @@ class scalar(_UDF):
         >>> expr = hamming("duck", "luck")
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)
-        1
+        np.int64(1)
 
         """
         return _wrap(
@@ -621,9 +621,9 @@ class agg(_UDF):
         >>> t = ibis.examples.penguins.fetch()
         >>> expr = favg(t.bill_length_mm)
         >>> expr
-        ┌──────────────────┐
-        │ 43.9219298245614 │
-        └──────────────────┘
+        ┌──────────────────────────────┐
+        │ np.float64(43.9219298245614) │
+        └──────────────────────────────┘
 
         """
         return _wrap(

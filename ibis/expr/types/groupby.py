@@ -16,16 +16,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Annotated
 
 from public import public
 
 import ibis
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.grounds import Concrete
+from ibis.common.patterns import Length  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import rewrite_window_input
 
@@ -38,14 +38,9 @@ class GroupedTable(Concrete):
     """An intermediate table expression to hold grouping information."""
 
     table: ops.Relation
-    groupings: VarTuple[ops.Column]
+    groupings: Annotated[VarTuple[ops.Value], Length(at_least=1)]
     orderings: VarTuple[ops.SortKey] = ()
     havings: VarTuple[ops.Value[dt.Boolean]] = ()
-
-    def __init__(self, groupings, **kwargs):
-        if not groupings:
-            raise com.IbisInputError("No group keys provided")
-        super().__init__(groupings=groupings, **kwargs)
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions

@@ -678,3 +678,28 @@ class PseudoHashable(Coercible, Generic[V]):
             return self.obj != other.obj
         else:
             return NotImplemented
+
+
+def chunks(n: int, *, chunk_size: int) -> Iterator[tuple[int, int]]:
+    """Return an iterator of chunk start and end indices.
+
+    Parameters
+    ----------
+    n
+        The total number of elements.
+    chunk_size
+        The size of each chunk.
+
+    Returns
+    -------
+    int
+        THE start and end indices of each chunk.
+
+    Examples
+    --------
+    >>> list(chunks(10, chunk_size=3))
+    [(0, 3), (3, 6), (6, 9), (9, 10)]
+    >>> list(chunks(10, chunk_size=4))
+    [(0, 4), (4, 8), (8, 10)]
+    """
+    return ((start, min(start + chunk_size, n)) for start in range(0, n, chunk_size))

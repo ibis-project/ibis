@@ -111,9 +111,20 @@ def sort_to_select(_, **kwargs):
     return Select(_.parent, selections=_.values, sort_keys=_.keys)
 
 
-@replace(p.FillNa)
-def fillna_to_select(_, **kwargs):
-    """Rewrite FillNa to a Select node."""
+@replace(p.DropColumns)
+def drop_columns_to_select(_, **kwargs):
+    """Convert a DropColumns node to a Select node."""
+    # if we're dropping fewer than 50% of the parent table's columns then the
+    # compiled query will likely be smaller than if we list everything *NOT*
+    # being dropped
+    if len(_.columns_to_drop) < len(_.schema) // 2:
+        return _
+    return Select(_.parent, selections=_.values)
+
+
+@replace(p.FillNull)
+def fill_null_to_select(_, **kwargs):
+    """Rewrite FillNull to a Select node."""
     if isinstance(_.replacements, Mapping):
         mapping = _.replacements
     else:
@@ -136,9 +147,9 @@ def fillna_to_select(_, **kwargs):
     return Select(_.parent, selections=selections)
 
 
-@replace(p.DropNa)
-def dropna_to_select(_, **kwargs):
-    """Rewrite DropNa to a Select node."""
+@replace(p.DropNull)
+def drop_null_to_select(_, **kwargs):
+    """Rewrite DropNull to a Select node."""
     if _.subset is None:
         columns = [ops.Field(_.parent, name) for name in _.parent.schema.names]
     else:
@@ -244,11 +255,11 @@ def extract_ctes(node):
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
-    for node, dependents in g.invert().items():
-        if isinstance(node, ops.View) or (
-            len(dependents) > 1 and isinstance(node, cte_types)
+    for op, dependents in g.invert().items():
+        if isinstance(op, ops.View) or (
+            len(dependents) > 1 and isinstance(op, cte_types)
         ):
-            result.append(node)
+            result.append(op)
 
     return result
 
@@ -290,8 +301,9 @@ def sqlize(
         | project_to_select
         | filter_to_select
         | sort_to_select
-        | fillna_to_select
-        | dropna_to_select
+        | fill_null_to_select
+        | drop_null_to_select
+        | drop_columns_to_select
         | first_to_firstvalue,
         context=context,
     )

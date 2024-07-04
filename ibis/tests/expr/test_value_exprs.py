@@ -352,7 +352,7 @@ def test_notnull(table):
 
 @pytest.mark.parametrize(
     "value",
-    [None, ibis.NA, ibis.literal(None, type="int32")],
+    [None, ibis.null(), ibis.literal(None, type="int32")],
     ids=["none", "NA", "typed-null"],
 )
 def test_null_eq_and_ne(table, value):
@@ -648,7 +648,7 @@ def test_or_(table):
 
 def test_null_column():
     t = ibis.table([("a", "string")], name="t")
-    s = t.mutate(b=ibis.NA)
+    s = t.mutate(b=ibis.null())
     assert s.b.type() == dt.null
     assert isinstance(s.b, ir.NullColumn)
 
@@ -657,8 +657,8 @@ def test_null_column_union():
     s = ibis.table([("a", "string"), ("b", "double")])
     t = ibis.table([("a", "string")])
     with pytest.raises(ibis.common.exceptions.RelationError):
-        s.union(t.mutate(b=ibis.NA))  # needs a type
-    assert s.union(t.mutate(b=ibis.NA.cast("double"))).schema() == s.schema()
+        s.union(t.mutate(b=ibis.null()))  # needs a type
+    assert s.union(t.mutate(b=ibis.null().cast("double"))).schema() == s.schema()
 
 
 def test_string_compare_numeric_array(table):
@@ -843,12 +843,12 @@ def test_substitute_dict():
     )
     assert_equal(result, expected)
 
-    result = table.foo.substitute(subs, else_=ibis.NA)
+    result = table.foo.substitute(subs, else_=ibis.null())
     expected = (
         ibis.case()
         .when(table.foo == "a", "one")
         .when(table.foo == "b", table.bar)
-        .else_(ibis.NA)
+        .else_(ibis.null())
         .end()
     )
     assert_equal(result, expected)
@@ -925,8 +925,8 @@ def test_generic_value_api_no_arithmetic(value, operation):
 @pytest.mark.parametrize(
     ("value", "expected"), [(5, dt.int8), (5.4, dt.double), ("abc", dt.string)]
 )
-def test_fillna_null(value, expected):
-    assert ibis.NA.fillna(value).type().equals(expected)
+def test_fill_null_null(value, expected):
+    assert ibis.null().fill_null(value).type().equals(expected)
 
 
 @pytest.mark.parametrize(
@@ -1229,7 +1229,7 @@ def test_map_get_with_incompatible_value_different_kind():
     assert value.get("C", 3.0).type() == dt.float64
 
 
-@pytest.mark.parametrize("null_value", [None, ibis.NA])
+@pytest.mark.parametrize("null_value", [None, ibis.null()])
 def test_map_get_with_null_on_not_nullable(null_value):
     map_type = dt.Map(dt.string, dt.Int16(nullable=False))
     value = ibis.literal({"A": 1000, "B": 2000}).cast(map_type)
@@ -1238,14 +1238,14 @@ def test_map_get_with_null_on_not_nullable(null_value):
     assert expr.type() == dt.Int16(nullable=True)
 
 
-@pytest.mark.parametrize("null_value", [None, ibis.NA])
+@pytest.mark.parametrize("null_value", [None, ibis.null()])
 def test_map_get_with_null_on_nullable(null_value):
     value = ibis.literal({"A": 1000, "B": None})
     result = value.get("C", null_value)
     assert result.type().nullable
 
 
-@pytest.mark.parametrize("null_value", [None, ibis.NA])
+@pytest.mark.parametrize("null_value", [None, ibis.null()])
 def test_map_get_with_null_on_null_type_with_null(null_value):
     value = ibis.literal({"A": None, "B": None})
     result = value.get("C", null_value)
@@ -1378,13 +1378,13 @@ def test_repr_list_of_lists_in_table():
 @pytest.mark.parametrize(
     ("expr", "expected_type"),
     [
-        (ibis.coalesce(ibis.NA, 1), dt.int8),
-        (ibis.coalesce(1, ibis.NA), dt.int8),
-        (ibis.coalesce(ibis.NA, 1000), dt.int16),
-        (ibis.coalesce(ibis.NA), dt.null),
-        (ibis.coalesce(ibis.NA, ibis.NA), dt.null),
+        (ibis.coalesce(ibis.null(), 1), dt.int8),
+        (ibis.coalesce(1, ibis.null()), dt.int8),
+        (ibis.coalesce(ibis.null(), 1000), dt.int16),
+        (ibis.coalesce(ibis.null()), dt.null),
+        (ibis.coalesce(ibis.null(), ibis.null()), dt.null),
         (
-            ibis.coalesce(ibis.NA, ibis.NA.cast("array<string>")),
+            ibis.coalesce(ibis.null(), ibis.null().cast("array<string>")),
             dt.Array(dt.string),
         ),
     ],
@@ -1508,14 +1508,14 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
 @pytest.mark.parametrize(
     ("expr_fn", "expected_type"),
     [
-        (lambda t: ibis.ifelse(t.a == 1, t.b, ibis.NA), dt.string),
+        (lambda t: ibis.ifelse(t.a == 1, t.b, ibis.null()), dt.string),
         (lambda t: ibis.ifelse(t.a == 1, t.b, t.a.cast("string")), dt.string),
         (
             lambda t: ibis.ifelse(t.a == 1, t.b, t.a.cast("!string")),
             dt.string.copy(nullable=False),
         ),
-        (lambda _: ibis.ifelse(True, ibis.NA, ibis.NA), dt.null),
-        (lambda _: ibis.ifelse(False, ibis.NA, ibis.NA), dt.null),
+        (lambda _: ibis.ifelse(True, ibis.null(), ibis.null()), dt.null),
+        (lambda _: ibis.ifelse(False, ibis.null(), ibis.null()), dt.null),
     ],
 )
 def test_non_null_with_null_precedence(expr_fn, expected_type):
@@ -1728,3 +1728,10 @@ def test_in_subquery_shape():
 
     expr = ibis.literal(2).isin(t.a)
     assert expr.op().shape.is_scalar()
+
+
+# TODO: remove when fillna is fully deprecated
+def test_value_fillna_depr_warn():
+    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    with pytest.warns(FutureWarning, match="v9.1"):
+        t.b.fillna("missing")

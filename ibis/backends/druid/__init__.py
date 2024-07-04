@@ -5,12 +5,11 @@ from __future__ import annotations
 import contextlib
 import json
 from typing import TYPE_CHECKING, Any
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import unquote_plus
 
 import pydruid.db
 import sqlglot as sg
 
-import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.backends.druid.compiler import DruidCompiler
@@ -20,10 +19,12 @@ from ibis.backends.sql.datatypes import DruidType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import pyarrow as pa
 
+    import ibis.expr.operations as ops
     import ibis.expr.types as ir
 
 
@@ -39,7 +40,7 @@ class Backend(SQLBackend):
             [(version,)] = result.fetchall()
         return version
 
-    def _from_url(self, url: str, **kwargs):
+    def _from_url(self, url: ParseResult, **kwargs):
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -55,24 +56,16 @@ class Backend(SQLBackend):
             A backend instance
 
         """
-
-        url = urlparse(url)
-        query_params = parse_qs(url.query)
         kwargs = {
             "user": url.username,
-            "password": url.password,
+            "password": unquote_plus(url.password)
+            if url.password is not None
+            else None,
             "host": url.hostname,
             "path": url.path,
             "port": url.port,
-        } | kwargs
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise com.IbisError(f"Invalid URL parameter: {name}")
+            **kwargs,
+        }
 
         self._convert_kwargs(kwargs)
 
@@ -179,7 +172,7 @@ class Backend(SQLBackend):
             tables = result.fetchall()
         return self._filter_with_like([table.TABLE_NAME for table in tables], like=like)
 
-    def _register_in_memory_tables(self, expr):
+    def _register_in_memory_table(self, op: ops.InMemoryTable):
         """No-op. Table are inlined, for better or worse."""
 
     def _cursor_batches(

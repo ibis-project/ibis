@@ -178,10 +178,20 @@ class Backend(SQLBackend, UrlFromPath):
         if database is None:
             database = "main"
 
-        quoted_db = _quote(database)
-        quoted_table = _quote(table_name)
+        quoted = self.compiler.quoted
+        quoted_db = sg.to_identifier(database, quoted=quoted)
+        quoted_table = sg.to_identifier(table_name, quoted=quoted)
 
-        sql = f'SELECT name, type, "notnull" FROM {quoted_db}.pragma_table_info({quoted_table})'
+        sql = (
+            sg.select("name", "type", sg.to_identifier("notnull", quoted=quoted))
+            .from_(
+                sge.Table(
+                    this=self.compiler.f.anon.pragma_table_info(quoted_table),
+                    db=quoted_db,
+                )
+            )
+            .sql(self.dialect)
+        )
         cur.execute(sql)
         rows = cur.fetchall()
         if not rows:
@@ -193,8 +203,16 @@ class Backend(SQLBackend, UrlFromPath):
         # first row and assume that matches the rest of the rows
         unknown = [name for name, (typ, _) in table_info.items() if not typ]
         if unknown:
-            queries = ", ".join(f"typeof({_quote(name)})" for name in unknown)
-            cur.execute(f"SELECT {queries} FROM {quoted_db}.{quoted_table} LIMIT 1")
+            queries = (
+                self.compiler.f.typeof(sg.to_identifier(name, quoted=quoted))
+                for name in unknown
+            )
+            cur.execute(
+                sg.select(*queries)
+                .from_(sg.table(table_name, db=database, quoted=quoted))
+                .limit(1)
+                .sql(self.dialect)
+            )
             row = cur.fetchone()
             if row is not None:
                 for name, typ in zip(unknown, row):
@@ -310,10 +328,8 @@ class Backend(SQLBackend, UrlFromPath):
             df = op.data.to_frame()
 
             data = df.itertuples(index=False)
-            cols = ", ".join(_quote(col) for col in op.schema.keys())
-            specs = ", ".join(["?"] * len(op.schema))
-            insert_stmt = (
-                f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
+            insert_stmt = self._build_insert_template(
+                op.name, schema=op.schema, catalog="temp", columns=True
             )
 
             with self.begin() as cur:
@@ -578,12 +594,12 @@ class Backend(SQLBackend, UrlFromPath):
 
         self._run_pre_execute_hooks(obj)
 
-        query = self._build_insert_query(
+        query = self._build_insert_from_table(
             target=table_name, source=obj, catalog=database
         )
         insert_stmt = query.sql(self.name)
 
         with self.begin() as cur:
             if overwrite:
-                cur.execute(f"DELETE FROM {table.sql(self.name)}")
+                cur.execute(sge.Delete(this=table).sql(self.dialect))
             cur.execute(insert_stmt)

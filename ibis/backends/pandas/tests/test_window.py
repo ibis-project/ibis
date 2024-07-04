@@ -20,7 +20,7 @@ def sort_kind():
     return "mergesort"
 
 
-default = pytest.mark.parametrize("default", [ibis.NA, ibis.literal("a")])
+default = pytest.mark.parametrize("default", [ibis.null(), ibis.literal("a")])
 row_offset = pytest.mark.parametrize("row_offset", list(map(ibis.literal, [-1, 1, 0])))
 range_offset = pytest.mark.parametrize(
     "range_offset",
@@ -49,7 +49,7 @@ def test_lead(t, df, row_offset, default, row_window):
     expr = t.dup_strings.lead(row_offset, default=default).over(row_window)
     result = expr.execute()
     expected = df.dup_strings.shift(con.execute(-row_offset))
-    if default is not ibis.NA:
+    if default is not ibis.null():
         expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
@@ -61,7 +61,7 @@ def test_lag(t, df, row_offset, default, row_window):
     expr = t.dup_strings.lag(row_offset, default=default).over(row_window)
     result = expr.execute()
     expected = df.dup_strings.shift(con.execute(row_offset))
-    if default is not ibis.NA:
+    if default is not ibis.null():
         expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
@@ -80,7 +80,7 @@ def test_lead_delta(t, df, range_offset, default, range_window):
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
-    if default is not ibis.NA:
+    if default is not ibis.null():
         expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 
@@ -100,7 +100,7 @@ def test_lag_delta(t, df, range_offset, default, range_window):
         .reindex(df.plain_datetimes_naive)
         .reset_index(drop=True)
     )
-    if default is not ibis.NA:
+    if default is not ibis.null():
         expected = expected.fillna(con.execute(default))
     tm.assert_series_equal(result, expected.rename("tmp"))
 

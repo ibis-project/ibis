@@ -278,12 +278,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         return self.table(name, database=(catalog, database))
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, op):
-        self.drop_table(op.name)
-
     def table(
         self, name: str, schema: str | None = None, database: str | None = None
     ) -> ir.Table:
@@ -493,7 +487,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     ) -> None:
         f = self.compiler.f
         query = (
-            sg.select(f.unnest(f.list_append(C.aliases, C.extension_name)))
+            sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
             .from_(f.duckdb_extensions())
             .where(sg.and_(C.installed, C.loaded))
         )
@@ -1551,13 +1545,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             }
         )
 
-    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
-        for memtable in expr.op().find(ops.InMemoryTable):
-            self._register_in_memory_table(memtable)
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
+        name = op.name
+        try:
+            # this handles tables _and_ views
+            self.con.table(name)
+        except (duckdb.CatalogException, duckdb.InvalidInputException):
+            # only register if we haven't already done so
             self.con.register(name, op.data.to_pyarrow(op.schema))
 
     def _register_udfs(self, expr: ir.Expr) -> None:

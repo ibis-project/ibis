@@ -1,0 +1,10 @@
+r0 := UnboundTable: t
+  a int64
+  b string
+
+r1 := Project[r0]
+  b: r0.b
+
+FillNull[r1]
+  replacements:
+    'foo'

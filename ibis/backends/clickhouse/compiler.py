@@ -640,3 +640,68 @@ class ClickHouseCompiler(SQLGlotCompiler):
     @staticmethod
     def _generate_groups(groups):
         return groups
+
+    def visit_DropColumns(self, op, *, parent, columns_to_drop):
+        quoted = self.quoted
+        excludes = [sg.column(column, quoted=quoted) for column in columns_to_drop]
+        star = sge.Star(**{"except": excludes})
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+        column = sge.Column(this=star, table=table)
+        return sg.select(column).from_(parent)
+
+    def visit_TableUnnest(
+        self, op, *, parent, column, offset: str | None, keep_empty: bool
+    ):
+        quoted = self.quoted
+
+        column_alias = sg.to_identifier(
+            util.gen_name("table_unnest_column"), quoted=quoted
+        )
+
+        table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
+
+        selcols = []
+
+        opname = op.column.name
+        overlaps_with_parent = opname in op.parent.schema
+        computed_column = column_alias.as_(opname, quoted=quoted)
+
+        if offset is not None:
+            if overlaps_with_parent:
+                selcols.append(
+                    sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+                )
+            else:
+                selcols.append(sge.Column(this=STAR, table=table))
+                selcols.append(computed_column)
+
+            offset = sg.to_identifier(offset, quoted=quoted)
+            selcols.append(offset)
+        elif overlaps_with_parent:
+            selcols.append(
+                sge.Column(this=sge.Star(replace=[computed_column]), table=table)
+            )
+        else:
+            selcols.append(sge.Column(this=STAR, table=table))
+            selcols.append(computed_column)
+
+        select = (
+            sg.select(*selcols)
+            .from_(parent)
+            .join(
+                sge.Join(
+                    this=column.as_(column_alias, quoted=quoted),
+                    kind="ARRAY",
+                    side=None if not keep_empty else "LEFT",
+                )
+            )
+        )
+
+        if offset is not None:
+            param = sg.to_identifier(util.gen_name("arr_enum"))
+            func = sge.Lambda(this=param - 1, expressions=[param])
+            return select.join(
+                self.f.arrayMap(func, self.f.arrayEnumerate(column)).as_(offset)
+            )
+
+        return select

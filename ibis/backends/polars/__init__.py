@@ -560,8 +560,8 @@ class Backend(BaseBackend, NoUrl):
     def _load_into_cache(self, name, expr):
         self.create_table(name, self.compile(expr).cache())
 
-    def _clean_up_cached_table(self, op):
-        self._remove_table(op.name)
+    def _clean_up_cached_table(self, name):
+        self._remove_table(name)
 
 
 @lazy_singledispatch

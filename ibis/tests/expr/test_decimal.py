@@ -106,11 +106,11 @@ def test_ifelse(lineitem):
     assert isinstance(expr, ir.DecimalScalar)
 
 
-def test_fillna(lineitem):
-    expr = lineitem.l_extendedprice.fillna(0)
+def test_fill_null(lineitem):
+    expr = lineitem.l_extendedprice.fill_null(0)
     assert isinstance(expr, ir.DecimalColumn)
 
-    expr = lineitem.l_extendedprice.fillna(lineitem.l_quantity)
+    expr = lineitem.l_extendedprice.fill_null(lineitem.l_quantity)
     assert isinstance(expr, ir.DecimalColumn)
 
 

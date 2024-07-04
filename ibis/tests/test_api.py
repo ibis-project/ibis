@@ -6,6 +6,7 @@ from importlib.metadata import EntryPoint
 from typing import NamedTuple
 
 import pytest
+from pytest import param
 
 import ibis
 
@@ -26,7 +27,7 @@ import ibis
 
 # def test_public_backend_methods():
 #     public = {m for m in dir(ibis.sqlite) if not m.startswith("_")}
-#     assert public == {"connect", "compile", "has_operation", "add_operation", "name"}
+#     assert public == {"connect", "compile", "has_operation", "name"}
 
 
 def test_missing_backend():
@@ -69,3 +70,44 @@ import sys
 assert "{module}" not in sys.modules
 """
     subprocess.run([sys.executable, "-c", script], check=True)
+
+
+def test_ibis_na_deprecation_warning():
+    with pytest.warns(
+        DeprecationWarning, match="The 'ibis.NA' constant is deprecated as of v9.1"
+    ):
+        assert ibis.NA is ibis.null()
+
+
+@pytest.mark.parametrize(
+    "op, api_func",
+    [
+        param("desc", ibis.desc),
+        param("asc", ibis.asc),
+    ],
+)
+def test_ibis_desc_asc_default(op, api_func):
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+
+    expr = t.order_by(getattr(t["b"], op)())
+    expr_api = t.order_by(api_func("b"))
+
+    assert expr.op() == expr_api.op()
+
+
+@pytest.mark.parametrize(
+    "op, api_func, nulls_first",
+    [
+        param("desc", ibis.desc, True),
+        param("asc", ibis.asc, True),
+        param("desc", ibis.desc, False),
+        param("asc", ibis.asc, False),
+    ],
+)
+def test_ibis_desc_asc(op, api_func, nulls_first):
+    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+
+    expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
+    expr_api = t.order_by(api_func("b", nulls_first=nulls_first))
+
+    assert expr.op() == expr_api.op()

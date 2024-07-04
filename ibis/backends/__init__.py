@@ -9,7 +9,6 @@ import re
 import urllib.parse
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
-from urllib.parse import parse_qs, urlparse
 
 import ibis
 import ibis.common.exceptions as exc
@@ -20,7 +19,8 @@ from ibis import util
 from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator, Mapping, MutableMapping
+    from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -1018,9 +1018,15 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 
-    def _register_in_memory_tables(self, expr: ir.Expr):
+    def _register_in_memory_tables(self, expr: ir.Expr) -> None:
+        for memtable in expr.op().find(ops.InMemoryTable):
+            self._register_in_memory_table(memtable)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable):
         if self.supports_in_memory_tables:
-            raise NotImplementedError(self.name)
+            raise NotImplementedError(
+                f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
+            )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
@@ -1050,23 +1056,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""
-
-    def add_operation(self, operation: ops.Node) -> Callable:
-        """Add a translation function to the backend for a specific operation.
-
-        Operations are defined in `ibis.expr.operations`, and a translation
-        function receives the translator object and an expression as
-        parameters, and returns a value depending on the backend.
-        """
-        if not hasattr(self, "compiler"):
-            raise RuntimeError("Only SQL-based backends support `add_operation`")
-
-        def decorator(translation_function: Callable) -> None:
-            self.compiler.translator_class.add_operation(
-                operation, translation_function
-            )
-
-        return decorator
 
     @abc.abstractmethod
     def create_table(
@@ -1239,8 +1228,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """
         op = expr.op()
         if (result := self._query_cache.get(op)) is None:
-            self._query_cache.store(expr)
-            result = self._query_cache[op]
+            result = self._query_cache.store(expr)
         return ir.CachedTable(result)
 
     def _release_cached(self, expr: ir.CachedTable) -> None:
@@ -1252,12 +1240,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             Cached expression to release
 
         """
-        del self._query_cache[expr.op()]
+        self._query_cache.release(expr.op().name)
 
     def _load_into_cache(self, name, expr):
         raise NotImplementedError(self.name)
 
-    def _clean_up_cached_table(self, op):
+    def _clean_up_cached_table(self, name):
         raise NotImplementedError(self.name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
@@ -1363,6 +1351,11 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
     orig_kwargs = kwargs.copy()
     kwargs = dict(urllib.parse.parse_qsl(parsed.query))
 
+    # convert single parameter lists value to single values
+    for name, value in kwargs.items():
+        if len(value) == 1:
+            kwargs[name] = value[0]
+
     if scheme == "file":
         path = parsed.netloc + parsed.path
         # Merge explicit kwargs with query string, explicit kwargs
@@ -1380,35 +1373,21 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")
 
-    if kwargs:
-        # If there are kwargs (either explicit or from the query string),
-        # re-add them to the parsed URL
-        query = urllib.parse.urlencode(kwargs)
-        parsed = parsed._replace(query=query)
-
-    if scheme in ("postgres", "postgresql"):
-        # Treat `postgres://` and `postgresql://` the same
-        scheme = "postgres"
-
-    # Convert all arguments back to a single URL string
-    url = parsed.geturl()
-    if "://" not in url:
-        # urllib may roundtrip `duckdb://` to `duckdb:`. Here we re-add the
-        # missing `//`.
-        url = url.replace(":", "://", 1)
+    # Treat `postgres://` and `postgresql://` the same
+    scheme = scheme.replace("postgresql", "postgres")
 
     try:
         backend = getattr(ibis, scheme)
     except AttributeError:
         raise ValueError(f"Don't know how to connect to {resource!r}") from None
 
-    return backend._from_url(url, **orig_kwargs)
+    return backend._from_url(parsed, **kwargs)
 
 
 class UrlFromPath:
     __slots__ = ()
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs: Any) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 
         Parameters
@@ -1424,7 +1403,6 @@ class UrlFromPath:
             A backend instance
 
         """
-        url = urlparse(url)
         netloc = url.netloc
         parts = list(filter(None, (netloc, url.path[bool(netloc) :])))
         database = Path(*parts) if parts and parts != [":memory:"] else ":memory:"
@@ -1435,16 +1413,6 @@ class UrlFromPath:
         elif isinstance(database, Path):
             database = database.absolute()
 
-        query_params = parse_qs(url.query)
-
-        for name, value in query_params.items():
-            if len(value) > 1:
-                kwargs[name] = value
-            elif len(value) == 1:
-                kwargs[name] = value[0]
-            else:
-                raise exc.IbisError(f"Invalid URL parameter: {name}")
-
         self._convert_kwargs(kwargs)
         return self.connect(database=database, **kwargs)
 
@@ -1454,7 +1422,7 @@ class NoUrl:
 
     name: str
 
-    def _from_url(self, url: str, **kwargs) -> BaseBackend:
+    def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
         """Connect to the backend with empty url.
 
         Parameters

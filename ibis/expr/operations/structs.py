@@ -48,6 +48,13 @@ class StructColumn(Value):
             )
         super().__init__(names=names, values=values)
 
+    @property
+    def name(self) -> str:
+        pairs = ", ".join(
+            f"{name!r}: {op.name}" for name, op in zip(self.names, self.values)
+        )
+        return f"{self.__class__.__name__}({{{pairs}}})"
+
     @attribute
     def dtype(self) -> dt.DataType:
         dtypes = (value.dtype for value in self.values)

@@ -146,6 +146,26 @@ class Simple(Relation):
 
 
 @public
+class DropColumns(Relation):
+    parent: Relation
+    columns_to_drop: VarTuple[str]
+
+    @attribute
+    def schema(self):
+        schema = self.parent.schema.fields.copy()
+        for column in self.columns_to_drop:
+            del schema[column]
+        return Schema(schema)
+
+    @attribute
+    def values(self):
+        fields = self.parent.fields.copy()
+        for column in self.columns_to_drop:
+            del fields[column]
+        return fields
+
+
+@public
 class Reference(Relation):
     _uid_counter = itertools.count()
     parent: Relation
@@ -279,7 +299,7 @@ class Aggregate(Relation):
     """Aggregate a table by a set of group by columns and metrics."""
 
     parent: Relation
-    groups: FrozenOrderedDict[str, Unaliased[Column]]
+    groups: FrozenOrderedDict[str, Unaliased[Value]]
     metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
 
     def __init__(self, parent, groups, metrics):
@@ -440,14 +460,14 @@ class DummyTable(Relation):
 
 
 @public
-class FillNa(Simple):
+class FillNull(Simple):
     """Fill null values in the table."""
 
     replacements: typing.Union[Value[dt.Numeric | dt.String], FrozenDict[str, Any]]
 
 
 @public
-class DropNa(Simple):
+class DropNull(Simple):
     """Drop null values in the table."""
 
     how: typing.Literal["any", "all"]
@@ -466,6 +486,29 @@ class Sample(Simple):
 @public
 class Distinct(Simple):
     """Compute the distinct rows of a table."""
+
+
+@public
+class TableUnnest(Simple):
+    """Cross join unnest operation."""
+
+    column: Value[dt.Array]
+    offset: typing.Union[str, None]
+    keep_empty: bool
+
+    @attribute
+    def schema(self):
+        column = self.column
+        offset = self.offset
+
+        base = self.parent.schema.fields.copy()
+
+        base[column.name] = column.dtype.value_type
+
+        if offset is not None:
+            base[offset] = dt.int64
+
+        return Schema(base)
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()

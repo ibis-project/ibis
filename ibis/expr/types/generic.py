@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
     import rich.table
 
+    import ibis.expr.schema as sch
     import ibis.expr.types as ir
     from ibis.formats.pyarrow import PyArrowData
 
@@ -290,7 +291,7 @@ class Value(Expr):
         See Also
         --------
         [`ibis.coalesce()`](./expression-generic.qmd#ibis.coalesce)
-        [`Value.fillna()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fillna)
+        [`Value.fill_null()`](./expression-generic.qmd#ibis.expr.types.generic.Value.fill_null)
 
         Examples
         --------
@@ -358,13 +359,13 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fillna(self, fill_value: Scalar) -> Value:
+    def fill_null(self, fill_value: Scalar) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
         ----------
         fill_value
-            Value with which to replace `NA` values in `self`
+            Value with which to replace `NULL` values in `self`
 
         See Also
         --------
@@ -388,7 +389,7 @@ class Value(Expr):
         │ NULL   │
         │ female │
         └────────┘
-        >>> t.sex.fillna("unrecorded").name("sex")
+        >>> t.sex.fill_null("unrecorded").name("sex")
         ┏━━━━━━━━━━━━┓
         ┃ sex        ┃
         ┡━━━━━━━━━━━━┩
@@ -404,9 +405,14 @@ class Value(Expr):
         Returns
         -------
         Value
-            `self` filled with `fill_value` where it is `NA`
+            `self` filled with `fill_value` where it is `NULL`
         """
         return ops.Coalesce((self, fill_value)).to_expr()
+
+    @deprecated(as_of="9.1", instead="use fill_null instead")
+    def fillna(self, fill_value: Scalar) -> Value:
+        """Deprecated - use `fill_null` instead."""
+        return self.fill_null(fill_value)
 
     def nullif(self, null_if_expr: Value) -> Value:
         """Set values to null if they equal the values `null_if_expr`.
@@ -535,15 +541,15 @@ class Value(Expr):
         Check against a literal sequence of values
 
         >>> t.a.isin([1, 2])
-        ┏━━━━━━━━━━━━━┓
-        ┃ InValues(a) ┃
-        ┡━━━━━━━━━━━━━┩
-        │ boolean     │
-        ├─────────────┤
-        │ True        │
-        │ True        │
-        │ False       │
-        └─────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ InValues(a, (1, 2)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean             │
+        ├─────────────────────┤
+        │ True                │
+        │ True                │
+        │ False               │
+        └─────────────────────┘
 
         Check against a derived expression
 
@@ -576,35 +582,35 @@ class Value(Expr):
 
         >>> t = ibis.memtable({"x": [1, 2]})
         >>> t.x.isin([1, None])
-        ┏━━━━━━━━━━━━━┓
-        ┃ InValues(x) ┃
-        ┡━━━━━━━━━━━━━┩
-        │ boolean     │
-        ├─────────────┤
-        │ True        │
-        │ NULL        │
-        └─────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ InValues(x, (1, None)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                │
+        ├────────────────────────┤
+        │ True                   │
+        │ NULL                   │
+        └────────────────────────┘
         >>> t = ibis.memtable({"x": [1, None, 2]})
         >>> t.x.isin([1])
-        ┏━━━━━━━━━━━━━┓
-        ┃ InValues(x) ┃
-        ┡━━━━━━━━━━━━━┩
-        │ boolean     │
-        ├─────────────┤
-        │ True        │
-        │ NULL        │
-        │ False       │
-        └─────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━┓
+        ┃ InValues(x, (1,)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━┩
+        │ boolean           │
+        ├───────────────────┤
+        │ True              │
+        │ NULL              │
+        │ False             │
+        └───────────────────┘
         >>> t.x.isin([3])
-        ┏━━━━━━━━━━━━━┓
-        ┃ InValues(x) ┃
-        ┡━━━━━━━━━━━━━┩
-        │ boolean     │
-        ├─────────────┤
-        │ False       │
-        │ NULL        │
-        │ False       │
-        └─────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━┓
+        ┃ InValues(x, (3,)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━┩
+        │ boolean           │
+        ├───────────────────┤
+        │ False             │
+        │ NULL              │
+        │ False             │
+        └───────────────────┘
         """
         from ibis.expr.types import ArrayValue
 
@@ -648,17 +654,17 @@ class Value(Expr):
         │          19.3 │
         └───────────────┘
         >>> t.bill_depth_mm.notin([18.7, 18.1])
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Not(InValues(bill_depth_mm)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ boolean                      │
-        ├──────────────────────────────┤
-        │ False                        │
-        │ True                         │
-        │ True                         │
-        │ NULL                         │
-        │ True                         │
-        └──────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Not(InValues(bill_depth_mm, (18.7, 18.1))) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ boolean                                    │
+        ├────────────────────────────────────────────┤
+        │ False                                      │
+        │ True                                       │
+        │ True                                       │
+        │ NULL                                       │
+        │ True                                       │
+        └────────────────────────────────────────────┘
         """
         return ~self.isin(values)
 
@@ -900,47 +906,47 @@ class Value(Expr):
         │ female │
         └────────┘
         >>> x.case().when("male", "M").when("female", "F").else_("U").end()
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ SimpleCase(sex, 'U') ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string               │
-        ├──────────────────────┤
-        │ M                    │
-        │ F                    │
-        │ F                    │
-        │ U                    │
-        │ F                    │
-        └──────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, ('male', 'female'), ('M', 'F'), 'U') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                               │
+        ├──────────────────────────────────────────────────────┤
+        │ M                                                    │
+        │ F                                                    │
+        │ F                                                    │
+        │ U                                                    │
+        │ F                                                    │
+        └──────────────────────────────────────────────────────┘
 
         Cases not given result in the ELSE case
 
         >>> x.case().when("male", "M").else_("OTHER").end()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ SimpleCase(sex, 'OTHER') ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                   │
-        ├──────────────────────────┤
-        │ M                        │
-        │ OTHER                    │
-        │ OTHER                    │
-        │ OTHER                    │
-        │ OTHER                    │
-        └──────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, ('male',), ('M',), 'OTHER') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                      │
+        ├─────────────────────────────────────────────┤
+        │ M                                           │
+        │ OTHER                                       │
+        │ OTHER                                       │
+        │ OTHER                                       │
+        │ OTHER                                       │
+        └─────────────────────────────────────────────┘
 
         If you don't supply an ELSE, then NULL is used
 
         >>> x.case().when("male", "M").end()
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ SimpleCase(sex, Cast(None, string)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                              │
-        ├─────────────────────────────────────┤
-        │ M                                   │
-        │ NULL                                │
-        │ NULL                                │
-        │ NULL                                │
-        │ NULL                                │
-        └─────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ SimpleCase(sex, ('male',), ('M',), Cast(None, string)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                                 │
+        ├────────────────────────────────────────────────────────┤
+        │ M                                                      │
+        │ NULL                                                   │
+        │ NULL                                                   │
+        │ NULL                                                   │
+        │ NULL                                                   │
+        └────────────────────────────────────────────────────────┘
         """
         import ibis.expr.builders as bl
 
@@ -1100,9 +1106,9 @@ class Value(Expr):
         >>> one = ibis.literal(1)
         >>> two = ibis.literal(2)
         >>> two.identical_to(one + one)
-        ┌──────┐
-        │ True │
-        └──────┘
+        ┌──────────┐
+        │ np.True_ │
+        └──────────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -1193,13 +1199,13 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-    def asc(self) -> ir.Value:
+    def asc(self, nulls_first: bool = False) -> ir.Value:
         """Sort an expression ascending."""
-        return ops.SortKey(self, ascending=True).to_expr()
+        return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
-    def desc(self) -> ir.Value:
+    def desc(self, nulls_first: bool = False) -> ir.Value:
         """Sort an expression descending."""
-        return ops.SortKey(self, ascending=False).to_expr()
+        return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
         """Convert a column expression to a pandas Series or scalar object.
@@ -1236,10 +1242,14 @@ class Scalar(Value):
 
         return data_mapper.convert_scalar(table[0][0], self.type())
 
-    def __pandas_result__(self, df: pd.DataFrame) -> Any:
+    def __pandas_result__(
+        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+    ) -> Any:
         from ibis.formats.pandas import PandasData
 
-        return PandasData.convert_scalar(df, self.type())
+        return PandasData.convert_scalar(
+            df, self.type() if schema is None else schema[df.columns[0]]
+        )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
         from ibis.formats.polars import PolarsData
@@ -1406,7 +1416,9 @@ class Column(Value, _FixedTextJupyterMixin):
 
         return data_mapper.convert_column(table[0], self.type())
 
-    def __pandas_result__(self, df: pd.DataFrame) -> pd.Series:
+    def __pandas_result__(
+        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+    ) -> pd.Series:
         from ibis.formats.pandas import PandasData
 
         assert (
@@ -1421,7 +1433,9 @@ class Column(Value, _FixedTextJupyterMixin):
         #
         # this bug is fixed in later versions of geopandas
         (column,) = df.columns
-        return PandasData.convert_column(df.loc[:, column], self.type())
+        return PandasData.convert_column(
+            df.loc[:, column], self.type() if schema is None else schema[column]
+        )
 
     def __polars_result__(self, df: pl.DataFrame) -> pl.Series:
         from ibis.formats.polars import PolarsData
@@ -1558,13 +1572,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
-        ┌────┐
-        │ 94 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(94) │
+        └──────────────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
-        ┌────┐
-        │ 55 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(55) │
+        └──────────────┘
         """
         return ops.ApproxCountDistinct(
             self, where=self._bind_to_parent_table(where)
@@ -1603,13 +1617,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        ┌──────┐
-        │ 4030 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(4030) │
+        └────────────────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        ┌──────┐
-        │ 3700 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(3700) │
+        └────────────────┘
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1632,13 +1646,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
-        ┌──────┐
-        │ 3800 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(3800) │
+        └────────────────┘
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
-        ┌──────┐
-        │ 5550 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(5550) │
+        └────────────────┘
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1661,13 +1675,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.max()
-        ┌──────┐
-        │ 6300 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(6300) │
+        └────────────────┘
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
-        ┌──────┐
-        │ 4800 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(4800) │
+        └────────────────┘
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1690,14 +1704,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.min()
-        ┌──────┐
-        │ 2700 │
-        └──────┘
+        ┌────────────────┐
+        │ np.int64(2700) │
+        └────────────────┘
         >>> t.body_mass_g.min(where=t.species == "Adelie")
-        ┌──────┐
-        │ 2850 │
-        └──────┘
-
+        ┌────────────────┐
+        │ np.int64(2850) │
+        └────────────────┘
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1791,9 +1804,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the median of `bill_depth_mm`
 
         >>> t.bill_depth_mm.median()
-        ┌──────┐
-        │ 17.3 │
-        └──────┘
+        ┌──────────────────┐
+        │ np.float64(17.3) │
+        └──────────────────┘
         >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
         ...     ibis.desc("median_bill_depth")
         ... )
@@ -1857,9 +1870,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the 99th percentile of `bill_depth`
 
         >>> t.bill_depth_mm.quantile(0.99)
-        ┌──────┐
-        │ 21.1 │
-        └──────┘
+        ┌──────────────────┐
+        │ np.float64(21.1) │
+        └──────────────────┘
         >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
         ...     ibis.desc("p99_bill_depth")
         ... )
@@ -1916,13 +1929,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.nunique()
-        ┌────┐
-        │ 94 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(94) │
+        └──────────────┘
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
-        ┌────┐
-        │ 55 │
-        └────┘
+        ┌──────────────┐
+        │ np.int64(55) │
+        └──────────────┘
         """
         return ops.CountDistinct(
             self, where=self._bind_to_parent_table(where)
@@ -2305,9 +2318,9 @@ def null(type: dt.DataType | str | None = None) -> Value:
     │ None │
     └──────┘
     >>> ibis.null(str).upper().isnull()
-    ┌──────┐
-    │ True │
-    └──────┘
+    ┌──────────┐
+    │ np.True_ │
+    └──────────┘
     """
     if type is None:
         type = dt.null

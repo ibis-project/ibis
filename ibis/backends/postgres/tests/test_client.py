@@ -14,8 +14,10 @@
 from __future__ import annotations
 
 import os
-import random
+from urllib.parse import quote_plus
 
+import hypothesis as h
+import hypothesis.strategies as st
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
@@ -260,7 +262,8 @@ def test_port():
         ibis.connect("postgresql://postgres:postgres@localhost:1337/ibis_testing")
 
 
-def test_pgvector_type_load(con):
+@h.given(st.integers(min_value=4, max_value=1000))
+def test_pgvector_type_load(con, vector_size):
     """
     CREATE TABLE items (id bigserial PRIMARY KEY, embedding vector(3));
     INSERT INTO items (embedding) VALUES ('[1,2,3]'), ('[4,5,6]');
@@ -279,7 +282,7 @@ def test_pgvector_type_load(con):
 
     query = f"""
     DROP TABLE IF EXISTS itemsvrandom;
-    CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({random.randint(4, 1000)}));
+    CREATE TABLE itemsvrandom (id bigserial PRIMARY KEY, embedding vector({vector_size}));
     """
 
     with con.raw_sql(query):
@@ -376,3 +379,14 @@ def test_infoschema_dtypes(con):
         con.table("triggers", database="information_schema").select("created").schema()
         == triggers_created_schema
     )
+
+
+def test_password_with_bracket():
+    password = f"{IBIS_POSTGRES_PASS}["
+    quoted_pass = quote_plus(password)
+    url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
+    with pytest.raises(
+        PsycoPg2OperationalError,
+        match=f'password authentication failed for user "{IBIS_POSTGRES_USER}"',
+    ):
+        ibis.connect(url)

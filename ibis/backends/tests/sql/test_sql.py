@@ -121,7 +121,7 @@ def test_coalesce(functional_alltypes, snapshot):
     d = functional_alltypes.double_col
     f = functional_alltypes.float_col
 
-    expr = ibis.coalesce((d > 30).ifelse(d, ibis.NA), ibis.NA, f).name("tmp")
+    expr = ibis.coalesce((d > 30).ifelse(d, ibis.null()), ibis.null(), f).name("tmp")
     snapshot.assert_match(to_sql(expr.name("tmp")), "out.sql")
 
 

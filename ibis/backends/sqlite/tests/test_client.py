@@ -47,7 +47,7 @@ def test_builtin_agg_udf(con):
     def total(x) -> float:
         """Totally total."""
 
-    expr = total(con.tables.functional_alltypes.limit(2).select(n=ibis.NA).n)
+    expr = total(con.tables.functional_alltypes.limit(2).select(n=ibis.null()).n)
     result = con.execute(expr)
     assert result == 0.0
 

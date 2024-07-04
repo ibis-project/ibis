@@ -150,7 +150,7 @@ def test_strftime(con, pattern):
     [
         param(L("foo_bar"), "text", id="text"),
         param(L(5), "integer", id="integer"),
-        param(ibis.NA, "null", id="null"),
+        param(ibis.null(), "null", id="null"),
         # TODO(phillipc): should this really be double?
         param(L(1.2345), "numeric", id="numeric"),
         param(
@@ -335,13 +335,13 @@ def test_regexp_extract(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.NA.fillna(5), 5, id="filled"),
-        param(L(5).fillna(10), 5, id="not_filled"),
+        param(ibis.null().fill_null(5), 5, id="filled"),
+        param(L(5).fill_null(10), 5, id="not_filled"),
         param(L(5).nullif(5), None, id="nullif_null"),
         param(L(10).nullif(5), 10, id="nullif_not_null"),
     ],
 )
-def test_fillna_nullif(con, expr, expected):
+def test_fill_null_nullif(con, expr, expected):
     assert con.execute(expr) == expected
 
 
@@ -349,8 +349,8 @@ def test_fillna_nullif(con, expr, expected):
     ("expr", "expected"),
     [
         param(ibis.coalesce(5, None, 4), 5, id="first"),
-        param(ibis.coalesce(ibis.NA, 4, ibis.NA), 4, id="second"),
-        param(ibis.coalesce(ibis.NA, ibis.NA, 3.14), 3.14, id="third"),
+        param(ibis.coalesce(ibis.null(), 4, ibis.null()), 4, id="second"),
+        param(ibis.coalesce(ibis.null(), ibis.null(), 3.14), 3.14, id="third"),
     ],
 )
 def test_coalesce(con, expr, expected):
@@ -360,12 +360,12 @@ def test_coalesce(con, expr, expected):
 @pytest.mark.parametrize(
     ("expr", "expected"),
     [
-        param(ibis.coalesce(ibis.NA, ibis.NA), None, id="all_null"),
+        param(ibis.coalesce(ibis.null(), ibis.null()), None, id="all_null"),
         param(
             ibis.coalesce(
-                ibis.NA.cast("int8"),
-                ibis.NA.cast("int8"),
-                ibis.NA.cast("int8"),
+                ibis.null().cast("int8"),
+                ibis.null().cast("int8"),
+                ibis.null().cast("int8"),
             ),
             None,
             id="all_nulls_with_all_cast",
@@ -377,15 +377,14 @@ def test_coalesce_all_na(con, expr, expected):
 
 
 def test_coalesce_all_na_double(con):
-    expr = ibis.coalesce(ibis.NA, ibis.NA, ibis.NA.cast("double"))
+    expr = ibis.coalesce(ibis.null(), ibis.null(), ibis.null().cast("double"))
     assert np.isnan(con.execute(expr))
 
 
 def test_numeric_builtins_work(alltypes, df):
-    expr = alltypes.double_col.fillna(0)
+    expr = alltypes.double_col.fill_null(0)
     result = expr.execute()
-    expected = df.double_col.fillna(0)
-    expected.name = "Coalesce()"
+    expected = df.double_col.fillna(0).rename(expr.get_name())
     tm.assert_series_equal(result, expected)
 
 
@@ -670,7 +669,9 @@ def test_interactive_repr_shows_error(alltypes):
 def test_subquery(alltypes, df):
     t = alltypes
 
-    expr = t.mutate(d=t.double_col.fillna(0)).limit(1000).group_by("string_col").size()
+    expr = (
+        t.mutate(d=t.double_col.fill_null(0)).limit(1000).group_by("string_col").size()
+    )
     result = expr.execute().sort_values("string_col").reset_index(drop=True)
     expected = (
         df.assign(d=df.double_col.fillna(0))
@@ -813,14 +814,14 @@ def test_first_last_value(alltypes, df, func, expected_index):
 def test_null_column(alltypes):
     t = alltypes
     nrows = t.count().execute()
-    expr = t.mutate(na_column=ibis.NA).na_column
+    expr = t.mutate(na_column=ibis.null()).na_column
     result = expr.execute()
     tm.assert_series_equal(result, pd.Series([None] * nrows, name="na_column"))
 
 
 def test_null_column_union(alltypes, df):
     t = alltypes
-    s = alltypes[["double_col"]].mutate(string_col=ibis.NA.cast("string"))
+    s = alltypes[["double_col"]].mutate(string_col=ibis.null().cast("string"))
     expr = t[["double_col", "string_col"]].union(s)
     result = expr.execute()
     nrows = t.count().execute()

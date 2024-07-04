@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+from urllib.parse import quote_plus
 
 import pandas as pd
 import pandas.testing as tm
@@ -346,3 +347,15 @@ def test_create_table_no_syntax_error(con):
     )
     t = con.create_table(gen_name("clickouse_temp_table"), schema=schema, temp=True)
     assert t.count().execute() == 0
+
+
+def test_password_with_bracket():
+    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}['
+    quoted_pass = quote_plus(password)
+    host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
+    user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
+    port = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123))
+    with pytest.raises(
+        cc.driver.exceptions.DatabaseError, match="password is incorrect"
+    ):
+        ibis.clickhouse.connect(host=host, user=user, port=port, password=quoted_pass)

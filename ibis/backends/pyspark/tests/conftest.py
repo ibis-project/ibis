@@ -2,17 +2,21 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
 import pytest
+from filelock import FileLock
 
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, topk, win
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def set_pyspark_database(con, database):
@@ -105,7 +109,7 @@ class TestConf(BackendTest):
             pd.DataFrame(
                 {
                     "a": np.arange(10, dtype=float),
-                    "b": [3.0, np.NaN] * 5,
+                    "b": [3.0, np.nan] * 5,
                     "key": list("ddeefffggh"),
                 }
             )
@@ -161,6 +165,7 @@ class TestConf(BackendTest):
             .config("spark.ui.enabled", False)
             .config("spark.ui.showConsoleProgress", False)
             .config("spark.sql.execution.arrow.pyspark.enabled", False)
+            .config("spark.sql.streaming.schemaInference", True)
         )
 
         try:
@@ -193,52 +198,41 @@ class TestConfForStreaming(BackendTest):
                 t = t.sort(sort_col)
             t.createOrReplaceTempView(name)
 
+    @classmethod
+    def load_data(
+        cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
+    ) -> BackendTest:
+        """Load testdata from `data_dir`."""
+        # handling for multi-processes pytest
+
+        # get the temp directory shared by all workers
+        root_tmp_dir = tmpdir.getbasetemp() / "streaming"
+        if worker_id != "master":
+            root_tmp_dir = root_tmp_dir.parent
+
+        fn = root_tmp_dir / cls.name()
+        with FileLock(f"{fn}.lock"):
+            cls.skip_if_missing_deps()
+
+            inst = cls(data_dir=data_dir, tmpdir=tmpdir, worker_id=worker_id, **kw)
+
+            if inst.stateful:
+                inst.stateful_load(fn, **kw)
+            else:
+                inst.stateless_load(**kw)
+            inst.postload(tmpdir=tmpdir, worker_id=worker_id, **kw)
+            return inst
+
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
-        # Spark internally stores timestamps as UTC values, and timestamp
-        # data that is brought in without a specified time zone is
-        # converted as local time to UTC with microsecond resolution.
-        # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-
         from pyspark.sql import SparkSession
 
-        config = (
-            SparkSession.builder.appName("ibis_testing")
-            .master("local[1]")
-            .config("spark.cores.max", 1)
-            .config("spark.default.parallelism", 1)
-            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.dynamicAllocation.enabled", False)
-            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.executor.heartbeatInterval", "3600s")
-            .config("spark.executor.instances", 1)
-            .config("spark.network.timeout", "4200s")
-            .config("spark.rdd.compress", False)
-            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-            .config("spark.shuffle.compress", False)
-            .config("spark.shuffle.spill.compress", False)
-            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-            .config("spark.ui.enabled", False)
-            .config("spark.ui.showConsoleProgress", False)
-            .config("spark.sql.execution.arrow.pyspark.enabled", False)
-            .config("spark.sql.streaming.schemaInference", True)
-        )
-
-        try:
-            from delta.pip_utils import configure_spark_with_delta_pip
-        except ImportError:
-            configure_spark_with_delta_pip = lambda cfg: cfg
-        else:
-            config = config.config(
-                "spark.sql.catalog.spark_catalog",
-                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            ).config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
-
-        spark = configure_spark_with_delta_pip(config).getOrCreate()
-        return ibis.pyspark.connect(spark, mode="streaming", **kw)
+        # SparkContext is shared globally; only one SparkContext should be active
+        # per JVM. We need to create a new SparkSession for streaming tests but
+        # this session shares the same SparkContext.
+        spark = SparkSession.getActiveSession().newSession()
+        con = ibis.pyspark.connect(spark, mode="streaming", **kw)
+        return con
 
 
 @pytest.fixture(scope="session")
@@ -255,7 +249,7 @@ def con(data_dir, tmp_path_factory, worker_id):
 
     df_nulls = con._session.createDataFrame(
         [
-            ["k1", np.NaN, "Alfred", None],
+            ["k1", np.nan, "Alfred", None],
             ["k1", 3.0, None, "joker"],
             ["k2", 27.0, "Batman", "batmobile"],
             ["k2", None, "Catwoman", "motorcycle"],

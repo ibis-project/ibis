@@ -59,7 +59,7 @@ sessionized = (
     data
     # Create a session id for each character by using a cumulative sum
     # over the `new_session` column.
-    .mutate(new_session=is_new_session.fillna(True))
+    .mutate(new_session=is_new_session.fill_null(True))
     # Create a session id for each character by using a cumulative sum
     # over the `new_session` column.
     .mutate(session_id=c.new_session.sum().over(entity_window))

@@ -502,10 +502,10 @@ def test_mutate_after_join():
             .isnull()
             .ifelse(joined["q_Order_Priority"], joined["p_Order_Priority"])
         ),
-        p_count=joined["p_count"].fillna(0),
-        q_count=joined["q_count"].fillna(0),
-        p_density=joined.p_density.fillna(1e-10),
-        q_density=joined.q_density.fillna(1e-10),
+        p_count=joined["p_count"].fill_null(0),
+        q_count=joined["q_count"].fill_null(0),
+        p_density=joined.p_density.fill_null(1e-10),
+        q_density=joined.q_density.fill_null(1e-10),
         features=ibis.literal("Order_Priority"),
     )
 

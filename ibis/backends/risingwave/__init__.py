@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from functools import partial
-from itertools import repeat
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
@@ -307,16 +305,11 @@ class Backend(PostgresBackend):
             )
             create_stmt_sql = create_stmt.sql(self.dialect)
 
-            columns = schema.keys()
             df = op.data.to_frame()
             data = df.itertuples(index=False)
-            cols = ", ".join(
-                ident.sql(self.dialect)
-                for ident in map(partial(sg.to_identifier, quoted=quoted), columns)
+            sql = self._build_insert_template(
+                name, schema=schema, columns=True, placeholder="%s"
             )
-            specs = ", ".join(repeat("%s", len(columns)))
-            table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.dialect)} ({cols}) VALUES ({specs})"
             with self.begin() as cur:
                 cur.execute(create_stmt_sql)
                 extras.execute_batch(cur, sql, data, 128)

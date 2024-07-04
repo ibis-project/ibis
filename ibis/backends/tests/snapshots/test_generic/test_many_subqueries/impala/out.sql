@@ -1,12 +1,12 @@
 WITH `t1` AS (
   SELECT
     `t0`.`street`,
-    ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC NULLS LAST) - 1 AS `key`
+    ROW_NUMBER() OVER (ORDER BY `t0`.`street` ASC) - 1 AS `key`
   FROM `data` AS `t0`
 ), `t7` AS (
   SELECT
     `t6`.`street`,
-    ROW_NUMBER() OVER (ORDER BY `t6`.`street` ASC NULLS LAST) - 1 AS `key`
+    ROW_NUMBER() OVER (ORDER BY `t6`.`street` ASC) - 1 AS `key`
   FROM (
     SELECT
       `t3`.`street`,

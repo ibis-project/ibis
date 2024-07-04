@@ -45,8 +45,8 @@ website:
     type: overlay
     algolia:
       index-name: prod_ibis
-      application-id: HS77W8GWM1
-      search-only-api-key: 8ca4fcd24da322db857322ae4f79d6f3
+      application-id: TNU9HG3L41
+      search-only-api-key: 26350948d1961209df16d9717a7e01d6
       analytics-events: true
       show-logo: true
 
@@ -297,10 +297,6 @@ quartodoc:
               signature_name: full
             - name: param
               dynamic: true
-              signature_name: full
-            - name: NA
-              # Ideally exposed under `ibis` but that doesn't seem to work??
-              package: ibis.expr.api
               signature_name: full
             - name: "null"
               dynamic: true

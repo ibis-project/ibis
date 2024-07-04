@@ -14,6 +14,7 @@ from ibis.common.graph import Node as Traversable
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Coercible, CoercionError
 from ibis.common.typing import DefaultTypeVars
+from ibis.util import is_iterable
 
 
 @public
@@ -79,11 +80,19 @@ class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
     # TODO(kszucs): figure out how to represent not named arguments
     @property
     def name(self) -> str:
-        names = (
-            name
-            for arg in self.__args__
-            if (name := getattr(arg, "name", None)) is not None
-        )
+        names = []
+        for arg in self.__args__:
+            if is_iterable(arg):
+                elements = [
+                    element_name
+                    for element in arg
+                    if (element_name := getattr(element, "name", None)) is not None
+                ]
+                joined = ", ".join(elements)
+                fmt = "({})" if len(elements) != 1 else "({},)"
+                names.append(fmt.format(joined))
+            elif (name := getattr(arg, "name", None)) is not None:
+                names.append(name)
         return f"{self.__class__.__name__}({', '.join(names)})"
 
     @property

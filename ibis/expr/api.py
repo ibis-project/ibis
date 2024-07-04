@@ -57,7 +57,6 @@ __all__ = (
     "Column",
     "Deferred",
     "Expr",
-    "NA",
     "Scalar",
     "Schema",
     "Table",
@@ -197,35 +196,6 @@ e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
 
-NA = null()
-"""The NULL scalar.
-
-This is an untyped NULL. If you want a typed NULL, use eg `ibis.null(str)`.
-
-Examples
---------
->>> import ibis
->>> ibis.options.interactive = True
->>> ibis.NA.isnull()
-┌──────┐
-│ True │
-└──────┘
-
-datatype-specific methods aren't available on `NA`:
-
->>> ibis.NA.upper()  # quartodoc: +EXPECTED_FAILURE
-Traceback (most recent call last):
-  ...
-AttributeError: 'NullScalar' object has no attribute 'upper'
-
-Instead, use the typed `ibis.null`:
-
->>> ibis.null(str).upper().isnull()
-┌──────┐
-│ True │
-└──────┘
-"""
-
 deferred = _
 """Deferred expression object.
 
@@ -282,12 +252,11 @@ def param(type: dt.DataType) -> ir.Scalar:
     ... )
     >>> expr = t.filter(t.date_col >= start).value.sum()
     >>> expr.execute(params={start: date(2013, 1, 1)})
-    6.0
+    np.float64(6.0)
     >>> expr.execute(params={start: date(2013, 1, 2)})
-    5.0
+    np.float64(5.0)
     >>> expr.execute(params={start: date(2013, 1, 3)})
-    3.0
-
+    np.float64(3.0)
     """
     return ops.ScalarParameter(type).to_expr()
 
@@ -590,8 +559,8 @@ def _memtable_from_polars_dataframe(
     ).to_expr()
 
 
-def _deferred_method_call(expr, method_name):
-    method = operator.methodcaller(method_name)
+def _deferred_method_call(expr, method_name, **kwargs):
+    method = operator.methodcaller(method_name, **kwargs)
     if isinstance(expr, str):
         value = _[expr]
     elif isinstance(expr, Deferred):
@@ -603,13 +572,15 @@ def _deferred_method_call(expr, method_name):
     return method(value)
 
 
-def desc(expr: ir.Column | str) -> ir.Value:
+def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
     ----------
     expr
         The expression or column name to use for sorting
+    nulls_first
+        Bool to indicate weather to put NULL values first or not.
 
     See Also
     --------
@@ -639,16 +610,18 @@ def desc(expr: ir.Column | str) -> ir.Value:
         An expression
 
     """
-    return _deferred_method_call(expr, "desc")
+    return _deferred_method_call(expr, "desc", nulls_first=nulls_first)
 
 
-def asc(expr: ir.Column | str) -> ir.Value:
+def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
     ----------
     expr
         The expression or column name to use for sorting
+    nulls_first
+        Bool to indicate weather to put NULL values first or not.
 
     See Also
     --------
@@ -678,7 +651,7 @@ def asc(expr: ir.Column | str) -> ir.Value:
         An expression
 
     """
-    return _deferred_method_call(expr, "asc")
+    return _deferred_method_call(expr, "asc", nulls_first=nulls_first)
 
 
 def preceding(value) -> ir.Value:
@@ -2406,7 +2379,6 @@ def where(cond, true_expr, false_expr) -> ir.Value:
     -------
     Value : ir.Value
         The value of `true_expr` if `arg` is `True` else `false_expr`
-
     """
     return ifelse(cond, true_expr, false_expr)
 
@@ -2428,17 +2400,16 @@ def coalesce(*args: Any) -> ir.Value:
     See Also
     --------
     [`Value.coalesce()`](#ibis.expr.types.generic.Value.coalesce)
-    [`Value.fillna()`](#ibis.expr.types.generic.Value.fillna)
+    [`Value.fill_null()`](#ibis.expr.types.generic.Value.fill_null)
 
     Examples
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.coalesce(None, 4, 5)
-    ┌───┐
-    │ 4 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(4) │
+    └────────────┘
     """
     return ops.Coalesce(args).to_expr()
 
@@ -2462,10 +2433,9 @@ def greatest(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.greatest(None, 4, 5)
-    ┌───┐
-    │ 5 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(5) │
+    └────────────┘
     """
     return ops.Greatest(args).to_expr()
 
@@ -2489,9 +2459,8 @@ def least(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.least(None, 4, 5)
-    ┌───┐
-    │ 4 │
-    └───┘
-
+    ┌────────────┐
+    │ np.int8(4) │
+    └────────────┘
     """
     return ops.Least(args).to_expr()
