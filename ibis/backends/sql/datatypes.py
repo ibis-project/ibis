@@ -1110,3 +1110,6 @@ class FlinkType(SqlglotType):
             ],
             nested=True,
         )
+
+class E6DataType(MySQLType):
+    dialect = "e6data"
