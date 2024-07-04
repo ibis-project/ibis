@@ -879,7 +879,10 @@ class BigQueryType(SqlglotType):
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial) -> sge.DataType:
         if (dtype.geotype, dtype.srid) == ("geography", 4326):
-            return sge.DataType(this=sge.DataType.Type.GEOGRAPHY)
+            return sge.DataType(
+                this=sge.DataType.Type.GEOGRAPHY,
+                expressions=[None, sge.DataTypeParam(this=sge.convert(dtype.srid))],
+            )
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
