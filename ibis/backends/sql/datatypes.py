@@ -296,7 +296,7 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOMETRY(
-        cls, arg: sge.DataTypeParam | None, srid: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
             typeclass = _geotypes[arg.this]
@@ -308,7 +308,7 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOGRAPHY(
-        cls, arg: sge.DataTypeParam | None, srid: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
             typeclass = _geotypes[arg.this]
@@ -806,7 +806,7 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_sqlglot_GEOGRAPHY(
-        cls, arg: sge.DataTypeParam | None, srid: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> dt.GeoSpatial:
         return dt.GeoSpatial(
             geotype="geography", srid=4326, nullable=cls.default_nullable
