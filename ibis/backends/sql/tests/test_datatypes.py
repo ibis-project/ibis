@@ -58,8 +58,6 @@ def test_roundtripable_types(ibis_type):
     assert_dtype_roundtrip(ibis_type)
 
 
-
-
 def test_interval_without_unit():
     with pytest.raises(com.IbisTypeError, match="precision is None"):
         SqlglotType.from_string("INTERVAL")
