@@ -64,13 +64,13 @@ def test_roundtripable_types(ibis_type):
 def test_specific_geometry_types(ibis_type):
     sqlglot_result = SqlglotType.from_ibis(ibis_type)
     assert isinstance(sqlglot_result, sge.DataType)
-    assert sqlglot_result.args["this"] == sge.DataType.Type.GEOMETRY
+    assert sqlglot_result.args["this"] == getattr(
+        sge.DataType.Type, ibis_type.geotype.upper()
+    )
     assert sqlglot_result.args["expressions"] == [
         sge.Var(this=ibis_type.__class__.__name__.upper())
     ]
-    assert SqlglotType.to_ibis(sqlglot_result) == ibis_type.__class__(
-        geotype="geometry", nullable=ibis_type.nullable
-    )
+    assert SqlglotType.to_ibis(sqlglot_result) == ibis_type
 
 
 # def test_geotype_with_srid
