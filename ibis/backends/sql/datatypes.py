@@ -298,16 +298,15 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOMETRY(
-        cls, arg: sge.DataTypeParam | None = None, srid: int | None = None
+        cls, arg: sge.DataTypeParam | None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            geotype = _geotypes[str(arg).upper()](nullable=cls.default_nullable)
-            if srid is not None:
-                geotype.srid = srid
-            return geotype
-        return dt.GeoSpatial(
-            geotype="geometry", nullable=cls.default_nullable, srid=srid
-        )
+            typeclass = _geotypes[arg.this]
+        else:
+            typeclass = dt.GeoSpatial
+        if srid is not None:
+            srid = int(srid.this.this)
+        return typeclass(geotype="geometry", nullable=cls.default_nullable, srid=srid)
 
     @classmethod
     def _from_sqlglot_GEOGRAPHY(cls) -> sge.DataType:
@@ -379,18 +378,31 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
-        srid = dtype.srid
-        expressions = [sge.DataTypeParam(this=sge.Literal.number(srid))]
+        expressions = [None]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
 
         if (geotype := dtype.geotype) is not None:
-            return sge.DataType(
-                this=getattr(typecode, geotype.upper()), expressions=expressions
-            )
-        return sge.DataType(this=typecode.GEOMETRY, expressions=expressions)
+            this = getattr(typecode, geotype.upper())
+
+        return sge.DataType(this=this, expressions=expressions)
+
+    @classmethod
+    def _from_ibis_SpecificGeometry(cls, dtype: dt.GeoSpatial):
+        expressions = [sge.Var(this=dtype.__class__.__name__.upper())]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
+
+        if (geotype := dtype.geotype) is not None:
+            this = getattr(typecode, geotype.upper())
+
+        return sge.DataType(this=this, expressions=expressions)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
-    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
+    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_SpecificGeometry
 
 
 class PostgresType(SqlglotType):
