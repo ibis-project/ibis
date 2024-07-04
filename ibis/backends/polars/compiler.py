@@ -1228,7 +1228,7 @@ def _arg_min_max(op, func, **kw):
     translate_key = translate(key, **kw)
 
     not_null_mask = translate_arg.is_not_null() & translate_key.is_not_null()
-    return translate_arg.filter(not_null_mask).gather(
+    return translate_arg.filter(not_null_mask).get(
         func(translate_key.filter(not_null_mask))
     )
 
