@@ -32,6 +32,13 @@ pandas'"](https://wesmckinney.com/blog/apache-arrow-pandas-internals):
 Today with Ibis you can reliably and efficiently process a 1TB dataset on a
 laptop with <1/10th the RAM.
 
+:::{.callout-important}
+This represents **a 50-100X improvement** in RAM requirements for Python
+dataframes in just 7 years thanks to [composable data
+systems](https://wesmckinney.com/blog/looking-back-15-years) and [hard work by
+the DuckDB team](https://duckdb.org/2024/06/26/benchmarks-over-time).
+:::
+
 ## Exploring the data with Python dataframes
 
 I've generated ~1TB (`sf=1024`) of [TPC-H data](https://www.tpc.org/tpch) on my
@@ -331,7 +338,7 @@ to_graph(t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3))
 
 Ibis with the DuckDB and DataFusion backends complete this in about 2 minutes
 each. Polars (lazy) crashes the kernel after about 2 minutes with its default
-mode and panicks in streaming mode.
+mode and panics in streaming mode.
 
 **Streaming is an overloaded term here**. In the context of Ibis, a streaming
 backend refers to a near real-time data processing engine like [Apache
