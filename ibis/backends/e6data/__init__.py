@@ -210,9 +210,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         catalog = None
         db = None
 
-        print("inside e6 table")
         if isinstance(database, tuple):
-            print("inside tuple")
             catalog, db = database
         elif isinstance(database, str):
             if '.' in database:
@@ -220,11 +218,8 @@ class Backend(SQLBackend, CanCreateDatabase):
             else:
                 db = database
 
-        print("Name: %s, Catalog: %s, Database: %s", name, catalog, db)
         table_schema = self.get_schema(name, catalog=catalog, database=db)
 
-        print('ops namespace++++++++++++++')
-        print(ops.Namespace(catalog=catalog, database=db))
         return ops.DatabaseTable(
             name,
             schema=table_schema,
@@ -236,7 +231,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         # print db, catalog, table
-        print("Table: %s , Catalog: %s, database: %s", name, catalog, database)
         columns = self.con.get_columns(database=database, catalog=catalog, table=name)
         type_mapper = self.compiler.type_mapper
         fields = {
@@ -286,7 +280,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         cursor = con.cursor()
 
         try:
-            print("Query: ", query)
             cursor.execute(query, **kwargs)
         except Exception:
             cursor.close()
@@ -364,7 +357,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             .sql(self.name)
         )
 
-        print("SQL List Tables: ", sql)
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()
 
@@ -374,25 +366,13 @@ class Backend(SQLBackend, CanCreateDatabase):
         self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
     ) -> Any:
         """Execute an expression."""
-        print("step 1")
-        print(expr)
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
-        print("step 2")
-        print(table)
         sql = self.compile(table, limit=limit, **kwargs)
 
-        print("---sql")
-        print(sql)
         schema = table.schema()
-        print("++schema")
-        print(schema)
         with self._safe_raw_sql(sql) as cur:
-            print("cur-------")
-            print(cur)
             result = self._fetch_from_cursor(cur, schema)
-            print("successfull execution========")
-            print(result)
         return expr.__pandas_result__(result)
 
     def create_table(
@@ -578,10 +558,6 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         from ibis.backends.mysql.converter import MySQLPandasData
 
-        print("passed data---------")
-        #print(cursor.fetchall())
-        print("after fetchall")
-        print(cursor)
         try:
             df = pd.DataFrame.from_records(
                 cursor.fetchall(), columns=schema.names, coerce_float=True
