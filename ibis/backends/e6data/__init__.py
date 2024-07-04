@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 class Backend(SQLBackend, CanCreateDatabase):
-    name = "mysql"
+    name = "e6data"
     compiler = E6DataCompiler()
     supports_create_or_replace = False
 
@@ -69,7 +69,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             "password": url.password or "",
             "host": url.hostname,
             "database": database or "",
-            "catalog_name": "",
+            "catalog_name": url.catalog or "",
+            "secure": url.secure == 'true',
+            "auto_resume": query_params.get('auto-resume', [False])[0] == 'true',
+            "cluster_uuid":  query_params.get('cluster-uuid', [None])[0] or "",
         }
 
         for name, value in query_params.items():
@@ -182,23 +185,67 @@ class Backend(SQLBackend, CanCreateDatabase):
             finally:
                 cur.execute(f"DROP TABLE {table}")
 
+    def table(
+        self,
+        name: str,
+        database: tuple[str, str] | str | None = None
+    ) -> ir.Table:
+        """Construct a table expression.
+
+        Parameters
+        ----------
+        name : str
+            Table name
+        database : tuple[str, str] | str | None, optional
+            Database name. If not provided, the current database is used.
+            For backends that support multi-level table hierarchies, you can
+            pass in a dotted string path like "catalog.database" or a tuple of
+            strings like ("catalog", "database").
+
+        Returns
+        -------
+        ir.Table
+            Table expression
+        """
+        catalog = None
+        db = None
+
+        print("inside e6 table")
+        if isinstance(database, tuple):
+            print("inside tuple")
+            catalog, db = database
+        elif isinstance(database, str):
+            if '.' in database:
+                catalog, db = database.split('.', 1)
+            else:
+                db = database
+
+        print("Name: %s, Catalog: %s, Database: %s", name, catalog, db)
+        table_schema = self.get_schema(name, catalog=catalog, database=db)
+
+        print('ops namespace++++++++++++++')
+        print(ops.Namespace(catalog=catalog, database=db))
+        return ops.DatabaseTable(
+            name,
+            schema=table_schema,
+            source=self,
+            namespace=ops.Namespace(catalog=catalog, database=db),
+        ).to_expr()
+        
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
-        table = sg.table(name, db=database, catalog=catalog, quoted=True).sql(self.name)
-
-        with self.begin() as cur:
-            cur.execute(f"DESCRIBE {table}")
-            result = cur.fetchall()
-
+        # print db, catalog, table
+        print("Table: %s , Catalog: %s, database: %s", name, catalog, database)
+        columns = self.con.get_columns(database=database, catalog=catalog, table=name)
         type_mapper = self.compiler.type_mapper
         fields = {
-            name: type_mapper.from_string(type_string, nullable=is_nullable == "YES")
-            for name, type_string, is_nullable, *_ in result
+            column["fieldName"]: type_mapper.from_string(column["fieldType"], nullable=True)
+            for column in columns
         }
-
+        print(fields)
         return sch.Schema(fields)
-
+    
     def create_database(self, name: str, force: bool = False) -> None:
         sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
             self.name
@@ -327,15 +374,25 @@ class Backend(SQLBackend, CanCreateDatabase):
         self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
     ) -> Any:
         """Execute an expression."""
-
+        print("step 1")
+        print(expr)
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
+        print("step 2")
+        print(table)
         sql = self.compile(table, limit=limit, **kwargs)
 
+        print("---sql")
+        print(sql)
         schema = table.schema()
-
+        print("++schema")
+        print(schema)
         with self._safe_raw_sql(sql) as cur:
+            print("cur-------")
+            print(cur)
             result = self._fetch_from_cursor(cur, schema)
+            print("successfull execution========")
+            print(result)
         return expr.__pandas_result__(result)
 
     def create_table(
@@ -521,9 +578,13 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         from ibis.backends.mysql.converter import MySQLPandasData
 
+        print("passed data---------")
+        #print(cursor.fetchall())
+        print("after fetchall")
+        print(cursor)
         try:
             df = pd.DataFrame.from_records(
-                cursor, columns=schema.names, coerce_float=True
+                cursor.fetchall(), columns=schema.names, coerce_float=True
             )
         except Exception:
             # clean up the cursor if we fail to create the DataFrame
