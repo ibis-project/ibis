@@ -30,7 +30,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     MySQLProgrammingError,
     OracleDatabaseError,
-    PolarsComputeError,
+    PolarsInvalidOperationError,
     PolarsPanicException,
     PsycoPg2InternalError,
     Py4JJavaError,
@@ -1447,7 +1447,7 @@ def test_integer_to_timestamp(backend, con, unit):
                 pytest.mark.never(
                     ["polars"],
                     reason="datetime formatting style not supported",
-                    raises=PolarsComputeError,
+                    raises=PolarsInvalidOperationError,
                 ),
                 pytest.mark.never(
                     ["duckdb"],
@@ -1526,7 +1526,7 @@ def test_string_to_timestamp(alltypes, fmt):
                 pytest.mark.never(
                     ["polars"],
                     reason="datetime formatting style not supported",
-                    raises=PolarsComputeError,
+                    raises=PolarsInvalidOperationError,
                 ),
                 pytest.mark.never(
                     ["duckdb"],
@@ -2073,7 +2073,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     ["flink"],
     raises=ArrowInvalid,
 )
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
+@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     ts = "2419-10-11 10:10:25"
@@ -2135,14 +2135,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     raises=AssertionError,
 )
 @pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
-@pytest.mark.notimpl(
-    ["polars"],
-    raises=PolarsPanicException,
-    reason=(
-        "called `Result::unwrap()` on an `Err` value: PyErr { type: <class 'OverflowError'>, "
-        "value: OverflowError('int too big to convert'), traceback: None }"
-    ),
-)
+@pytest.mark.broken(["polars"], raises=AssertionError, reason="returns NaT")
 @pytest.mark.broken(
     ["flink"],
     reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",

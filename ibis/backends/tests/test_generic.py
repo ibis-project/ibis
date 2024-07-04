@@ -795,11 +795,6 @@ def test_table_info_large(con):
     raises=com.OperationNotDefinedError,
     reason="Mode and StandardDev is not supported",
 )
-@pytest.mark.notimpl(
-    ["polars"],
-    raises=PolarsSchemaError,
-    reason="cannot extend/append Float64 with Float32",
-)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -863,6 +858,11 @@ def test_table_info_large(con):
                     condition=is_newer_than("pandas", "2.1.0"),
                     reason="FutureWarning: concat empty or all-NA entries is deprecated",
                 ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=PolarsSchemaError,
+                    reason="type Float32 is incompatible with expected type Float64",
+                ),
             ],
             id="all_cols",
         ),
@@ -893,6 +893,11 @@ def test_table_info_large(con):
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=PolarsSchemaError,
+                    reason="type Float32 is incompatible with expected type Float64",
                 ),
             ],
             id="numeric_col",
