@@ -389,8 +389,7 @@ class SqlglotType(TypeMapper):
         if (srid := dtype.srid) is not None:
             expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
 
-        if (geotype := dtype.geotype) is not None:
-            this = getattr(typecode, geotype.upper())
+        this = getattr(typecode, dtype.geotype.upper())
 
         return sge.DataType(this=this, expressions=expressions)
 
@@ -401,11 +400,7 @@ class SqlglotType(TypeMapper):
         if (srid := dtype.srid) is not None:
             expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
 
-        if (geotype := dtype.geotype) is not None:
-            this = getattr(typecode, geotype.upper())
-        else:
-            this = typecode.GEOMETRY
-
+        this = getattr(typecode, dtype.geotype.upper())
         return sge.DataType(this=this, expressions=expressions)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
