@@ -27,8 +27,6 @@ _from_sqlglot_types = {
     typecode.ENUM16: dt.String,
     typecode.FLOAT: dt.Float32,
     typecode.FIXEDSTRING: dt.String,
-    typecode.GEOMETRY: partial(dt.GeoSpatial, geotype="geometry"),
-    typecode.GEOGRAPHY: partial(dt.GeoSpatial, geotype="geography"),
     typecode.HSTORE: partial(dt.Map, dt.string, dt.string),
     typecode.INET: dt.INET,
     typecode.INT128: partial(dt.Decimal, 38, 0),
@@ -298,15 +296,27 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOMETRY(
-        cls, arg: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            return _geotypes[str(arg).upper()](nullable=cls.default_nullable)
-        return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
+            typeclass = _geotypes[arg.this.this]
+        else:
+            typeclass = dt.GeoSpatial
+        if srid is not None:
+            srid = int(srid.this.this)
+        return typeclass(geotype="geometry", nullable=cls.default_nullable, srid=srid)
 
     @classmethod
-    def _from_sqlglot_GEOGRAPHY(cls) -> sge.DataType:
-        return dt.GeoSpatial(geotype="geography", nullable=cls.default_nullable)
+    def _from_sqlglot_GEOGRAPHY(
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
+    ) -> sge.DataType:
+        if arg is not None:
+            typeclass = _geotypes[arg.this.this]
+        else:
+            typeclass = dt.GeoSpatial
+        if srid is not None:
+            srid = int(srid.this.this)
+        return typeclass(geotype="geography", nullable=cls.default_nullable, srid=srid)
 
     @classmethod
     def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
@@ -374,13 +384,30 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
-        if (geotype := dtype.geotype) is not None:
-            return sge.DataType(this=getattr(typecode, geotype.upper()))
-        return sge.DataType(this=typecode.GEOMETRY)
+        expressions = [None]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
+
+        this = getattr(typecode, dtype.geotype.upper())
+
+        return sge.DataType(this=this, expressions=expressions)
+
+    @classmethod
+    def _from_ibis_SpecificGeometry(cls, dtype: dt.GeoSpatial):
+        expressions = [
+            sge.DataTypeParam(this=sge.Var(this=dtype.__class__.__name__.upper()))
+        ]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
+
+        this = getattr(typecode, dtype.geotype.upper())
+        return sge.DataType(this=this, expressions=expressions)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
-    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
+    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_SpecificGeometry
 
 
 class PostgresType(SqlglotType):
@@ -780,7 +807,9 @@ class BigQueryType(SqlglotType):
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_GEOGRAPHY(cls) -> dt.GeoSpatial:
+    def _from_sqlglot_GEOGRAPHY(
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
+    ) -> dt.GeoSpatial:
         return dt.GeoSpatial(
             geotype="geography", srid=4326, nullable=cls.default_nullable
         )

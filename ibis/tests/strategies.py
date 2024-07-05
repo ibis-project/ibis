@@ -178,30 +178,17 @@ def struct_dtypes(
     return dt.Struct(fields, nullable=draw(nullable))
 
 
-def geometry_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geometry"), nullable=nullable)
-
-
-def geography_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable)
-
-
-def specific_geometry_dtypes(nullable=_nullable):
-    return st.one_of(
-        st.builds(dt.Point, nullable=nullable),
-        st.builds(dt.LineString, nullable=nullable),
-        st.builds(dt.Polygon, nullable=nullable),
-        st.builds(dt.MultiPoint, nullable=nullable),
-        st.builds(dt.MultiLineString, nullable=nullable),
-        st.builds(dt.MultiPolygon, nullable=nullable),
-    )
-
-
 def geospatial_dtypes(nullable=_nullable):
+    geotype = st.one_of(st.just("geography"), st.just("geometry"))
+    srid = st.one_of(st.just(None), st.integers(min_value=0))
     return st.one_of(
-        specific_geometry_dtypes(nullable=nullable),
-        geometry_dtypes(nullable=nullable),
-        geography_dtypes(nullable=nullable),
+        st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.Polygon, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.GeoSpatial, geotype=geotype, nullable=nullable, srid=srid),
     )
 
 

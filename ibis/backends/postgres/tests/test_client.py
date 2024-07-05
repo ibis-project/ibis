@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import string
 from urllib.parse import quote_plus
 
 import hypothesis as h
@@ -30,6 +31,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import PsycoPg2OperationalError
+from ibis.util import gen_name
 
 pytest.importorskip("psycopg2")
 
@@ -390,3 +392,28 @@ def test_password_with_bracket():
         match=f'password authentication failed for user "{IBIS_POSTGRES_USER}"',
     ):
         ibis.connect(url)
+
+
+def test_create_geospatial_table_with_srid(con):
+    name = gen_name("geospatial")
+    column_names = string.ascii_lowercase
+    column_types = [
+        "Point",
+        "LineString",
+        "Polygon",
+        "MultiLineString",
+        "MultiPoint",
+        "MultiPolygon",
+    ]
+    schema_string = ", ".join(
+        f"{column} geometry({dtype}, 4326)"
+        for column, dtype in zip(column_names, column_types)
+    )
+    con.raw_sql(f"CREATE TEMP TABLE {name} ({schema_string})")
+    schema = con.get_schema(name)
+    assert schema == ibis.schema(
+        {
+            column: getattr(dt, dtype)(srid=4326)
+            for column, dtype in zip(column_names, column_types)
+        }
+    )
