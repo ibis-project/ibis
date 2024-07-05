@@ -299,7 +299,7 @@ class SqlglotType(TypeMapper):
         cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this]
+            typeclass = _geotypes[arg.this.this]
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
@@ -311,7 +311,7 @@ class SqlglotType(TypeMapper):
         cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            typeclass = _geotypes[arg.this]
+            typeclass = _geotypes[arg.this.this]
         else:
             typeclass = dt.GeoSpatial
         if srid is not None:
@@ -395,7 +395,9 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_SpecificGeometry(cls, dtype: dt.GeoSpatial):
-        expressions = [sge.Var(this=dtype.__class__.__name__.upper())]
+        expressions = [
+            sge.DataTypeParam(this=sge.Var(this=dtype.__class__.__name__.upper()))
+        ]
 
         if (srid := dtype.srid) is not None:
             expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
