@@ -178,27 +178,9 @@ def struct_dtypes(
     return dt.Struct(fields, nullable=draw(nullable))
 
 
-def geometry_dtypes(nullable=_nullable):
-    return st.builds(
-        dt.GeoSpatial,
-        geotype=st.just("geometry"),
-        nullable=nullable,
-        srid=st.one_of(st.just(None), st.just(4321)),
-    )
-
-
-def geography_dtypes(nullable=_nullable):
-    return st.builds(
-        dt.GeoSpatial,
-        geotype=st.just("geography"),
-        nullable=nullable,
-        srid=st.one_of(st.just(None), st.just(4321)),
-    )
-
-
-def specific_geospatial_dtypes(nullable=_nullable):
+def geospatial_dtypes(nullable=_nullable):
     geotype = st.one_of(st.just("geography"), st.just("geometry"))
-    srid = st.one_of(st.just(None), st.just(4321))
+    srid = st.one_of(st.just(None), st.integers(min_value=0))
     return st.one_of(
         st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
         st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),
@@ -206,14 +188,7 @@ def specific_geospatial_dtypes(nullable=_nullable):
         st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid),
         st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid),
         st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid),
-    )
-
-
-def geospatial_dtypes(nullable=_nullable):
-    return st.one_of(
-        specific_geospatial_dtypes(nullable=nullable),
-        geometry_dtypes(nullable=nullable),
-        geography_dtypes(nullable=nullable),
+        st.builds(dt.GeoSpatial, geotype=geotype, nullable=nullable, srid=srid),
     )
 
 
