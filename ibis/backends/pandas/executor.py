@@ -623,7 +623,7 @@ class PandasExecutor(Dispatched, PandasUtils):
     @classmethod
     def visit(cls, op: PandasAggregate, parent, groups, metrics):
         if groups:
-            parent = parent.groupby([col.name for col in groups.values()])
+            parent = parent.groupby([col.name for col in groups.values()], dropna=False)
             metrics = {k: parent.apply(v) for k, v in metrics.items()}
             result = cls.concat(metrics, axis=1).reset_index()
             renames = {v.name: k for k, v in op.groups.items()}
