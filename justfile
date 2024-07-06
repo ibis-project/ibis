@@ -200,7 +200,7 @@ build-ibis-for-pyodide:
     git checkout poetry.lock pyproject.toml
     jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
         --arg ibis dist/*.whl \
-        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-0.10.2-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
+        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         > docs/jupyter_lite_config.json
 
 # build the jupyterlite deployment
