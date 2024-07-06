@@ -392,7 +392,7 @@ class DaskExecutor(PandasExecutor, DaskUtils):
             combined, _ = cls.asframe(results)
             return combined
 
-        parent = parent.groupby([col.name for col in groups.values()])
+        parent = parent.groupby([col.name for col in groups.values()], dropna=False)
 
         measures = {}
         for name, metric in metrics.items():
