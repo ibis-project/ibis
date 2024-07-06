@@ -2430,9 +2430,6 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask"], raises=IndexError, reason="NaN isn't treated as NULL"
-)
-@pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
     reason="inserting three rows into druid is difficult",

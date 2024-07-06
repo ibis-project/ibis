@@ -1556,21 +1556,7 @@ def test_group_by_expr(backend, con):
 
 
 @pytest.mark.parametrize(
-    "value",
-    [
-        ibis.literal("a"),
-        param(
-            ibis.null("str"),
-            marks=[
-                pytest.mark.notimpl(
-                    ["pandas", "dask"],
-                    reason="nulls are discarded by default in group bys",
-                    raises=IndexError,
-                ),
-            ],
-        ),
-    ],
-    ids=["string", "null"],
+    "value", [ibis.literal("a"), ibis.null("str")], ids=["string", "null"]
 )
 @pytest.mark.notyet(
     ["mssql"], raises=PyODBCProgrammingError, reason="not supported by the database"
