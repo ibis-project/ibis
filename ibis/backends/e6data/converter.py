@@ -5,8 +5,8 @@ import datetime
 from ibis.formats.pandas import PandasData
 
 
-class MySQLPandasData(PandasData):
-    # TODO(kszucs): this could be reused at other backends, like pyspark
+class E6DataPandasData(PandasData):
+    # Placeholder for implementing furture data type conversion 
     @classmethod
     def convert_Time(cls, s, dtype, pandas_type):
         def convert(timedelta):
