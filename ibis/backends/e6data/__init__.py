@@ -12,7 +12,6 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 import numpy as np
-import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
 
@@ -23,8 +22,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
-from ibis.backends.e6data.compiler import E6DataCompiler 
-from ibis.backends.sql import SQLBackend
+from ibis.backends.e6data.compiler import E6DataCompiler
+from ibis.backends.mysql import Backend as MySQLBackend
 from ibis.backends.sql.compiler import TRUE, C
 from e6data_python_connector import Connection
 
@@ -35,7 +34,8 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
-class Backend(SQLBackend, CanCreateDatabase):
+
+class Backend(MySQLBackend, CanCreateDatabase):
     name = "e6data"
     compiler = E6DataCompiler()
     supports_create_or_replace = False
@@ -44,6 +44,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def version(self):
         matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.server_version)
         return ".".join(matched.groups())
+
     def _from_url(self, url: str, **kwargs):
         """Connect to a backend using a URL `url`.
 
@@ -97,7 +98,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if "password" in kwargs and kwargs["password"] is None:
             del kwargs["password"]
-        
+
         if "catalog_name" in kwargs and not kwargs["catalog_name"]:
             del kwargs["catalog_name"]
 
@@ -107,7 +108,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def version(self):
         matched = re.search(r"(\d+)\.(\d+)\.(\d+)", self.con.server_version)
         return ".".join(matched.groups())
-    
+
     def do_connect(
         self,
         host: str,
@@ -134,7 +135,7 @@ class Backend(SQLBackend, CanCreateDatabase):
           Catalog name
           kwargs
             Additional keyword arguments
-       
+
 
         Examples
         --------
@@ -149,7 +150,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-       
+
         """
         self.con = Connection(
             host=host,
@@ -159,7 +160,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             database=database,
             catalog=catalog_name,
         )
-    
 
     @property
     def current_database(self) -> str:
@@ -169,8 +169,8 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def list_databases(self, like: str | None = None) -> list[str]:
         # In MySQL syntax, "database" and "schema" are synonymous
-    
-        databases = self.con.get_schema_names() 
+
+        databases = self.con.get_schema_names()
         return self._filter_with_like(databases, like)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
@@ -226,44 +226,20 @@ class Backend(SQLBackend, CanCreateDatabase):
             source=self,
             namespace=ops.Namespace(catalog=catalog, database=db),
         ).to_expr()
-        
+
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
         # print db, catalog, table
-        columns = self.con.get_columns(database=database, catalog=catalog, table=name)
+        columns = self.con.get_columns(
+            database=database, catalog=catalog, table=name)
         type_mapper = self.compiler.type_mapper
         fields = {
-            column["fieldName"]: type_mapper.from_string(column["fieldType"], nullable=True)
+            column["fieldName"]: type_mapper.from_string(
+                column["fieldType"], nullable=True)
             for column in columns
         }
-        print(fields)
         return sch.Schema(fields)
-    
-    def create_database(self, name: str, force: bool = False) -> None:
-        sql = sge.Create(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
-            self.name
-        )
-        with self.begin() as cur:
-            cur.execute(sql)
-
-    def drop_database(self, name: str, force: bool = False) -> None:
-        sql = sge.Drop(kind="DATABASE", exist=force, this=sg.to_identifier(name)).sql(
-            self.name
-        )
-        with self.begin() as cur:
-            cur.execute(sql)
-
-    @contextlib.contextmanager
-    def begin(self):
-        con = self.con
-        cur = con.cursor()
-        try:
-            yield cur
-        except Exception:
-            raise
-        finally:
-            cur.close()
 
     # TODO(kszucs): should make it an abstract method or remove the use of it
     # from .execute()
@@ -346,7 +322,8 @@ class Backend(SQLBackend, CanCreateDatabase):
                 sg_cat.args["quoted"] = False
             if (sg_db := table_loc.args["db"]) is not None:
                 sg_db.args["quoted"] = False
-            conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
+            conditions = [C.table_schema.eq(
+                sge.convert(table_loc.sql(self.name)))]
 
         col = "table_name"
         sql = (
@@ -437,7 +414,8 @@ class Backend(SQLBackend, CanCreateDatabase):
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(temp_name, catalog=database,
+                         quoted=self.compiler.quoted)
         target = sge.Schema(this=table, expressions=column_defs)
 
         create_stmt = sge.Create(
@@ -449,12 +427,14 @@ class Backend(SQLBackend, CanCreateDatabase):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(
+                    this=table, expression=query).sql(self.name)
                 cur.execute(insert_stmt)
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
+                    sge.Drop(kind="TABLE", this=this,
+                             exists=True).sql(self.name)
                 )
                 cur.execute(
                     f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
@@ -470,93 +450,14 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
-            name, schema=schema, source=self, namespace=ops.Namespace(database=database)
+            name, schema=schema, source=self, namespace=ops.Namespace(
+                database=database)
         ).to_expr()
-
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
-            raise com.IbisTypeError(
-                "MySQL cannot yet reliably handle `null` typed columns; "
-                f"got null typed columns: {null_columns}"
-            )
-
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
-
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
-
-            columns = schema.keys()
-            df = op.data.to_frame()
-            # nan can not be used with MySQL
-            df = df.replace(np.nan, None)
-
-            data = df.itertuples(index=False)
-            cols = ", ".join(
-                ident.sql(self.name)
-                for ident in map(partial(sg.to_identifier, quoted=quoted), columns)
-            )
-            specs = ", ".join(repeat("%s", len(columns)))
-            table = sg.table(name, quoted=quoted)
-            sql = f"INSERT INTO {table.sql(self.name)} ({cols}) VALUES ({specs})"
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
-
-                if not df.empty:
-                    cur.executemany(sql, data)
-
-    @util.experimental
-    def to_pyarrow_batches(
-        self,
-        expr: ir.Expr,
-        *,
-        params: Mapping[ir.Scalar, Any] | None = None,
-        limit: int | str | None = None,
-        chunk_size: int = 1_000_000,
-        **_: Any,
-    ) -> pa.ipc.RecordBatchReader:
-        import pyarrow as pa
-
-        self._run_pre_execute_hooks(expr)
-
-        schema = expr.as_table().schema()
-        with self._safe_raw_sql(
-            self.compile(expr, limit=limit, params=params)
-        ) as cursor:
-            df = self._fetch_from_cursor(cursor, schema)
-        table = pa.Table.from_pandas(
-            df, schema=schema.to_pyarrow(), preserve_index=False
-        )
-        return table.to_reader(max_chunksize=chunk_size)
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
 
-        from ibis.backends.mysql.converter import MySQLPandasData
+        from ibis.backends.e6data.converter import E6DataPandasData 
 
         try:
             df = pd.DataFrame.from_records(
@@ -569,5 +470,5 @@ class Backend(SQLBackend, CanCreateDatabase):
             # artificially locked tables
             cursor.close()
             raise
-        df = MySQLPandasData.convert_table(df, schema)
+        df = E6DataPandasData.convert_table(df, schema)
         return df
