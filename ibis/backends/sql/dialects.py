@@ -403,7 +403,6 @@ class RisingWave(Postgres):
         JSON_TYPE_REQUIRED_FOR_EXTRACTION = True
         SUPPORTS_UNLOGGED_TABLES = True
 
-
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMPTZ"
         }
