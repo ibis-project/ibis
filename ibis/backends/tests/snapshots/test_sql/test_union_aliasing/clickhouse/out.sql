@@ -1,30 +1,30 @@
 WITH "t5" AS (
   SELECT
-    "t4"."field_of_study",
+    "t4"."field_of_study" AS "field_of_study",
     any("t4"."diff") AS "diff"
   FROM (
     SELECT
-      "t3"."field_of_study",
-      "t3"."years",
-      "t3"."degrees",
-      "t3"."earliest_degrees",
-      "t3"."latest_degrees",
+      "t3"."field_of_study" AS "field_of_study",
+      "t3"."years" AS "years",
+      "t3"."degrees" AS "degrees",
+      "t3"."earliest_degrees" AS "earliest_degrees",
+      "t3"."latest_degrees" AS "latest_degrees",
       "t3"."latest_degrees" - "t3"."earliest_degrees" AS "diff"
     FROM (
       SELECT
-        "t2"."field_of_study",
-        "t2"."years",
-        "t2"."degrees",
+        "t2"."field_of_study" AS "field_of_study",
+        "t2"."years" AS "years",
+        "t2"."degrees" AS "degrees",
         FIRST_VALUE("t2"."degrees") OVER (PARTITION BY "t2"."field_of_study" ORDER BY "t2"."years" ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "earliest_degrees",
         LAST_VALUE("t2"."degrees") OVER (PARTITION BY "t2"."field_of_study" ORDER BY "t2"."years" ASC ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS "latest_degrees"
       FROM (
         SELECT
-          "t1"."field_of_study",
+          "t1"."field_of_study" AS "field_of_study",
           CAST("t1"."__pivoted__".1 AS Nullable(String)) AS "years",
           CAST("t1"."__pivoted__".2 AS Nullable(Int64)) AS "degrees"
         FROM (
           SELECT
-            "t0"."field_of_study",
+            "t0"."field_of_study" AS "field_of_study",
             arrayJoin(
               [
                 CAST(tuple('1970-71', "t0"."1970-71") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
