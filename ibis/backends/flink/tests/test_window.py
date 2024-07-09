@@ -78,7 +78,7 @@ def test_tumble_window_by_grouped_agg(con):
     assert result.shape == (610, 4)
 
 
-def test_tumble_window_by_global_agg(con):
+def test_tumble_window_by_ungrouped_agg(con):
     t = con.table("functional_alltypes_with_watermark")
     expr = (
         t.window_by(time_col=t.timestamp_col)

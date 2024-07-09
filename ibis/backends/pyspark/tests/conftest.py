@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,8 @@ from filelock import FileLock
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.pyspark import Backend
+from ibis.backends.pyspark.datatypes import PySparkSchema
 from ibis.backends.tests.base import BackendTest
 from ibis.backends.tests.data import json_types, topk, win
 
@@ -189,13 +192,17 @@ class TestConfForStreaming(BackendTest):
         s = self.connection._session
         num_partitions = 4
 
-        sort_cols = {"functional_alltypes": "id"}
+        watermark_cols = {"functional_alltypes": "timestamp_col"}
 
-        for name in TEST_TABLES:
+        for name, schema in TEST_TABLES.items():
             path = str(self.data_dir / "directory" / "parquet" / name)
-            t = s.readStream.parquet(path).repartition(num_partitions)
-            if (sort_col := sort_cols.get(name)) is not None:
-                t = t.sort(sort_col)
+            t = (
+                s.readStream.schema(PySparkSchema.from_ibis(schema))
+                .parquet(path)
+                .repartition(num_partitions)
+            )
+            if (watermark_col := watermark_cols.get(name)) is not None:
+                t = t.withWatermark(watermark_col, "10 seconds")
             t.createOrReplaceTempView(name)
 
     @classmethod
@@ -409,3 +416,29 @@ def temp_table_db(con, temp_database):
     yield temp_database, name
     assert name in con.list_tables(database=temp_database), name
     con.drop_table(name, database=temp_database)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def default_session_fixture():
+    with mock.patch.object(Backend, "write_to_memory", write_to_memory, create=True):
+        yield
+
+
+def write_to_memory(self, expr, table_name):
+    if self.mode == "batch":
+        raise NotImplementedError
+    df = self._session.sql(expr.compile())
+    df.writeStream.format("memory").queryName(table_name).start()
+
+
+@pytest.fixture(autouse=True, scope="function")
+def stop_active_jobs(con_streaming):
+    yield
+    for sq in con_streaming._session.streams.active:
+        sq.stop()
+        sq.awaitTermination()
+
+
+@pytest.fixture
+def awards_players_schema():
+    return TEST_TABLES["awards_players"]

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -1044,7 +1045,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     def read_csv_dir(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        watermark: Watermark | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV directory as a table in the current database.
 
@@ -1055,6 +1060,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_name
             An optional name to use for the created table. This defaults to
             a random generated name.
+        watermark
+            Watermark strategy for the table.
         kwargs
             Additional keyword arguments passed to PySpark loading function.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.csv.html
@@ -1072,10 +1079,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             spark_df = self._session.read.csv(
                 path, inferSchema=inferSchema, header=header, **kwargs
             )
+            if watermark is not None:
+                warnings.warn("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream.csv(
                 path, inferSchema=inferSchema, header=header, **kwargs
             )
+            if watermark is not None:
+                spark_df = spark_df.withWatermark(
+                    watermark.time_col,
+                    _interval_to_string(watermark.allowed_delay),
+                )
         table_name = table_name or util.gen_name("read_csv_dir")
 
         spark_df.createOrReplaceTempView(table_name)
@@ -1086,6 +1100,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self,
         path: str | Path,
         table_name: str | None = None,
+        watermark: Watermark | None = None,
         **kwargs: Any,
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
@@ -1097,6 +1112,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_name
             An optional name to use for the created table. This defaults to
             a random generated name.
+        watermark
+            Watermark strategy for the table.
         kwargs
             Additional keyword arguments passed to PySpark.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html
@@ -1110,8 +1127,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         path = util.normalize_filename(path)
         if self.mode == "batch":
             spark_df = self._session.read.parquet(path, **kwargs)
+            if watermark is not None:
+                warnings.warn("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream.parquet(path, **kwargs)
+            if watermark is not None:
+                spark_df = spark_df.withWatermark(
+                    watermark.time_col,
+                    _interval_to_string(watermark.allowed_delay),
+                )
         table_name = table_name or util.gen_name("read_parquet_dir")
 
         spark_df.createOrReplaceTempView(table_name)
@@ -1119,7 +1143,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     def read_json_dir(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        path: str | Path,
+        table_name: str | None = None,
+        watermark: Watermark | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a JSON file as a table in the current database.
 
@@ -1130,6 +1158,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_name
             An optional name to use for the created table. This defaults to
             a random generated name.
+        watermark
+            Watermark strategy for the table.
         kwargs
             Additional keyword arguments passed to PySpark loading function.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.json.html
@@ -1143,8 +1173,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         path = util.normalize_filename(path)
         if self.mode == "batch":
             spark_df = self._session.read.json(path, **kwargs)
+            if watermark is not None:
+                warnings.warn("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream.json(path, **kwargs)
+            if watermark is not None:
+                spark_df = spark_df.withWatermark(
+                    watermark.time_col,
+                    _interval_to_string(watermark.allowed_delay),
+                )
         table_name = table_name or util.gen_name("read_json_dir")
 
         spark_df.createOrReplaceTempView(table_name)
