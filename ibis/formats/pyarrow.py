@@ -3,6 +3,8 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, Any
 
+from geoarrow import types as geoarrow_types
+
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
@@ -12,6 +14,12 @@ if TYPE_CHECKING:
 
     import polars as pl
     import pyarrow as pa
+
+
+# Probably a better place for this
+from geoarrow.types.type_pyarrow import register_extension_types
+
+register_extension_types()
 
 
 @functools.cache
@@ -175,7 +183,15 @@ class PyArrowType(TypeMapper):
             )
             return pa.map_(key_field, value_field, keys_sorted=False)
         elif dtype.is_geospatial():
-            return pa.binary()
+            if dtype.srid is None:
+                crs = None
+            elif dtype.srid == 4326:
+                crs = geoarrow_types.OGC_CRS84
+            else:
+                # Warn for dropped CRS?
+                crs = None
+
+            return geoarrow_types.wkb(crs=crs).to_pyarrow()
         else:
             try:
                 return _to_pyarrow_types()[type(dtype)]
