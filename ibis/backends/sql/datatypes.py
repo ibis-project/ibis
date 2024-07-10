@@ -441,6 +441,8 @@ class PostgresType(SqlglotType):
             "information_schema.time_stamp": dt.timestamp,
             # the pre-bool version of bool kept for backwards compatibility
             "information_schema.yes_or_no": dt.string,
+            # a case-insensitive string that has it's own type for some reason
+            "citext": dt.string,
         }
     )
 
