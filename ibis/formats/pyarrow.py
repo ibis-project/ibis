@@ -4,6 +4,7 @@ import functools
 from typing import TYPE_CHECKING, Any
 
 from geoarrow import types as geoarrow_types
+from geoarrow.types.type_pyarrow import GeometryExtensionType
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
@@ -121,6 +122,28 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif isinstance(typ.value_type, GeometryExtensionType):
+            auth_code = None
+            if typ.value_type.crs is not None:
+                crs_dict = typ.value_type.crs.to_json_dict()
+                if "id" in crs_dict:
+                    crs_id = crs_dict["id"]
+                    if "authority" in crs_id and "code" in crs_id:
+                       auth_code = f"{crs_id["authority"]}:{crs_id["code"]}"
+
+            if auth_code is None:
+                srid = None
+            elif auth_code == "OGC:CRS84":
+                srid = 4326
+            else:
+                srid = crs_id["code"]
+
+            if typ.value_type.edge_type == geoarrow_types.EdgeType.SPHERICAL:
+                geotype = "geography"
+            else:
+                geotype = "geometry"
+
+            return dt.GeoSpatial(typ.value_field.nullable, geotype, srid)
         else:
             return _from_pyarrow_types()[typ](nullable=nullable)
 
@@ -183,15 +206,23 @@ class PyArrowType(TypeMapper):
             )
             return pa.map_(key_field, value_field, keys_sorted=False)
         elif dtype.is_geospatial():
+            # Resolve CRS
             if dtype.srid is None:
                 crs = None
             elif dtype.srid == 4326:
                 crs = geoarrow_types.OGC_CRS84
             else:
-                # Warn for dropped CRS?
+                # Warn for dropped CRS? Or geoarrow.types would need a lookup table
+                # for srid -> PROJJSON
                 crs = None
 
-            return geoarrow_types.wkb(crs=crs).to_pyarrow()
+            # Resolve edge type
+            if dtype.geotype == "geography":
+                edge_type = geoarrow_types.EdgeType.SPHERICAL
+            else:
+                edge_type = geoarrow_types.EdgeType.PLANAR
+
+            return geoarrow_types.wkb(crs=crs, edge_type=edge_type).to_pyarrow()
         else:
             try:
                 return _to_pyarrow_types()[type(dtype)]
