@@ -125,7 +125,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         src = sge.Create(
             this=table,
             kind="VIEW",
-            expression=sg.parse_one(query, read="datafusion"),
+            expression=sg.parse_one(query, read=self.dialect),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
 
@@ -537,13 +537,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 # convert the renamed + casted columns into a record batch
                 pa.RecordBatch.from_struct_array(
                     # rename columns to match schema because datafusion lowercases things
-                    pa.RecordBatch.from_arrays(batch.columns, names=names)
+                    pa.RecordBatch.from_arrays(batch.to_pyarrow().columns, names=names)
                     # cast the struct array to the desired types to work around
                     # https://github.com/apache/arrow-datafusion-python/issues/534
                     .to_struct_array()
                     .cast(struct_schema, safe=False)
                 )
-                for batch in frame.collect()
+                for batch in frame.execute_stream()
             )
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), make_gen())
@@ -628,7 +628,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 )
             )
         elif obj is not None:
-            _read_in_memory(obj, name, self, overwrite=overwrite)
+            table_ident = sg.table(name, db=database, quoted=quoted).sql(self.dialect)
+            _read_in_memory(obj, table_ident, self, overwrite=overwrite)
             return self.table(name, database=database)
         else:
             query = None
@@ -687,7 +688,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        ident = sg.table(name, db=db, catalog=catalog).sql(self.name)
+        ident = sg.table(name, db=db, catalog=catalog).sql(self.dialect)
         with self._safe_raw_sql(sge.delete(ident)):
             pass
 
