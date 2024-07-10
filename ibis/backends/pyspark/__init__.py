@@ -1101,6 +1101,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         path: str | Path,
         table_name: str | None = None,
         watermark: Watermark | None = None,
+        schema: sch.Schema | None = None,
         **kwargs: Any,
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
@@ -1114,6 +1115,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             a random generated name.
         watermark
             Watermark strategy for the table.
+        schema
+            Schema of the parquet source.
         kwargs
             Additional keyword arguments passed to PySpark.
             https://spark.apache.org/docs/latest/api/python/reference/pyspark.ss/api/pyspark.sql.streaming.DataStreamReader.parquet.html
@@ -1126,11 +1129,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         path = util.normalize_filename(path)
         if self.mode == "batch":
-            spark_df = self._session.read.parquet(path, **kwargs)
+            spark_df = self._session.read
+            if schema is not None:
+                spark_df = spark_df.schema(PySparkSchema.from_ibis(schema))
+            spark_df = spark_df.parquet(path, **kwargs)
             if watermark is not None:
                 warnings.warn("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
-            spark_df = self._session.readStream.parquet(path, **kwargs)
+            spark_df = self._session.readStream
+            if schema is not None:
+                spark_df = spark_df.schema(PySparkSchema.from_ibis(schema))
+            spark_df = spark_df.parquet(path, **kwargs)
             if watermark is not None:
                 spark_df = spark_df.withWatermark(
                     watermark.time_col,
