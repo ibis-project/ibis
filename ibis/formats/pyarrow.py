@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-# Probably a better place for this
+# TODO: Probably a better place for this
 from geoarrow.types.type_pyarrow import register_extension_types
 
 register_extension_types()
