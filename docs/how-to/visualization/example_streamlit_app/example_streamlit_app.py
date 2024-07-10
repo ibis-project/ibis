@@ -27,10 +27,10 @@ options = [1, 5, 10, 25, 50, 100]
 @st.cache_data
 def query():
     return (
-        con.tables.recipes.relabel("snake_case")
+        con.tables.recipes.rename("snake_case")
         .mutate(ner=_.ner.map(lambda n: n.lower()).unnest())
         .ner.topk(max(options))
-        .relabel(dict(ner="ingredient"))
+        .rename(ingredient="ner")
         .to_pandas()
         .assign(
             emoji=lambda df: df.ingredient.map(
@@ -43,7 +43,7 @@ def query():
 
 emojis = get_emoji()
 
-con = st.experimental_connection("ch", type=IbisConnection)
+con = st.connection("ch", type=IbisConnection)
 
 if n := st.radio("Ingredients", options, index=1, horizontal=True):
     table, whole = st.columns((2, 1))
