@@ -172,7 +172,7 @@ website](https://docs.docker.com/compose/install/).
 * Follow [the setup
 tutorial](../../tutorials/open-source-software/apache-flink/0_setup.qmd) to
 install the Flink backend for Ibis.
-* Clone the [example repository](https://github.com/ibis-project/ibis-flink-example).
+* Clone the [example repository](https://github.com/ibis-project/realtime-fraud-detection).
 :::
 
 ::: {.callout-note}
@@ -199,8 +199,8 @@ would extract a chunk of the data and load it in batch:
 # | code-fold: true
 # | include: false
 !pip install apache-flink kafka-python
-!git clone https://github.com/ibis-project/ibis-flink-example
-!cd ibis-flink-example && docker compose up kafka init-kafka data-generator -d && sleep 10 && cd ..
+!git clone https://github.com/ibis-project/realtime-fraud-detection
+!cd realtime-fraud-detection && docker compose up kafka init-kafka data-generator -d && sleep 10 && cd ..
 ```
 
 ```{python}
