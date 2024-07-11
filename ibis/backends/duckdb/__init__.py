@@ -1380,26 +1380,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         import pandas as pd
         import pyarrow.types as pat
 
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(expr, params=params, limit=limit)
 
-        df = pd.DataFrame(
-            {
-                name: (
-                    col.to_pylist()
-                    if (
-                        pat.is_nested(col.type)
-                        or
-                        # pyarrow / duckdb type null literals columns as int32?
-                        # but calling `to_pylist()` will render it as None
-                        col.null_count
-                    )
-                    else col.to_pandas(timestamp_as_object=True)
-                )
-                for name, col in zip(table.column_names, table.columns)
-            }
-        )
-        df = DuckDBPandasData.convert_table(df, expr.as_table().schema())
-        return expr.__pandas_result__(df)
+        return table.df()
 
     @util.experimental
     def to_torch(
