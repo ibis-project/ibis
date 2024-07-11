@@ -4853,7 +4853,7 @@ numpy = ">=1.16.6"
 name = "pyarrow-hotfix"
 version = "0.6"
 description = ""
-optional = false
+optional = true
 python-versions = ">=3.5"
 files = [
     {file = "pyarrow_hotfix-0.6-py3-none-any.whl", hash = "sha256:dcc9ae2d220dff0083be6a9aa8e0cdee5182ad358d4931fce825c545e5c89178"},
@@ -7665,33 +7665,33 @@ cffi = {version = ">=1.11", markers = "platform_python_implementation == \"PyPy\
 cffi = ["cffi (>=1.11)"]
 
 [extras]
-bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pydata-google-auth"]
-clickhouse = ["clickhouse-connect"]
-dask = ["dask", "packaging", "regex"]
-datafusion = ["datafusion"]
+bigquery = ["db-dtypes", "google-cloud-bigquery", "google-cloud-bigquery-storage", "pyarrow", "pyarrow-hotfix", "pydata-google-auth"]
+clickhouse = ["clickhouse-connect", "pyarrow", "pyarrow-hotfix"]
+dask = ["dask", "packaging", "pyarrow", "pyarrow-hotfix", "regex"]
+datafusion = ["datafusion", "pyarrow", "pyarrow-hotfix"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
-druid = ["pydruid"]
-duckdb = ["duckdb"]
+druid = ["pyarrow", "pyarrow-hotfix", "pydruid"]
+duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix"]
 examples = ["fsspec", "pins"]
-exasol = ["pyexasol"]
-flink = []
+exasol = ["pyarrow", "pyarrow-hotfix", "pyexasol"]
+flink = ["pyarrow", "pyarrow-hotfix"]
 geospatial = ["geopandas", "shapely"]
-impala = ["impyla"]
-mssql = ["pyodbc"]
-mysql = ["pymysql"]
-oracle = ["oracledb", "packaging"]
-pandas = ["packaging", "regex"]
-polars = ["packaging", "polars"]
-postgres = ["psycopg2"]
-pyspark = ["packaging", "pyspark"]
-risingwave = ["psycopg2"]
-snowflake = ["snowflake-connector-python"]
-sqlite = ["regex"]
-trino = ["trino"]
+impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
+mssql = ["pyarrow", "pyarrow-hotfix", "pyodbc"]
+mysql = ["pyarrow", "pyarrow-hotfix", "pymysql"]
+oracle = ["oracledb", "packaging", "pyarrow", "pyarrow-hotfix"]
+pandas = ["packaging", "pyarrow", "pyarrow-hotfix", "regex"]
+polars = ["packaging", "polars", "pyarrow", "pyarrow-hotfix"]
+postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
+pyspark = ["packaging", "pyarrow", "pyarrow-hotfix", "pyspark"]
+risingwave = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
+snowflake = ["pyarrow", "pyarrow-hotfix", "snowflake-connector-python"]
+sqlite = ["pyarrow", "pyarrow-hotfix", "regex"]
+trino = ["pyarrow", "pyarrow-hotfix", "trino"]
 visualization = ["graphviz"]
 
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "860d081f536ce48d748d67ad828aac337b0f08fee7cf772d172db2b8f6fd37c2"
+content-hash = "78c776cedc53934095a7266faddc2c32aa5b76a2b6285719df3055e58d9a67a3"

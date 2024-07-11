@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.csv as pcsv
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -24,7 +22,8 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.formats.pyarrow import PyArrowType
+
+pa = pytest.importorskip("pyarrow")
 
 limit = [
     param(
@@ -330,6 +329,8 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 )
 @pytest.mark.parametrize("delimiter", [";", "\t"], ids=["semicolon", "tab"])
 def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
+    import pyarrow.csv as pcsv
+
     outcsv = tmp_path / "out.csv"
     # avoid pandas NaNonense
     awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
@@ -426,6 +427,8 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path):
     ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
+    from ibis.formats.pyarrow import PyArrowType
+
     t = alltypes.select(
         tz=alltypes.timestamp_col.cast(
             alltypes.timestamp_col.type().copy(timezone="UTC")

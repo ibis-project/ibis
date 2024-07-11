@@ -1732,6 +1732,6 @@ def test_in_subquery_shape():
 
 # TODO: remove when fillna is fully deprecated
 def test_value_fillna_depr_warn():
-    t = ibis.memtable([{"a": 1, "b": None}, {"a": 2, "b": "baz"}])
+    t = ibis.table({"a": "int", "b": "str"})
     with pytest.warns(FutureWarning, match="v9.1"):
         t.b.fillna("missing")

@@ -41,8 +41,8 @@ atpublic = ">=2.3,<5"
 numpy = ">=1.23.2,<3"
 pandas = ">=1.5.3,<3"
 parsy = ">=2,<3"
-pyarrow = ">=10.0.1,<17"
-pyarrow-hotfix = ">=0.4,<1"
+pyarrow = { version = ">=10.0.1,<17", optional = true }
+pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
 rich = ">=12.4.4,<14"
@@ -145,27 +145,29 @@ bigquery = [
   "db-dtypes",
   "google-cloud-bigquery",
   "google-cloud-bigquery-storage",
+  "pyarrow",
+  "pyarrow-hotfix",
   "pydata-google-auth",
 ]
-clickhouse = ["clickhouse-connect"]
-dask = ["dask", "regex", "packaging"]
-datafusion = ["datafusion"]
-druid = ["pydruid"]
-duckdb = ["duckdb"]
-exasol = ["pyexasol"]
-flink = []
-impala = ["impyla"]
-mssql = ["pyodbc"]
-mysql = ["pymysql"]
-oracle = ["oracledb", "packaging"]
-pandas = ["regex", "packaging"]
-polars = ["polars", "packaging"]
-postgres = ["psycopg2"]
-pyspark = ["pyspark", "packaging"]
-snowflake = ["snowflake-connector-python"]
-sqlite = ["regex"]
-risingwave = ["psycopg2"]
-trino = ["trino"]
+clickhouse = ["clickhouse-connect", "pyarrow", "pyarrow-hotfix"]
+dask = ["dask", "regex", "packaging", "pyarrow", "pyarrow-hotfix"]
+datafusion = ["datafusion", "pyarrow", "pyarrow-hotfix"]
+druid = ["pydruid", "pyarrow", "pyarrow-hotfix"]
+duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix"]
+exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix"]
+flink = ["pyarrow", "pyarrow-hotfix"]
+impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
+mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix"]
+mysql = ["pymysql", "pyarrow", "pyarrow-hotfix"]
+oracle = ["oracledb", "packaging", "pyarrow", "pyarrow-hotfix"]
+pandas = ["regex", "packaging", "pyarrow", "pyarrow-hotfix"]
+polars = ["polars", "packaging", "pyarrow", "pyarrow-hotfix"]
+postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
+pyspark = ["pyspark", "packaging", "pyarrow", "pyarrow-hotfix"]
+snowflake = ["snowflake-connector-python", "pyarrow", "pyarrow-hotfix"]
+sqlite = ["regex", "pyarrow", "pyarrow-hotfix"]
+risingwave = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
+trino = ["trino", "pyarrow", "pyarrow-hotfix"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]

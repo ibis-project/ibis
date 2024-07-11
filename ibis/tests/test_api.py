@@ -87,7 +87,7 @@ def test_ibis_na_deprecation_warning():
     ],
 )
 def test_ibis_desc_asc_default(op, api_func):
-    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    t = ibis.table(schema={"a": "int", "b": "str"})
 
     expr = t.order_by(getattr(t["b"], op)())
     expr_api = t.order_by(api_func("b"))
@@ -105,7 +105,7 @@ def test_ibis_desc_asc_default(op, api_func):
     ],
 )
 def test_ibis_desc_asc(op, api_func, nulls_first):
-    t = ibis.memtable([{"a": 1, "b": "foo"}, {"a": 2, "b": "baz"}, {"a": 3, "b": None}])
+    t = ibis.table(schema={"a": "int", "b": "str"})
 
     expr = t.order_by(getattr(t["b"], op)(nulls_first=nulls_first))
     expr_api = t.order_by(api_func("b", nulls_first=nulls_first))

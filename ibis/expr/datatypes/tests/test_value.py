@@ -327,6 +327,7 @@ def test_from_numpy_timedelta():
     ],
 )
 def test_infer_numpy_array(numpy_array, expected_dtypes):
+    pytest.importorskip("pyarrow")
     pandas_series = pd.Series(numpy_array)
     assert dt.infer(numpy_array) in expected_dtypes
     assert dt.infer(pandas_series) in expected_dtypes

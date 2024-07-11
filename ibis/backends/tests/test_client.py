@@ -15,8 +15,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-import pyarrow as pa
-import pyarrow.dataset
 import pytest
 import rich.console
 import toolz
@@ -43,6 +41,9 @@ from ibis.util import gen_name
 if TYPE_CHECKING:
     from ibis.backends import BaseBackend
 
+
+pa = pytest.importorskip("pyarrow")
+ds = pytest.importorskip("pyarrow.dataset")
 pl = pytest.importorskip("polars", reason="Polars is not installed")
 
 
@@ -948,7 +949,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             id="pyarrow_single_batch",
         ),
         param(
-            lambda: pa.dataset.dataset(pa.table({"a": ["a"], "b": [1]})),
+            lambda: ds.dataset(pa.table({"a": ["a"], "b": [1]})),
             "df_arrow_dataset",
             marks=[
                 pytest.mark.notimpl(

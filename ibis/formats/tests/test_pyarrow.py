@@ -2,13 +2,18 @@ from __future__ import annotations
 
 import hypothesis as h
 import hypothesis.strategies as st
-import pyarrow as pa
-import pyarrow.tests.strategies as past
 import pytest
 
 import ibis.expr.datatypes as dt
 from ibis.common.exceptions import IntegrityError
-from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
+
+pa = pytest.importorskip("pyarrow")
+past = pytest.importorskip("pyarrow.tests.strategies")
+
+ipa = pytest.importorskip("ibis.formats.pyarrow")
+
+PyArrowSchema = ipa.PyArrowSchema
+PyArrowType = ipa.PyArrowType
 
 
 def assert_dtype_roundtrip(arrow_type, ibis_type=None, restored_type=None):

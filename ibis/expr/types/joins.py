@@ -31,6 +31,28 @@ if TYPE_CHECKING:
     from ibis.expr.operations.relations import JoinKind
 
 
+def coerce_to_table(data):
+    try:
+        import pandas as pd
+    except ImportError:
+        pass
+    else:
+        if isinstance(data, pd.DataFrame):
+            return ibis.memtable(data)
+
+    try:
+        import pyarrow as pa
+    except ImportError:
+        pass
+    else:
+        if isinstance(data, pa.Table):
+            return ibis.memtable(data)
+
+    if not isinstance(data, Table):
+        raise TypeError(f"right operand must be a Table, got {type(data).__name__}")
+    return data
+
+
 def disambiguate_fields(
     how,
     predicates,
@@ -228,16 +250,7 @@ class Join(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        import pandas as pd
-        import pyarrow as pa
-
-        # TODO(kszucs): factor out to a helper function
-        if isinstance(right, (pd.DataFrame, pa.Table)):
-            right = ibis.memtable(right)
-        elif not isinstance(right, Table):
-            raise TypeError(
-                f"right operand must be a Table, got {type(right).__name__}"
-            )
+        right = coerce_to_table(right)
 
         if how == "left_semi":
             how = "semi"
