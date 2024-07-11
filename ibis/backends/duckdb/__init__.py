@@ -25,7 +25,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.compiler import DuckDBCompiler
-from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compiler import STAR, C
 from ibis.common.dispatch import lazy_singledispatch
@@ -1377,12 +1376,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         **_: Any,
     ) -> Any:
         """Execute an expression."""
-        import pandas as pd
-        import pyarrow.types as pat
+        duckdb_relation = self._to_duckdb_relation(expr, params=params, limit=limit)
 
-        table = self._to_duckdb_relation(expr, params=params, limit=limit)
-
-        return table.df()
+        return duckdb_relation.df()
 
     @util.experimental
     def to_torch(
