@@ -1,6 +1,6 @@
 # Streamlit + Ibis
 
-Ibis supports the [streamlit `experimental_connection` interface](https://blog.streamlit.io/introducing-st-experimental_connection/), making it easier than ever to combine the powers of both tools!
+Ibis supports the [streamlit `connection` interface](https://docs.streamlit.io/develop/concepts/connections/connecting-to-data), making it easier than ever to combine the powers of both tools!
 
 Check out the example application below that shows the top N ingredients from a corpus of recipes using [the ClickHouse backend](../../backends/clickhouse.qmd)!
 
