@@ -221,6 +221,15 @@ just docs-preview
 
 to build and serve the documentation.
 
+::: {.callout-tip}
+If you're getting reference errors (e.g., `reference/operations.qmd` not found), you may need to run
+```bash
+just docs-api-preview
+```
+which first generates the API docs and then spins up the preview.
+
+:::
+
 [^conda-callout]: Some optional dependencies for Windows and Mac OS are not available through `conda`/`mamba`
 [^supported]: Tested in CI. If this doesn't work for you, please [file an issue](https://github.com/ibis-project/ibis/issues/new).
 [^m1]: Not working as of March 2024. See https://github.com/ibis-project/ibis/issues/8696
