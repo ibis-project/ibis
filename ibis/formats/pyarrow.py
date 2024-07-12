@@ -129,7 +129,7 @@ class PyArrowType(TypeMapper):
                 if "id" in crs_dict:
                     crs_id = crs_dict["id"]
                     if "authority" in crs_id and "code" in crs_id:
-                       auth_code = f"{crs_id["authority"]}:{crs_id["code"]}"
+                        auth_code = f"{crs_id['authority']}:{crs_id['code']}"
 
             if auth_code is None:
                 srid = None
