@@ -8,11 +8,13 @@ import math
 import os
 import random
 import string
+from datetime import datetime
 from operator import attrgetter, itemgetter
 
 import numpy as np
 import pandas as pd
 import pytest
+import pytz
 from packaging.version import parse as vparse
 from pytest import param
 
@@ -914,3 +916,15 @@ def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
     benchmark(
         lambda expr: ibis.to_sql(expr, dialect="duckdb"), wide_table.drop(*cols_to_drop)
     )
+
+
+def test_duckdb_timestamp_conversion(benchmark):
+    pytest.importorskip("duckdb")
+
+    start = datetime(2000, 1, 1, tzinfo=pytz.UTC)
+    stop = datetime(2000, 2, 1, tzinfo=pytz.UTC)
+    expr = ibis.range(start, stop, ibis.interval(seconds=1)).unnest()
+
+    con = ibis.duckdb.connect()
+    series = benchmark(con.execute, expr)
+    assert series.size == (stop - start).total_seconds()
