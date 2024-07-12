@@ -111,7 +111,8 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
     result = result.sort_values(["group", "time"]).reset_index(drop=True)
     expected = expected.sort_values(["group", "time"]).reset_index(drop=True)
 
-    tm.assert_frame_equal(result[expected.columns], expected)
+    # duckdb returns datetime64[us], pandas defaults to use datetime64[ns]
+    tm.assert_frame_equal(result[expected.columns], expected, check_dtype=False)
     with pytest.raises(AssertionError):
         tm.assert_series_equal(result["time"], result["time_right"])
 

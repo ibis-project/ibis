@@ -1393,7 +1393,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                         # but calling `to_pylist()` will render it as None
                         col.null_count
                     )
-                    else col.to_pandas(timestamp_as_object=True)
+                    else col.to_pandas()
                 )
                 for name, col in zip(table.column_names, table.columns)
             }
