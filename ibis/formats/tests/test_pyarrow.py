@@ -188,5 +188,7 @@ def test_unknown_dtype_gets_converted_to_string():
         pytest.param(dt.multipolygon, id="multipolygon"),
     ],
 )
-def test_geo_gets_converted_to_binary(ibis_type):
-    assert PyArrowType.from_ibis(ibis_type) == pa.binary()
+def test_geo_gets_converted_to_geoarrow(ibis_type):
+    from geoarrow.types.type_pyarrow import GeometryExtensionType
+
+    assert isinstance(PyArrowType.from_ibis(ibis_type), GeometryExtensionType)

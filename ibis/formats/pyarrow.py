@@ -114,16 +114,16 @@ class PyArrowType(TypeMapper):
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
         elif (
-            isinstance(value_type := typ.value_type, pa.ExtensionType)
-            and type(value_type).__name__ == "GeometryExtensionType"
+            isinstance(typ, pa.ExtensionType)
+            and type(typ).__name__ == "GeometryExtensionType"
         ):
             from geoarrow import types as gat
 
             gat.type_pyarrow.register_extension_types()
 
             auth_code = None
-            if value_type.crs is not None:
-                crs_dict = value_type.crs.to_json_dict()
+            if typ.crs is not None:
+                crs_dict = typ.crs.to_json_dict()
                 if "id" in crs_dict:
                     crs_id = crs_dict["id"]
                     if "authority" in crs_id and "code" in crs_id:
@@ -136,7 +136,7 @@ class PyArrowType(TypeMapper):
             else:
                 srid = crs_id["code"]
 
-            if value_type.edge_type == gat.EdgeType.SPHERICAL:
+            if typ.edge_type == gat.EdgeType.SPHERICAL:
                 geotype = "geography"
             else:
                 geotype = "geometry"
