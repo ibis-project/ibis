@@ -14,7 +14,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-
 @functools.cache
 def _from_pyarrow_types():
     import pyarrow as pa
@@ -114,35 +113,36 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
-        else:
+        elif (
+            isinstance(value_type := typ.value_type, pa.ExtensionType)
+            and type(value_type).__name__ == "GeometryExtensionType"
+        ):
             from geoarrow import types as gat
 
             gat.type_pyarrow.register_extension_types()
 
-            if isinstance(
-                value_type := typ.value_type, gat.type_pyarrow.GeometryExtensionType
-            ):
-                auth_code = None
-                if value_type.crs is not None:
-                    crs_dict = value_type.crs.to_json_dict()
-                    if "id" in crs_dict:
-                        crs_id = crs_dict["id"]
-                        if "authority" in crs_id and "code" in crs_id:
-                            auth_code = f"{crs_id['authority']}:{crs_id['code']}"
+            auth_code = None
+            if value_type.crs is not None:
+                crs_dict = value_type.crs.to_json_dict()
+                if "id" in crs_dict:
+                    crs_id = crs_dict["id"]
+                    if "authority" in crs_id and "code" in crs_id:
+                        auth_code = f"{crs_id['authority']}:{crs_id['code']}"
 
-                if auth_code is None:
-                    srid = None
-                elif auth_code == "OGC:CRS84":
-                    srid = 4326
-                else:
-                    srid = crs_id["code"]
+            if auth_code is None:
+                srid = None
+            elif auth_code == "OGC:CRS84":
+                srid = 4326
+            else:
+                srid = crs_id["code"]
 
-                if value_type.edge_type == gat.EdgeType.SPHERICAL:
-                    geotype = "geography"
-                else:
-                    geotype = "geometry"
+            if value_type.edge_type == gat.EdgeType.SPHERICAL:
+                geotype = "geography"
+            else:
+                geotype = "geometry"
 
-                return dt.GeoSpatial(typ.value_field.nullable, geotype, srid)
+            return dt.GeoSpatial(typ.value_field.nullable, geotype, srid)
+        else:
             return _from_pyarrow_types()[typ](nullable=nullable)
 
     @classmethod
