@@ -1259,6 +1259,7 @@ class SQLGlotCompiler(abc.ABC):
             "asof": "asof",
             "any_left": "left",
             "any_inner": None,
+            "positional": None,
         }
         kinds = {
             "any_left": "any",
@@ -1271,11 +1272,12 @@ class SQLGlotCompiler(abc.ABC):
             "anti": "anti",
             "cross": "cross",
             "outer": "outer",
+            "positional": "positional",
         }
-        assert (
-            predicates or how == "cross"
-        ), "expected non-empty predicates when not a cross join"
-
+        assert predicates or how in {
+            "cross",
+            "positional",
+        }, "expected non-empty predicates when not a cross join"
         on = sg.and_(*predicates) if predicates else None
         return sge.Join(this=table, side=sides[how], kind=kinds[how], on=on)
 
