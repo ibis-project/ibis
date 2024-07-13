@@ -27,6 +27,10 @@ on:
       - "*.x.x"
   merge_group:
 jobs:
+  test_bigquery_lite:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No build required"
   test_backends:
     runs-on: ubuntu-latest
     steps:
@@ -43,6 +47,7 @@ jobs:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
+      - test_bigquery_lite
       - test_backends_min_version
       - test_backends
       - test_pyspark
