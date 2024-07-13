@@ -170,7 +170,9 @@ class SqlglotType(TypeMapper):
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = _from_sqlglot_types.get(typecode, dt.unknown)(
+                nullable=cls.default_nullable
+            )
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -417,8 +419,6 @@ class PostgresType(SqlglotType):
 
     unknown_type_strings = FrozenDict(
         {
-            "vector": dt.unknown,
-            "tsvector": dt.unknown,
             "line": dt.linestring,
             "line[]": dt.Array(dt.linestring),
             "polygon": dt.polygon,
@@ -453,16 +453,6 @@ class PostgresType(SqlglotType):
         if not dtype.value_type.is_string():
             raise com.IbisTypeError("Postgres only supports string values in maps")
         return sge.DataType(this=typecode.HSTORE)
-
-    @classmethod
-    def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
-        if text.lower().startswith("vector"):
-            text = "vector"
-        if dtype := cls.unknown_type_strings.get(text.lower()):
-            return dtype
-
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
 
 
 class RisingWaveType(PostgresType):
