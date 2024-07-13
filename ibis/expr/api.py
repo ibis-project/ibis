@@ -910,16 +910,16 @@ def date(value_or_year, month=None, day=None, /):
     Create a date scalar from a string
 
     >>> ibis.date("2023-01-02")
-    ┌───────────────────────────┐
-    │ datetime.date(2023, 1, 2) │
-    └───────────────────────────┘
+    ┌──────────────────────────────────┐
+    │ Timestamp('2023-01-02 00:00:00') │
+    └──────────────────────────────────┘
 
     Create a date scalar from year, month, and day
 
     >>> ibis.date(2023, 1, 2)
-    ┌───────────────────────────┐
-    │ datetime.date(2023, 1, 2) │
-    └───────────────────────────┘
+    ┌──────────────────────────────────┐
+    │ Timestamp('2023-01-02 00:00:00') │
+    └──────────────────────────────────┘
 
     Create a date column from year, month, and day
 

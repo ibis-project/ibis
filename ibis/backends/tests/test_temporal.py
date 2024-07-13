@@ -729,9 +729,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
             "ignore", category=(UserWarning, pd.errors.PerformanceWarning)
         )
         expected = (
-            pd.to_datetime(df.date_string_col)
-            .add(offset)
-            .map(lambda ts: ts.normalize().date(), na_action="ignore")
+            pd.to_datetime(df.date_string_col).add(offset).astype("datetime64[s]")
         )
 
     expected = backend.default_series_rename(expected)
@@ -817,12 +815,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() + ibis.interval(days=4),
-            lambda t, _: (
-                t.timestamp_col.dt.floor("d")
-                .add(pd.Timedelta(days=4))
-                .dt.normalize()
-                .dt.date
-            ),
+            lambda t, _: t.timestamp_col.dt.floor("d").add(pd.Timedelta(days=4)),
             id="date-add-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -831,16 +824,19 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason=(
+                        "Oracle includes hour:min:sec in the result for "
+                        "CAST(t0.timestamp_col AS DATE), while other backends don't."
+                    ),
+                ),
             ],
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.interval(days=14),
-            lambda t, _: (
-                t.timestamp_col.dt.floor("d")
-                .sub(pd.Timedelta(days=14))
-                .dt.normalize()
-                .dt.date
-            ),
+            lambda t, _: t.timestamp_col.dt.floor("d").sub(pd.Timedelta(days=14)),
             id="date-subtract-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -849,6 +845,14 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="'StringColumn' object has no attribute 'date'",
                 ),
                 pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
+                pytest.mark.broken(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason=(
+                        "Oracle includes hour:min:sec in the result for "
+                        "CAST(t0.timestamp_col AS DATE), while other backends don't."
+                    ),
+                ),
             ],
         ),
         param(
@@ -1253,19 +1257,28 @@ def test_interval_add_cast_scalar(backend, alltypes):
     reason="'StringColumn' object has no attribute 'date'",
 )
 @pytest.mark.broken(["flink"], raises=AssertionError, reason="incorrect results")
+@pytest.mark.broken(
+    ["oracle"],
+    raises=AssertionError,
+    reason=(
+        "Oracle includes hour:min:sec in the result for "
+        "CAST(t0.timestamp_col AS DATE), while other backends don't."
+    ),
+)
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
     expr = alltypes["id", (timestamp_date + delta).name("tmp")]
     result = expr.execute().sort_values("id").reset_index().tmp
+
     df = df.sort_values("id").reset_index(drop=True)
     expected = (
         df["timestamp_col"]
         .dt.normalize()
         .add(df.bigint_col.astype("timedelta64[D]"))
         .rename("tmp")
-        .dt.date
     )
+
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
@@ -2538,7 +2551,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.broken(
-                    ["pandas", "dask"],
+                    ["dask", "pandas", "pyspark"],
                     condition=is_older_than("pandas", "2.0.0"),
                     raises=ValueError,
                     reason="Out of bounds nanosecond timestamp: 9999-01-02 00:00:00",
@@ -2557,7 +2570,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.broken(
-                    ["pandas", "dask"],
+                    ["dask", "pandas", "pyspark"],
                     condition=is_older_than("pandas", "2.0.0"),
                     raises=ValueError,
                     reason="Out of bounds nanosecond timestamp: 1-07-17 00:00:00",
@@ -2580,10 +2593,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
 )
 def test_date_scalar(con, value, func):
     expr = ibis.date(func(value)).name("tmp")
-
     result = con.execute(expr)
 
-    assert not isinstance(result, datetime.datetime)
-    assert isinstance(result, datetime.date)
-
-    assert result == datetime.date.fromisoformat(value)
+    assert isinstance(result, pd.Timestamp)
+    assert result == pd.Timestamp.fromisoformat(value)
