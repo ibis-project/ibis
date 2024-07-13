@@ -189,6 +189,6 @@ def test_unknown_dtype_gets_converted_to_string():
     ],
 )
 def test_geo_gets_converted_to_geoarrow(ibis_type):
-    from geoarrow.types.type_pyarrow import GeometryExtensionType
+    type_pyarrow = pytest.importorskip("geoarrow.types.type_pyarrow")
 
-    assert isinstance(PyArrowType.from_ibis(ibis_type), GeometryExtensionType)
+    assert isinstance(PyArrowType.from_ibis(ibis_type), type_pyarrow.GeometryExtensionType)
