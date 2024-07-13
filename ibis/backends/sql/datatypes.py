@@ -42,6 +42,7 @@ _from_sqlglot_types = {
     typecode.MONEY: dt.Decimal(19, 4),
     typecode.NCHAR: dt.String,
     typecode.UUID: dt.UUID,
+    typecode.NAME: dt.String,
     typecode.NULL: dt.Null,
     typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
@@ -190,11 +191,15 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
-        if dtype := cls.unknown_type_strings.get(text.lower()):
-            return dtype
+        try:
+            sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
+            return cls.to_ibis(sgtype, nullable=nullable)
+        except sg.errors.ParseError:
+            # If sqlglot can't parse the type, try our manual mappings
+            # falling back to `dt.unknown`
+            pass
 
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
+        return cls.unknown_type_strings.get(text.lower(), dt.unknown)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
