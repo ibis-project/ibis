@@ -1780,6 +1780,8 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["pandas"], reason="casts to ['0']"),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     ["exasol", "impala", "mssql", "mysql", "sqlite"],
                     reason="backend doesn't support arrays",
@@ -1798,6 +1800,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     ["datafusion", "exasol", "impala", "mssql", "mysql", "sqlite"],
                     reason="backend doesn't support structs",
