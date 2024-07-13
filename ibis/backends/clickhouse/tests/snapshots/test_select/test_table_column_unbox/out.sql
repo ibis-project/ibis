@@ -1,8 +1,8 @@
 SELECT
-  "t2"."string_col"
+  "t2"."string_col" AS "string_col"
 FROM (
   SELECT
-    "t1"."string_col",
+    "t1"."string_col" AS "string_col",
     SUM("t1"."float_col") AS "total"
   FROM (
     SELECT

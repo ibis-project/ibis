@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -14,6 +14,9 @@ from ibis import util
 from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
 
 
 class ClickhouseAggGen(AggGen):
@@ -705,3 +708,31 @@ class ClickHouseCompiler(SQLGlotCompiler):
             )
 
         return select
+
+    def _cleanup_names(
+        self, exprs: Mapping[str, sge.Expression]
+    ) -> Iterator[sge.Expression]:
+        """Compose `_gen_valid_name` and `_dedup_name` to clean up names in projections.
+
+        ClickHouse has a bug where this fails to find the final `"o"."a"` column:
+
+        ```sql
+        SELECT
+          "o"."a"
+        FROM (
+          SELECT
+            "w"."a"
+          FROM "t" AS "s"
+          INNER JOIN "t" AS "w"
+          USING ("a")
+        ) AS "o"
+        ```
+
+        Adding a redundant aliasing operation (`"w"."a" AS "a"`) helps
+        ClickHouse.
+        """
+        quoted = self.quoted
+        return (
+            value.as_(self._gen_valid_name(name), quoted=quoted, copy=False)
+            for name, value in exprs.items()
+        )

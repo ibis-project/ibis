@@ -20,6 +20,7 @@ from ibis.backends.clickhouse.tests.conftest import (
     CLICKHOUSE_USER,
     IBIS_TEST_CLICKHOUSE_DB,
 )
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.util import gen_name
 
 cc = pytest.importorskip("clickhouse_connect")
@@ -357,7 +358,7 @@ def test_create_table_no_syntax_error(con):
 
 
 def test_password_with_bracket():
-    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}['
+    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}[]'
     quoted_pass = quote_plus(password)
     host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
     user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
@@ -379,3 +380,32 @@ def test_invalid_port(con):
     url = f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{port}/{IBIS_TEST_CLICKHOUSE_DB}"
     with pytest.raises(cc.driver.exceptions.DatabaseError):
         ibis.connect(url)
+
+
+def test_subquery_with_join(con):
+    name = gen_name("clickhouse_tmp_table")
+
+    s = con.create_table(name, pa.Table.from_pydict({"a": [1, 2, 3]}), temp=True)
+
+    sql = f"""
+    SELECT
+      "o"."a"
+    FROM (
+      SELECT
+        "w"."a"
+      FROM "{name}" AS "s"
+      INNER JOIN "{name}" AS "w"
+      USING ("a")
+    ) AS "o"
+    """
+    with pytest.raises(
+        ClickHouseDatabaseError, match="Identifier 'o.a' cannot be resolved"
+    ):
+        # https://github.com/ClickHouse/ClickHouse/issues/66133
+        con.sql(sql)
+
+    # this works because we add the additional alias in the inner query
+    w = s.view()
+    expr = s.join(w, "a").select(a=w.a).select(b=lambda t: t.a + 1)
+    result = expr.to_pandas()
+    assert set(result["b"].tolist()) == {2, 3, 4}

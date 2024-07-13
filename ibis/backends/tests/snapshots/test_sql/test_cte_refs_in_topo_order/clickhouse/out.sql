@@ -6,13 +6,13 @@ WITH "t1" AS (
     TRUE
 )
 SELECT
-  "t3"."key"
+  "t3"."key" AS "key"
 FROM "t1" AS "t3"
 INNER JOIN "t1" AS "t4"
   ON "t3"."key" = "t4"."key"
 INNER JOIN (
   SELECT
-    "t3"."key"
+    "t3"."key" AS "key"
   FROM "t1" AS "t3"
   INNER JOIN "t1" AS "t4"
     ON "t3"."key" = "t4"."key"
