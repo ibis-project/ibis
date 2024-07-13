@@ -739,7 +739,6 @@ _reductions = {
     ops.Mean: "mean",
     ops.Median: "median",
     ops.Min: "min",
-    ops.Mode: "mode",
     ops.StandardDev: "std",
     ops.Sum: "sum",
     ops.Variance: "var",
@@ -766,6 +765,23 @@ for reduction in _reductions.keys():
         return method(first.filter(reduce(operator.and_, predicates))).cast(
             PolarsType.from_ibis(op.dtype)
         )
+
+
+@translate.register(ops.Mode)
+def execute_mode(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    predicate = arg.is_not_null()
+    if (where := op.where) is not None:
+        predicate &= translate(where, **kw)
+
+    dtype = PolarsType.from_ibis(op.dtype)
+    # `mode` can return more than one value so the additional `get(0)` call is
+    # necessary to enforce aggregation behavior of a scalar value per group
+    #
+    # eventually we may want to support an Ibis API like `modes` that returns a
+    # list of all the modes per group.
+    return arg.filter(predicate).mode().get(0).cast(dtype)
 
 
 @translate.register(ops.Quantile)
@@ -1228,7 +1244,7 @@ def _arg_min_max(op, func, **kw):
     translate_key = translate(key, **kw)
 
     not_null_mask = translate_arg.is_not_null() & translate_key.is_not_null()
-    return translate_arg.filter(not_null_mask).gather(
+    return translate_arg.filter(not_null_mask).get(
         func(translate_key.filter(not_null_mask))
     )
 

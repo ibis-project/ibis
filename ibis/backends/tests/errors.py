@@ -59,10 +59,10 @@ except ImportError:
     GoogleBadRequest = None
 
 try:
-    from polars import ComputeError as PolarsComputeError
-    from polars import PanicException as PolarsPanicException
     from polars.exceptions import ColumnNotFoundError as PolarsColumnNotFoundError
+    from polars.exceptions import ComputeError as PolarsComputeError
     from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
+    from polars.exceptions import PanicException as PolarsPanicException
     from polars.exceptions import SchemaError as PolarsSchemaError
 except ImportError:
     PolarsComputeError = PolarsPanicException = PolarsInvalidOperationError = (

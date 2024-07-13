@@ -19,7 +19,6 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
-    PolarsComputeError,
 )
 
 dot_sql_never = pytest.mark.never(
@@ -119,11 +118,6 @@ def test_table_dot_sql(backend):
 
 
 @dot_sql_never
-@pytest.mark.notyet(
-    ["polars"],
-    raises=PolarsComputeError,
-    reason="polars doesn't support aliased tables",
-)
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
@@ -287,7 +281,6 @@ def test_order_by_no_projection(backend):
 
 
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_dot_sql_limit(con):
     expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb").limit(1)
     result = expr.execute()

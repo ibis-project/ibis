@@ -290,7 +290,7 @@ def infer_pyarrow_table(table):
 def infer_polars_dataframe(df):
     from ibis.formats.polars import PolarsSchema
 
-    return PolarsSchema.to_ibis(df.schema)
+    return PolarsSchema.to_ibis(df.collect_schema())
 
 
 # lock the dispatchers to avoid adding new implementations

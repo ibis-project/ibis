@@ -1180,19 +1180,12 @@ def test_string_quantile(alltypes, func):
     reason="doesn't support median of dates",
 )
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
-@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
-@pytest.mark.parametrize(
-    "func",
-    [
-        param(
-            methodcaller("quantile", 0.5),
-            id="quantile",
-        ),
-    ],
+@pytest.mark.notyet(
+    ["polars"], raises=PolarsInvalidOperationError, reason="not supported upstream"
 )
-def test_date_quantile(alltypes, func):
-    expr = func(alltypes.timestamp_col.date())
+def test_date_quantile(alltypes):
+    expr = alltypes.timestamp_col.date().quantile(0.5)
     result = expr.execute()
     assert result == date(2009, 12, 31)
 
