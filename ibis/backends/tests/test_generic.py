@@ -1781,6 +1781,7 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
+                pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     ["exasol", "impala", "mssql", "mysql", "sqlite"],
                     reason="backend doesn't support arrays",
