@@ -763,6 +763,7 @@ jobs:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
+      - test_bigquery_lite
       - test_backends_min_version
       - test_backends
       - test_pyspark
