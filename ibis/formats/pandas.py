@@ -200,8 +200,10 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
-        if isinstance(dtype, pd.DatetimeTZDtype):
-            return s.dt.tz_convert(dtype.timezone)
+        if isinstance(pandas_type, pd.DatetimeTZDtype) and isinstance(
+            s.dtype, pd.DatetimeTZDtype
+        ):
+            return s if s.dtype == pandas_type else s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
         else:
