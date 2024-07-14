@@ -195,6 +195,7 @@ def test_geo_gets_converted_to_geoarrow(ibis_type):
         PyArrowType.from_ibis(ibis_type), type_pyarrow.GeometryExtensionType
     )
 
+
 def test_geoarrow_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
 
@@ -206,11 +207,14 @@ def test_geoarrow_gets_converted_to_geo():
     assert ibis_type.srid is None
     assert ibis_type.nullable is True
 
-    ibis_type = PyArrowType.to_ibis(gat.wkb(edge_type=gat.EdgeType.SPHERICAL).to_pyarrow())
+    ibis_type = PyArrowType.to_ibis(
+        gat.wkb(edge_type=gat.EdgeType.SPHERICAL).to_pyarrow()
+    )
     assert ibis_type.geotype == "geography"
 
     ibis_type = PyArrowType.to_ibis(gat.wkb().to_pyarrow(), nullable=False)
     assert ibis_type.nullable is False
+
 
 def test_geoarrow_crs_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
