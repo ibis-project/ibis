@@ -37,7 +37,7 @@ env:
 
 jobs:
   test_core:
-    name: Test ${{ matrix.os }} python-${{ matrix.python-version }}
+    name: Test ${{ matrix.os }} python-${{ matrix.python-version }} pyarrow-${{ matrix.pyarrow }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -49,6 +49,9 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+        pyarrow:
+          - true
+          - false
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -77,17 +80,25 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras "visualization decompiler"
 
+      - name: install pyarrow
+        if: matrix.pyarrow
+        run: poetry run pip install pyarrow pyarrow-hotfix
+
+      - name: check pyarrow import
+        if: matrix.pyarrow
+        run: poetry run python -c 'import pyarrow, pyarrow_hotfix'
+
       - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: just ci-check -m "'core or benchmarks'" --numprocesses auto
+        run: just ci-check -m "'core or benchmarks'" --numprocesses auto -rs
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: just ci-check -m "'core or benchmarks'"
+        run: just ci-check -m "'core or benchmarks'" -rs
 
       - name: upload code coverage
         if: success()

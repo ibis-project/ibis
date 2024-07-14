@@ -6,7 +6,6 @@ from decimal import Decimal
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
-import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -14,6 +13,8 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis.formats.pandas import PandasData, PandasSchema, PandasType
+
+pa = pytest.importorskip("pyarrow")
 
 
 @pytest.mark.parametrize(

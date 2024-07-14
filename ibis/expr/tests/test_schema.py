@@ -5,7 +5,6 @@ from dataclasses import dataclass
 from typing import NamedTuple
 
 import numpy as np
-import pyarrow as pa
 import pytest
 
 import ibis.expr.datatypes as dt
@@ -365,6 +364,7 @@ def test_schema_set_operations():
 
 
 def test_schema_infer_pyarrow_table():
+    pa = pytest.importorskip("pyarrow")
     table = pa.Table.from_arrays(
         [
             pa.array([1, 2, 3]),
@@ -378,6 +378,7 @@ def test_schema_infer_pyarrow_table():
 
 
 def test_schema_from_to_pyarrow_schema():
+    pa = pytest.importorskip("pyarrow")
     pyarrow_schema = pa.schema(
         [
             pa.field("a", pa.int64()),

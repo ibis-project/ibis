@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
-import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -23,6 +22,7 @@ from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
 
 if TYPE_CHECKING:
     import polars as pl
+    import pyarrow as pa
 
 _has_arrow_dtype = hasattr(pd, "ArrowDtype")
 
@@ -408,6 +408,9 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         return self.obj
 
     def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
         return pa.Table.from_pandas(self.obj, schema=pyarrow_schema)
 

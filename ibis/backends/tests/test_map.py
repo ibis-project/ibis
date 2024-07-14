@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pandas.testing as tm
-import pyarrow as pa
 import pytest
 from pytest import param
 
@@ -11,6 +10,8 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
+
+pa = pytest.importorskip("pyarrow")
 
 pytestmark = [
     pytest.mark.never(
