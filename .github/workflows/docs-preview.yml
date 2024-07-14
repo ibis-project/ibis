@@ -58,18 +58,17 @@ jobs:
             **.qmd
 
       - name: get preview links
-        id: get-preview-links
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-qmd-files.outputs.all_changed_files }}
           PREVIEW_URL: "https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app"
         run: |
-          links="$(
+          {
+            echo 'Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app'
             for file in ${ALL_CHANGED_FILES}; do
               link="${file#docs/}"
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
-          )"
-          echo "links=\"$links\"" | tee -a "$GITHUB_OUTPUT"
+          } | tee /tmp/comment
 
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-build-all
@@ -89,6 +88,4 @@ jobs:
         with:
           token: ${{ steps.generate_token.outputs.token }}
           issue-number: ${{ github.event.pull_request.number }}
-          body: |
-            Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app
-            ${{ steps.get-preview-links.outputs.links }}
+          body-path: /tmp/comment
