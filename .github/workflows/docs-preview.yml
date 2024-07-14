@@ -44,22 +44,10 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - name: build docs
-        run: nix develop --ignore-environment --keep HOME -c just docs-build-all
-
-      - name: install netlify cli
-        run: npm install -g netlify-cli
-
       - name: generate url alias
         id: get_alias
         run: |
           echo "id=pr-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
-
-      - name: build and push quarto docs to preview url
-        run: netlify deploy --dir=docs/_output --alias="${{ steps.get_alias.outputs.id }}"
-        env:
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       - name: Get all changed qmd files
         id: changed-qmd-files
@@ -70,17 +58,30 @@ jobs:
             **.qmd
 
       - name: get preview links
+        id: get-preview-links
         env:
           ALL_CHANGED_FILES: ${{ steps.changed-qmd-files.outputs.all_changed_files }}
           PREVIEW_URL: "https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app"
         run: |
-          links="$({
+          links="$(
             for file in ${ALL_CHANGED_FILES}; do
               link="${file#docs/}"
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
-          })"
-          echo "preview_links=$links" >> "$GITHUB_ENV"
+          )"
+          echo "links=$links" | tee -a "$GITHUB_OUTPUT"
+
+      - name: build docs
+        run: nix develop --ignore-environment --keep HOME -c just docs-build-all
+
+      - name: install netlify cli
+        run: npm install -g netlify-cli
+
+      - name: build and push quarto docs to preview url
+        run: netlify deploy --dir=docs/_output --alias="${{ steps.get_alias.outputs.id }}"
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       - name: create preview link comment
         if: success()
@@ -90,4 +91,4 @@ jobs:
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app
-            ${{ env.preview_links }}
+            ${{ steps.get-preview-links.outputs.links }}
