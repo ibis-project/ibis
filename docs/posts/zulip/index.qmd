@@ -1,5 +1,5 @@
 ---
-title: "Announcing Zulip for Ibis community chat"
+title: "Announcing Zulip for Ibis chat"
 author: "Ibis team"
 date: "2024-01-04"
 categories:
