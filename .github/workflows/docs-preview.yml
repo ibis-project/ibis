@@ -78,7 +78,7 @@ jobs:
           for file in "${ALL_CHANGED_FILES[@]}"; do
             links="$links\n- [${file}](${PREVIEW_URL}/${file})"
           done
-          echo "preview_links=$links" >> $GITHUB_ENV
+          echo "preview_links=$links" >> "$GITHUB_ENV"
 
       - name: create preview link comment
         if: success()
