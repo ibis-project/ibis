@@ -431,3 +431,18 @@ Trino.Generator.TRANSFORMS |= {
     sge.Join: transforms.preprocess([make_cross_joins_explicit]),
     sge.LastValue: rename_func("last_value"),
 }
+
+class E6data(MySQL):
+    class Tokenizer(MySQL.Tokenizer):
+        IDENTIFIERS = ['"'] 
+    class Generator(MySQL.Generator):
+        TYPE_MAPPING = {
+            sge.DataType.Type.VARCHAR: "STRING",
+            sge.DataType.Type.CHAR: "STRING",
+            sge.DataType.Type.TEXT: "STRING",
+        }
+        
+        TRANSFORMS = {
+            sge.Concat: lambda self, e: f"concat({self.sql(e.left)}, {self.sql(e.right)})",
+            sge.Length: rename_func("length"),
+        }
