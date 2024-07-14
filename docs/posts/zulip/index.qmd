@@ -1,6 +1,6 @@
 ---
 title: "Announcing Zulip for Ibis community chat"
-author: "Ibis team (blah)"
+author: "Ibis team"
 date: "2024-01-04"
 categories:
     - blog
