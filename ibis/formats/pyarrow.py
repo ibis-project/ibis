@@ -151,7 +151,7 @@ class PyArrowType(TypeMapper):
                 srid = 4326
             else:
                 # This works because the two most common srid authorities are EPSG and ESRI
-                # and the "codes" are all integers and don't intersect with eachother on
+                # and the "codes" are all integers and don't intersect with each other on
                 # purpose. This won't scale to something like OGC:CRS27 (not common).
                 srid = int(auth_code[1])
 
