@@ -69,7 +69,7 @@ jobs:
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
           )"
-          echo "links=$links" | tee -a "$GITHUB_OUTPUT"
+          echo "links=\"$links\"" | tee -a "$GITHUB_OUTPUT"
 
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-build-all
