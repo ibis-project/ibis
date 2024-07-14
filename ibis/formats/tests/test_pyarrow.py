@@ -199,8 +199,6 @@ def test_geo_gets_converted_to_geoarrow(ibis_type):
 def test_geoarrow_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
 
-    import geoarrow.types as gat
-
     ibis_type = PyArrowType.to_ibis(gat.wkb().to_pyarrow())
     assert ibis_type.is_geospatial()
     assert ibis_type.geotype == "geometry"
@@ -219,8 +217,6 @@ def test_geoarrow_gets_converted_to_geo():
 def test_geoarrow_crs_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
     pyproj = pytest.importorskip("pyproj")
-
-    import geoarrow.types as gat
 
     # Check the GeoArrow/GeoParquet standard representation of longitude/latitude
     ibis_type = PyArrowType.to_ibis(gat.wkb(crs=gat.OGC_CRS84).to_pyarrow())
