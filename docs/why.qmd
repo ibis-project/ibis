@@ -1,5 +1,5 @@
 ---
-title: "Why Ibis????"
+title: "Why Ibis?"
 ---
 
 Ibis defines a Python dataframe API that executes on any query engine -- the
