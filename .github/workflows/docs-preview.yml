@@ -76,7 +76,8 @@ jobs:
         run: |
           links="$({
             for file in "${ALL_CHANGED_FILES[@]}"; do
-              echo "- [${file}](${PREVIEW_URL}/${file})"
+              link="${file#docs/}"
+              echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
           })"
           echo "preview_links=$links" >> "$GITHUB_ENV"
