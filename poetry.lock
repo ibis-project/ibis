@@ -1888,6 +1888,20 @@ crc = ["crcmod"]
 gcsfuse = ["fusepy"]
 
 [[package]]
+name = "geoarrow-types"
+version = "0.2.0"
+description = ""
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "geoarrow_types-0.2.0-py3-none-any.whl", hash = "sha256:b83bd7e4cee92356df1904bc681cd86938ae808778aef8f836d2dce8f234cb7e"},
+    {file = "geoarrow_types-0.2.0.tar.gz", hash = "sha256:2dcb3db9c80b2079a7a61c3e74aa46904f1c899136735f1cacc015757707e924"},
+]
+
+[package.extras]
+test = ["pyarrow", "pytest"]
+
+[[package]]
 name = "geopandas"
 version = "1.0.1"
 description = "Geographic pandas extensions"
@@ -7676,7 +7690,7 @@ duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix"]
 examples = ["fsspec", "pins"]
 exasol = ["pyarrow", "pyarrow-hotfix", "pyexasol"]
 flink = ["pyarrow", "pyarrow-hotfix"]
-geospatial = ["geopandas", "shapely"]
+geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
 mssql = ["pyarrow", "pyarrow-hotfix", "pyodbc"]
 mysql = ["pyarrow", "pyarrow-hotfix", "pymysql"]
@@ -7694,4 +7708,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "78c776cedc53934095a7266faddc2c32aa5b76a2b6285719df3055e58d9a67a3"
+content-hash = "dfb7c483def7e2d0fded85c445aba1a47a725df201fd5429971124b986ff99c9"

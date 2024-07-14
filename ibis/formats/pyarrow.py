@@ -113,6 +113,54 @@ class PyArrowType(TypeMapper):
             return dt.Map(key_dtype, value_dtype, nullable=nullable)
         elif pa.types.is_dictionary(typ):
             return cls.to_ibis(typ.value_type)
+        elif (
+            isinstance(typ, pa.ExtensionType)
+            and type(typ).__module__ == "geoarrow.types.type_pyarrow"
+        ):
+            from geoarrow import types as gat
+
+            gat.type_pyarrow.register_extension_types()
+
+            auth_code = None
+            if typ.crs is not None:
+                crs_dict = typ.crs.to_json_dict()
+                if "id" in crs_dict:
+                    crs_id = crs_dict["id"]
+                    if "authority" in crs_id and "code" in crs_id:
+                        auth_code = (crs_id["authority"], crs_id["code"])
+
+            if typ.crs is not None and auth_code is None:
+                # It is possible to have PROJJSON that does not have an authority/code
+                # attached, either because the producer didn't have that information
+                # (e.g., because they were reading a older shapefile). In this case,
+                # pyproj can often guess the authority/code.
+                import pyproj
+
+                auth_code = pyproj.CRS(typ.crs.to_json()).to_authority()
+                if auth_code is None:
+                    raise ValueError(f"Can't resolve SRID of crs {typ.crs}")
+
+            if auth_code is None:
+                srid = None
+            elif auth_code == ("OGC", "CRS84"):
+                # OGC:CRS84 and EPSG:4326 are identical except for the order of
+                # coordinates (i.e., lon lat vs. lat lon) in their official definition.
+                # This axis ordering is ignored in all but the most obscure scenarios
+                # such that these are identical. OGC:CRS84 is more correct, but EPSG:4326
+                # is more common.
+                srid = 4326
+            else:
+                # This works because the two most common srid authorities are EPSG and ESRI
+                # and the "codes" are all integers and don't intersect with each other on
+                # purpose. This won't scale to something like OGC:CRS27 (not common).
+                srid = int(auth_code[1])
+
+            if typ.edge_type == gat.EdgeType.SPHERICAL:
+                geotype = "geography"
+            else:
+                geotype = "geometry"
+
+            return dt.GeoSpatial(geotype, srid, nullable)
         else:
             return _from_pyarrow_types()[typ](nullable=nullable)
 
@@ -175,7 +223,28 @@ class PyArrowType(TypeMapper):
             )
             return pa.map_(key_field, value_field, keys_sorted=False)
         elif dtype.is_geospatial():
-            return pa.binary()
+            from geoarrow import types as gat
+
+            # Resolve CRS
+            if dtype.srid is None:
+                crs = None
+            elif dtype.srid == 4326:
+                crs = gat.OGC_CRS84
+            else:
+                import pyproj
+
+                # Assume that these are EPSG codes. An srid is more accurately a key
+                # into a backend/connection-specific lookup table; however, most usage
+                # should work with this assumption.
+                crs = pyproj.CRS(f"EPSG:{dtype.srid}")
+
+            # Resolve edge type
+            if dtype.geotype == "geography":
+                edge_type = gat.EdgeType.SPHERICAL
+            else:
+                edge_type = gat.EdgeType.PLANAR
+
+            return gat.wkb(crs=crs, edge_type=edge_type).to_pyarrow()
         else:
             try:
                 return _to_pyarrow_types()[type(dtype)]
