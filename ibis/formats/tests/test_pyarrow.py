@@ -199,16 +199,18 @@ def test_geo_gets_converted_to_geoarrow(ibis_type):
 def test_geoarrow_gets_converted_to_geo():
     gat = pytest.importorskip("geoarrow.types")
 
-    ibis_type = PyArrowType.to_ibis(gat.wkb().to_pyarrow())
+    pyarrow_type = gat.wkb().to_pyarrow()
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.is_geospatial()
     assert ibis_type.geotype == "geometry"
     assert ibis_type.srid is None
     assert ibis_type.nullable is True
+    assert ibis_type.to_pyarrow() == pyarrow_type
 
-    ibis_type = PyArrowType.to_ibis(
-        gat.wkb(edge_type=gat.EdgeType.SPHERICAL).to_pyarrow()
-    )
+    pyarrow_type = gat.wkb(edge_type=gat.EdgeType.SPHERICAL).to_pyarrow()
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.geotype == "geography"
+    assert ibis_type.to_pyarrow() == pyarrow_type
 
     ibis_type = PyArrowType.to_ibis(gat.wkb().to_pyarrow(), nullable=False)
     assert ibis_type.nullable is False
@@ -219,18 +221,24 @@ def test_geoarrow_crs_gets_converted_to_geo():
     pyproj = pytest.importorskip("pyproj")
 
     # Check the GeoArrow/GeoParquet standard representation of longitude/latitude
-    ibis_type = PyArrowType.to_ibis(gat.wkb(crs=gat.OGC_CRS84).to_pyarrow())
+    pyarrow_type = gat.wkb(crs=gat.OGC_CRS84).to_pyarrow()
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.srid == 4326
+    assert ibis_type.to_pyarrow() == pyarrow_type
 
     # Check a standard representation of lon/lat that happens to be missing the
     # explicit authority/code section of the PROJJSON (i.e., make pyproj guess
     # the srid for us)
     lonlat_crs = gat.OGC_CRS84.to_json_dict()
     del lonlat_crs["id"]
-    ibis_type = PyArrowType.to_ibis(gat.wkb(crs=lonlat_crs).to_pyarrow())
+    pyarrow_type = gat.wkb(crs=lonlat_crs).to_pyarrow()
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.srid == 4326
+    assert ibis_type.to_pyarrow() == pyarrow_type
 
     # Check a non-lon/lat CRS (e.g., UTM Zone 20N)
     utm_20n = pyproj.CRS("EPSG:32620")
-    ibis_type = PyArrowType.to_ibis(gat.wkb(crs=utm_20n).to_pyarrow())
+    pyarrow_type = gat.wkb(crs=utm_20n).to_pyarrow()
+    ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.srid == 32620
+    assert ibis_type.to_pyarrow() == pyarrow_type

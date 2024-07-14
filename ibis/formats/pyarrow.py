@@ -231,9 +231,12 @@ class PyArrowType(TypeMapper):
             elif dtype.srid == 4326:
                 crs = gat.OGC_CRS84
             else:
-                # Warn for dropped CRS? Or geoarrow.types would need a lookup table
-                # for srid -> PROJJSON
-                crs = None
+                import pyproj
+
+                # Assume that these are EPSG codes. An srid is more accurately a key
+                # into a backend/connection-specific lookup table; however, most usage
+                # should work with this assumption.
+                crs = pyproj.CRS(f"EPSG:{dtype.srid}")
 
             # Resolve edge type
             if dtype.geotype == "geography":
