@@ -87,5 +87,5 @@ jobs:
           token: ${{ steps.generate_token.outputs.token }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
-            Docs preview:
+            Docs preview: https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app
             ${{ env.preview_links }}
