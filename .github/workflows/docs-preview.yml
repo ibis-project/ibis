@@ -75,7 +75,7 @@ jobs:
           PREVIEW_URL: "https://${{ steps.get_alias.outputs.id }}--ibis-quarto.netlify.app"
         run: |
           links="$({
-            for file in "${ALL_CHANGED_FILES[@]}"; do
+            for file in ${ALL_CHANGED_FILES}; do
               link="${file#docs/}"
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
