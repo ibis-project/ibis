@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import pandas.testing as tm
 import pytest
-import sqlglot as sg
 from pytest import param
 
 import ibis
@@ -158,7 +157,9 @@ def test_field_access_after_case(con):
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
 @pytest.mark.notyet(
-    ["clickhouse"], raises=sg.ParseError, reason="sqlglot fails to parse"
+    ["clickhouse"],
+    raises=AssertionError,
+    reason="sqlglot fails to parse, fall back to unknown",
 )
 @pytest.mark.parametrize(
     "nullable",
@@ -189,8 +190,8 @@ def test_field_access_after_case(con):
 )
 @pytest.mark.broken(
     ["trino"],
-    raises=sg.ParseError,
-    reason="trino returns unquoted and therefore unparsable struct field names",
+    raises=AssertionError,
+    reason="trino returns unquoted and therefore unparsable struct field names, we fall back to dt.unknown",
 )
 @pytest.mark.notyet(
     ["snowflake"],
