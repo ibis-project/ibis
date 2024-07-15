@@ -2095,7 +2095,7 @@ def range(start, stop, step) -> ir.ArrayValue:
 
     ::: {.callout-note}
     `start` is inclusive and `stop` is exclusive, just like Python's builtin
-    [`range`](:py:class:`range`).
+    [](`range`).
 
     When `step` equals 0, however, this function will return an empty array.
 
