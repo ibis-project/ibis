@@ -179,7 +179,11 @@ def prepare_predicates(
         The comparison operation to construct if the input is a pair of
         expression-like objects
     """
-    reverse = {ops.Field(chain, k): v for k, v in chain.values.items()}
+    reverse = {
+        ops.Field(chain, k): v
+        for k, v in chain.values.items()
+        if isinstance(v, ops.Field)
+    }
     deref_right = DerefMap.from_targets(right)
     deref_left = DerefMap.from_targets(chain.tables, extra=reverse)
     deref_both = DerefMap.from_targets([*chain.tables, right], extra=reverse)
