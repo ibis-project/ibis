@@ -40,6 +40,7 @@ from ibis.backends.sql.datatypes import BigQueryType
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
     from pathlib import Path
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
