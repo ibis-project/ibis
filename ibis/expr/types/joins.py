@@ -269,7 +269,7 @@ class Join(Table):
         # bind and dereference the predicates
         preds = prepare_predicates(chain, right, predicates)
         preds = flatten_predicates(preds)
-        if not preds and how != "cross":
+        if not preds and how not in {"cross", "positional"}:
             # if there are no predicates, default to every row matching unless
             # the join is a cross join, because a cross join already has this
             # behavior

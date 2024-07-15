@@ -205,6 +205,7 @@ JoinKind = Literal[
     "any_inner",
     "any_left",
     "cross",
+    "positional",
 ]
 
 

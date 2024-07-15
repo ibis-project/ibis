@@ -385,3 +385,33 @@ def test_join_conflicting_columns(backend, con):
         }
     )
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.never(
+    [
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "risingwave",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    reason="Users can implement this with ibis.row_number(): https://github.com/ibis-project/ibis/issues/9486",
+)
+def test_positional_join(backend, con):
+    t1 = ibis.memtable({"x": [1, 2, 3]})
+    t2 = ibis.memtable({"x": [3, 2, 1]})
+    j = t1.join(t2, how="positional")
+    result = con.execute(j)
+    expected = pd.DataFrame({"x": [1, 2, 3], "x_right": [3, 2, 1]})
+    backend.assert_frame_equal(result, expected)
