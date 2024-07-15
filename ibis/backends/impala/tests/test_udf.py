@@ -144,10 +144,10 @@ def test_udf_primitive_output_types(ty, value, column, table):
     ibis_type = dt.validate_type(ty)
 
     expr = func(value)
-    assert type(expr) == getattr(ir, ibis_type.scalar)
+    assert type(expr) is getattr(ir, ibis_type.scalar)
 
     expr = func(table[column])
-    assert type(expr) == getattr(ir, ibis_type.column)
+    assert type(expr) is getattr(ir, ibis_type.column)
 
 
 @pytest.mark.parametrize(
@@ -184,9 +184,9 @@ def test_uda_primitive_output_types(ty, value):
 def test_decimal(dec):
     func = _register_udf(["decimal(12, 2)"], "decimal(12, 2)", "test")
     expr = func(1.0)
-    assert type(expr) == ir.DecimalScalar
+    assert type(expr) is ir.DecimalScalar
     expr = func(dec)
-    assert type(expr) == ir.DecimalColumn
+    assert type(expr) is ir.DecimalColumn
 
 
 @pytest.mark.parametrize(
@@ -382,7 +382,7 @@ def identity_func_testing(udf_ll, con, test_data_db, datatype, literal, column):
     result = con.execute(expr)
     # Hacky
     if datatype == "timestamp":
-        assert type(result) == pd.Timestamp
+        assert type(result) is pd.Timestamp
     else:
         lop = literal.op()
         if isinstance(lop, ir.Literal):

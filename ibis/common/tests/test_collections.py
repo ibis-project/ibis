@@ -246,7 +246,7 @@ class MySchema(MapSet):
         return len(self._fields)
 
     def identical(self, other):
-        return type(self) == type(other) and tuple(self.items()) == tuple(other.items())
+        return type(self) is type(other) and tuple(self.items()) == tuple(other.items())
 
 
 def test_myschema_identical():

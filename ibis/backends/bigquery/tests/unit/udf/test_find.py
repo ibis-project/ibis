@@ -17,7 +17,7 @@ def parse_stmt(stmt):
 
 
 def eq(left, right):
-    if type(left) != type(right):
+    if type(left) is not type(right):
         return False
 
     if is_iterable(left) and is_iterable(right):

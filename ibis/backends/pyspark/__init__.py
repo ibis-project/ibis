@@ -86,7 +86,7 @@ def unwrap_json(typ):
             value = json.loads(raw)
             # exact type check because we want to distinguish between integer
             # and booleans and bool is a subclass of int
-            return value if type(value) == typ else None
+            return value if type(value) is typ else None
 
         return s.map(nullify_type_mismatched_value)
 
