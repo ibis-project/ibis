@@ -286,12 +286,19 @@ quartodoc:
             name: Generic expressions
             desc: Scalars and columns of any element type.
           contents:
+            # types
             - name: Value
               package: ibis.expr.types.generic
             - name: Column
               package: ibis.expr.types.generic
+            - name: Deferred
+              package: ibis.common.deferred
             - name: Scalar
               package: ibis.expr.types.generic
+
+            # constants
+            - name: deferred
+              package: ibis.expr.api
             - name: literal
               dynamic: true
               signature_name: full
@@ -301,19 +308,18 @@ quartodoc:
             - name: "null"
               dynamic: true
               signature_name: full
+            - name: range
+              dynamic: true
+              signature_name: full
             - name: coalesce
               dynamic: true
               signature_name: full
+
+            # comparisons
             - name: least
               dynamic: true
               signature_name: full
             - name: greatest
-              dynamic: true
-              signature_name: full
-            - name: asc
-              dynamic: true
-              signature_name: full
-            - name: desc
               dynamic: true
               signature_name: full
             - name: ifelse
@@ -322,6 +328,17 @@ quartodoc:
             - name: case
               dynamic: true
               signature_name: full
+
+            # sorting
+            - name: asc
+              dynamic: true
+              signature_name: full
+            - name: desc
+              dynamic: true
+              signature_name: full
+
+            # conversions
+            # TODO: add decompile here once the API is not experimental
             - name: to_sql
               dynamic: true
               signature_name: full
@@ -355,6 +372,12 @@ quartodoc:
             - name: random
               dynamic: true
               signature_name: full
+
+            # constants
+            - name: e
+              package: ibis.expr.api
+            - name: pi
+              package: ibis.expr.api
 
         - kind: page
           path: expression-strings
@@ -642,6 +665,13 @@ quartodoc:
             desc: "Scalar user-defined function APIs"
           contents:
             - scalar
+        - kind: page
+          path: aggregate-udfs
+          summary:
+            name: Aggregate UDFs (experimental)
+            desc: "Aggregate user-defined function APIs"
+          contents:
+            - agg
 
     - title: Configuration
       desc: "Ibis configuration"
