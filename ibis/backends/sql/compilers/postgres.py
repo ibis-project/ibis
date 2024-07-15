@@ -5,13 +5,12 @@ from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
-from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
@@ -22,7 +21,6 @@ class PostgresUDFNode(ops.Value):
     shape = rlz.shape_like("args")
 
 
-@public
 class PostgresCompiler(SQLGlotCompiler):
     __slots__ = ()
 

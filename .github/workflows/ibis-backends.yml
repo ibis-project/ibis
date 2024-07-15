@@ -166,7 +166,7 @@ jobs:
             sys-deps:
               - libgeos-dev
           - name: risingwave
-            title: Risingwave
+            title: RisingWave
             serial: true
             services:
               - risingwave
@@ -304,7 +304,7 @@ jobs:
           - os: windows-latest
             backend:
               name: risingwave
-              title: Risingwave
+              title: RisingWave
               serial: true
               services:
                 - risingwave

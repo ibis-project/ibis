@@ -11,7 +11,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ClickHouseType
 from ibis.backends.sql.dialects import ClickHouse
 

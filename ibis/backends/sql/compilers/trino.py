@@ -10,7 +10,7 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (

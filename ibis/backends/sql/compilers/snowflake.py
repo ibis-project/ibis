@@ -5,13 +5,12 @@ from functools import partial
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, C, FuncGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, C, FuncGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
@@ -27,7 +26,6 @@ class SnowflakeFuncGen(FuncGen):
     udf = FuncGen(namespace="ibis_udfs.public")
 
 
-@public
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
 

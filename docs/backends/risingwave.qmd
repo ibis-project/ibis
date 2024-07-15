@@ -30,7 +30,7 @@ con = ibis.risingwave.connect()  # <1>
 
 ## `conda`
 
-Install for Risingwave:
+Install for RisingWave:
 
 ```{.bash}
 conda install -c conda-forge ibis-risingwave
@@ -48,7 +48,7 @@ con = ibis.risingwave.connect()  # <1>
 
 ## `mamba`
 
-Install for Risingwave:
+Install for RisingWave:
 
 ```{.bash}
 mamba install -c conda-forge ibis-risingwave
@@ -98,7 +98,7 @@ render_do_connect("risingwave")
 
 ```{python}
 #| echo: false
-BACKEND = "Risingwave"
+BACKEND = "RisingWave"
 ```
 
 {{< include ./_templates/api.qmd >}}

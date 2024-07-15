@@ -27,7 +27,7 @@ def test_simple_mv(con, alltypes, column):
 def test_mv_on_simple_source(con):
     sc_name = util.gen_name("simple_sc")
     schema = ibis.schema([("v", "int32")])
-    # use Risingwave's internal data generator to imitate a upstream data source
+    # use RisingWave's internal data generator to imitate a upstream data source
     connector_properties = {
         "connector": "datagen",
         "fields.v.kind": "sequence",
@@ -58,7 +58,7 @@ def test_mv_on_simple_source(con):
 def test_mv_on_table_with_connector(con):
     tblc_name = util.gen_name("simple_table_with_connector")
     schema = ibis.schema([("v", "int32")])
-    # use Risingwave's internal data generator to imitate a upstream data source
+    # use RisingWave's internal data generator to imitate a upstream data source
     connector_properties = {
         "connector": "datagen",
         "fields.v.kind": "sequence",

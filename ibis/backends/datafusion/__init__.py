@@ -20,9 +20,9 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compilers import DataFusionCompiler
+from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType

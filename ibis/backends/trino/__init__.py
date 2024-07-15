@@ -20,8 +20,8 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
-from ibis.backends.trino.compiler import TrinoCompiler
+from ibis.backends.sql.compilers import TrinoCompiler
+from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping

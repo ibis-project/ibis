@@ -5,13 +5,12 @@ from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 from sqlglot.dialects import DuckDB
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
@@ -28,7 +27,6 @@ _INTERVAL_SUFFIXES = {
 }
 
 
-@public
 class DuckDBCompiler(SQLGlotCompiler):
     __slots__ = ()
 

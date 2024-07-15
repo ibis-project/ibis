@@ -11,13 +11,12 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
-from ibis.formats.pyarrow import PyArrowType
 
 
 class DataFusionCompiler(SQLGlotCompiler):
@@ -136,6 +135,8 @@ class DataFusionCompiler(SQLGlotCompiler):
         if to.is_timestamp():
             return self._to_timestamp(arg, to)
         if to.is_decimal():
+            from ibis.formats.pyarrow import PyArrowType
+
             return self.f.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
         return self.cast(arg, to)
 

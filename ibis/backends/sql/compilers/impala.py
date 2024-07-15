@@ -7,12 +7,10 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.dialects import Impala
-from ibis.backends.sql.rewrites import (
-    rewrite_empty_order_by_window,
-)
+from ibis.backends.sql.rewrites import rewrite_empty_order_by_window
 
 
 class ImpalaCompiler(SQLGlotCompiler):

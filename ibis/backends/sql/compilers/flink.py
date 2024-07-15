@@ -8,7 +8,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import FlinkType
 from ibis.backends.sql.dialects import Flink
 from ibis.backends.sql.rewrites import (

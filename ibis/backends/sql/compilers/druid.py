@@ -6,7 +6,7 @@ import toolz
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
 

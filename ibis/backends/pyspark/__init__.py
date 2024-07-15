@@ -21,10 +21,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
-from ibis.backends.pyspark.compiler import PySparkCompiler
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers import PySparkCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated

@@ -26,9 +26,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
-from ibis.backends.postgres.compiler import PostgresCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import TRUE, C, ColGen, F
+from ibis.backends.sql.compilers import PostgresCompiler
+from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:

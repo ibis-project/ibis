@@ -31,10 +31,10 @@ from ibis.backends.bigquery.client import (
     rename_partitioned_column,
     schema_from_bigquery_table,
 )
-from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers import BigQueryCompiler
 from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:

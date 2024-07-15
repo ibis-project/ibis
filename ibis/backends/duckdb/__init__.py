@@ -24,10 +24,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
-from ibis.backends.duckdb.compiler import DuckDBCompiler
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, C
+from ibis.backends.sql.compilers import DuckDBCompiler
+from ibis.backends.sql.compilers.base import STAR, C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.util import deprecated

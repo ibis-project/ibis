@@ -14,7 +14,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend
-from ibis.backends.sql.compiler import STAR
+from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import pyarrow as pa
 
-    from ibis.backends.sql.compiler import SQLGlotCompiler
+    from ibis.backends.sql.compilers.base import SQLGlotCompiler
     from ibis.expr.schema import SchemaLike
 
 

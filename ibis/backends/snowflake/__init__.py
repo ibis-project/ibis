@@ -32,10 +32,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
-from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR
+from ibis.backends.sql.compilers import SnowflakeCompiler
+from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import SnowflakeType
 
 if TYPE_CHECKING:

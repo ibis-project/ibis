@@ -24,10 +24,10 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend, CanCreateDatabase
-from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compilers import ClickHouseCompiler
+from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping

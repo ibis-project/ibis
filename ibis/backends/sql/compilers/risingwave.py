@@ -1,20 +1,18 @@
 from __future__ import annotations
 
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.postgres.compiler import PostgresCompiler
-from ibis.backends.sql.compiler import ALL_OPERATIONS
+from ibis.backends.sql.compilers import PostgresCompiler
+from ibis.backends.sql.compilers.base import ALL_OPERATIONS
 from ibis.backends.sql.datatypes import RisingWaveType
 from ibis.backends.sql.dialects import RisingWave
 
 
-@public
-class RisingwaveCompiler(PostgresCompiler):
+class RisingWaveCompiler(PostgresCompiler):
     __slots__ = ()
 
     dialect = RisingWave

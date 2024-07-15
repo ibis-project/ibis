@@ -6,13 +6,12 @@ import re
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import FALSE, NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
 from ibis.backends.sql.rewrites import FirstValue, LastValue, p
@@ -45,7 +44,6 @@ def offset_to_filter(_):
     return _.copy(parent=rel, offset=0)
 
 
-@public
 class PySparkCompiler(SQLGlotCompiler):
     __slots__ = ()
 

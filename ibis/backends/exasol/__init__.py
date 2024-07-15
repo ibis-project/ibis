@@ -19,9 +19,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema
-from ibis.backends.exasol.compiler import ExasolCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, C
+from ibis.backends.sql.compilers import ExasolCompiler
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping

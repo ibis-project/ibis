@@ -12,9 +12,9 @@ import sqlglot as sg
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.druid.compiler import DruidCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR
+from ibis.backends.sql.compilers import DruidCompiler
+from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import DruidType
 
 if TYPE_CHECKING:

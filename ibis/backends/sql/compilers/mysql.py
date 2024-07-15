@@ -5,12 +5,11 @@ from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import MySQLType
 from ibis.backends.sql.dialects import MySQL
 from ibis.backends.sql.rewrites import (
@@ -41,7 +40,6 @@ def rewrite_limit(_, **kwargs):
     return _
 
 
-@public
 class MySQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 

@@ -3,11 +3,10 @@ from __future__ import annotations
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
-from public import public
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.sql.compiler import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import OracleType
 from ibis.backends.sql.dialects import Oracle
 from ibis.backends.sql.rewrites import (
@@ -21,7 +20,6 @@ from ibis.backends.sql.rewrites import (
 )
 
 
-@public
 class OracleCompiler(SQLGlotCompiler):
     __slots__ = ()
 
