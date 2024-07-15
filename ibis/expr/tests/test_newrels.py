@@ -1769,6 +1769,7 @@ def test_projections_with_similar_expressions_have_different_names():
 def test_expr_in_join_projection():
     t1 = ibis.table({"a": "int64", "b": "string"}, name="t1")
     t2 = ibis.table({"c": "int64", "b": "string"}, name="t2")
+    t3 = ibis.table({"a": "int64", "d": "int64"}, name="t3")
     expr = t1.inner_join(t2, "b").select(
         "a", lit1=1, lit2=2 * t1.a, lit3=_.c - 5, lit4=t2.b.length() / 2.0
     )
@@ -1778,6 +1779,20 @@ def test_expr_in_join_projection():
     assert op.schema == ibis.schema(
         {
             "a": "int64",
+            "lit1": "int8",
+            "lit2": "int64",
+            "lit3": "int64",
+            "lit4": "float64",
+        }
+    )
+
+    expr2 = expr.inner_join(t3, "a").select("a", "d", "lit1", "lit2", "lit3", "lit4")
+    op2 = expr2.op()
+    assert isinstance(op2, ops.JoinChain)
+    assert op2.schema == ibis.schema(
+        {
+            "a": "int64",
+            "d": "int64",
             "lit1": "int8",
             "lit2": "int64",
             "lit3": "int64",
