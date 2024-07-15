@@ -66,15 +66,15 @@ pixi add ibis-flink
 
 ## Spinning up the services using Docker Compose
 
-The [ibis-project/ibis-flink-example GitHub
-repository](https://github.com/ibis-project/ibis-flink-example) includes the
+The [ibis-project/realtime-fraud-detection GitHub
+repository](https://github.com/ibis-project/realtime-fraud-detection) includes the
 relevant Docker Compose configuration for this tutorial. Clone the repository,
 and run `docker compose up` from the cloned directory to create Kafka topics,
 generate sample data, and launch a Flink cluster:
 
 ```bash
-git clone https://github.com/claypotai/ibis-flink-example.git
-cd ibis-flink-example
+git clone https://github.com/claypotai/realtime-fraud-detection.git
+cd realtime-fraud-detection
 docker compose up
 ```
 
@@ -88,12 +88,12 @@ After a few seconds, you should see messages indicating your Kafka environment
 is ready:
 
 ```bash
-ibis-flink-example-init-kafka-1      | Successfully created the following topics:
-ibis-flink-example-init-kafka-1      | payment_msg
-ibis-flink-example-init-kafka-1      | sink
-ibis-flink-example-init-kafka-1 exited with code 0
-ibis-flink-example-data-generator-1  | Connected to Kafka
-ibis-flink-example-data-generator-1  | Producing 20000 records to Kafka topic payment_msg
+realtime-fraud-detection-init-kafka-1      | Successfully created the following topics:
+realtime-fraud-detection-init-kafka-1      | payment_msg
+realtime-fraud-detection-init-kafka-1      | sink
+realtime-fraud-detection-init-kafka-1 exited with code 0
+realtime-fraud-detection-data-generator-1  | Connected to Kafka
+realtime-fraud-detection-data-generator-1  | Producing 20000 records to Kafka topic payment_msg
 ```
 
 This example uses mock payments data. The `payment_msg` Kafka topic contains
