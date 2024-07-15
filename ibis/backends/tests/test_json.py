@@ -69,8 +69,8 @@ def test_json_getitem_array(json_t):
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
 )
 def test_json_map(backend, json_t):
-    expr = json_t.js.map.name("res")
-    result = expr.execute()
+    expr = json_t.mutate("rowid", res=json_t.js.map).order_by("rowid")
+    result = expr.execute().res
     expected = pd.Series(
         [
             {"a": [1, 2, 3, 4], "b": 1},
@@ -91,8 +91,8 @@ def test_json_map(backend, json_t):
 )
 @pytest.mark.notyet(["bigquery"], reason="doesn't allow null in arrays")
 def test_json_array(backend, json_t):
-    expr = json_t.js.array.name("res")
-    result = expr.execute()
+    expr = json_t.mutate("rowid", res=json_t.js.array).order_by("rowid")
+    result = expr.execute().res
     expected = pd.Series(
         [None, None, None, None, [42, 47, 55], []] + [None] * 8,
         name="res",

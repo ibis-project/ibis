@@ -123,23 +123,23 @@ INSERT INTO "struct" ("abc")
     SELECT NULL UNION
     SELECT {'a': 3.0, 'b': 'orange', 'c': NULL};
 
-CREATE OR REPLACE TABLE "json_t" ("js" VARIANT);
+CREATE OR REPLACE TABLE "json_t" ("rowid" BIGINT, "js" VARIANT);
 
-INSERT INTO "json_t" ("js")
-    SELECT parse_json('{"a": [1,2,3,4], "b": 1}') UNION
-    SELECT parse_json('{"a":null,"b":2}') UNION
-    SELECT parse_json('{"a":"foo", "c":null}') UNION
-    SELECT parse_json('null') UNION
-    SELECT parse_json('[42,47,55]') UNION
-    SELECT parse_json('[]') UNION
-    SELECT parse_json('"a"') UNION
-    SELECT parse_json('""') UNION
-    SELECT parse_json('"b"') UNION
-    SELECT NULL UNION
-    SELECT parse_json('true') UNION
-    SELECT parse_json('false') UNION
-    SELECT parse_json('42') UNION
-    SELECT parse_json('37.37');
+INSERT INTO "json_t" ("rowid", "js")
+    SELECT 1, parse_json('{"a": [1,2,3,4], "b": 1}') UNION
+    SELECT 2, parse_json('{"a":null,"b":2}') UNION
+    SELECT 3, parse_json('{"a":"foo", "c":null}') UNION
+    SELECT 4, parse_json('null') UNION
+    SELECT 5, parse_json('[42,47,55]') UNION
+    SELECT 6, parse_json('[]') UNION
+    SELECT 7, parse_json('"a"') UNION
+    SELECT 8, parse_json('""') UNION
+    SELECT 9, parse_json('"b"') UNION
+    SELECT 10, NULL UNION
+    SELECT 11, parse_json('true') UNION
+    SELECT 12, parse_json('false') UNION
+    SELECT 13, parse_json('42') UNION
+    SELECT 14, parse_json('37.37');
 
 CREATE OR REPLACE TABLE "win" ("g" TEXT, "x" BIGINT NOT NULL, "y" BIGINT);
 INSERT INTO "win" VALUES
