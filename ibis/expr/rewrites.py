@@ -55,7 +55,7 @@ class DerefMap(Concrete, Traversable):
     rels: VarTuple[ops.Relation]
 
     """Substitution mapping from values of earlier relations to the fields of `rels`."""
-    subs: FrozenDict[ops.Value, ops.Field]
+    subs: FrozenDict[ops.Value, ops.Field | ops.Literal]
 
     """Ambiguous field references."""
     ambigs: FrozenDict[ops.Value, VarTuple[ops.Value]]
