@@ -10,7 +10,7 @@ if TYPE_CHECKING:
 def matches(value: ast.AST, pattern: ast.AST) -> bool:
     """Check whether `value` matches `pattern`."""
     # types must match exactly
-    if type(value) != type(pattern):
+    if type(value) is not type(pattern):
         return False
 
     # primitive value, such as None, True, False etc

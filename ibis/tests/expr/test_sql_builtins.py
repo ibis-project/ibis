@@ -88,10 +88,10 @@ def test_zero_ifnull(functional_alltypes):
     iresult = functional_alltypes.int_col.fill_null(0)
 
     assert type(dresult.op()) is ops.Coalesce
-    assert type(dresult) == ir.FloatingColumn
+    assert type(dresult) is ir.FloatingColumn
 
     # Impala upconverts all ints to bigint. Hmm.
-    assert type(iresult) == type(iresult)
+    assert type(iresult) is type(iresult)
 
 
 def test_fill_null(functional_alltypes):
