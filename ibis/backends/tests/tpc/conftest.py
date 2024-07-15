@@ -34,7 +34,7 @@ def pytest_pyfunc_call(pyfuncitem):
     return True
 
 
-def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
+def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
     """Decorator for TPC tests.
 
     Parameters
@@ -68,20 +68,27 @@ def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
             query_number = query_name_match.group(1)
             sql_path_name = f"{query_number}.sql"
 
-            path = Path(__file__).parent.joinpath(
-                "queries", "duckdb", suite_name, sql_path_name
-            )
+            base = Path(__file__).parent / "queries"
+
+            path = base / backend_name / suite_name / sql_path_name
+
+            if path.exists():
+                dialect = backend_name
+            else:
+                dialect = "duckdb"
+                path = base / "duckdb" / suite_name / sql_path_name
+
             raw_sql = path.read_text()
 
-            sql = sg.parse_one(raw_sql, read="duckdb")
+            sql = sg.parse_one(raw_sql, read=dialect)
 
             sql = backend._transform_tpc_sql(
                 sql, suite=suite_name, leaves=backend.list_tpc_tables(suite_name)
             )
 
-            raw_sql = sql.sql(dialect="duckdb", pretty=True)
+            raw_sql = sql.sql(dialect=dialect, pretty=True)
 
-            expected_expr = backend.connection.sql(raw_sql, dialect="duckdb")
+            expected_expr = backend.connection.sql(raw_sql, dialect=dialect)
 
             result_expr = test(*args, **kwargs)
 
@@ -90,7 +97,10 @@ def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
             assert (result_is_empty and result.empty) or not result.empty
 
             expected = expected_expr.to_pandas()
-            assert list(map(str.lower, expected.columns)) == result.columns.tolist()
+
+            assert len(expected.columns) == len(result.columns)
+            assert all(r in e.lower() for r, e in zip(result.columns, expected.columns))
+
             expected.columns = result.columns
 
             expected = PandasData.convert_table(expected, result_expr.schema())
