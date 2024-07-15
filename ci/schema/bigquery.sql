@@ -56,24 +56,25 @@ INSERT INTO {dataset}.numeric_table VALUES
     ('2nd value', 0.000000002);
 
 CREATE OR REPLACE TABLE {dataset}.json_t (
+    rowid INT64,
     js JSON
 );
 
 INSERT INTO {dataset}.json_t VALUES
-    (JSON '{{"a": [1,2,3,4], "b": 1}}'),
-    (JSON '{{"a":null,"b":2}}'),
-    (JSON '{{"a":"foo", "c":null}}'),
-    (JSON 'null'),
-    (JSON '[42,47,55]'),
-    (JSON '[]'),
-    (JSON '"a"'),
-    (JSON '""'),
-    (JSON '"b"'),
-    (NULL),
-    (JSON 'true'),
-    (JSON 'false'),
-    (JSON '42'),
-    (JSON '37.37');
+    (1, JSON '{{"a": [1,2,3,4], "b": 1}}'),
+    (2, JSON '{{"a":null,"b":2}}'),
+    (3, JSON '{{"a":"foo", "c":null}}'),
+    (4, JSON 'null'),
+    (5, JSON '[42,47,55]'),
+    (6, JSON '[]'),
+    (7, JSON '"a"'),
+    (8, JSON '""'),
+    (9, JSON '"b"'),
+    (10, NULL),
+    (11, JSON 'true'),
+    (12, JSON 'false'),
+    (13, JSON '42'),
+    (14, JSON '37.37');
 
 
 LOAD DATA OVERWRITE {dataset}.functional_alltypes (
