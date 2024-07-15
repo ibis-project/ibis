@@ -171,10 +171,26 @@ docs-apigen *args:
 
 # build documentation
 docs-render:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Check if the folder "reference" exists and has contents
+    if [ ! -d "docs/reference" ] || [ -z "$(ls -A docs/reference)" ]; then
+        just docs-apigen
+    fi
+
     quarto render docs
 
 # preview docs
 docs-preview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Check if the folder "reference" exists and has contents
+    if [ ! -d "docs/reference" ] || [ -z "$(ls -A docs/reference)" ]; then
+        just docs-apigen
+    fi
+
     quarto preview docs
 
 # regen api and preview docs
