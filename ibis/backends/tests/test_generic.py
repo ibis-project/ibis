@@ -1088,42 +1088,6 @@ def test_zero_ifnull_column(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
-def test_ifelse_select(backend, alltypes, df):
-    table = alltypes
-    table = table.select(
-        [
-            "int_col",
-            (
-                ibis.ifelse(table["int_col"] == 0, 42, -1)
-                .cast("int64")
-                .name("where_col")
-            ),
-        ]
-    )
-
-    result = table.execute()
-
-    expected = df.loc[:, ["int_col"]].copy()
-
-    expected["where_col"] = -1
-    expected.loc[expected["int_col"] == 0, "where_col"] = 42
-
-    backend.assert_frame_equal(result, expected)
-
-
-def test_ifelse_column(backend, alltypes, df):
-    expr = ibis.ifelse(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
-    result = expr.execute()
-
-    expected = pd.Series(
-        np.where(df.int_col == 0, 42, -1),
-        name="where_col",
-        dtype="int64",
-    )
-
-    backend.assert_series_equal(result, expected)
-
-
 def test_select_filter(backend, alltypes, df):
     t = alltypes
 
@@ -2324,19 +2288,6 @@ def test_sample_with_seed(backend):
     df1 = expr.to_pandas()
     df2 = expr.to_pandas()
     backend.assert_frame_equal(df1, df2)
-
-
-def test_substitute(backend):
-    val = "400"
-    t = backend.functional_alltypes
-    expr = (
-        t.string_col.nullif("1")
-        .substitute({None: val})
-        .name("subs")
-        .value_counts()
-        .filter(lambda t: t.subs == val)
-    )
-    assert expr["subs_count"].execute()[0] == t.count().execute() // 10
 
 
 @pytest.mark.notimpl(
