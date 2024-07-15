@@ -22,9 +22,11 @@ from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
 from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
+from ibis.expr.operations.logical import IfElse  # noqa: TCH001
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TCH001
+
 
 T = TypeVar("T")
 
@@ -218,7 +220,7 @@ class JoinLink(Node):
 @public
 class JoinChain(Relation):
     first: Reference
-    rest: VarTuple[JoinLink]
+    rest: VarTuple[JoinLink | IfElse]
     values: FrozenOrderedDict[str, Unaliased[Value]]
 
     def __init__(self, first, rest, values):
@@ -228,6 +230,8 @@ class JoinChain(Relation):
                 raise IntegrityError(
                     f"Cannot add {join.table!r} to the join chain, it is already in the chain"
                 )
+
+            assert join.table not in allowed_parents
             allowed_parents.add(join.table)
             _check_integrity(join.predicates, allowed_parents)
         _check_integrity(values.values(), allowed_parents)
