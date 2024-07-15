@@ -642,6 +642,9 @@ class PandasExecutor(Dispatched, PandasUtils):
         if how == "cross":
             assert not left_on and not right_on
             return cls.merge(left, right, how="cross")
+        elif how == "positional":
+            assert not left_on and not right_on
+            return cls.concat([left, right], axis=1)
         elif how == "anti":
             df = cls.merge(
                 left,
