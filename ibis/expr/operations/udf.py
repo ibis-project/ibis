@@ -559,6 +559,13 @@ class scalar(_UDF):
 
 @public
 class agg(_UDF):
+    """Aggregate user-defined functions.
+
+    ::: {.callout-note}
+    ## The `agg` class itself is **not** a public API, its methods are.
+    :::
+    """
+
     __slots__ = ()
 
     _base = AggUDF
