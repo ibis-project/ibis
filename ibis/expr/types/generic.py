@@ -2012,14 +2012,14 @@ class Column(Value, _FixedTextJupyterMixin):
         │     2 │ a      │     4.1 │
         │     2 │ a      │     4.2 │
         └───────┴────────┴─────────┘
-        >>> t.group_by("a").agg(arb=t.b.arbitrary(), c=t.c.sum())
+        >>> t.group_by("a").agg(arb=t.b.arbitrary(), c=t.c.sum()).order_by("a")
         ┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
         ┃ a     ┃ arb    ┃ c       ┃
         ┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
         │ int64 │ string │ float64 │
         ├───────┼────────┼─────────┤
-        │     2 │ a      │     8.3 │
         │     1 │ a      │     4.0 │
+        │     2 │ a      │     8.3 │
         └───────┴────────┴─────────┘
         """
         if how is not None:
