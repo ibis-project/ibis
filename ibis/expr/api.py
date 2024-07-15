@@ -2094,8 +2094,8 @@ def range(start, stop, step) -> ir.ArrayValue:
     Integer ranges are supported, as well as timestamp ranges.
 
     ::: {.callout-note}
-    `start` is inclucive and `stop` is exclusive, just like Python's builtin
-    [`range`](range).
+    `start` is inclusive and `stop` is exclusive, just like Python's builtin
+    [`range`](:py:class:`range`).
 
     When `step` equals 0, however, this function will return an empty array.
 

@@ -22,8 +22,6 @@ interlinks:
   sources:
     python:
       url: https://docs.python.org/3/
-    sqlalchemy:
-      url: https://docs.sqlalchemy.org/
     arrow:
       url: https://arrow.apache.org/docs/
     pandas:
