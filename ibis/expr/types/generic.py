@@ -1996,6 +1996,31 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Scalar
             An expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 2], "b": list("aaa"), "c": [4.0, 4.1, 4.2]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ a     ┃ b      ┃ c       ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string │ float64 │
+        ├───────┼────────┼─────────┤
+        │     1 │ a      │     4.0 │
+        │     2 │ a      │     4.1 │
+        │     2 │ a      │     4.2 │
+        └───────┴────────┴─────────┘
+        >>> t.group_by("a").agg(arb=t.b.arbitrary(), c=t.c.sum())
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ a     ┃ arb    ┃ c       ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string │ float64 │
+        ├───────┼────────┼─────────┤
+        │     2 │ a      │     8.3 │
+        │     1 │ a      │     4.0 │
+        └───────┴────────┴─────────┘
         """
         if how is not None:
             warn_deprecated(
