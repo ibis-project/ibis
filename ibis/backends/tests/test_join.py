@@ -404,6 +404,7 @@ def test_join_conflicting_columns(backend, con):
         "risingwave",
         "snowflake",
         "sqlite",
+        "trino",
     ],
     reason="Users can implement this with ibis.row_number(): https://github.com/ibis-project/ibis/issues/9486",
 )
