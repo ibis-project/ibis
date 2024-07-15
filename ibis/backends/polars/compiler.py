@@ -296,6 +296,9 @@ def join(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
 
+    if how == "positional":
+        return pl.concat([left, right], how="horizontal")
+
     # workaround required for https://github.com/pola-rs/polars/issues/13130
     prefix = gen_name("on")
     left_on = {f"{prefix}_{i}": translate(v, **kw) for i, v in enumerate(op.left_on)}

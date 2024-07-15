@@ -399,7 +399,6 @@ def test_join_conflicting_columns(backend, con):
         "mssql",
         "mysql",
         "oracle",
-        "polars",
         "postgres",
         "pyspark",
         "risingwave",
