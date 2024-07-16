@@ -667,3 +667,13 @@ def test_subquery_scalar_params(snapshot):
     )
     result = ibis.to_sql(expr, params={p: "20140101"}, dialect="bigquery")
     snapshot.assert_match(result, "out.sql")
+
+
+def test_time_from_hms_with_micros(snapshot):
+    literal = ibis.literal(datetime.time(12, 34, 56, 789101))
+    result = ibis.to_sql(literal, dialect="bigquery")
+    snapshot.assert_match(result, "micros.sql")
+
+    literal = ibis.literal(datetime.time(12, 34, 56))
+    result = ibis.to_sql(literal, dialect="bigquery")
+    snapshot.assert_match(result, "no_micros.sql")
