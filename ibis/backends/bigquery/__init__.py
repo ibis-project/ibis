@@ -548,8 +548,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
-        name = f"`{name}`"
-        table = sg.parse_one(name, into=sge.Table, read=self.name)
+        table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
 
         # Bigquery, unlike other backends, had existing support for specifying
         # table hierarchy in the table name, e.g. con.table("dataset.table_name")
