@@ -81,7 +81,7 @@ pydruid = { version = ">=0.6.7,<1", optional = true }
 pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
-pyspark = { version = ">=3,<4", optional = true }
+pyspark = { version = ">=3.3.3,<4", optional = true }
 # used to support posix regexen in the pandas, dask and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 shapely = { version = ">=2,<3", optional = true }
