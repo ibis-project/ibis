@@ -131,7 +131,7 @@ def _promote_interval_resolution(units: list[IntervalUnit]) -> IntervalUnit:
     raise AssertionError("unreachable")
 
 
-def _arg_type_error_format(op):
+def arg_type_error_format(op: ops.Value) -> str:
     if isinstance(op, ops.Literal):
         return f"Literal({op.value}):{op.dtype}"
     else:

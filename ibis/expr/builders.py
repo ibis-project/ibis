@@ -96,12 +96,6 @@ class SimpleCaseBuilder(Builder):
             case_expr = ibis.literal(case_expr)
         if not isinstance(result_expr, ir.Value):
             result_expr = ibis.literal(result_expr)
-
-        if not rlz.comparable(self.base, case_expr.op()):
-            raise TypeError(
-                f"Base expression {rlz._arg_type_error_format(self.base)} and "
-                f"case {rlz._arg_type_error_format(case_expr)} are not comparable"
-            )
         return self.copy(
             cases=self.cases + (case_expr,), results=self.results + (result_expr,)
         )
