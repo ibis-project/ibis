@@ -547,6 +547,21 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
+    @classmethod
+    def from_connection(cls, con: Any, **kwargs: Any) -> BaseBackend:
+        """Create an Ibis client from an existing connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection.
+        **kwargs
+            Extra arguments to be applied to the newly-created backend.
+        """
+        raise NotImplementedError(
+            f"{cls.name} backend cannot be constructed from an existing connection"
+        )
+
     def disconnect(self):
         # This is part of the Python DB-API specification so should work for
         # _most_ sqlglot backends

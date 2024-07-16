@@ -767,6 +767,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
+        self._can_reconnect: bool = True
         # expression cache
         self._query_cache = RefCountedCache(
             populate=self._load_into_cache,
@@ -856,7 +857,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     # TODO(kszucs): should call self.connect(*self._con_args, **self._con_kwargs)
     def reconnect(self) -> None:
         """Reconnect to the database already configured with connect."""
-        self.do_connect(*self._con_args, **self._con_kwargs)
+        if self._can_reconnect:
+            self.do_connect(*self._con_args, **self._con_kwargs)
+        else:
+            raise exc.IbisError("Cannot reconnect to unconfigured {self.name} backend")
 
     def do_connect(self, *args, **kwargs) -> None:
         """Connect to database specified by `args` and `kwargs`."""

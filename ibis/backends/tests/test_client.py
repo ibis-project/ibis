@@ -1614,3 +1614,8 @@ def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypa
     # Ideally we'd use a temp table for this test, but several backends don't
     # support them and it's nice to know that data are being inserted correctly.
     con.drop_table(table_name)
+
+
+def test_from_connection(con):
+    new_con = type(con).from_connection(con.con)
+    assert {"astronauts", "batting", "diamonds"} <= set(new_con.list_tables())
