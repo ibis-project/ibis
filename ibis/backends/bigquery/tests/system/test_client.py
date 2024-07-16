@@ -423,6 +423,17 @@ def test_create_temp_table_from_scratch(project_id, dataset_id):
     assert len(t.execute()) == 1
 
 
+def test_create_table_from_scratch_with_spaces(project_id, dataset_id):
+    con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
+    name = f"{gen_name('bigquery_temp_table')} with spaces"
+    df = con.tables.functional_alltypes.limit(1)
+    t = con.create_table(name, obj=df)
+    try:
+        assert len(t.execute()) == 1
+    finally:
+        con.drop_table(name)
+
+
 def test_table_suffix():
     con = ibis.connect("bigquery://ibis-gbq")
     t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
