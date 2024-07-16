@@ -548,10 +548,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
+        table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
 
-        table = sg.parse_one(name, into=sge.Table, read=self.name)
-
-        # Bigquery, unlike other bcakends, had existing support for specifying
+        # Bigquery, unlike other backends, had existing support for specifying
         # table hierarchy in the table name, e.g. con.table("dataset.table_name")
         # so here we have an extra layer of disambiguation to handle.
 
@@ -582,8 +581,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
 
         project, dataset = self._parse_project_and_dataset(database)
-
-        table = sg.parse_one(name, into=sge.Table, read=self.name)
 
         bq_table = self.client.get_table(
             bq.TableReference(
