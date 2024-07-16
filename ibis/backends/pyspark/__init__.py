@@ -879,7 +879,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             raise NotImplementedError(
                 "Writing to a Delta Lake table in streaming mode is not supported"
             )
-        df = self._session.sql(expr.compile(params=params, limit=limit))
+        df = self._session.sql(self.compile(expr, params=params, limit=limit))
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(
@@ -1030,7 +1030,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         if self.mode == "batch":
             raise NotImplementedError("Writing to Kafka in batch mode is not supported")
-        df = self._session.sql(expr.compile(params=params, limit=limit))
+        df = self._session.sql(self.compile(expr, params=params, limit=limit))
         if auto_format:
             df = df.select(
                 F.to_json(F.struct([F.col(c).alias(c) for c in df.columns])).alias(
@@ -1205,7 +1205,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
     ) -> StreamingQuery | None:
-        df = self._session.sql(expr.compile(params=params, limit=limit))
+        df = self._session.sql(self.compile(expr, params=params, limit=limit))
         if self.mode == "batch":
             df = df.write.format(format)
             for k, v in (options or {}).items():
