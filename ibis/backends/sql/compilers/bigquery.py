@@ -283,7 +283,15 @@ class BigQueryCompiler(SQLGlotCompiler):
         elif dtype.is_date():
             return self.f.date_from_parts(value.year, value.month, value.day)
         elif dtype.is_time():
-            return self.f.time_from_parts(value.hour, value.minute, value.second)
+            time = self.f.time_from_parts(value.hour, value.minute, value.second)
+            if micros := value.microsecond:
+                # bigquery doesn't support `time(12, 34, 56.789101)`, AKA a
+                # float seconds specifier, so add any non-zero micros to the
+                # time value
+                return sge.TimeAdd(
+                    this=time, expression=sge.convert(micros), unit=self.v.MICROSECOND
+                )
+            return time
         elif dtype.is_binary():
             return sge.Cast(
                 this=sge.convert(value.hex()),
