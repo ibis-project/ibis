@@ -163,6 +163,20 @@ class Backend(SQLBackend, CanCreateDatabase):
             **kwargs,
         )
 
+    @classmethod
+    def from_connection(cls, con: cc.driver.Client) -> Backend:
+        """Create an Ibis client from an existing ClickHouse Connect Client instance.
+
+        Parameters
+        ----------
+        con
+            An existing ClickHouse Connect Client instance.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
+
     @property
     def version(self) -> str:
         return self.con.server_version
