@@ -18,6 +18,7 @@ objects.json
 # generated notebooks and files
 *.ipynb
 *_files
+backends/*_methods.json
 
 # inventories
 _inv
