@@ -31,9 +31,19 @@ from ibis.formats.polars import PolarsData, PolarsSchema, PolarsType  # noqa: E4
         param(dt.uint64, pl.UInt64, id="uint64"),
         param(dt.float32, pl.Float32, id="float32"),
         param(dt.float64, pl.Float64, id="float64"),
-        param(dt.timestamp, pl.Datetime("ns", time_zone=None), id="timestamp"),
         param(
-            dt.Timestamp("UTC"), pl.Datetime("ns", time_zone="UTC"), id="timestamp_tz"
+            dt.Timestamp(scale=9), pl.Datetime("ns", time_zone=None), id="timestamp_ns"
+        ),
+        param(
+            dt.Timestamp(scale=6), pl.Datetime("us", time_zone=None), id="timestamp_us"
+        ),
+        param(
+            dt.Timestamp(scale=3), pl.Datetime("ms", time_zone=None), id="timestamp_ms"
+        ),
+        param(
+            dt.Timestamp("UTC", scale=9),
+            pl.Datetime("ns", time_zone="UTC"),
+            id="timestamp_tz",
         ),
         param(dt.Interval(unit="ms"), pl.Duration("ms"), id="interval_ms"),
         param(dt.Interval(unit="us"), pl.Duration("us"), id="interval_us"),
@@ -58,6 +68,25 @@ def test_to_from_ibis_type(ibis_dtype, polars_type):
     assert PolarsType.from_ibis(ibis_dtype) == polars_type
     assert PolarsType.to_ibis(polars_type) == ibis_dtype
     assert PolarsType.to_ibis(polars_type, nullable=False) == ibis_dtype(nullable=False)
+
+
+@pytest.mark.parametrize(
+    ("ibis_dtype", "polars_type"),
+    [
+        param(
+            dt.Timestamp(scale=0), pl.Datetime("ns", time_zone=None), id="timestamp_sc0"
+        ),
+        param(dt.Timestamp(), pl.Datetime("ns", time_zone=None), id="timestamp_scn"),
+        param(
+            dt.Timestamp("UTC", scale=0),
+            pl.Datetime("ns", time_zone="UTC"),
+            id="timestamp_tz_sc0",
+        ),
+    ],
+)
+def test_from_ibis_type_seconds(ibis_dtype, polars_type):
+    # we accept seconds as an ibis type, default to ns in polars
+    assert PolarsType.from_ibis(ibis_dtype) == polars_type
 
 
 def test_decimal():
