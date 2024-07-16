@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import os
-import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -1080,7 +1079,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 path, inferSchema=inferSchema, header=header, **kwargs
             )
             if watermark is not None:
-                warnings.warn("Watermark is not supported in batch mode")
+                raise com.IbisInputError("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream.csv(
                 path, inferSchema=inferSchema, header=header, **kwargs
@@ -1134,7 +1133,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 spark_df = spark_df.schema(PySparkSchema.from_ibis(schema))
             spark_df = spark_df.parquet(path, **kwargs)
             if watermark is not None:
-                warnings.warn("Watermark is not supported in batch mode")
+                raise com.IbisInputError("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream
             if schema is not None:
@@ -1183,7 +1182,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if self.mode == "batch":
             spark_df = self._session.read.json(path, **kwargs)
             if watermark is not None:
-                warnings.warn("Watermark is not supported in batch mode")
+                raise com.IbisInputError("Watermark is not supported in batch mode")
         elif self.mode == "streaming":
             spark_df = self._session.readStream.json(path, **kwargs)
             if watermark is not None:
