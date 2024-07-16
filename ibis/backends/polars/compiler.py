@@ -907,20 +907,6 @@ def date_from_ymd(op, **kw):
     )
 
 
-@translate.register(ops.Atan2)
-def atan2(op, **kw):
-    left = translate(op.left, **kw)
-    right = translate(op.right, **kw)
-    return pl.map_batches([left, right], lambda cols: np.arctan2(cols[0], cols[1]))
-
-
-@translate.register(ops.Modulus)
-def modulus(op, **kw):
-    left = translate(op.left, **kw)
-    right = translate(op.right, **kw)
-    return pl.map_batches([left, right], lambda cols: np.mod(cols[0], cols[1]))
-
-
 @translate.register(ops.TimestampFromYMDHMS)
 def timestamp_from_ymdhms(op, **kw):
     return pl.datetime(
@@ -1081,6 +1067,7 @@ _unary = {
     ops.Sin: operator.methodcaller("sin"),
     ops.Sqrt: operator.methodcaller("sqrt"),
     ops.Tan: operator.methodcaller("tan"),
+    ops.BitwiseNot: operator.invert,
 }
 
 
@@ -1132,37 +1119,22 @@ def between(op, **kw):
     return arg.is_between(lower, upper, closed="both")
 
 
-_bitwise_binops = {
-    ops.BitwiseRightShift: np.right_shift,
-    ops.BitwiseLeftShift: np.left_shift,
-    ops.BitwiseOr: np.bitwise_or,
-    ops.BitwiseAnd: np.bitwise_and,
-    ops.BitwiseXor: np.bitwise_xor,
-}
-
-
-@translate.register(ops.BitwiseBinary)
-def bitwise_binops(op, **kw):
-    ufunc = _bitwise_binops.get(type(op))
-    if ufunc is None:
-        raise com.OperationNotDefinedError(f"{type(op).__name__} not supported")
+@translate.register(ops.BitwiseLeftShift)
+def bitwise_left_shift(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
-
-    if isinstance(op.right, ops.Literal):
-        result = left.map_batches(lambda col: ufunc(col, op.right.value))
-    elif isinstance(op.left, ops.Literal):
-        result = right.map_batches(lambda col: ufunc(op.left.value, col))
-    else:
-        result = pl.map_batches([left, right], lambda cols: ufunc(cols[0], cols[1]))
-
-    return result.cast(PolarsType.from_ibis(op.dtype))
+    return (left.cast(pl.Int64) * 2 ** right.cast(pl.Int64)).cast(
+        PolarsType.from_ibis(op.dtype)
+    )
 
 
-@translate.register(ops.BitwiseNot)
-def bitwise_not(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.map_batches(lambda x: np.invert(x))
+@translate.register(ops.BitwiseRightShift)
+def bitwise_right_shift(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    return (left.cast(pl.Int64) // 2 ** right.cast(pl.Int64)).cast(
+        PolarsType.from_ibis(op.dtype)
+    )
 
 
 _binops = {
@@ -1180,6 +1152,11 @@ _binops = {
     ops.Or: operator.or_,
     ops.Xor: operator.xor,
     ops.Subtract: operator.sub,
+    ops.BitwiseOr: operator.or_,
+    ops.BitwiseXor: operator.xor,
+    ops.BitwiseAnd: operator.and_,
+    ops.Modulus: operator.mod,
+    ops.Atan2: pl.arctan2,
 }
 
 
