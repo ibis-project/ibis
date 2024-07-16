@@ -8,7 +8,7 @@ from ibis.backends.tests.errors import Py4JJavaError
 
 
 @pytest.mark.parametrize(
-    "data,schema,expected",
+    ("data", "schema", "expected"),
     [
         pytest.param(
             {"value": [{"a": 1}, {"a": 2}]},
@@ -36,7 +36,8 @@ def test_create_memtable(con, data, schema, expected):
     # `TableEnvironment.execute_sql()` and `TableEnvironment.sql_query()`; this doesn't
     # seem to be an issue if we don't execute memtable directly
     result = con.raw_sql(con.compile(t)).collect()
-    assert all(element in result for element in expected)
+    for element in expected:
+        assert element in result
 
 
 @pytest.mark.notyet(
