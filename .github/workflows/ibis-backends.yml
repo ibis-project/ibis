@@ -680,7 +680,7 @@ jobs:
       matrix:
         include:
           - python-version: "3.10"
-            pyspark-version: "3.3"
+            pyspark-version: "3.3.3"
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"

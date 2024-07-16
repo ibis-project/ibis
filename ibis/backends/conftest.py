@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import _pytest
-import numpy as np
 import pandas as pd
 import pytest
 from packaging.requirements import Requirement
@@ -237,11 +236,6 @@ def pytest_collection_modifyitems(session, config, items):
     all_backends = _get_backend_names()
     additional_markers = []
 
-    try:
-        import pyspark
-    except ImportError:
-        pyspark = None
-
     unrecognized_backends = set()
     for item in items:
         # Yell loudly if unrecognized backend in notimpl, notyet or never
@@ -270,23 +264,6 @@ def pytest_collection_modifyitems(session, config, items):
             # anything else is a "core" test and is run by default
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
-
-        # skip or xfail pyspark tests that run afoul of our non-ancient stack
-        for _ in item.iter_markers(name="pyspark"):
-            if not isinstance(item, pytest.DoctestItem):
-                additional_markers.append(
-                    (
-                        item,
-                        [
-                            pytest.mark.skipif(
-                                pyspark is not None
-                                and vparse(pyspark.__version__) < vparse("3.3.3")
-                                and vparse(np.__version__) >= vparse("1.24"),
-                                reason="PySpark doesn't support numpy >= 1.24",
-                            ),
-                        ],
-                    )
-                )
 
     if unrecognized_backends:
         raise pytest.PytestCollectionWarning("\n" + "\n".join(unrecognized_backends))
