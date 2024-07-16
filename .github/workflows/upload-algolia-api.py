@@ -1,5 +1,7 @@
 from __future__ import annotations  # noqa: INP001
 
+import glob
+import json
 import os
 import re
 from functools import partial
@@ -92,6 +94,20 @@ def main():
     # record to the Algolia index.  If the object ID already exists, it gets
     # updated with the new fields in the record dict
     print(f"Uploading {len(records)} records to {index.name=}")  # noqa:T201
+    index.save_objects(records)
+
+    # Methods documented on backend-specific docs pages aren't scraped by Quarto
+    # since we construct them programmatically.
+    # There is a hook in docs/backends/_templates/api.qmd that calls
+    # `dump_methods_to_json_for_algolia` that serializes all the backend methods
+    # to a backend-specific json file in docs/backends/
+    # (Not Pandas and Impala because those backend pages don't use the template)
+    #
+    # Here, we load those records and upload them to the Algolia index
+    records = []
+    for record_json in glob.glob("docs/backends/*.json"):
+        with open(record_json) as f:
+            records.extend(json.load(f))
     index.save_objects(records)
 
 
