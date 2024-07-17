@@ -2076,18 +2076,30 @@ def test_invalid_distinct_empty_key():
         t.distinct(on="c", keep="first")
 
 
-def test_unbind_with_namespace():
+@pytest.mark.parametrize(
+    "catalog, database",
+    [("catalog", "database"), (None, None), ("ork", "bork"), (None, "bork")],
+)
+def test_unbind_with_namespace(catalog, database):
     schema = ibis.schema({"a": "int"})
-    ns = ops.Namespace(catalog="catalog", database="database")
+    ns = ops.Namespace(catalog=catalog, database=database)
 
     t_op = ops.DatabaseTable(name="t", schema=schema, source=None, namespace=ns)
     t = t_op.to_expr()
-    s = t.unbind()
+    s = t.unbind(catalog=catalog, database=database)
 
     expected = ops.UnboundTable(name="t", schema=schema, namespace=ns).to_expr()
 
     assert s.op() == expected.op()
     assert s.equals(expected)
+
+    s2 = t.unbind()
+    expected = ops.UnboundTable(
+        name="t", schema=schema, namespace=ops.Namespace(catalog=None, database=None)
+    ).to_expr()
+
+    assert s2.op() == expected.op()
+    assert s2.equals(expected)
 
 
 def test_table_bind():

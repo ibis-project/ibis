@@ -682,12 +682,14 @@ class Expr(Immutable, Coercible):
             self, params=params, limit=limit, **kwargs
         )
 
-    def unbind(self) -> ir.Table:
+    def unbind(self, catalog=None, database=None) -> ir.Table:
         """Return an expression built on `UnboundTable` instead of backend-specific objects."""
         from ibis.expr.rewrites import _, d, p
 
+        namespace = ops.Namespace(catalog=catalog, database=database)
+
         rule = p.DatabaseTable >> d.UnboundTable(
-            name=_.name, schema=_.schema, namespace=_.namespace
+            name=_.name, schema=_.schema, namespace=namespace
         )
         return self.op().replace(rule).to_expr()
 
