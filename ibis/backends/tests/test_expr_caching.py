@@ -64,6 +64,16 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
+@mark.notyet(
+    ["pyspark"],
+    raises=AssertionError,
+    reason=(
+        "PySpark holds on to `cached_table` in the stack frame of an internal function. "
+        "Caching works, but this test is probably too strict for PySpark. "
+        "On the other hand, it's hard to write a test that makes assertions after weakref "
+        "finalizers are called."
+    ),
+)
 def test_persist_expression_multiple_refs(backend, con, alltypes):
     non_cached_table = alltypes.mutate(
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
