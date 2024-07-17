@@ -549,7 +549,7 @@ def test_table_to_polars(limit, awards_players):
 @pytest.mark.parametrize("limit", limit_no_limit)
 @pytest.mark.parametrize(
     ("output_format", "expected_column_type"),
-    [("pyarrow", "Array"), ("polars", "Column")],
+    [("pyarrow", "ChunkedArray"), ("polars", "Series")],
     ids=["pyarrow", "polars"],
 )
 def test_column_to_memory(limit, awards_players, output_format, expected_column_type):
