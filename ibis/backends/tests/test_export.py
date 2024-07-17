@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from operator import methodcaller
+
 import pandas as pd
 import pytest
 from packaging.version import parse as vparse
@@ -545,20 +547,33 @@ def test_table_to_polars(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
-def test_column_to_polars(limit, awards_players):
-    pl = pytest.importorskip("polars")
-    res = awards_players.awardID.to_polars(limit=limit)
-    assert isinstance(res, pl.Series)
-    if limit is not None:
-        assert len(res) == limit
+@pytest.mark.parametrize(
+    ("output_format", "expected_column_type"),
+    [("pyarrow", "ChunkedArray"), ("polars", "Series")],
+    ids=["pyarrow", "polars"],
+)
+def test_column_to_memory(limit, awards_players, output_format, expected_column_type):
+    mod = pytest.importorskip(output_format)
+    method = methodcaller(f"to_{output_format}", limit=limit)
+    res = method(awards_players.awardID)
+    assert isinstance(res, getattr(mod, expected_column_type))
+    assert (limit is not None and len(res) == limit) or len(
+        res
+    ) == awards_players.count().execute()
 
 
 @pytest.mark.parametrize("limit", no_limit)
-def test_scalar_to_polars(limit, awards_players):
-    pytest.importorskip("polars")
-    scalar = awards_players.yearID.min().to_polars(limit=limit)
-    assert isinstance(scalar, int)
+@pytest.mark.parametrize(
+    ("output_format", "converter"),
+    [("pyarrow", methodcaller("as_py")), ("polars", lambda x: x)],
+    ids=["pyarrow", "polars"],
+)
+def test_scalar_to_memory(limit, awards_players, output_format, converter):
+    pytest.importorskip(output_format)
+    method = methodcaller(f"to_{output_format}", limit=limit)
+    scalar = method(awards_players.yearID.min())
+    assert isinstance(converter(scalar), int)
 
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.min()
-    res = expr.to_polars(limit=limit)
-    assert res is None
+    res = method(expr)
+    assert converter(res) is None

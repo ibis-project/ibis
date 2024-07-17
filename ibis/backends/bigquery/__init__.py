@@ -806,6 +806,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
+        table = table.rename_columns(list(expr.as_table().schema().names))
         return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(

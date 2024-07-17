@@ -41,7 +41,7 @@ atpublic = ">=2.3,<5"
 numpy = ">=1.23.2,<3"
 pandas = ">=1.5.3,<3"
 parsy = ">=2,<3"
-pyarrow = { version = ">=10.0.1,<17", optional = true }
+pyarrow = { version = ">=10.0.1,<18", optional = true }
 pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
