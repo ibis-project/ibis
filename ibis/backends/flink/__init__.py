@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -445,27 +446,21 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         # In-memory data is created as views in `pyflink`
         if obj is not None:
-            if isinstance(obj, pd.DataFrame):
-                dataframe = obj
+            if not isinstance(obj, ir.Table):
+                obj = ibis.memtable(obj)
 
-            elif isinstance(obj, pa.Table):
-                dataframe = obj.to_pandas()
-
-            elif isinstance(obj, ir.Table):
-                # Note (mehmet): If obj points to in-memory data, we create a view.
-                # Other cases are unsupported for now, e.g., obj is of UnboundTable.
-                # See TODO right below for more context on how we handle in-memory data.
-                op = obj.op()
-                if isinstance(op, ops.InMemoryTable):
-                    dataframe = op.data.to_frame()
-                else:
-                    raise exc.IbisError(
-                        "`obj` is of type ibis.expr.types.Table but it is not in-memory. "
-                        "Currently, only in-memory tables are supported. "
-                        "See ibis.memtable() for info on creating in-memory table."
-                    )
+            # Note (mehmet): If obj points to in-memory data, we create a view.
+            # Other cases are unsupported for now, e.g., obj is of UnboundTable.
+            # See TODO right below for more context on how we handle in-memory data.
+            op = obj.op()
+            if isinstance(op, ops.InMemoryTable):
+                dataframe = op.data.to_frame()
             else:
-                raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
+                raise exc.IbisError(
+                    "`obj` is of type ibis.expr.types.Table but it is not in-memory. "
+                    "Currently, only in-memory tables are supported. "
+                    "See ibis.memtable() for info on creating in-memory table."
+                )
 
             # TODO (mehmet): Flink requires a source connector to create regular tables.
             # In-memory data can only be created as a view (virtual table). So we decided
