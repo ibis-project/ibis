@@ -353,9 +353,6 @@ class PyArrowData(DataMapper):
         desired_schema = PyArrowSchema.from_ibis(schema)
         pa_schema = table.schema
 
-        if pa_schema.names != schema.names:
-            table = table.rename_columns(schema.names)
-
         if pa_schema != desired_schema:
             return table.cast(desired_schema, safe=False)
         else:
