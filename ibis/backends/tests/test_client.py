@@ -44,7 +44,6 @@ if TYPE_CHECKING:
 
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
-pl = pytest.importorskip("polars", reason="Polars is not installed")
 
 
 @pytest.fixture
@@ -978,12 +977,12 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         ),
         param(lambda: pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
         param(
-            lambda: pl.DataFrame({"a": ["a"], "b": [1]}),
+            lambda: pytest.importorskip("polars").DataFrame({"a": ["a"], "b": [1]}),
             "df_polars_eager",
             id="polars dataframe",
         ),
         param(
-            lambda: pl.LazyFrame({"a": ["a"], "b": [1]}),
+            lambda: pytest.importorskip("polars").LazyFrame({"a": ["a"], "b": [1]}),
             "df_polars_lazy",
             id="polars lazyframe",
         ),
@@ -1003,12 +1002,16 @@ def test_self_join_memory_table(backend, con, monkeypatch):
             id="memtable pandas",
         ),
         param(
-            lambda: ibis.memtable(pl.DataFrame({"a": ["a"], "b": [1]})),
+            lambda: ibis.memtable(
+                pytest.importorskip("polars").DataFrame({"a": ["a"], "b": [1]})
+            ),
             "memtable_polars_eager",
             id="memtable polars dataframe",
         ),
         param(
-            lambda: ibis.memtable(pl.LazyFrame({"a": ["a"], "b": [1]})),
+            lambda: ibis.memtable(
+                pytest.importorskip("polars").LazyFrame({"a": ["a"], "b": [1]})
+            ),
             "memtable_polars_lazy",
             id="memtable polars lazyframe",
         ),
