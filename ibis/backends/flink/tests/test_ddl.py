@@ -8,6 +8,7 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+from pytest import param
 
 import ibis
 import ibis.common.exceptions as exc
@@ -60,6 +61,66 @@ def test_create_table(con, awards_players_schema, temp_table, csv_source_configs
     con.drop_table(temp_table, temp=temp)
 
     assert temp_table not in con.list_tables()
+
+
+@pytest.mark.parametrize(
+    "obj, table_name",
+    [
+        param(lambda: pa.table({"a": ["a"], "b": [1]}), "df_arrow", id="pyarrow table"),
+        param(lambda: pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
+        param(
+            lambda: pytest.importorskip("polars").DataFrame({"a": ["a"], "b": [1]}),
+            "df_polars_eager",
+            id="polars dataframe",
+        ),
+        param(
+            lambda: pytest.importorskip("polars").LazyFrame({"a": ["a"], "b": [1]}),
+            "df_polars_lazy",
+            id="polars lazyframe",
+        ),
+        param(
+            lambda: ibis.memtable([("a", 1)], columns=["a", "b"]),
+            "memtable",
+            id="memtable_list",
+        ),
+        param(
+            lambda: ibis.memtable(pa.table({"a": ["a"], "b": [1]})),
+            "memtable_pa",
+            id="memtable pyarrow",
+        ),
+        param(
+            lambda: ibis.memtable(pd.DataFrame({"a": ["a"], "b": [1]})),
+            "memtable_pandas",
+            id="memtable pandas",
+        ),
+        param(
+            lambda: ibis.memtable(
+                pytest.importorskip("polars").DataFrame({"a": ["a"], "b": [1]})
+            ),
+            "memtable_polars_eager",
+            id="memtable polars dataframe",
+        ),
+        param(
+            lambda: ibis.memtable(
+                pytest.importorskip("polars").LazyFrame({"a": ["a"], "b": [1]})
+            ),
+            "memtable_polars_lazy",
+            id="memtable polars lazyframe",
+        ),
+    ],
+)
+def test_create_table_in_memory(con, obj, table_name, monkeypatch):
+    """Same as in ibis/backends/tests/test_client.py, with temp=True."""
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    obj = obj()
+    t = con.create_table(table_name, obj, temp=True)
+
+    result = pa.table({"a": ["a"], "b": [1]})
+    assert table_name in con.list_tables()
+
+    assert result.equals(t.to_pyarrow())
+
+    con.drop_table(table_name, force=True)
 
 
 def test_recreate_table_from_schema(
@@ -362,10 +423,8 @@ def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs
 @pytest.mark.parametrize(
     "obj",
     [
-        pytest.param(
-            [("fred flintstone", 35, 1.28), ("barney rubble", 32, 2.32)], id="list"
-        ),
-        pytest.param(
+        param([("fred flintstone", 35, 1.28), ("barney rubble", 32, 2.32)], id="list"),
+        param(
             {
                 "name": ["fred flintstone", "barney rubble"],
                 "age": [35, 32],
@@ -373,14 +432,14 @@ def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs
             },
             id="dict",
         ),
-        pytest.param(
+        param(
             pd.DataFrame(
                 [("fred flintstone", 35, 1.28), ("barney rubble", 32, 2.32)],
                 columns=["name", "age", "gpa"],
             ),
             id="pandas_dataframe",
         ),
-        pytest.param(
+        param(
             pa.Table.from_arrays(
                 [
                     pa.array(["fred flintstone", "barney rubble"]),
