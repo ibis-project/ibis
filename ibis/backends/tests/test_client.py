@@ -1579,6 +1579,9 @@ def test_schema_with_caching(alltypes):
 @pytest.mark.notyet(
     ["datafusion"], reason="Doesn't support table creation from records"
 )
+@pytest.mark.notimpl(
+    ["flink"], reason="Temp tables are implemented as views, which don't support insert"
+)
 @pytest.mark.parametrize(
     "first_row, second_row",
     [
