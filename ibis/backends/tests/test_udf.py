@@ -4,6 +4,7 @@ import sys
 
 from pytest import mark, param
 
+import ibis
 import ibis.common.exceptions as com
 from ibis import _, udf
 from ibis.backends.tests.errors import Py4JJavaError
@@ -138,6 +139,11 @@ def test_map_merge_udf(batting):
     assert not df.empty
 
 
+@udf.scalar.python
+def add_one_python(s: int) -> int:
+    return s + 1
+
+
 @udf.scalar.pandas
 def add_one_pandas(s: int) -> int:  # s is series, int is the element type
     return s + 1
@@ -199,3 +205,25 @@ def test_vectorized_udf(backend, batting, add_one):
         .reset_index(drop=True)
     )
     backend.assert_frame_equal(result, expected)
+
+
+@mark.parametrize(
+    ("inp", "exp"),
+    [
+        (ibis.literal(1), ibis.literal(2)),
+        (ibis.literal(None, type=int), ibis.literal(None, type=int)),
+    ],
+)
+def test_udf_null_handling_scalar(con, inp, exp):
+    res = con.execute(add_one_python(inp))
+    exp = con.execute(exp)
+    assert res == exp
+
+
+@mark.notimpl(["duckdb"], reason="UDF is passed the None, which errors")
+def test_udf_null_handling_column(con, batting):
+    inp = ibis.memtable({"x": [1, None]}, schema={"x": "int64"})
+    exp = ibis.memtable({"x": [2, None]}, schema={"x": "int64"})
+    res = con.execute(add_one_python(inp.x))
+    exp = con.execute(exp)
+    con.assert_series_equal(res, exp)
