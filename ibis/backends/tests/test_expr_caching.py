@@ -81,8 +81,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     op = non_cached_table.op()
     cached_table = non_cached_table.cache()
 
-    cached_df = cached_table.to_pandas()
-    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_df)
+    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
     name = cached_table.op().name
     nested_cached_table = non_cached_table.cache()
