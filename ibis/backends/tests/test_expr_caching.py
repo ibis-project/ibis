@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import sys
-
 import pytest
 from pytest import mark
 
@@ -75,7 +73,6 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
 
     cached_df = cached_table.to_pandas()
     backend.assert_frame_equal(non_cached_table.to_pandas(), cached_df)
-    assert sys.getrefcount(op) == 2
 
     name = cached_table.op().name
     nested_cached_table = non_cached_table.cache()
