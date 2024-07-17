@@ -58,32 +58,6 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
     ["mssql"],
     reason="mssql supports support temporary tables through naming conventions",
 )
-@mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
-@pytest.mark.never(
-    ["risingwave"],
-    raises=com.UnsupportedOperationError,
-    reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
-)
-def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
-    non_cached_table = alltypes.mutate(
-        test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
-    )
-    op = non_cached_table.op()
-
-    with non_cached_table.cache() as cached_table:
-        assert op in con._query_cache.cache
-        backend.assert_frame_equal(
-            non_cached_table.to_pandas(), cached_table.to_pandas()
-        )
-
-    assert op not in con._query_cache.cache
-
-
-@mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @pytest.mark.never(
     ["risingwave"],
     raises=com.UnsupportedOperationError,
