@@ -1395,11 +1395,13 @@ def test_persist_expression_contextmanager_ref_count(backend, con, alltypes):
         test_column=ibis.literal("calculation"), other_column=ibis.literal("big calc 2")
     )
     op = non_cached_table.op()
-    cached_table = non_cached_table.cache()
-    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
 
-    assert op in con._query_cache.cache
-    del cached_table
+    with non_cached_table.cache() as cached_table:
+        assert op in con._query_cache.cache
+        backend.assert_frame_equal(
+            non_cached_table.to_pandas(), cached_table.to_pandas()
+        )
+
     assert op not in con._query_cache.cache
 
 
