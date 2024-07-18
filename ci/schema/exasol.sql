@@ -48,7 +48,7 @@ CREATE OR REPLACE TABLE EXASOL."awards_players"
     "yearID"   BIGINT,
     "lgID"     VARCHAR(256),
     "tie"      VARCHAR(256),
-    "notes"   VARCHAR(256)
+    "notes"    VARCHAR(256)
 );
 
 CREATE OR REPLACE TABLE EXASOL."functional_alltypes"
@@ -68,11 +68,39 @@ CREATE OR REPLACE TABLE EXASOL."functional_alltypes"
     "month"           INTEGER
 );
 
+CREATE OR REPLACE TABLE EXASOL."astronauts"
+(
+    "id"                       INTEGER,
+    "number"                   INTEGER,
+    "nationwide_number"        INTEGER,
+    "name"                     VARCHAR(256),
+    "original_name"            VARCHAR(256),
+    "sex"                      VARCHAR(256),
+    "year_of_birth"            INTEGER,
+    "nationality"              VARCHAR(256),
+    "military_civilian"        VARCHAR(256),
+    "selection"                VARCHAR(256),
+    "year_of_selection"        INTEGER,
+    "mission_number"           INTEGER,
+    "total_number_of_missions" INTEGER,
+    "occupation"               VARCHAR(256),
+    "year_of_mission"          INTEGER,
+    "mission_title"            VARCHAR(256),
+    "ascend_shuttle"           VARCHAR(256),
+    "in_orbit"                 VARCHAR(256),
+    "descend_shuttle"          VARCHAR(256),
+    "hours_mission"            DOUBLE PRECISION,
+    "total_hrs_sum"            DOUBLE PRECISION,
+    "field21"                  INTEGER,
+    "eva_hrs_mission"          DOUBLE PRECISION,
+    "total_eva_hrs"            DOUBLE PRECISION
+);
 
 IMPORT INTO EXASOL."diamonds" FROM LOCAL CSV FILE '/data/diamonds.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 IMPORT INTO EXASOL."batting" FROM LOCAL CSV FILE '/data/batting.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 IMPORT INTO EXASOL."awards_players" FROM LOCAL CSV FILE '/data/awards_players.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 IMPORT INTO EXASOL."functional_alltypes" FROM LOCAL CSV FILE '/data/functional_alltypes.csv' COLUMN SEPARATOR = ',' SKIP = 1;
+IMPORT INTO EXASOL."astronauts" FROM LOCAL CSV FILE '/data/astronauts.csv' COLUMN SEPARATOR = ',' SKIP = 1;
 
 CREATE OR REPLACE TABLE EXASOL."win"
 (
