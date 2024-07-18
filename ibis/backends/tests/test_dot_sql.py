@@ -15,11 +15,7 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
-from ibis.backends.tests.errors import (
-    ExaQueryError,
-    GoogleBadRequest,
-    OracleDatabaseError,
-)
+from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
 
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas"], reason="dask and pandas do not accept SQL"
@@ -263,11 +259,6 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 
 @dot_sql_never
 @pytest.mark.notimpl(["druid", "polars"])
-@pytest.mark.notimpl(
-    ["exasol"],
-    raises=ExaQueryError,
-    reason="loading the test data is a pain because of embedded commas",
-)
 def test_order_by_no_projection(backend):
     con = backend.connection
     expr = (
