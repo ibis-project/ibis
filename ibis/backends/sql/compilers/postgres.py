@@ -514,7 +514,15 @@ class PostgresCompiler(SQLGlotCompiler):
         return self.f.extract("isoyear", arg)
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
-        return self.f.extract("epoch", arg)
+        return self.cast(self.f.trunc(self.f.extract("epoch", arg)), op.dtype)
+
+    def visit_ExtractEpochMilliseconds(self, op, *, arg):
+        return self.cast(self.f.trunc(self.f.extract("epoch", arg) * 1_000), op.dtype)
+
+    def visit_ExtractEpochMicroseconds(self, op, *, arg):
+        return self.cast(
+            self.f.trunc(self.f.extract("epoch", arg) * 1_000_000), op.dtype
+        )
 
     def visit_ArrayIndex(self, op, *, arg, index):
         index = self.if_(index < 0, self.f.cardinality(arg) + index, index)

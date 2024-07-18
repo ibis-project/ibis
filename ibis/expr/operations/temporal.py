@@ -152,6 +152,20 @@ class ExtractEpochSeconds(ExtractDateField):
 
 
 @public
+class ExtractEpochMilliseconds(ExtractDateField):
+    """Extract milliseconds since the UNIX epoch from a date or timestamp."""
+
+    dtype = dt.int64
+
+
+@public
+class ExtractEpochMicroseconds(ExtractDateField):
+    """Extract microseconds since the UNIX epoch from a date or timestamp."""
+
+    dtype = dt.int64
+
+
+@public
 class ExtractWeekOfYear(ExtractDateField):
     """Extract the week of the year from a date or timestamp."""
 

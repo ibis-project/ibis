@@ -240,12 +240,12 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
     reason="'StringColumn' object has no attribute 'epoch_seconds'",
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["bigquery"],
     raises=GoogleBadRequest,
     reason="UNIX_SECONDS does not support DATETIME arguments",
@@ -255,8 +255,11 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     raises=AssertionError,
     condition=is_older_than("pandas", "2.0.0"),
 )
-def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
-    expr = alltypes.timestamp_col.epoch_seconds().name("tmp")
+@pytest.mark.parametrize(
+    "method", [methodcaller("epoch_seconds"), methodcaller("epoch", unit="s")]
+)
+def test_timestamp_extract_epoch_seconds(backend, alltypes, df, method):
+    expr = method(alltypes.timestamp_col).name("tmp")
     result = expr.execute()
 
     expected = backend.default_series_rename(
@@ -267,6 +270,131 @@ def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
         .astype("int32")
     )
     backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'epoch'",
+)
+@pytest.mark.never(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="UNIX_MILLIS does not support DATETIME arguments",
+)
+@pytest.mark.broken(
+    ["dask", "pandas"],
+    raises=AssertionError,
+    condition=is_older_than("pandas", "2.0.0"),
+)
+def test_timestamp_extract_epoch_milliseconds(backend, alltypes, df):
+    expr = alltypes.timestamp_col.epoch("ms").name("tmp")
+    result = expr.execute()
+
+    expected = backend.default_series_rename(
+        df.timestamp_col.astype("datetime64[ns]")
+        .dt.floor("ms")
+        .astype("int64")
+        .floordiv(1_000_000)
+    )
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=AttributeError,
+    reason="'StringColumn' object has no attribute 'epoch'",
+)
+@pytest.mark.never(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="UNIX_MICROS does not support DATETIME arguments",
+)
+@pytest.mark.broken(
+    ["dask", "pandas"],
+    raises=AssertionError,
+    condition=is_older_than("pandas", "2.0.0"),
+)
+def test_timestamp_extract_epoch_microseconds(backend, alltypes, df):
+    expr = alltypes.timestamp_col.epoch("us").name("tmp")
+    result = expr.execute()
+
+    expected = backend.default_series_rename(
+        df.timestamp_col.astype("datetime64[ns]")
+        .dt.floor("us")
+        .astype("int64")
+        .floordiv(1_000)
+    )
+    backend.assert_series_equal(result, expected)
+
+
+scale_factors = {"s": 1e0, "ms": 1e3, "us": 1e6}
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "s",
+        param(
+            "ms",
+            marks=pytest.mark.notimpl(
+                [
+                    "datafusion",
+                    "druid",
+                    "exasol",
+                    "flink",
+                    "impala",
+                    "mssql",
+                    "mysql",
+                    "oracle",
+                    "pyspark",
+                    "sqlite",
+                ],
+                raises=com.OperationNotDefinedError,
+            ),
+            id="ms",
+        ),
+        param(
+            "us",
+            marks=pytest.mark.notimpl(
+                [
+                    "datafusion",
+                    "druid",
+                    "exasol",
+                    "flink",
+                    "impala",
+                    "mssql",
+                    "mysql",
+                    "oracle",
+                    "pyspark",
+                    "sqlite",
+                ],
+                raises=com.OperationNotDefinedError,
+            ),
+            id="us",
+        ),
+    ],
+)
+@pytest.mark.notyet(
+    ["trino"],
+    raises=com.OperationNotDefinedError,
+    reason="not sure if trino can extract microseconds",
+)
+def test_timestamp_extract_epoch_scalar(con, unit):
+    t = ibis.timestamp("2017-07-13 12:34:56.789101")
+
+    # TODO: this method of comparison doesn't work for certain kinds of timestamps
+    #
+    # e.g.,
+    # 1. negative representable timestamps like < epoch (1969-anything)
+    # 2. timestamps whose microseconds value can't be represented exactly in
+    #    float64 2243-01-01 00:00:00.000001
+    expected = int(con.execute(t).timestamp() * scale_factors[unit])
+    expr = t.epoch(unit)
+    result = con.execute(expr)
+    assert result == expected
 
 
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)

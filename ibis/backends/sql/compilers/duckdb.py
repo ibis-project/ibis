@@ -323,6 +323,12 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.mod(self.f.extract("us", arg), 1_000_000)
 
+    def visit_ExtractEpochMilliseconds(self, op, *, arg):
+        return self.f.epoch_ms(self.cast(arg, dt.timestamp))
+
+    def visit_ExtractEpochMicroseconds(self, op, *, arg):
+        return self.f.epoch_us(self.cast(arg, dt.timestamp))
+
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         unit = unit.short
         if unit == "ms":

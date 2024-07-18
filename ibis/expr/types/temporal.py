@@ -5,12 +5,13 @@ from typing import TYPE_CHECKING, Any, Literal
 from public import public
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.annotations import annotated
-from ibis.common.temporal import IntervalUnit
+from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -28,6 +29,78 @@ class _DateComponentMixin:
     def epoch_seconds(self) -> ir.IntegerValue:
         """Extract UNIX epoch in seconds."""
         return ops.ExtractEpochSeconds(self).to_expr()
+
+    def epoch(
+        self,
+        unit: Literal["s", "ms", "us"]
+        | TimestampUnit.SECOND
+        | TimestampUnit.MILLISECOND
+        | TimestampUnit.MICROSECOND,
+    ) -> ir.IntegerValue:
+        """Extract UNIX epoch in units of `unit`.
+
+        Parameters
+        ----------
+        unit
+            Unit of the returned integer or floating point value
+
+        Returns
+        -------
+        IntegerValue
+            The UNIX epoch in integer units of `unit`.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.timestamp("2017-07-13 12:34:56.789101")
+        >>> t.epoch("s")
+        ┌──────────────────────┐
+        │ np.int32(1499949296) │
+        └──────────────────────┘
+        >>> t.epoch("ms")
+        ┌─────────────────────────┐
+        │ np.int64(1499949296789) │
+        └─────────────────────────┘
+        >>> t.epoch("us")
+        ┌────────────────────────────┐
+        │ np.int64(1499949296789101) │
+        └────────────────────────────┘
+
+        ::: {.callout-info}
+        ## Epoch values are unchanged by time zones
+
+        Calculations are done in UTC.
+        :::
+
+        >>> t = ibis.timestamp("2017-07-13 12:34:56.789101-05:00")
+        >>> t
+        ┌──────────────────────────────────────────────────────────────┐
+        │ Timestamp('2017-07-13 07:34:56.789101-0500', tz='UTC-05:00') │
+        └──────────────────────────────────────────────────────────────┘
+        >>> t.epoch("s")
+        ┌──────────────────────┐
+        │ np.int32(1499949296) │
+        └──────────────────────┘
+        >>> t.epoch("ms")
+        ┌─────────────────────────┐
+        │ np.int64(1499949296789) │
+        └─────────────────────────┘
+        >>> t.epoch("us")
+        ┌────────────────────────────┐
+        │ np.int64(1499949296789101) │
+        └────────────────────────────┘
+        """
+        unit = TimestampUnit(unit)
+
+        if unit == TimestampUnit.SECOND:
+            return ops.ExtractEpochSeconds(self).to_expr()
+        elif unit == TimestampUnit.MILLISECOND:
+            return ops.ExtractEpochMilliseconds(self).to_expr()
+        elif unit == TimestampUnit.MICROSECOND:
+            return ops.ExtractEpochMicroseconds(self).to_expr()
+        else:
+            raise com.IbisError(f"Unsupported unit for `epoch` method: {unit}")
 
     def year(self) -> ir.IntegerValue:
         """Extract the year component."""
