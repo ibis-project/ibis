@@ -258,7 +258,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if name is None or PYSPARK_LT_34:
             yield
             return
-        current = self.current_catalog
+        prev_catalog = self.current_catalog
+        prev_database = self.current_database
         try:
             try:
                 catalog_sql = sg.to_identifier(name).sql(self.dialect)
@@ -268,10 +269,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             yield
         finally:
             try:
-                catalog_sql = sg.to_identifier(current).sql(self.dialect)
+                catalog_sql = sg.to_identifier(prev_catalog).sql(self.dialect)
+                db_sql = sg.to_identifier(prev_database).sql(self.dialect)
                 self.raw_sql(f"USE CATALOG {catalog_sql};")
+                self.raw_sql(f"USE DATABASE {db_sql};")
             except PySparkParseException:
-                self._session.catalog.setCurrentCatalog(current)
+                self._session.catalog.setCurrentCatalog(prev_catalog)
+                self._session.catalog.setCurrentDatabase(prev_database)
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
