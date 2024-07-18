@@ -71,6 +71,17 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         """
         self._table_env = table_env
 
+    @classmethod
+    def from_connection(cls, table_env: TableEnvironment) -> Backend:
+        """Create a Flink `Backend` from an existing table environment.
+
+        Parameters
+        ----------
+        table_env
+            A table environment.
+        """
+        return ibis.flink.connect(table_env)
+
     def disconnect(self) -> None:
         pass
 

@@ -1616,6 +1616,10 @@ def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypa
     con.drop_table(table_name)
 
 
+CON_ATTR = {"flink": "_table_env"}
+DEFAULT_CON_ATTR = "con"
+
+
 def test_from_connection(con):
-    new_con = type(con).from_connection(con.con)
+    new_con = type(con).from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     assert {"astronauts", "batting", "diamonds"} <= set(new_con.list_tables())
