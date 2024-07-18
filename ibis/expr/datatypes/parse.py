@@ -200,7 +200,7 @@ def parse(
         | array
         | map
         | struct
-        | spaceless_string("json", "uuid", "macaddr", "inet").map(
+        | spaceless_string("jsonb", "json", "uuid", "macaddr", "inet").map(
             functools.partial(getattr, dt)
         )
         | spaceless_string("int").result(dt.int64)

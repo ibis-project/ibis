@@ -110,7 +110,7 @@ def test_create_and_drop_table(con, temp_table):
             ("timestamp with time zone", dt.Timestamp("UTC", scale=6)),
             ("interval", dt.Interval("s")),
             ("numeric", dt.decimal),
-            ("jsonb", dt.json),
+            ("jsonb", dt.JSON(binary=True)),
         ]
     ],
 )

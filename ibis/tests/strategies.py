@@ -81,7 +81,7 @@ def binary_dtype(nullable=_nullable):
 
 
 def json_dtype(nullable=_nullable):
-    return st.builds(dt.JSON, nullable=nullable)
+    return st.builds(dt.JSON, binary=st.booleans(), nullable=nullable)
 
 
 def inet_dtype(nullable=_nullable):

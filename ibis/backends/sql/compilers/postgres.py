@@ -315,66 +315,70 @@ class PostgresCompiler(SQLGlotCompiler):
         #
         # but also postgres should really support anonymous structs
         return self.cast(
-            self.f.jsonb_extract_path(self.f.to_jsonb(arg), sge.convert(f"f{idx:d}")),
-            op.dtype,
+            self.f.jsonb_extract_path(self.f.to_jsonb(arg), f"f{idx:d}"), op.dtype
+        )
+
+    def json_typeof(self, op, arg):
+        b = "b" * op.arg.dtype.binary
+        return self.f[f"json{b}_typeof"](arg)
+
+    def json_extract_path_text(self, op, arg, *rest):
+        b = "b" * op.arg.dtype.binary
+        return self.f[f"json{b}_extract_path_text"](
+            arg,
+            *rest,
+            # this is apparently how you pass in no additional arguments to
+            # a variadic function, see the "Variadic Function Resolution"
+            # section in
+            # https://www.postgresql.org/docs/current/typeconv-func.html
+            sge.Var(this="VARIADIC ARRAY[]::TEXT[]"),
         )
 
     def visit_UnwrapJSONString(self, op, *, arg):
         return self.if_(
-            self.f.json_typeof(arg).eq(sge.convert("string")),
-            self.f.json_extract_path_text(
-                arg,
-                # this is apparently how you pass in no additional arguments to
-                # a variadic function, see the "Variadic Function Resolution"
-                # section in
-                # https://www.postgresql.org/docs/current/typeconv-func.html
-                sge.Var(this="VARIADIC ARRAY[]::TEXT[]"),
-            ),
+            self.json_typeof(op, arg).eq(sge.convert("string")),
+            self.json_extract_path_text(op, arg),
             NULL,
         )
 
     def visit_UnwrapJSONInt64(self, op, *, arg):
-        text = self.f.json_extract_path_text(
-            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
-        )
+        text = self.json_extract_path_text(op, arg)
         return self.if_(
-            self.f.json_typeof(arg).eq(sge.convert("number")),
+            self.json_typeof(op, arg).eq(sge.convert("number")),
             self.cast(
-                self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL),
-                op.dtype,
+                self.if_(self.f.regexp_like(text, r"^\d+$", "g"), text, NULL), op.dtype
             ),
             NULL,
         )
 
     def visit_UnwrapJSONFloat64(self, op, *, arg):
-        text = self.f.json_extract_path_text(
-            arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
-        )
+        text = self.json_extract_path_text(op, arg)
         return self.if_(
-            self.f.json_typeof(arg).eq(sge.convert("number")),
+            self.json_typeof(op, arg).eq(sge.convert("number")),
             self.cast(text, op.dtype),
             NULL,
         )
 
     def visit_UnwrapJSONBoolean(self, op, *, arg):
         return self.if_(
-            self.f.json_typeof(arg).eq(sge.convert("boolean")),
-            self.cast(
-                self.f.json_extract_path_text(
-                    arg, sge.Var(this="VARIADIC ARRAY[]::TEXT[]")
-                ),
-                op.dtype,
-            ),
+            self.json_typeof(op, arg).eq(sge.convert("boolean")),
+            self.cast(self.json_extract_path_text(op, arg), op.dtype),
             NULL,
         )
+
+    def visit_JSONGetItem(self, op, *, arg, index):
+        if op.arg.dtype.binary:
+            return self.f.jsonb_extract_path(arg, self.cast(index, dt.string))
+        return super().visit_JSONGetItem(op, arg=arg, index=index)
 
     def visit_StructColumn(self, op, *, names, values):
         return self.f.row(*map(self.cast, values, op.dtype.types))
 
     def visit_ToJSONArray(self, op, *, arg):
+        b = "b" * op.arg.dtype.binary
         return self.if_(
-            self.f.json_typeof(arg).eq(sge.convert("array")),
-            self.f.array(sg.select(STAR).from_(self.f.json_array_elements(arg))),
+            self.json_typeof(op, arg).eq(sge.convert("array")),
+            self.f.array(sg.select(STAR).from_(self.f[f"json{b}_array_elements"](arg))),
             NULL,
         )
 

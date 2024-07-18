@@ -6,6 +6,7 @@ from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
+from ibis.common.annotations import attribute
 from ibis.expr.operations import Value
 
 
@@ -16,7 +17,7 @@ class JSONGetItem(Value):
     arg: Value[dt.JSON]
     index: Value[dt.String | dt.Integer]
 
-    dtype = dt.json
+    dtype = rlz.dtype_like("arg")
     shape = rlz.shape_like("args")
 
 
@@ -26,8 +27,11 @@ class ToJSONArray(Value):
 
     arg: Value[dt.JSON]
 
-    dtype = dt.Array(dt.json)
     shape = rlz.shape_like("arg")
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return dt.Array(self.arg.dtype)
 
 
 @public
@@ -36,8 +40,11 @@ class ToJSONMap(Value):
 
     arg: Value[dt.JSON]
 
-    dtype = dt.Map(dt.string, dt.json)
     shape = rlz.shape_like("arg")
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return dt.Map(dt.string, self.arg.dtype)
 
 
 @public

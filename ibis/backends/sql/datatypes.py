@@ -34,7 +34,7 @@ _from_sqlglot_types = {
     typecode.INT: dt.Int32,
     typecode.IPADDRESS: dt.INET,
     typecode.JSON: dt.JSON,
-    typecode.JSONB: dt.JSON,
+    typecode.JSONB: partial(dt.JSON, binary=True),
     typecode.LONGBLOB: dt.Binary,
     typecode.LONGTEXT: dt.String,
     typecode.MEDIUMBLOB: dt.Binary,
@@ -115,7 +115,6 @@ _to_sqlglot_types = {
     dt.Float64: typecode.DOUBLE,
     dt.String: typecode.VARCHAR,
     dt.Binary: typecode.VARBINARY,
-    dt.JSON: typecode.JSON,
     dt.INET: typecode.INET,
     dt.UUID: typecode.UUID,
     dt.MACADDR: typecode.VARCHAR,
@@ -324,6 +323,10 @@ class SqlglotType(TypeMapper):
         if srid is not None:
             srid = int(srid.this.this)
         return typeclass(geotype="geography", nullable=cls.default_nullable, srid=srid)
+
+    @classmethod
+    def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
+        return sge.DataType(this=typecode.JSONB if dtype.binary else typecode.JSON)
 
     @classmethod
     def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
