@@ -129,7 +129,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self._cached_dataframes = {}
 
     def do_connect(
-        self, session: SparkSession | None = None, mode: ConnectionMode | None = None
+        self,
+        session: SparkSession | None = None,
+        mode: ConnectionMode = "batch",
+        **kwargs,
     ) -> None:
         """Create a PySpark `Backend` for use with Ibis.
 
@@ -142,6 +145,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             query executed within this connection will be interpreted as a batch
             workload. If "streaming", every source, sink, and query executed within
             this connection will be interpreted as a streaming workload.
+        kwargs
+            Additional keyword arguments used to configure the SparkSession.
 
         Examples
         --------
@@ -157,7 +162,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
             session = SparkSession.builder.getOrCreate()
 
-        mode = mode or "batch"
         if mode not in ("batch", "streaming"):
             raise com.IbisInputError(
                 f"Invalid connection mode: {mode}, must be `streaming` or `batch`"
@@ -172,6 +176,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
         self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
+
+        for key, value in kwargs.items():
+            self._session.conf.set(key, value)
 
     def disconnect(self) -> None:
         self._session.stop()
