@@ -2,68 +2,39 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from public import public
 
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
+from ibis.common.collections import FrozenOrderedDict
 from ibis.expr.operations.core import Column, Scalar  # noqa: TCH001
-from ibis.expr.operations.relations import Relation
+from ibis.expr.operations.relations import Relation, Unaliased
 from ibis.expr.schema import Schema
 
 
 @public
-class WindowingTVF(Relation):
-    """Generic windowing table-valued function."""
-
-    # TODO(kszucs): rename to `parent`
-    table: Relation
-    time_col: Column[dt.Timestamp]  # enforce timestamp column type here
+class WindowAggregate(Relation):
+    parent: Relation
+    window_type: Literal["tumble", "hop"]
+    time_col: Unaliased[Column]
+    groups: FrozenOrderedDict[str, Unaliased[Column]]
+    metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
+    window_size: Scalar[dt.Interval]
+    window_slide: Optional[Scalar[dt.Interval]] = None
+    window_offset: Optional[Scalar[dt.Interval]] = None
 
     @attribute
     def values(self):
-        return self.table.fields
+        return FrozenOrderedDict({**self.groups, **self.metrics})
 
-    @property
+    @attribute
     def schema(self):
-        names = list(self.table.schema.names)
-        types = list(self.table.schema.types)
-
-        # The return value of windowing TVF is a new relation that includes all columns
-        # of original relation as well as additional 3 columns named “window_start”,
-        # “window_end”, “window_time” to indicate the assigned window
-
-        # TODO(kszucs): this looks like an implementation detail leaked from the
-        # flink backend
-        names.extend(["window_start", "window_end", "window_time"])
-        # window_start, window_end, window_time have type TIMESTAMP(3) in Flink
-        types.extend([dt.timestamp(scale=3)] * 3)
-
-        return Schema.from_tuples(list(zip(names, types)))
-
-
-@public
-class TumbleWindowingTVF(WindowingTVF):
-    """TUMBLE window table-valued function."""
-
-    window_size: Scalar[dt.Interval]
-    offset: Optional[Scalar[dt.Interval]] = None
-
-
-@public
-class HopWindowingTVF(WindowingTVF):
-    """HOP window table-valued function."""
-
-    window_size: Scalar[dt.Interval]
-    window_slide: Scalar[dt.Interval]
-    offset: Optional[Scalar[dt.Interval]] = None
-
-
-@public
-class CumulateWindowingTVF(WindowingTVF):
-    """CUMULATE window table-valued function."""
-
-    window_size: Scalar[dt.Interval]
-    window_step: Scalar[dt.Interval]
-    offset: Optional[Scalar[dt.Interval]] = None
+        field_pairs = {
+            "window_start": dt.timestamp,
+            "window_end": dt.timestamp,
+            **{k: v.dtype for k, v in self.groups.items()},
+            **{k: v.dtype for k, v in self.metrics.items()},
+        }
+        return Schema(field_pairs)

@@ -1,12 +1,7 @@
 from __future__ import annotations
 
-from operator import methodcaller
-
 import pytest
 from pytest import param
-
-import ibis
-from ibis.common.deferred import _
 
 
 def test_sum(simple_table, assert_sql):
@@ -102,49 +97,4 @@ def test_having(simple_table, assert_sql):
         .having(simple_table.count() >= 1000)
         .aggregate(simple_table.b.sum().name("b_sum"))
     )
-    assert_sql(expr)
-
-
-@pytest.mark.parametrize(
-    "method",
-    [
-        methodcaller("tumble", window_size=ibis.interval(minutes=15)),
-        methodcaller(
-            "hop",
-            window_size=ibis.interval(minutes=15),
-            window_slide=ibis.interval(minutes=1),
-        ),
-        methodcaller(
-            "cumulate",
-            window_size=ibis.interval(minutes=1),
-            window_step=ibis.interval(seconds=10),
-        ),
-    ],
-    ids=["tumble", "hop", "cumulate"],
-)
-def test_windowing_tvf(simple_table, method, assert_sql):
-    expr = method(simple_table.window_by(time_col=simple_table.i))
-    assert_sql(expr)
-
-
-def test_window_aggregation(simple_table, assert_sql):
-    expr = (
-        simple_table.window_by(time_col=simple_table.i)
-        .tumble(window_size=ibis.interval(minutes=15))
-        .group_by(["window_start", "window_end", "g"])
-        .aggregate(mean=_.d.mean())
-    )
-    assert_sql(expr)
-
-
-def test_window_topn(simple_table, assert_sql):
-    expr = simple_table.window_by(time_col="i").tumble(
-        window_size=ibis.interval(seconds=600),
-    )["a", "b", "c", "d", "g", "window_start", "window_end"]
-    expr = expr.mutate(
-        rownum=ibis.row_number().over(
-            group_by=["window_start", "window_end"], order_by=ibis.desc("g")
-        )
-    )
-    expr = expr[expr.rownum <= 3]
     assert_sql(expr)

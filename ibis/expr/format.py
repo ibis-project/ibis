@@ -211,7 +211,6 @@ def fmt(op, **kwargs):
 
 
 @fmt.register(ops.Relation)
-@fmt.register(ops.WindowingTVF)
 def _relation(op, parent=None, **kwargs):
     if parent is None:
         top = f"{op.__class__.__name__}\n"
