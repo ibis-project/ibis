@@ -870,14 +870,15 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             An integer to effect a specific row limit. A value of `None` means
             "no limit". The default is in `ibis/config.py`.
         **kwargs
-            PySpark Delta Lake table write arguments.
-            https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.save.html
+            Additional keyword arguments passed to
+            [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
 
         """
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Writing to a Delta Lake table in streaming mode is not supported"
             )
+        self._run_pre_execute_hooks(expr)
         df = self._session.sql(self.compile(expr, params=params, limit=limit))
         df.write.format("delta").save(os.fspath(path), **kwargs)
 
