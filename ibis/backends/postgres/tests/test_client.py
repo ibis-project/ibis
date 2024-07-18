@@ -173,7 +173,7 @@ def test_create_and_drop_table(con, temp_table, params):
             ("numeric", dt.decimal),
             ("numeric(3, 2)", dt.Decimal(3, 2)),
             ("uuid", dt.uuid),
-            ("jsonb", dt.json),
+            ("jsonb", dt.jsonb),
             ("geometry", dt.geometry),
             ("geography", dt.geography),
         ]

@@ -936,6 +936,13 @@ class JSON(Variadic):
     scalar = "JSONScalar"
     column = "JSONColumn"
 
+    binary: bool = False
+    """True if JSON is stored as binary, e.g., JSONB in PostgreSQL."""
+
+    @property
+    def _pretty_piece(self) -> str:
+        return "b" * self.binary
+
 
 @public
 class GeoSpatial(DataType):
@@ -1066,7 +1073,8 @@ multilinestring = MultiLineString()
 multipoint = MultiPoint()
 multipolygon = MultiPolygon()
 # json
-json = JSON()
+json = JSON(binary=False)
+jsonb = JSON(binary=True)
 # special string based data type
 uuid = UUID()
 macaddr = MACADDR()
@@ -1107,6 +1115,7 @@ public(
     multipoint=multipoint,
     multipolygon=multipolygon,
     json=json,
+    jsonb=jsonb,
     uuid=uuid,
     macaddr=macaddr,
     inet=inet,
