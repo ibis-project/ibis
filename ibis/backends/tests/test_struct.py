@@ -156,15 +156,18 @@ def test_field_access_after_case(con):
     ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=AssertionError,
-    reason="sqlglot fails to parse, fall back to unknown",
-)
 @pytest.mark.parametrize(
     "nullable",
     [
-        param(True, id="nullable"),
+        param(
+            True,
+            marks=pytest.mark.notyet(
+                ["clickhouse"],
+                raises=AssertionError,
+                reason="clickhouse doesn't allow nullable nested types",
+            ),
+            id="nullable",
+        ),
         param(
             False,
             marks=[
