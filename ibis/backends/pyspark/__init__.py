@@ -11,7 +11,6 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
-from pyspark.errors import ParseException as PySparkParseException
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -29,6 +28,11 @@ from ibis.backends.sql.compilers import PySparkCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
+
+try:
+    from pyspark.errors import ParseException as PySparkParseException
+except ImportError:
+    from pyspark.sql.utils import ParseException as PySparkParseException
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
