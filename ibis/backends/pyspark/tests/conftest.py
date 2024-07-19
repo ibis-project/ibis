@@ -171,6 +171,16 @@ class TestConf(BackendTest):
             .config("spark.sql.streaming.schemaInference", True)
         )
 
+        config = (
+            config.config(
+                "spark.sql.extensions",
+                "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            )
+            .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
+            .config("spark.sql.catalog.local.type", "hadoop")
+            .config("spark.sql.catalog.local.warehouse", "icehouse")
+        )
+
         try:
             from delta.pip_utils import configure_spark_with_delta_pip
         except ImportError:

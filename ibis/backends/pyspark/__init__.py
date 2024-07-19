@@ -29,6 +29,11 @@ from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
 
+try:
+    from pyspark.errors import ParseException as PySparkParseException
+except ImportError:
+    from pyspark.sql.utils import ParseException as PySparkParseException
+
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from urllib.parse import ParseResult
@@ -226,27 +231,62 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # 2. set database
         # 3. set catalog to previous
         # 4. set database to previous
+        #
+        # Unity catalog has special handling for "USE CATALOG" and "USE DATABASE"
+        # and also has weird permissioning around using `setCurrentCatalog` and
+        # `setCurrentDatabase`.
+        #
+        # We attempt to use the Unity-specific Spark SQL to set CATALOG and DATABASE
+        # and if that causes a parser exception we fall back to using the catalog API.
         try:
             if catalog is not None:
-                self._session.catalog.setCurrentCatalog(catalog)
-            self._session.catalog.setCurrentDatabase(db)
+                try:
+                    catalog_sql = sg.to_identifier(catalog).sql(self.dialect)
+                    self.raw_sql(f"USE CATALOG {catalog_sql}")
+                except PySparkParseException:
+                    self._session.catalog.setCurrentCatalog(catalog)
+            try:
+                db_sql = sg.to_identifier(db).sql(self.dialect)
+                self.raw_sql(f"USE DATABASE {db_sql}")
+            except PySparkParseException:
+                self._session.catalog.setCurrentDatabase(db)
             yield
         finally:
             if catalog is not None:
-                self._session.catalog.setCurrentCatalog(current_catalog)
-            self._session.catalog.setCurrentDatabase(current_db)
+                try:
+                    catalog_sql = sg.to_identifier(current_catalog).sql(self.dialect)
+                    self.raw_sql(f"USE CATALOG {catalog_sql}")
+                except PySparkParseException:
+                    self._session.catalog.setCurrentCatalog(current_catalog)
+            try:
+                db_sql = sg.to_identifier(current_db).sql(self.dialect)
+                self.raw_sql(f"USE DATABASE {db_sql}")
+            except PySparkParseException:
+                self._session.catalog.setCurrentDatabase(current_db)
 
     @contextlib.contextmanager
     def _active_catalog(self, name: str | None):
         if name is None or PYSPARK_LT_34:
             yield
             return
-        current = self.current_catalog
+        prev_catalog = self.current_catalog
+        prev_database = self.current_database
         try:
-            self._session.catalog.setCurrentCatalog(name)
+            try:
+                catalog_sql = sg.to_identifier(name).sql(self.dialect)
+                self.raw_sql(f"USE CATALOG {catalog_sql};")
+            except PySparkParseException:
+                self._session.catalog.setCurrentCatalog(name)
             yield
         finally:
-            self._session.catalog.setCurrentCatalog(current)
+            try:
+                catalog_sql = sg.to_identifier(prev_catalog).sql(self.dialect)
+                db_sql = sg.to_identifier(prev_database).sql(self.dialect)
+                self.raw_sql(f"USE CATALOG {catalog_sql};")
+                self.raw_sql(f"USE DATABASE {db_sql};")
+            except PySparkParseException:
+                self._session.catalog.setCurrentCatalog(prev_catalog)
+                self._session.catalog.setCurrentDatabase(prev_database)
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]

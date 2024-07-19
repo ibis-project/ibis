@@ -743,6 +743,11 @@ jobs:
         if: matrix.pyspark-version == '3.5'
         run: poetry run pip install delta-spark
 
+      - name: install iceberg
+        shell: bash
+        if: matrix.pyspark-version == '3.5'
+        run: pushd "$(poetry run python -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")/jars" && curl -LO https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.2/iceberg-spark-runtime-3.5_2.12-1.5.2.jar
+
       - name: run tests
         run: just ci-check -m pyspark
 
