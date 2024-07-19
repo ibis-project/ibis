@@ -1620,6 +1620,7 @@ CON_ATTR = {"flink": "_table_env"}
 DEFAULT_CON_ATTR = "con"
 
 
+@pytest.mark.never(["dask", "pandas", "polars"], reason="don't have connection concept")
 def test_from_connection(con):
     new_con = type(con).from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     assert {"astronauts", "batting", "diamonds"} <= set(new_con.list_tables())
