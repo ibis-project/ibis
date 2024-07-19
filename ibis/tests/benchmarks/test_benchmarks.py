@@ -918,6 +918,33 @@ def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
     )
 
 
+@pytest.mark.parametrize(
+    "method",
+    [
+        "snake_case",
+        "ALL_CAPS",
+        lambda x: f"t_{x}",
+        "t_{name}",
+        lambda x: x,
+        "{name}",
+        {"b0": "a0"},
+    ],
+    ids=[
+        "snake_case",
+        "ALL_CAPS",
+        "function",
+        "format_string",
+        "no_op_function",
+        "no_op_string",
+        "mapping",
+    ],
+)
+@pytest.mark.parametrize("cols", [1_000, 10_000])
+def test_wide_rename(benchmark, method, cols):
+    t = ibis.table(name="t", schema={f"a{i}": "int" for i in range(cols)})
+    benchmark(t.rename, method)
+
+
 def test_duckdb_timestamp_conversion(benchmark):
     pytest.importorskip("duckdb")
 
