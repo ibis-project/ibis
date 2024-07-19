@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python =3.10
+  - python >=3.10,<3.12
   - atpublic >=2.3
   - black >=22.1.0,<25
   - clickhouse-connect >=0.5.23
