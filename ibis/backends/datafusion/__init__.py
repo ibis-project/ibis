@@ -14,6 +14,7 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -77,12 +78,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def do_connect(
         self, config: Mapping[str, str | Path] | SessionContext | None = None
     ) -> None:
-        """Create a Datafusion backend for use with Ibis.
+        """Create a Datafusion `Backend` for use with Ibis.
 
         Parameters
         ----------
         config
-            Mapping of table names to files.
+            Mapping of table names to files or a `SessionContext`
+            instance.
 
         Examples
         --------
@@ -111,6 +113,17 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         for name, path in config.items():
             self.register(path, table_name=name)
+
+    @classmethod
+    def from_connection(cls, con: SessionContext) -> None:
+        """Create a Datafusion `Backend` from an existing `SessionContext` instance.
+
+        Parameters
+        ----------
+        con
+            A `SessionContext` instance.
+        """
+        return ibis.datafusion.connect(con)
 
     def disconnect(self) -> None:
         pass
