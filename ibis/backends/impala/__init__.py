@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from urllib.parse import ParseResult
 
+    import impala.hiveserver2 as hs2
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -183,6 +184,24 @@ class Backend(SQLBackend):
             cur.ping()
 
         self.con = con
+        self._post_connect()
+
+    @classmethod
+    def from_connection(cls, con: hs2.HiveServer2Connection) -> Backend:
+        """Create an Impala `Backend` from an existing HS2 connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection to HiveServer2 (HS2).
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         self.options = {}
 
     @cached_property
