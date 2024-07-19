@@ -2359,22 +2359,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         # A mapping from old_name -> renamed expr
         renamed = {}
 
-        if substitutions:
-            for new_name, old_name in substitutions.items():
-                col = self[old_name]
-                if old_name not in renamed:
-                    renamed[old_name] = col.name(new_name)
-                else:
-                    raise ValueError(
-                        "duplicate new names passed for renaming {old_name!r}"
-                    )
+        for new_name, old_name in substitutions.items():
+            if old_name not in renamed:
+                renamed[old_name] = (new_name, self[old_name].op())
+            else:
+                raise ValueError("duplicate new names passed for renaming {old_name!r}")
 
-        if method is None:
-
-            def rename(c):
-                return None
-
-        elif isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
+        if isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
 
             def rename(c):
                 c = c.strip()
@@ -2412,17 +2403,20 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             rename = method
 
-        exprs = []
+        exprs = {}
+        fields = self.op().fields
+        rename_is_none = rename is None
         for c in self.columns:
-            if c in renamed:
-                expr = renamed[c]
+            if (new_name_op := renamed.get(c)) is not None:
+                new_name, op = new_name_op
             else:
-                expr = self[c]
-                if (name := rename(c)) is not None:
-                    expr = expr.name(name)
-            exprs.append(expr)
+                op = fields[c]
+                if rename_is_none or (new_name := rename(c)) is None:
+                    new_name = c
 
-        return self.select(exprs)
+            exprs[new_name] = op
+
+        return ops.Project(self, exprs).to_expr()
 
     def drop(self, *fields: str | Selector) -> Table:
         """Remove fields from a table.
