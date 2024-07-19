@@ -6,8 +6,8 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
-# lock dependencies without updating existing versions
-lock:
+# verify poetry version
+check-poetry:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -17,7 +17,28 @@ lock:
         >&2 echo "poetry version must be ${required_version}, got ${version}"
         exit 1
     fi
+
+# lock dependencies without updating existing versions
+lock: check-poetry
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     poetry lock --no-update
+    just export-deps
+
+# update locked dependencies
+update *deps: check-poetry
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    poetry update {{ deps }}
+    just export-deps
+
+# export locked dependencies
+export-deps:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
 # show all backends
