@@ -490,12 +490,17 @@ class Distinct(Simple):
 
 
 @public
-class TableUnnest(Simple):
+class TableUnnest(Relation):
     """Cross join unnest operation."""
 
+    parent: Relation
     column: Value[dt.Array]
     offset: typing.Union[str, None]
     keep_empty: bool
+
+    @attribute
+    def values(self):
+        return self.parent.fields
 
     @attribute
     def schema(self):
