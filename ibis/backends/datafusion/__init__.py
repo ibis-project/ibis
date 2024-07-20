@@ -115,8 +115,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             self.register(path, table_name=name)
 
     @classmethod
-    def from_connection(cls, con: SessionContext) -> None:
-        """Create a Datafusion `Backend` from an existing `SessionContext` instance.
+    def from_connection(cls, con: SessionContext) -> Backend:
+        """Create a DataFusion `Backend` from an existing `SessionContext` instance.
 
         Parameters
         ----------
