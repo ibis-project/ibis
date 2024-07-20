@@ -144,7 +144,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         Parameters
         ----------
         session
-            A SparkSession instance
+            A `SparkSession` instance.
         mode
             Can be either "batch" or "streaming". If "batch", every source, sink, and
             query executed within this connection will be interpreted as a batch
@@ -184,6 +184,26 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
+
+    @classmethod
+    def from_connection(
+        cls, session: SparkSession, mode: ConnectionMode = "batch", **kwargs
+    ) -> Backend:
+        """Create a PySpark `Backend` from an existing `SparkSession` instance.
+
+        Parameters
+        ----------
+        session
+            A `SparkSession` instance.
+        mode
+            Can be either "batch" or "streaming". If "batch", every source, sink, and
+            query executed within this connection will be interpreted as a batch
+            workload. If "streaming", every source, sink, and query executed within
+            this connection will be interpreted as a streaming workload.
+        kwargs
+            Additional keyword arguments used to configure the SparkSession.
+        """
+        return ibis.pyspark.connect(session, mode, **kwargs)
 
     def disconnect(self) -> None:
         self._session.stop()
