@@ -73,7 +73,7 @@ class Backend(SQLBackend, UrlFromPath):
             files
         type_map
             An optional mapping from a string name of a SQLite "type" to the
-            corresponding ibis DataType that it represents. This can be used
+            corresponding Ibis DataType that it represents. This can be used
             to override schema inference for a given SQLite database.
 
         Examples
@@ -84,12 +84,40 @@ class Backend(SQLBackend, UrlFromPath):
         """
         _init_sqlite3()
 
+        self.con = sqlite3.connect(":memory:" if database is None else database)
+
+        self._post_connect(type_map)
+
+    @classmethod
+    def from_connection(
+        cls,
+        con: sqlite3.Connection,
+        type_map: dict[str, str | dt.DataType] | None = None,
+    ) -> Backend:
+        """Create an Ibis client from an existing connection to a SQLite database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a SQLite database.
+        type_map
+            An optional mapping from a string name of a SQLite "type" to the
+            corresponding Ibis DataType that it represents. This can be used
+            to override schema inference for a given SQLite database.
+        """
+        new_backend = cls(type_map=type_map)
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect(type_map)
+        return new_backend
+
+    def _post_connect(
+        self, type_map: dict[str, str | dt.DataType] | None = None
+    ) -> None:
         if type_map:
             self._type_map = {k.lower(): ibis.dtype(v) for k, v in type_map.items()}
         else:
             self._type_map = {}
-
-        self.con = sqlite3.connect(":memory:" if database is None else database)
 
         register_all(self.con)
         self.con.execute("PRAGMA case_sensitive_like=ON")
