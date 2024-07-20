@@ -325,6 +325,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             **kwargs,
         )
 
+    @classmethod
+    def from_connection(cls, con: trino.dbapi.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a Trino database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a Trino database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name(f"{self.name}_metadata")
         with self.begin() as cur:
