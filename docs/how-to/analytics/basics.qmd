@@ -49,7 +49,7 @@ Use the `.mutate()` method to create new columns:
 
 ```{python}
 t.mutate(bill_length_cm=t["bill_length_mm"] / 10).relocate(
-    t.columns[0:2], "bill_length_cm"
+    *t.columns[:2], "bill_length_cm"
 )
 ```
 
