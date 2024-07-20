@@ -478,6 +478,33 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         self.partition_column = partition_column
 
+    @classmethod
+    def from_connection(
+        cls,
+        client: bq.Client,
+        partition_column: str | None = "PARTITIONTIME",
+        storage_client: bqstorage.BigQueryReadClient | None = None,
+    ) -> Backend:
+        """Create a BigQuery `Backend` from an existing ``Client``.
+
+        Parameters
+        ----------
+        client
+            A ``Client`` from the ``google.cloud.bigquery`` package.
+        partition_column
+            Identifier to use instead of default ``_PARTITIONTIME`` partition
+            column. Defaults to ``'PARTITIONTIME'``.
+        storage_client
+            A ``BigQueryReadClient`` from the
+            ``google.cloud.bigquery_storage_v1`` package. If not set, one is
+            created using the ``project_id`` and ``credentials``.
+        """
+        return ibis.bigquery.Backend.connect(
+            client=client,
+            partition_column=partition_column,
+            storage_client=storage_client,
+        )
+
     def disconnect(self) -> None:
         self.client.close()
 

@@ -1616,7 +1616,7 @@ def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypa
     con.drop_table(table_name)
 
 
-CON_ATTR = {"flink": "_table_env", "pyspark": "_session"}
+CON_ATTR = {"bigquery": "client", "flink": "_table_env", "pyspark": "_session"}
 DEFAULT_CON_ATTR = "con"
 
 
