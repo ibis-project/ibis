@@ -126,7 +126,7 @@ jobs:
             extras:
               - sqlite
           - name: datafusion
-            title: Datafusion
+            title: DataFusion
             extras:
               - datafusion
           - name: polars

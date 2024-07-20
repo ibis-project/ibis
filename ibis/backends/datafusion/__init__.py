@@ -78,7 +78,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def do_connect(
         self, config: Mapping[str, str | Path] | SessionContext | None = None
     ) -> None:
-        """Create a Datafusion `Backend` for use with Ibis.
+        """Create a DataFusion `Backend` for use with Ibis.
 
         Parameters
         ----------
@@ -342,7 +342,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name
             The name of the table
         kwargs
-            Datafusion-specific keyword arguments
+            DataFusion-specific keyword arguments
 
         Examples
         --------
@@ -436,7 +436,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -464,7 +464,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -589,7 +589,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         temp: bool = False,
         overwrite: bool = False,
     ):
-        """Create a table in Datafusion.
+        """Create a table in DataFusion.
 
         Parameters
         ----------
@@ -710,7 +710,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
     """Workaround inability to overwrite tables in dataframe API.
 
-    Datafusion has helper methods for loading in-memory data, but these methods
+    DataFusion has helper methods for loading in-memory data, but these methods
     don't allow overwriting tables.
     The SQL interface allows creating tables from existing tables, so we register
     the data as a table using the dataframe API, then run a

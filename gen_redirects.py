@@ -10,7 +10,8 @@ TEMPLATED_REDIRECTS = {
     "/backends/{version}/BigQuery/": "/backends/bigquery/",
     "/backends/{version}/Clickhouse/": "/backends/clickhouse/",
     "/backends/{version}/Dask/": "/backends/dask/",
-    "/backends/{version}/Datafusion/": "/backends/datafusion/",
+    "/backends/{version}/DataFusion/": "/backends/datafusion/",
+    "/backends/{version}/Datafusion/": "/backends/datafusion/",  # For backwards compatibility
     "/backends/{version}/Druid/": "/backends/druid/",
     "/backends/{version}/DuckDB/": "/backends/duckdb/",
     "/backends/{version}/Impala/": "/backends/impala/",
@@ -30,7 +31,8 @@ TEMPLATED_REDIRECTS = {
     "/docs/{version}/backends/BigQuery/": "/backends/bigquery/",
     "/docs/{version}/backends/Clickhouse/": "/backends/clickhouse/",
     "/docs/{version}/backends/Dask/": "/backends/dask/",
-    "/docs/{version}/backends/Datafusion/": "/backends/datafusion/",
+    "/docs/{version}/backends/DataFusion/": "/backends/datafusion/",
+    "/docs/{version}/backends/Datafusion/": "/backends/datafusion/",  # For backwards compatibility
     "/docs/{version}/backends/Druid/": "/backends/druid/",
     "/docs/{version}/backends/DuckDB/": "/backends/duckdb/",
     "/docs/{version}/backends/Impala/": "/backends/impala/",
@@ -73,7 +75,8 @@ REDIRECTS = {
     "/backends/BigQuery/": "/backends/bigquery/",
     "/backends/Clickhouse/": "/backends/clickhouse/",
     "/backends/Dask/": "/backends/dask/",
-    "/backends/Datafusion/": "/backends/datafusion/",
+    "/backends/DataFusion/": "/backends/datafusion/",
+    "/backends/Datafusion/": "/backends/datafusion/",  # For backwards compatibility
     "/backends/Druid/": "/backends/druid/",
     "/backends/DuckDB/": "/backends/duckdb/",
     "/backends/Impala/": "/backends/impala/",
