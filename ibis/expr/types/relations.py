@@ -238,7 +238,25 @@ class Table(Expr, _FixedTextJupyterMixin):
             values.append(value.name(key))
         return values
 
-    def bind(self, *args, **kwargs):
+    def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
+        """Bind column values to a table expression.
+
+        This method handles the binding of every kind of column-like value that
+        Ibis handles, including strings, integers, deferred expressions and
+        selectors, to a table expression.
+
+        Parameters
+        ----------
+        args
+            Column-like values to bind.
+        kwargs
+            Column-like values to bind, with names.
+
+        Returns
+        -------
+        tuple[Value, ...]
+            A tuple of bound values
+        """
         values = self._fast_bind(*args, **kwargs)
         # dereference the values to `self`
         dm = DerefMap.from_targets(self.op())
