@@ -50,7 +50,6 @@ Using a composition of selectors this is much less tiresome:
 
 from __future__ import annotations
 
-import abc
 import functools
 import inspect
 import operator
@@ -67,27 +66,8 @@ from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.exceptions import IbisError
-from ibis.common.grounds import Concrete, Singleton
-
-
-class Selector(Concrete):
-    """A column selector."""
-
-    @abc.abstractmethod
-    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        """Expand `table` into value expressions that match the selector.
-
-        Parameters
-        ----------
-        table
-            An ibis table expression
-
-        Returns
-        -------
-        Sequence[Value]
-            A sequence of value expressions that match the selector
-
-        """
+from ibis.common.grounds import Singleton
+from ibis.common.selectors import Selector
 
 
 class Predicate(Selector):

@@ -18,12 +18,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
+from ibis.common.selectors import Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.pretty import to_rich
 from ibis.expr.types.temporal import TimestampColumn
-from ibis.selectors import Selector
 from ibis.util import deprecated
 
 if TYPE_CHECKING:
