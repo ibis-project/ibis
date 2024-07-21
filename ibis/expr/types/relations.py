@@ -4588,9 +4588,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         schema = self.schema()
         positions = schema._name_locs
 
-        for new_name, expr in itertools.chain(
-            zip(itertools.repeat(None), self._fast_bind(*columns)),
-            zip(kwargs.keys(), self._fast_bind(*kwargs.values())),
+        for new_name, expr in itertools.zip_longest(
+            kwargs.keys(), self._fast_bind(*kwargs.values(), *columns)
         ):
             expr_name = expr.get_name()
             pos = positions[expr_name]
