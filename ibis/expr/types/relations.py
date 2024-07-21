@@ -213,7 +213,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return PolarsData.convert_table(df, self.schema())
 
-    def bind(self, *args, **kwargs):
+    def _fast_bind(self, *args, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
         if len(args) == 1:
             if isinstance(args[0], dict):
@@ -236,7 +236,10 @@ class Table(Expr, _FixedTextJupyterMixin):
                 )
             (value,) = bindings
             values.append(value.name(key))
+        return values
 
+    def bind(self, *args, **kwargs):
+        values = self._fast_bind(*args, **kwargs)
         # dereference the values to `self`
         dm = DerefMap.from_targets(self.op())
         result = []
