@@ -2491,7 +2491,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             return self
 
         columns_to_drop = tuple(
-            map(operator.methodcaller("get_name"), self.bind(*fields))
+            map(operator.methodcaller("get_name"), self._fast_bind(*fields))
         )
         return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
