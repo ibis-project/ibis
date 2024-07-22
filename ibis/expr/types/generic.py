@@ -1539,10 +1539,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def __deferred_repr__(self):
         return f"<column[{self.type()}]>"
 
-    def approx_nunique(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> ir.IntegerScalar:
+    def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
         ::: {.callout-note}
@@ -1584,10 +1581,7 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def approx_median(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> Scalar:
+    def approx_median(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return an approximate of the median of `self`.
 
         ::: {.callout-note}
@@ -1945,11 +1939,7 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def topk(
-        self,
-        k: int,
-        by: ir.Value | None = None,
-    ) -> ir.Table:
+    def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
         """Return a "top k" expression.
 
         Parameters
