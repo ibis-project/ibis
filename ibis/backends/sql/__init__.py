@@ -70,6 +70,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
+    _top_level_methods = ("from_connection",)
+
     @property
     def dialect(self) -> sg.Dialect:
         return self.compiler.dialect

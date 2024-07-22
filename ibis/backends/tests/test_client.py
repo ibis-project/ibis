@@ -1620,7 +1620,9 @@ CON_ATTR = {"bigquery": "client", "flink": "_table_env", "pyspark": "_session"}
 DEFAULT_CON_ATTR = "con"
 
 
+@pytest.mark.parametrize("top_level", [True, False])
 @pytest.mark.never(["dask", "pandas", "polars"], reason="don't have connection concept")
-def test_from_connection(con):
-    new_con = type(con).from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
+def test_from_connection(con, top_level):
+    backend = getattr(ibis, con.name) if top_level else type(con)
+    new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     assert {"astronauts", "batting", "diamonds"} <= set(new_con.list_tables())
