@@ -2405,13 +2405,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         exprs = {}
         fields = self.op().fields
-        rename_is_none = rename is None
         for c in self.columns:
             if (new_name_op := renamed.get(c)) is not None:
                 new_name, op = new_name_op
             else:
                 op = fields[c]
-                if rename_is_none or (new_name := rename(c)) is None:
+                if rename is None or (new_name := rename(c)) is None:
                     new_name = c
 
             exprs[new_name] = op
