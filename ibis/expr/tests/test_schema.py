@@ -393,6 +393,13 @@ def test_schema_from_to_pyarrow_schema():
     assert restored_schema == pyarrow_schema
 
 
+def test_schema___arrow_c_schema__():
+    pytest.importorskip("pyarrow")
+    schema = sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+    # smoketest, since no way to create schema from capsule in current pyarrow
+    assert schema.__arrow_c_schema__() is not None
+
+
 @pytest.mark.parametrize("lazy", [False, True])
 def test_schema_infer_polars_dataframe(lazy):
     pl = pytest.importorskip("polars")
