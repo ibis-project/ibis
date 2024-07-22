@@ -1,5 +1,5 @@
 SELECT
-  CAST(1 AS TINYINT) AS "a"
+  1 AS "a"
 FROM "t" AS "t0"
 WHERE
-  CAST(1 AS TINYINT) > CAST(1 AS TINYINT)
+  1 > 1

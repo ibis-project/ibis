@@ -1,8 +1,7 @@
 SELECT
   (
-    "t0"."double_col" > CAST(0 AS TINYINT)
-  )
-  AND (
-    "t0"."double_col" < CAST(5 AS TINYINT)
+    "t0"."double_col" > 0
+  ) AND (
+    "t0"."double_col" < 5
   ) AS "tmp"
 FROM "functional_alltypes" AS "t0"

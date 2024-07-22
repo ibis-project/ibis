@@ -9,4 +9,4 @@ FROM (
     1
 ) AS "t1"
 WHERE
-  "t1"."total" > CAST(10 AS TINYINT)
+  "t1"."total" > 10

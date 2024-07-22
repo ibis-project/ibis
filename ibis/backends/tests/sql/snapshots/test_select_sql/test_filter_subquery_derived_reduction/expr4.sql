@@ -15,5 +15,5 @@ WHERE
             "t0"."foo_id" = 'foo'
         ) AS "t1"
       )
-    ) + CAST(1 AS TINYINT)
+    ) + 1
   )

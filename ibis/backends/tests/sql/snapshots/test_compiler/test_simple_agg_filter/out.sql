@@ -2,7 +2,7 @@ SELECT
   *
 FROM "my_table" AS "t0"
 WHERE
-  "t0"."a" < CAST(100 AS TINYINT)
+  "t0"."a" < 100
   AND "t0"."a" = (
     SELECT
       MAX("t1"."a") AS "Max(a)"
@@ -11,6 +11,6 @@ WHERE
         *
       FROM "my_table" AS "t0"
       WHERE
-        "t0"."a" < CAST(100 AS TINYINT)
+        "t0"."a" < 100
     ) AS "t1"
   )

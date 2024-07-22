@@ -4,6 +4,6 @@ SELECT
       *
     FROM "t" AS "t0"
     WHERE
-      "t0"."x" > CAST(2 AS TINYINT)
+      "t0"."x" > 2
   ) AS "InSubquery(x)"
 FROM "t" AS "t0"

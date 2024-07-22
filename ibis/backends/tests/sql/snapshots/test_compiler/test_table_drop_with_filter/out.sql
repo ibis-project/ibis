@@ -16,4 +16,4 @@ FROM (
     ON "t4"."b" = "t2"."b"
 ) AS "t5"
 WHERE
-  "t5"."a" < CAST(1.0 AS DOUBLE)
+  "t5"."a" < 1.0
