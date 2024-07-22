@@ -44,6 +44,8 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import snowflake.connector
+    import snowflake.snowpark
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -197,7 +199,7 @@ $$ {defn["source"]} $$"""
             `ibis.snowflake.connect(...)` can succeed, while subsequent API
             calls fail if the authentication fails for any reason.
         create_object_udfs
-            Enable object UDF extensions defined by ibis on the first
+            Enable object UDF extensions defined by Ibis on the first
             connection to the database.
         kwargs
             Additional arguments passed to the DBAPI connection call.
@@ -274,7 +276,9 @@ $$ {defn["source"]} $$"""
 
     @util.experimental
     @classmethod
-    def from_snowpark(cls, session, *, create_object_udfs: bool = True) -> Backend:
+    def from_snowpark(
+        cls, session: snowflake.snowpark.Session, *, create_object_udfs: bool = True
+    ) -> Backend:
         """Create an Ibis Snowflake backend from a Snowpark session.
 
         Parameters
@@ -282,7 +286,7 @@ $$ {defn["source"]} $$"""
         session
             A Snowpark session instance.
         create_object_udfs
-            Enable object UDF extensions defined by ibis on the first
+            Enable object UDF extensions defined by Ibis on the first
             connection to the database.
 
         Returns
@@ -321,6 +325,66 @@ $$ {defn["source"]} $$"""
                 session_parameters={}, create_object_udfs=create_object_udfs
             )
         return backend
+
+    @classmethod
+    def from_connection(
+        cls,
+        con: snowflake.connector.SnowflakeConnection | snowflake.snowpark.Session,
+        *,
+        create_object_udfs: bool = True,
+    ) -> Backend:
+        """Create an Ibis Snowflake backend from an existing connection.
+
+        Parameters
+        ----------
+        con
+            A Snowflake Connector for Python connection or a Snowpark
+            session instance.
+        create_object_udfs
+            Enable object UDF extensions defined by Ibis on the first
+            connection to the database.
+
+        Returns
+        -------
+        Backend
+            An Ibis Snowflake backend instance.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import snowflake.snowpark as sp  # doctest: +SKIP
+        >>> session = sp.Session.builder.configs(...).create()  # doctest: +SKIP
+        >>> con = ibis.snowflake.from_connection(session)  # doctest: +SKIP
+        >>> batting = con.tables.BATTING  # doctest: +SKIP
+        >>> batting[["playerID", "RBI"]].head()  # doctest: +SKIP
+        ┏━━━━━━━━━━━┳━━━━━━━┓
+        ┃ playerID  ┃ RBI   ┃
+        ┡━━━━━━━━━━━╇━━━━━━━┩
+        │ string    │ int64 │
+        ├───────────┼───────┤
+        │ abercda01 │     0 │
+        │ addybo01  │    13 │
+        │ allisar01 │    19 │
+        │ allisdo01 │    27 │
+        │ ansonca01 │    16 │
+        └───────────┴───────┘
+        """
+        import snowflake.connector
+
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = (
+            con
+            if isinstance(con, snowflake.connector.SnowflakeConnection)
+            else con._conn._conn
+        )
+        with contextlib.suppress(snowflake.connector.errors.ProgrammingError):
+            # stored procs on snowflake don't allow session mutation it seems
+            new_backend._setup_session(
+                session_parameters={}, create_object_udfs=create_object_udfs
+            )
+        return new_backend
 
     def reconnect(self) -> None:
         if self._from_snowpark:
