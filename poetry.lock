@@ -5050,20 +5050,6 @@ google-auth-oauthlib = {version = ">=0.4.0", markers = "python_version >= \"3.6\
 setuptools = "*"
 
 [[package]]
-name = "pydeps"
-version = "1.12.20"
-description = "Display module dependencies"
-optional = false
-python-versions = "*"
-files = [
-    {file = "pydeps-1.12.20-py3-none-any.whl", hash = "sha256:7278a8912bdada26b773d3550f0cc8fd76bed172d23dc1472c457d6292b67fd7"},
-    {file = "pydeps-1.12.20.tar.gz", hash = "sha256:4f6a833a7998bfa24e339c55535882905c22960efc14902c361f74b2952aff19"},
-]
-
-[package.dependencies]
-stdlib-list = "*"
-
-[[package]]
 name = "pydruid"
 version = "0.6.9"
 description = "A Python connector for Druid."
@@ -6828,24 +6814,6 @@ develop = ["colorama", "cython (>=0.29.33)", "cython (>=3.0.10,<4)", "flake8", "
 docs = ["ipykernel", "jupyter-client", "matplotlib", "nbconvert", "nbformat", "numpydoc", "pandas-datareader", "sphinx"]
 
 [[package]]
-name = "stdlib-list"
-version = "0.10.0"
-description = "A list of Python Standard Libraries (2.7 through 3.12)."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "stdlib_list-0.10.0-py3-none-any.whl", hash = "sha256:b3a911bc441d03e0332dd1a9e7d0870ba3bb0a542a74d7524f54fb431256e214"},
-    {file = "stdlib_list-0.10.0.tar.gz", hash = "sha256:6519c50d645513ed287657bfe856d527f277331540691ddeaf77b25459964a14"},
-]
-
-[package.extras]
-dev = ["build", "stdlib-list[doc,lint,test]"]
-doc = ["furo", "sphinx"]
-lint = ["black", "mypy", "ruff"]
-support = ["sphobjinv"]
-test = ["coverage[toml]", "pytest", "pytest-cov"]
-
-[[package]]
 name = "tabulate"
 version = "0.9.0"
 description = "Pretty-print tabular data"
@@ -7758,4 +7726,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "95a451a0189c8fa22f51935c279138dabe0fa1155d7996dda6990ecbabed6c60"
+content-hash = "e4c7b86eba7e816e771cb86f25138ddae33163dbb5732418f6358fefe6490edc"
