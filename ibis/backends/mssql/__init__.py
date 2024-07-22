@@ -252,6 +252,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
     @contextlib.contextmanager
     def begin(self):
+        with contextlib.closing(self.con.cursor()) as cur:
+            yield cur
+
+    @contextlib.contextmanager
+    def _ddl_begin(self):
         con = self.con
         cur = con.cursor()
         try:
@@ -273,6 +278,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             cur.execute(query, *args, **kwargs)
             yield cur
 
+    @contextlib.contextmanager
+    def _safe_ddl(self, query, *args, **kwargs):
+        with contextlib.suppress(AttributeError):
+            query = query.sql(self.dialect)
+
+        with self._ddl_begin() as cur:
+            cur.execute(query, *args, **kwargs)
+            yield cur
+
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
@@ -280,15 +294,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         con = self.con
         cursor = con.cursor()
 
-        try:
-            cursor.execute(query, **kwargs)
-        except Exception:
-            con.rollback()
-            cursor.close()
-            raise
-        else:
-            con.commit()
-            return cursor
+        cursor.execute(query, **kwargs)
+        return cursor
 
     def create_catalog(self, name: str, force: bool = False) -> None:
         expr = (
@@ -309,11 +316,11 @@ GO"""
             if force
             else stmt
         )
-        with self._safe_raw_sql(create_stmt):
+        with self._safe_ddl(create_stmt):
             pass
 
     def drop_catalog(self, name: str, force: bool = False) -> None:
-        with self._safe_raw_sql(
+        with self._safe_ddl(
             sge.Drop(
                 kind="DATABASE",
                 this=sg.to_identifier(name, quoted=self.compiler.quoted),
@@ -584,7 +591,7 @@ GO"""
 
         this = sg.table(name, catalog=catalog, db=db, quoted=self.compiler.quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
-        with self._safe_raw_sql(create_stmt) as cur:
+        with self._safe_ddl(create_stmt) as cur:
             if query is not None:
                 # You can specify that a table is temporary for the sqlglot `Create` but not
                 # for the subsequent `Insert`, so we need to shove a `#` in
@@ -666,7 +673,7 @@ GO"""
             data = df.itertuples(index=False)
 
             insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
-            with self._safe_raw_sql(create_stmt) as cur:
+            with self._safe_ddl(create_stmt) as cur:
                 if not df.empty:
                     cur.executemany(insert_stmt, data)
 
