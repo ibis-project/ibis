@@ -494,3 +494,26 @@ def test_order_by_with_selectors(penguins):
 
     with pytest.raises(exc.IbisError):
         penguins.order_by(~s.all())
+
+
+def test_window_function_group_by(penguins):
+    expr = penguins.species.count().over(group_by=s.c("island"))
+    assert expr.equals(penguins.species.count().over(group_by=penguins.island))
+
+
+def test_window_function_order_by(penguins):
+    expr = penguins.island.count().over(order_by=s.c("species"))
+    assert expr.equals(penguins.island.count().over(order_by=penguins.species))
+
+
+def test_window_function_group_by_order_by(penguins):
+    expr = penguins.species.count().over(
+        group_by=s.c("island"),
+        order_by=s.c("year") | (~s.c("island", "species") & s.of_type("str")),
+    )
+    assert expr.equals(
+        penguins.species.count().over(
+            group_by=penguins.island,
+            order_by=[penguins.sex, penguins.year],
+        )
+    )

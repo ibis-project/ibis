@@ -13,6 +13,7 @@ from ibis.common.annotations import annotated, attribute
 from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
+from ibis.common.selectors import Selector  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
 if TYPE_CHECKING:
@@ -145,8 +146,8 @@ class WindowBuilder(Builder):
     how: Literal["rows", "range"] = "rows"
     start: Optional[RangeWindowBoundary] = None
     end: Optional[RangeWindowBoundary] = None
-    groupings: VarTuple[Union[str, Resolver, ops.Value]] = ()
-    orderings: VarTuple[Union[str, Resolver, ops.SortKey]] = ()
+    groupings: VarTuple[Union[str, Resolver, Selector, ops.Value]] = ()
+    orderings: VarTuple[Union[str, Resolver, Selector, ops.SortKey]] = ()
 
     @attribute
     def _table(self):
