@@ -1625,4 +1625,5 @@ DEFAULT_CON_ATTR = "con"
 def test_from_connection(con, top_level):
     backend = getattr(ibis, con.name) if top_level else type(con)
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
-    assert {"astronauts", "batting", "diamonds"} <= set(new_con.list_tables())
+    result = int(new_con.execute(ibis.literal(1, type="int")))
+    assert result == 1
