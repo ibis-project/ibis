@@ -106,3 +106,10 @@ def test_argminmax_deferred(func_name):
     t = ibis.table({"a": "int", "b": "int"}, name="t")
     func = getattr(t.a, func_name)
     assert func(_.b).equals(func(t.b))
+
+
+@pytest.mark.parametrize("func_name", ["cov", "corr"])
+def test_cov_corr_deferred(func_name):
+    t = ibis.table({"a": "int", "b": "int"}, name="t")
+    func = getattr(t.a, func_name)
+    assert func(_.b).equals(func(t.b))

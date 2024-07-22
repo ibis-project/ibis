@@ -836,7 +836,10 @@ class NumericColumn(Column, NumericValue):
             The correlation of `left` and `right`
         """
         return ops.Correlation(
-            self, right, how=how, where=self._bind_to_parent_table(where)
+            self,
+            self._bind_to_parent_table(right),
+            how=how,
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def cov(
@@ -862,7 +865,10 @@ class NumericColumn(Column, NumericValue):
             The covariance of `self` and `right`
         """
         return ops.Covariance(
-            self, right, how=how, where=self._bind_to_parent_table(where)
+            self,
+            self._bind_to_parent_table(right),
+            how=how,
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def mean(
