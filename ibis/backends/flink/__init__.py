@@ -11,6 +11,7 @@ import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanCreateDatabase, NoUrl
 from ibis.backends.flink.ddl import (
     CreateDatabase,
@@ -71,6 +72,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         """
         self._table_env = table_env
 
+    @util.experimental
     @classmethod
     def from_connection(cls, table_env: TableEnvironment) -> Backend:
         """Create a Flink `Backend` from an existing table environment.

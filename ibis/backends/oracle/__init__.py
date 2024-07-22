@@ -156,6 +156,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
         self._post_connect()
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: oracledb.Connection) -> Backend:
         """Create an Ibis client from an existing connection to an Oracle database.

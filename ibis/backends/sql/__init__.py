@@ -549,6 +549,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: Any, **kwargs: Any) -> BaseBackend:
         """Create an Ibis client from an existing connection.

@@ -99,6 +99,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         self._post_connect(timezone)
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls, con: pyexasol.ExaConnection, timezone: str | None = None

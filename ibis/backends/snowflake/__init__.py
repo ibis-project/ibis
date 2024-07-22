@@ -326,6 +326,7 @@ $$ {defn["source"]} $$"""
             )
         return backend
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls,

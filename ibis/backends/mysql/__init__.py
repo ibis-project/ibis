@@ -164,6 +164,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         self._post_connect()
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: pymysql.Connection) -> Backend:
         """Create an Ibis client from an existing connection to a MySQL database.

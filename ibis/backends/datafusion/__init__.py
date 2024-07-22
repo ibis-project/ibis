@@ -20,6 +20,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers import DataFusionCompiler
@@ -114,6 +115,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         for name, path in config.items():
             self.register(path, table_name=name)
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: SessionContext) -> Backend:
         """Create a DataFusion `Backend` from an existing `SessionContext` instance.

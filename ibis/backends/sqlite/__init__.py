@@ -88,6 +88,7 @@ class Backend(SQLBackend, UrlFromPath):
 
         self._post_connect(type_map)
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls,

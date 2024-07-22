@@ -185,6 +185,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls, session: SparkSession, mode: ConnectionMode = "batch", **kwargs

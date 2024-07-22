@@ -12,6 +12,7 @@ import sqlglot as sg
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers import DruidCompiler
 from ibis.backends.sql.compilers.base import STAR
@@ -81,6 +82,7 @@ class Backend(SQLBackend):
         header = kwargs.pop("header", True)
         self.con = pydruid.db.connect(**kwargs, header=header)
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: pydruid.db.api.Connection) -> Backend:
         """Create an Ibis client from an existing connection to a Druid database.

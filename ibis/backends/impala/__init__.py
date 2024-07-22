@@ -186,6 +186,7 @@ class Backend(SQLBackend):
         self.con = con
         self._post_connect()
 
+    @util.experimental
     @classmethod
     def from_connection(cls, con: hs2.HiveServer2Connection) -> Backend:
         """Create an Impala `Backend` from an existing HS2 connection.

@@ -478,6 +478,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         self.partition_column = partition_column
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls,

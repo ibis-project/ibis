@@ -475,6 +475,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         self._post_connect(extensions)
 
+    @util.experimental
     @classmethod
     def from_connection(
         cls,
