@@ -1744,7 +1744,9 @@ class Column(Value, _FixedTextJupyterMixin):
         └─────────────┘
         """
         return ops.ArgMax(
-            self, key=key, where=self._bind_to_parent_table(where)
+            self,
+            key=self._bind_to_parent_table(key),
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1778,7 +1780,9 @@ class Column(Value, _FixedTextJupyterMixin):
         └──────────┘
         """
         return ops.ArgMin(
-            self, key=key, where=self._bind_to_parent_table(where)
+            self,
+            key=self._bind_to_parent_table(key),
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def median(self, where: ir.BooleanValue | None = None) -> Scalar:
