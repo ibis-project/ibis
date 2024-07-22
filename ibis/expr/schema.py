@@ -183,6 +183,9 @@ class Schema(Concrete, Coercible, MapSet):
 
         return PyArrowSchema.from_ibis(self)
 
+    def __arrow_c_schema__(self):
+        return self.to_pyarrow().__arrow_c_schema__()
+
     def to_polars(self):
         """Return the equivalent polars schema."""
         from ibis.formats.polars import PolarsSchema
