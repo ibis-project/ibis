@@ -5,7 +5,6 @@ from typing import TYPE_CHECKING, Any
 
 from public import public
 
-import ibis
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.deferred import Deferred
@@ -13,6 +12,7 @@ from ibis.common.egraph import DisjointSet
 from ibis.common.exceptions import (
     ExpressionError,
     IbisInputError,
+    IbisTypeError,
     InputTypeError,
     IntegrityError,
 )
@@ -29,28 +29,6 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from ibis.expr.operations.relations import JoinKind
-
-
-def coerce_to_table(data):
-    try:
-        import pandas as pd
-    except ImportError:
-        pass
-    else:
-        if isinstance(data, pd.DataFrame):
-            return ibis.memtable(data)
-
-    try:
-        import pyarrow as pa
-    except ImportError:
-        pass
-    else:
-        if isinstance(data, pa.Table):
-            return ibis.memtable(data)
-
-    if not isinstance(data, Table):
-        raise TypeError(f"right operand must be a Table, got {type(data).__name__}")
-    return data
 
 
 def disambiguate_fields(
@@ -254,7 +232,10 @@ class Join(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        right = coerce_to_table(right)
+        if not isinstance(right, Table):
+            raise IbisTypeError(
+                f"Right side of join must be an Ibis table, got {type(right)}."
+            )
 
         if how == "left_semi":
             how = "semi"
