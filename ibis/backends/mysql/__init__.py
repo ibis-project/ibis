@@ -151,7 +151,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             month : int32
 
         """
-        con = pymysql.connect(
+        self.con = pymysql.connect(
             user=user,
             host=host,
             port=port,
@@ -162,13 +162,30 @@ class Backend(SQLBackend, CanCreateDatabase):
             **kwargs,
         )
 
-        with contextlib.closing(con.cursor()) as cur:
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pymysql.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a MySQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a MySQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
+        with contextlib.closing(self.con.cursor()) as cur:
             try:
                 cur.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:  # noqa: BLE001
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
-
-        self.con = con
 
     @property
     def current_database(self) -> str:

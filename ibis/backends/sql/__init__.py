@@ -70,6 +70,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
+    _top_level_methods = ("from_connection",)
+
     @property
     def dialect(self) -> sg.Dialect:
         return self.compiler.dialect
@@ -546,6 +548,22 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         )
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: Any, **kwargs: Any) -> BaseBackend:
+        """Create an Ibis client from an existing connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection.
+        **kwargs
+            Extra arguments to be applied to the newly-created backend.
+        """
+        raise NotImplementedError(
+            f"{cls.name} backend cannot be constructed from an existing connection"
+        )
 
     def disconnect(self):
         # This is part of the Python DB-API specification so should work for

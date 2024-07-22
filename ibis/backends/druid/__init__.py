@@ -12,6 +12,7 @@ import sqlglot as sg
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
+from ibis import util
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers import DruidCompiler
 from ibis.backends.sql.compilers.base import STAR
@@ -80,6 +81,21 @@ class Backend(SQLBackend):
         """Create an Ibis client using the passed connection parameters."""
         header = kwargs.pop("header", True)
         self.con = pydruid.db.connect(**kwargs, header=header)
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pydruid.db.api.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a Druid database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a Druid database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):

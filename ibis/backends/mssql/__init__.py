@@ -112,7 +112,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if user is None and password is None:
             kwargs.setdefault("Trusted_Connection", "yes")
 
-        con = pyodbc.connect(
+        self.con = pyodbc.connect(
             user=user,
             server=f"{host},{port}",
             password=password,
@@ -121,13 +121,30 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             **kwargs,
         )
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pyodbc.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a MSSQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a MSSQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self):
         # -155 is the code for datetimeoffset
-        con.add_output_converter(-155, datetimeoffset_to_datetime)
+        self.con.add_output_converter(-155, datetimeoffset_to_datetime)
 
-        with closing(con.cursor()) as cur:
+        with closing(self.con.cursor()) as cur:
             cur.execute("SET DATEFIRST 1")
-
-        self.con = con
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None

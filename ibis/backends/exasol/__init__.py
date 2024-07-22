@@ -97,6 +97,32 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             quote_ident=True,
             **kwargs,
         )
+        self._post_connect(timezone)
+
+    @util.experimental
+    @classmethod
+    def from_connection(
+        cls, con: pyexasol.ExaConnection, timezone: str | None = None
+    ) -> Backend:
+        """Create an Ibis client from an existing connection to an Exasol database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to an Exasol database.
+        timezone
+            The session timezone.
+        """
+        if timezone is None:
+            timezone = (con.execute("SELECT SESSIONTIMEZONE").fetchone() or ("UTC",))[0]
+
+        new_backend = cls(timezone=timezone)
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect(timezone)
+        return new_backend
+
+    def _post_connect(self, timezone: str = "UTC") -> None:
         with self.begin() as con:
             con.execute(f"ALTER SESSION SET TIME_ZONE = {timezone!r}")
 

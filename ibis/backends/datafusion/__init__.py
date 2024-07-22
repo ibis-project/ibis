@@ -14,11 +14,13 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers import DataFusionCompiler
@@ -77,12 +79,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def do_connect(
         self, config: Mapping[str, str | Path] | SessionContext | None = None
     ) -> None:
-        """Create a Datafusion backend for use with Ibis.
+        """Create a DataFusion `Backend` for use with Ibis.
 
         Parameters
         ----------
         config
-            Mapping of table names to files.
+            Mapping of table names to files or a `SessionContext`
+            instance.
 
         Examples
         --------
@@ -111,6 +114,18 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         for name, path in config.items():
             self.register(path, table_name=name)
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: SessionContext) -> Backend:
+        """Create a DataFusion `Backend` from an existing `SessionContext` instance.
+
+        Parameters
+        ----------
+        con
+            A `SessionContext` instance.
+        """
+        return ibis.datafusion.connect(con)
 
     def disconnect(self) -> None:
         pass
@@ -329,7 +344,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name
             The name of the table
         kwargs
-            Datafusion-specific keyword arguments
+            DataFusion-specific keyword arguments
 
         Examples
         --------
@@ -423,7 +438,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -451,7 +466,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -576,7 +591,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         temp: bool = False,
         overwrite: bool = False,
     ):
-        """Create a table in Datafusion.
+        """Create a table in DataFusion.
 
         Parameters
         ----------
@@ -697,7 +712,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
     """Workaround inability to overwrite tables in dataframe API.
 
-    Datafusion has helper methods for loading in-memory data, but these methods
+    DataFusion has helper methods for loading in-memory data, but these methods
     don't allow overwriting tables.
     The SQL interface allows creating tables from existing tables, so we register
     the data as a table using the dataframe API, then run a

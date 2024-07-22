@@ -1614,3 +1614,16 @@ def test_insert_using_col_name_not_position(con, first_row, second_row, monkeypa
     # Ideally we'd use a temp table for this test, but several backends don't
     # support them and it's nice to know that data are being inserted correctly.
     con.drop_table(table_name)
+
+
+CON_ATTR = {"bigquery": "client", "flink": "_table_env", "pyspark": "_session"}
+DEFAULT_CON_ATTR = "con"
+
+
+@pytest.mark.parametrize("top_level", [True, False])
+@pytest.mark.never(["dask", "pandas", "polars"], reason="don't have connection concept")
+def test_from_connection(con, top_level):
+    backend = getattr(ibis, con.name) if top_level else type(con)
+    new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
+    result = int(new_con.execute(ibis.literal(1, type="int")))
+    assert result == 1

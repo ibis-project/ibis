@@ -473,6 +473,31 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         self.con = duckdb.connect(str(database), config=config, read_only=read_only)
 
+        self._post_connect(extensions)
+
+    @util.experimental
+    @classmethod
+    def from_connection(
+        cls,
+        con: duckdb.DuckDBPyConnection,
+        extensions: Sequence[str] | None = None,
+    ) -> Backend:
+        """Create an Ibis client from an existing connection to a DuckDB database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a DuckDB database.
+        extensions
+            A list of duckdb extensions to install/load upon connection.
+        """
+        new_backend = cls(extensions=extensions)
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect(extensions)
+        return new_backend
+
+    def _post_connect(self, extensions: Sequence[str] | None = None) -> None:
         # Load any pre-specified extensions
         if extensions is not None:
             self._load_extensions(extensions)

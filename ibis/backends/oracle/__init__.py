@@ -154,6 +154,25 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         # https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_b.html#statement-caching-in-thin-and-thick-modes
         self.con = oracledb.connect(dsn, user=user, password=password, stmtcachesize=0)
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: oracledb.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to an Oracle database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to an Oracle database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         # turn on autocommit
         # TODO: it would be great if this worked but it doesn't seem to do the trick
         # I had to hack in the commit lines to the compiler

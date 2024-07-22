@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import psycopg2
     import pyarrow as pa
 
 
@@ -280,6 +281,25 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             **kwargs,
         )
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+        """Create an Ibis client from an existing connection to a PostgreSQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a PostgreSQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
 
