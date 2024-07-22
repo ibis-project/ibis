@@ -1,0 +1,238 @@
+---
+title: "Synthetic data with Ibis, Python UDFs, and LLMs"
+author: "Cody Peterson"
+date: "2024-07-25"
+categories:
+    - blog
+    - duckdb
+    - udfs
+---
+
+***Taking a random cube for a walk and making it talk.***
+
+## Overview
+
+Well...
+
+## Source data
+
+Let's...
+
+```{python}
+import ibis
+import ibis.selectors as s
+import plotly.express as px
+
+ibis.options.interactive = True
+```
+
+```{python}
+con = ibis.connect("duckdb://synthetic.ddb")
+con.list_tables()
+```
+
+```{python}
+if "source" in con.list_tables():
+    t = con.table("source")
+else:
+    lookback = ibis.interval(days=1)
+    step = ibis.interval(seconds=1)
+
+    t = (
+        (
+            ibis.range(
+                ibis.now() - lookback,
+                ibis.now(),
+                step=step,
+            )
+            .unnest()
+            .name("timestamp")
+            .as_table()
+        )
+        .mutate(
+            index=(ibis.row_number().over(order_by="timestamp")),
+            **{col: 2 * (ibis.random() - 0.5) for col in ["a", "b", "c"]},
+        )
+        .mutate(color=ibis._["index"].histogram(nbins=8))
+        .drop("index")
+        .relocate("timestamp", "color")
+        .order_by("timestamp")
+    )
+
+    t = con.create_table("source", t.to_pyarrow())
+
+t.head()
+```
+
+```{python}
+c = px.line_3d(
+    t,
+    x="a",
+    y="b",
+    z="c",
+    color="color",
+    hover_data=["timestamp"],
+)
+c
+```
+
+## Walking
+
+We can...
+
+```{python}
+window = ibis.window(order_by="timestamp", preceding=None, following=0)
+walked = t.select(
+    "timestamp",
+    "color",
+    a=t["a"].sum().over(window),
+    b=t["b"].sum().over(window),
+    c=t["c"].sum().over(window),
+).order_by("timestamp")
+walked.head()
+```
+
+::: {.callout-tip title="Using column selectors" collapse="true"}
+
+While it adds a line of code in this example, using column selectors can avoid
+repetition and make your code more readable. We can achieve the same result as
+above with:
+
+```{python}
+window = ibis.window(order_by="timestamp", preceding=None, following=0)
+walked = t.select(
+    "timestamp",
+    "color",
+    s.across(
+        s.of_type(float),
+        ibis._.sum().over(window),
+    ),
+).order_by("timestamp")
+walked.head()
+```
+
+:::
+
+```{python}
+c = px.line_3d(
+    walked,
+    x="a",
+    y="b",
+    z="c",
+    color="color",
+    hover_data=["timestamp"],
+)
+c
+```
+
+## Faking it
+
+Now let's...
+
+```{python}
+#| echo: false
+#| code-fold: true
+con.raw_sql("set enable_progress_bar = false;");
+```
+
+```{python}
+import ibis.expr.datatypes as dt
+
+from faker import Faker
+from datetime import datetime, timedelta
+
+fake = Faker()
+
+record_schema = dt.Struct(
+    {
+        "timestamp": datetime,
+        "name": str,
+        "value": float,
+        "comment": str,
+        "location": list[str],
+    }
+)
+
+
+@ibis.udf.scalar.python
+def faked_batch(
+    timestamp: datetime,
+    a: float,
+    b: float,
+    c: float,
+    batch_size: int = 8,
+) -> dt.Array(record_schema):
+    """
+    Generate records of fake data.
+    """
+
+    res = [
+        {
+            "timestamp": timestamp + timedelta(seconds=0.1 * i),
+            "name": fake.name(),
+            "value": i * (a + b + c),
+            "comment": fake.sentence(),
+            "location": fake.location_on_land(),
+        }
+        for i in range(batch_size)
+    ]
+
+    return res
+```
+
+```{python}
+if "faked" in con.list_tables():
+    faked = con.table("faked")
+else:
+    faked = (
+        walked.mutate(
+            faked=faked_batch(walked["timestamp"], walked["a"], walked["b"], walked["c"]),
+        )
+        .select(
+            "a",
+            "b",
+            "c",
+            ibis._["faked"].unnest(),
+        )
+        .unpack("faked")
+        .relocate(~s.c("a", "b", "c"))
+    )
+
+    faked = con.create_table("faked", faked)
+
+faked.head()
+```
+
+```{python}
+faked["name"].topk(10)
+```
+
+## Talking (feat. LLMs)
+
+In...
+
+```{python}
+t = faked.sample(0.01).limit(10).select("name", "comment", "location", "a", "b", "c")
+t
+```
+
+```{python}
+styles = ["Yoda", "Darth Vader", "Luke Skywalker", "Princess Leia", "Han Solo"]
+locations = ["Hoth", "Endor"]
+sentiment = ["very negative", "neutral but snarky", "very positive"]
+```
+
+## Next steps
+
+```{python}
+con.list_tables()
+```
+
+We'll estimate the size of data we generated:
+
+```{python}
+import os
+
+size_in_mbs = os.path.getsize("synthetic.ddb") / (1024 * 1024)
+print(f"synthetic.ddb: {size_in_mbs:.2f} MBs")
+```
