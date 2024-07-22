@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -184,3 +184,39 @@ def test_timestamp_field_access_on_time_failure(
 def test_integer_timestamp_fails(value):
     with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.to_timestamp"):
         ibis.timestamp(value)
+
+
+@pytest.mark.parametrize(
+    "start",
+    [
+        "2002-01-01 00:00:00",
+        datetime(2002, 1, 1, 0, 0, 0),
+        ibis.timestamp("2002-01-01 00:00:00"),
+        ibis.timestamp(datetime(2002, 1, 1, 0, 0, 0)),
+        ibis.table({"start": "timestamp"}).start,
+    ],
+)
+@pytest.mark.parametrize(
+    "stop",
+    [
+        "2002-01-02 00:00:00",
+        datetime(2002, 1, 2, 0, 0, 0),
+        ibis.timestamp("2002-01-02 00:00:00"),
+        ibis.timestamp(datetime(2002, 1, 2, 0, 0, 0)),
+        ibis.table({"stop": "timestamp"}).stop,
+    ],
+)
+@pytest.mark.parametrize("step", [ibis.interval(seconds=1), timedelta(seconds=1)])
+def test_timestamp_range_with_str_inputs(start, stop, step):
+    expr = ibis.range(start, stop, step)
+
+    op = expr.op()
+
+    assert op.start.dtype.is_timestamp()
+    assert op.stop.dtype.is_timestamp()
+    assert op.step.dtype.is_interval()
+
+    dtype = expr.type()
+
+    assert dtype.is_array()
+    assert dtype.value_type.is_timestamp()

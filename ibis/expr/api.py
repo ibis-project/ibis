@@ -2237,7 +2237,9 @@ def _timestamp_range(
     step: datetime.timedelta | ir.IntervalValue,
 ) -> ir.ArrayValue:
     return ops.TimestampRange(
-        start=normalize_datetime(start), stop=normalize_datetime(stop), step=step
+        start=normalize_datetime(start) if isinstance(start, str) else start,
+        stop=normalize_datetime(stop) if isinstance(stop, str) else stop,
+        step=step,
     ).to_expr()
 
 
