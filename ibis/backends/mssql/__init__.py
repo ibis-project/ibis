@@ -114,8 +114,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         con = pyodbc.connect(
             user=user,
-            server=host,
-            port=port,
+            server=f"{host},{port}",
             password=password,
             database=database,
             driver=driver,
