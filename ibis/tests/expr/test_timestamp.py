@@ -186,24 +186,37 @@ def test_integer_timestamp_fails(value):
         ibis.timestamp(value)
 
 
-def test_timestamp_range_with_expr_inputs():
-    start = ibis.now() - ibis.interval(days=1)
-    stop = ibis.now()
-    expr = ibis.range(start, stop, ibis.interval(seconds=1))
+@pytest.mark.parametrize(
+    "start",
+    [
+        "2002-01-01 00:00:00",
+        datetime(2002, 1, 1, 0, 0, 0),
+        ibis.timestamp("2002-01-01 00:00:00"),
+        ibis.timestamp(datetime(2002, 1, 1, 0, 0, 0)),
+        ibis.table({"start": "timestamp"}).start,
+    ],
+)
+@pytest.mark.parametrize(
+    "stop",
+    [
+        "2002-01-02 00:00:00",
+        datetime(2002, 1, 2, 0, 0, 0),
+        ibis.timestamp("2002-01-02 00:00:00"),
+        ibis.timestamp(datetime(2002, 1, 2, 0, 0, 0)),
+        ibis.table({"stop": "timestamp"}).stop,
+    ],
+)
+@pytest.mark.parametrize("step", [ibis.interval(seconds=1), timedelta(seconds=1)])
+def test_timestamp_range_with_str_inputs(start, stop, step):
+    expr = ibis.range(start, stop, step)
+
+    op = expr.op()
+
+    assert op.start.dtype.is_timestamp()
+    assert op.stop.dtype.is_timestamp()
+    assert op.step.dtype.is_interval()
 
     dtype = expr.type()
 
     assert dtype.is_array()
     assert dtype.value_type.is_timestamp()
-
-
-def test_timestamp_range_with_mixed_type_inputs():
-    now = datetime.now()
-    t = (
-        ibis.range(now - timedelta(days=2), ibis.now(), step=ibis.interval(minutes=1))
-        .unnest()
-        .name("timestamp")
-        .as_table()
-    )
-    assert t.columns == ["timestamp"]
-    assert t["timestamp"].type().is_timestamp()
