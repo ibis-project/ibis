@@ -4575,8 +4575,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ a      │ a      │     1 │     1 │
         └────────┴────────┴───────┴───────┘
         """
-        import ibis.selectors as s
-
         if not columns and before is None and after is None and not kwargs:
             raise com.IbisInputError(
                 "At least one selector or `before` or `after` must be provided"
@@ -4586,45 +4584,67 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.IbisInputError("Cannot specify both `before` and `after`")
 
         sels = {}
-        table_columns = self.columns
 
-        for name, sel in itertools.chain(
-            zip(itertools.repeat(None), map(s._to_selector, columns)),
-            zip(kwargs.keys(), map(s._to_selector, kwargs.values())),
+        schema = self.schema()
+        positions = schema._name_locs
+
+        for new_name, expr in itertools.zip_longest(
+            kwargs.keys(), self._fast_bind(*kwargs.values(), *columns)
         ):
-            for pos in sel.positions(self):
-                renamed = name is not None
-                if pos in sels and renamed:
-                    # **only when renaming**: make sure the last duplicate
-                    # column wins by reinserting the position if it already
-                    # exists
-                    del sels[pos]
-                sels[pos] = name if renamed else table_columns[pos]
+            expr_name = expr.get_name()
+            pos = positions[expr_name]
+            renamed = new_name is not None
+            if renamed and pos in sels:
+                # **only when renaming**: make sure the last duplicate
+                # column wins by reinserting the position if it already
+                # exists
+                #
+                # to do that, we first delete the existing one, which causes
+                # the subsequent insertion to be at the end
+                del sels[pos]
+            sels[pos] = new_name if renamed else expr_name
 
-        ncols = len(table_columns)
+        ncols = len(schema)
 
         if before is not None:
-            where = min(s._to_selector(before).positions(self), default=0)
+            where = min(
+                (positions[expr.get_name()] for expr in self._fast_bind(before)),
+                default=0,
+            )
         elif after is not None:
-            where = max(s._to_selector(after).positions(self), default=ncols - 1) + 1
+            where = (
+                max(
+                    (positions[expr.get_name()] for expr in self._fast_bind(after)),
+                    default=ncols - 1,
+                )
+                + 1
+            )
         else:
             assert before is None and after is None
             where = 0
 
-        # all columns that should come BEFORE the matched selectors
-        front = [self[left] for left in range(where) if left not in sels]
+        columns = schema.names
 
-        # all columns that should come AFTER the matched selectors
-        back = [self[right] for right in range(where, ncols) if right not in sels]
+        fields = self.op().fields
+
+        # all columns that should come BEFORE the matched selectors
+        exprs = {
+            name: fields[name]
+            for name in (columns[left] for left in range(where) if left not in sels)
+        }
 
         # selected columns
-        middle = [self[i].name(name) for i, name in sels.items()]
+        exprs.update((name, fields[columns[i]]) for i, name in sels.items())
 
-        relocated = self.select(*front, *middle, *back)
+        # all columns that should come AFTER the matched selectors
+        exprs.update(
+            (name, fields[name])
+            for name in (
+                columns[right] for right in range(where, ncols) if right not in sels
+            )
+        )
 
-        assert len(relocated.columns) == ncols
-
-        return relocated
+        return ops.Project(self, exprs).to_expr()
 
     def window_by(
         self,

@@ -945,6 +945,18 @@ def test_wide_rename(benchmark, method, cols):
     benchmark(t.rename, method)
 
 
+@pytest.mark.parametrize(
+    ("input", "column", "relative"),
+    [("before", "a{}", "a0"), ("after", "a0", "a{}")],
+    ids=["before", "after"],
+)
+@pytest.mark.parametrize("cols", [10, 100, 1_000, 10_000])
+def test_wide_relocate(benchmark, input, column, relative, cols):
+    last = cols - 1
+    t = ibis.table(name="t", schema={f"a{i}": "int" for i in range(cols)})
+    benchmark(t.relocate, column.format(last), **{input: relative.format(last)})
+
+
 def test_duckdb_timestamp_conversion(benchmark):
     pytest.importorskip("duckdb")
 

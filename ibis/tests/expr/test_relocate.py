@@ -91,4 +91,15 @@ def test_empty_after_moves_to_end():
 def test_no_arguments():
     t = ibis.table(dict(x="int", y="int", z="int"))
     with pytest.raises(exc.IbisInputError, match="At least one selector"):
-        assert t.relocate()
+        t.relocate()
+
+
+def test_tuple_input():
+    t = ibis.table(dict(x="int", y="int", z="int"))
+    assert t.relocate(("y", "z")).columns == list("yzx")
+
+    # not allowed, because this would be technically inconsistent with `select`
+    # though, the tuple is unambiguous here and could never be interpreted as a
+    # scalar array
+    with pytest.raises(KeyError):
+        t.relocate(("y", "z"), "x")

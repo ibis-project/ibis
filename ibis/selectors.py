@@ -89,24 +89,6 @@ class Selector(Concrete):
 
         """
 
-    def positions(self, table: ir.Table) -> Sequence[int]:
-        """Expand `table` into column indices that match the selector.
-
-        Parameters
-        ----------
-        table
-            An ibis table expression
-
-        Returns
-        -------
-        Sequence[int]
-            A sequence of column indices where the selector matches
-
-        """
-        raise NotImplementedError(
-            f"`positions` doesn't make sense for {self.__class__.__name__} selector"
-        )
-
 
 class Predicate(Selector):
     predicate: Callable[[ir.Value], bool]
@@ -121,11 +103,6 @@ class Predicate(Selector):
 
         """
         return [col for column in table.columns if self.predicate(col := table[column])]
-
-    def positions(self, table: ir.Table) -> Sequence[int]:
-        return [
-            i for i, column in enumerate(table.columns) if self.predicate(table[column])
-        ]
 
     def __and__(self, other: Selector) -> Predicate:
         """Compute the conjunction of two `Selector`s.
