@@ -49,6 +49,9 @@ pytestmark = [
         ),
     ],
 )
+@pytest.mark.broken(
+    ["polars"], raises=AssertionError, reason="fixed upstream but not yet released"
+)
 def test_single_field(struct, field, expected):
     expr = struct.select(field=lambda t: t.abc[field]).order_by("field")
     result = expr.execute()
