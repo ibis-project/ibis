@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import numpy as np
 import pandas as pd
@@ -184,3 +184,26 @@ def test_timestamp_field_access_on_time_failure(
 def test_integer_timestamp_fails(value):
     with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.to_timestamp"):
         ibis.timestamp(value)
+
+
+def test_timestamp_range_with_expr_inputs():
+    start = ibis.now() - ibis.interval(days=1)
+    stop = ibis.now()
+    expr = ibis.range(start, stop, ibis.interval(seconds=1))
+
+    dtype = expr.type()
+
+    assert dtype.is_array()
+    assert dtype.value_type.is_timestamp()
+
+
+def test_timestamp_range_with_mixed_type_inputs():
+    now = datetime.now()
+    t = (
+        ibis.range(now - timedelta(days=2), ibis.now(), step=ibis.interval(minutes=1))
+        .unnest()
+        .name("timestamp")
+        .as_table()
+    )
+    assert t.columns == ["timestamp"]
+    assert t["timestamp"].type().is_timestamp()
