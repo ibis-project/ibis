@@ -177,10 +177,6 @@ view-changelog flags="":
         -- conventional-changelog --config ./.conventionalcommits.js \
         | ([ "{{ flags }}" = "--pretty" ] && glow -p - || cat -)
 
-# run the decouple script to check for prohibited inter-module dependencies
-decouple +args:
-    python ci/check_disallowed_imports.py {{ args }}
-
 # profile something
 profile +args:
     pyinstrument {{ args }}

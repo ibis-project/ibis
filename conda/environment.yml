@@ -90,7 +90,6 @@ dependencies:
   - poetry-plugin-export
   - pre-commit
   - prettier
-  - pydeps >=1.12.7
   - pyinstrument
   - ruff >=0.1.8
   - taplo

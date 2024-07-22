@@ -100,7 +100,6 @@ ipython = ">=8.7.0,<9"
 poetry-plugin-export = ">=1.6.0,<2"
 poetry-dynamic-versioning = ">=0.18.0,<2"
 pre-commit = ">=3.1,<4"
-pydeps = ">=1.12.7,<2"
 pyinstrument = ">=4.5.1,<5"
 ruff = ">=0.1.8"
 tqdm = ">=4.66.1,<5"
@@ -344,14 +343,6 @@ markers = [
   "tpch: TPC-H tests",
   "tpcds: TPC-DS tests",
 ]
-
-[tool.pydeps]
-exclude = ["__future__", "collections", "os", "re", "sys"]
-verbose = 0
-pylib = false
-show_dot = false
-no_dot = true
-show_deps = true
 
 [tool.ruff]
 line-length = 88
