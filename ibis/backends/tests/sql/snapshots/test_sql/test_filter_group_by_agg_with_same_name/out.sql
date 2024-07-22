@@ -9,4 +9,4 @@ FROM (
     1
 ) AS "t1"
 WHERE
-  "t1"."bigint_col" = CAST(60 AS TINYINT)
+  "t1"."bigint_col" = 60

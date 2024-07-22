@@ -201,10 +201,17 @@ class DuckDBCompiler(SQLGlotCompiler):
         any_arg_null = sg.or_(*(arr.is_(NULL) for arr in arg))
         return self.if_(any_arg_null, NULL, zipped_arrays)
 
+    def visit_Array(self, op, *, exprs):
+        return self.cast(self.f.array(*exprs), op.dtype)
+
     def visit_Map(self, op, *, keys, values):
         # workaround for https://github.com/ibis-project/ibis/issues/8632
         return self.if_(
-            sg.or_(keys.is_(NULL), values.is_(NULL)), NULL, self.f.map(keys, values)
+            sg.or_(keys.is_(NULL), values.is_(NULL)),
+            NULL,
+            self.f.map(
+                self.cast(keys, op.keys.dtype), self.cast(values, op.values.dtype)
+            ),
         )
 
     def visit_MapGet(self, op, *, arg, key, default):
@@ -378,6 +385,8 @@ class DuckDBCompiler(SQLGlotCompiler):
                 return self.cast(
                     str(value), to=dt.float32 if dtype.is_decimal() else dtype
                 )
+            if dtype.is_floating() or dtype.is_integer():
+                return sge.convert(value)
             return self.cast(value, dtype)
         elif dtype.is_time():
             return self.f.make_time(
@@ -401,16 +410,16 @@ class DuckDBCompiler(SQLGlotCompiler):
 
             return self.f[funcname](*args)
         elif dtype.is_struct():
-            return sge.Struct.from_arg_list(
-                [
-                    sge.PropertyEQ(
-                        this=sg.to_identifier(k, quoted=self.quoted),
-                        expression=self.visit_Literal(
+            return self.cast(
+                sge.Struct.from_arg_list(
+                    [
+                        self.visit_Literal(
                             ops.Literal(v, field_dtype), value=v, dtype=field_dtype
-                        ),
-                    )
-                    for field_dtype, (k, v) in zip(dtype.types, value.items())
-                ]
+                        )
+                        for field_dtype, v in zip(dtype.types, value.values())
+                    ]
+                ),
+                op.dtype,
             )
         else:
             return None

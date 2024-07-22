@@ -17,9 +17,9 @@ FROM (
     "t0"."a" + "t0"."b" AS "foo"
   FROM "alltypes" AS "t0"
   WHERE
-    "t0"."f" > CAST(0 AS TINYINT) AND (
+    "t0"."f" > 0 AND (
       "t0"."a" + "t0"."b"
-    ) < CAST(10 AS TINYINT)
+    ) < 10
 ) AS "t1"
 GROUP BY
   1

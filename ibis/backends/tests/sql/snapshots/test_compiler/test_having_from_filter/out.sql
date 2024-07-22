@@ -17,4 +17,4 @@ FROM (
     1
 ) AS "t2"
 WHERE
-  "t2"."Max(a)" = CAST(2 AS TINYINT)
+  "t2"."Max(a)" = 2

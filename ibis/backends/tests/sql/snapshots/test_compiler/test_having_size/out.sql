@@ -11,4 +11,4 @@ FROM (
     1
 ) AS "t1"
 WHERE
-  "t1"."Max(double_col)" = CAST(1 AS TINYINT)
+  "t1"."Max(double_col)" = 1

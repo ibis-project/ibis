@@ -11,4 +11,4 @@ FROM (
     1
 ) AS "t1"
 WHERE
-  "t1"."CountStar(star1)" > CAST(100 AS TINYINT)
+  "t1"."CountStar(star1)" > 100

@@ -1,3 +1,3 @@
 SELECT
-  "t0"."double_col" * CAST(2 AS TINYINT) AS "foo"
+  "t0"."double_col" * 2 AS "foo"
 FROM "functional_alltypes" AS "t0"

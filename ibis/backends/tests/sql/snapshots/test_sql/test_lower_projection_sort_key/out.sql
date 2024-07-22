@@ -17,6 +17,6 @@ FROM (
     ON "t4"."foo_id" = "t2"."foo_id"
 ) AS "t5"
 WHERE
-  "t5"."total" > CAST(100 AS TINYINT)
+  "t5"."total" > 100
 ORDER BY
   "t5"."total" DESC
