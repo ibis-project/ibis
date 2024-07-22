@@ -927,27 +927,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             lambda: pa.table({"a": ["a"], "b": [1]}).to_batches()[0],
             "df_arrow_single_batch",
-            marks=[
-                pytest.mark.notimpl(
-                    [
-                        "bigquery",
-                        "clickhouse",
-                        "duckdb",
-                        "exasol",
-                        "impala",
-                        "mssql",
-                        "mysql",
-                        "oracle",
-                        "postgres",
-                        "pyspark",
-                        "risingwave",
-                        "snowflake",
-                        "sqlite",
-                        "trino",
-                        "databricks",
-                    ]
-                )
-            ],
             id="pyarrow_single_batch",
         ),
         param(
