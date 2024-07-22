@@ -99,3 +99,10 @@ def test_reduction_methods(fn, operation, cond):
         assert node.where == resolved
     else:
         assert node.where == where.op()
+
+
+@pytest.mark.parametrize("func_name", ["argmin", "argmax"])
+def test_argminmax_deferred(func_name):
+    t = ibis.table({"a": "int", "b": "int"}, name="t")
+    func = getattr(t.a, func_name)
+    assert func(_.b).equals(func(t.b))
