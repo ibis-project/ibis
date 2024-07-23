@@ -337,11 +337,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "h",
             marks=[
                 pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
             ],
         ),
         param(
@@ -349,11 +344,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "min",
             marks=[
                 pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
             ],
         ),
         param(
@@ -361,11 +351,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "s",
             marks=[
                 pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
             ],
         ),
         param(
@@ -376,11 +361,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     ["clickhouse", "mysql", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
             ],
         ),
         param(
@@ -390,11 +370,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                 pytest.mark.notimpl(
                     ["clickhouse", "mysql", "sqlite", "trino", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
-                ),
-                pytest.mark.broken(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
                 ),
                 pytest.mark.notyet(
                     ["flink"],
@@ -481,9 +456,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
         ),
     ],
 )
-@pytest.mark.broken(
-    ["polars", "druid"], reason="snaps to the UNIX epoch", raises=AssertionError
-)
+@pytest.mark.broken(["druid"], reason="snaps to the UNIX epoch", raises=AssertionError)
 @pytest.mark.broken(
     ["druid"],
     raises=AttributeError,
