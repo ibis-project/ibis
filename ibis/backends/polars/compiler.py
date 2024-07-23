@@ -11,7 +11,6 @@ from math import isnan
 import numpy as np
 import pandas as pd
 import polars as pl
-from packaging.version import parse as vparse
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -665,17 +664,7 @@ def clip(op, **kw):
     lower = _literal_value(op.lower)
     upper = _literal_value(op.upper)
 
-    if vparse(pl.__version__) >= vparse("0.19.12"):
-        if not (lower is None and upper is None):
-            return arg.clip(lower, upper)
-    elif lower is not None and upper is not None:
-        return arg.clip(lower, upper)
-    elif lower is not None:
-        return arg.clip_min(lower)
-    elif upper is not None:
-        return arg.clip_max(upper)
-
-    raise com.TranslationError("No lower or upper bound specified")
+    return arg.clip(lower, upper)
 
 
 @translate.register(ops.Log)
