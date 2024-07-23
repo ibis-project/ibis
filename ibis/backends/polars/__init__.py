@@ -496,11 +496,15 @@ class Backend(BaseBackend, NoUrl):
             return expr.__pandas_result__(df.to_pandas())
         else:
             assert isinstance(expr, ir.Column), type(expr)
-            if expr.type().is_temporal():
+
+            dtype = expr.type()
+            if dtype.is_temporal():
                 return expr.__pandas_result__(df.to_pandas())
             else:
+                from ibis.formats.pandas import PandasData
+
                 # note: skip frame-construction overhead
-                return df.to_series().to_pandas()
+                return PandasData.convert_column(df.to_series().to_pandas(), dtype)
 
     def to_polars(
         self,
