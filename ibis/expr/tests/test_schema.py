@@ -393,11 +393,15 @@ def test_schema_from_to_pyarrow_schema():
     assert restored_schema == pyarrow_schema
 
 
+@pytest.mark.xfail(
+    raises=TypeError,
+    reason="pyarrow doesn't support Mappings that implement the `__arrow_c_schema__` method",
+)
 def test_schema___arrow_c_schema__():
-    pytest.importorskip("pyarrow")
+    pa = pytest.importorskip("pyarrow")
     schema = sch.Schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
-    # smoketest, since no way to create schema from capsule in current pyarrow
-    assert schema.__arrow_c_schema__() is not None
+    pa_schema = pa.schema(schema)
+    assert pa_schema == schema.to_pyarrow()
 
 
 @pytest.mark.parametrize("lazy", [False, True])

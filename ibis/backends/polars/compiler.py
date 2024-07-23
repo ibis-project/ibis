@@ -312,12 +312,7 @@ def join(op, **kw):
         how = "full"
 
     joined = left.join(right, on=on, how=how, coalesce=False)
-
-    try:
-        joined = joined.drop(*on)
-    except TypeError:
-        joined = joined.drop(columns=on)
-
+    joined = joined.drop(*on)
     return joined
 
 
@@ -350,10 +345,7 @@ def asof_join(op, **kw):
 
     assert len(on) == 1
     joined = left.join_asof(right, on=on[0], by=by, strategy=direction)
-    try:
-        joined = joined.drop(*(on + by))
-    except TypeError:
-        joined = joined.drop(columns=on + by)
+    joined = joined.drop(*on, *by)
     return joined
 
 
@@ -533,7 +525,7 @@ def string_unary(op, **kw):
 @translate.register(ops.Reverse)
 def reverse(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.map_elements(lambda x: x[::-1])
+    return arg.str.reverse()
 
 
 @translate.register(ops.StringSplit)
@@ -822,10 +814,7 @@ def count_star(op, **kw):
         condition = translate(where, **kw)
         result = condition.sum()
     else:
-        try:
-            result = pl.len()
-        except AttributeError:
-            result = pl.count()
+        result = pl.len()
     return result.cast(PolarsType.from_ibis(op.dtype))
 
 
@@ -858,7 +847,7 @@ def temporal_truncate(op, **kw):
     arg = translate(op.arg, **kw)
     unit = "mo" if op.unit.short == "M" else op.unit.short
     unit = f"1{unit.lower()}"
-    return arg.dt.truncate(unit).dt.offset_by("-1w")
+    return arg.dt.truncate(unit)
 
 
 def _compile_literal_interval(op):
