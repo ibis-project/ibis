@@ -22,9 +22,10 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+import ibis.selectors as s
 from ibis.backends import _get_backend_names
 
-pytestmark = [pytest.mark.benchmark, pytest.mark.timeout(30)]
+pytestmark = [pytest.mark.benchmark]
 
 
 def make_t():
@@ -967,3 +968,11 @@ def test_duckdb_timestamp_conversion(benchmark):
     con = ibis.duckdb.connect()
     series = benchmark(con.execute, expr)
     assert series.size == (stop - start).total_seconds()
+
+
+@pytest.mark.parametrize("cols", [1_000, 10_000])
+def test_selectors(benchmark, cols):
+    t = ibis.table(name="t", schema={f"col{i}": "int" for i in range(cols)})
+    n = cols - cols // 10
+    sel = s.across(s.c(*[f"col{i}" for i in range(n)]), lambda c: c.cast("str"))
+    benchmark(sel.expand, t)

@@ -362,13 +362,17 @@ def c(*names: str | ir.Column) -> Predicate:
     """Select specific column names."""
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
 
-    def func(col: ir.Value) -> bool:
-        schema = col.op().rel.schema
-        if extra_cols := (names - schema.keys()):
+    @functools.cache
+    def check_delta(schema):
+        if extra_cols := names - schema._name_locs.keys():
             raise exc.IbisInputError(
                 f"Columns {extra_cols} are not present in {schema.names}"
             )
-        return col.get_name() in names
+
+    def func(col: ir.Value) -> bool:
+        op = col.op()
+        check_delta(op.rel.schema)
+        return op.name in names
 
     return where(func)
 
