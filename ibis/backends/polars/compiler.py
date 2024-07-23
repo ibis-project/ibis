@@ -1050,6 +1050,7 @@ _unary = {
     ops.Ceil: lambda arg: arg.ceil().cast(pl.Int64),
     ops.Cos: operator.methodcaller("cos"),
     ops.Cot: lambda arg: 1.0 / arg.tan(),
+    ops.IsoDayOfWeekIndex: (lambda arg: arg.dt.weekday().cast(pl.Int16)),
     ops.DayOfWeekIndex: (
         lambda arg: arg.dt.weekday().cast(pl.Int16) - _day_of_week_offset
     ),
