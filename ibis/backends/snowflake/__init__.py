@@ -274,7 +274,7 @@ $$ {defn["source"]} $$"""
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
 
-    @util.experimental
+    @util.deprecated(as_of="10.0", instead="use from_connection instead")
     @classmethod
     def from_snowpark(
         cls, session: snowflake.snowpark.Session, *, create_object_udfs: bool = True
