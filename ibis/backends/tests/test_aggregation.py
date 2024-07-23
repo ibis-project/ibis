@@ -606,6 +606,12 @@ def test_reduction_ops(
     ibis_cond,
     pandas_cond,
 ):
+    # Operate on a subset of the data, since aggregations like var/std with
+    # sample/population can be too numerically similar for a larger number of
+    # rows.
+    alltypes = alltypes.filter(alltypes.id < 1550)
+    df = df[df.id < 1550]
+
     expr = alltypes.agg(tmp=result_fn(alltypes, ibis_cond(alltypes))).tmp
     result = expr.execute().squeeze()
     expected = expected_fn(df, pandas_cond(df))
