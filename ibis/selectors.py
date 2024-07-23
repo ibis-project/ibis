@@ -370,9 +370,9 @@ def c(*names: str | ir.Column) -> Predicate:
             )
 
     def func(col: ir.Value) -> bool:
-        schema = col.op().rel.schema
-        check_delta(schema)
-        return col.get_name() in names
+        op = col.op()
+        check_delta(op.rel.schema)
+        return op.name in names
 
     return where(func)
 
