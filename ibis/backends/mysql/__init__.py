@@ -318,7 +318,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             [deprecated] The schema to perform the list against.
         database
             Database to list tables from. Default behavior is to show tables in
-            the current database (``self.current_database``).
+            the current database (`self.current_database`).
         """
         if schema is not None:
             self._warn_schema()

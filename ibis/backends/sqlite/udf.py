@@ -77,8 +77,8 @@ def udf(func=None, *, skip_if_exists=False, deterministic=True):
     Returns
     -------
     callable
-        A callable object that returns ``None`` if any of its inputs are
-        ``None``.
+        A callable object that returns `None` if any of its inputs are
+        `None`.
 
     """
     if func is None:

@@ -77,10 +77,10 @@ def _regular_join_method(
             Boolean or column names to join on
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------
@@ -1335,7 +1335,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             float between 0 and 1.
         method
             The sampling method to use. The default is "row", which includes
-            each row with a probability of ``fraction``. If method is "block",
+            each row with a probability of `fraction`. If method is "block",
             some backends may instead perform sampling a fraction of blocks of
             rows (where "block" is a backend dependent definition). This is
             identical to "row" for backends lacking a blockwise sampling
@@ -2253,16 +2253,16 @@ class Table(Expr, _FixedTextJupyterMixin):
             An optional method for renaming columns. May be one of:
 
             - A format string to use to rename all columns, like
-              ``"prefix_{name}"``.
+              `"prefix_{name}"`.
             - A function from old name to new name. If the function returns
-              ``None`` the old name is used.
-            - The literal strings ``"snake_case"`` or ``"ALL_CAPS"`` to
-              rename all columns using a ``snake_case`` or ``"ALL_CAPS"``
+              `None` the old name is used.
+            - The literal strings `"snake_case"` or `"ALL_CAPS"` to
+              rename all columns using a `snake_case` or `"ALL_CAPS"``
               naming convention respectively.
             - A mapping from new name to old name. Existing columns not present
               in the mapping will passthrough with their original name.
         substitutions
-            Columns to be explicitly renamed, expressed as ``new_name=old_name``
+            Columns to be explicitly renamed, expressed as `new_name=old_name``
             keyword arguments.
 
         Returns
@@ -2297,7 +2297,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────────┴───────────────┴─────────────────────────────────────┘
 
         Rename specific columns by passing keyword arguments like
-        ``new_name="old_name"``
+        `new_name="old_name"``
 
         >>> t.rename(study_name="studyName").head(1)
         ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -3123,13 +3123,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         predicates
             Condition(s) to join on. See examples for details.
         how
-            Join method, e.g. ``"inner"`` or ``"left"``.
+            Join method, e.g. `"inner"` or `"left"`.
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Examples
         --------
@@ -3301,10 +3301,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             Amount of time to look behind when joining
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------
@@ -3336,10 +3336,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             Additional tables to cross join
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------

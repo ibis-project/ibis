@@ -439,7 +439,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         name
             Database name
         catalog
-            Catalog to create database in (defaults to ``current_catalog``)
+            Catalog to create database in (defaults to `current_catalog`)
         path
             Path where to store the database data; otherwise uses Spark default
         force
@@ -473,7 +473,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         name
             Database name
         catalog
-            Catalog containing database to drop (defaults to ``current_catalog``)
+            Catalog containing database to drop (defaults to `current_catalog`)
         force
             If False, Spark throws exception if database is not empty or
             database does not exist

@@ -134,7 +134,7 @@ def parse_project_and_dataset(project: str, dataset: str = "") -> tuple[str, str
     project : str
         A project name
     dataset : Optional[str]
-        A ``<project>.<dataset>`` string or just a dataset name
+        A `<project>.<dataset>` string or just a dataset name
 
     Examples
     --------

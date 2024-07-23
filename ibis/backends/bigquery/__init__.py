@@ -381,27 +381,27 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         auth_cache
             Selects the behavior of the credentials cache.
 
-            ``'default'``
+            `'default'``
                 Reads credentials from disk if available, otherwise
                 authenticates and caches credentials to disk.
 
-            ``'reauth'``
+            `'reauth'``
                 Authenticates and caches credentials to disk.
 
-            ``'none'``
+            `'none'``
                 Authenticates and does **not** cache credentials.
 
-            Defaults to ``'default'``.
+            Defaults to `'default'`.
         partition_column
-            Identifier to use instead of default ``_PARTITIONTIME`` partition
-            column. Defaults to ``'PARTITIONTIME'``.
+            Identifier to use instead of default `_PARTITIONTIME` partition
+            column. Defaults to `'PARTITIONTIME'`.
         client
-            A ``Client`` from the ``google.cloud.bigquery`` package. If not
-            set, one is created using the ``project_id`` and ``credentials``.
+            A `Client` from the `google.cloud.bigquery` package. If not
+            set, one is created using the `project_id` and `credentials`.
         storage_client
-            A ``BigQueryReadClient`` from the
-            ``google.cloud.bigquery_storage_v1`` package. If not set, one is
-            created using the ``project_id`` and ``credentials``.
+            A `BigQueryReadClient` from the
+            `google.cloud.bigquery_storage_v1` package. If not set, one is
+            created using the `project_id` and `credentials`.
         location
             Default location for BigQuery objects.
 
@@ -487,7 +487,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         storage_client: bqstorage.BigQueryReadClient | None = None,
         dataset_id: str = "",
     ) -> Backend:
-        """Create a BigQuery `Backend` from an existing ``Client``.
+        """Create a BigQuery `Backend` from an existing `Client`.
 
         Parameters
         ----------
@@ -1318,20 +1318,20 @@ def connect(
     auth_cache
         Selects the behavior of the credentials cache.
 
-        ``'default'``
+        `'default'``
             Reads credentials from disk if available, otherwise
             authenticates and caches credentials to disk.
 
-        ``'reauth'``
+        `'reauth'``
             Authenticates and caches credentials to disk.
 
-        ``'none'``
+        `'none'``
             Authenticates and does **not** cache credentials.
 
-        Defaults to ``'default'``.
+        Defaults to `'default'`.
     partition_column
-        Identifier to use instead of default ``_PARTITIONTIME`` partition
-        column. Defaults to ``'PARTITIONTIME'``.
+        Identifier to use instead of default `_PARTITIONTIME` partition
+        column. Defaults to `'PARTITIONTIME'`.
 
     Returns
     -------
