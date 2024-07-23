@@ -215,15 +215,11 @@ def test_case_mixed_type():
     assert result["label"].type().equals(dt.string)
 
 
-def test_err_on_nonbool(table):
+def test_err_on_nonbool_expr(table):
     with pytest.raises(SignatureValidationError):
         ibis.case().when(table.a, "bar").else_("baz").end()
-
-
-@pytest.mark.xfail(reason="Literal('foo', type=bool), should error, but doesn't")
-def test_err_on_nonbool2():
     with pytest.raises(SignatureValidationError):
-        ibis.case().when("foo", "bar").else_("baz").end()
+        ibis.case().when(ibis.literal(1), "bar").else_("baz").end()
 
 
 def test_err_on_noncomparable(table):
