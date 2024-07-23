@@ -865,7 +865,7 @@ def temporal_truncate(op, **kw):
     arg = translate(op.arg, **kw)
     unit = "mo" if op.unit.short == "M" else op.unit.short
     unit = f"1{unit.lower()}"
-    return arg.dt.truncate(unit).dt.offset_by("-1w")
+    return arg.dt.truncate(unit)
 
 
 def _compile_literal_interval(op):
