@@ -35,6 +35,20 @@ class RisingWaveCompiler(PostgresCompiler):
     def visit_DateNow(self, op):
         return self.cast(sge.CurrentTimestamp(), dt.date)
 
+    def visit_First(self, op, *, arg, where, order_by):
+        if not order_by:
+            raise com.UnsupportedOperationError(
+                "RisingWave requires an `order_by` be specified in `first`"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by):
+        if not order_by:
+            raise com.UnsupportedOperationError(
+                "RisingWave requires an `order_by` be specified in `last`"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(

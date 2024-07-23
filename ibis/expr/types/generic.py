@@ -15,7 +15,7 @@ from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
 from ibis.expr.types.pretty import to_rich
-from ibis.util import deprecated, warn_deprecated
+from ibis.util import deprecated, promote_list, warn_deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -1017,7 +1017,9 @@ class Value(Expr):
             builder = builder.when(case, result)
         return builder.else_(default).end()
 
-    def collect(self, where: ir.BooleanValue | None = None) -> ir.ArrayScalar:
+    def collect(
+        self, where: ir.BooleanValue | None = None, order_by: Any = None
+    ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
         This function is called `array_agg`, `list_agg`, or `list` in other systems.
@@ -1025,7 +1027,12 @@ class Value(Expr):
         Parameters
         ----------
         where
-            Filter to apply before aggregation
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
 
         Returns
         -------
@@ -1082,7 +1089,11 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.ArrayCollect(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+        ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1119,15 +1130,21 @@ class Value(Expr):
         self,
         sep: str = ",",
         where: ir.BooleanValue | None = None,
+        order_by: Any = None,
     ) -> ir.StringScalar:
         """Concatenate values using the indicated separator to produce a string.
 
         Parameters
         ----------
         sep
-            Separator will be used to join strings
+            The separator to use to join strings.
         where
-            Filter expression
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
 
         Returns
         -------
@@ -1167,7 +1184,10 @@ class Value(Expr):
         └──────────────┘
         """
         return ops.GroupConcat(
-            self, sep=sep, where=self._bind_to_parent_table(where)
+            self,
+            sep=sep,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
         ).to_expr()
 
     def __hash__(self) -> int:
@@ -1506,6 +1526,11 @@ class Column(Value, _FixedTextJupyterMixin):
                 f"Cannot convert {type(self)} expression involving multiple "
                 "base table references to a projection"
             )
+
+    def _bind_order_by(self, value) -> tuple[ops.SortKey, ...]:
+        if value is None:
+            return ()
+        return tuple(self._bind_to_parent_table(v) for v in promote_list(value))
 
     def _bind_to_parent_table(self, value) -> Value | None:
         """Bind an expr to the parent table of `self`."""
@@ -2083,8 +2108,20 @@ class Column(Value, _FixedTextJupyterMixin):
         metric = _.count().name(f"{name}_count")
         return self.as_table().group_by(name).aggregate(metric)
 
-    def first(self, where: ir.BooleanValue | None = None) -> Value:
+    def first(
+        self, where: ir.BooleanValue | None = None, order_by: Any = None
+    ) -> Value:
         """Return the first value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `first` is undefined
+            and will be backend specific.
 
         Examples
         --------
@@ -2111,10 +2148,24 @@ class Column(Value, _FixedTextJupyterMixin):
         │ 'b' │
         └─────┘
         """
-        return ops.First(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.First(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+        ).to_expr()
 
-    def last(self, where: ir.BooleanValue | None = None) -> Value:
+    def last(self, where: ir.BooleanValue | None = None, order_by: Any = None) -> Value:
         """Return the last value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `last` is undefined
+            and will be backend specific.
 
         Examples
         --------
@@ -2141,7 +2192,11 @@ class Column(Value, _FixedTextJupyterMixin):
         │ 'c' │
         └─────┘
         """
-        return ops.Last(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.Last(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+        ).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.

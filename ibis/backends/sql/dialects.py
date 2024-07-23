@@ -64,9 +64,18 @@ def _interval(self, e, quote_arg=True):
     return f"INTERVAL {arg} {e.args['unit']}"
 
 
+def _group_concat(self, e):
+    this = self.sql(e, "this")
+    separator = self.sql(e, "separator") or "','"
+    return f"GROUP_CONCAT({this} SEPARATOR {separator})"
+
+
 class Exasol(Postgres):
     class Generator(Postgres.Generator):
-        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {sge.Interval: _interval}
+        TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
+            sge.Interval: _interval,
+            sge.GroupConcat: _group_concat,
+        }
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
         }

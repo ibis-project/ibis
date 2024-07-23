@@ -185,10 +185,16 @@ class MSSQLCompiler(SQLGlotCompiler):
             length = self.f.length(arg)
         return self.f.substring(arg, start, length)
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.group_concat(arg, sep)
+
+        out = self.f.group_concat(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out
 
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:

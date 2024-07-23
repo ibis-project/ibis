@@ -12,7 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import BigQueryType, BigQueryUDFType
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
@@ -28,6 +28,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     dialect = BigQuery
     type_mapper = BigQueryType
     udf_type_mapper = BigQueryUDFType
+
+    agg = AggGen(supports_order_by=True)
+
     rewrites = (
         exclude_unsupported_window_frame_from_ops,
         exclude_unsupported_window_frame_from_row_number,
@@ -67,6 +70,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.DateFromYMD: "date",
         ops.Divide: "ieee_divide",
         ops.EndsWith: "ends_with",
+        ops.GroupConcat: "string_agg",
         ops.GeoArea: "st_area",
         ops.GeoAsBinary: "st_asbinary",
         ops.GeoAsText: "st_astext",
@@ -172,11 +176,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             "timestamp difference with mixed timezone/timezoneless values is not implemented"
         )
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return self.f.string_agg(arg, sep)
-
     def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
 
@@ -225,10 +224,10 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return self.f.array_agg(sge.IgnoreNulls(this=arg))
+    def visit_ArrayCollect(self, op, *, arg, where, order_by):
+        return sge.IgnoreNulls(
+            this=self.agg.array_agg(arg, where=where, order_by=order_by)
+        )
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
@@ -474,17 +473,25 @@ class BigQueryCompiler(SQLGlotCompiler):
             self.f.generate_timestamp_array, start, stop, step, op.step.dtype
         )
 
-    def visit_First(self, op, *, arg, where):
+    def visit_First(self, op, *, arg, where, order_by):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+
         array = self.f.array_agg(
             sge.Limit(this=sge.IgnoreNulls(this=arg), expression=sge.convert(1)),
         )
         return array[self.f.safe_offset(0)]
 
-    def visit_Last(self, op, *, arg, where):
+    def visit_Last(self, op, *, arg, where, order_by):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+
         array = self.f.array_reverse(self.f.array_agg(sge.IgnoreNulls(this=arg)))
         return array[self.f.safe_offset(0)]
 

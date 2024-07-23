@@ -30,7 +30,11 @@ from ibis.backends.pandas.rewrites import (
     plan,
 )
 from ibis.common.dispatch import Dispatched
-from ibis.common.exceptions import OperationNotDefinedError, UnboundExpressionError
+from ibis.common.exceptions import (
+    OperationNotDefinedError,
+    UnboundExpressionError,
+    UnsupportedOperationError,
+)
 from ibis.formats.pandas import PandasData, PandasType
 from ibis.util import any_of, gen_name
 
@@ -253,7 +257,12 @@ class PandasExecutor(Dispatched, PandasUtils):
     ############################# Reductions ##################################
 
     @classmethod
-    def visit(cls, op: ops.Reduction, arg, where):
+    def visit(cls, op: ops.Reduction, arg, where, order_by=()):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         func = cls.kernels.reductions[type(op)]
         return cls.agg(func, arg, where)
 
@@ -344,7 +353,13 @@ class PandasExecutor(Dispatched, PandasUtils):
         return agg
 
     @classmethod
-    def visit(cls, op: ops.GroupConcat, arg, sep, where):
+    def visit(cls, op: ops.GroupConcat, arg, sep, where, order_by):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
         if where is None:
 
             def agg(df):

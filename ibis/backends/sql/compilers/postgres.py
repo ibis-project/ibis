@@ -29,7 +29,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
 
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
