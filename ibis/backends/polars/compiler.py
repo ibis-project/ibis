@@ -721,39 +721,59 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
-    ops.Arbitrary: "first",
     ops.Count: "count",
     ops.CountDistinct: "n_unique",
-    ops.First: "first",
-    ops.Last: "last",
     ops.Max: "max",
     ops.Mean: "mean",
     ops.Median: "median",
     ops.Min: "min",
-    ops.StandardDev: "std",
     ops.Sum: "sum",
-    ops.Variance: "var",
 }
 
-for reduction in _reductions.keys():
 
-    @translate.register(reduction)
-    def reduction(op, **kw):
-        args = [
-            translate(arg, **kw)
-            for name, arg in zip(op.argnames, op.args)
-            if name not in ("where", "how")
-        ]
+def execute_reduction(op, **kw):
+    arg = translate(op.arg, **kw)
 
-        agg = _reductions[type(op)]
+    if op.where is not None:
+        arg = arg.filter(translate(op.where, **kw))
 
-        predicates = [arg.is_not_null() for arg in args]
-        if (where := op.where) is not None:
-            predicates.append(translate(where, **kw))
+    method = _reductions[type(op)]
 
-        first, *rest = args
-        method = operator.methodcaller(agg, *rest)
-        return method(first.filter(reduce(operator.and_, predicates)))
+    return getattr(arg, method)()
+
+
+for cls in _reductions:
+    translate.register(cls, execute_reduction)
+
+
+@translate.register(ops.First)
+@translate.register(ops.Last)
+@translate.register(ops.Arbitrary)
+def execute_first_last(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    # polars doesn't ignore nulls by default for these methods
+    predicate = arg.is_not_null()
+    if op.where is not None:
+        predicate &= translate(op.where, **kw)
+
+    arg = arg.filter(predicate)
+
+    return arg.last() if isinstance(op, ops.Last) else arg.first()
+
+
+@translate.register(ops.StandardDev)
+@translate.register(ops.Variance)
+def execute_std_var(op, **kw):
+    arg = translate(op.arg, **kw)
+
+    if op.where is not None:
+        arg = arg.filter(translate(op.where, **kw))
+
+    method = "std" if isinstance(op, ops.StandardDev) else "var"
+    ddof = 0 if op.how == "pop" else 1
+
+    return getattr(arg, method)(ddof=ddof)
 
 
 @translate.register(ops.Mode)
