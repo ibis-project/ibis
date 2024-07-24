@@ -98,6 +98,24 @@ Choose your stack:
 
 Additionally, choose tools for:
 
+**Orchestration**:
+
+- Airflow
+- Prefect
+- Dagster
+- Kedro
+- SQLMesh
+- dbt
+- ...
+
+**Ingestion**:
+
+- dlt
+- Airbyte
+- requests
+- Ibis
+- ...
+
 **Visualization**:
 
 - Altair
@@ -113,16 +131,6 @@ Additionally, choose tools for:
 - Quarto dashboards
 - Shiny for Python
 - Dash
-- ...
-
-**Orchestration**:
-
-- Airflow
-- Prefect
-- Dagster
-- Kedro
-- SQLMesh
-- dbt
 - ...
 
 **Testing**:
