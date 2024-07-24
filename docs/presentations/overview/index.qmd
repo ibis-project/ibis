@@ -65,7 +65,7 @@ Choose your users' programming language(s) and stack at each layer:
 :::: {.columns}
 
 ::: {.column width="33%"}
-**UIs**: 
+**UIs**:
 
 - Ibis (Python)
 - dplyr (R)
@@ -74,7 +74,7 @@ Choose your users' programming language(s) and stack at each layer:
 :::
 
 ::: {.column width="33%"}
-**Execution engines**: 
+**Execution engines**:
 
 - DuckDB
 - DataFusion
