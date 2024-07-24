@@ -36,12 +36,6 @@ format:
 
 ![layers](img/layers.png)
 
-## A Python perspective
-
-["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
-
-> Another way I look at this with fifteen years of hindsight is that pandas had to do everything for itself, and this is an enormous burden for a fully volunteer-based open source project. Things like **language-independent data interoperability standards** or **plug-and-play components for efficient query processing** were pie-in-the-sky ideas then but only now have become more realistic.
-
 ## Future
 
 ["The Composable Codex"](https://voltrondata.com/codex) by Voltron Data:
@@ -60,12 +54,12 @@ Efficiency:
 
 ## How can you implement it? {.smaller}
 
-Choose your users' programming language(s) and stack at each layer:
+Choose your stack:
 
 :::: {.columns}
 
 ::: {.column width="33%"}
-**UIs**:
+**UI**:
 
 - Ibis (Python)
 - dplyr (R)
@@ -74,7 +68,7 @@ Choose your users' programming language(s) and stack at each layer:
 :::
 
 ::: {.column width="33%"}
-**Execution engines**:
+**Execution engine**:
 
 - DuckDB
 - DataFusion
