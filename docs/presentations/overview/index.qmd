@@ -9,14 +9,146 @@ format:
     footer: <https://ibis-project.org>
     # preview-links: true
     chalkboard: true
-    incremental: true
+    incremental: false
     # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
     theme: dark
     scrollable: true
     # smaller: true
 ---
 
-# what
+# composable data systems
+
+## A Python perspective
+
+["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
+
+> **pandas solved many problems that database systems also solve**, but almost no one in the data science ecosystem had the expertise to build a data frame library using database techniques. Eagerly-evaluated APIs (as opposed to “lazy” ones) make it more difficult to do efficient “query” planning and execution. **Data interoperability with other systems is always going to be painful**...
+
+## A Python perspective
+
+["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
+
+> ...**unless faster, more efficient “standards” for interoperability are created**.
+
+## Layers
+
+["The Composable Codex"](https://voltrondata.com/codex) by Voltron Data:
+
+![layers](img/layers.png)
+
+## Future
+
+["The Composable Codex"](https://voltrondata.com/codex) by Voltron Data:
+
+![future](img/future2.png)
+
+## Why composable data systems?
+
+Efficiency:
+
+- time
+- money
+- data mesh
+- engineering productivity
+- avoid vendor lock-in
+
+## How can you implement it? {.smaller}
+
+Choose your stack:
+
+:::: {.columns}
+
+::: {.column width="33%"}
+**UI**:
+
+- Ibis (Python)
+- dplyr (R)
+- SQL
+- ...
+:::
+
+::: {.column width="33%"}
+**Execution engine**:
+
+- DuckDB
+- DataFusion
+- Polars
+- Spark
+- Trino
+- ClickHouse
+- Snowflake
+- Databricks
+- Theseus
+- ...
+:::
+
+::: {.column width="33%"}
+**Storage**:
+
+- Iceberg
+- Delta Lake
+- Hudi
+- Hive-partitioned Parquet files
+- ...
+:::
+
+::::
+
+## Choose your stack (there's more) {.smaller}
+
+Additionally, choose tools for:
+
+**Orchestration**:
+
+- Airflow
+- Prefect
+- Dagster
+- Kedro
+- SQLMesh
+- dbt
+- ...
+
+**Ingestion**:
+
+- dlt
+- Airbyte
+- requests
+- Ibis
+- ...
+
+**Visualization**:
+
+- Altair
+- plotnine
+- Plotly
+- seaborn
+- matplotlib
+- ...
+
+**Dashboarding**:
+
+- Streamlit
+- Quarto dashboards
+- Shiny for Python
+- Dash
+- ...
+
+**Testing**:
+
+- Great Expectations
+- Pandera
+- Pytest
+- assert statements
+- ...
+
+**CLI**:
+
+- Click
+- Typer
+- argparse
+- ...
+
+# what is Ibis?
 
 ## Ibis is a Python library for:
 
@@ -24,12 +156,12 @@ format:
 - analytics
 - data engineering
 - machine learning
-- building your own library (e.g. [Google BigFrames](https://github.com/googleapis/python-bigquery-dataframes))
+- building your own library
 - ...
 
 ::: {.fragment}
 ::: {.r-fit-text}
-development to production with the same API
+***development to production with the same API***
 :::
 :::
 
@@ -122,18 +254,19 @@ t.group_by("species", "island").agg(count=t.count()).order_by("count")
 
 :::
 
-## how it works
+## How it works
 
 Ibis compiles down to SQL or dataframe code:
 
 ```{python}
 #| echo: false
-
 import os
 import sys
-sys.path.append(os.path.abspath(".."))
+
+sys.path.append(os.path.abspath("../.."))
 
 from backends_sankey import fig
+
 fig.show()
 ```
 
@@ -199,7 +332,7 @@ Analyzing 10M+ rows from 4+ data sources.
 
 # why
 
-## dataframe lore
+## Dataframe lore {.smaller}
 
 ::: {.fragment .fade-in-then-semi-out}
 Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language.
@@ -225,7 +358,7 @@ This leads to data scientists frequently "throwing their work over the wall" to 
 But what if there were a new [standard](https://xkcd.com/927/)?
 :::
 
-## Ibis origins
+## Ibis origins {.smaller}
 
 ::: {.fragment .fade-left}
 from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/) by Wes McKinney
@@ -235,7 +368,7 @@ from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.
 > ...in 2015, I started the Ibis project...to create a pandas-friendly deferred expression system for static analysis and compilation [of] these types of [query planned, multicore execution] operations. Since an efficient multithreaded in-memory engine for pandas was not available when I started Ibis, I instead focused on building compilers for SQL engines (Impala, PostgreSQL, SQLite), similar to the R dplyr package. Phillip Cloud from the pandas core team has been actively working on Ibis with me for quite a long time.
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -251,7 +384,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -271,7 +404,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -293,7 +426,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -317,7 +450,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -343,7 +476,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -375,19 +508,40 @@ SQL:
 
 ## Python dataframe history {.smaller}
 
+::: {.incremental}
+
 - **pandas** (2008): dataframes in Python
 - **Spark** (2009): distributed dataframes with PySpark
 - **Dask** (2014): distributed pandas dataframes
 - **Vaex** (2014): multicore dataframes in Python via C++
-- [**Ibis**]{style="color:#7C65A0"} (2015): dataframes in Python with SQL-like syntax
+- [**Ibis**]{style="color:#7C65A0"} (2015): backend-agnostic dataframes in Python
 - **cuDF** (2017): pandas API on GPUs
 - **Modin** (2018): pandas API on Ray/Dask
 - **Koalas** (2019): pandas API on Spark, later renamed "pandas API on Spark"
 - **Polars** (2020): multicore dataframes in Python via Rust
 - [**Ibis**]{style="color:#7C65A0"} (2022): Ibis invested in heavily by Voltron Data
 - **Snowpark Python** (2022): PySpark-like dataframes on Snowflake
+- **Daft** (2022): distributed dataframes in Python via Rust
 - **BigQuery DataFrames** (2023): pandas API on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
 - **Snowpark pandas API** (2024): pandas API on Snowflake
+- [**SQLFrame**]{style="color:#7C65A0"} (2024): backend-agnostic dataframes in Python (PySpark API)
+- **DataFusion dataframes** (2024): multicore dataframes in Python via Rust
+
+:::
+
+## Obligatory standards xkcd
+
+![standards](https://imgs.xkcd.com/comics/standards.png)
+
+## Standards and composability
+
+All Python dataframe libraries that are not Ibis (or SQLFrame) **lock you into an execution engine**.
+
+::: {.fragment}
+::: {.r-fit-text}
+***Good [standards are composable]{style="color:#7C65A0"} and adopted by competitors.***
+:::
+:::
 
 ## Python dataframe history (aside) {.smaller}
 
@@ -411,6 +565,7 @@ pandas clones:
 ::: {.column width=33%}
 PySpark clones:
 
+- [SQLFrame]{style="color:#7C65A0"}
 - Snowpark Python (sort of)
 - DuckDB Spark API
 - SQLGlot Spark API
@@ -419,14 +574,16 @@ PySpark clones:
 ::: {.column width=33%}
 something else:
 
-- Ibis
+- [Ibis]{style="color:#7C65A0"}
 - Polars
+- Daft
+- DataFusion
 :::
 
 ::::
 :::
 
-## database history
+## Database history
 
 - they got faster
 
@@ -544,7 +701,7 @@ penguins.group_by(["species", "island"]).agg(penguins.count().name("count"))
 
 A distributed SQL query engine.
 
-## and more!
+## ...and more!
 
 :::: {.columns}
 
@@ -576,10 +733,9 @@ New backends are easy to add!^\*^
 ^\*^usually
 :::
 
-
 # how
 
-## try it out now
+## Try it out now!
 
 Install:
 
