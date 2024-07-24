@@ -208,24 +208,24 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         format
-            Image output format. These are specified by the ``graphviz`` Python
+            Image output format. These are specified by the `graphviz` Python
             library.
         label_edges
             Show operation input names as edge labels
         verbose
             Print the graphviz DOT code to stderr if [](`True`)
         node_attr
-            Mapping of ``(attribute, value)`` pairs set for all nodes.
-            Options are specified by the ``graphviz`` Python library.
+            Mapping of `(attribute, value)` pairs set for all nodes.
+            Options are specified by the `graphviz` Python library.
         node_attr_getter
-            Callback taking a node and returning a mapping of ``(attribute, value)`` pairs
-            for that node. Options are specified by the ``graphviz`` Python library.
+            Callback taking a node and returning a mapping of `(attribute, value)` pairs
+            for that node. Options are specified by the `graphviz` Python library.
         edge_attr
-            Mapping of ``(attribute, value)`` pairs set for all edges.
-            Options are specified by the ``graphviz`` Python library.
+            Mapping of `(attribute, value)` pairs set for all edges.
+            Options are specified by the `graphviz` Python library.
         edge_attr_getter
-            Callback taking two adjacent nodes and returning a mapping of ``(attribute, value)`` pairs
-            for the edge between those nodes. Options are specified by the ``graphviz`` Python library.
+            Callback taking two adjacent nodes and returning a mapping of `(attribute, value)` pairs
+            for the edge between those nodes. Options are specified by the `graphviz` Python library.
 
         Examples
         --------
@@ -248,7 +248,7 @@ class Expr(Immutable, Coercible):
         Raises
         ------
         ImportError
-            If ``graphviz`` is not installed.
+            If `graphviz` is not installed.
         """
         import ibis.expr.visualize as viz
 
@@ -541,7 +541,7 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
-            Maximum number of rows in each returned `DataFrame``.
+            Maximum number of rows in each returned `DataFrame`.
         kwargs
             Keyword arguments
 

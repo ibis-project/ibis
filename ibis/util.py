@@ -150,7 +150,7 @@ def is_function(v: Any) -> bool:
 
 
 def log(msg: str) -> None:
-    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``."""
+    """Log `msg` using `options.verbose_log` if set, otherwise `print`."""
     from ibis.config import options
 
     if options.verbose:
@@ -171,7 +171,7 @@ def approx_equal(a: Real, b: Real, eps: Real):
 def safe_index(elements: Sequence[int], value: int) -> int:
     """Find the location of `value` in `elements`.
 
-    Return -1 if `value` is not found instead of raising ``ValueError``.
+    Return -1 if `value` is not found instead of raising `ValueError`.
 
     Parameters
     ----------

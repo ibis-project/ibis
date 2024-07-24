@@ -930,7 +930,7 @@ def test_ungrouped_unbounded_window(
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
-    # `preceding=10, following=0, order_by='id'``:
+    # `preceding=10, following=0, order_by='id'`:
     #     The window at a particular row (call its `id` value x) will contain
     #     some other row (call its `id` value y) if x-10 <= y <= x.
     # `group_by='string_col'`:

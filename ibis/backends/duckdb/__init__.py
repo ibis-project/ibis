@@ -1328,7 +1328,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
     ):
-        """Preprocess the expr, and return a ``duckdb.DuckDBPyRelation`` object.
+        """Preprocess the expr, and return a `duckdb.DuckDBPyRelation` object.
 
         When retrieving in-memory results, it's faster to use `duckdb_con.sql`
         than `duckdb_con.execute`, as the query planner can take advantage of

@@ -341,7 +341,7 @@ class StructValue(Value):
         return table.to_expr().select([self[name] for name in self.names])
 
     def destructure(self) -> list[ir.Value]:
-        """Destructure a ``StructValue`` into the corresponding struct fields.
+        """Destructure a `StructValue` into the corresponding struct fields.
 
         When assigned, a destruct value will be destructured and assigned to
         multiple columns.

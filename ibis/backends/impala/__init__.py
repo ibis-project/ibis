@@ -132,7 +132,7 @@ class Backend(SQLBackend):
         ca_cert
             Local path to 3rd party CA certificate or copy of server
             certificate for self-signed certificates. If SSL is enabled, but
-            this argument is ``None``, then certificate validation is skipped.
+            this argument is `None`, then certificate validation is skipped.
         user
             LDAP user to authenticate
         password
