@@ -1,0 +1,146 @@
+---
+title: "Composable data systems and Ibis"
+author:
+  - Cody Peterson
+execute:
+  echo: true
+format:
+  revealjs:
+    footer: <https://ibis-project.org>
+    # preview-links: true
+    chalkboard: true
+    incremental: false
+    # https://quarto.org/docs/presentations/revealjs/themes.html#using-themes
+    theme: dark
+    scrollable: true
+    # smaller: true
+---
+
+# what
+
+## Composable data systems
+
+["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
+
+> **pandas solved many problems that database systems also solve**, but almost no one in the data science ecosystem had the expertise to build a data frame library using database techniques. Eagerly-evaluated APIs (as opposed to “lazy” ones) make it more difficult to do efficient “query” planning and execution. **Data interoperability with other systems is always going to be painful**...
+
+## Composable data systems
+
+["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
+
+> ...**unless faster, more efficient “standards” for interoperability are created**.
+
+## Layers
+
+["The Composable Codex"](https://voltrondata.com/codex) by Voltron Data:
+
+![layers](img/layers.png)
+
+## Composable data systems
+
+["The Road to Composable Data Systems: Thoughts on the Last 15 Years and the Future"](https://wesmckinney.com/blog/looking-back-15-years) by Wes McKinney:
+
+> Another way I look at this with fifteen years of hindsight is that pandas had to do everything for itself, and this is an enormous burden for a fully volunteer-based open source project. Things like **language-independent data interoperability standards** or **plug-and-play components for efficient query processing** were pie-in-the-sky ideas then but only now have become more realistic.
+
+## Future
+
+["The Composable Codex"](https://voltrondata.com/codex) by Voltron Data:
+
+![future](img/future2.png)
+
+# why
+
+## Efficiency
+
+- time
+- money
+- data mesh
+- engineering productivity
+
+## Vendor lock-in
+
+words
+
+# how
+
+## Choose your stack
+
+:::: {.columns}
+
+::: {.column width="33%"}
+**UIs**: 
+
+- Ibis (Python)
+- dplyr (R)
+- SQL
+- ...
+:::
+
+::: {.column width="33%"}
+**Execution engines**: 
+
+- DuckDB
+- DataFusion
+- Polars
+- Spark
+- Trino
+- ClickHouse
+- ...
+:::
+
+::: {.column width="33%"}
+**Storage**:
+
+- Iceberg
+- Delta Lake
+- Hudi
+- Hive-partitioned Parquet files
+- ...
+:::
+
+::::
+
+## Choose your stack (there's more)
+
+**Visualization**:
+
+- Altair
+- plotnine
+- Plotly
+- seaborn
+- matplotlib
+- ...
+
+**Dashboarding**:
+
+- Streamlit
+- Quarto dashboards (shiny for Python)
+- Dash
+- ...
+
+**Orchestration**:
+
+- Airflow
+- Prefect
+- Dagster
+- Kedro
+- SQLMesh
+- dbt
+- ...
+
+**Testing**:
+
+- Great Expectations
+- Pandera
+- Pytest
+- assert statements
+- ...
+
+**CLI**:
+
+- Click
+- Typer
+- argparse
+- ...
+
+# the end
