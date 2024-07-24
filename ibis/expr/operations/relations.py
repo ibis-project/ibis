@@ -148,7 +148,7 @@ class Simple(Relation):
 @public
 class DropColumns(Relation):
     parent: Relation
-    columns_to_drop: VarTuple[str]
+    columns_to_drop: frozenset[str]
 
     @attribute
     def schema(self):

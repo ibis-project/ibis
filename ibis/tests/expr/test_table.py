@@ -1886,6 +1886,12 @@ def test_drop():
         t.drop("e")
 
 
+def test_drop_equality():
+    t = ibis.table(dict.fromkeys("abcd", "int"))
+
+    assert t.drop("a", "b").equals(t.drop("b", "a"))
+
+
 def test_python_table_ambiguous():
     with pytest.raises(NotImplementedError):
         ibis.memtable(
