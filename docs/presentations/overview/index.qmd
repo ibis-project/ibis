@@ -77,7 +77,7 @@ Choose your stack:
 - Trino
 - ClickHouse
 - Snowflake
-- DataBricks
+- Databricks
 - Theseus
 - ...
 :::
