@@ -324,7 +324,7 @@ Analyzing 10M+ rows from 4+ data sources.
 
 # why
 
-## dataframe lore {.smaller}
+## Dataframe lore {.smaller}
 
 ::: {.fragment .fade-in-then-semi-out}
 Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language.
@@ -360,7 +360,7 @@ from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.
 > ...in 2015, I started the Ibis project...to create a pandas-friendly deferred expression system for static analysis and compilation [of] these types of [query planned, multicore execution] operations. Since an efficient multithreaded in-memory engine for pandas was not available when I started Ibis, I instead focused on building compilers for SQL engines (Impala, PostgreSQL, SQLite), similar to the R dplyr package. Phillip Cloud from the pandas core team has been actively working on Ibis with me for quite a long time.
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -376,7 +376,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -396,7 +396,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -418,7 +418,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -442,7 +442,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -468,7 +468,7 @@ Python:
 ::::
 :::
 
-## two world problem {auto-animate="true"}
+## Two world problem {auto-animate="true"}
 
 ::: {.nonincremental}
 :::: {.columns}
@@ -575,7 +575,7 @@ something else:
 ::::
 :::
 
-## database history
+## Database history
 
 - they got faster
 
@@ -693,7 +693,7 @@ penguins.group_by(["species", "island"]).agg(penguins.count().name("count"))
 
 A distributed SQL query engine.
 
-## and more!
+## ...and more!
 
 :::: {.columns}
 
@@ -725,10 +725,9 @@ New backends are easy to add!^\*^
 ^\*^usually
 :::
 
-
 # how
 
-## try it out now
+## Try it out now!
 
 Install:
 
