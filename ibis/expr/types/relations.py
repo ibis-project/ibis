@@ -2935,26 +2935,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ year              │ int64   │ True     │     0 │       344 │  0.000000 │ … │
         └───────────────────┴─────────┴──────────┴───────┴───────────┴───────────┴───┘
         """
-        from ibis import literal as lit
-
-        aggs = []
-
-        for pos, colname in enumerate(self.columns):
-            col = self[colname]
-            typ = col.type()
-            agg = self.select(
-                isna=ibis.case().when(col.isnull(), 1).else_(0).end()
-            ).agg(
-                name=lit(colname),
-                type=lit(str(typ)),
-                nullable=lit(typ.nullable),
-                nulls=lambda t: t.isna.sum(),
-                non_nulls=lambda t: (1 - t.isna).sum(),
-                null_frac=lambda t: t.isna.mean(),
-                pos=lit(pos, type=dt.int16),
-            )
-            aggs.append(agg)
-        return ibis.union(*aggs).order_by(ibis.asc("pos"))
+        return ops.Info(self).to_expr()
 
     def describe(
         self, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
@@ -2992,91 +2973,37 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────────────────┼───────┼─────────┼───────┼───────┼────────┼────────┼───┤
         │ species           │     0 │ string  │   344 │     0 │      3 │ Adelie │ … │
         │ island            │     1 │ string  │   344 │     0 │      3 │ Biscoe │ … │
-        │ bill_length_mm    │     2 │ float64 │   344 │     2 │    164 │ NULL   │ … │
-        │ bill_depth_mm     │     3 │ float64 │   344 │     2 │     80 │ NULL   │ … │
-        │ flipper_length_mm │     4 │ int64   │   344 │     2 │     55 │ NULL   │ … │
-        │ body_mass_g       │     5 │ int64   │   344 │     2 │     94 │ NULL   │ … │
-        │ sex               │     6 │ string  │   344 │    11 │      2 │ male   │ … │
+        │ bill_length_mm    │     2 │ float64 │   342 │     2 │    164 │ NULL   │ … │
+        │ bill_depth_mm     │     3 │ float64 │   342 │     2 │     80 │ NULL   │ … │
+        │ flipper_length_mm │     4 │ int64   │   342 │     2 │     55 │ NULL   │ … │
+        │ body_mass_g       │     5 │ int64   │   342 │     2 │     94 │ NULL   │ … │
+        │ sex               │     6 │ string  │   333 │    11 │      2 │ male   │ … │
         │ year              │     7 │ int64   │   344 │     0 │      3 │ NULL   │ … │
         └───────────────────┴───────┴─────────┴───────┴───────┴────────┴────────┴───┘
         >>> p.select(s.of_type("numeric")).describe()
-        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━┓
-        ┃ name              ┃ pos   ┃ type    ┃ count ┃ nulls ┃ unique ┃ … ┃
-        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━┩
-        │ string            │ int16 │ string  │ int64 │ int64 │ int64  │ … │
-        ├───────────────────┼───────┼─────────┼───────┼───────┼────────┼───┤
-        │ flipper_length_mm │     2 │ int64   │   344 │     2 │     55 │ … │
-        │ body_mass_g       │     3 │ int64   │   344 │     2 │     94 │ … │
-        │ year              │     4 │ int64   │   344 │     0 │      3 │ … │
-        │ bill_length_mm    │     0 │ float64 │   344 │     2 │    164 │ … │
-        │ bill_depth_mm     │     1 │ float64 │   344 │     2 │     80 │ … │
-        └───────────────────┴───────┴─────────┴───────┴───────┴────────┴───┘
+        ┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━┓
+        ┃ name              ┃ pos   ┃ type    ┃ count ┃ nulls ┃ unique ┃ mode   ┃ … ┃
+        ┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━┩
+        │ string            │ int16 │ string  │ int64 │ int64 │ int64  │ string │ … │
+        ├───────────────────┼───────┼─────────┼───────┼───────┼────────┼────────┼───┤
+        │ bill_length_mm    │     0 │ float64 │   342 │     2 │    164 │ NULL   │ … │
+        │ bill_depth_mm     │     1 │ float64 │   342 │     2 │     80 │ NULL   │ … │
+        │ flipper_length_mm │     2 │ int64   │   342 │     2 │     55 │ NULL   │ … │
+        │ body_mass_g       │     3 │ int64   │   342 │     2 │     94 │ NULL   │ … │
+        │ year              │     4 │ int64   │   344 │     0 │      3 │ NULL   │ … │
+        └───────────────────┴───────┴─────────┴───────┴───────┴────────┴────────┴───┘
         >>> p.select(s.of_type("string")).describe()
-        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ name    ┃ pos   ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃
-        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ string  │ int16 │ string │ int64 │ int64 │ int64  │ string │
-        ├─────────┼───────┼────────┼───────┼───────┼────────┼────────┤
-        │ sex     │     2 │ string │   344 │    11 │      2 │ male   │
-        │ species │     0 │ string │   344 │     0 │      3 │ Adelie │
-        │ island  │     1 │ string │   344 │     0 │      3 │ Biscoe │
-        └─────────┴───────┴────────┴───────┴───────┴────────┴────────┘
+        ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━┓
+        ┃ name    ┃ pos   ┃ type   ┃ count ┃ nulls ┃ unique ┃ mode   ┃ mean    ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━┩
+        │ string  │ int16 │ string │ int64 │ int64 │ int64  │ string │ float64 │ … │
+        ├─────────┼───────┼────────┼───────┼───────┼────────┼────────┼─────────┼───┤
+        │ species │     0 │ string │   344 │     0 │      3 │ Adelie │    NULL │ … │
+        │ island  │     1 │ string │   344 │     0 │      3 │ Biscoe │    NULL │ … │
+        │ sex     │     2 │ string │   333 │    11 │      2 │ male   │    NULL │ … │
+        └─────────┴───────┴────────┴───────┴───────┴────────┴────────┴─────────┴───┘
         """
-        from ibis import literal as lit
-
-        quantile = sorted(quantile)
-        aggs = []
-        for pos, colname in enumerate(self.columns):
-            col = self[colname]
-            typ = col.type()
-
-            # default statistics to None
-            col_mean = lit(None).cast(float)
-            col_std = lit(None).cast(float)
-            col_min = lit(None).cast(float)
-            col_max = lit(None).cast(float)
-            col_mode = lit(None).cast(str)
-            quantile_values = {
-                f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
-                for q in quantile
-            }
-
-            if typ.is_numeric():
-                col_mean = col.mean()
-                col_std = col.std()
-                col_min = col.min().cast(float)
-                col_max = col.max().cast(float)
-                quantile_values = {
-                    f"p{100*q:.6f}".rstrip("0").rstrip("."): col.quantile(q).cast(float)
-                    for q in quantile
-                }
-            elif typ.is_string():
-                col_mode = col.mode()
-            elif typ.is_boolean():
-                col_mean = col.mean()
-            else:
-                # Will not calculate statistics for other types
-                continue
-
-            agg = self.agg(
-                name=lit(colname),
-                pos=lit(pos, type=dt.int16),
-                type=lit(str(typ)),
-                count=col.isnull().count(),
-                nulls=col.isnull().sum(),
-                unique=col.nunique(),
-                mode=col_mode,
-                mean=col_mean,
-                std=col_std,
-                min=col_min,
-                **quantile_values,
-                max=col_max,
-            )
-            aggs.append(agg)
-
-        t = ibis.union(*aggs)
-
-        return t
+        return ops.Describe(self, quantile=quantile).to_expr()
 
     def join(
         left: Table,

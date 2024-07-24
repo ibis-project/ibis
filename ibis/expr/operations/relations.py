@@ -304,7 +304,7 @@ class Aggregate(Relation):
 
     parent: Relation
     groups: FrozenOrderedDict[str, Unaliased[Value]]
-    metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
+    metrics: FrozenOrderedDict[str, Unaliased[Value]]
 
     def __init__(self, parent, groups, metrics):
         _check_integrity(groups.values(), {parent})
@@ -518,6 +518,61 @@ class TableUnnest(Relation):
             base[offset] = dt.int64
 
         return Schema(base)
+
+
+@public
+class Info(Relation):
+    parent: Relation
+
+    @attribute
+    def schema(self) -> Schema:
+        return Schema(
+            {
+                "name": dt.string,
+                "type": dt.string,
+                "nullable": dt.boolean,
+                "nulls": dt.int64,
+                "non_nulls": dt.int64,
+                "null_frac": dt.float64,
+                "pos": dt.int16,
+            }
+        )
+
+    @attribute
+    def values(self):
+        return {}
+
+
+@public
+class Describe(Relation):
+    parent: Relation
+    quantile: VarTuple[float]
+
+    @attribute
+    def schema(self) -> Schema:
+        return Schema(
+            {
+                "name": dt.string,
+                "pos": dt.int16,
+                "type": dt.string,
+                "count": dt.int64,
+                "nulls": dt.int64,
+                "unique": dt.int64,
+                "mode": dt.string,
+                "mean": dt.float64,
+                "std": dt.float64,
+                "min": dt.float64,
+                **{
+                    f"p{100 * q:.6f}".rstrip("0").rstrip("."): dt.float64
+                    for q in sorted(self.quantile)
+                },
+                "max": dt.float64,
+            }
+        )
+
+    @attribute
+    def values(self):
+        return {}
 
 
 # TODO(kszucs): support t.select(*t) syntax by implementing Table.__iter__()

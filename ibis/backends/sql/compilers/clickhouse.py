@@ -816,5 +816,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
             sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
         )
 
+    def visit_Info(self, op, *, parent):
+        # clickhouse explode is not pairwise, so fall back to generic impl
+        return self.visit_GenericInfo(op, parent=parent)
+
+    def visit_Describe(self, op, *, parent, quantile):
+        # clickhouse explode is not pairwise, so fall back to generic impl
+        return self.visit_GenericDescribe(op, parent=parent, quantile=quantile)
+
 
 compiler = ClickHouseCompiler()
