@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import functools
 import sys
-import weakref
 from collections import namedtuple
 from typing import TYPE_CHECKING, Any
+from weakref import finalize, ref
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,8 +39,17 @@ class RefCountedCache:
     We can implement that interface if and when we need to.
     """
 
-    def __init__(self, backend: weakref.proxy) -> None:
-        self.backend = backend
+    def __init__(
+        self,
+        *,
+        populate: Callable[[str, Any], None],
+        lookup: Callable[[str], Any],
+        finalize: Callable[[Any], None],
+    ) -> None:
+        self.populate = populate
+        self.lookup = lookup
+        self.finalize = finalize
+
         self.cache: dict[Any, CacheEntry] = dict()
 
     def get(self, key, default=None):
@@ -61,13 +70,11 @@ class RefCountedCache:
 
         key = input.op()
         name = gen_name("cache")
+        self.populate(name, input)
+        cached = self.lookup(name)
+        finalizer = finalize(cached, self._release, key)
 
-        self.backend._load_into_cache(name, input)
-
-        cached = self.backend.table(name).op()
-        finalizer = weakref.finalize(cached, self._release, key)
-
-        self.cache[key] = CacheEntry(name, weakref.ref(cached), finalizer)
+        self.cache[key] = CacheEntry(name, ref(cached), finalizer)
 
         return cached
 
@@ -81,7 +88,7 @@ class RefCountedCache:
     def _release(self, key) -> None:
         entry = self.cache.pop(key)
         try:
-            self.backend._clean_up_cached_table(entry.name)
+            self.finalize(entry.name)
         except Exception:
             # suppress exceptions during interpreter shutdown
             if not sys.is_finalizing():

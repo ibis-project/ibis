@@ -7,7 +7,6 @@ import importlib.metadata
 import keyword
 import re
 import urllib.parse
-import weakref
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -35,12 +34,6 @@ __all__ = ("BaseBackend", "connect")
 class TablesAccessor(collections.abc.Mapping):
     """A mapping-like object for accessing tables off a backend.
 
-    ::: {.callout-note}
-    ## The `tables` accessor is tied to the lifetime of the backend.
-
-    If the backend goes out of scope, the `tables` accessor is no longer valid.
-    :::
-
     Tables may be accessed by name using either index or attribute access:
 
     Examples
@@ -52,6 +45,42 @@ class TablesAccessor(collections.abc.Mapping):
 
     def __init__(self, backend: BaseBackend) -> None:
         self._backend = backend
+
+    def _execute_if_exists(
+        self, method_name: str, database=None, like=None
+    ) -> list[str]:
+        """Executes method if it exists and it doesn't raise a NotImplementedError, else returns an empty list."""
+        method = getattr(self._backend.ddl, method_name)
+        if callable(method):
+            try:
+                return method(database=database, like=like)
+            except NotImplementedError:
+                pass
+        return []
+
+    def _gather_tables(self, database=None, like=None) -> list[str]:
+        """Gathers table names using the list_* methods available on the backend."""
+        # TODO: break this down into views/tables to be more explicit in repr (see #9859)
+        # list_* methods that might exist on a given backends.
+        list_methods = [
+            "list_tables",
+            "list_temp_tables",
+            "list_views",
+            "list_temp_views",
+        ]
+        tables = []
+        for method_name in list_methods:
+            tables.extend(
+                self._execute_if_exists(method_name, database=database, like=like)
+            )
+        return list(set(tables))
+
+    def __call__(self, database=None, like=None):
+        return self._gather_tables(database, like)
+
+    @property
+    def _tables(self) -> list[str]:
+        return self._gather_tables()
 
     def __getitem__(self, name) -> ir.Table:
         try:
@@ -68,29 +97,154 @@ class TablesAccessor(collections.abc.Mapping):
             raise AttributeError(name) from exc
 
     def __iter__(self) -> Iterator[str]:
-        return iter(sorted(self._backend.list_tables()))
+        return iter(sorted(self._tables))
 
     def __len__(self) -> int:
-        return len(self._backend.list_tables())
+        return len(self._tables)
 
     def __dir__(self) -> list[str]:
         o = set()
         o.update(dir(type(self)))
         o.update(
             name
-            for name in self._backend.list_tables()
+            for name in self._tables
             if name.isidentifier() and not keyword.iskeyword(name)
         )
         return list(o)
 
     def __repr__(self) -> str:
-        tables = self._backend.list_tables()
         rows = ["Tables", "------"]
-        rows.extend(f"- {name}" for name in sorted(tables))
+        rows.extend(f"- {name}" for name in sorted(self._tables))
         return "\n".join(rows)
 
     def _ipython_key_completions_(self) -> list[str]:
-        return self._backend.list_tables()
+        return self._tables
+
+
+class DDLAccessor:
+    """ddl accessor list views."""
+
+    def __init__(self, backend: BaseBackend) -> None:
+        self._backend = backend
+
+    def _raise_if_not_implemented(self, method_name: str):
+        method = getattr(self._backend, method_name)
+        if not callable(method):
+            raise NotImplementedError(
+                f"The method {method_name} is not implemented for the {self._backend.name} backend"
+            )
+
+    def list_tables(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        """Return the list of table names in a database via the backend's implementation.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
+
+        self._raise_if_not_implemented("_list_tables")
+        return self._backend._list_tables(like=like, database=database)
+
+    def list_temp_tables(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        """Return the list of temporary table names in a database via the backend's implementation.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
+
+        self._raise_if_not_implemented("_list_temp_tables")
+        return self._backend._list_temp_tables(like=like, database=database)
+
+    def list_views(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        """Return the list of view names in a database via the backend's implementation.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
+
+        self._raise_if_not_implemented("_list_views")
+        return self._backend._list_views(like=like, database=database)
+
+    def list_temp_views(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        """Return the list of temporary view names in a database via the backend's implementation.
+
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list tables from. Default behavior is to show tables in
+            the current database.
+        """
+
+        self._raise_if_not_implemented("_list_temp_views")
+        return self._backend._list_temp_views(like=like, database=database)
 
 
 class _FileIOHandler:
@@ -811,7 +965,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
-        self._query_cache = RefCountedCache(weakref.proxy(self))
+        # expression cache
+        self._query_cache = RefCountedCache(
+            populate=self._load_into_cache,
+            lookup=lambda name: self.table(name).op(),
+            finalize=self._clean_up_cached_table,
+        )
 
     @property
     @abc.abstractmethod
@@ -934,44 +1093,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         return sorted(filter(pattern.findall, values))
 
     @abc.abstractmethod
-    def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
-    ) -> list[str]:
-        """Return the list of table names in the current database.
-
-        For some backends, the tables may be files in a directory,
-        or other equivalent entities in a SQL database.
-
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern in Python's regex format.
-        database
-            The database from which to list tables.
-            If not provided, the current database is used.
-            For backends that support multi-level table hierarchies, you can
-            pass in a dotted string path like `"catalog.database"` or a tuple of
-            strings like `("catalog", "database")`.
-
-        Returns
-        -------
-        list[str]
-            The list of the table names that match the pattern `like`.
-
-        """
-
-    @abc.abstractmethod
     def table(
         self, name: str, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
@@ -1019,7 +1140,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         >>> people = con.tables.people  # access via attribute
 
         """
-        return TablesAccessor(weakref.proxy(self))
+        return TablesAccessor(self)
+
+    @property
+    def ddl(self):
+        """A ddl accessor."""
+        return DDLAccessor(self)
 
     @property
     @abc.abstractmethod

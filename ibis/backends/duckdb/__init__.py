@@ -977,85 +977,102 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self.con.register(table_name, delta_table.to_pyarrow_dataset())
         return self.table(table_name)
 
+    def _list_query_constructor(self, col: str, where_predicates: list) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col)
+            .from_(sg.table("tables", db="information_schema"))
+            .where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+        is_temp: bool = False,
+    ) -> list[str]:
+        """Generic method to list objects like tables or views."""
+
+        table_loc = self._warn_and_create_table_loc(database)
+
+        catalog = table_loc.catalog or ("temp" if is_temp else self.current_catalog)
+        database = table_loc.db or self.current_database
+
+        col = "table_name"
+        where_predicates = [
+            C.table_catalog.eq(sge.convert(catalog)),
+            C.table_schema.eq(sge.convert(database)),
+            C.table_type.eq(object_type),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates)
+        out = self.con.execute(sql).fetch_arrow_table()
+
+        return self._filter_with_like(out[col].to_pylist(), like)
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "BASE TABLE")
+
+    def _list_temp_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary tables."""
+
+        return self._list_objects(like, database, "LOCAL TEMPORARY", is_temp=True)
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "VIEW")
+
+    def _list_temp_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary views."""
+
+        return self._list_objects(like, database, "VIEW", is_temp=True)
+
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
         schema: str | None = None,
     ) -> list[str]:
-        """List tables and views.
+        """List tables and views."""
 
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            Regex to filter by table/view name.
-        database
-            Database location. If not passed, uses the current database.
-
-            By default uses the current `database` (`self.current_database`) and
-            `catalog` (`self.current_catalog`).
-
-            To specify a table in a separate catalog, you can pass in the
-            catalog and database as a string `"catalog.database"`, or as a tuple of
-            strings `("catalog", "database")`.
-        schema
-            [deprecated] Schema name. If not passed, uses the current schema.
-
-        Returns
-        -------
-        list[str]
-            List of table and view names.
-
-        Examples
-        --------
-        >>> import ibis
-        >>> con = ibis.duckdb.connect()
-        >>> foo = con.create_table("foo", schema=ibis.schema(dict(a="int")))
-        >>> con.list_tables()
-        ['foo']
-        >>> bar = con.create_view("bar", foo)
-        >>> con.list_tables()
-        ['bar', 'foo']
-        >>> con.create_database("my_database")
-        >>> con.list_tables(database="my_database")
-        []
-        >>> with con.begin() as c:
-        ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
-        <...>
-        >>> con.list_tables(database="my_database")
-        ['baz']
-
-        """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog = table_loc.catalog or self.current_catalog
-        database = table_loc.db or self.current_database
+        database = self.current_database
+        if table_loc is not None:
+            database = table_loc.db or database
 
-        col = "table_name"
-        sql = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(
-                C.table_catalog.isin(sge.convert(catalog), sge.convert("temp")),
-                C.table_schema.eq(sge.convert(database)),
-            )
-            .sql(self.dialect)
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_temp_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
+            | set(self._list_temp_views(like=like, database=database))
         )
-        out = self.con.execute(sql).fetch_arrow_table()
 
-        return self._filter_with_like(out[col].to_pylist(), like)
+        return tables_and_views
 
     def read_postgres(
         self, uri: str, *, table_name: str | None = None, database: str = "public"

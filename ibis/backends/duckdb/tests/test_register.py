@@ -292,7 +292,7 @@ def test_attach_sqlite(data_dir, tmp_path):
     con = ibis.duckdb.connect()
 
     con.attach_sqlite(test_db_path)
-    assert set(con.list_tables()) >= {
+    assert set(con.tables) >= {
         "functional_alltypes",
         "awards_players",
         "batting",
@@ -304,7 +304,7 @@ def test_attach_sqlite(data_dir, tmp_path):
 
     # overwrite existing sqlite_db and force schema to all strings
     con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
-    assert set(con.list_tables()) >= {
+    assert set(con.tables) >= {
         "functional_alltypes",
         "awards_players",
         "batting",

@@ -100,7 +100,7 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     assert op not in con._query_cache.cache
 
     # assert that table has been dropped
-    assert name not in con.list_tables()
+    assert name not in con.tables
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -126,7 +126,7 @@ def test_persist_expression_repeated_cache(alltypes, con):
 
     del nested_cached_table, cached_table
 
-    assert name not in con.list_tables()
+    assert name not in con.tables
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])

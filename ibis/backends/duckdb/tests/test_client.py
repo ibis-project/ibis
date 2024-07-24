@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import gc
 import os
 import subprocess
 import sys
@@ -293,15 +292,15 @@ def test_list_tables_schema_warning_refactor(con):
         "diamonds",
         "functional_alltypes",
         "win",
-    }.issubset(con.list_tables())
+    }.issubset(con.tables)
 
     icecream_table = ["ice_cream"]
 
     with pytest.warns(FutureWarning):
         assert con.list_tables(schema="shops") == icecream_table
 
-    assert con.list_tables(database="shops") == icecream_table
-    assert con.list_tables(database=("shops",)) == icecream_table
+    assert con.ddl.list_tables(database="shops") == icecream_table
+    assert con.ddl.list_tables(database=("shops",)) == icecream_table
 
 
 def test_settings_repr():
@@ -315,16 +314,16 @@ def test_connect_named_in_memory_db():
     con_named_db = ibis.duckdb.connect(":memory:mydb")
 
     con_named_db.create_table("ork", schema=ibis.schema(dict(bork="int32")))
-    assert "ork" in con_named_db.list_tables()
+    assert "ork" in con_named_db.tables
 
     con_named_db_2 = ibis.duckdb.connect(":memory:mydb")
-    assert "ork" in con_named_db_2.list_tables()
+    assert "ork" in con_named_db_2.tables
 
     unnamed_memory_db = ibis.duckdb.connect(":memory:")
-    assert "ork" not in unnamed_memory_db.list_tables()
+    assert "ork" not in unnamed_memory_db.tables
 
     default_memory_db = ibis.duckdb.connect()
-    assert "ork" not in default_memory_db.list_tables()
+    assert "ork" not in default_memory_db.tables
 
 
 @pytest.mark.parametrize(
@@ -404,23 +403,3 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
-
-
-def test_tables_accessor_no_reference_cycle():
-    """Test that a single reference to a connection has the desired lifetime semantics."""
-    con = ibis.duckdb.connect()
-
-    before = len(gc.get_referrers(con))
-    tables = con.tables
-    after = len(gc.get_referrers(con))
-
-    assert after == before
-
-    # valid call, and there are no tables in the database
-    assert not list(tables)
-
-    del con
-
-    # no longer valid because the backend has been manually decref'd
-    with pytest.raises(ReferenceError):
-        list(tables)
