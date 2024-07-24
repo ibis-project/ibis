@@ -2501,9 +2501,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             # no-op if nothing to be dropped
             return self
 
-        columns_to_drop = frozenset(
-            map(operator.methodcaller("get_name"), self._fast_bind(*fields))
-        )
+        columns_to_drop = frozenset(map(Expr.get_name, self._fast_bind(*fields)))
         return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
     def filter(
