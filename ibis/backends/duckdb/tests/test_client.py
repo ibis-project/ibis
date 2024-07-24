@@ -322,3 +322,26 @@ def test_connect_named_in_memory_db():
 
     default_memory_db = ibis.duckdb.connect()
     assert "ork" not in default_memory_db.list_tables()
+
+
+@pytest.mark.parametrize(
+    ("url", "method_name"),
+    [
+        ("hf://datasets/datasets-examples/doc-formats-csv-1/data.csv", "read_csv"),
+        ("hf://datasets/datasets-examples/doc-formats-jsonl-1/data.jsonl", "read_json"),
+        (
+            "hf://datasets/datasets-examples/doc-formats-parquet-1/data/train-00000-of-00001.parquet",
+            "read_parquet",
+        ),
+    ],
+    ids=["csv", "jsonl", "parquet"],
+)
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux is not allowed to access the network and cannot download the httpfs extension",
+    raises=duckdb.Error,
+)
+def test_hugging_face(con, url, method_name):
+    method = getattr(con, method_name)
+    t = method(url)
+    assert t.count().execute() > 0
