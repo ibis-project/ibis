@@ -527,7 +527,7 @@ SQL:
 
 ## Standards and composability
 
-All Python dataframe libraries that are not Ibis (or SQLFrames) **lock you into an execution engine**.
+All Python dataframe libraries that are not Ibis (or SQLFrame) **lock you into an execution engine**.
 
 ::: {.fragment}
 ::: {.r-fit-text}
