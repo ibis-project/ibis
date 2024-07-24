@@ -34,7 +34,7 @@ FROM (
         `t0`.`f` <= 50
       )
       THEN 3
-      ELSE CAST(NULL AS TINYINT)
+      ELSE NULL
     END AS `tier`,
     COUNT(*) AS `CountStar(alltypes)`
   FROM `alltypes` AS `t0`

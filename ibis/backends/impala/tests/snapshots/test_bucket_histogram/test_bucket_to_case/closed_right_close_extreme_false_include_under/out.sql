@@ -20,6 +20,6 @@ SELECT
       `t0`.`f` <= 50
     )
     THEN 3
-    ELSE CAST(NULL AS TINYINT)
+    ELSE NULL
   END AS `Bucket(f, ())`
 FROM `alltypes` AS `t0`
