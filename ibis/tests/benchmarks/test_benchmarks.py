@@ -994,3 +994,57 @@ def test_dedup_schema(benchmark):
             itertools.cycle(("int", "string", "array<int>", "float")),
         ),
     )
+
+
+@pytest.fixture(scope="module")
+def info_t():
+    num_cols = 450
+    return ibis.table({f"col_{i}": "float64" for i in range(num_cols)})
+
+
+@pytest.fixture(scope="module")
+def info_t_with_data():
+    np = pytest.importorskip("numpy")
+    pa = pytest.importorskip("pyarrow")
+
+    num_cols = 450
+    num_rows = 1_500
+    data = pa.Table.from_arrays(
+        np.random.randn(num_rows, num_cols).T,
+        names=list(map("col_{}".format, range(num_cols))),
+    )
+    return ibis.memtable(data)
+
+
+@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+def test_summarize_construct(benchmark, info_t, method):
+    """Construct the expression."""
+    benchmark(method, info_t)
+
+
+@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+def test_summarize_compile(benchmark, info_t, method):
+    """Compile the expression."""
+    benchmark(ibis.to_sql, method(info_t), dialect="duckdb")
+
+
+@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+def test_summarize_execute(benchmark, info_t_with_data, method, con):
+    """Compile and execute the expression."""
+    benchmark(con.execute, method(info_t_with_data))
+
+
+@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+def test_summarize_end_to_end(benchmark, info_t_with_data, method, con):
+    """Construct, compile, and execute the expression."""
+    benchmark(lambda table: con.execute(method(table)), info_t_with_data)
+
+
+def test_summarize_duckdb(benchmark, info_t_with_data, tmp_path):
+    """Construct, compile, and execute the expression."""
+    duckdb = pytest.importorskip("duckdb")
+
+    con = duckdb.connect(str(tmp_path / "test.ddb"))
+    con.register("t", info_t_with_data)
+    sql = "SUMMARIZE t"
+    benchmark(lambda sql: con.sql(sql).arrow(), sql)

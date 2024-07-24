@@ -3022,13 +3022,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ island  │     1 │ string │   344 │     0 │      3 │ Biscoe │
         └─────────┴───────┴────────┴───────┴───────┴────────┴────────┘
         """
-        import ibis.selectors as s
         from ibis import literal as lit
 
         quantile = sorted(quantile)
         aggs = []
-        string_col = False
-        numeric_col = False
         for pos, colname in enumerate(self.columns):
             col = self[colname]
             typ = col.type()
@@ -3045,7 +3042,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             }
 
             if typ.is_numeric():
-                numeric_col = True
                 col_mean = col.mean()
                 col_std = col.std()
                 col_min = col.min().cast(float)
@@ -3055,10 +3051,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                     for q in quantile
                 }
             elif typ.is_string():
-                string_col = True
                 col_mode = col.mode()
             elif typ.is_boolean():
-                numeric_col = True
                 col_mean = col.mean()
             else:
                 # Will not calculate statistics for other types
@@ -3081,12 +3075,6 @@ class Table(Expr, _FixedTextJupyterMixin):
             aggs.append(agg)
 
         t = ibis.union(*aggs)
-
-        # TODO(jiting): Need a better way to remove columns with all NULL
-        if string_col and not numeric_col:
-            t = t.select(~s.of_type("float"))
-        elif numeric_col and not string_col:
-            t = t.drop("mode")
 
         return t
 
