@@ -159,7 +159,7 @@ Additionally, choose tools for:
 
 ::: {.fragment}
 ::: {.r-fit-text}
-development to production with the same API
+***development to production with the same API***
 :::
 :::
 
@@ -506,19 +506,40 @@ SQL:
 
 ## Python dataframe history {.smaller}
 
+::: {.incremental}
+
 - **pandas** (2008): dataframes in Python
 - **Spark** (2009): distributed dataframes with PySpark
 - **Dask** (2014): distributed pandas dataframes
 - **Vaex** (2014): multicore dataframes in Python via C++
-- [**Ibis**]{style="color:#7C65A0"} (2015): dataframes in Python with SQL-like syntax
+- [**Ibis**]{style="color:#7C65A0"} (2015): backend-agnostic dataframes in Python
 - **cuDF** (2017): pandas API on GPUs
 - **Modin** (2018): pandas API on Ray/Dask
 - **Koalas** (2019): pandas API on Spark, later renamed "pandas API on Spark"
 - **Polars** (2020): multicore dataframes in Python via Rust
 - [**Ibis**]{style="color:#7C65A0"} (2022): Ibis invested in heavily by Voltron Data
 - **Snowpark Python** (2022): PySpark-like dataframes on Snowflake
+- **Daft** (2022): distributed dataframes in Python via Rust
 - **BigQuery DataFrames** (2023): pandas API on Google BigQuery (via [Ibis]{style="color:#7C65A0"}!)
 - **Snowpark pandas API** (2024): pandas API on Snowflake
+- [**SQLFrame**]{style="color:#7C65A0"} (2024): backend-agnostic dataframes in Python (PySpark API)
+- **DataFusion dataframes** (2024): multicore dataframes in Python via Rust
+
+:::
+
+## Obligatory standards xkcd
+
+![standards](https://imgs.xkcd.com/comics/standards.png)
+
+## Standards: composability matters
+
+All Python dataframe libraries that are not Ibis (or SQLFrames) **lock you into an execution engine**.
+
+::: {.fragment}
+::: {.r-fit-text}
+***Good [standards are composable]{style="color:#7C65A0"} and adopted by competitors.***
+:::
+:::
 
 ## Python dataframe history (aside) {.smaller}
 
@@ -542,6 +563,7 @@ pandas clones:
 ::: {.column width=33%}
 PySpark clones:
 
+- [SQLFrame]{style="color:#7C65A0"}
 - Snowpark Python (sort of)
 - DuckDB Spark API
 - SQLGlot Spark API
@@ -550,8 +572,10 @@ PySpark clones:
 ::: {.column width=33%}
 something else:
 
-- Ibis
+- [Ibis]{style="color:#7C65A0"}
 - Polars
+- Daft
+- DataFusion
 :::
 
 ::::
