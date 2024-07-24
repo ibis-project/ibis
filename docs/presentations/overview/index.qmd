@@ -324,7 +324,7 @@ Analyzing 10M+ rows from 4+ data sources.
 
 # why
 
-## dataframe lore
+## dataframe lore {.smaller}
 
 ::: {.fragment .fade-in-then-semi-out}
 Dataframes first appeared in the `S` programming language (*in 1991!*), then evolved into the `R` programming language.
@@ -350,7 +350,7 @@ This leads to data scientists frequently "throwing their work over the wall" to 
 But what if there were a new [standard](https://xkcd.com/927/)?
 :::
 
-## Ibis origins
+## Ibis origins {.smaller}
 
 ::: {.fragment .fade-left}
 from [Apache Arrow and the "10 Things I Hate About pandas"](https://wesmckinney.com/blog/apache-arrow-pandas-internals/) by Wes McKinney
@@ -525,7 +525,7 @@ SQL:
 
 ![standards](https://imgs.xkcd.com/comics/standards.png)
 
-## Standards: composability matters
+## Standards and composability
 
 All Python dataframe libraries that are not Ibis (or SQLFrames) **lock you into an execution engine**.
 
