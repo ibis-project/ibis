@@ -7725,9 +7725,9 @@ geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
 mssql = ["pyarrow", "pyarrow-hotfix", "pyodbc"]
 mysql = ["pyarrow", "pyarrow-hotfix", "pymysql"]
-oracle = ["oracledb", "packaging", "pyarrow", "pyarrow-hotfix"]
+oracle = ["oracledb", "pyarrow", "pyarrow-hotfix"]
 pandas = ["packaging", "pyarrow", "pyarrow-hotfix", "regex"]
-polars = ["packaging", "polars", "pyarrow", "pyarrow-hotfix"]
+polars = ["polars", "pyarrow", "pyarrow-hotfix"]
 postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
 pyspark = ["packaging", "pyarrow", "pyarrow-hotfix", "pyspark"]
 risingwave = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
@@ -7739,4 +7739,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "e4c7b86eba7e816e771cb86f25138ddae33163dbb5732418f6358fefe6490edc"
+content-hash = "274a3616194478f90b5d30d44dd74b831780be9ee207aefb6f59aea3366411f7"
