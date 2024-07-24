@@ -246,7 +246,7 @@ t.group_by("species", "island").agg(count=t.count()).order_by("count")
 
 :::
 
-## how it works
+## How it works
 
 Ibis compiles down to SQL or dataframe code:
 
