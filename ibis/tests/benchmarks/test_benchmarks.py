@@ -627,7 +627,7 @@ def test_compile_with_drops(
         .join(products, "sku")
         .drop("customerid", "qty", "total", "items")
         .drop("dims_cm", "cost")
-        .mutate(o_date=lambda t: t.shipped.date())
+        .mutate(o_date=lambda t: t.shipped)
         .filter(lambda t: t.ordered == t.shipped)
     )
 
