@@ -342,13 +342,13 @@ files = [
 
 [[package]]
 name = "atpublic"
-version = "4.1.0"
+version = "5.0"
 description = "Keep all y'all's __all__'s in sync"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "atpublic-4.1.0-py3-none-any.whl", hash = "sha256:df90de1162b1a941ee486f484691dc7c33123ee638ea5d6ca604061306e0fdde"},
-    {file = "atpublic-4.1.0.tar.gz", hash = "sha256:d1c8cd931af7461f6d18bc6063383e8654d9e9ef19d58ee6dc01e8515bbf55df"},
+    {file = "atpublic-5.0-py3-none-any.whl", hash = "sha256:b651dcd886666b1042d1e38158a22a4f2c267748f4e97fde94bc492a4a28a3f3"},
+    {file = "atpublic-5.0.tar.gz", hash = "sha256:d5cb6cbabf00ec1d34e282e8ce7cbc9b74ba4cb732e766c24e2d78d1ad7f723f"},
 ]
 
 [[package]]
@@ -7739,4 +7739,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "274a3616194478f90b5d30d44dd74b831780be9ee207aefb6f59aea3366411f7"
+content-hash = "5e8b3335e974ebce7d34bc50a7690e9eea5c96bc133e3eda3d1781193cb1bf0d"
