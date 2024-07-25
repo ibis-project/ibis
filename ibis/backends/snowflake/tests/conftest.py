@@ -209,7 +209,7 @@ class TestConf(BackendTest):
                         "schema": os.environ["SNOWFLAKE_SCHEMA"],
                     }
                 )
-            return ibis.backends.snowflake.Backend.from_snowpark(builder.create())
+            return ibis.backends.snowflake.Backend.from_connection(builder.create())
         else:
             return ibis.connect(_get_url(), **kw)
 

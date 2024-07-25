@@ -317,7 +317,9 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 )
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
-        with pytest.raises(com.IbisError, match="Reconnecting is not supported"):
+        with pytest.raises(
+            com.IbisError, match="Cannot reconnect to unconfigured .+ backend"
+        ):
             con_no_data.reconnect()
         return
 

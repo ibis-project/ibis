@@ -238,7 +238,7 @@ def test_ibis_inside_snowpark(snowpark_session, execute_as):
     def ibis_sproc(session):
         import ibis.backends.snowflake
 
-        con = ibis.backends.snowflake.Backend.from_snowpark(session)
+        con = ibis.backends.snowflake.Backend.from_connection(session)
 
         expr = (
             con.tables.functional_alltypes.group_by("string_col")
