@@ -529,20 +529,30 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
         return self.f.arrayConcat(self.f.arrayDistinct(arg), null_element)
 
+    def visit_ExtractEpochMicroseconds(self, op, *, arg):
+        return self.cast(
+            self.f.toUnixTimestamp64Micro(self.cast(arg, op.arg.dtype.copy(scale=6))),
+            op.dtype,
+        )
+
+    def visit_ExtractEpochMilliseconds(self, op, *, arg):
+        return self.cast(
+            self.f.toUnixTimestamp64Milli(self.cast(arg, op.arg.dtype.copy(scale=3))),
+            op.dtype,
+        )
+
     def visit_ExtractMicrosecond(self, op, *, arg):
-        dtype = op.dtype
         return self.cast(
             self.f.toUnixTimestamp64Micro(self.cast(arg, op.arg.dtype.copy(scale=6)))
             % 1_000_000,
-            dtype,
+            op.dtype,
         )
 
     def visit_ExtractMillisecond(self, op, *, arg):
-        dtype = op.dtype
         return self.cast(
             self.f.toUnixTimestamp64Milli(self.cast(arg, op.arg.dtype.copy(scale=3)))
             % 1_000,
-            dtype,
+            op.dtype,
         )
 
     def visit_LagLead(self, op, *, arg, offset, default):

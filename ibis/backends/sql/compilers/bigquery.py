@@ -113,6 +113,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
         ops.ExtractHost: "net.host",
+        ops.ExtractEpochMilliseconds: "unix_millis",
+        ops.ExtractEpochMicroseconds: "unix_micros",
+        ops.ExtractEpochSeconds: "unix_seconds",
     }
 
     @staticmethod
@@ -382,9 +385,6 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_UnwrapJSONBoolean(self, op, *, arg):
         return self.f.anon["safe.bool"](arg)
-
-    def visit_ExtractEpochSeconds(self, op, *, arg):
-        return self.f.unix_seconds(arg)
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
         return self.f.extract(self.v.isoweek, arg)

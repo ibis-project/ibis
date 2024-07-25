@@ -393,6 +393,12 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.f.extract("epoch", arg)
 
+    def visit_ExtractEpochMicroseconds(self, op, *, arg):
+        return self.f.extract("epoch_microsecond", arg)
+
+    def visit_ExtractEpochMilliseconds(self, op, *, arg):
+        return self.f.extract("epoch_millisecond", arg)
+
     def visit_ExtractMicrosecond(self, op, *, arg):
         return self.f.extract("epoch_microsecond", arg) % 1_000_000
 
