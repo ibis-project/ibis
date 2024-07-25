@@ -124,25 +124,19 @@ def test_scalar_param_map(con):
             marks=[pytest.mark.notimpl(["druid"])],
         ),
         param(
-            "2009-01-20 01:02:03",
-            "timestamp",
-            "timestamp_col",
-            id="string_timestamp",
-            marks=[pytest.mark.notimpl(["druid"])],
+            "2009-01-20 01:02:03", "timestamp", "timestamp_col", id="string_timestamp"
         ),
         param(
             datetime.date(2009, 1, 20),
             "timestamp",
             "timestamp_col",
             id="date_timestamp",
-            marks=[pytest.mark.notimpl(["druid"])],
         ),
         param(
             datetime.datetime(2009, 1, 20, 1, 2, 3),
             "timestamp",
             "timestamp_col",
             id="datetime_timestamp",
-            marks=[pytest.mark.notimpl(["druid"])],
         ),
     ],
 )

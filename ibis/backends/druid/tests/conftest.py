@@ -94,7 +94,7 @@ def run_query(session: Session, query: str) -> None:
 class TestConf(ServiceBackendTest):
     # druid has the same rounding behavior as postgres
     check_dtype = False
-    returned_timestamp_unit = "s"
+    returned_timestamp_unit = "ms"
     supports_arrays = False
     native_bool = True
     supports_structs = False
@@ -106,13 +106,26 @@ class TestConf(ServiceBackendTest):
     @property
     def functional_alltypes(self) -> ir.Table:
         t = self.connection.table("functional_alltypes")
-        # The parquet loading for booleans appears to be broken in Druid, so
-        # I'm using this as a workaround to make the data match what's on disk.
-        return t.mutate(bool_col=1 - t.id % 2)
+        return t.mutate(
+            # The parquet loading for booleans appears to be broken in Druid, so
+            # I'm using this as a workaround to make the data match what's on disk.
+            bool_col=1 - t.id % 2,
+            # timestamp_col is loaded as a long because druid's type system is
+            # awful: it does 99% of the work of a proper timestamp type, but
+            # encodes it as an integer. I've never seen or heard of any other
+            # tool that calls itself a time series database or "good for
+            # working with time series", that lacks a first-class timestamp
+            # type.
+            timestamp_col=t.timestamp_col.to_timestamp(unit="ms"),
+        )
 
     @property
     def test_files(self) -> Iterable[Path]:
-        return self.data_dir.joinpath("parquet").glob("*.parquet")
+        return [
+            path
+            for path in self.data_dir.joinpath("parquet").glob("*.parquet")
+            if path.name != "functional_alltypes.parquet"
+        ] + [self.data_dir.joinpath("csv", "functional_alltypes.csv")]
 
     def _load_data(self, **_: Any) -> None:
         """Load test data into a druid backend instance.

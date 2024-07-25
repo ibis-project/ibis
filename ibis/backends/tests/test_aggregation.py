@@ -110,11 +110,6 @@ aggregate_test_params = [
         lambda t: t.timestamp_col.max(),
         lambda t: t.timestamp_col.max(),
         id="timestamp_max",
-        marks=pytest.mark.broken(
-            ["druid"],
-            raises=PyDruidProgrammingError,
-            reason="Max aggregation is not supported for 'STRING' type SQL",
-        ),
     ),
 ]
 
@@ -1174,12 +1169,13 @@ def test_string_quantile(alltypes, func):
     assert result == "a"
 
 
-@pytest.mark.notimpl(["bigquery", "sqlite"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["bigquery", "sqlite", "druid"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notyet(
     ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(["druid"], raises=AttributeError)
 @pytest.mark.notyet(
     ["snowflake"],
     raises=SnowflakeProgrammingError,

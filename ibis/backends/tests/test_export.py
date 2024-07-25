@@ -28,20 +28,11 @@ from ibis.backends.tests.errors import (
 pa = pytest.importorskip("pyarrow")
 
 limit = [
-    param(
-        42,
-        id="limit",
-        # limit not implemented for pandas-family backends
-        marks=[pytest.mark.notimpl(["dask", "pandas"])],
-    ),
+    # limit not implemented for pandas-family backends
+    param(42, id="limit", marks=pytest.mark.notimpl(["dask", "pandas"])),
 ]
 
-no_limit = [
-    param(
-        None,
-        id="nolimit",
-    )
-]
+no_limit = [param(None, id="nolimit")]
 
 limit_no_limit = limit + no_limit
 
@@ -426,7 +417,9 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path):
 
 
 @pytest.mark.notimpl(
-    ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Invalid SQL generated; druid doesn't know about TIMESTAMPTZ",
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
@@ -512,9 +505,8 @@ def test_to_pandas_batches_column(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["druid"])
 def test_to_pandas_batches_scalar(backend, con):
-    t = backend.functional_alltypes.timestamp_col.max()
+    t = backend.functional_alltypes.int_col.max()
     expected = t.execute()
 
     result1 = list(con.to_pandas_batches(t))
