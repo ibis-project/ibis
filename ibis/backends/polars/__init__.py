@@ -72,7 +72,11 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str) -> ir.Table:
-        schema = sch.infer(self._tables[name])
+        try:
+            schema = sch.infer(self._tables[name])
+        except KeyError:
+            raise com.TableNotFound(name)
+
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     @deprecated(

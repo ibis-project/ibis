@@ -366,7 +366,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             meta = cur.fetch_arrow_table()
 
         if not meta:
-            raise exc.IbisError(f"Table not found: {table_name!r}")
+            raise exc.TableNotFound(table_name)
 
         names = meta["column_name"].to_pylist()
         types = meta["data_type"].to_pylist()

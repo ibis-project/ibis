@@ -1629,3 +1629,8 @@ def test_from_connection(con, top_level):
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     result = int(new_con.execute(ibis.literal(1, type="int")))
     assert result == 1
+
+
+def test_table_not_found(con):
+    with pytest.raises(com.TableNotFound, match="Table not found"):
+        con.table("foo")

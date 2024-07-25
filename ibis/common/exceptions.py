@@ -21,6 +21,13 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+class TableNotFound(Exception):
+    def __init__(self, table_name, message="Table not found"):
+        self.table_name = table_name
+        self.message = f"{message}: {table_name!r}"
+        super().__init__(self.message)
+
+
 class IbisError(Exception):
     """IbisError."""
 
