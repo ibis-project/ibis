@@ -85,7 +85,6 @@ aggregate_test_params = [
             pytest.mark.notyet(
                 [
                     "bigquery",
-                    "clickhouse",
                     "datafusion",
                     "impala",
                     "mysql",
@@ -393,7 +392,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                 pytest.mark.notyet(
                     [
                         "bigquery",
-                        "clickhouse",
                         "datafusion",
                         "impala",
                         "mysql",

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
 
 
-class ClickhouseAggGen(AggGen):
+class ClickHouseAggGen(AggGen):
     def aggregate(self, compiler, name, *args, where=None, order_by=()):
         if order_by:
             raise com.UnsupportedOperationError(
@@ -33,6 +33,18 @@ class ClickhouseAggGen(AggGen):
             args += (where,)
         return compiler.f[name](*args, dialect=compiler.dialect)
 
+    def mode(self, arg, where=None):
+        func = "topK"
+
+        params = [arg]
+        if where is not None:
+            func += "If"
+            params.append(where)
+
+        return sge.ParameterizedAgg(
+            this=func, expressions=[sge.convert(1)], params=params
+        )[1]
+
 
 class ClickHouseCompiler(SQLGlotCompiler):
     __slots__ = ()
@@ -40,7 +52,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     dialect = ClickHouse
     type_mapper = ClickHouseType
 
-    agg = ClickhouseAggGen()
+    agg = ClickHouseAggGen()
 
     supports_qualify = True
 
@@ -104,6 +116,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.MapMerge: "mapUpdate",
         ops.MapValues: "mapValues",
         ops.Median: "quantileExactExclusive",
+        ops.Mode: "mode",
         ops.NotNull: "isNotNull",
         ops.NullIf: "nullIf",
         ops.RStrip: "trimRight",
