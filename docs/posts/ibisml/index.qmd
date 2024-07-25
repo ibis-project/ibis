@@ -1,7 +1,7 @@
 ---
-title: "Using IbisML for a kagge competition: credit risk model stability"
+title: "Using IbisML for a Kagge competition: credit risk model stability"
 author: "Jiting Xu"
-date: "2024-07-09"
+date: "2024-07-25"
 categories:
     - blog
     - machine learning
@@ -30,14 +30,14 @@ To get started with Ibis and IbisML, please refer to the websites:
 
 
 ## Prerequisites
-To run this example, you'll need to download the data from kaggle website with a kaggle user account and install Ibis, IbisML, and the necessary modeling library.
+To run this example, you'll need to download the data from Kaggle website with a Kaggle user account and install Ibis, IbisML, and the necessary modeling library.
 
 ### Download data
-You need a kaggle account to download the data. If you do not have one,
+You need a Kaggle account to download the data. If you do not have one,
 feel free to register one.
 
 1. Option 1: Manual Download
-     * Log into your kaggle account and download all data from this
+     * Log into your Kaggle account and download all data from this
      [link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data),
      unzip the files, and save them to your local disk.
 2. Option 2: Kaggle API
@@ -79,7 +79,7 @@ We'll use Ibis to read the parquet files (with the same data also available in C
 
 ::: {.callout-tip}
 You can perform the same process with a different backend, such as
-Polars, Dask, BigQuery, Spark, or other Ibis-supported backends. Move the datasets to the
+Polars, BigQuery, Spark, or other Ibis-supported backends. Move the datasets to the
 desired database and set the Ibis backend using the reference: [Work with multiple
 backends](https://ibis-project.org/how-to/input-output/multiple-backends).
 :::
@@ -93,7 +93,7 @@ tables within the train directory:
 tree -L 2 /Users/claypot/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
 ```
 
-The output will show:
+:::{.callout-note title="Data files overview" collapse="true"}
 
 ```bash
 /Users/claypot/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
@@ -129,6 +129,9 @@ The output will show:
 ├── train_tax_registry_b_1.parquet
 └── train_tax_registry_c_1.parquet
 ```
+
+:::
+
 The `train_base.parquet` file is the base table, while the others are feature tables.
 Let's take a quick look at these tables.
 
@@ -148,7 +151,7 @@ linking key for joining with other feature tables.
 
 #### Feature tables
 
-The remaining files contain features, consisting of approximately 465 features from
+The remaining files contain features, consisting of approximately 370 features from
 previous loan applications and external data sources. Their definitions can be found
 in the file `feature_definitions.csv` from the competition website
 [link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data).
@@ -166,7 +169,7 @@ follows:
        using `case_id`.
 :::
 
-Import libraries
+Import libraries:
 ```{python}
 import ibis
 import ibis.expr.datatypes as dt
@@ -178,29 +181,34 @@ from glob import glob
 # enable interactive mode for ibis
 ibis.options.interactive = True
 ```
-Set data path
+Set data path:
 ```{python}
 # Change the root path to yours
-ROOT       = Path("/Users/claypot/Downloads/home-credit-credit-risk-model-stability")
-TRAIN_DIR  = ROOT / "parquet_files" / "train"
-TEST_DIR   = ROOT /"parquet_files" / "test"
+ROOT = Path("/Users/claypot/Downloads/home-credit-credit-risk-model-stability")
+TRAIN_DIR = ROOT / "parquet_files" / "train"
+TEST_DIR = ROOT / "parquet_files" / "test"
 ```
 Here are several examples of tables with different levels.
 
 Example of table with depth = 0. Features can be directly joined with the base table.
 ```{python}
-ibis.read_parquet(TRAIN_DIR / "train_static_cb_0.parquet").head()
+#| code-fold: true
+#| code-summary: "Show code to get the top 5 rows of user static data"
+ibis.read_parquet(TRAIN_DIR / "train_static_cb_0.parquet").head(5)
 ```
 Example of a table with depth = 1.
 We need to aggregate the features and collect statistics based on `case_id` then join
 with the base table.
 ```{python}
-ibis.read_parquet(TRAIN_DIR / "train_credit_bureau_b_1.parquet") \
-.relocate("num_group1").order_by(["case_id", "num_group1"]).head()
+#| code-fold: true
+#| code-summary: "Show code to get the top 5 rows of credit bureau data"
+ibis.read_parquet(TRAIN_DIR / "train_credit_bureau_b_1.parquet").relocate(
+    "num_group1"
+).order_by(["case_id", "num_group1"]).head(5)
 ```
 
 For more details on features and its exploratory data analysis (EDA), you can refer to
-feature dictionary and these kaggle notebooks:
+feature dictionary and these Kaggle notebooks:
 
 * [Feature
   dictionary](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data#:~:text=calendar_view_week-,feature_definitions,-.csv)
@@ -238,9 +246,11 @@ capital letter at the end of their names:
 
 We'll define the
 [recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe) for
-data processing, which will be used to clean the dataset.
+data processing, which will be used to clean the dataset:
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to define the recipe"
 # Convert columns ends with P to floating number
 step_cast_P_to_float = ml.Cast(ml.endswith("P"), dt.float64)
 # Convert columns ends with A to floating number
@@ -257,15 +267,7 @@ data_type_recipes = ml.Recipe(
     step_cast_A_to_float,
     # Cast some special columns
     ml.Cast(["date_decision"], "date"),
-    ml.Cast(
-        [
-            "case_id",
-            "WEEK_NUM",
-            "num_group1",
-            "num_group2"
-        ],
-        dt.int64
-    ),
+    ml.Cast(["case_id", "WEEK_NUM", "num_group1", "num_group2"], dt.int64),
     ml.Cast(
         [
             "cardtype_51L",
@@ -274,7 +276,7 @@ data_type_recipes = ml.Recipe(
             "riskassesment_302T",
             "max_periodicityofpmts_997L",
         ],
-        dt.str
+        dt.str,
     ),
     ml.Cast(
         [
@@ -282,9 +284,10 @@ data_type_recipes = ml.Recipe(
             "isdebitcard_527L",
             "equalityempfrom_62L",
         ],
-        dt.int64
+        dt.int64,
     ),
 )
+print(f"Data format conversion recipe:\n{data_type_recipes}")
 ```
 
 ::: {.callout-tip}
@@ -303,13 +306,15 @@ minimum for non-numeric columns.
 Here, we use the maximum as an example.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to aggregate features by case_id using max"
 def agg_by_id(table):
     return table.group_by("case_id").agg(
-            [
-                table[col_name].max().name(f"max_{col_name}")
-                for col_name in table.columns
-                if col_name[-1] in ("T", "L", "P", "A", "D", "M")
-            ]
+        [
+            table[col_name].max().name(f"max_{col_name}")
+            for col_name in table.columns
+            if col_name[-1] in ("T", "L", "P", "A", "D", "M")
+        ]
     )
 ```
 ::: {.callout-tip}
@@ -323,6 +328,8 @@ multiple sub-files, applies data type transformations using `data_type_recipes`,
 performs aggregation based on `case_id` if specified by the depth parameter.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to read and process data files"
 def read_and_process_files(file_path, depth=None, is_regex=False):
     """
     Read and process Parquet files.
@@ -361,6 +368,8 @@ Let's define two dictionaries, `train_data_store` and `test_data_store`, that or
 store processed datasets for training and testing.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to load all data into a dict"
 train_data_store = {
     "df_base": read_and_process_files(TRAIN_DIR / "train_base.parquet"),
     "depth_0": [
@@ -368,7 +377,9 @@ train_data_store = {
         read_and_process_files(TRAIN_DIR / "train_static_0_*.parquet", is_regex=True),
     ],
     "depth_1": [
-        read_and_process_files(TRAIN_DIR / "train_applprev_1_*.parquet", 1, is_regex=True),
+        read_and_process_files(
+            TRAIN_DIR / "train_applprev_1_*.parquet", 1, is_regex=True
+        ),
         read_and_process_files(TRAIN_DIR / "train_tax_registry_a_1.parquet", 1),
         read_and_process_files(TRAIN_DIR / "train_tax_registry_b_1.parquet", 1),
         read_and_process_files(TRAIN_DIR / "train_tax_registry_c_1.parquet", 1),
@@ -380,7 +391,7 @@ train_data_store = {
     ],
     "depth_2": [
         read_and_process_files(TRAIN_DIR / "train_credit_bureau_b_2.parquet", 2),
-    ]
+    ],
 }
 # We won't be submitting the predictions, so let's comment out the test data.
 # test_data_store = {
@@ -409,20 +420,29 @@ train_data_store = {
 Join all features data to base table:
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Define function to join feature tables to base table"
 def join_data(df_base, depth_0, depth_1, depth_2):
     for i, df in enumerate(depth_0 + depth_1 + depth_2):
-        df_base = df_base.join(df, "case_id", how="left", rname="{name}_right" + f"_{i}" )
+        df_base = df_base.join(
+            df, "case_id", how="left", rname="{name}_right" + f"_{i}"
+        )
     return df_base
 ```
 
 Generate train and test datasets:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to generate train and test datasets"
 df_train = join_data(**train_data_store)
 # df_test = join_data(**test_data_store)
+print(f"There is {df_train.count()} rows and {len(df_train.columns)} columns")
 ```
 ### Select features
-Since there are 465 features, we'll only select part of good ones for this post:
+Since there are ~370 features, we'll only select part of good ones for this post:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to select important features for the train dataset"
 df_train = df_train.select(
     "case_id",
     "date_decision",
@@ -507,6 +527,8 @@ df_train.head()
 ```
 Univariate analysis:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to describe the train dataset"
 # take the first 10 columns
 df_train[df_train.columns[:10]].describe()
 ```
@@ -533,6 +555,8 @@ understand the meaning of each feature and apply the appropriate imputation meth
 different features. For more imputation steps, please refer to this
 [doc](https://ibis-project.github.io/ibis-ml/reference/steps-imputation.html).
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to impute all numeric columns with median"
 step_impute_median = ml.ImputeMedian(ml.numeric())
 ```
 
@@ -542,34 +566,45 @@ please refer to this
 [doc](https://ibis-project.github.io/ibis-ml/reference/steps-encoding.html).
 
 ```{python}
-ohe_step = ml.OneHotEncode([
-   "maritalst_893M",
-   "requesttype_4525192L",
-   "max_profession_152M",
-   "max_gender_992L",
-    "max_empl_industry_691L",
-    "max_housingtype_772L",
-    "max_incometype_1044T",
-    "max_cancelreason_3545846M",
-    "max_rejectreason_755M",
-    "education_1103M",
-    "max_status_219L",
-])
+#| code-fold: true
+#| code-summary: "Show code to one-hot encode selected columns"
+ohe_step = ml.OneHotEncode(
+    [
+        "maritalst_893M",
+        "requesttype_4525192L",
+        "max_profession_152M",
+        "max_gender_992L",
+        "max_empl_industry_691L",
+        "max_housingtype_772L",
+        "max_incometype_1044T",
+        "max_cancelreason_3545846M",
+        "max_rejectreason_755M",
+        "education_1103M",
+        "max_status_219L",
+    ]
+)
 ```
 
 ### Handle date variables
 Calculate all the days difference between any date columns and the column `date_decision`:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to calculate days difference between date columns and date_decision"
 date_cols = [col_name for col_name in df_train.columns if col_name[-1] == "D"]
 days_to_decision_expr = {
-        # Difference in days
-        f"{col}_date_decision_diff": (_.date_decision.epoch_seconds() - getattr(_, col).epoch_seconds()) / (60 * 60 * 24)
-        for col in date_cols
+    # Difference in days
+    f"{col}_date_decision_diff": (
+        _.date_decision.epoch_seconds() - getattr(_, col).epoch_seconds()
+    )
+    / (60 * 60 * 24)
+    for col in date_cols
 }
 days_to_decision_step = ml.Mutate(days_to_decision_expr)
 ```
 Extract information from the date columns:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to extract day and week info from date columns"
 # dow and month is set to catagoery
 expand_date_step = ml.ExpandDate(ml.date(), ["week", "day"])
 ```
@@ -577,6 +612,8 @@ expand_date_step = ml.ExpandDate(ml.date(), ["week", "day"])
 ### Handle outliers
 Capping outliers using `z-score` method:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to cap outliers for selected columns"
 step_handle_outliers = ml.HandleUnivariateOutliers(
     ["max_amount_1115A", "max_overdueamountmax_950A"],
     method="z-score",
@@ -591,24 +628,24 @@ We'll construct a [Recipe](https://ibis-project.github.io/ibis-ml/reference/core
 by chaining all transformation steps, which will be applied to the train and test datasets later.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to construct the recipe"
 last_mile_preprocessing = ml.Recipe(
     expand_date_step,
     ml.Drop(ml.date()),
-
     # handle string columns
     ohe_step,
     ml.Drop(ml.string()),
-
     # handle numeric cols
     # Capping outliers
     step_handle_outliers,
     step_impute_median,
     ml.ScaleMinMax(ml.numeric()),
-
     # Fill missing value
     ml.FillNA(ml.numeric(), 0),
     ml.Cast(ml.numeric(), "float32"),
 )
+print(f"Last-mile preprocessing recipe: \n{last_mile_preprocessing}")
 ```
 
 ## Modeling
@@ -637,6 +674,8 @@ reordering rows. This deterministic process ensures that each data point is alwa
 assigned to the same split, thereby enhancing reproducibility.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to split data into train and test"
 import random
 
 # This enables the analysis to be reproducible when random numbers are used
@@ -656,6 +695,8 @@ y_train = train_data.target.cast(dt.float32).name("target")
 
 X_test = test_data.drop("target")
 y_test = test_data.target.cast(dt.float32).name("target")
+
+print(f"train dataset size = {X_train.count()} \ntest data size = {X_test.count()}")
 ```
 
 ::: {.callout-warning}
@@ -672,12 +713,14 @@ partitioning.
 In this section, we integrate XGBoost into a scikit-learn pipeline to create a
 streamlined workflow for training and evaluating our model.
 
-We set up a pipeline that includes two components:
+We'll set up a pipeline that includes two components:
 
 * preprocessing: This step applies the `last_mile_preprocessing` for final data preprocessing.
 * model: This step applies the `xgb.XGBClassifier()` to train the XGBoost model.
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to built and fit the pipeline"
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import roc_auc_score
 import xgboost as xgb
@@ -688,24 +731,25 @@ model = xgb.XGBClassifier(
     learning_rate=0.05,
     subsample=0.8,
     colsample_bytree=0.8,
-    random_state=42
+    random_state=42,
 )
 # Create the pipeline with the last mile ML recipes and the model
 pipe = Pipeline([("last_mile_recipes", last_mile_preprocessing), ("model", model)])
 # Fit the pipeline on the training data
 pipe.fit(X_train, y_train)
-
 ```
 
-Evaluate the model on the test data
+Let's evaluate the model on the test data using gini index:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to calculate gini for the test dataset"
 y_pred_proba = pipe.predict_proba(X_test)[:, 1]
 # Calculate the AUC score
 auc = roc_auc_score(y_test, y_pred_proba)
 
 # Calculate the Gini score
 gini_score = 2 * auc - 1
-gini_score
+print(f"gini_score for test dataset: {gini_score:,}")
 ```
 
 ::: {.callout-note}
@@ -713,8 +757,10 @@ The competition is evaluated using a gini stability metric. For more information
 [link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/overview/evaluation)
 :::
 
-Force the garbage collection to release unreferenced memory.
+Let's force the garbage collection to release unreferenced memory.
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to force garbage collection to free unreferenced memory"
 import gc
 
 del y_pred_proba
@@ -736,6 +782,8 @@ We'll demonstrate how to build a model by directly passing the data to it. IbisM
 data in various formats, making it compatible with different modeling frameworks.
 Let's first train the recipe:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to train the IbisML recipe"
 # Train preprocessing recipe using training dataset
 last_mile_preprocessing.fit(X_train, y_train)
 ```
@@ -745,13 +793,19 @@ transform both the train and test datasets using the same recipe. The default ou
 is `Numpy Array`
 
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to transform the datasets using fitted recipe"
 # Transform train and test dataset using IbisML recipe
 X_train_transformed = last_mile_preprocessing.transform(X_train)
 X_test_transformed = last_mile_preprocessing.transform(X_test)
+print(f"train data shape = {X_train_transformed.shape}")
+print(f"test data shape = {X_test_transformed.shape}")
 ```
 
-Define a neural network classifier using pytorch and pytorch lighting:
+Let's define a neural network classifier using pytorch and pytorch lighting:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to define a torch classifier"
 import numpy as np
 import torch
 import torch.nn as nn
@@ -767,7 +821,7 @@ class NeuralNetClassifier(pl.LightningModule):
         self.model = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Linear(hidden_dim, output_dim)
+            nn.Linear(hidden_dim, output_dim),
         )
         self.loss = nn.BCEWithLogitsLoss()
         self.sigmoid = nn.Sigmoid()
@@ -779,14 +833,14 @@ class NeuralNetClassifier(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = self.loss(y_hat.view(-1), y)
-        self.log('train_loss', loss)
+        self.log("train_loss", loss)
         return loss
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
         y_hat = self(x)
         loss = self.loss(y_hat.view(-1), y)
-        self.log('val_loss', loss)
+        self.log("val_loss", loss)
         return loss
 
     def configure_optimizers(self):
@@ -798,42 +852,40 @@ class NeuralNetClassifier(pl.LightningModule):
             x = x.to(self.device)
             return self.sigmoid(self(x))
 
+
 # Initialize your Lightning Module
-nn_classifier = NeuralNetClassifier(
-    input_dim=X_train_transformed.shape[1]
-)
+nn_classifier = NeuralNetClassifier(input_dim=X_train_transformed.shape[1])
 
 y_train_array = y_train.to_pandas().to_numpy().astype(np.float32)
 x_train_tensor = torch.from_numpy(X_train_transformed)
 y_train_tensor = torch.from_numpy(y_train_array)
-train_dataset = TensorDataset(
-    x_train_tensor,
-    y_train_tensor
-)
+train_dataset = TensorDataset(x_train_tensor, y_train_tensor)
 
 y_test_array = y_test.to_pandas().to_numpy().astype(np.float32)
 X_test_tensor = torch.from_numpy(X_test_transformed)
 y_test_tensor = torch.from_numpy(y_test_array)
-val_dataset = TensorDataset(
-    X_test_tensor,
-    y_test_tensor
-)
+val_dataset = TensorDataset(X_test_tensor, y_test_tensor)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 
 # Initialize a Trainer
 trainer = Trainer(max_epochs=2)
+print(nn_classifier)
 ```
 
-Train the classifier:
+Let's train the classifier:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to train the pytorch classifier"
 # Train the model
 trainer.fit(nn_classifier, train_loader, val_loader)
 ```
 
-Use the trained model to make a prediction:
+Let's use the trained model to make a prediction:
 ```{python}
+#| code-fold: true
+#| code-summary: "Show code to predict using the trained pytorch classifier"
 y_pred = nn_classifier.predict_proba(X_test_tensor[:10])
 y_pred
 ```
