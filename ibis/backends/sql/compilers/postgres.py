@@ -36,13 +36,30 @@ class PostgresUDFNode(ops.Value):
     shape = rlz.shape_like("args")
 
 
+class PostgresAggGen(AggGen):
+    def aggregate(self, compiler, name, *args, where=None):
+        if (func := getattr(self, name, None)) is not None:
+            return func(*args, where=where)
+        return super().aggregate(compiler, name, *args, where=where)
+
+    def mode(self, arg, where=None):
+        func = sg.func("mode")
+        expr = sge.WithinGroup(
+            this=func,
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        if where is not None:
+            return sge.Filter(this=expr, expression=sge.Where(this=where))
+        return expr
+
+
 class PostgresCompiler(SQLGlotCompiler):
     __slots__ = ()
 
     dialect = Postgres
     type_mapper = PostgresType
 
-    agg = AggGen(supports_filter=True, supports_order_by=True)
+    agg = PostgresAggGen(supports_filter=True, supports_order_by=True)
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
@@ -108,6 +125,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapContains: "exist",
         ops.MapKeys: "akeys",
         ops.MapValues: "avals",
+        ops.Mode: "mode",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
@@ -172,16 +190,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
-
-    def visit_Mode(self, op, *, arg, where):
-        expr = self.f.mode()
-        expr = sge.WithinGroup(
-            this=expr,
-            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
-        )
-        if where is not None:
-            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
 
     def visit_ArgMinMax(self, op, *, arg, key, where, desc: bool):
         conditions = [arg.is_(sg.not_(NULL)), key.is_(sg.not_(NULL))]
