@@ -4,11 +4,13 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
 
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import NULL, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DruidType
 from ibis.backends.sql.dialects import Druid
+from ibis.common.temporal import TimestampUnit
 
 
 class DruidCompiler(SQLGlotCompiler):
@@ -36,7 +38,9 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ArrayZip,
         ops.CountDistinctStar,
         ops.Covariance,
+        ops.Date,
         ops.DateDelta,
+        ops.DateFromYMD,
         ops.DayOfWeekIndex,
         ops.DayOfWeekName,
         ops.First,
@@ -168,6 +172,13 @@ class DruidCompiler(SQLGlotCompiler):
         elif from_.is_string() and to.is_timestamp():
             return self.f.time_parse(arg)
         return super().visit_Cast(op, arg=arg, to=to)
+
+    def visit_TimestampFromUNIX(self, op, *, arg, unit):
+        if unit == TimestampUnit.SECOND:
+            return self.f.millis_to_timestamp(arg * 1_000)
+        elif unit == TimestampUnit.MILLISECOND:
+            return self.f.millis_to_timestamp(arg)
+        raise exc.UnsupportedArgumentError(f"Druid doesn't support {unit} units")
 
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
