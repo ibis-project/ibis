@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import datetime
 import functools
 import inspect
 import itertools
@@ -8,14 +9,9 @@ import math
 import os
 import random
 import string
-from datetime import datetime
-from operator import attrgetter, itemgetter
 
-import numpy as np
-import pandas as pd
 import pytest
 import pytz
-from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
@@ -200,8 +196,17 @@ def test_compile(benchmark, module, expr_fn, t, base, large_expr):
             pytest.skip(str(e))
 
 
-@pytest.fixture(scope="module")
-def pt():
+@pytest.fixture
+def con():
+    pytest.importorskip("duckdb")
+    return ibis.duckdb.connect()
+
+
+@pytest.fixture
+def pt(con):
+    np = pytest.importorskip("numpy")
+    pd = pytest.importorskip("pandas")
+
     n = 60_000
     data = pd.DataFrame(
         {
@@ -220,7 +225,6 @@ def pt():
         }
     )
 
-    con = ibis.duckdb.connect()
     return con.create_table("df", data)
 
 
@@ -292,13 +296,6 @@ def high_card_window(t):
     return ibis.window(group_by=t.key)
 
 
-broken_pandas_grouped_rolling = pytest.mark.xfail(
-    condition=vparse("1.4") <= vparse(pd.__version__) < vparse("1.4.2"),
-    raises=ValueError,
-    reason="https://github.com/pandas-dev/pandas/pull/44068",
-)
-
-
 @pytest.mark.benchmark(group="execution")
 @pytest.mark.parametrize(
     "expression_fn",
@@ -311,16 +308,8 @@ broken_pandas_grouped_rolling = pytest.mark.xfail(
         pytest.param(simple_sort_projection, id="simple_sort_projection"),
         pytest.param(multikey_sort, id="multikey_sort"),
         pytest.param(multikey_sort_projection, id="multikey_sort_projection"),
-        pytest.param(
-            low_card_grouped_rolling,
-            id="low_card_grouped_rolling",
-            marks=[broken_pandas_grouped_rolling],
-        ),
-        pytest.param(
-            high_card_grouped_rolling,
-            id="high_card_grouped_rolling",
-            marks=[broken_pandas_grouped_rolling],
-        ),
+        pytest.param(low_card_grouped_rolling, id="low_card_grouped_rolling"),
+        pytest.param(high_card_grouped_rolling, id="high_card_grouped_rolling"),
     ],
 )
 def test_execute(benchmark, expression_fn, pt):
@@ -627,7 +616,7 @@ def test_compile_with_drops(
         .join(products, "sku")
         .drop("customerid", "qty", "total", "items")
         .drop("dims_cm", "cost")
-        .mutate(o_date=lambda t: t.shipped.date())
+        .mutate(o_date=lambda t: t.shipped)
         .filter(lambda t: t.ordered == t.shipped)
     )
 
@@ -730,6 +719,7 @@ def test_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
     # yes, we're benchmarking duckdb here, not ibis
     #
     # we do this to get a baseline for comparison
+    pytest.importorskip("pyarrow")
     duckdb = pytest.importorskip("duckdb")
     con = duckdb.connect(ddb, read_only=True)
 
@@ -737,6 +727,7 @@ def test_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
 
 
 def test_ibis_duckdb_to_pyarrow(benchmark, sql, ddb) -> None:
+    pytest.importorskip("pyarrow")
     pytest.importorskip("duckdb")
 
     con = ibis.duckdb.connect(ddb, read_only=True)
@@ -820,6 +811,8 @@ def test_big_join_compile(benchmark, src, diff):
 
 @pytest.mark.timeout(5)
 def test_big_expression_compile(benchmark):
+    pytest.importorskip("duckdb")
+
     from ibis.tests.benchmarks.benchfuncs import clean_names
 
     t = ibis.table(
@@ -846,7 +839,7 @@ def many_cols():
 
 @pytest.mark.parametrize(
     "getter",
-    [itemgetter("x0"), itemgetter(0), attrgetter("x0")],
+    [lambda t: t["x0"], lambda t: t[0], lambda t: t.x0],
     ids=["str", "int", "attr"],
 )
 def test_column_access(benchmark, many_cols, getter):
@@ -868,8 +861,10 @@ def test_large_union_construct(benchmark, many_tables):
 
 @pytest.mark.timeout(180)
 def test_large_union_compile(benchmark, many_tables):
+    pytest.importorskip("duckdb")
+
     expr = ibis.union(*many_tables)
-    assert benchmark(ibis.to_sql, expr) is not None
+    assert benchmark(ibis.to_sql, expr, dialect="duckdb") is not None
 
 
 @pytest.fixture(scope="session")
@@ -914,6 +909,8 @@ def test_wide_drop_construct(benchmark, wide_table, cols_to_drop):
 
 
 def test_wide_drop_compile(benchmark, wide_table, cols_to_drop):
+    pytest.importorskip("duckdb")
+
     benchmark(
         lambda expr: ibis.to_sql(expr, dialect="duckdb"), wide_table.drop(*cols_to_drop)
     )
@@ -958,14 +955,11 @@ def test_wide_relocate(benchmark, input, column, relative, cols):
     benchmark(t.relocate, column.format(last), **{input: relative.format(last)})
 
 
-def test_duckdb_timestamp_conversion(benchmark):
-    pytest.importorskip("duckdb")
-
-    start = datetime(2000, 1, 1, tzinfo=pytz.UTC)
-    stop = datetime(2000, 2, 1, tzinfo=pytz.UTC)
+def test_duckdb_timestamp_conversion(benchmark, con):
+    start = datetime.datetime(2000, 1, 1, tzinfo=pytz.UTC)
+    stop = datetime.datetime(2000, 2, 1, tzinfo=pytz.UTC)
     expr = ibis.range(start, stop, ibis.interval(seconds=1)).unnest()
 
-    con = ibis.duckdb.connect()
     series = benchmark(con.execute, expr)
     assert series.size == (stop - start).total_seconds()
 

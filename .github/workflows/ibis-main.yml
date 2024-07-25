@@ -94,11 +94,11 @@ jobs:
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: just ci-check -m "'core or benchmarks'" --numprocesses auto -rs
+        run: just ci-check -m "'core or benchmark'" --numprocesses auto -rfEs
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: just ci-check -m "'core or benchmarks'" -rs
+        run: just ci-check -m "'core or benchmark'" -rfEs
 
       - name: upload code coverage
         if: success()
