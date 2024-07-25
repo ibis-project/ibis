@@ -450,7 +450,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         )
 
     def visit_Xor(self, op, *, left, right):
-        return (left.or_(right)).and_(sg.not_(left.and_(right)))
+        return left.or_(right).and_(sg.not_(left.and_(right)))
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():

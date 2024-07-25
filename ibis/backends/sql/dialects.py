@@ -20,7 +20,7 @@ from sqlglot.dialects import (
     Trino,
 )
 from sqlglot.dialects.dialect import rename_func
-from sqlglot.helper import find_new_name, seq_get
+from sqlglot.helper import find_new_name, flatten, seq_get
 
 ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySize: rename_func("length"),
@@ -440,7 +440,22 @@ Snowflake.Generator.TRANSFORMS |= {
     sge.Levenshtein: rename_func("editdistance"),
 }
 
+
+# return lambda self, expression: self.func(name, *flatten(expression.args.values()))
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
+SQLite.Generator.TRANSFORMS |= {
+    sge.Stddev: lambda self, e: self.func(
+        "sqrt", self.func("_ibis_var_sample", *flatten(e.args.values()))
+    ),
+    sge.StddevSamp: lambda self, e: self.func(
+        "sqrt", self.func("_ibis_var_sample", *flatten(e.args.values()))
+    ),
+    sge.StddevPop: lambda self, e: self.func(
+        "sqrt", self.func("_ibis_var_pop", *flatten(e.args.values()))
+    ),
+    sge.Variance: rename_func("_ibis_var_samp"),
+    sge.VariancePop: rename_func("_ibis_var_pop"),
+}
 
 
 # TODO(cpcloud): remove this hack once

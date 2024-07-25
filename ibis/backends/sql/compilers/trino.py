@@ -659,5 +659,13 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayMean(self, op, *, arg):
         return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
 
+    def visit_Info(self, op, *, parent):
+        # unnest cannot contain aggregates
+        return self.visit_GenericInfo(op, parent=parent)
+
+    def visit_Describe(self, op, *, parent, quantile):
+        # unnest cannot contain aggregates
+        return self.visit_GenericDescribe(op, parent=parent, quantile=quantile)
+
 
 compiler = TrinoCompiler()
