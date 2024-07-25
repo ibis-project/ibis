@@ -64,6 +64,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.DateDelta,
         ops.TimestampDelta,
         ops.TryCast,
+        ops.Unnest,
     )
 
     SIMPLE_OPS = {
