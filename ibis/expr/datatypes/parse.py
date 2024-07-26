@@ -110,7 +110,6 @@ def parse(
             "uint16",
             "uint32",
             "uint64",
-            "string",
             "binary",
             "timestamp",
             "time",
@@ -128,9 +127,11 @@ def parse(
     )
 
     varchar_or_char = (
-        spaceless_string("varchar", "char")
-        .then(LPAREN.then(RAW_NUMBER).skip(RPAREN).optional())
-        .result(dt.string)
+        spaceless_string("varchar", "string", "char")
+        .then(
+            LPAREN.then(parsy.seq(length=spaceless(LENGTH))).skip(RPAREN).optional({})
+        )
+        .combine_dict(dt.String)
     )
 
     decimal = spaceless_string("decimal").then(

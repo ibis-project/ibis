@@ -553,6 +553,12 @@ class String(Variadic, Singleton):
     scalar = "StringScalar"
     column = "StringColumn"
 
+    @property
+    def _pretty_piece(self) -> str:
+        if (length := self.length) is not None:
+            return f"({length:d})"
+        return ""
+
 
 @public
 class Binary(Variadic, Singleton):
