@@ -165,7 +165,7 @@ def test_table_access_database_schema(con):
     assert t.count().execute()
 
     with pytest.raises(
-        exc.TableNotFound, match='Table not found: tpch."tpch.sf1".region'
+        exc.TableNotFound, match=r'Table not found: tpch\."tpch\.sf1"\.region'
     ):
         con.table("region", database=("tpch", "tpch.sf1"))
 
