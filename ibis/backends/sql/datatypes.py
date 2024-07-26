@@ -151,17 +151,17 @@ class SqlglotType(TypeMapper):
     @classmethod
     def to_ibis(cls, typ: sge.DataType, nullable: bool | None = None) -> dt.DataType:
         """Convert a sqlglot type to an ibis type."""
-        typecode = typ.this
+        this = typ.this
 
         # broken sqlglot thing
-        if isinstance(typecode, sge.Interval):
-            typ = sge.DataType(this=typecode.INTERVAL, expressions=[typecode.unit])
-            typecode = typ.this
+        if isinstance(this, sge.Interval):
+            typ = sge.DataType(this=typecode.INTERVAL, expressions=[this.unit])
+            this = typ.this
 
-        if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
+        if method := getattr(cls, f"_from_sqlglot_{this.name}", None):
             dtype = method(*typ.expressions)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = _from_sqlglot_types[this](nullable=cls.default_nullable)
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
