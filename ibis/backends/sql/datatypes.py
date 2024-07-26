@@ -674,6 +674,15 @@ class TrinoType(SqlglotType):
     def _from_ibis_UInt8(cls, dtype):
         return sge.DataType(this=typecode.SMALLINT)
 
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        if (length := dtype.length) is None:
+            return super()._from_ibis_String(dtype)
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=[sge.DataTypeParam(this=sge.convert(length))],
+        )
+
 
 class DruidType(SqlglotType):
     # druid doesn't have a sophisticated type system and hive is close enough
@@ -1151,6 +1160,15 @@ class ClickHouseType(SqlglotType):
         value_type = cls.from_ibis(dtype.value_type)
         return sge.DataType(
             this=typecode.MAP, expressions=[key_type, value_type], nested=True
+        )
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        if (length := dtype.length) is None:
+            return super()._from_ibis_String(dtype)
+        return sge.DataType(
+            this=typecode.FIXEDSTRING,
+            expressions=[sge.DataTypeParam(this=sge.convert(length))],
         )
 
 
