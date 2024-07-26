@@ -161,10 +161,7 @@ class SqlglotType(TypeMapper):
 
         # broken sqlglot thing
         if isinstance(typecode, sge.Interval):
-            typ = sge.DataType(
-                this=sge.DataType.Type.INTERVAL,
-                expressions=[typecode.unit],
-            )
+            typ = sge.DataType(this=typecode.INTERVAL, expressions=[typecode.unit])
             typecode = typ.this
 
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
@@ -723,19 +720,19 @@ class SnowflakeType(SqlglotType):
 
     @classmethod
     def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.VARIANT)
+        return sge.DataType(this=typecode.VARIANT)
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.ARRAY, nested=True)
+        return sge.DataType(this=typecode.ARRAY, nested=True)
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.OBJECT, nested=True)
+        return sge.DataType(this=typecode.OBJECT, nested=True)
 
     @classmethod
     def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.OBJECT, nested=True)
+        return sge.DataType(this=typecode.OBJECT, nested=True)
 
 
 class SQLiteType(SqlglotType):
@@ -855,9 +852,9 @@ class BigQueryType(SqlglotType):
     @classmethod
     def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
         if dtype.timezone is None:
-            return sge.DataType(this=sge.DataType.Type.DATETIME)
+            return sge.DataType(this=typecode.DATETIME)
         elif dtype.timezone == "UTC":
-            return sge.DataType(this=sge.DataType.Type.TIMESTAMPTZ)
+            return sge.DataType(this=typecode.TIMESTAMPTZ)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery does not support timestamps with timezones other than 'UTC'"
@@ -868,9 +865,9 @@ class BigQueryType(SqlglotType):
         precision = dtype.precision
         scale = dtype.scale
         if (precision, scale) == (76, 38):
-            return sge.DataType(this=sge.DataType.Type.BIGDECIMAL)
+            return sge.DataType(this=typecode.BIGDECIMAL)
         elif (precision, scale) in ((38, 9), (None, None)):
-            return sge.DataType(this=sge.DataType.Type.DECIMAL)
+            return sge.DataType(this=typecode.DECIMAL)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery only supports decimal types with precision of 38 and "
@@ -886,14 +883,14 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_ibis_UInt32(cls, dtype: dt.UInt32) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.BIGINT)
+        return sge.DataType(this=typecode.BIGINT)
 
     _from_ibis_UInt8 = _from_ibis_UInt16 = _from_ibis_UInt32
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial) -> sge.DataType:
         if (dtype.geotype, dtype.srid) == ("geography", 4326):
-            return sge.DataType(this=sge.DataType.Type.GEOGRAPHY)
+            return sge.DataType(this=typecode.GEOGRAPHY)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
@@ -1137,7 +1134,7 @@ class FlinkType(SqlglotType):
 
     @classmethod
     def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.VARBINARY)
+        return sge.DataType(this=typecode.VARBINARY)
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
