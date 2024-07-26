@@ -930,10 +930,13 @@ class ExasolType(SqlglotType):
 
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        length = dtype.length
         return sge.DataType(
             this=typecode.VARCHAR,
             expressions=[
-                sge.DataTypeParam(this=sge.convert(dtype.length or 2_000_000))
+                sge.DataTypeParam(
+                    this=sge.convert(length if length is not None else 2_000_000)
+                )
             ],
         )
 
