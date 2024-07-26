@@ -28,11 +28,11 @@ dtypes = [
     ("integer", dt.int32),
     ("uuid", dt.uuid),
     ("char", dt.string),
-    ("char(42)", dt.string),
+    ("char(42)", dt.String(length=42)),
     ("json", dt.json),
     ("ipaddress", dt.inet),
     ("varchar", dt.string),
-    ("varchar(7)", dt.string),
+    ("varchar(7)", dt.String(length=7)),
     ("decimal", dt.Decimal(18, 3)),
     ("decimal(15, 0)", dt.Decimal(15, 0)),
     ("decimal(23, 5)", dt.Decimal(23, 5)),
@@ -44,7 +44,7 @@ dtypes = [
     ("array(array(decimal(42, 23)))", dt.Array(dt.Array(dt.Decimal(42, 23)))),
     (
         "array(row(xYz map(varchar(3), double)))",
-        dt.Array(dt.Struct(dict(xYz=dt.Map(dt.string, dt.float64)))),
+        dt.Array(dt.Struct(dict(xYz=dt.Map(dt.String(length=3), dt.float64)))),
     ),
     ("map(varchar, array(double))", dt.Map(dt.string, dt.Array(dt.float64))),
     (
