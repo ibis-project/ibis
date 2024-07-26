@@ -34,7 +34,6 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -1060,22 +1059,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         table = _force_quote_table(table)
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=BigQueryType.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable or typ.is_array()
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for name, typ in (schema or {}).items()
-        ]
-
         stmt = sge.Create(
             kind="TABLE",
-            this=sge.Schema(this=table, expressions=column_defs or None),
+            this=sge.Schema(
+                this=table,
+                expressions=schema.to_sqlglot(self.dialect) if schema else None,
+            ),
             replace=overwrite,
             properties=sge.Properties(expressions=properties),
             expression=None if obj is None else self.compile(obj),

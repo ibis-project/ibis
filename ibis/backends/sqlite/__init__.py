@@ -332,20 +332,7 @@ class Backend(SQLBackend, UrlFromPath):
         return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in schema.items()
-        ]
-
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         return sge.Create(kind="TABLE", this=target)
 

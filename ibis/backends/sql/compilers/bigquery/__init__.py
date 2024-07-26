@@ -14,6 +14,7 @@ from sqlglot.dialects import BigQuery
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.compilers.bigquery.udf.core import PythonToJavaScriptTranslator
@@ -279,13 +280,12 @@ class BigQueryCompiler(SQLGlotCompiler):
         config = udf_node.__config__
         libraries = config.get("libraries", [])
 
-        signature = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.quoted),
-                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
-            )
-            for name, param in udf_node.__signature__.parameters.items()
-        ]
+        signature = sch.Schema(
+            {
+                param_name: param.annotation.pattern.dtype
+                for param_name, param in udf_node.__signature__.parameters.items()
+            }
+        )
 
         lines = ['"""']
 
@@ -302,7 +302,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         func = sge.Create(
             kind="FUNCTION",
             this=sge.UserDefinedFunction(
-                this=sg.to_identifier(name), expressions=signature, wrapped=True
+                this=sg.to_identifier(name),
+                expressions=signature.to_sqlglot(self.dialect),
+                wrapped=True,
             ),
             # not exactly what I had in mind, but it works
             #

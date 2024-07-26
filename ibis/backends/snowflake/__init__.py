@@ -811,21 +811,10 @@ $$ {defn["source"]} $$"""
             db = db.name
             target = sg.table(name, db=db, catalog=catalog, quoted=quoted)
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
+        if schema:
+            target = sge.Schema(
+                this=target, expressions=schema.to_sqlglot(self.dialect)
             )
-            for name, typ in (schema or {}).items()
-        ]
-
-        if column_defs:
-            target = sge.Schema(this=target, expressions=column_defs)
 
         properties = []
 
@@ -1134,19 +1123,7 @@ $$ {defn["source"]} $$"""
             sge.Create(
                 kind="TABLE",
                 this=sge.Schema(
-                    this=qtable,
-                    expressions=[
-                        sge.ColumnDef(
-                            this=sg.to_identifier(col, quoted=quoted),
-                            kind=type_mapper.from_ibis(typ),
-                            constraints=(
-                                [sge.NotNullColumnConstraint()]
-                                if not typ.nullable
-                                else None
-                            ),
-                        )
-                        for col, typ in schema.items()
-                    ],
+                    this=qtable, expressions=schema.to_sqlglot(self.dialect)
                 ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(self.dialect),

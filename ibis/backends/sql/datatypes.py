@@ -1156,3 +1156,6 @@ class FlinkType(SqlglotType):
             ],
             nested=True,
         )
+
+
+TYPE_MAPPERS = {mapper.dialect: mapper for mapper in SqlglotType.__subclasses__()}
