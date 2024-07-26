@@ -37,7 +37,7 @@ classifiers = [
 
 [tool.poetry.dependencies]
 python = "^3.10"
-atpublic = ">=2.3,<5"
+atpublic = ">=2.3,<6"
 numpy = ">=1.23.2,<3"
 pandas = ">=1.5.3,<3"
 parsy = ">=2,<3"
