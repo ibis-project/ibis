@@ -211,7 +211,6 @@ class Backend(SQLBackend, CanCreateDatabase):
                 .limit(0)
                 .sql(self.dialect)
             )
-
             return sch.Schema(
                 {
                     field.name: _type_from_cursor_info(descr, field)
@@ -227,8 +226,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         ).sql(self.dialect)
 
         with self.begin() as cur:
-            cur.execute(sge.Describe(this=table).sql(self.dialect))
-            result = cur.fetchall()
+            try:
+                cur.execute(sge.Describe(this=table).sql(self.dialect))
+                result = cur.fetchall()
+            except Exception:  # noqa: BLE001
+                raise com.TableNotFound(name)
 
         type_mapper = self.compiler.type_mapper
         fields = {
