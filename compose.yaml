@@ -63,6 +63,11 @@ services:
     environment:
       MSSQL_SA_PASSWORD: 1bis_Testing!
       ACCEPT_EULA: "Y"
+      # The default collation in MSSQL isS QL_Latin1_General_CP1_CI_AS
+      # where the CI stands for Case Insensitive.
+      # We use a case-sensitive collation for testing so that we don't
+      # break users with case-sensitive collations.
+      MSSQL_COLLATION: "Latin1_General_100_BIN2_UTF8"
     healthcheck:
       interval: 1s
       retries: 20
