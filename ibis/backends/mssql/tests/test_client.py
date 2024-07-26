@@ -49,12 +49,12 @@ RAW_DB_TYPES = [
     ("DATETIMEOFFSET", dt.timestamp(scale=7, timezone="UTC")),
     ("SMALLDATETIME", dt.Timestamp(scale=0)),
     ("DATETIME", dt.Timestamp(scale=3)),
-    # Characters strings
-    ("CHAR", dt.string),
-    ("VARCHAR", dt.string),
+    # Character strings
+    ("CHAR", dt.String(length=1)),
+    ("VARCHAR", dt.String(length=1)),
     # Unicode character strings
-    ("NCHAR", dt.string),
-    ("NVARCHAR", dt.string),
+    ("NCHAR", dt.String(length=1)),
+    ("NVARCHAR", dt.String(length=1)),
     # Binary strings
     ("BINARY", dt.binary),
     ("VARBINARY", dt.binary),
@@ -256,7 +256,7 @@ def test_dot_sql_with_unnamed_columns(con):
 
     assert schema.types == (
         dt.Timestamp(timezone="UTC", scale=7),
-        dt.String(nullable=False),
+        dt.String(nullable=False, length=2),
         dt.Int32(nullable=False),
     )
 

@@ -258,6 +258,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
                 C.numeric_precision,
                 C.numeric_scale,
                 C.datetime_precision,
+                C.character_maximum_length,
             )
             .from_(
                 sg.table(
@@ -288,12 +289,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
             numeric_precision,
             numeric_scale,
             datetime_precision,
+            character_maximum_length,
         ) in meta:
             newtyp = self.compiler.type_mapper.from_string(
                 typ, nullable=is_nullable == "YES"
             )
 
-            if typ == "float":
+            if (
+                typ.lower() != "hierarchyid"
+                and character_maximum_length is not None
+                and character_maximum_length != -1
+                and newtyp.is_string()
+            ):
+                newtyp = newtyp.copy(length=character_maximum_length)
+            elif typ == "float":
                 newcls = dt.Float64 if numeric_precision == 53 else dt.Float32
                 newtyp = newcls(nullable=newtyp.nullable)
             elif newtyp.is_decimal():

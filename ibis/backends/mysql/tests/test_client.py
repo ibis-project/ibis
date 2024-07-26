@@ -45,11 +45,9 @@ MYSQL_TYPES = [
     param("time", dt.time, id="time"),
     param("datetime", dt.timestamp, id="datetime"),
     param("year", dt.int8, id="year"),
-    param("char(32)", dt.string, id="char"),
+    param("char(32)", dt.String(length=32), id="char"),
     param("char byte", dt.binary, id="char_byte"),
-    param("varchar(42)", dt.string, id="varchar"),
-    param("mediumtext", dt.string, id="mediumtext"),
-    param("text", dt.string, id="text"),
+    param("varchar(42)", dt.String(length=42), id="varchar"),
     param("binary(42)", dt.binary, id="binary"),
     param("varbinary(42)", dt.binary, id="varbinary"),
     param("bit(1)", dt.int8, id="bit_1"),
@@ -57,7 +55,6 @@ MYSQL_TYPES = [
     param("bit(17)", dt.int32, id="bit_17"),
     param("bit(33)", dt.int64, id="bit_33"),
     # mariadb doesn't have a distinct json type
-    param("enum('small', 'medium', 'large')", dt.string, id="enum"),
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
@@ -95,6 +92,14 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
         param("json", dt.binary, dt.string, id="json"),
         param("inet6", dt.binary, dt.inet, id="inet"),
         param("uuid", dt.binary, dt.uuid, id="uuid"),
+        param(
+            "enum('small', 'medium', 'large')",
+            dt.String(length=6),
+            dt.string,
+            id="enum",
+        ),
+        param("mediumtext", dt.String(length=2**24 - 1), dt.string, id="mediumtext"),
+        param("text", dt.String(length=2**16 - 1), dt.string, id="text"),
     ],
 )
 def test_get_schema_from_query_special_cases(

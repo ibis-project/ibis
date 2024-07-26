@@ -24,35 +24,34 @@ def boolean_dtype(nullable=_nullable):
 
 
 def signed_integer_dtypes(nullable=_nullable):
-    return st.one_of(
-        st.builds(dt.Int8, nullable=nullable),
-        st.builds(dt.Int16, nullable=nullable),
-        st.builds(dt.Int32, nullable=nullable),
-        st.builds(dt.Int64, nullable=nullable),
+    return (
+        st.builds(dt.Int8, nullable=nullable)
+        | st.builds(dt.Int16, nullable=nullable)
+        | st.builds(dt.Int32, nullable=nullable)
+        | st.builds(dt.Int64, nullable=nullable)
     )
 
 
 def unsigned_integer_dtypes(nullable=_nullable):
-    return st.one_of(
-        st.builds(dt.UInt8, nullable=nullable),
-        st.builds(dt.UInt16, nullable=nullable),
-        st.builds(dt.UInt32, nullable=nullable),
-        st.builds(dt.UInt64, nullable=nullable),
+    return (
+        st.builds(dt.UInt8, nullable=nullable)
+        | st.builds(dt.UInt16, nullable=nullable)
+        | st.builds(dt.UInt32, nullable=nullable)
+        | st.builds(dt.UInt64, nullable=nullable)
     )
 
 
 def integer_dtypes(nullable=_nullable):
-    return st.one_of(
-        signed_integer_dtypes(nullable=nullable),
-        unsigned_integer_dtypes(nullable=nullable),
+    return signed_integer_dtypes(nullable=nullable) | unsigned_integer_dtypes(
+        nullable=nullable
     )
 
 
 def floating_dtypes(nullable=_nullable):
-    return st.one_of(
-        st.builds(dt.Float16, nullable=nullable),
-        st.builds(dt.Float32, nullable=nullable),
-        st.builds(dt.Float64, nullable=nullable),
+    return (
+        st.builds(dt.Float16, nullable=nullable)
+        | st.builds(dt.Float32, nullable=nullable)
+        | st.builds(dt.Float64, nullable=nullable)
     )
 
 
@@ -65,15 +64,17 @@ def decimal_dtypes(draw, nullable=_nullable):
 
 
 def numeric_dtypes(nullable=_nullable):
-    return st.one_of(
-        integer_dtypes(nullable=nullable),
-        floating_dtypes(nullable=nullable),
-        decimal_dtypes(nullable=nullable),
+    return (
+        integer_dtypes(nullable=nullable)
+        | floating_dtypes(nullable=nullable)
+        | decimal_dtypes(nullable=nullable)
     )
 
 
 def string_dtype(nullable=_nullable):
-    return st.builds(dt.String, nullable=nullable)
+    return st.builds(
+        dt.String, length=st.none() | st.integers(min_value=0), nullable=nullable
+    )
 
 
 def binary_dtype(nullable=_nullable):
@@ -97,13 +98,13 @@ def uuid_dtype(nullable=_nullable):
 
 
 def string_like_dtypes(nullable=_nullable):
-    return st.one_of(
-        string_dtype(nullable=nullable),
-        binary_dtype(nullable=nullable),
-        json_dtype(nullable=nullable),
-        inet_dtype(nullable=nullable),
-        macaddr_dtype(nullable=nullable),
-        uuid_dtype(nullable=nullable),
+    return (
+        string_dtype(nullable=nullable)
+        | binary_dtype(nullable=nullable)
+        | json_dtype(nullable=nullable)
+        | inet_dtype(nullable=nullable)
+        | macaddr_dtype(nullable=nullable)
+        | uuid_dtype(nullable=nullable)
     )
 
 
@@ -128,22 +129,22 @@ def interval_dtype(interval=_interval, nullable=_nullable):
     return st.builds(dt.Interval, unit=interval, nullable=nullable)
 
 
-def temporal_dtypes(timezone=_timezone, interval=_interval, nullable=_nullable):
-    return st.one_of(
-        date_dtype(nullable=nullable),
-        time_dtype(nullable=nullable),
-        timestamp_dtype(timezone=timezone, nullable=nullable),
+def temporal_dtypes(timezone=_timezone, nullable=_nullable):
+    return (
+        date_dtype(nullable=nullable)
+        | time_dtype(nullable=nullable)
+        | timestamp_dtype(timezone=timezone, nullable=nullable)
     )
 
 
 def primitive_dtypes(nullable=_nullable):
-    return st.one_of(
-        null_dtype,
-        boolean_dtype(nullable=nullable),
-        integer_dtypes(nullable=nullable),
-        floating_dtypes(nullable=nullable),
-        date_dtype(nullable=nullable),
-        time_dtype(nullable=nullable),
+    return (
+        null_dtype
+        | boolean_dtype(nullable=nullable)
+        | integer_dtypes(nullable=nullable)
+        | floating_dtypes(nullable=nullable)
+        | date_dtype(nullable=nullable)
+        | time_dtype(nullable=nullable)
     )
 
 
@@ -179,26 +180,26 @@ def struct_dtypes(
 
 
 def geospatial_dtypes(nullable=_nullable):
-    geotype = st.one_of(st.just("geography"), st.just("geometry"))
-    srid = st.one_of(st.just(None), st.integers(min_value=0))
-    return st.one_of(
-        st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.Polygon, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid),
-        st.builds(dt.GeoSpatial, geotype=geotype, nullable=nullable, srid=srid),
+    geotype = st.just("geography") | st.just("geometry")
+    srid = st.none() | st.integers(min_value=0)
+    return (
+        st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.Polygon, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid)
+        | st.builds(dt.GeoSpatial, geotype=geotype, nullable=nullable, srid=srid)
     )
 
 
 def variadic_dtypes(nullable=_nullable):
-    return st.one_of(
-        string_dtype(nullable=nullable),
-        binary_dtype(nullable=nullable),
-        json_dtype(nullable=nullable),
-        array_dtypes(nullable=nullable),
-        map_dtypes(nullable=nullable),
+    return (
+        string_dtype(nullable=nullable)
+        | binary_dtype(nullable=nullable)
+        | json_dtype(nullable=nullable)
+        | array_dtypes(nullable=nullable)
+        | map_dtypes(nullable=nullable)
     )
 
 
