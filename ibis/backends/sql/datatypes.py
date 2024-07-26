@@ -18,7 +18,6 @@ _from_sqlglot_types = {
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
     typecode.BOOLEAN: dt.Boolean,
-    typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
     typecode.DATE32: dt.Date,
     typecode.DOUBLE: dt.Float64,
@@ -26,7 +25,6 @@ _from_sqlglot_types = {
     typecode.ENUM8: dt.String,
     typecode.ENUM16: dt.String,
     typecode.FLOAT: dt.Float32,
-    typecode.FIXEDSTRING: dt.String,
     typecode.HSTORE: partial(dt.Map, dt.string, dt.string),
     typecode.INET: dt.INET,
     typecode.INT128: partial(dt.Decimal, 38, 0),
@@ -40,11 +38,9 @@ _from_sqlglot_types = {
     typecode.MEDIUMBLOB: dt.Binary,
     typecode.MEDIUMTEXT: dt.String,
     typecode.MONEY: dt.Decimal(19, 4),
-    typecode.NCHAR: dt.String,
     typecode.UUID: dt.UUID,
     typecode.NAME: dt.String,
     typecode.NULL: dt.Null,
-    typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
     typecode.ROWVERSION: partial(dt.Binary, nullable=False),
     typecode.SMALLINT: dt.Int16,
@@ -61,7 +57,6 @@ _from_sqlglot_types = {
     typecode.UTINYINT: dt.UInt8,
     typecode.UUID: dt.UUID,
     typecode.VARBINARY: dt.Binary,
-    typecode.VARCHAR: dt.String,
     typecode.VARIANT: dt.JSON,
     typecode.UNIQUEIDENTIFIER: dt.UUID,
     typecode.SET: partial(dt.Array, dt.string),
@@ -113,7 +108,6 @@ _to_sqlglot_types = {
     dt.Float16: typecode.FLOAT,
     dt.Float32: typecode.FLOAT,
     dt.Float64: typecode.DOUBLE,
-    dt.String: typecode.VARCHAR,
     dt.Binary: typecode.VARBINARY,
     dt.INET: typecode.INET,
     dt.UUID: typecode.UUID,
@@ -200,6 +194,19 @@ class SqlglotType(TypeMapper):
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
         return cls.from_ibis(dtype).sql(dialect=cls.dialect)
+
+    @classmethod
+    def _from_sqlglot_VARCHAR(
+        cls, length: sge.DataTypeParam | None = None
+    ) -> dt.String:
+        return dt.String(
+            length=int(length.this.this) if length is not None else None,
+            nullable=cls.default_nullable,
+        )
+
+    _from_sqlglot_NVARCHAR = _from_sqlglot_NCHAR = _from_sqlglot_CHAR = (
+        _from_sqlglot_FIXEDSTRING
+    ) = _from_sqlglot_VARCHAR
 
     @classmethod
     def _from_sqlglot_ARRAY(cls, value_type: sge.DataType) -> dt.Array:
@@ -320,6 +327,17 @@ class SqlglotType(TypeMapper):
         if srid is not None:
             srid = int(srid.this.this)
         return typeclass(geotype="geography", nullable=cls.default_nullable, srid=srid)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=(
+                None
+                if (length := dtype.length) is None
+                else [sge.DataTypeParam(this=sge.convert(length))]
+            ),
+        )
 
     @classmethod
     def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
@@ -541,10 +559,6 @@ class MySQLType(SqlglotType):
     @classmethod
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
-
-    @classmethod
-    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
-        return sge.DataType(this=typecode.TEXT)
 
 
 class DuckDBType(SqlglotType):
@@ -917,8 +931,10 @@ class ExasolType(SqlglotType):
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
         return sge.DataType(
-            this=sge.DataType.Type.VARCHAR,
-            expressions=[sge.DataTypeParam(this=sge.convert(2_000_000))],
+            this=typecode.VARCHAR,
+            expressions=[
+                sge.DataTypeParam(this=sge.convert(dtype.length or 2_000_000))
+            ],
         )
 
     @classmethod
@@ -1009,7 +1025,15 @@ class MSSQLType(SqlglotType):
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
         return sge.DataType(
             this=typecode.VARCHAR,
-            expressions=[sge.DataTypeParam(this=sge.Var(this="max"))],
+            expressions=[
+                sge.DataTypeParam(
+                    this=(
+                        sge.Var(this="max")
+                        if (length := dtype.length) is None
+                        else sge.convert(length)
+                    )
+                )
+            ],
         )
 
     @classmethod
