@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import copy
 import datetime
 import functools
@@ -15,8 +16,10 @@ import pytz
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis.backends import _get_backend_names
@@ -970,3 +973,24 @@ def test_selectors(benchmark, cols):
     n = cols - cols // 10
     sel = s.across(s.c(*[f"col{i}" for i in range(n)]), lambda c: c.cast("str"))
     benchmark(sel.expand, t)
+
+
+def test_dedup_schema_failure_mode(benchmark):
+    def dedup_schema(pairs):
+        with contextlib.suppress(exc.IntegrityError):
+            sch.Schema.from_tuples(pairs)
+
+    benchmark(
+        dedup_schema,
+        [("a", "int"), ("b", "string"), ("c", "array<int>"), ("d", "float")] * 2_500,
+    )
+
+
+def test_dedup_schema(benchmark):
+    benchmark(
+        sch.Schema.from_tuples,
+        zip(
+            map("col{}".format, range(10_000)),
+            itertools.cycle(("int", "string", "array<int>", "float")),
+        ),
+    )
