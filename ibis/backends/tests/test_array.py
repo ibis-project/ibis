@@ -1531,6 +1531,11 @@ def _agg_with_nulls(agg, x):
     ],
 )
 @notimpl_aggs
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="bigquery doesn't allow arrays with nulls",
+)
 def test_array_agg_numeric(con, agg, baseline_func):
     data = [[1, 2, 3], [None, 6], [5], [None], [], None]
     t = ibis.memtable({"x": data})
@@ -1559,6 +1564,11 @@ def test_array_agg_numeric(con, agg, baseline_func):
     ],
 )
 @notimpl_aggs
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=GoogleBadRequest,
+    reason="bigquery doesn't allow arrays with nulls",
+)
 def test_array_agg_bool(con, agg, baseline_func):
     data = [
         [True, False],
