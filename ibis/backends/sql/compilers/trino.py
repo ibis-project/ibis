@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import operator
 from functools import partial, reduce
 
 import sqlglot as sg
@@ -10,7 +11,14 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import (
+    FALSE,
+    NULL,
+    STAR,
+    TRUE,
+    AggGen,
+    SQLGlotCompiler,
+)
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
@@ -79,6 +87,8 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArrayLength: "cardinality",
         ops.ArrayCollect: "array_agg",
         ops.ArrayIntersect: "array_intersect",
+        ops.ArrayMin: "array_min",
+        ops.ArrayMax: "array_max",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
         ops.TypeOf: "typeof",
@@ -564,7 +574,46 @@ class TrinoCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(
                 unnest,
-                on=None if not keep_empty else sge.convert(True),
+                on=None if not keep_empty else TRUE,
                 join_type="CROSS" if not keep_empty else "LEFT",
             )
         )
+
+    def visit_ArrayAny(self, op, *, arg):
+        return self.f.contains(arg, TRUE)
+
+    def visit_ArrayAll(self, op, *, arg):
+        return sg.not_(self.f.contains(arg, FALSE))
+
+    def visit_ArraySumAgg(self, op, *, arg, output_fn):
+        quoted = self.quoted
+        dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
+        state_dtype = dt.Struct({"sum": op.dtype, "count": dt.int64})
+        initial_state = self.cast(
+            sge.Struct.from_arg_list([sge.convert(0), sge.convert(0)]), state_dtype
+        )
+
+        s = sg.to_identifier("s", quoted=quoted)
+        x = sg.to_identifier("x", quoted=quoted)
+
+        input_fn_body = self.cast(
+            sge.Struct.from_arg_list([x + dot(s, "sum"), dot(s, "count") + 1]),
+            state_dtype,
+        )
+        input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
+
+        output_fn_body = self.if_(
+            dot(s, "count").eq(0), NULL, output_fn(dot(s, "sum"), dot(s, "count"))
+        )
+        return self.f.reduce(
+            arg,
+            initial_state,
+            input_fn,
+            sge.Lambda(this=output_fn_body, expressions=[s]),
+        )
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=lambda sum, _: sum)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
