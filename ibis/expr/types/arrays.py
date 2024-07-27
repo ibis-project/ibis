@@ -1059,8 +1059,14 @@ class ArrayValue(Value):
         """
         return ops.ArrayFlatten(self).to_expr()
 
-    def any(self) -> ir.BooleanValue:
+    def anys(self) -> ir.BooleanValue:
         """Return whether any element in the array is true.
+
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`BooleanColumn.any`](./expression-numeric.qmd#ibis.expr.types.numeric.BooleanColumn.any)
 
         Returns
         -------
@@ -1085,7 +1091,7 @@ class ArrayValue(Value):
         ...         ]
         ...     }
         ... )
-        >>> t.mutate(x=t.arr.any())
+        >>> t.mutate(x=t.arr.anys())
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ arr                  ┃ x       ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
@@ -1103,14 +1109,19 @@ class ArrayValue(Value):
         """
         return ops.ArrayAny(self).to_expr()
 
-    def all(self) -> ir.BooleanValue:
-        """Return whether all elements in the array are true (ignoring nulls).
+    def alls(self) -> ir.BooleanValue:
+        """Return whether all elements (ignoring nulls) in the array are true.
+
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`BooleanColumn.all`](./expression-numeric.qmd#ibis.expr.types.numeric.BooleanColumn.all)
 
         Returns
         -------
         BooleanValue
-            Whether all elements in the array are true (ignoring nulls).
-            Will be NULL if no elements are non-NULL.
+            Whether all elements (ignoring nulls) in the array are true.
 
         Examples
         --------
@@ -1131,13 +1142,13 @@ class ArrayValue(Value):
         ...         ],
         ...     }
         ... )
-        >>> t.mutate(x=t.arr.any()).order_by("id")
+        >>> t.mutate(x=t.arr.alls()).order_by("id")
         ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ id    ┃ arr                  ┃ x       ┃
         ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
         │ int64 │ array<boolean>       │ boolean │
         ├───────┼──────────────────────┼─────────┤
-        │     0 │ [True, False]        │ True    │
+        │     0 │ [True, False]        │ False   │
         │     1 │ [False]              │ False   │
         │     2 │ [True]               │ True    │
         │     3 │ [None, False]        │ False   │
@@ -1149,11 +1160,14 @@ class ArrayValue(Value):
         """
         return ops.ArrayAll(self).to_expr()
 
-    def array_min(self) -> ir.NumericValue:
+    def mins(self) -> ir.NumericValue:
         """Return the minimum value in the array.
 
-        We have to use the name .array_min() to avoid conflict with the
-        .min() method on Column expressions.
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`Column.min`](./expression-generic.qmd#ibis.expr.types.generic.Column.min)
 
         Returns
         -------
@@ -1165,7 +1179,7 @@ class ArrayValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
-        >>> t.mutate(x=t.arr.array_min())
+        >>> t.mutate(x=t.arr.mins())
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ arr                  ┃ x     ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -1180,11 +1194,14 @@ class ArrayValue(Value):
         """
         return ops.ArrayMin(self).to_expr()
 
-    def array_max(self) -> ir.NumericValue:
+    def maxs(self) -> ir.NumericValue:
         """Return the maximum value in the array.
 
-        We have to use the name .array_max() to avoid conflict with the
-        .max() method on Column expressions.
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`Column.max`](./expression-generic.qmd#ibis.expr.types.generic.Column.max)
 
         Returns
         -------
@@ -1196,7 +1213,7 @@ class ArrayValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
-        >>> t.mutate(x=t.arr.array_max())
+        >>> t.mutate(x=t.arr.maxs())
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ arr                  ┃ x     ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -1211,11 +1228,14 @@ class ArrayValue(Value):
         """
         return ops.ArrayMax(self).to_expr()
 
-    def array_sum(self) -> ir.NumericValue:
+    def sums(self) -> ir.NumericValue:
         """Return the sum of the values in the array.
 
-        We have to use the name .array_sum() to avoid conflict with the
-        .sum() method on Column expressions.
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`NumericColumn.sum`](./expression-numeric.qmd#ibis.expr.types.numeric.NumericColumn.sum)
 
         Returns
         -------
@@ -1227,7 +1247,7 @@ class ArrayValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
-        >>> t.mutate(x=t.arr.array_sum())
+        >>> t.mutate(x=t.arr.sums())
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ arr                  ┃ x     ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -1242,11 +1262,14 @@ class ArrayValue(Value):
         """
         return ops.ArraySum(self).to_expr()
 
-    def array_mean(self) -> ir.FloatingValue:
+    def means(self) -> ir.FloatingValue:
         """Return the mean of the values in the array.
 
-        We have to use the name .array_mean() to avoid conflict with the
-        .mean() method on Column expressions.
+        Returns NULL if the array is empty or contains only NULLs.
+
+        See Also
+        --------
+        [`NumericColumn.mean`](./expression-numeric.qmd#ibis.expr.types.numeric.NumericColumn.mean)
 
         Returns
         -------
@@ -1258,7 +1281,7 @@ class ArrayValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
-        >>> t.mutate(x=t.arr.array_mean())
+        >>> t.mutate(x=t.arr.means())
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ arr                  ┃ x       ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩

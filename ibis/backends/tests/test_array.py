@@ -1503,27 +1503,27 @@ def _agg_with_nulls(agg, x):
     ("agg", "baseline_func"),
     [
         param(
-            lambda x: x.array_sum(),
+            lambda x: x.sums(),
             lambda x: _agg_with_nulls(sum, x),
-            id="sum",
+            id="sums",
             marks=[
                 pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
             ],
         ),
         param(
-            lambda x: x.array_min(),
+            lambda x: x.mins(),
             lambda x: _agg_with_nulls(min, x),
-            id="min",
+            id="mins",
         ),
         param(
-            lambda x: x.array_max(),
+            lambda x: x.maxs(),
             lambda x: _agg_with_nulls(max, x),
-            id="max",
+            id="maxs",
         ),
         param(
-            lambda x: x.array_mean(),
+            lambda x: x.means(),
             lambda x: _agg_with_nulls(np.mean, x),
-            id="mean",
+            id="means",
             marks=[
                 pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
             ],
@@ -1552,14 +1552,14 @@ def test_array_agg_numeric(con, agg, baseline_func):
     ("agg", "baseline_func"),
     [
         param(
-            lambda x: x.any(),
+            lambda x: x.anys(),
             lambda x: _agg_with_nulls(any, x),
-            id="any",
+            id="anys",
         ),
         param(
-            lambda x: x.all(),
+            lambda x: x.alls(),
             lambda x: _agg_with_nulls(all, x),
-            id="all",
+            id="alls",
         ),
     ],
 )
