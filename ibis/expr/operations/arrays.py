@@ -266,3 +266,54 @@ class TimestampRange(Range):
     start: Value[dt.Timestamp]
     stop: Value[dt.Timestamp]
     step: Value[dt.Interval]
+
+
+class ArrayAgg(Unary):
+    arg: Value[dt.Array[dt.Numeric]]
+
+    shape = rlz.shape_like("args")
+
+    @attribute
+    def dtype(self):
+        return self.arg.dtype.value_type
+
+
+@public
+class ArrayMin(ArrayAgg):
+    """Compute the minimum value of an array."""
+
+
+@public
+class ArrayMax(ArrayAgg):
+    """Compute the maximum value of an array."""
+
+
+# in duckdb summing an array of ints leads to an int, but for other backends
+# it might lead to a float??
+@public
+class ArraySum(ArrayAgg):
+    """Compute the sum of an array."""
+
+
+@public
+class ArrayMean(Unary):
+    arg: Value[dt.Array[dt.Numeric]]
+
+    shape = rlz.shape_like("args")
+    dtype = dt.float64
+
+
+@public
+class ArrayAny(Unary):
+    arg: Value[dt.Array[dt.Boolean]]
+
+    dtype = dt.boolean
+    shape = rlz.shape_like("args")
+
+
+@public
+class ArrayAll(Unary):
+    arg: Value[dt.Array[dt.Boolean]]
+
+    dtype = dt.boolean
+    shape = rlz.shape_like("args")

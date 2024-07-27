@@ -1059,6 +1059,219 @@ class ArrayValue(Value):
         """
         return ops.ArrayFlatten(self).to_expr()
 
+    def any(self) -> ir.BooleanValue:
+        """Return whether any element in the array is true.
+
+        Returns
+        -------
+        BooleanValue
+            Whether any element in the array is true
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "arr": [
+        ...             [True, False],
+        ...             [False],
+        ...             [True],
+        ...             [None, False],
+        ...             [None, True],
+        ...             [None],
+        ...             [],
+        ...             None,
+        ...         ]
+        ...     }
+        ... )
+        >>> t.mutate(x=t.arr.any())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ arr                  ┃ x       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ array<boolean>       │ boolean │
+        ├──────────────────────┼─────────┤
+        │ [True, False]        │ True    │
+        │ [False]              │ False   │
+        │ [True]               │ True    │
+        │ [None, False]        │ False   │
+        │ [None, True]         │ True    │
+        │ [None]               │ NULL    │
+        │ []                   │ NULL    │
+        │ NULL                 │ NULL    │
+        └──────────────────────┴─────────┘
+        """
+        return ops.ArrayAny(self).to_expr()
+
+    def all(self) -> ir.BooleanValue:
+        """Return whether all elements in the array are true (ignoring nulls).
+
+        Returns
+        -------
+        BooleanValue
+            Whether all elements in the array are true (ignoring nulls).
+            Will be NULL if no elements are non-NULL.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "arr": [
+        ...             [True, False],
+        ...             [False],
+        ...             [True],
+        ...             [None, False],
+        ...             [None, True],
+        ...             [None],
+        ...             [],
+        ...             None,
+        ...         ]
+        ...     }
+        ... )
+        >>> t.mutate(x=t.arr.any())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ arr                  ┃ x       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ array<boolean>       │ boolean │
+        ├──────────────────────┼─────────┤
+        │ [True, False]        │ False   │
+        │ [False]              │ False   │
+        │ [True]               │ True    │
+        │ [None, False]        │ False   │
+        │ [None, True]         │ True    │
+        │ [None]               │ NULL    │
+        │ []                   │ NULL    │
+        │ NULL                 │ NULL    │
+        └──────────────────────┴─────────┘
+        """
+        return ops.ArrayAll(self).to_expr()
+
+    def array_min(self) -> ir.NumericValue:
+        """Return the minimum value in the array.
+
+        We have to use the name .array_min() to avoid conflict with the
+        .min() method on Column expressions.
+
+        Returns
+        -------
+        Value
+            Minimum value in the array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
+        >>> t.mutate(x=t.arr.array_min())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ arr                  ┃ x     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2, ... +1]       │     1 │
+        │ [None, 6]            │     6 │
+        │ [None]               │  NULL │
+        │ []                   │  NULL │
+        │ NULL                 │  NULL │
+        └──────────────────────┴───────┘
+        """
+        return ops.ArrayMin(self).to_expr()
+
+    def array_max(self) -> ir.NumericValue:
+        """Return the maximum value in the array.
+
+        We have to use the name .array_max() to avoid conflict with the
+        .max() method on Column expressions.
+
+        Returns
+        -------
+        Value
+            Maximum value in the array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
+        >>> t.mutate(x=t.arr.array_max())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ arr                  ┃ x     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2, ... +1]       │     3 │
+        │ [None, 6]            │     6 │
+        │ [None]               │  NULL │
+        │ []                   │  NULL │
+        │ NULL                 │  NULL │
+        └──────────────────────┴───────┘
+        """
+        return ops.ArrayMax(self).to_expr()
+
+    def array_sum(self) -> ir.NumericValue:
+        """Return the sum of the values in the array.
+
+        We have to use the name .array_sum() to avoid conflict with the
+        .sum() method on Column expressions.
+
+        Returns
+        -------
+        Value
+            Sum of the values in the array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
+        >>> t.mutate(x=t.arr.array_sum())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ arr                  ┃ x     ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2, ... +1]       │     6 │
+        │ [None, 6]            │     6 │
+        │ [None]               │  NULL │
+        │ []                   │  NULL │
+        │ NULL                 │  NULL │
+        └──────────────────────┴───────┘
+        """
+        return ops.ArraySum(self).to_expr()
+
+    def array_mean(self) -> ir.FloatingValue:
+        """Return the mean of the values in the array.
+
+        We have to use the name .array_mean() to avoid conflict with the
+        .mean() method on Column expressions.
+
+        Returns
+        -------
+        Value
+            Mean of the values in the array
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 2, 3], [None, 6], [None], [], None]})
+        >>> t.mutate(x=t.arr.array_mean())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ arr                  ┃ x       ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ array<int64>         │ float64 │
+        ├──────────────────────┼─────────┤
+        │ [1, 2, ... +1]       │     2.0 │
+        │ [None, 6]            │     6.0 │
+        │ [None]               │    NULL │
+        │ []                   │    NULL │
+        │ NULL                 │    NULL │
+        └──────────────────────┴─────────┘
+        """
+        return ops.ArrayMean(self).to_expr()
+
 
 @public
 class ArrayScalar(Scalar, ArrayValue):

@@ -1482,3 +1482,98 @@ def test_table_unnest_array_of_struct_of_array(con):
     result = con.execute(expr)
     expected = pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3]})
     tm.assert_frame_equal(result, expected)
+
+
+notimpl_aggs = pytest.mark.notimpl(
+    [
+        "datafusion",
+        "flink",
+        "polars",
+        "postgres",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+
+
+def _agg_with_nulls(agg, x):
+    if x is None:
+        return None
+    x = [y for y in x if y is not None]
+    if not x:
+        return None
+    return agg(x)
+
+
+@pytest.mark.parametrize(
+    ("agg", "baseline_func"),
+    [
+        param(
+            lambda x: x.array_sum(),
+            lambda x: _agg_with_nulls(sum, x),
+            id="sum",
+        ),
+        param(
+            lambda x: x.array_min(),
+            lambda x: _agg_with_nulls(min, x),
+            id="min",
+        ),
+        param(
+            lambda x: x.array_max(),
+            lambda x: _agg_with_nulls(max, x),
+            id="max",
+        ),
+        param(
+            lambda x: x.array_mean(),
+            lambda x: _agg_with_nulls(np.mean, x),
+            id="mean",
+        ),
+    ],
+)
+@notimpl_aggs
+def test_array_agg_numeric(con, agg, baseline_func):
+    data = [[1, 2, 3], [None, 6], [5], [None], [], None]
+    t = ibis.memtable({"x": data})
+    t = t.mutate(y=agg(t.x))
+    assert t.y.type().is_numeric()
+    df = con.to_pandas(t)
+    result = df.y.tolist()
+    result = [x if pd.notna(x) else None for x in result]
+    expected = [baseline_func(x) for x in df.x]
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("agg", "baseline_func"),
+    [
+        param(
+            lambda x: x.any(),
+            lambda x: _agg_with_nulls(any, x),
+            id="any",
+        ),
+        param(
+            lambda x: x.all(),
+            lambda x: _agg_with_nulls(all, x),
+            id="all",
+        ),
+    ],
+)
+@notimpl_aggs
+def test_array_agg_bool(con, agg, baseline_func):
+    data = [
+        [True, False],
+        [True, None],
+        [False, None],
+        [True],
+        [False],
+        [None],
+        [],
+        None,
+    ]
+    t = ibis.memtable({"x": data})
+    t = t.mutate(y=agg(t.x))
+    assert t.y.type().is_boolean()
+    df = con.to_pandas(t)
+    result = df.y.tolist()
+    result = [x if pd.notna(x) else None for x in result]
+    expected = [baseline_func(x) for x in df.x]
+    assert result == expected
