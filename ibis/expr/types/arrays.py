@@ -1118,6 +1118,7 @@ class ArrayValue(Value):
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable(
         ...     {
+        ...         "id": range(8),
         ...         "arr": [
         ...             [True, False],
         ...             [False],
@@ -1127,24 +1128,24 @@ class ArrayValue(Value):
         ...             [None],
         ...             [],
         ...             None,
-        ...         ]
+        ...         ],
         ...     }
         ... )
-        >>> t.mutate(x=t.arr.any())
-        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ arr                  ┃ x       ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
-        │ array<boolean>       │ boolean │
-        ├──────────────────────┼─────────┤
-        │ [True, False]        │ False   │
-        │ [False]              │ False   │
-        │ [True]               │ True    │
-        │ [None, False]        │ False   │
-        │ [None, True]         │ True    │
-        │ [None]               │ NULL    │
-        │ []                   │ NULL    │
-        │ NULL                 │ NULL    │
-        └──────────────────────┴─────────┘
+        >>> t.mutate(x=t.arr.any()).order_by("id")
+        ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
+        ┃ id    ┃ arr                  ┃ x       ┃
+        ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ array<boolean>       │ boolean │
+        ├───────┼──────────────────────┼─────────┤
+        │     0 │ [True, False]        │ True    │
+        │     1 │ [False]              │ False   │
+        │     2 │ [True]               │ True    │
+        │     3 │ [None, False]        │ False   │
+        │     4 │ [None, True]         │ True    │
+        │     5 │ [None]               │ NULL    │
+        │     6 │ []                   │ NULL    │
+        │     7 │ NULL                 │ NULL    │
+        └───────┴──────────────────────┴─────────┘
         """
         return ops.ArrayAll(self).to_expr()
 
