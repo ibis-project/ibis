@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import itertools
+import operator
 import re
 
 import sqlglot as sg
@@ -68,6 +69,10 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.ArrayRemove: "array_remove",
         ops.ArraySort: "array_sort",
         ops.ArrayUnion: "array_union",
+        ops.ArrayMin: "array_min",
+        ops.ArrayMax: "array_max",
+        ops.ArrayAll: "array_min",
+        ops.ArrayAny: "array_max",
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
@@ -589,3 +594,43 @@ class PySparkCompiler(SQLGlotCompiler):
         this = expression.this.this  # avoid quoting the interval as a string literal
 
         return f"{this}{unit}"
+
+    def visit_ArraySumAgg(self, op, *, arg, output):
+        quoted = self.quoted
+        dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
+        state_dtype = dt.Struct({"sum": op.dtype, "count": dt.int64})
+        initial_state = self.cast(
+            sge.Struct.from_arg_list([sge.convert(0), sge.convert(0)]), state_dtype
+        )
+
+        s = sg.to_identifier("s", quoted=quoted)
+        x = sg.to_identifier("x", quoted=quoted)
+
+        input_fn_body = self.cast(
+            sge.Struct.from_arg_list(
+                [
+                    x + self.f.coalesce(dot(s, "sum"), sge.convert(0)),
+                    self.if_(
+                        dot(s, "sum").is_(NULL), dot(s, "count"), dot(s, "count") + 1
+                    ),
+                ]
+            ),
+            state_dtype,
+        )
+        input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
+
+        output_fn_body = self.if_(
+            dot(s, "count").eq(0), NULL, output(dot(s, "sum"), dot(s, "count"))
+        )
+        return self.f.aggregate(
+            arg,
+            initial_state,
+            input_fn,
+            sge.Lambda(this=output_fn_body, expressions=[s]),
+        )
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=lambda sum, _: sum)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
