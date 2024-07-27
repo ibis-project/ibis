@@ -268,13 +268,12 @@ class TimestampRange(Range):
     step: Value[dt.Interval]
 
 
-class ArrayAgg(Unary):
-    arg: Value[dt.Array[dt.Numeric]]
-
+class ArrayAgg(Value):
+    arg: Value[dt.Array]
     shape = rlz.shape_like("args")
 
     @attribute
-    def dtype(self):
+    def dtype(self) -> dt.DataType:
         return self.arg.dtype.value_type
 
 
@@ -294,26 +293,33 @@ class ArrayMax(ArrayAgg):
 class ArraySum(ArrayAgg):
     """Compute the sum of an array."""
 
-
-@public
-class ArrayMean(Unary):
     arg: Value[dt.Array[dt.Numeric]]
 
-    shape = rlz.shape_like("args")
-    dtype = dt.float64
+
+@public
+class ArrayMean(ArrayAgg):
+    """Compute the average of an array."""
+
+    arg: Value[dt.Array[dt.Numeric]]
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        dtype = self.arg.dtype.value_type
+        if dtype.is_floating() or dtype.is_integer():
+            return dt.float64
+        # do nothing for decimal types
+        return dtype
 
 
 @public
-class ArrayAny(Unary):
-    arg: Value[dt.Array[dt.Boolean]]
+class ArrayAny(ArrayAgg):
+    """Compute whether any array element is true."""
 
-    dtype = dt.boolean
-    shape = rlz.shape_like("args")
+    arg: Value[dt.Array[dt.Boolean]]
 
 
 @public
-class ArrayAll(Unary):
-    arg: Value[dt.Array[dt.Boolean]]
+class ArrayAll(ArrayAgg):
+    """Compute whether all array elements are true."""
 
-    dtype = dt.boolean
-    shape = rlz.shape_like("args")
+    arg: Value[dt.Array[dt.Boolean]]
