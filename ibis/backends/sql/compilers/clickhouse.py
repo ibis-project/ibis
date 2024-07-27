@@ -737,3 +737,24 @@ class ClickHouseCompiler(SQLGlotCompiler):
             value.as_(self._gen_valid_name(name), quoted=quoted, copy=False)
             for name, value in exprs.items()
         )
+
+    def visit_ArrayReduceSetup(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.arrayFilter(not_null, arg)
+
+    def visit_ArrayMin(self, op, *, arg):
+        return self.f.arrayReduce("min", self.visit_ArrayReduceSetup(op, arg=arg))
+
+    visit_ArrayAll = visit_ArrayMin
+
+    def visit_ArrayMax(self, op, *, arg):
+        return self.f.arrayReduce("max", self.visit_ArrayReduceSetup(op, arg=arg))
+
+    visit_ArrayAny = visit_ArrayMax
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.f.arrayReduce("sum", self.visit_ArrayReduceSetup(op, arg=arg))
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.f.arrayReduce("avg", self.visit_ArrayReduceSetup(op, arg=arg))
