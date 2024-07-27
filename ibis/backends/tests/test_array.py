@@ -1506,6 +1506,9 @@ def _agg_with_nulls(agg, x):
             lambda x: x.array_sum(),
             lambda x: _agg_with_nulls(sum, x),
             id="sum",
+            marks=[
+                pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
+            ],
         ),
         param(
             lambda x: x.array_min(),
@@ -1521,6 +1524,9 @@ def _agg_with_nulls(agg, x):
             lambda x: x.array_mean(),
             lambda x: _agg_with_nulls(np.mean, x),
             id="mean",
+            marks=[
+                pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
+            ],
         ),
     ],
 )
