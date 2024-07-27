@@ -585,7 +585,7 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayAll(self, op, *, arg):
         return sg.not_(self.f.contains(arg, FALSE))
 
-    def visit_ArraySumAgg(self, op, *, arg, output_fn):
+    def visit_ArraySumAgg(self, op, *, arg, output):
         quoted = self.quoted
         dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
         state_dtype = dt.Struct({"sum": op.dtype, "count": dt.int64})
@@ -603,7 +603,7 @@ class TrinoCompiler(SQLGlotCompiler):
         input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
 
         output_fn_body = self.if_(
-            dot(s, "count").eq(0), NULL, output_fn(dot(s, "sum"), dot(s, "count"))
+            dot(s, "count").eq(0), NULL, output(dot(s, "sum"), dot(s, "count"))
         )
         return self.f.reduce(
             arg,
