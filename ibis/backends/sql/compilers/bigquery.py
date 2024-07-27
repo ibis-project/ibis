@@ -784,19 +784,19 @@ class BigQueryCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayMin(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="min")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="min")
 
     def visit_ArrayMax(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="max")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="max")
 
     def visit_ArraySum(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="sum")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="sum")
 
     def visit_ArrayMean(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="avg")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="avg")
 
     def visit_ArrayAny(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="logical_or")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="logical_or")
 
     def visit_ArrayAll(self, op, *, arg):
-        return self.visit_ArrayReduction(arg, reduction="logical_and")
+        return self.visit_ArrayReduction(op, arg=arg, reduction="logical_and")
