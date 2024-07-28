@@ -729,10 +729,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayMin(self, op, *, arg):
-        return self.cast(self.f.array_min(arg), op.dtype)
+        return self.cast(self.f.array_min(self.f.array_compact(arg)), op.dtype)
 
     def visit_ArrayMax(self, op, *, arg):
-        return self.cast(self.f.array_max(arg), op.dtype)
+        return self.cast(self.f.array_max(self.f.array_compact(arg)), op.dtype)
 
     def visit_ArrayAny(self, op, *, arg):
         return self.f.udf.array_any(arg)
