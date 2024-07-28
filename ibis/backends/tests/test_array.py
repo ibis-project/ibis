@@ -1478,8 +1478,7 @@ def test_table_unnest_array_of_struct_of_array(con):
 
 
 notimpl_aggs = pytest.mark.notimpl(
-    ["datafusion", "flink", "postgres", "risingwave", "pandas", "dask"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
 )
 
 
