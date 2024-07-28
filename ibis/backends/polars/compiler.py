@@ -1350,3 +1350,29 @@ def execute_timestamp_range(op, **kw):
 def execute_drop_columns(op, **kw):
     parent = translate(op.parent, **kw)
     return parent.drop(op.columns_to_drop)
+
+
+@translate.register(ops.ArraySum)
+def execute_array_agg(op, **kw):
+    arg = translate(op.arg, **kw)
+    # workaround polars annoying sum([]) == 0 behavior
+    #
+    # the polars behavior is consistent with math, but inconsistent
+    # with every other query engine every built.
+    no_nulls = arg.list.drop_nulls()
+    return pl.when(no_nulls.list.len() == 0).then(None).otherwise(no_nulls.list.sum())
+
+
+@translate.register(ops.ArrayMean)
+def execute_array_mean(op, **kw):
+    return translate(op.arg, **kw).list.mean()
+
+
+@translate.register(ops.ArrayMin)
+def execute_array_min(op, **kw):
+    return translate(op.arg, **kw).list.min()
+
+
+@translate.register(ops.ArrayMax)
+def execute_array_max(op, **kw):
+    return translate(op.arg, **kw).list.max()
