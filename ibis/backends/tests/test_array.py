@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import functools
+import statistics
 from collections import Counter
 from datetime import datetime
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -453,11 +454,7 @@ def test_array_slice(backend, start, stop):
 )
 @pytest.mark.parametrize(
     "func",
-    [
-        lambda x: x + 1,
-        functools.partial(lambda x, y: x + y, y=1),
-        ibis._ + 1,
-    ],
+    [lambda x: x + 1, partial(lambda x, y: x + y, y=1), ibis._ + 1],
     ids=["lambda", "partial", "deferred"],
 )
 @pytest.mark.notimpl(
@@ -515,11 +512,7 @@ def test_array_map(con, input, output, func):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [
-        lambda x: x > 1,
-        functools.partial(lambda x, y: x > y, y=1),
-        ibis._ > 1,
-    ],
+    [lambda x: x > 1, partial(lambda x, y: x > y, y=1), ibis._ > 1],
     ids=["lambda", "partial", "deferred"],
 )
 def test_array_filter(con, input, output, predicate):
@@ -1502,33 +1495,12 @@ def _agg_with_nulls(agg, x):
 @pytest.mark.parametrize(
     ("agg", "baseline_func"),
     [
-        param(
-            lambda x: x.sums(),
-            lambda x: _agg_with_nulls(sum, x),
-            id="sums",
-            marks=[
-                pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
-            ],
-        ),
-        param(
-            lambda x: x.mins(),
-            lambda x: _agg_with_nulls(min, x),
-            id="mins",
-        ),
-        param(
-            lambda x: x.maxs(),
-            lambda x: _agg_with_nulls(max, x),
-            id="maxs",
-        ),
-        param(
-            lambda x: x.means(),
-            lambda x: _agg_with_nulls(np.mean, x),
-            id="means",
-            marks=[
-                pytest.mark.notimpl(["snowflake"], raises=com.OperationNotDefinedError)
-            ],
-        ),
+        (ir.ArrayValue.sums, partial(_agg_with_nulls, sum)),
+        (ir.ArrayValue.mins, partial(_agg_with_nulls, min)),
+        (ir.ArrayValue.maxs, partial(_agg_with_nulls, max)),
+        (ir.ArrayValue.means, partial(_agg_with_nulls, statistics.mean)),
     ],
+    ids=["sums", "mins", "maxs", "means"],
 )
 @notimpl_aggs
 @pytest.mark.notyet(
@@ -1552,17 +1524,10 @@ def test_array_agg_numeric(con, agg, baseline_func):
 @pytest.mark.parametrize(
     ("agg", "baseline_func"),
     [
-        param(
-            lambda x: x.anys(),
-            lambda x: _agg_with_nulls(any, x),
-            id="anys",
-        ),
-        param(
-            lambda x: x.alls(),  # codespell:ignore alls
-            lambda x: _agg_with_nulls(all, x),
-            id="alls",  # codespell:ignore alls
-        ),
+        (ir.ArrayValue.anys, partial(_agg_with_nulls, any)),
+        (ir.ArrayValue.alls, partial(_agg_with_nulls, all)),
     ],
+    ids=["anys", "alls"],
 )
 @notimpl_aggs
 @pytest.mark.notyet(
