@@ -606,22 +606,21 @@ class PySparkCompiler(SQLGlotCompiler):
         s = sg.to_identifier("s", quoted=quoted)
         x = sg.to_identifier("x", quoted=quoted)
 
+        s_sum = dot(s, "sum")
+        s_count = dot(s, "count")
+
         input_fn_body = self.cast(
             sge.Struct.from_arg_list(
                 [
-                    x + self.f.coalesce(dot(s, "sum"), sge.convert(0)),
-                    self.if_(
-                        dot(s, "sum").is_(NULL), dot(s, "count"), dot(s, "count") + 1
-                    ),
+                    x + self.f.coalesce(s_sum, 0),
+                    s_count + self.if_(x.is_(sg.not_(NULL)), 1, 0),
                 ]
             ),
             state_dtype,
         )
         input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
 
-        output_fn_body = self.if_(
-            dot(s, "count").eq(0), NULL, output(dot(s, "sum"), dot(s, "count"))
-        )
+        output_fn_body = self.if_(s_count > 0, output(s_sum, s_count), NULL)
         return self.f.aggregate(
             arg,
             initial_state,
