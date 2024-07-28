@@ -108,6 +108,38 @@ for (val of array) {
 
 return count !== 0 ? total / count : null;""",
     },
+    "ibis_udfs.public.array_any": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "BOOLEAN",
+        "source": """\
+let count = 0;
+
+for (val of values) {
+  if (val === true) {
+    return true;
+  } else if (val === false) {
+    ++count;
+  }
+}
+
+return count !== 0 ? false : null;""",
+    },
+    "ibis_udfs.public.array_all": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "BOOLEAN",
+        "source": """\
+let count = 0;
+
+for (val of array) {
+  if (val === false) {
+    return false;
+  } else if (val === true) {
+    ++count;
+  }
+}
+
+return count !== 0 ? true : null;""",
+    },
 }
 
 

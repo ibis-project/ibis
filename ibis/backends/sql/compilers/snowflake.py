@@ -731,15 +731,17 @@ class SnowflakeCompiler(SQLGlotCompiler):
     def visit_ArrayMin(self, op, *, arg):
         return self.cast(self.f.array_min(arg), op.dtype)
 
-    visit_ArrayAll = visit_ArrayMin
-
     def visit_ArrayMax(self, op, *, arg):
         return self.cast(self.f.array_max(arg), op.dtype)
 
-    visit_ArrayAny = visit_ArrayMax
+    def visit_ArrayAny(self, op, *, arg):
+        return self.f.udf.array_any(arg)
+
+    def visit_ArrayAll(self, op, *, arg):
+        return self.f.udf.array_all(arg)
 
     def visit_ArraySum(self, op, *, arg):
-        return self.f.udf.array_sum(arg)
+        return self.cast(self.f.udf.array_sum(arg), op.dtype)
 
     def visit_ArrayMean(self, op, *, arg):
-        return self.f.udf.array_avg(arg)
+        return self.cast(self.f.udf.array_avg(arg), op.dtype)
