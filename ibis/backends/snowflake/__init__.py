@@ -76,6 +76,38 @@ return longest.map((_, i) => {
         "returns": "ARRAY",
         "source": """return Array(count).fill(value).flat();""",
     },
+    "ibis_udfs.public.array_sum": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "DOUBLE",
+        "source": """\
+let total = 0.0;
+let allNull = true;
+
+for (val of array) {
+  if (val !== null) {
+    total += val;
+    allNull = false;
+  }
+}
+
+return !allNull ? total : null;""",
+    },
+    "ibis_udfs.public.array_avg": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "DOUBLE",
+        "source": """\
+let count = 0;
+let total = 0.0;
+
+for (val of array) {
+  if (val !== null) {
+    total += val;
+    ++count;
+  }
+}
+
+return count !== 0 ? total / count : null;""",
+    },
 }
 
 

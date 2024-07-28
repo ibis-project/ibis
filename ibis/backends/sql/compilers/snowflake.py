@@ -737,3 +737,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.cast(self.f.array_max(arg), op.dtype)
 
     visit_ArrayAny = visit_ArrayMax
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.f.udf.array_sum(arg)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.f.udf.array_avg(arg)
