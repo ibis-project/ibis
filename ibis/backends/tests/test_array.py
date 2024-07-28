@@ -1538,10 +1538,11 @@ def _agg_with_nulls(agg, x):
 )
 def test_array_agg_numeric(con, agg, baseline_func):
     data = [[1, 2, 3], [None, 6], [5], [None], [], None]
-    t = ibis.memtable({"x": data})
+    t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))
     assert t.y.type().is_numeric()
-    df = con.to_pandas(t)
+    # sort so debugging is easier
+    df = con.to_pandas(t.order_by("id"))
     result = df.y.tolist()
     result = [x if pd.notna(x) else None for x in result]
     expected = [baseline_func(x) for x in df.x]
@@ -1557,9 +1558,9 @@ def test_array_agg_numeric(con, agg, baseline_func):
             id="anys",
         ),
         param(
-            lambda x: x.alls(),
+            lambda x: x.alls(),  # codespell:ignore alls
             lambda x: _agg_with_nulls(all, x),
-            id="alls",
+            id="alls",  # codespell:ignore alls
         ),
     ],
 )
@@ -1580,10 +1581,11 @@ def test_array_agg_bool(con, agg, baseline_func):
         [],
         None,
     ]
-    t = ibis.memtable({"x": data})
+    t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))
     assert t.y.type().is_boolean()
-    df = con.to_pandas(t)
+    # sort so debugging is easier
+    df = con.to_pandas(t.order_by("id"))
     result = df.y.tolist()
     result = [x if pd.notna(x) else None for x in result]
     expected = [baseline_func(x) for x in df.x]

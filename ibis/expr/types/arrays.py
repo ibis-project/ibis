@@ -1066,7 +1066,7 @@ class ArrayValue(Value):
 
         See Also
         --------
-        [`BooleanColumn.any`](./expression-numeric.qmd#ibis.expr.types.numeric.BooleanColumn.any)
+        [`BooleanColumn.any`](./expression-numeric.qmd#ibis.expr.types.logical.BooleanColumn.any)
 
         Returns
         -------
@@ -1109,14 +1109,14 @@ class ArrayValue(Value):
         """
         return ops.ArrayAny(self).to_expr()
 
-    def alls(self) -> ir.BooleanValue:
+    def alls(self) -> ir.BooleanValue:  # codespell:ignore alls
         """Return whether all elements (ignoring nulls) in the array are true.
 
         Returns NULL if the array is empty or contains only NULLs.
 
         See Also
         --------
-        [`BooleanColumn.all`](./expression-numeric.qmd#ibis.expr.types.numeric.BooleanColumn.all)
+        [`BooleanColumn.all`](./expression-numeric.qmd#ibis.expr.types.logical.BooleanColumn.all)
 
         Returns
         -------
@@ -1142,7 +1142,7 @@ class ArrayValue(Value):
         ...         ],
         ...     }
         ... )
-        >>> t.mutate(x=t.arr.alls()).order_by("id")
+        >>> t.mutate(x=t.arr.alls()).order_by("id")  # codespell:ignore alls
         ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ id    ┃ arr                  ┃ x       ┃
         ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
