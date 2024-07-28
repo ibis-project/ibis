@@ -1478,7 +1478,7 @@ def test_table_unnest_array_of_struct_of_array(con):
 
 
 notimpl_aggs = pytest.mark.notimpl(
-    ["datafusion", "flink", "polars", "postgres", "risingwave", "pandas", "dask"],
+    ["datafusion", "flink", "postgres", "risingwave", "pandas", "dask"],
     raises=com.OperationNotDefinedError,
 )
 
@@ -1486,7 +1486,7 @@ notimpl_aggs = pytest.mark.notimpl(
 def _agg_with_nulls(agg, x):
     if x is None:
         return None
-    x = [y for y in x if y is not None]
+    x = [y for y in x if not pd.isna(y)]
     if not x:
         return None
     return agg(x)
@@ -1503,13 +1503,24 @@ def _agg_with_nulls(agg, x):
     ids=["sums", "mins", "maxs", "means"],
 )
 @notimpl_aggs
-@pytest.mark.notyet(
-    ["bigquery"],
-    raises=GoogleBadRequest,
-    reason="bigquery doesn't allow arrays with nulls",
+@pytest.mark.parametrize(
+    "data",
+    [
+        param(
+            [[1, 2, 3], [None, 6], [5], [None], [], None],
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery doesn't allow arrays with nulls",
+                )
+            ],
+        ),
+        param([[1, 2, 3], [6], [], None], id="no-nulls"),
+    ],
 )
-def test_array_agg_numeric(con, agg, baseline_func):
-    data = [[1, 2, 3], [None, 6], [5], [None], [], None]
+def test_array_agg_numeric(con, data, agg, baseline_func):
     t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))
     assert t.y.type().is_numeric()
@@ -1529,23 +1540,39 @@ def test_array_agg_numeric(con, agg, baseline_func):
     ],
     ids=["anys", "alls"],
 )
-@notimpl_aggs
-@pytest.mark.notyet(
-    ["bigquery"],
-    raises=GoogleBadRequest,
-    reason="bigquery doesn't allow arrays with nulls",
+@pytest.mark.parametrize(
+    "data",
+    [
+        param(
+            [
+                [True, False],
+                [True, None],
+                [False, None],
+                [True],
+                [False],
+                [None],
+                [],
+                None,
+            ],
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery doesn't allow arrays with nulls",
+                )
+            ],
+            id="nulls",
+        ),
+        param([[True, False], [True], [False], [], None], id="no-nulls"),
+    ],
 )
-def test_array_agg_bool(con, agg, baseline_func):
-    data = [
-        [True, False],
-        [True, None],
-        [False, None],
-        [True],
-        [False],
-        [None],
-        [],
-        None,
-    ]
+@notimpl_aggs
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="https://github.com/pola-rs/polars/issues/17917",
+)
+def test_array_agg_bool(con, data, agg, baseline_func):
     t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))
     assert t.y.type().is_boolean()
