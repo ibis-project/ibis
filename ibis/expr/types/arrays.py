@@ -1109,7 +1109,7 @@ class ArrayValue(Value):
         """
         return ops.ArrayAny(self).to_expr()
 
-    def alls(self) -> ir.BooleanValue:  # codespell:ignore alls
+    def alls(self) -> ir.BooleanValue:
         """Return whether all elements (ignoring nulls) in the array are true.
 
         Returns NULL if the array is empty or contains only NULLs.
@@ -1142,7 +1142,7 @@ class ArrayValue(Value):
         ...         ],
         ...     }
         ... )
-        >>> t.mutate(x=t.arr.alls()).order_by("id")  # codespell:ignore alls
+        >>> t.mutate(x=t.arr.alls()).order_by("id")
         ┏━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ id    ┃ arr                  ┃ x       ┃
         ┡━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━┩
