@@ -420,7 +420,7 @@ def test_12(orders, lineitem):
     return q
 
 
-@pytest.mark.broken(["clickhouse"], reason="broken sqlglot codegen")
+@pytest.mark.notyet(["clickhouse"], reason="broken sqlglot codegen")
 @tpc_test("h")
 def test_13(customer, orders):
     """Customer Distribution Query (Q13)

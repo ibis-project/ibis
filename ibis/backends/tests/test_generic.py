@@ -65,7 +65,7 @@ def test_null_literal(con, backend):
     assert pd.isna(con.execute(expr.cast(str).upper()))
 
 
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     "mssql",
     reason="https://github.com/ibis-project/ibis/issues/9109",
     raises=AssertionError,
@@ -643,7 +643,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
 
 
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.broken(
+@pytest.mark.never(
     ["exasol", "mssql", "mysql"],
     raises=AssertionError,
     reason="someone decided a long time ago that 'A' = 'a' is true in these systems",
@@ -854,7 +854,7 @@ def test_table_info_large(con):
                     raises=(OracleDatabaseError, com.OperationNotDefinedError),
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas"],
                     condition=is_newer_than("pandas", "2.1.0"),
                     reason="FutureWarning: concat empty or all-NA entries is deprecated",
@@ -1138,7 +1138,7 @@ def test_correlated_subquery(alltypes):
 
 
 @pytest.mark.notimpl(["polars", "pyspark"])
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"],
     raises=AssertionError,
     reason='DataFrame.iloc[:, 0] (column name="playerID") are different',
@@ -1209,12 +1209,12 @@ def test_typeof(con):
     assert result is not None
 
 
-@pytest.mark.broken(["polars"], reason="incorrect answer")
+@pytest.mark.notimpl(["polars"], reason="incorrect answer")
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
 @pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
@@ -1243,7 +1243,7 @@ def test_isin_uncorrelated(
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.broken(["polars"], reason="incorrect answer")
+@pytest.mark.notimpl(["polars"], reason="incorrect answer")
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.xfail_version(
     dask=["dask<2024.2.0"], reason="not supported by the backend"
@@ -1407,12 +1407,12 @@ def test_many_subqueries(con, snapshot):
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["trino"],
     reason="invalid code generated for unnesting a struct",
     raises=TrinoUserError,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["flink"],
     reason="invalid code generated for unnesting a struct",
     raises=Py4JJavaError,
@@ -1797,16 +1797,16 @@ def test_cast(con, from_type, to_type, from_val, expected):
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"], reason="casts to 1672531200000 (millisecond)"
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"], reason="casts to 1672531200000000000 (nanoseconds)"
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["datafusion"], reason="casts to 1672531200000000 (microseconds)"
                 ),
-                pytest.mark.broken(["mysql"], reason="returns 20230101000000"),
+                pytest.mark.notimpl(["mysql"], reason="returns 20230101000000"),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
         ),
@@ -1848,7 +1848,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
-                pytest.mark.broken(["polars"], reason="casts to 1672531200000000000"),
+                pytest.mark.notimpl(["polars"], reason="casts to 1672531200000000000"),
             ],
         ),
     ],
@@ -2322,7 +2322,7 @@ def test_select_scalar(alltypes):
     assert (res.y == 1).all()
 
 
-@pytest.mark.broken(["mssql"], reason="incorrect syntax")
+@pytest.mark.notimpl(["mssql"], reason="incorrect syntax")
 def test_isnull_equality(con, backend, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     t = ibis.memtable({"x": ["a", "b", None], "y": ["c", None, None], "z": [1, 2, 3]})
@@ -2334,7 +2334,7 @@ def test_isnull_equality(con, backend, monkeypatch):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
+@pytest.mark.never(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Query could not be planned. SQL query requires ordering a table by time column",
@@ -2351,14 +2351,14 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
+@pytest.mark.never(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason=(
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["dask"],
     raises=(AssertionError, NotImplementedError),
     reason=(
@@ -2386,14 +2386,14 @@ def test_select_sort_sort(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(
+@pytest.mark.never(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason=(
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["dask"],
     raises=(AssertionError, NotImplementedError),
     reason=(

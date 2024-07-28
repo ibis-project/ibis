@@ -120,7 +120,7 @@ def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op
 @pytest.mark.parametrize(
     ("direction", "op"), [("backward", operator.ge), ("forward", operator.le)]
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["clickhouse"], raises=AssertionError, reason="`time` is truncated to seconds"
 )
 @pytest.mark.notyet(

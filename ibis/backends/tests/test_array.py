@@ -420,7 +420,7 @@ def test_array_slice(backend, start, stop):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
@@ -460,7 +460,7 @@ def test_array_slice(backend, start, stop):
     ],
     ids=["lambda", "partial", "deferred"],
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
@@ -542,7 +542,7 @@ def test_array_filter(con, input, output, predicate):
             "x",
             1,
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="unknown; NPE during execution",
@@ -574,7 +574,7 @@ def test_array_contains(backend, con, col, value):
                     raises=Py4JJavaError,
                     reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["datafusion"],
                     raises=Exception,
                     reason="Internal error: start_from index out of bounds",
@@ -647,7 +647,7 @@ def test_array_remove(con, a):
     raises=(AssertionError, GoogleBadRequest),
     reason="bigquery doesn't support null elements in arrays",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"], raises=AssertionError, reason="TODO(Kexiang): seems a bug"
 )
 @pytest.mark.notyet(
@@ -681,7 +681,7 @@ def test_array_unique(con, input, expected):
     ["flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["risingwave"],
     raises=AssertionError,
     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
@@ -752,7 +752,7 @@ def test_array_union(con, a, b, expected_array):
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"],
     raises=AssertionError,
     reason="TODO(Kexiang): seems a bug",
@@ -793,7 +793,7 @@ def test_array_intersect(con, data):
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 def test_unnest_struct(con):
@@ -813,10 +813,10 @@ def test_unnest_struct(con):
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["flink"], reason="flink unnests a and b as separate columns", raises=Py4JJavaError
 )
 def test_unnest_struct_with_multiple_fields(con):
@@ -914,7 +914,7 @@ def test_zip_null(con, fn):
     reason="pyspark doesn't seem to support field selection on explode",
     raises=PySparkAnalysisException,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.notyet(
@@ -1002,7 +1002,7 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=TypeError,
                     reason="comparison of nested arrays doesn't work in pandas testing module",
@@ -1220,8 +1220,10 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             "-1h",
             id="neg_inner",
             marks=[
-                pytest.mark.broken(
-                    ["polars"], raises=AssertionError, reason="returns an empty array"
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=(AssertionError, TypeError),
+                    reason="returns an empty array",
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -1329,8 +1331,10 @@ def test_repr_timestamp_array(con, monkeypatch):
     ["datafusion", "flink", "polars"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(["pandas"], raises=ValueError, reason="reindex on duplicate values")
-@pytest.mark.broken(
+@pytest.mark.notimpl(
+    ["pandas"], raises=ValueError, reason="reindex on duplicate values"
+)
+@pytest.mark.notimpl(
     ["dask"], raises=AssertionError, reason="DataFrame.index are different"
 )
 def test_unnest_range(con):
@@ -1367,7 +1371,7 @@ def test_array_literal_with_exprs(con, input, expected):
     ["datafusion", "postgres", "pandas", "polars", "risingwave", "dask", "flink"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["trino"],
     raises=TrinoUserError,
     reason="sqlglot generates code that assumes there's only at most two fields to unpack from a struct",

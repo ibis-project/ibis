@@ -23,11 +23,11 @@ pytestmark = [
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
     reason="JSON not supported in SQLite < 3.38.0",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["flink"],
     reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"], reason="TODO(Kexiang): order mismatch in array", strict=False
 )
 def test_json_getitem_object(json_t):
@@ -47,11 +47,11 @@ def test_json_getitem_object(json_t):
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
     reason="JSON not supported in SQLite < 3.38.0",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["flink"],
     reason="https://github.com/ibis-project/ibis/pull/6920#discussion_r1373212503",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["risingwave"], reason="TODO(Kexiang): order mismatch in array", strict=False
 )
 def test_json_getitem_array(json_t):

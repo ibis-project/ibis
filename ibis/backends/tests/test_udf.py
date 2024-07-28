@@ -24,7 +24,7 @@ no_python_udfs = mark.notimpl(
         "risingwave",
     ]
 )
-cloudpickle_version_mismatch = mark.broken(
+cloudpickle_version_mismatch = mark.notimpl(
     ["flink"],
     condition=sys.version_info >= (3, 11),
     raises=Py4JJavaError,

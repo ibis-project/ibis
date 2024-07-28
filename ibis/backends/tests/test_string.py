@@ -56,12 +56,12 @@ from ibis.common.annotations import ValidationError
             },
             id="string-quote1",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="ORA-01741: illegal zero length identifier",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
@@ -84,12 +84,12 @@ from ibis.common.annotations import ValidationError
             },
             id="string-quote2",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="ORA-25716",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
@@ -133,7 +133,7 @@ def uses_java_re(t):
             lambda t: t.string_col.str.contains("6"),
             id="contains",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["mssql"], raises=PyODBCProgrammingError, reason="incorrect syntax"
                 ),
             ],
@@ -171,7 +171,7 @@ def uses_java_re(t):
                     ["polars"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["mssql"],
                     reason="mssql doesn't allow like outside of filters",
                     raises=PyODBCProgrammingError,
@@ -746,7 +746,7 @@ def test_substr_with_null_values(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                     reason="host is netloc",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     reason="Backend is foiled by the presence of a password",
                     raises=AssertionError,

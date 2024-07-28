@@ -86,7 +86,7 @@ def test_value_cases_scalar(con, inp, exp):
         assert result == exp
 
 
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     "exasol",
     reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to ints",
     raises=AssertionError,
@@ -117,7 +117,7 @@ def test_ibis_cases_scalar():
     assert result == "five"
 
 
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["sqlite", "exasol"],
     reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to 5",
     raises=TypeError,
@@ -142,7 +142,7 @@ def test_ibis_cases_column(batting):
     assert Counter(result) == Counter(expected)
 
 
-@pytest.mark.broken("clickhouse", reason="special case this and returns 'oops'")
+@pytest.mark.notimpl("clickhouse", reason="special case this and returns 'oops'")
 def test_value_cases_null(con):
     """CASE x WHEN NULL never gets hit"""
     e = ibis.literal(5).nullif(5).case().when(None, "oops").else_("expected").end()
