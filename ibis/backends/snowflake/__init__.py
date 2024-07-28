@@ -114,7 +114,7 @@ return count !== 0 ? total / count : null;""",
         "source": """\
 let count = 0;
 
-for (val of values) {
+for (val of array) {
   if (val === true) {
     return true;
   } else if (val === false) {
