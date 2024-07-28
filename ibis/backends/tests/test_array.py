@@ -1567,11 +1567,6 @@ def test_array_agg_numeric(con, data, agg, baseline_func):
     ],
 )
 @notimpl_aggs
-@pytest.mark.notimpl(
-    ["polars"],
-    raises=com.OperationNotDefinedError,
-    reason="https://github.com/pola-rs/polars/issues/17917",
-)
 def test_array_agg_bool(con, data, agg, baseline_func):
     t = ibis.memtable({"x": data, "id": range(len(data))})
     t = t.mutate(y=agg(t.x))

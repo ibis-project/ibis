@@ -1376,3 +1376,17 @@ def execute_array_min(op, **kw):
 @translate.register(ops.ArrayMax)
 def execute_array_max(op, **kw):
     return translate(op.arg, **kw).list.max()
+
+
+@translate.register(ops.ArrayAny)
+def execute_array_any(op, **kw):
+    arg = translate(op.arg, **kw)
+    no_nulls = arg.list.drop_nulls()
+    return pl.when(no_nulls.list.len() == 0).then(None).otherwise(no_nulls.list.any())
+
+
+@translate.register(ops.ArrayAll)
+def execute_array_all(op, **kw):
+    arg = translate(op.arg, **kw)
+    no_nulls = arg.list.drop_nulls()
+    return pl.when(no_nulls.list.len() == 0).then(None).otherwise(no_nulls.list.all())
