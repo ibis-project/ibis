@@ -87,8 +87,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArrayLength: "cardinality",
         ops.ArrayCollect: "array_agg",
         ops.ArrayIntersect: "array_intersect",
-        ops.ArrayMin: "array_min",
-        ops.ArrayMax: "array_max",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
         ops.TypeOf: "typeof",
@@ -580,10 +578,30 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayAny(self, op, *, arg):
-        return self.f.contains(arg, TRUE)
+        x = sg.to_identifier("x", quoted=self.quoted)
+        identity = sge.Lambda(this=x, expressions=[x])
+        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.any_match(
+            self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
+        )
 
     def visit_ArrayAll(self, op, *, arg):
-        return sg.not_(self.f.contains(arg, FALSE))
+        x = sg.to_identifier("x", quoted=self.quoted)
+        identity = sge.Lambda(this=x, expressions=[x])
+        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.all_match(
+            self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
+        )
+
+    def visit_ArrayMin(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.array_min(self.f.filter(arg, func))
+
+    def visit_ArrayMax(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.array_max(self.f.filter(arg, func))
 
     def visit_ArraySumAgg(self, op, *, arg, output):
         quoted = self.quoted
