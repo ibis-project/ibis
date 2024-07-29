@@ -285,6 +285,19 @@ class MySQLCompiler(SQLGlotCompiler):
         )
 
     def visit_DateTimestampTruncate(self, op, *, arg, unit):
+        if unit.short == "Q":
+            # adapted from https://stackoverflow.com/a/11884743
+            return (
+                # January 1 of the year of the `arg`
+                self.f.makedate(self.f.year(arg), 1)
+                # add the current quarter's number of quarters minus one to Jan 1
+                # first quarter: add zero
+                # second quarter: add one
+                # third quarter: add two
+                # fourth quarter: add three
+                + sge.Interval(this=self.f.quarter(arg) - 1, unit=self.v.QUARTER)
+            )
+
         truncate_formats = {
             "s": "%Y-%m-%d %H:%i:%s",
             "m": "%Y-%m-%d %H:%i:00",
