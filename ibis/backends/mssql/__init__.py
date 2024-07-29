@@ -131,11 +131,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if user is None and password is None:
             kwargs.setdefault("Trusted_Connection", "yes")
 
+        if database is not None:
+            # passing database=None tries to interpolate "None" into the
+            # connection string and use it as a database
+            kwargs["database"] = database
+
         self.con = pyodbc.connect(
             user=user,
             server=f"{host},{port}",
             password=password,
-            database=database,
             driver=driver,
             **kwargs,
         )
