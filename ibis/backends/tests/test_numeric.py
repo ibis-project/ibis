@@ -1370,7 +1370,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.broken(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -1382,6 +1382,18 @@ def test_histogram(con, alltypes):
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
     assert vc.tolist() == vc_np.tolist()
+    assert (
+        con.execute(
+            ibis.range(100)
+            .unnest()
+            .name("value")
+            .as_table()
+            .select(bin=_.value.histogram(10))
+            .value_counts()
+            .bin_count.nunique()
+        )
+        == 1
+    )
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])
