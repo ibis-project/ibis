@@ -1,5 +1,6 @@
 SELECT
-  ST_ASWKB("p") AS p
+  *
+  REPLACE (ST_ASWKB("p") AS "p")
 FROM (
   SELECT
     ST_GEOMFROMTEXT('POINT (1 0)') AS "p"
