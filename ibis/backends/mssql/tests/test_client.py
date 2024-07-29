@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -35,11 +36,23 @@ DB_TYPES = [
     ("DATETIME", dt.Timestamp(scale=3)),
     # Characters strings
     ("CHAR", dt.string),
-    ("TEXT", dt.string),
+    param(
+        "TEXT",
+        dt.string,
+        marks=pytest.mark.notyet(
+            ["mssql"], reason="Not supported by UTF-8 aware collations"
+        ),
+    ),
     ("VARCHAR", dt.string),
     # Unicode character strings
     ("NCHAR", dt.string),
-    ("NTEXT", dt.string),
+    param(
+        "NTEXT",
+        dt.string,
+        marks=pytest.mark.notyet(
+            ["mssql"], reason="Not supported by UTF-8 aware collations"
+        ),
+    ),
     ("NVARCHAR", dt.string),
     # Binary strings
     ("BINARY", dt.binary),

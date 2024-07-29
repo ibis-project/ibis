@@ -54,6 +54,25 @@ def datetimeoffset_to_datetime(value):
     )
 
 
+# For testing we use the collation "Latin1_General_100_BIN2_UTF8"
+# which is case-sensitive and supports UTF8.
+# This allows us to (hopefully) support both case-sensitive and case-insensitive
+# collations.
+# It DOES mean, though, that we need to be correct in our usage of case when
+# referring to system tables and views.
+# So, the correct casing for the tables and views we use often (and the
+# corresponding columns):
+#
+#
+# Info schema tables:
+# - INFORMATION_SCHEMA.COLUMNS
+# - INFORMATION_SCHEMA.SCHEMATA
+# - INFORMATION_SCHEMA.TABLES
+# Temp table location: tempdb.dbo
+# Catalogs: sys.databases
+# Databases: sys.schemas
+
+
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
     compiler = MSSQLCompiler()
@@ -112,11 +131,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if user is None and password is None:
             kwargs.setdefault("Trusted_Connection", "yes")
 
+        if database is not None:
+            # passing database=None tries to interpolate "None" into the
+            # connection string and use it as a database
+            kwargs["database"] = database
+
         self.con = pyodbc.connect(
             user=user,
             server=f"{host},{port}",
             password=password,
-            database=database,
             driver=driver,
             **kwargs,
         )
@@ -171,8 +194,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             )
             .from_(
                 sg.table(
-                    "columns",
-                    db="information_schema",
+                    "COLUMNS",
+                    db="INFORMATION_SCHEMA",
                     catalog=catalog or self.current_catalog,
                 )
             )
@@ -212,23 +235,33 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return sch.Schema(mapping)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
+        # Docs describing usage of dm_exec_describe_first_result_set
+        # https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-exec-describe-first-result-set-transact-sql?view=sql-server-ver16
         tsql = sge.convert(str(query)).sql(self.dialect)
-        query = f"EXEC sp_describe_first_result_set @tsql = N{tsql}"
+
+        # For some reason when using "Latin1_General_100_BIN2_UTF8"
+        # the stored procedure `sp_describe_first_result_set` starts throwing errors about DLL loading.
+        # This "dynamic management function" uses the same algorithm and allows
+        # us to pre-filter the columns we want back.
+        # The syntax is:
+        # `sys.dm_exec_describe_first_result_set(@tsql, @params, @include_browse_information)`
+        query = f"""SELECT name,
+                        is_nullable AS nullable,
+                        system_type_name,
+                        precision,
+                        scale
+                    FROM
+                        sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)"""
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
 
         schema = {}
         for (
-            _,
-            _,
             name,
             nullable,
-            _,
             system_type_name,
-            _,
             precision,
             scale,
-            *_,
         ) in sorted(rows, key=itemgetter(1)):
             newtyp = self.compiler.type_mapper.from_string(
                 system_type_name, nullable=nullable
@@ -463,8 +496,8 @@ GO"""
             sg.select("table_name")
             .from_(
                 sg.table(
-                    "tables",
-                    db="information_schema",
+                    "TABLES",
+                    db="INFORMATION_SCHEMA",
                     catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
@@ -486,8 +519,8 @@ GO"""
     ) -> list[str]:
         query = sg.select(C.schema_name).from_(
             sg.table(
-                "schemata",
-                db="information_schema",
+                "SCHEMATA",
+                db="INFORMATION_SCHEMA",
                 catalog=catalog or self.current_catalog,
             )
         )
