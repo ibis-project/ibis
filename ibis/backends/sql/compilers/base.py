@@ -837,6 +837,7 @@ class SQLGlotCompiler(abc.ABC):
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
             "Y": "year",
+            "Q": "quarter",
             "M": "month",
             "W": "week",
             "D": "day",
@@ -847,10 +848,12 @@ class SQLGlotCompiler(abc.ABC):
             "us": "us",
         }
 
-        if (unit := unit_mapping.get(unit.short)) is None:
-            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        if (raw_unit := unit_mapping.get(unit.short)) is None:
+            raise com.UnsupportedOperationError(
+                f"Unsupported truncate unit {unit.short!r}"
+            )
 
-        return self.f.date_trunc(unit, arg)
+        return self.f.date_trunc(raw_unit, arg)
 
     def visit_DateTruncate(self, op, *, arg, unit):
         return self.visit_TimestampTruncate(op, arg=arg, unit=unit)
