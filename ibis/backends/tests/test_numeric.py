@@ -1384,10 +1384,7 @@ def test_histogram(con, alltypes):
     assert vc.tolist() == vc_np.tolist()
     assert (
         con.execute(
-            ibis.range(100)
-            .unnest()
-            .name("value")
-            .as_table()
+            ibis.memtable({"value": range(100)})
             .select(bin=_.value.histogram(10))
             .value_counts()
             .bin_count.nunique()
