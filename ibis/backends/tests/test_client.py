@@ -134,7 +134,7 @@ def test_create_table(backend, con, temp_table, func, sch):
                     reason="Can't rename temp tables",
                     raises=ValueError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["bigquery"],
                     reason="tables created with temp=True cause a 404 on retrieval",
                 ),
@@ -155,8 +155,8 @@ def test_create_table(backend, con, temp_table, func, sch):
                     ["pyspark", "trino", "exasol", "risingwave"],
                     reason="No support for temp tables",
                 ),
-                pytest.mark.broken(["mssql"], reason="Incorrect temp table syntax"),
-                pytest.mark.broken(
+                pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
+                pytest.mark.notimpl(
                     ["bigquery"],
                     reason="tables created with temp=True cause a 404 on retrieval",
                 ),
@@ -293,7 +293,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     assert result == new_table.schema()
 
 
-@mark.broken(
+@mark.notimpl(
     ["oracle"],
     reason="oracle temp tables aren't cleaned up on reconnect -- they need to "
     "be switched from using atexit to weakref.finalize",
@@ -1315,10 +1315,10 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.notimpl(
     ["snowflake"], reason="scale not implemented in ibis's snowflake backend"
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["oracle"], reason="oracle doesn't allow DESCRIBE outside of its CLI"
 )
-@pytest.mark.broken(["druid"], reason="dialect is broken")
+@pytest.mark.notimpl(["druid"], reason="dialect is broken")
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -1345,7 +1345,7 @@ def gen_test_name(con: BaseBackend):
     con.drop_table(name, force=True)
 
 
-@mark.broken(
+@mark.notimpl(
     ["druid"], raises=NotImplementedError, reason="generated SQL fails to parse"
 )
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")

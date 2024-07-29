@@ -171,7 +171,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["sqlite"],
     raises=pa.ArrowException,
     reason="Test data has empty strings in columns typed as int64",

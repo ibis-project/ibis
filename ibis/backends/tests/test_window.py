@@ -94,7 +94,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t: t.float_col.shift(-1),
             id="lead",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
@@ -156,12 +156,12 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     ["dask", "pandas", "polars"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["impala"],
                     raises=AssertionError,
                     reason="Results don't match; possibly due to ordering",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["datafusion"],
                     raises=AssertionError,
                     reason="Results are shifted + 1",
@@ -598,8 +598,8 @@ def test_grouped_unbounded_window(
         param(methodcaller("mean"), lambda s: s.expanding().mean(), id="mean"),
     ],
 )
-@pytest.mark.broken(["snowflake"], raises=AssertionError)
-@pytest.mark.broken(["dask"], raises=AssertionError)
+@pytest.mark.notimpl(["snowflake"], raises=AssertionError)
+@pytest.mark.notimpl(["dask"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
@@ -653,7 +653,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="ordered-mean",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["impala"],
                     reason="default window semantics are different",
                     raises=AssertionError,
@@ -763,14 +763,14 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             False,
             id="unordered-lag",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["trino", "exasol"],
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
                 ),
                 pytest.mark.notyet(["flink"], raises=Py4JJavaError),
-                pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
+                pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend supports this functionality but requires meaningful ordering",
@@ -802,7 +802,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             False,
             id="unordered-lead",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["trino"],
                     reason=(
                         "this isn't actually broken: the trino backend "
@@ -812,7 +812,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     strict=False,  # sometimes it passes
                 ),
                 pytest.mark.notyet(["flink"], raises=Py4JJavaError),
-                pytest.mark.broken(["mssql"], raises=PyODBCProgrammingError),
+                pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(
                     ["snowflake"],
                     reason="backend supports this functionality but requires meaningful ordering",
@@ -917,7 +917,7 @@ def test_ungrouped_unbounded_window(
     ["impala"], raises=ImpalaHiveServer2Error, reason="limited RANGE support"
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["mysql"],
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
@@ -1098,13 +1098,13 @@ def test_first_last(backend):
 @pytest.mark.notyet(
     ["mssql"], raises=PyODBCProgrammingError, reason="not support by the backend"
 )
-@pytest.mark.broken(["flink"], raises=Py4JJavaError, reason="bug in Flink")
-@pytest.mark.broken(
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="bug in Flink")
+@pytest.mark.notyet(
     ["exasol"],
     raises=ExaQueryError,
     reason="database can't handle UTC timestamps in DataFrames",
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
@@ -1150,10 +1150,10 @@ def test_range_expression_bounds(backend):
     reason="clickhouse doesn't implement percent_rank",
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["mssql"], reason="lack of support for booleans", raises=PyODBCProgrammingError
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",

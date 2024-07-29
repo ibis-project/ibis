@@ -353,17 +353,17 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
                 pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["duckdb"],
                     reason="Unsupported precision.",
                     raises=DuckDBParserException,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["pyspark"],
                     reason="Unsupported precision.",
                     raises=(PySparkParseException, PySparkArithmeticException),
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["trino"], reason="Unsupported precision.", raises=TrinoUserError
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
@@ -398,7 +398,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -407,7 +407,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -415,8 +415,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 15: Column 'Infinity' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -438,7 +438,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-                pytest.mark.broken(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-infinity+",
         ),
@@ -463,7 +463,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -472,7 +472,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -480,8 +480,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 16: Column 'Infinity' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -503,7 +503,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-                pytest.mark.broken(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-infinity-",
         ),
@@ -531,7 +531,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -540,7 +540,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -548,8 +548,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 10: Column 'NaN' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -571,7 +571,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
-                pytest.mark.broken(["polars"], reason="panic", raises=BaseException),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-NaN",
         ),
@@ -1015,7 +1015,7 @@ def test_complex_math_functions_columns(
             id="round",
             marks=[
                 pytest.mark.notimpl(["mssql"], raises=AssertionError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     raises=AssertionError,
                     reason="rounding works but behavior differs from pandas",
@@ -1371,7 +1371,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
 
 
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
@@ -1445,7 +1445,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
             lshift,
             lambda _: 3,
             lambda t: t.int_col,
-            marks=pytest.mark.broken(
+            marks=pytest.mark.notyet(
                 ["impala"],
                 reason="impala's behavior differs from every other backend",
                 raises=AssertionError,

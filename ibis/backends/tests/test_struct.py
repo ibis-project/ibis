@@ -199,7 +199,7 @@ def test_field_access_after_case(con):
         ),
     ],
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["trino"],
     raises=AssertionError,
     reason="trino returns unquoted and therefore unparsable struct field names, we fall back to dt.unknown",

@@ -41,7 +41,7 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.broken(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -63,7 +63,7 @@ def test_map_nulls(con, k, v):
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.broken(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -97,7 +97,7 @@ def test_map_keys_nulls(con, k, v):
                 ibis.literal(["a", "b"]), ibis.literal(None, type="array<string>")
             ),
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
                 )
             ],
@@ -109,7 +109,7 @@ def test_map_keys_nulls(con, k, v):
                 ibis.literal(None, type="array<string>"),
             ),
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
                 )
             ],
@@ -136,7 +136,7 @@ def test_map_values_nulls(con, map):
             ),
             ibis.literal(None, type="string"),
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas", "dask"],
                     reason="result is False instead of None",
                     strict=False,  # passes for contains, but not for get
@@ -158,7 +158,7 @@ def test_map_values_nulls(con, map):
             "a",
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
                 ),
             ],
@@ -172,7 +172,7 @@ def test_map_values_nulls(con, map):
             ibis.literal(None, type="string"),
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
                 ),
             ],
@@ -568,7 +568,7 @@ def test_map_construct_dict(con, keys, values):
 
 @mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["flink"],
     raises=pa.lib.ArrowInvalid,
     reason="Map array child array should have no nulls",

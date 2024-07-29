@@ -136,6 +136,13 @@ def test_iso_year_does_not_match_date_year(con):
     assert con.execute(expr) == 2021
 
 
+mark_notyet_risingwave_14670 = pytest.mark.notyet(
+    ["risingwave"],
+    raises=AssertionError,
+    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
+)
+
+
 @pytest.mark.parametrize(
     ("func", "expected"),
     [
@@ -174,16 +181,7 @@ def test_iso_year_does_not_match_date_year(con):
                     ["druid", "oracle"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-                ),
-                pytest.mark.broken(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-                ),
+                mark_notyet_risingwave_14670,
             ],
         ),
     ],
@@ -204,7 +202,7 @@ def test_timestamp_extract_literal(con, func, expected):
     raises=(ImpalaHiveServer2Error, ImpalaOperationalError),
     reason="Impala backend does not support extracting microseconds.",
 )
-@pytest.mark.broken(["sqlite"], raises=AssertionError)
+@pytest.mark.notyet(["sqlite"], raises=AssertionError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_timestamp_extract_microseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.microsecond().name("microsecond")
@@ -216,7 +214,7 @@ def test_timestamp_extract_microseconds(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["oracle", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["sqlite"], raises=AssertionError)
+@pytest.mark.notyet(["sqlite"], raises=AssertionError)
 def test_timestamp_extract_milliseconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.millisecond().name("millisecond")
     result = expr.execute()
@@ -227,13 +225,13 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["oracle"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(
     ["bigquery"],
     raises=GoogleBadRequest,
     reason="UNIX_SECONDS does not support DATETIME arguments",
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["dask", "pandas"],
     raises=AssertionError,
     condition=is_older_than("pandas", "2.0.0"),
@@ -269,7 +267,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "Y",
             "Y",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
@@ -280,7 +278,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "M",
             "M",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
@@ -291,7 +289,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "D",
             "D",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
@@ -303,7 +301,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "W",
             marks=[
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars", "flink"],
                     raises=AssertionError,
                     reason="implemented, but doesn't match other backends",
@@ -382,7 +380,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=PolarsPanicException,
                     reason="attempt to calculate the remainder with a divisor of zero",
@@ -422,7 +420,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
             "W",
             marks=[
                 pytest.mark.notyet(["mysql"], raises=com.UnsupportedOperationError),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
                     reason="Implemented, but behavior doesn't match other backends",
@@ -506,7 +504,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="week not implemented",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'WEEK'. Was expecting one of: DAY, DAYS, HOUR",
@@ -529,7 +527,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 pytest.mark.notimpl(
                     ["clickhouse"], raises=com.UnsupportedOperationError
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'MILLISECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
@@ -553,7 +551,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=AssertionError,
                     reason="we're dropping microseconds to ensure results consistent with pandas",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="ParseException: Encountered 'MICROSECOND'. Was expecting one of: DAY, DAYS, HOUR, ...",
@@ -780,12 +778,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["duckdb"],
                     raises=AssertionError,
                     reason="duckdb returns dateoffsets",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["trino"],
                     raises=AssertionError,
                     reason="doesn't match pandas results, unclear what the issue is, perhaps timezones",
@@ -797,7 +795,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                         "CalciteContextException: Cannot apply '-' to arguments of type '<TIMESTAMP(9)> - <TIMESTAMP(0)>'."
                     ),
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["datafusion"],
                     raises=Exception,
                     reason="pyarrow.lib.ArrowInvalid: Casting from duration[us] to duration[s] would lose data",
@@ -821,12 +819,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     ["bigquery", "druid", "flink"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["datafusion"],
                     raises=Exception,
                     reason="pyarrow.lib.ArrowNotImplementedError: Unsupported cast",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["oracle"],
                     raises=com.OperationNotDefinedError,
                     reason="Some wonkiness in sqlglot generation.",
@@ -860,7 +858,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             plus,
             id="large-days-plus",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
@@ -884,12 +882,12 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
             minus,
             id="large-days-minus",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="DateTime column overflows, should use DateTime64",
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["flink"],
                     # Note (mehmet): Following cannot be imported for backends other than Flink.
                     # raises=pyflink.util.exceptions.TableException,
@@ -1023,7 +1021,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     ["snowflake", "mssql", "exasol", "druid"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(["flink"], raises=AssertionError, reason="incorrect results")
+@pytest.mark.notimpl(["flink"], raises=AssertionError, reason="incorrect results")
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
@@ -1343,11 +1341,7 @@ def test_string_to_date(alltypes, fmt):
 )
 @pytest.mark.notimpl(["druid", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-)
+@mark_notyet_risingwave_14670
 def test_day_of_week_scalar(con, date, expected_index, expected_day):
     expr = ibis.literal(date).cast(dt.date)
     result_index = con.execute(expr.day_of_week.index().name("tmp"))
@@ -1358,11 +1352,7 @@ def test_day_of_week_scalar(con, date, expected_index, expected_day):
 
 
 @pytest.mark.notimpl(["oracle", "exasol", "druid"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-)
+@mark_notyet_risingwave_14670
 def test_day_of_week_column(backend, alltypes, df):
     expr = alltypes.timestamp_col.day_of_week
 
@@ -1392,13 +1382,7 @@ def test_day_of_week_column(backend, alltypes, df):
             lambda t: t.timestamp_col.day_of_week.full_name().length().sum(),
             lambda s: s.dt.day_name().str.len().sum(),
             id="day_of_week_full_name",
-            marks=[
-                pytest.mark.broken(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14670",
-                ),
-            ],
+            marks=[mark_notyet_risingwave_14670],
         ),
     ],
 )
@@ -1532,7 +1516,7 @@ def test_timestamp_literal(con, backend):
             "2022-02-04 08:20:00PST",  # The time zone for Berkeley, California.
             id="iso",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["datafusion"],
                     raises=AssertionError,
                     reason="timezones don't seem to work",
@@ -1605,7 +1589,7 @@ def test_time_literal(con, backend):
     reason="backend doesn't have a time datatype",
 )
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["sqlite"], raises=AssertionError, reason="SQLite returns Timedelta from execution"
 )
 @pytest.mark.notyet(["oracle"], raises=OracleDatabaseError)
@@ -1655,23 +1639,23 @@ INTERVAL_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["snowflake"],
     "(snowflake.connector.errors.ProgrammingError) 001007 (22023): SQL compilation error:"
     "invalid type [CAST(INTERVAL_LITERAL('second', '1') AS VARIANT)] for parameter 'TO_VARIANT'",
     raises=SnowflakeProgrammingError,
 )
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["impala"],
     "AnalysisException: Syntax error in line 1: SELECT typeof(INTERVAL 1 SECOND) AS `TypeOf(1)` "
     "Encountered: ) Expected: +",
     raises=ImpalaHiveServer2Error,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["mysql"], "The backend implementation is broken. ", raises=MySQLProgrammingError
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["bigquery", "duckdb"],
     reason="BigQuery returns DateOffset arrays",
     raises=AssertionError,
@@ -1709,7 +1693,7 @@ def test_interval_literal(con, backend):
     ["pandas", "dask", "exasol", "risingwave", "druid"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-00936: missing expression"
 )
 def test_date_column_from_ymd(backend, con, alltypes, df):
@@ -1807,19 +1791,16 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     assert result == expected
 
 
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["clickhouse"], raises=AssertionError, reason="clickhouse truncates the result"
 )
-@pytest.mark.broken(["druid"], reason="timezone doesn't match", raises=AssertionError)
+@pytest.mark.notimpl(["druid"], reason="timezone doesn't match", raises=AssertionError)
 @pytest.mark.notyet(
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
     raises=pd.errors.OutOfBoundsDatetime,
 )
-@pytest.mark.broken(
-    ["flink"],
-    raises=ArrowInvalid,
-)
+@pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 def test_big_timestamp(con):
     # TODO: test with a timezone
@@ -1876,14 +1857,12 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.broken(
-    ["clickhouse"],
-    reason="returns incorrect results",
-    raises=AssertionError,
+@pytest.mark.notimpl(
+    ["clickhouse"], reason="returns incorrect results", raises=AssertionError
 )
 @pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
-@pytest.mark.broken(["polars"], raises=AssertionError, reason="returns NaT")
-@pytest.mark.broken(
+@pytest.mark.notimpl(["polars"], raises=AssertionError, reason="returns NaT")
+@pytest.mark.notyet(
     ["flink"],
     reason="Casting from timestamp[s] to timestamp[ns] would result in out of bounds timestamp: 81953424000",
     raises=ArrowInvalid,
@@ -1924,12 +1903,12 @@ def test_large_timestamp(con):
             "ns",
             id="ns",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["duckdb", "impala", "pyspark", "trino"],
                     reason="drivers appear to truncate nanos",
                     raises=AssertionError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     reason="ibis normalization truncates nanos",
                     raises=AssertionError,
@@ -1957,7 +1936,7 @@ def test_large_timestamp(con):
                     ),
                     raises=GoogleBadRequest,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["flink"],
                     reason="assert Timestamp('2023-01-07 13:20:05.561000') == Timestamp('2023-01-07 13:20:05.561000231')",
                     raises=AssertionError,
@@ -2028,7 +2007,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             2,
             id="timestamp",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["pyspark"],
                     raises=AssertionError,
                     reason="pyspark difference is timezone aware",
@@ -2134,7 +2113,7 @@ def test_delta(con, start, end, unit, expected):
             {"days": 2},
             "2D",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
                     reason="numpy array values are different (50.0 %)",
@@ -2263,13 +2242,13 @@ def test_time_literal_sql(dialect, snapshot, micros):
         param(
             "9999-01-02",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["pandas", "dask"],
                     condition=is_older_than("pandas", "2.0.0"),
                     raises=ValueError,
@@ -2282,13 +2261,13 @@ def test_time_literal_sql(dialect, snapshot, micros):
             "0001-07-17",
             id="small",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     raises=AssertionError,
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["pandas", "dask"],
                     condition=is_older_than("pandas", "2.0.0"),
                     raises=ValueError,
@@ -2298,7 +2277,7 @@ def test_time_literal_sql(dialect, snapshot, micros):
         ),
         param(
             "2150-01-01",
-            marks=pytest.mark.broken(["clickhouse"], raises=AssertionError),
+            marks=pytest.mark.notyet(["clickhouse"], raises=AssertionError),
             id="medium",
         ),
     ],
