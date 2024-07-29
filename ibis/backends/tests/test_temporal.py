@@ -275,6 +275,17 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             ],
         ),
         param(
+            "Q",
+            "Q",
+            marks=[
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="numpy array are different",
+                ),
+            ],
+        ),
+        param(
             "M",
             "M",
             marks=[
@@ -399,7 +410,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
 
     dtns = df.timestamp_col.dt
 
-    if ibis_unit in ("Y", "M", "D", "W"):
+    if ibis_unit in ("Y", "Q", "M", "D", "W"):
         expected = dtns.to_period(pandas_unit).dt.to_timestamp()
     else:
         expected = dtns.floor(pandas_unit)
@@ -414,6 +425,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
     "unit",
     [
         "Y",
+        "Q",
         "M",
         "D",
         param(
