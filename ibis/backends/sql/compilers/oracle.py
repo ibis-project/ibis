@@ -329,6 +329,7 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_DateTruncate(self, op, *, arg, unit):
         trunc_unit_mapping = {
             "Y": "year",
+            "Q": "Q",
             "M": "MONTH",
             "W": "IW",
             "D": "DDD",
