@@ -683,12 +683,36 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._define_udf_translation_rules(expr)
         sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
+        table_expr = expr.as_table()
+        geocols = frozenset(
+            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
+        )
+
         query = sql.transform(
             _qualify_memtable,
             dataset=getattr(self._session_dataset, "dataset_id", None),
             project=getattr(self._session_dataset, "project", None),
         ).transform(_remove_null_ordering_from_unsupported_window)
-        return query
+
+        if not geocols:
+            return query
+
+        # if there are any geospatial columns, we have to convert them to WKB,
+        # so interactive mode knows how to display them
+        #
+        # by default bigquery returns data to python as WKT, and there's really
+        # no point in supporting both if we don't need to.
+        compiler = self.compiler
+        quoted = compiler.quoted
+        f = compiler.f
+        return sg.select(
+            sge.Star(
+                replace=[
+                    f.st_asbinary(sg.column(col, quoted=quoted)).as_(col, quoted=quoted)
+                    for col in geocols
+                ]
+            )
+        ).from_(query.subquery())
 
     def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
