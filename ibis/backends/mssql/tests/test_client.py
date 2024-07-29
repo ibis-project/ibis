@@ -34,13 +34,13 @@ DB_TYPES = [
     ("SMALLDATETIME", dt.Timestamp(scale=0)),
     ("DATETIME", dt.Timestamp(scale=3)),
     # Characters strings
-    ("CHAR", dt.string),
+    ("CHAR", dt.String(length=1)),
     ("TEXT", dt.string),
-    ("VARCHAR", dt.string),
+    ("VARCHAR", dt.String(length=1)),
     # Unicode character strings
-    ("NCHAR", dt.string),
+    ("NCHAR", dt.String(length=1)),
     ("NTEXT", dt.string),
-    ("NVARCHAR", dt.string),
+    ("NVARCHAR", dt.String(length=1)),
     # Binary strings
     ("BINARY", dt.binary),
     ("VARBINARY", dt.binary),

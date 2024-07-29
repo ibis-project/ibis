@@ -535,6 +535,12 @@ class Integer(Primitive, Numeric):
 class String(Variadic, Singleton):
     """A type representing a string.
 
+    ::: {.callout-note}
+    ## The `length` attribute has **no** effect on the end-user API.
+
+    `length` is supported so that fixed-length strings' metadata is preserved.
+    :::
+
     Notes
     -----
     Because of differences in the way different backends handle strings, we
@@ -542,8 +548,16 @@ class String(Variadic, Singleton):
 
     """
 
+    length: int | None = None
+
     scalar = "StringScalar"
     column = "StringColumn"
+
+    @property
+    def _pretty_piece(self) -> str:
+        if (length := self.length) is not None:
+            return f"({length:d})"
+        return ""
 
 
 @public

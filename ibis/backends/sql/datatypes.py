@@ -18,7 +18,6 @@ _from_sqlglot_types = {
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
     typecode.BOOLEAN: dt.Boolean,
-    typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
     typecode.DATE32: dt.Date,
     typecode.DOUBLE: dt.Float64,
@@ -26,7 +25,6 @@ _from_sqlglot_types = {
     typecode.ENUM8: dt.String,
     typecode.ENUM16: dt.String,
     typecode.FLOAT: dt.Float32,
-    typecode.FIXEDSTRING: dt.String,
     typecode.HSTORE: partial(dt.Map, dt.string, dt.string),
     typecode.INET: dt.INET,
     typecode.INT128: partial(dt.Decimal, 38, 0),
@@ -40,11 +38,9 @@ _from_sqlglot_types = {
     typecode.MEDIUMBLOB: dt.Binary,
     typecode.MEDIUMTEXT: dt.String,
     typecode.MONEY: dt.Decimal(19, 4),
-    typecode.NCHAR: dt.String,
     typecode.UUID: dt.UUID,
     typecode.NAME: dt.String,
     typecode.NULL: dt.Null,
-    typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
     typecode.ROWVERSION: partial(dt.Binary, nullable=False),
     typecode.SMALLINT: dt.Int16,
@@ -61,7 +57,6 @@ _from_sqlglot_types = {
     typecode.UTINYINT: dt.UInt8,
     typecode.UUID: dt.UUID,
     typecode.VARBINARY: dt.Binary,
-    typecode.VARCHAR: dt.String,
     typecode.VARIANT: dt.JSON,
     typecode.UNIQUEIDENTIFIER: dt.UUID,
     typecode.SET: partial(dt.Array, dt.string),
@@ -113,7 +108,6 @@ _to_sqlglot_types = {
     dt.Float16: typecode.FLOAT,
     dt.Float32: typecode.FLOAT,
     dt.Float64: typecode.DOUBLE,
-    dt.String: typecode.VARCHAR,
     dt.Binary: typecode.VARBINARY,
     dt.INET: typecode.INET,
     dt.UUID: typecode.UUID,
@@ -157,20 +151,17 @@ class SqlglotType(TypeMapper):
     @classmethod
     def to_ibis(cls, typ: sge.DataType, nullable: bool | None = None) -> dt.DataType:
         """Convert a sqlglot type to an ibis type."""
-        typecode = typ.this
+        this = typ.this
 
         # broken sqlglot thing
-        if isinstance(typecode, sge.Interval):
-            typ = sge.DataType(
-                this=sge.DataType.Type.INTERVAL,
-                expressions=[typecode.unit],
-            )
-            typecode = typ.this
+        if isinstance(this, sge.Interval):
+            typ = sge.DataType(this=typecode.INTERVAL, expressions=[this.unit])
+            this = typ.this
 
-        if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
+        if method := getattr(cls, f"_from_sqlglot_{this.name}", None):
             dtype = method(*typ.expressions)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = _from_sqlglot_types[this](nullable=cls.default_nullable)
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -203,6 +194,19 @@ class SqlglotType(TypeMapper):
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
         return cls.from_ibis(dtype).sql(dialect=cls.dialect)
+
+    @classmethod
+    def _from_sqlglot_VARCHAR(
+        cls, length: sge.DataTypeParam | None = None
+    ) -> dt.String:
+        return dt.String(
+            length=int(length.this.this) if length is not None else None,
+            nullable=cls.default_nullable,
+        )
+
+    _from_sqlglot_NVARCHAR = _from_sqlglot_NCHAR = _from_sqlglot_CHAR = (
+        _from_sqlglot_FIXEDSTRING
+    ) = _from_sqlglot_VARCHAR
 
     @classmethod
     def _from_sqlglot_ARRAY(cls, value_type: sge.DataType) -> dt.Array:
@@ -323,6 +327,17 @@ class SqlglotType(TypeMapper):
         if srid is not None:
             srid = int(srid.this.this)
         return typeclass(geotype="geography", nullable=cls.default_nullable, srid=srid)
+
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        return sge.DataType(
+            this=typecode.VARCHAR,
+            expressions=(
+                None
+                if (length := dtype.length) is None
+                else [sge.DataTypeParam(this=sge.convert(length))]
+            ),
+        )
 
     @classmethod
     def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
@@ -545,10 +560,6 @@ class MySQLType(SqlglotType):
     def _from_sqlglot_TIMESTAMP(cls) -> dt.Timestamp:
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
-    @classmethod
-    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
-        return sge.DataType(this=typecode.TEXT)
-
 
 class DuckDBType(SqlglotType):
     dialect = "duckdb"
@@ -723,19 +734,19 @@ class SnowflakeType(SqlglotType):
 
     @classmethod
     def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.VARIANT)
+        return sge.DataType(this=typecode.VARIANT)
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.ARRAY, nested=True)
+        return sge.DataType(this=typecode.ARRAY, nested=True)
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.OBJECT, nested=True)
+        return sge.DataType(this=typecode.OBJECT, nested=True)
 
     @classmethod
     def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.OBJECT, nested=True)
+        return sge.DataType(this=typecode.OBJECT, nested=True)
 
 
 class SQLiteType(SqlglotType):
@@ -855,9 +866,9 @@ class BigQueryType(SqlglotType):
     @classmethod
     def _from_ibis_Timestamp(cls, dtype: dt.Timestamp) -> sge.DataType:
         if dtype.timezone is None:
-            return sge.DataType(this=sge.DataType.Type.DATETIME)
+            return sge.DataType(this=typecode.DATETIME)
         elif dtype.timezone == "UTC":
-            return sge.DataType(this=sge.DataType.Type.TIMESTAMPTZ)
+            return sge.DataType(this=typecode.TIMESTAMPTZ)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery does not support timestamps with timezones other than 'UTC'"
@@ -868,9 +879,9 @@ class BigQueryType(SqlglotType):
         precision = dtype.precision
         scale = dtype.scale
         if (precision, scale) == (76, 38):
-            return sge.DataType(this=sge.DataType.Type.BIGDECIMAL)
+            return sge.DataType(this=typecode.BIGDECIMAL)
         elif (precision, scale) in ((38, 9), (None, None)):
-            return sge.DataType(this=sge.DataType.Type.DECIMAL)
+            return sge.DataType(this=typecode.DECIMAL)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery only supports decimal types with precision of 38 and "
@@ -886,14 +897,14 @@ class BigQueryType(SqlglotType):
 
     @classmethod
     def _from_ibis_UInt32(cls, dtype: dt.UInt32) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.BIGINT)
+        return sge.DataType(this=typecode.BIGINT)
 
     _from_ibis_UInt8 = _from_ibis_UInt16 = _from_ibis_UInt32
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial) -> sge.DataType:
         if (dtype.geotype, dtype.srid) == ("geography", 4326):
-            return sge.DataType(this=sge.DataType.Type.GEOGRAPHY)
+            return sge.DataType(this=typecode.GEOGRAPHY)
         else:
             raise com.UnsupportedBackendType(
                 "BigQuery geography uses points on WGS84 reference ellipsoid."
@@ -919,9 +930,14 @@ class ExasolType(SqlglotType):
 
     @classmethod
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        length = dtype.length
         return sge.DataType(
-            this=sge.DataType.Type.VARCHAR,
-            expressions=[sge.DataTypeParam(this=sge.convert(2_000_000))],
+            this=typecode.VARCHAR,
+            expressions=[
+                sge.DataTypeParam(
+                    this=sge.convert(length if length is not None else 2_000_000)
+                )
+            ],
         )
 
     @classmethod
@@ -1012,8 +1028,26 @@ class MSSQLType(SqlglotType):
     def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
         return sge.DataType(
             this=typecode.VARCHAR,
-            expressions=[sge.DataTypeParam(this=sge.Var(this="max"))],
+            expressions=[
+                sge.DataTypeParam(
+                    this=(
+                        sge.Var(this="max")
+                        if (length := dtype.length) is None
+                        else sge.convert(length)
+                    )
+                )
+            ],
         )
+
+    @classmethod
+    def _from_sqlglot_VARCHAR(
+        cls, length: sge.DataTypeParam | None = None
+    ) -> dt.String:
+        if length is not None and (bound := length.this.this).isdigit():
+            bound = int(bound)
+        else:
+            bound = None
+        return dt.String(length=bound, nullable=cls.default_nullable)
 
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.String) -> sge.DataType:
@@ -1129,6 +1163,15 @@ class ClickHouseType(SqlglotType):
             this=typecode.MAP, expressions=[key_type, value_type], nested=True
         )
 
+    @classmethod
+    def _from_ibis_String(cls, dtype: dt.String) -> sge.DataType:
+        if (length := dtype.length) is None:
+            return super()._from_ibis_String(dtype)
+        return sge.DataType(
+            this=typecode.FIXEDSTRING,
+            expressions=[sge.DataTypeParam(this=sge.convert(length))],
+        )
+
 
 class FlinkType(SqlglotType):
     dialect = "flink"
@@ -1137,7 +1180,7 @@ class FlinkType(SqlglotType):
 
     @classmethod
     def _from_ibis_Binary(cls, dtype: dt.Binary) -> sge.DataType:
-        return sge.DataType(this=sge.DataType.Type.VARBINARY)
+        return sge.DataType(this=typecode.VARBINARY)
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
