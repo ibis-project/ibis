@@ -101,23 +101,25 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         sql = super()._to_sqlglot(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
-        geocols = frozenset(
+        geocols = [
             name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        )
+        ]
 
         if not geocols:
             return sql
         else:
             self._load_extensions(["spatial"])
 
+        compiler = self.compiler
+        quoted = compiler.quoted
         return sg.select(
-            *(
-                self.compiler.f.st_aswkb(
-                    sg.column(col, quoted=self.compiler.quoted)
-                ).as_(col)
-                if col in geocols
-                else col
-                for col in table_expr.columns
+            sge.Star(
+                replace=[
+                    compiler.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
+                    for col in geocols
+                ]
             )
         ).from_(sql.subquery())
 
