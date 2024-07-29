@@ -455,3 +455,17 @@ def test_complex_column_name(con):
     )
     result = con.to_pandas(expr)
     assert result == 1
+
+
+def test_geospatial_interactive(con, monkeypatch):
+    pytest.importorskip("geopandas")
+
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    t = con.table("bigquery-public-data.geo_us_boundaries.zip_codes")
+    expr = (
+        t.filter(lambda t: t.zip_code_geom.geometry_type() == "ST_Polygon")
+        .head(1)
+        .zip_code_geom
+    )
+    result = repr(expr)
+    assert "POLYGON" in result
