@@ -73,7 +73,7 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - $(find / -name sqlcmd -type f -executable) -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1"
+        - $(find /opt -name sqlcmd -type f -executable) -C -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -Q "SELECT 1"
     ports:
       - 1433:1433
     volumes:
