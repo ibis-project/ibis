@@ -185,7 +185,7 @@ class PandasExecutor(Dispatched, PandasUtils):
 
         unit = units.get(unit.short, unit.short)
 
-        if unit in "YMWD":
+        if unit in "YQMWD":
             return arg.dt.to_period(unit).dt.to_timestamp()
         try:
             return arg.dt.floor(unit)
