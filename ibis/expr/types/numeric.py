@@ -1005,7 +1005,7 @@ class NumericColumn(Column, NumericValue):
 
             binwidth = (self.max() - base) / nbins
 
-        return ((self - base) / binwidth).floor()
+        return ((self - base) / binwidth).floor().clip(0, nbins - 1)
 
 
 @public
