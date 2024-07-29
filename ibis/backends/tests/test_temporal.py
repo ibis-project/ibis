@@ -278,12 +278,11 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "Q",
             "Q",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["polars"],
                     raises=AssertionError,
                     reason="numpy array are different",
                 ),
-                pytest.mark.notyet(["sqlite"], raises=com.UnsupportedOperationError),
             ],
         ),
         param(
@@ -426,10 +425,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
     "unit",
     [
         "Y",
-        param(
-            "Q",
-            marks=pytest.mark.notyet(["sqlite"], raises=com.UnsupportedOperationError),
-        ),
+        "Q",
         "M",
         "D",
         param(

@@ -290,6 +290,20 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self.f.anon.mod(left, right)
 
     def _temporal_truncate(self, func, arg, unit):
+        if unit.short == "Q":
+            return sge.Case(
+                ifs=[
+                    self.if_(
+                        sge.Between(
+                            this=self.cast(self.f.strftime("%m", arg), dt.int32),
+                            low=sge.convert(lower),
+                            high=sge.convert(lower + 2),
+                        ),
+                        self.f.strftime(f"%Y-{lower:0>2}-01", arg),
+                    )
+                    for lower in range(1, 13, 3)
+                ],
+            )
         modifiers = {
             DateUnit.DAY: ("start of day",),
             DateUnit.WEEK: ("weekday 0", "-6 days"),
