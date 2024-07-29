@@ -1376,6 +1376,7 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
 )
+@pytest.mark.notyet(["impala"], raises=TypeError)
 def test_histogram(con, alltypes):
     n = 10
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
