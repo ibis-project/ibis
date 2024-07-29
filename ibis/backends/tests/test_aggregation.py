@@ -280,7 +280,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col[where].any(),
             id="any",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
@@ -292,7 +292,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].any(),
             id="notany",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notany'",
@@ -305,7 +305,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].any(),
             id="any_negate",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
@@ -318,7 +318,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.bool_col[where].all(),
             id="all",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
@@ -330,7 +330,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].all(),
             id="notall",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notall'",
@@ -343,7 +343,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: ~t.bool_col[where].all(),
             id="all_negate",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["druid"],
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
@@ -361,7 +361,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: (t.int_col > 0)[where].sum(),
             id="bool_sum",
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
@@ -538,7 +538,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["dask"],
                     raises=(AttributeError, TypeError),
                     reason=(
@@ -809,12 +809,12 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend implements approximate quantiles",
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["pyspark"],
                     reason="backend implements approximate quantiles",
                     raises=AssertionError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.never(
                     ["dask"],
                     reason="backend implements approximate quantiles",
                     raises=AssertionError,
@@ -824,7 +824,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend doesn't implement approximate quantiles yet",
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notimpl(
                     ["risingwave"],
                     reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
                     raises=PsycoPg2InternalError,
@@ -1132,7 +1132,7 @@ def test_median(alltypes, df):
     raises=ClickHouseDatabaseError,
     reason="doesn't support median of strings",
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
 )
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
@@ -1301,7 +1301,7 @@ def test_topk_op(alltypes, df):
         )
     ],
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["druid"], raises=PyDruidProgrammingError, reason="Java NullPointerException"
 )
 @pytest.mark.notimpl(

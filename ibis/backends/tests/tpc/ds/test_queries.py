@@ -45,7 +45,7 @@ def test_01(store_returns, date_dim, store, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.broken(["datafusion"], reason="internal error")
+@pytest.mark.notimpl(["datafusion"], reason="internal error")
 def test_02(web_sales, catalog_sales, date_dim):
     wscs = web_sales.select(
         sold_date_sk=_.ws_sold_date_sk, sales_price=_.ws_ext_sales_price
@@ -106,7 +106,7 @@ def test_03(date_dim, store_sales, item):
 
 
 @tpc_test("ds", result_is_empty=True)
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
 )
 def test_04(customer, store_sales, catalog_sales, web_sales, date_dim):
@@ -751,7 +751,7 @@ def test_09(store_sales, reason):
 
 
 @tpc_test("ds")
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["datafusion"], reason="Exception: Optimizer rule 'scalar_subquery_to_join' failed"
 )
 @pytest.mark.notyet(
@@ -845,7 +845,7 @@ def test_10(
 
 
 @tpc_test("ds")
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["datafusion"],
     reason="Exception: Optimizer rule 'common_sub_expression_eliminate' failed",
 )

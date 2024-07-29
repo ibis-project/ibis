@@ -95,12 +95,12 @@ all ordinary and edge cases.
 Pytest markers can be used to assert that a test should fail or raise a specific error.
 We use a number of pytest markers in ibis:
 
-- `pytest.mark.notimpl`: the backend can do a thing, we haven't mapped the op
-- `pytest.mark.notyet`: the backend cannot do a thing, but might in the future
-- `pytest.mark.never`: the backend will never support this / pass this test (common example
-here is a test running on sqlite that relies on strong typing)
-- `pytest.mark.broken`: this test broke and it's demonstrably unrelated to the PR I'm working
-on and fixing it shouldn't block this PR from going in (but we should fix it up pronto)
+- `pytest.mark.notimpl`: We can implement/fix/workaround this on the ibis side, but haven't yet.
+- `pytest.mark.notyet`: This requires the backend to implement/fix something.
+   We can't/won't do it on the ibis side.
+- `pytest.mark.never`: The backend will never support this / pass this test.
+  We shouldn't have any hope of trying to fix this.
+  A common example here is a test running on sqlite that relies on strong typing.
 
 Refrain from using a generic marker like `pytest.mark.xfail`.
 

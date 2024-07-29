@@ -45,7 +45,7 @@ def test_uuid_literal(con, backend):
     ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.broken(
+@pytest.mark.never(
     ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
 )
 def test_uuid_function(con):

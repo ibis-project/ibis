@@ -370,22 +370,6 @@ def pytest_runtest_call(item):
             kwargs = _filter_none_from_raises(kwargs)
             item.add_marker(pytest.mark.xfail(**kwargs))
 
-    # Something has been exposed as broken by a new test and it shouldn't be
-    # imperative for a contributor to fix it just because they happened to
-    # bring it to attention  -- USE SPARINGLY
-    for marker in item.iter_markers(name="broken"):
-        if backend in marker.args[0]:
-            if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
-                and "raises" not in marker.kwargs.keys()
-            ):
-                raise ValueError("broken requires a raises")
-
-            kwargs = marker.kwargs.copy()
-            kwargs.setdefault("reason", f"Feature is failing on {backend}")
-            kwargs = _filter_none_from_raises(kwargs)
-            item.add_marker(pytest.mark.xfail(**kwargs))
-
     for marker in item.iter_markers(name="xfail_version"):
         kwargs = marker.kwargs.copy()
         kwargs = _filter_none_from_raises(kwargs)
