@@ -684,9 +684,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
         table_expr = expr.as_table()
-        geocols = frozenset(
+        geocols = [
             name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        )
+        ]
 
         query = sql.transform(
             _qualify_memtable,
