@@ -373,6 +373,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_TimestampTruncate(self, op, *, arg, unit):
         converters = {
             "Y": "toStartOfYear",
+            "Q": "toStartOfQuarter",
             "M": "toStartOfMonth",
             "W": "toMonday",
             "D": "toDate",
