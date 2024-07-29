@@ -996,16 +996,19 @@ class NumericColumn(Column, NumericValue):
                 f"Cannot pass both `nbins` (got {nbins}) and `binwidth` (got {binwidth})"
             )
 
-        if binwidth is None or base is None:
+        if base is None:
+            base = self.min() - eps
+
+        if binwidth is None:
             if nbins is None:
                 raise ValueError("`nbins` is required if `binwidth` is not provided")
 
-            if base is None:
-                base = self.min() - eps
-
             binwidth = (self.max() - base) / nbins
 
-        return ((self - base) / binwidth).floor().clip(0, nbins - 1)
+        if nbins is None:
+            nbins = ((self.max() - base) / binwidth).ceil()
+
+        return ((self - base) / binwidth).floor().clip(-1, nbins - 1)
 
 
 @public
