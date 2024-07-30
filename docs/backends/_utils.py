@@ -36,7 +36,11 @@ def find_member_with_docstring(member):
         return member
 
     cls = member.parent
-    for base in cls.resolved_bases:
+    resolved_bases = cls.resolved_bases
+    # If we're a SQLBackend (likely) then also search through to `BaseBackend``
+    if (sqlbackend := resolved_bases[0]).name == "SQLBackend":
+        resolved_bases.extend(sqlbackend.resolved_bases)
+    for base in resolved_bases:
         try:
             parent_member = get_callable(base, member.name)
         except KeyError:
