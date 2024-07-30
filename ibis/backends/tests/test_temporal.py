@@ -2041,17 +2041,7 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    [
-        "bigquery",
-        "dask",
-        "impala",
-        "mysql",
-        "pandas",
-        "pyspark",
-        "sqlite",
-        "trino",
-        "druid",
-    ],
+    ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite", "trino", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2154,7 +2144,6 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 
 @pytest.mark.notimpl(
     [
-        "bigquery",
         "dask",
         "datafusion",
         "impala",

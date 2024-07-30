@@ -45,7 +45,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.RowID,
-        ops.TimestampBucket,
         ops.TimestampDiff,
     )
 
@@ -760,3 +759,18 @@ class BigQueryCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
+
+    def visit_TimestampBucket(self, op, *, arg, interval, offset):
+        arg_dtype = op.arg.dtype
+        if arg_dtype.timezone is not None:
+            funcname = "timestamp"
+        else:
+            funcname = "datetime"
+
+        func = self.f[f"{funcname}_bucket"]
+
+        origin = sge.convert("1970-01-01")
+        if offset is not None:
+            origin = self.f.anon[f"{funcname}_add"](origin, offset)
+
+        return func(arg, interval, origin)
