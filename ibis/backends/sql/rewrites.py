@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from collections.abc import Mapping
+from collections.abc import Mapping, Set
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -249,17 +249,17 @@ def merge_select_select(_, **kwargs):
     return result if complexity(result) <= complexity(_) else _
 
 
-def extract_ctes(node):
-    result = []
+def extract_ctes(node: ops.Relation) -> Set[ops.Relation]:
     cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
+    result = set()
     for op, dependents in g.invert().items():
         if isinstance(op, ops.View) or (
             len(dependents) > 1 and isinstance(op, cte_types)
         ):
-            result.append(op)
+            result.add(op)
 
     return result
 
@@ -315,7 +315,7 @@ def sqlize(
         simplified = sqlized
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = frozenset(extract_ctes(simplified))
+    ctes = extract_ctes(simplified)
 
     def wrap(node, _, **kwargs):
         new = node.__recreate__(kwargs)
