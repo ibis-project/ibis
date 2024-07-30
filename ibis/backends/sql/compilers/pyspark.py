@@ -595,10 +595,10 @@ class PySparkCompiler(SQLGlotCompiler):
 
         return f"{this}{unit}"
 
-    def visit_ArraySumAgg(self, op, *, arg, output):
+    def _array_reduction(self, *, dtype, arg, output):
         quoted = self.quoted
         dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
-        state_dtype = dt.Struct({"sum": op.dtype, "count": dt.int64})
+        state_dtype = dt.Struct({"sum": dtype, "count": dt.int64})
         initial_state = self.cast(
             sge.Struct.from_arg_list([sge.convert(0), sge.convert(0)]), state_dtype
         )
@@ -629,7 +629,7 @@ class PySparkCompiler(SQLGlotCompiler):
         )
 
     def visit_ArraySum(self, op, *, arg):
-        return self.visit_ArraySumAgg(op, arg=arg, output=lambda sum, _: sum)
+        return self._array_reduction(dtype=op.dtype, arg=arg, output=lambda sum, _: sum)
 
     def visit_ArrayMean(self, op, *, arg):
-        return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
+        return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)

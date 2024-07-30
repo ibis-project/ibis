@@ -1494,10 +1494,10 @@ def _agg_with_nulls(agg, x):
 @pytest.mark.parametrize(
     ("agg", "baseline_func"),
     [
-        (ir.ArrayValue.sums, partial(_agg_with_nulls, sum)),
-        (ir.ArrayValue.mins, partial(_agg_with_nulls, min)),
-        (ir.ArrayValue.maxs, partial(_agg_with_nulls, max)),
-        (ir.ArrayValue.means, partial(_agg_with_nulls, statistics.mean)),
+        (ir.ArrayValue.sums, lambda x: _agg_with_nulls(sum, x)),
+        (ir.ArrayValue.mins, lambda x: _agg_with_nulls(min, x)),
+        (ir.ArrayValue.maxs, lambda x: _agg_with_nulls(max, x)),
+        (ir.ArrayValue.means, lambda x: _agg_with_nulls(statistics.mean, x)),
     ],
     ids=["sums", "mins", "maxs", "means"],
 )

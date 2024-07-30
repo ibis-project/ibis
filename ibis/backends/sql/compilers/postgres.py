@@ -675,7 +675,7 @@ class PostgresCompiler(SQLGlotCompiler):
         alias = sge.TableAlias(columns=[sg.to_identifier(as_)])
         return sge.Unnest(expressions=[expression], alias=alias)
 
-    def visit_ArrayReduction(self, op, *, arg, reduction):
+    def _array_reduction(self, *, arg, reduction):
         name = sg.to_identifier(gen_name(f"pg_arr_{reduction}"))
         return (
             sg.select(self.f[reduction](name))
@@ -684,19 +684,19 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayMin(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="min")
+        return self._array_reduction(arg=arg, reduction="min")
 
     def visit_ArrayMax(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="max")
+        return self._array_reduction(arg=arg, reduction="max")
 
     def visit_ArraySum(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="sum")
+        return self._array_reduction(arg=arg, reduction="sum")
 
     def visit_ArrayMean(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="avg")
+        return self._array_reduction(arg=arg, reduction="avg")
 
     def visit_ArrayAny(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="bool_or")
+        return self._array_reduction(arg=arg, reduction="bool_or")
 
     def visit_ArrayAll(self, op, *, arg):
-        return self.visit_ArrayReduction(op, arg=arg, reduction="bool_and")
+        return self._array_reduction(arg=arg, reduction="bool_and")
