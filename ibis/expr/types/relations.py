@@ -1266,7 +1266,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
 
-        The only valid values of `keep` are `"first"`, `"last"` and [`None][None]
+        The only valid values of `keep` are `"first"`, `"last"` and [](`None`).
 
         >>> t.distinct(on="species", keep="second")  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
