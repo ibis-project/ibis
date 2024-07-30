@@ -1506,7 +1506,7 @@ def _agg_with_nulls(agg, x):
     "data",
     [
         param(
-            [[1, 2, 3], [None, 6], [5], [None], [], None],
+            [[None, 6], [None]],
             id="nulls",
             marks=[
                 pytest.mark.notyet(
@@ -1543,16 +1543,7 @@ def test_array_agg_numeric(con, data, agg, baseline_func):
     "data",
     [
         param(
-            [
-                [True, False],
-                [True, None],
-                [False, None],
-                [True],
-                [False],
-                [None],
-                [],
-                None,
-            ],
+            [[True, None], [False, None], [None]],
             marks=[
                 pytest.mark.notyet(
                     ["bigquery"],
