@@ -62,11 +62,38 @@ def _create_api_record_from_method_line(base_url, method):
         "objectID": f"{base_url}{anchor}",
         "href": f"{base_url}{anchor}",
         "title": name,
-        "text": desc,
-        "crumbs": ["Expression API", "API", f"{section} expressions"],
+        "backend": "core",
+        "core": 1,
+        "crumbs": ["Expression API", "API", f"{section} expression"],
     }
+    if desc:
+        record["text"] = desc
 
     return record
+
+
+def adjust_backend_custom_attributes(backend_records):
+    """Adjusts attributes of the Algolia records.
+
+    Two custom attribute changes:
+        One is the name of the backend, which we can possibly use for grouping
+        or filtering results.
+
+        The other is a marker of whether the record is part of the core
+        expression API, which we can use to sort results so that generic table
+        expressions appear above backend-specific ones in the case of
+        name-collisions.
+
+    We also strip out the "text" attribute if it's empty
+    """
+    backend_name = backend_records[0]["title"].split(".", 1)[0]
+    for record in backend_records:
+        record["backend"] = backend_name
+        record["core"] = 0
+        if not record["text"]:
+            record.pop("text")
+
+    return backend_records
 
 
 def main():
@@ -106,8 +133,12 @@ def main():
     # Here, we load those records and upload them to the Algolia index
     records = []
     for record_json in glob.glob("docs/backends/*.json"):
+        print(f"Loading {record_json} methods...")  # noqa:T201
         with open(record_json) as f:
-            records.extend(json.load(f))
+            backend_records = json.load(f)
+            backend_records = adjust_backend_custom_attributes(backend_records)
+            records.extend(backend_records)
+    print(f"Uploading {len(records)} records to {index.name=}")  # noqa:T201
     index.save_objects(records)
 
 
