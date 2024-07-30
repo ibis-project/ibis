@@ -40,7 +40,11 @@ def find_member_with_docstring(member):
     # If we're a SQLBackend (likely) then also search through to `BaseBackend``
     if (sqlbackend := resolved_bases[0]).name == "SQLBackend":
         resolved_bases.extend(sqlbackend.resolved_bases)
-    for base in resolved_bases:
+
+    # Remove `CanCreateSchema` and `CanListSchema` since they are deprecated
+    # and we don't want to document their existence.
+    filtered_bases = filter(lambda x: "schema" not in x.name.lower(), resolved_bases)
+    for base in filtered_bases:
         try:
             parent_member = get_callable(base, member.name)
         except KeyError:
