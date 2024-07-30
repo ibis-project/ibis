@@ -38,8 +38,10 @@ def find_member_with_docstring(member):
     cls = member.parent
     resolved_bases = cls.resolved_bases
     # If we're a SQLBackend (likely) then also search through to `BaseBackend``
-    if (sqlbackend := resolved_bases[0]).name == "SQLBackend":
-        resolved_bases.extend(sqlbackend.resolved_bases)
+    if resolved_bases and (sqlbackend := resolved_bases[0]).name == "SQLBackend":
+        for base in sqlbackend.resolved_bases:
+            if base not in resolved_bases:
+                resolved_bases.append(base)
 
     # Remove `CanCreateSchema` and `CanListSchema` since they are deprecated
     # and we don't want to document their existence.
