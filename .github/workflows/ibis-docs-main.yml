@@ -71,7 +71,7 @@ jobs:
 
       - name: Create and Upload Base Index
         run: |
-          python .github/workflows/upload-algolia.py
+          python .github/workflows/algolia/upload-algolia.py
         env:
           ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
           ALGOLIA_APP_ID: TNU9HG3L41
@@ -79,7 +79,15 @@ jobs:
 
       - name: Create and Upload API Records to index
         run: |
-          python .github/workflows/upload-algolia-api.py
+          python .github/workflows/algolia/upload-algolia-api.py
+        env:
+          ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
+          ALGOLIA_APP_ID: TNU9HG3L41
+          ALGOLIA_INDEX: prod_ibis
+
+      - name: Configure custom ranking on Algolia
+        run: |
+          python .github/workflows/algolia/configure-algolia-api.py
         env:
           ALGOLIA_WRITE_API_KEY: ${{ secrets.ALGOLIA_WRITE_API_KEY }}
           ALGOLIA_APP_ID: TNU9HG3L41
