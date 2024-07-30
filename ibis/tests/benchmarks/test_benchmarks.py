@@ -1003,7 +1003,7 @@ def info_t():
 
 
 @pytest.fixture(scope="module")
-def info_t_with_data():
+def info_t_raw():
     np = pytest.importorskip("numpy")
     pa = pytest.importorskip("pyarrow")
 
@@ -1013,38 +1013,56 @@ def info_t_with_data():
         np.random.randn(num_rows, num_cols).T,
         names=list(map("col_{}".format, range(num_cols))),
     )
-    return ibis.memtable(data)
+    return data
 
 
-@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+@pytest.fixture(scope="module")
+def info_t_with_data(info_t_raw):
+    return ibis.memtable(info_t_raw)
+
+
+@pytest.mark.parametrize(
+    "method", [ir.Table.describe, ir.Table.info], ids=["describe", "info"]
+)
+@pytest.mark.benchmark(group="summarization")
 def test_summarize_construct(benchmark, info_t, method):
     """Construct the expression."""
     benchmark(method, info_t)
 
 
-@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+@pytest.mark.parametrize(
+    "method", [ir.Table.describe, ir.Table.info], ids=["describe", "info"]
+)
+@pytest.mark.benchmark(group="summarization")
 def test_summarize_compile(benchmark, info_t, method):
     """Compile the expression."""
     benchmark(ibis.to_sql, method(info_t), dialect="duckdb")
 
 
-@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+@pytest.mark.parametrize(
+    "method", [ir.Table.describe, ir.Table.info], ids=["describe", "info"]
+)
+@pytest.mark.benchmark(group="summarization")
 def test_summarize_execute(benchmark, info_t_with_data, method, con):
     """Compile and execute the expression."""
-    benchmark(con.execute, method(info_t_with_data))
+    benchmark(con.to_pyarrow, method(info_t_with_data))
 
 
-@pytest.mark.parametrize("method", [ir.Table.describe, ir.Table.info])
+@pytest.mark.parametrize(
+    "method", [ir.Table.describe, ir.Table.info], ids=["describe", "info"]
+)
+@pytest.mark.benchmark(group="summarization")
 def test_summarize_end_to_end(benchmark, info_t_with_data, method, con):
     """Construct, compile, and execute the expression."""
-    benchmark(lambda table: con.execute(method(table)), info_t_with_data)
+    benchmark(lambda table: con.to_pyarrow(method(table)), info_t_with_data)
 
 
-def test_summarize_duckdb(benchmark, info_t_with_data, tmp_path):
+@pytest.mark.benchmark(group="summarization")
+def test_summarize_duckdb(benchmark, info_t_raw, tmp_path):
     """Construct, compile, and execute the expression."""
     duckdb = pytest.importorskip("duckdb")
 
     con = duckdb.connect(str(tmp_path / "test.ddb"))
-    con.register("t", info_t_with_data)
+    con.register("t", info_t_raw)
     sql = "SUMMARIZE t"
     benchmark(lambda sql: con.sql(sql).arrow(), sql)
