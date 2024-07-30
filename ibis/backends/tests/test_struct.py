@@ -49,14 +49,6 @@ pytestmark = [
         ),
     ],
 )
-@pytest.mark.xfail_version(
-    polars=["polars>=1.2.1"],
-    raises=AssertionError,
-    reason=(
-        "polars returns incorrect values on struct field access where the entire row is null; "
-        "see https://github.com/pola-rs/polars/issues/17730"
-    ),
-)
 def test_single_field(struct, field, expected):
     expr = struct.select(field=lambda t: t.abc[field]).order_by("field")
     result = expr.execute()
