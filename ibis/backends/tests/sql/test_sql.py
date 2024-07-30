@@ -590,3 +590,17 @@ def test_no_cartesian_join(snapshot):
         ]
     )
     snapshot.assert_match(ibis.to_sql(final, dialect="duckdb"), "out.sql")
+
+
+def test_ctes_in_order():
+    table1 = ibis.table({"id": "int"}, name="table1")
+    table2 = ibis.table({"id": "int"}, name="table2")
+    table3 = ibis.table({"id": "int"}, name="table3")
+
+    ids_table = table1.union(table2).alias("first")
+    info_table = ids_table.union(table3).alias("second")
+
+    expr = ids_table.union(info_table)
+
+    sql = ibis.to_sql(expr, dialect="duckdb")
+    assert sql.find('"first" AS (') < sql.find('"second" AS (')
