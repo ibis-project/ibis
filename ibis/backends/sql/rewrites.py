@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import operator
-from collections.abc import Mapping, Set
+from collections.abc import Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
 
@@ -249,7 +249,7 @@ def merge_select_select(_, **kwargs):
     return result if complexity(result) <= complexity(_) else _
 
 
-def extract_ctes(node: ops.Relation) -> Set[ops.Relation]:
+def extract_ctes(node: ops.Relation) -> set[ops.Relation]:
     cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
