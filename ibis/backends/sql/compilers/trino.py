@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import operator
 from functools import partial, reduce
 
 import sqlglot as sg
@@ -10,7 +11,14 @@ import toolz
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import (
+    FALSE,
+    NULL,
+    STAR,
+    TRUE,
+    AggGen,
+    SQLGlotCompiler,
+)
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
@@ -564,7 +572,72 @@ class TrinoCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(
                 unnest,
-                on=None if not keep_empty else sge.convert(True),
+                on=None if not keep_empty else TRUE,
                 join_type="CROSS" if not keep_empty else "LEFT",
             )
         )
+
+    def visit_ArrayAny(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        identity = sge.Lambda(this=x, expressions=[x])
+        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.any_match(
+            self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
+        )
+
+    def visit_ArrayAll(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        identity = sge.Lambda(this=x, expressions=[x])
+        is_not_null = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.all_match(
+            self.f.nullif(self.f.filter(arg, is_not_null), self.f.array()), identity
+        )
+
+    def visit_ArrayMin(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.array_min(self.f.filter(arg, func))
+
+    def visit_ArrayMax(self, op, *, arg):
+        x = sg.to_identifier("x", quoted=self.quoted)
+        func = sge.Lambda(this=x.is_(sg.not_(NULL)), expressions=[x])
+        return self.f.array_max(self.f.filter(arg, func))
+
+    def visit_ArraySumAgg(self, op, *, arg, output):
+        quoted = self.quoted
+        dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
+        state_dtype = dt.Struct({"sum": op.dtype, "count": dt.int64})
+        initial_state = self.cast(
+            sge.Struct.from_arg_list([sge.convert(0), sge.convert(0)]), state_dtype
+        )
+
+        s = sg.to_identifier("s", quoted=quoted)
+        x = sg.to_identifier("x", quoted=quoted)
+
+        s_sum = dot(s, "sum")
+        s_count = dot(s, "count")
+
+        input_fn_body = self.cast(
+            sge.Struct.from_arg_list(
+                [
+                    x + self.f.coalesce(s_sum, 0),
+                    s_count + self.if_(x.is_(sg.not_(NULL)), 1, 0),
+                ]
+            ),
+            state_dtype,
+        )
+        input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
+
+        output_fn_body = self.if_(s_count > 0, output(s_sum, s_count), NULL)
+        return self.f.reduce(
+            arg,
+            initial_state,
+            input_fn,
+            sge.Lambda(this=output_fn_body, expressions=[s]),
+        )
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=lambda sum, _: sum)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)

@@ -727,3 +727,21 @@ class SnowflakeCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
+
+    def visit_ArrayMin(self, op, *, arg):
+        return self.cast(self.f.array_min(self.f.array_compact(arg)), op.dtype)
+
+    def visit_ArrayMax(self, op, *, arg):
+        return self.cast(self.f.array_max(self.f.array_compact(arg)), op.dtype)
+
+    def visit_ArrayAny(self, op, *, arg):
+        return self.f.udf.array_any(arg)
+
+    def visit_ArrayAll(self, op, *, arg):
+        return self.f.udf.array_all(arg)
+
+    def visit_ArraySum(self, op, *, arg):
+        return self.cast(self.f.udf.array_sum(arg), op.dtype)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self.cast(self.f.udf.array_avg(arg), op.dtype)

@@ -361,6 +361,8 @@ quartodoc:
               package: ibis.expr.types.numeric
             - name: BooleanValue
               package: ibis.expr.types.logical
+            - name: BooleanColumn
+              package: ibis.expr.types.logical
             - name: and_
               dynamic: true
               signature_name: full

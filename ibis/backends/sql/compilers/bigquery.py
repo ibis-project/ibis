@@ -774,3 +774,29 @@ class BigQueryCompiler(SQLGlotCompiler):
             origin = self.f.anon[f"{funcname}_add"](origin, offset)
 
         return func(arg, interval, origin)
+
+    def _array_reduction(self, *, arg, reduction):
+        name = sg.to_identifier(util.gen_name(f"bq_arr_{reduction}"))
+        return (
+            sg.select(self.f[reduction](name))
+            .from_(self._unnest(arg, as_=name))
+            .subquery()
+        )
+
+    def visit_ArrayMin(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="min")
+
+    def visit_ArrayMax(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="max")
+
+    def visit_ArraySum(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="sum")
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="avg")
+
+    def visit_ArrayAny(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="logical_or")
+
+    def visit_ArrayAll(self, op, *, arg):
+        return self._array_reduction(arg=arg, reduction="logical_and")

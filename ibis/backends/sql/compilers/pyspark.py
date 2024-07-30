@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import itertools
+import operator
 import re
 
 import sqlglot as sg
@@ -68,6 +69,10 @@ class PySparkCompiler(SQLGlotCompiler):
         ops.ArrayRemove: "array_remove",
         ops.ArraySort: "array_sort",
         ops.ArrayUnion: "array_union",
+        ops.ArrayMin: "array_min",
+        ops.ArrayMax: "array_max",
+        ops.ArrayAll: "array_min",
+        ops.ArrayAny: "array_max",
         ops.EndsWith: "endswith",
         ops.Hash: "hash",
         ops.Log10: "log10",
@@ -589,3 +594,42 @@ class PySparkCompiler(SQLGlotCompiler):
         this = expression.this.this  # avoid quoting the interval as a string literal
 
         return f"{this}{unit}"
+
+    def _array_reduction(self, *, dtype, arg, output):
+        quoted = self.quoted
+        dot = lambda a, f: sge.Dot.build((a, sge.to_identifier(f, quoted=quoted)))
+        state_dtype = dt.Struct({"sum": dtype, "count": dt.int64})
+        initial_state = self.cast(
+            sge.Struct.from_arg_list([sge.convert(0), sge.convert(0)]), state_dtype
+        )
+
+        s = sg.to_identifier("s", quoted=quoted)
+        x = sg.to_identifier("x", quoted=quoted)
+
+        s_sum = dot(s, "sum")
+        s_count = dot(s, "count")
+
+        input_fn_body = self.cast(
+            sge.Struct.from_arg_list(
+                [
+                    x + self.f.coalesce(s_sum, 0),
+                    s_count + self.if_(x.is_(sg.not_(NULL)), 1, 0),
+                ]
+            ),
+            state_dtype,
+        )
+        input_fn = sge.Lambda(this=input_fn_body, expressions=[s, x])
+
+        output_fn_body = self.if_(s_count > 0, output(s_sum, s_count), NULL)
+        return self.f.aggregate(
+            arg,
+            initial_state,
+            input_fn,
+            sge.Lambda(this=output_fn_body, expressions=[s]),
+        )
+
+    def visit_ArraySum(self, op, *, arg):
+        return self._array_reduction(dtype=op.dtype, arg=arg, output=lambda sum, _: sum)
+
+    def visit_ArrayMean(self, op, *, arg):
+        return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)

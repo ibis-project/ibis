@@ -48,6 +48,12 @@ class DuckDBCompiler(SQLGlotCompiler):
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
         ops.ArrayPosition: "list_indexof",
+        ops.ArrayMin: "list_min",
+        ops.ArrayMax: "list_max",
+        ops.ArrayAny: "list_bool_or",
+        ops.ArrayAll: "list_bool_and",
+        ops.ArraySum: "list_sum",
+        ops.ArrayMean: "list_avg",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",

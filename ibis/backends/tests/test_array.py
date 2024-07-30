@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-import functools
+import statistics
 from collections import Counter
 from datetime import datetime
+from functools import partial
 
 import numpy as np
 import pandas as pd
@@ -453,11 +454,7 @@ def test_array_slice(backend, start, stop):
 )
 @pytest.mark.parametrize(
     "func",
-    [
-        lambda x: x + 1,
-        functools.partial(lambda x, y: x + y, y=1),
-        ibis._ + 1,
-    ],
+    [lambda x: x + 1, partial(lambda x, y: x + y, y=1), ibis._ + 1],
     ids=["lambda", "partial", "deferred"],
 )
 @pytest.mark.notimpl(
@@ -515,11 +512,7 @@ def test_array_map(con, input, output, func):
 )
 @pytest.mark.parametrize(
     "predicate",
-    [
-        lambda x: x > 1,
-        functools.partial(lambda x, y: x > y, y=1),
-        ibis._ > 1,
-    ],
+    [lambda x: x > 1, partial(lambda x, y: x > y, y=1), ibis._ > 1],
     ids=["lambda", "partial", "deferred"],
 )
 def test_array_filter(con, input, output, predicate):
@@ -1482,3 +1475,95 @@ def test_table_unnest_array_of_struct_of_array(con):
     result = con.execute(expr)
     expected = pd.DataFrame({"x": [1, 1, 1, 2, 2, 2, 3, 3, 3]})
     tm.assert_frame_equal(result, expected)
+
+
+notimpl_aggs = pytest.mark.notimpl(
+    ["datafusion", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
+)
+
+
+def _agg_with_nulls(agg, x):
+    if x is None:
+        return None
+    x = [y for y in x if not pd.isna(y)]
+    if not x:
+        return None
+    return agg(x)
+
+
+@pytest.mark.parametrize(
+    ("agg", "baseline_func"),
+    [
+        (ir.ArrayValue.sums, lambda x: _agg_with_nulls(sum, x)),
+        (ir.ArrayValue.mins, lambda x: _agg_with_nulls(min, x)),
+        (ir.ArrayValue.maxs, lambda x: _agg_with_nulls(max, x)),
+        (ir.ArrayValue.means, lambda x: _agg_with_nulls(statistics.mean, x)),
+    ],
+    ids=["sums", "mins", "maxs", "means"],
+)
+@notimpl_aggs
+@pytest.mark.parametrize(
+    "data",
+    [
+        param(
+            [[None, 6], [None]],
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery doesn't allow arrays with nulls",
+                )
+            ],
+        ),
+        param([[1, 2, 3], [6], [], None], id="no-nulls"),
+    ],
+)
+def test_array_agg_numeric(con, data, agg, baseline_func):
+    t = ibis.memtable({"x": data, "id": range(len(data))})
+    t = t.mutate(y=agg(t.x))
+    assert t.y.type().is_numeric()
+    # sort so debugging is easier
+    df = con.to_pandas(t.order_by("id"))
+    result = df.y.tolist()
+    result = [x if pd.notna(x) else None for x in result]
+    expected = [baseline_func(x) for x in df.x]
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("agg", "baseline_func"),
+    [
+        (ir.ArrayValue.anys, partial(_agg_with_nulls, any)),
+        (ir.ArrayValue.alls, partial(_agg_with_nulls, all)),
+    ],
+    ids=["anys", "alls"],
+)
+@pytest.mark.parametrize(
+    "data",
+    [
+        param(
+            [[True, None], [False, None], [None]],
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery doesn't allow arrays with nulls",
+                )
+            ],
+            id="nulls",
+        ),
+        param([[True, False], [True], [False], [], None], id="no-nulls"),
+    ],
+)
+@notimpl_aggs
+def test_array_agg_bool(con, data, agg, baseline_func):
+    t = ibis.memtable({"x": data, "id": range(len(data))})
+    t = t.mutate(y=agg(t.x))
+    assert t.y.type().is_boolean()
+    # sort so debugging is easier
+    df = con.to_pandas(t.order_by("id"))
+    result = df.y.tolist()
+    result = [x if pd.notna(x) else None for x in result]
+    expected = [baseline_func(x) for x in df.x]
+    assert result == expected
