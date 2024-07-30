@@ -6749,13 +6749,13 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "25.7.1"
+version = "25.8.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.7.1-py3-none-any.whl", hash = "sha256:d907e07baaa910b1b1ad1f95bc01aeef95734132efb7372d08da8966e9f5b55c"},
-    {file = "sqlglot-25.7.1.tar.gz", hash = "sha256:bab34b0beea365317fd67e50defbfabc97f14d8e1968ccef509b13030c4af561"},
+    {file = "sqlglot-25.8.0-py3-none-any.whl", hash = "sha256:6bf009ddad613b492ce9c786f602eab95a451fc74959442bfc9408f915d45ecc"},
+    {file = "sqlglot-25.8.0.tar.gz", hash = "sha256:7abc0d3f45402c44578075e317548c38ddc4e2ca2f9a3f1f48eda698bc5994fb"},
 ]
 
 [package.extras]
@@ -7739,4 +7739,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "46bf53b5278483a5c2e4aed7c83f1c2a33a117d895a0de4ee5c42cae6d68cc6b"
+content-hash = "2ef5130f6edba1140ee3f218f095b469bf81696b72829ac15d5ca60572a77a4d"
