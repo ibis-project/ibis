@@ -3069,3 +3069,146 @@ def test_60(store_sales, date_dim, customer_address, item, catalog_sales, web_sa
         .order_by(s.all())
         .limit(100)
     )
+
+
+@tpc_test("ds")
+def test_61(store_sales, store, promotion, date_dim, customer, customer_address, item):
+    promotional_sales = (
+        store_sales.join(store, [("ss_store_sk", "s_store_sk")])
+        .join(promotion, [("ss_promo_sk", "p_promo_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .filter(
+            _.ca_gmt_offset == -5,
+            _.i_category == "Jewelry",
+            (_.p_channel_dmail == "Y")
+            | (_.p_channel_email == "Y")
+            | (_.p_channel_tv == "Y"),
+            _.s_gmt_offset == -5,
+            _.d_year == 1998,
+            _.d_moy == 11,
+        )
+        .agg(promotions=_.ss_ext_sales_price.sum())
+    )
+    all_sales = (
+        store_sales.join(store, [("ss_store_sk", "s_store_sk")])
+        .join(promotion, [("ss_promo_sk", "p_promo_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .filter(
+            _.ca_gmt_offset == -5,
+            _.i_category == "Jewelry",
+            _.s_gmt_offset == -5,
+            _.d_year == 1998,
+            _.d_moy == 11,
+        )
+        .agg(total=_.ss_ext_sales_price.sum())
+    )
+    return (
+        promotional_sales.cross_join(all_sales)
+        .mutate(
+            perc_promotions=(
+                _.promotions.cast("decimal(15, 4)")
+                / _.total.cast("decimal(15, 4)")
+                * 100
+            )
+        )
+        .order_by(_.promotions, _.total)
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_62(web_sales, warehouse, ship_mode, web_site, date_dim):
+    return (
+        web_sales.join(
+            warehouse.mutate(w_substr=_.w_warehouse_name[:20]),
+            [("ws_warehouse_sk", "w_warehouse_sk")],
+        )
+        .join(ship_mode, [("ws_ship_mode_sk", "sm_ship_mode_sk")])
+        .join(web_site, [("ws_web_site_sk", ("web_site_sk"))])
+        .join(date_dim, [("ws_ship_date_sk", "d_date_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .group_by(_.w_substr, _.sm_type, _.web_name)
+        .agg(
+            # MEH
+            **{
+                f"{name} days": ifelse(
+                    (
+                        (_.ws_ship_date_sk - _.ws_sold_date_sk > lower)
+                        if lower is not None
+                        else True
+                    )
+                    & (
+                        (_.ws_ship_date_sk - _.ws_sold_date_sk <= upper)
+                        if upper is not None
+                        else True
+                    ),
+                    1,
+                    0,
+                ).sum()
+                for name, lower, upper in [
+                    ("30", None, 30),
+                    ("31-60", 30, 60),
+                    ("61-90", 60, 90),
+                    ("91-120", 90, 120),
+                    (">120", 120, None),
+                ]
+            }
+        )
+        .order_by(s.across(~s.endswith(" days"), _.asc(nulls_first=True)))
+    )
+
+
+@tpc_test("ds")
+def test_63(item, store_sales, date_dim, store):
+    return (
+        item.join(store_sales, [("i_item_sk", "ss_item_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .filter(
+            _.d_month_seq.isin(tuple(range(1200, 1212))),
+            (
+                _.i_category.isin(("Books", "Children", "Electronics"))
+                & _.i_class.isin(("personal", "portable", "reference", "self-help"))
+                & _.i_brand.isin(
+                    (
+                        "scholaramalgamalg #14",
+                        "scholaramalgamalg #7",
+                        "exportiunivamalg #9",
+                        "scholaramalgamalg #9",
+                    )
+                )
+            )
+            | (
+                _.i_category.isin(("Women", "Music", "Men"))
+                & _.i_class.isin(("accessories", "classical", "fragrances", "pants"))
+                & _.i_brand.isin(
+                    (
+                        "amalgimporto #1",
+                        "edu packscholar #1",
+                        "exportiimporto #1",
+                        "importoamalg #1",
+                    )
+                )
+            ),
+        )
+        .group_by(_.i_manager_id, _.d_moy)
+        .agg(sum_sales=_.ss_sales_price.sum())
+        .drop("d_moy")
+        .mutate(avg_monthly_sales=_.sum_sales.mean().over(group_by=_.i_manager_id))
+        .filter(
+            ifelse(
+                _.avg_monthly_sales > 0,
+                (_.sum_sales - _.avg_monthly_sales).abs() / _.avg_monthly_sales,
+                null(),
+            )
+            > 0.1
+        )
+        .order_by(_.i_manager_id, _.avg_monthly_sales, _.sum_sales)
+        .limit(100)
+    )
