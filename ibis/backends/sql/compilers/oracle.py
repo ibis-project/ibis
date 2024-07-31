@@ -446,3 +446,9 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_ExtractIsoYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
+
+    def visit_GroupConcat(self, op, *, arg, where, sep):
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        return self.f.listagg(arg, sep)
