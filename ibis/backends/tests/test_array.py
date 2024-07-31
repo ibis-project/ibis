@@ -621,16 +621,21 @@ def test_array_position(con, a, expected_array):
             id="all-non-empty-arrays",
         ),
         param(
+            [[3, 2, None], [None], [42, 2], [2, 2]],
+            [[3, None], [None], [42], []],
+            id="including_nested_null",
+        ),
+        param(
             [[3, 2, None], [None], [42, 2], [2, 2], None],
             [[3, None], [None], [42], [], None],
-            id="including_null",
-            # marks=[
-            #     pytest.mark.broken(
-            #         ["duckdb"],
-            #         raises=AssertionError,
-            #         reason="not implmented correctly",
-            #     ),
-            # ],
+            id="including_non_nested_null",
+            marks=[
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=AssertionError,
+                    reason="clickhouse still does not support nullable nested types",
+                )
+            ],
         ),
     ],
 )
@@ -640,9 +645,9 @@ def test_array_remove(con, inp, exp):
     result = con.execute(expr)
     expected = pd.Series(exp, dtype="object")
 
-    assert frozenset(
-        tuple(v) if v is not None else None for v in result.values
-    ) == frozenset(tuple(v) if v is not None else None for v in expected.values)
+    lhs = frozenset(tuple(v) if v is not None else None for v in result.values)
+    rhs = frozenset(tuple(v) if v is not None else None for v in expected.values)
+    assert lhs == rhs
 
 
 @builtin_array
