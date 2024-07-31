@@ -62,10 +62,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ArrayIntersect: "arrayIntersect",
         ops.ArrayPosition: "indexOf",
         ops.BitwiseAnd: "bitAnd",
-        ops.BitwiseLeftShift: "bitShiftLeft",
         ops.BitwiseNot: "bitNot",
         ops.BitwiseOr: "bitOr",
-        ops.BitwiseRightShift: "bitShiftRight",
         ops.BitwiseXor: "bitXor",
         ops.Capitalize: "initcap",
         ops.CountDistinct: "uniq",
@@ -97,7 +95,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Last: "anyLast",
         ops.Ln: "log",
         ops.Log10: "log10",
-        ops.MapContains: "mapContains",
         ops.MapKeys: "mapKeys",
         ops.MapLength: "length",
         ops.MapMerge: "mapUpdate",
@@ -443,10 +440,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_Cot(self, op, *, arg):
         return 1.0 / self.f.tan(arg)
 
-    def visit_StructColumn(self, op, *, values, names):
-        # ClickHouse struct types cannot be nullable
-        # (non-nested fields can be nullable)
-        return self.cast(self.f.tuple(*values), op.dtype.copy(nullable=False))
+    def visit_StructColumn(self, op, *, values, **_):
+        return self.f.tuple(*values)
 
     def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:
@@ -759,3 +754,34 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self.f.arrayReduce("avg", self._array_reduction(arg))
+
+    def _promote_bitshift_inputs(self, *, op, left, right):
+        # clickhouse is incredibly pedantic about types allowed in bit shifting
+        #
+        # e.g., a UInt8 cannot be bitshift by more than 8 bits, UInt16 by more
+        # than 16, and so on.
+        #
+        # This is why something like Ibis is necessary so that people have just
+        # _consistent_ things, let alone *nice* things.
+        left_dtype = op.left.dtype
+        right_dtype = op.right.dtype
+
+        if left_dtype != right_dtype:
+            promoted = dt.higher_precedence(left_dtype, right_dtype)
+            return self.cast(left, promoted), self.cast(right, promoted)
+        return left, right
+
+    def visit_BitwiseLeftShift(self, op, *, left, right):
+        return self.f.bitShiftLeft(
+            *self._promote_bitshift_inputs(op=op, left=left, right=right)
+        )
+
+    def visit_BitwiseRightShift(self, op, *, left, right):
+        return self.f.bitShiftRight(
+            *self._promote_bitshift_inputs(op=op, left=left, right=right)
+        )
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
+        )
