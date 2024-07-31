@@ -4,12 +4,15 @@ import calendar as cal
 from operator import itemgetter
 
 import pytest
-from pyarrow import ArrowNotImplementedError
 
 from ibis import _, coalesce, cumulative_window, date, ifelse, null, rank, union
 from ibis import literal as lit
 from ibis import selectors as s
-from ibis.backends.tests.errors import ClickHouseDatabaseError, TrinoUserError
+from ibis.backends.tests.errors import (
+    ArrowNotImplementedError,
+    ClickHouseDatabaseError,
+    TrinoUserError,
+)
 from ibis.backends.tests.tpc.conftest import tpc_test
 
 # so that clickhouse doesn't run forever when we hit one of its weird cross
