@@ -62,10 +62,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ArrayIntersect: "arrayIntersect",
         ops.ArrayPosition: "indexOf",
         ops.BitwiseAnd: "bitAnd",
-        ops.BitwiseLeftShift: "bitShiftLeft",
         ops.BitwiseNot: "bitNot",
         ops.BitwiseOr: "bitOr",
-        ops.BitwiseRightShift: "bitShiftRight",
         ops.BitwiseXor: "bitXor",
         ops.Capitalize: "initcap",
         ops.CountDistinct: "uniq",
@@ -758,3 +756,29 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self.f.arrayReduce("avg", self._array_reduction(arg))
+
+    def _promote_bitshift_inputs(self, *, op, left, right):
+        # clickhouse is incredibly pedantic about types allowed in bit shifting
+        #
+        # e.g., a UInt8 cannot be bitshift by more than 8 bits, UInt16 by more
+        # than 16, and so on.
+        #
+        # This is why something like Ibis is necessary so that people have just
+        # _consistent_ things, let alone *nice* things.
+        left_dtype = op.left.dtype
+        right_dtype = op.right.dtype
+
+        if left_dtype != right_dtype:
+            promoted = dt.higher_precedence(left_dtype, right_dtype)
+            return self.cast(left, promoted), self.cast(right, promoted)
+        return left, right
+
+    def visit_BitwiseLeftShift(self, op, *, left, right):
+        return self.f.bitShiftLeft(
+            *self._promote_bitshift_inputs(op=op, left=left, right=right)
+        )
+
+    def visit_BitwiseRightShift(self, op, *, left, right):
+        return self.f.bitShiftRight(
+            *self._promote_bitshift_inputs(op=op, left=left, right=right)
+        )
