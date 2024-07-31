@@ -15,12 +15,6 @@ from ibis.backends.tests.errors import (
 )
 from ibis.backends.tests.tpc.conftest import tpc_test
 
-# so that clickhouse doesn't run forever when we hit one of its weird cross
-# join performance black holes
-#
-# trino can sometimes take a while as well, especially in CI
-pytestmark = pytest.mark.timeout(60)
-
 
 @pytest.mark.notyet(
     ["clickhouse"],
