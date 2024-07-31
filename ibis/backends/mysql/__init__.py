@@ -14,6 +14,8 @@ import numpy as np
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
+from pymysql.constants.ER import NO_SUCH_TABLE
+from pymysql.err import ProgrammingError
 
 import ibis
 import ibis.common.exceptions as com
@@ -229,8 +231,9 @@ class Backend(SQLBackend, CanCreateDatabase):
             try:
                 cur.execute(sge.Describe(this=table).sql(self.dialect))
                 result = cur.fetchall()
-            except Exception:  # noqa: BLE001
-                raise com.TableNotFound(name)
+            except ProgrammingError as e:
+                if e.args[0] == NO_SUCH_TABLE:
+                    raise com.TableNotFound(name)
 
         type_mapper = self.compiler.type_mapper
         fields = {
