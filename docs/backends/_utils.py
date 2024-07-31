@@ -102,7 +102,11 @@ def dump_methods_to_json_for_algolia(backend, methods):
             "objectID": base_url,
             "href": base_url,
             "title": f"{backend_name}.Backend.{method}",
-            "text": getattr(backend.all_members[method].docstring, "value", ""),
+            "text": getattr(
+                find_member_with_docstring(backend.all_members[method]).docstring,
+                "value",
+                "",
+            ),
             "crumbs": ["Backend API", "API", f"{backend_name} methods"],
         }
 
