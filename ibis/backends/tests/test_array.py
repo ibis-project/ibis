@@ -258,7 +258,6 @@ def test_array_discovery(backend):
     reason="BigQuery doesn't support casting array<T> to array<U>",
     raises=GoogleBadRequest,
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -274,7 +273,6 @@ def test_unnest_simple(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -303,7 +301,12 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
+)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -326,7 +329,12 @@ def test_unnest_idempotent(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
+)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -358,7 +366,6 @@ def test_unnest_no_nulls(backend):
     raises=ValueError,
     reason="all the input arrays must have same number of dimensions",
 )
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -785,7 +792,6 @@ def test_array_intersect(con, data):
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -805,7 +811,6 @@ def test_unnest_struct(con):
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -896,7 +901,9 @@ def test_zip_null(con, fn):
 @builtin_array
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion"], raises=Exception, reason="probably generating invalid SQL"
+)
 @pytest.mark.notimpl(
     ["polars"],
     raises=com.OperationNotDefinedError,
@@ -1094,11 +1101,6 @@ def test_range_start_stop_step_zero(con, start, stop):
     ["polars"],
     raises=AssertionError,
     reason="ibis hasn't implemented this behavior yet",
-)
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=com.OperationNotDefinedError,
-    reason="backend doesn't support unnest",
 )
 @pytest.mark.notyet(
     ["flink"],

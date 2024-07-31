@@ -57,7 +57,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.TimestampDelta,
         ops.TimestampNow,
         ops.TypeOf,
-        ops.Unnest,
         ops.StringToDate,
         ops.StringToTimestamp,
     )
