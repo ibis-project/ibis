@@ -2912,3 +2912,160 @@ def test_57(item, catalog_sales, date_dim, call_center):
         .order_by((_.sum_sales - _.avg_monthly_sales).asc(nulls_first=True), s.r[1:10])
         .limit(100)
     )
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_58(store_sales, item, date_dim, catalog_sales, web_sales):
+    date_filter = lambda t: t.d_date.isin(
+        date_dim.filter(
+            lambda dd: dd.d_week_seq.isin(
+                date_dim.filter(_.d_date == date("2000-01-03")).d_week_seq
+            )
+        ).d_date
+    )
+    ss_items = (
+        store_sales.join(item, [("ss_item_sk", "i_item_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .filter(date_filter)
+        .group_by(item_id=_.i_item_id)
+        .agg(ss_item_rev=_.ss_ext_sales_price.sum())
+    )
+    cs_items = (
+        catalog_sales.join(item, [("cs_item_sk", "i_item_sk")])
+        .join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+        .filter(date_filter)
+        .group_by(item_id=_.i_item_id)
+        .agg(cs_item_rev=_.cs_ext_sales_price.sum())
+    )
+    ws_items = (
+        web_sales.join(item, [("ws_item_sk", "i_item_sk")])
+        .join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .filter(date_filter)
+        .group_by(item_id=_.i_item_id)
+        .agg(ws_item_rev=_.ws_ext_sales_price.sum())
+    )
+    return (
+        ss_items.join(cs_items, "item_id")
+        .join(ws_items, "item_id")
+        .filter(
+            _.ss_item_rev.between(0.9 * _.cs_item_rev, 1.1 * _.cs_item_rev),
+            _.ss_item_rev.between(0.9 * _.ws_item_rev, 1.1 * _.ws_item_rev),
+            _.cs_item_rev.between(0.9 * _.ss_item_rev, 1.1 * _.ss_item_rev),
+            _.cs_item_rev.between(0.9 * _.ws_item_rev, 1.1 * _.ws_item_rev),
+            _.ws_item_rev.between(0.9 * _.ss_item_rev, 1.1 * _.ss_item_rev),
+            _.ws_item_rev.between(0.9 * _.cs_item_rev, 1.1 * _.cs_item_rev),
+        )
+        .select(
+            ss_items.item_id,
+            _.ss_item_rev,
+            ss_dev=(
+                _.ss_item_rev
+                / ((_.ss_item_rev + _.cs_item_rev + _.ws_item_rev) / 3)
+                * 100
+            ),
+            cs_item_rev=_.cs_item_rev,
+            cs_dev=(
+                _.cs_item_rev
+                / ((_.ss_item_rev + _.cs_item_rev + _.ws_item_rev) / 3)
+                * 100
+            ),
+            ws_item_rev=_.ws_item_rev,
+            ws_dev=(
+                _.ws_item_rev
+                / ((_.ss_item_rev + _.cs_item_rev + _.ws_item_rev) / 3)
+                * 100
+            ),
+            average=(_.ss_item_rev + _.cs_item_rev + _.ws_item_rev) / 3,
+        )
+        .order_by(
+            ss_items.item_id.asc(nulls_first=True), _.ss_item_rev.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Internal error")
+def test_59(store_sales, date_dim, store):
+    days = [(cal.day_abbr[i].lower(), cal.day_name[i]) for i in range(-1, 6)]
+
+    wss = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .group_by(_.d_week_seq, _.ss_store_sk)
+        .agg(
+            {
+                f"{abbr}_sales": _.ss_sales_price.sum(where=_.d_day_name == day)
+                for abbr, day in days
+            }
+        )
+    )
+    y = (
+        wss.join(store, [("ss_store_sk", "s_store_sk")])
+        .join(date_dim, "d_week_seq")
+        .filter(_.d_month_seq.between(1212, 1212 + 11))
+        .mutate(_.s_store_name, _.d_week_seq, _.s_store_id, s.endswith("sales"))
+        .rename("{name}1")
+    )
+    x = (
+        wss.join(store, [("ss_store_sk", "s_store_sk")])
+        .join(date_dim, "d_week_seq")
+        .filter(_.d_month_seq.between(1212 + 12, 1212 + 23))
+        .mutate(_.s_store_name, _.d_week_seq, _.s_store_id, s.endswith("sales"))
+        .rename("{name}2")
+    )
+    return (
+        y.join(x, [("s_store_id1", "s_store_id2"), y.d_week_seq1 == x.d_week_seq2 - 52])
+        .select(
+            _.s_store_name1,
+            _.s_store_id1,
+            _.d_week_seq1,
+            **{
+                f"{abbr}_sales_ratio": _[f"{abbr}_sales1"] / _[f"{abbr}_sales2"]
+                for abbr in map(itemgetter(0), days)
+            },
+        )
+        .order_by(s.across(~s.endswith("_ratio"), _.asc(nulls_first=True)))
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_60(store_sales, date_dim, customer_address, item, catalog_sales, web_sales):
+    filters = (
+        _.i_item_id.isin(item.filter(lambda i: i.i_category == "Music").i_item_id),
+        _.d_year == 1998,
+        _.d_moy == 9,
+        _.ca_gmt_offset == -5,
+    )
+    ss = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(customer_address, [("ss_addr_sk", "ca_address_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .filter(*filters)
+        .group_by(_.i_item_id)
+        .agg(total_sales=_.ss_ext_sales_price.sum())
+    )
+    cs = (
+        catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+        .join(customer_address, [("cs_bill_addr_sk", "ca_address_sk")])
+        .join(item, [("cs_item_sk", "i_item_sk")])
+        .filter(*filters)
+        .group_by(_.i_item_id)
+        .agg(total_sales=_.cs_ext_sales_price.sum())
+    )
+    ws = (
+        web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .join(customer_address, [("ws_bill_addr_sk", "ca_address_sk")])
+        .join(item, [("ws_item_sk", "i_item_sk")])
+        .filter(*filters)
+        .group_by(_.i_item_id)
+        .agg(total_sales=_.ws_ext_sales_price.sum())
+    )
+    return (
+        ss.union(cs)
+        .union(ws)
+        .group_by(_.i_item_id)
+        .agg(total_sales=_.total_sales.sum())
+        .order_by(s.all())
+        .limit(100)
+    )
