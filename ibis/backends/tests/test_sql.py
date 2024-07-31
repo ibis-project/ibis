@@ -102,7 +102,7 @@ def test_isin_bug(con, snapshot):
     raises=NotImplementedError,
 )
 @pytest.mark.notyet(
-    ["datafusion", "exasol", "oracle", "flink"],
+    ["exasol", "oracle", "flink"],
     reason="no unnest support",
     raises=exc.OperationNotDefinedError,
 )

@@ -1403,7 +1403,7 @@ def test_many_subqueries(con, snapshot):
 @pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["datafusion", "impala", "mssql", "mysql", "sqlite"],
+    ["impala", "mssql", "mysql", "sqlite"],
     reason="backend doesn't support arrays and we don't implement pivot_longer with unions yet",
     raises=com.OperationNotDefinedError,
 )
