@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import re
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -303,7 +304,16 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         qualified_name = sg.table(table_name, db=catalog, catalog=database).sql(
             self.name
         )
-        table = self._table_env.from_path(qualified_name)
+        try:
+            table = self._table_env.from_path(qualified_name)
+        except Py4JJavaError as e:
+            # This seems to msg specific but not sure what a good work around is
+            if re.search(
+                rf"Table `{re.escape(table_name)}` was not found",
+                str(e.java_exception.toString()),
+            ):
+                raise exc.TableNotFound(table_name) from e
+
         pyflink_schema = table.get_schema()
 
         return sch.Schema.from_pyarrow(
