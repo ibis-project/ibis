@@ -1420,14 +1420,12 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
     assert isinstance(result, datetime.datetime)
 
 
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 def test_now_from_projection(alltypes):
     n = 2
     expr = alltypes.select(now=ibis.now()).limit(n)
