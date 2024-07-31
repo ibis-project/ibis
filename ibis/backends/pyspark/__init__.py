@@ -11,6 +11,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
+from pyspark.errors.exceptions.base import AnalysisException
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -514,7 +515,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
         with self._active_catalog_database(catalog, db):
-            df = self._session.table(table_name)
+            try:
+                df = self._session.table(table_name)
+            except AnalysisException as e:
+                # we can alternative check for e.getErrorClass == 'TABLE_OR_VIEW_NOT_FOUND'
+                if e.getSqlState() == "42P01":
+                    # spark sqlerror state for undefined_table see https://spark.apache.org/docs/3.4.1/sql-error-conditions-sqlstates.html
+                    raise com.TableNotFound(table_name)
+
             struct = PySparkType.to_ibis(df.schema)
 
         return sch.Schema(struct)
