@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import statistics
 from collections import Counter
 from datetime import datetime
@@ -623,12 +624,12 @@ def test_array_position(con, a, expected_array):
         param(
             [[3, 2, None], [None], [42, 2], [2, 2]],
             [[3, None], [None], [42], []],
-            id="including_nested_null",
+            id="nested-null",
         ),
         param(
             [[3, 2, None], [None], [42, 2], [2, 2], None],
             [[3, None], [None], [42], [], None],
-            id="including_non_nested_null",
+            id="non-nested-null",
             marks=[
                 pytest.mark.notyet(
                     ["clickhouse"],
@@ -645,7 +646,13 @@ def test_array_remove(con, inp, exp):
     result = con.execute(expr)
     expected = pd.Series(exp, dtype="object")
 
-    lhs = frozenset(tuple(v) if v is not None else None for v in result.values)
+    lhs = frozenset(
+        # arg, things are coming back as nan
+        tuple(None if el is not None and math.isnan(el) else el for el in v)
+        if v is not None
+        else None
+        for v in result.values
+    )
     rhs = frozenset(tuple(v) if v is not None else None for v in expected.values)
     assert lhs == rhs
 
