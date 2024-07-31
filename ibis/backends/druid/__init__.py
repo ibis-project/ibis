@@ -4,12 +4,15 @@ from __future__ import annotations
 
 import contextlib
 import json
+import re
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import pydruid.db
 import sqlglot as sg
+from pydruid.db.exceptions import ProgrammingError
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
@@ -130,11 +133,17 @@ class Backend(SQLBackend):
         catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
-        return self._get_schema_using_query(
-            sg.select(STAR)
-            .from_(sg.table(table_name, db=database, catalog=catalog))
-            .sql(self.dialect)
-        )
+        try:
+            schema = self._get_schema_using_query(
+                sg.select(STAR)
+                .from_(sg.table(table_name, db=database, catalog=catalog))
+                .sql(self.dialect)
+            )
+        except ProgrammingError as e:
+            if re.search(r"\bINVALID_INPUT\b", str(e)):
+                raise com.TableNotFound(table_name) from e
+
+        return schema
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
