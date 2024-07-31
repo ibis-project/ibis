@@ -95,7 +95,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Last: "anyLast",
         ops.Ln: "log",
         ops.Log10: "log10",
-        ops.MapContains: "mapContains",
         ops.MapKeys: "mapKeys",
         ops.MapLength: "length",
         ops.MapMerge: "mapUpdate",
@@ -779,4 +778,9 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_BitwiseRightShift(self, op, *, left, right):
         return self.f.bitShiftRight(
             *self._promote_bitshift_inputs(op=op, left=left, right=right)
+        )
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
         )
