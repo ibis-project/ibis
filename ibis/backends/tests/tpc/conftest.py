@@ -52,9 +52,14 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
     def inner(test: Callable[..., ir.Table]):
         name = f"tpc{suite_name}"
 
-        @getattr(pytest.mark, name)
+        # so that clickhouse doesn't run forever when we hit one of its weird cross
+        # join performance black holes
+        #
+        # trino can sometimes take a while as well, especially in CI
+        @pytest.mark.timeout(60)
         @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
+        @getattr(pytest.mark, name)
         @functools.wraps(test)
         def wrapper(*args, backend, **kwargs):
             backend_name = backend.name()
