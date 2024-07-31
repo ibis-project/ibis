@@ -1234,11 +1234,6 @@ def test_date_quantile(alltypes):
     ],
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
-)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
