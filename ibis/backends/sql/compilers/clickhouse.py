@@ -441,10 +441,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_Cot(self, op, *, arg):
         return 1.0 / self.f.tan(arg)
 
-    def visit_StructColumn(self, op, *, values, names):
-        # ClickHouse struct types cannot be nullable
-        # (non-nested fields can be nullable)
-        return self.cast(self.f.tuple(*values), op.dtype.copy(nullable=False))
+    def visit_StructColumn(self, op, *, values, **_):
+        return self.f.tuple(*values)
 
     def visit_Clip(self, op, *, arg, lower, upper):
         if upper is not None:

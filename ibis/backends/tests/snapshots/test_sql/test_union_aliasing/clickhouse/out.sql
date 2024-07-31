@@ -27,24 +27,24 @@ WITH "t5" AS (
             "t0"."field_of_study" AS "field_of_study",
             arrayJoin(
               [
-                CAST(tuple('1970-71', "t0"."1970-71") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('1975-76', "t0"."1975-76") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('1980-81', "t0"."1980-81") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('1985-86', "t0"."1985-86") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('1990-91', "t0"."1990-91") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('1995-96', "t0"."1995-96") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2000-01', "t0"."2000-01") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2005-06', "t0"."2005-06") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2010-11', "t0"."2010-11") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2011-12', "t0"."2011-12") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2012-13', "t0"."2012-13") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2013-14', "t0"."2013-14") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2014-15', "t0"."2014-15") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2015-16', "t0"."2015-16") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2016-17', "t0"."2016-17") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2017-18', "t0"."2017-18") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2018-19', "t0"."2018-19") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64))),
-                CAST(tuple('2019-20', "t0"."2019-20") AS Tuple("years" Nullable(String), "degrees" Nullable(Int64)))
+                tuple('1970-71', "t0"."1970-71"),
+                tuple('1975-76', "t0"."1975-76"),
+                tuple('1980-81', "t0"."1980-81"),
+                tuple('1985-86', "t0"."1985-86"),
+                tuple('1990-91', "t0"."1990-91"),
+                tuple('1995-96', "t0"."1995-96"),
+                tuple('2000-01', "t0"."2000-01"),
+                tuple('2005-06', "t0"."2005-06"),
+                tuple('2010-11', "t0"."2010-11"),
+                tuple('2011-12', "t0"."2011-12"),
+                tuple('2012-13', "t0"."2012-13"),
+                tuple('2013-14', "t0"."2013-14"),
+                tuple('2014-15', "t0"."2014-15"),
+                tuple('2015-16', "t0"."2015-16"),
+                tuple('2016-17', "t0"."2016-17"),
+                tuple('2017-18', "t0"."2017-18"),
+                tuple('2018-19', "t0"."2018-19"),
+                tuple('2019-20', "t0"."2019-20")
               ]
             ) AS "__pivoted__"
           FROM "humanities" AS "t0"
