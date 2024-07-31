@@ -585,7 +585,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))
-        should_keep_null = sg.and_(x.is_(NULL), sg.not_(other.is_(NULL)))
+        should_keep_null = sg.and_(x.is_(NULL), other.is_(sg.not_(NULL)))
         cond = sg.or_(x.neq(other), should_keep_null)
         return self.f.arrayFilter(sge.Lambda(this=cond, expressions=[x]), arg)
 
