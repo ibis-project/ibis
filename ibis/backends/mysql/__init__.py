@@ -233,7 +233,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                 result = cur.fetchall()
             except ProgrammingError as e:
                 if e.args[0] == NO_SUCH_TABLE:
-                    raise com.TableNotFound(name)
+                    raise com.TableNotFound(name) from e
 
         type_mapper = self.compiler.type_mapper
         fields = {
