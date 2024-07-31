@@ -122,6 +122,12 @@ class DataFusionCompiler(SQLGlotCompiler):
             return sg.exp.HexString(this=value.hex())
         elif dtype.is_uuid():
             return sge.convert(str(value))
+        elif dtype.is_struct():
+            args = []
+            for name, field_value in value.items():
+                args.append(sge.convert(name))
+                args.append(field_value)
+            return self.f.named_struct(*args)
         else:
             return None
 

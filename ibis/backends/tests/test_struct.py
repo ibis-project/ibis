@@ -24,7 +24,7 @@ from ibis.common.exceptions import IbisError
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "druid", "oracle", "exasol"]),
+    pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
 
 
@@ -76,6 +76,7 @@ _NULL_STRUCT_LITERAL = ibis.null().cast("struct<a: int64, b: string, c: float64>
 
 
 @pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(backend, con, field):
     query = _STRUCT_LITERAL[field]
@@ -87,6 +88,7 @@ def test_literal(backend, con, field):
 
 
 @pytest.mark.notimpl(["postgres"])
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
@@ -112,6 +114,7 @@ def test_struct_column(alltypes, df):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave", "polars"])
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notyet(
     ["flink"], reason="flink doesn't support creating struct columns from collect"
 )
@@ -144,6 +147,7 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
@@ -201,6 +205,7 @@ def test_field_access_after_case(con):
     raises=AssertionError,
     reason="snowflake doesn't have strongly typed structs",
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_keyword_fields(con, nullable):
     schema = ibis.schema(
         {
@@ -260,6 +265,7 @@ def test_keyword_fields(con, nullable):
     raises=Py4JJavaError,
     reason="fails to parse due to an unsupported operation; flink docs say the syntax is supported",
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_isin_struct(con):
     needle1 = ibis.struct({"x": 1, "y": 2})
     needle2 = ibis.struct({"x": 2, "y": 3})
