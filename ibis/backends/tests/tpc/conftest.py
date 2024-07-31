@@ -94,17 +94,25 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
 
             assert result_expr._find_backend(use_default=False) is backend.connection
             result = backend.connection.to_pandas(result_expr)
-            assert (result_is_empty and result.empty) or not result.empty
+
+            assert (result_is_empty and result.empty) or (
+                not result_is_empty and not result.empty
+            )
 
             expected = expected_expr.to_pandas()
 
             assert len(expected.columns) == len(result.columns)
-            assert all(r in e.lower() for r, e in zip(result.columns, expected.columns))
+            assert all(
+                r.lower() in e.lower() for r, e in zip(result.columns, expected.columns)
+            )
 
             expected.columns = result.columns
 
             expected = PandasData.convert_table(expected, result_expr.schema())
-            assert (result_is_empty and expected.empty) or not expected.empty
+
+            assert (result_is_empty and expected.empty) or (
+                not result_is_empty and not expected.empty
+            )
 
             assert len(expected) == len(result)
             assert result.columns.tolist() == expected.columns.tolist()
