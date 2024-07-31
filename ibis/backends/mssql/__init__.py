@@ -489,7 +489,7 @@ GO"""
         catalog, db = self._to_catalog_db_tuple(table_loc)
         conditions = []
 
-        if table_loc is not None:
+        if db:
             conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (

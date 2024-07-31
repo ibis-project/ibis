@@ -132,10 +132,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog, database = None, None
-        if table_loc is not None:
-            catalog = table_loc.catalog or None
-            database = table_loc.db or None
+        catalog = table_loc.catalog or None
+        database = table_loc.db or None
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         return ops.DatabaseTable(
@@ -589,9 +587,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         )
 
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
-        if table_loc is None or table_loc == (None, None):
-            return None, None
-
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False
             sg_cat = sg_cat.sql(self.name)
@@ -603,7 +598,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
     def _to_sqlglot_table(self, database):
         if database is None:
-            return None
+            # Create "table" with empty catalog and db
+            database = sg.exp.Table(catalog=None, db=None)
         elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(

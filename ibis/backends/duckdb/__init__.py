@@ -172,11 +172,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                 "Don't specify a catalog to enable temp table creation."
             )
 
-        catalog = self.current_catalog
-        database = self.current_database
-        if table_loc is not None:
-            catalog = table_loc.catalog or catalog
-            database = table_loc.db or database
+        catalog = table_loc.catalog or self.current_catalog
+        database = table_loc.db or self.current_database
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -302,10 +299,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog, database = None, None
-        if table_loc is not None:
-            catalog = table_loc.catalog or None
-            database = table_loc.db or None
+        # TODO: set these to better defaults
+        catalog = table_loc.catalog or None
+        database = table_loc.db or None
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
@@ -1018,11 +1014,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog = self.current_catalog
-        database = self.current_database
-        if table_loc is not None:
-            catalog = table_loc.catalog or catalog
-            database = table_loc.db or database
+        catalog = table_loc.catalog or self.current_catalog
+        database = table_loc.db or self.current_database
 
         col = "table_name"
         sql = (

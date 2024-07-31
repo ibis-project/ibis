@@ -587,9 +587,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         # Default `catalog` to None unless we've parsed it out of the database/schema kwargs
         # Raise if there are path specifications in both the name and as a kwarg
-        catalog = None if table_loc is None else table_loc.catalog
+        catalog = table_loc.args["catalog"]  # args access will return None, not ''
         if table.catalog:
-            if table_loc is not None and table_loc.catalog:
+            if table_loc.catalog:
                 raise com.IbisInputError(
                     "Cannot specify catalog both in the table name and as an argument"
                 )
@@ -597,9 +597,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 catalog = table.catalog
 
         # Default `db` to None unless we've parsed it out of the database/schema kwargs
-        db = None if table_loc is None else table_loc.db
+        db = table_loc.args["db"]  # args access will return None, not ''
         if table.db:
-            if table_loc is not None and table_loc.db:
+            if table_loc.db:
                 raise com.IbisInputError(
                     "Cannot specify database both in the table name and as an argument"
                 )

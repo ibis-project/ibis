@@ -734,7 +734,7 @@ $$"""
         tables_query = "SHOW TABLES"
         views_query = "SHOW VIEWS"
 
-        if table_loc is not None:
+        if table_loc.catalog or table_loc.db:
             tables_query += f" IN {table_loc}"
             views_query += f" IN {table_loc}"
 

@@ -236,7 +236,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         query = "SHOW TABLES"
 
-        if table_loc is not None:
+        if table_loc.catalog or table_loc.db:
             table_loc = table_loc.sql(dialect=self.dialect)
             query += f" IN {table_loc}"
 
