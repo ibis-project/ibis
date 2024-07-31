@@ -987,7 +987,8 @@ def flatten_data():
                     ["clickhouse"],
                     reason="Arrays are never nullable",
                     raises=AssertionError,
-                )
+                ),
+                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
         param(
@@ -1005,11 +1006,12 @@ def flatten_data():
                     raises=TypeError,
                     reason="comparison of nested arrays doesn't work in pandas testing module",
                 ),
+                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
     t = ibis.memtable({column: data["data"]}, schema={column: data["type"]})

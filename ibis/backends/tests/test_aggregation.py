@@ -1233,7 +1233,7 @@ def test_date_quantile(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
@@ -1485,7 +1485,10 @@ def test_grouped_case(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["datafusion"], raises=Exception, reason="not supported in datafusion"
+)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
