@@ -625,6 +625,13 @@ def test_array_position(con, a, expected_array):
             [[3, 2, None], [None], [42, 2], [2, 2]],
             [[3, None], [None], [42], []],
             id="nested-null",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery does not support arrays with nulls",
+                ),
+            ],
         ),
         param(
             [[3, 2, None], [None], [42, 2], [2, 2], None],
@@ -634,8 +641,13 @@ def test_array_position(con, a, expected_array):
                 pytest.mark.notyet(
                     ["clickhouse"],
                     raises=AssertionError,
-                    reason="clickhouse still does not support nullable nested types",
-                )
+                    reason="clickhouse does not support nullable nested types",
+                ),
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="bigquery does not support arrays with nulls",
+                ),
             ],
         ),
     ],
