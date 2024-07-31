@@ -10,7 +10,6 @@ from urllib.parse import unquote_plus
 
 import pydruid.db
 import sqlglot as sg
-from pydruid.db.exceptions import ProgrammingError
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -20,6 +19,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers import DruidCompiler
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import DruidType
+from ibis.backends.tests.errors import PyDruidProgrammingError
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -139,7 +139,7 @@ class Backend(SQLBackend):
                 .from_(sg.table(table_name, db=database, catalog=catalog))
                 .sql(self.dialect)
             )
-        except ProgrammingError as e:
+        except PyDruidProgrammingError as e:
             if re.search(r"\bINVALID_INPUT\b", str(e)):
                 raise com.TableNotFound(table_name) from e
 
