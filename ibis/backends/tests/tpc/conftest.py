@@ -56,7 +56,6 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
         # join performance black holes
         #
         # trino can sometimes take a while as well, especially in CI
-        @pytest.mark.timeout(60)
         @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
         @getattr(pytest.mark, name)
