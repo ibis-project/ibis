@@ -878,8 +878,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         # by the time we execute against this so we register it
         # explicitly.
 
+    @util.deprecated(
+        instead="Pass in-memory data to `create_table` instead.",
+        as_of="9.1",
+        removed_in="10.0",
+    )
     def read_in_memory(
-        # TODO: deprecate this in favor of `create_table`
         self,
         source: pd.DataFrame
         | pa.Table
