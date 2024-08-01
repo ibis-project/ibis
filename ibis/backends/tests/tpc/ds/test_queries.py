@@ -2517,7 +2517,7 @@ def test_49(
             _[0].asc(nulls_first=True),
             _[3].asc(nulls_first=True),
             _[4].asc(nulls_first=True),
-            _[2].asc(nulls_first=True),
+            _[1].asc(nulls_first=True),
         )
         .limit(100)
     )
