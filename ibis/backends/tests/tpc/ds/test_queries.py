@@ -950,7 +950,8 @@ def test_12(web_sales, item, date_dim):
         .mutate(
             revenueratio=_.itemrevenue
             * 100.000
-            / _.itemrevenue.sum().over(group_by=_.i_class)
+            # snowflake divide by zero is an error, all others return a value (null, nan, or inf)
+            / _.itemrevenue.sum().over(group_by=_.i_class).nullif(0.0)
         )
         .order_by(_.i_category, _.i_class, _.i_item_id, _.i_item_desc, "revenueratio")
         .limit(100)
