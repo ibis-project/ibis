@@ -2505,10 +2505,10 @@ def test_49(
             currency_rank=_.currency_rank,
         )
         .order_by(
-            _.channel.asc(nulls_first=True),
-            _.return_rank.asc(nulls_first=True),
-            _.currency_rank.asc(nulls_first=True),
-            _.item.asc(nulls_first=True),
+            _[0].asc(nulls_first=True),
+            _[3].asc(nulls_first=True),
+            _[4].asc(nulls_first=True),
+            _[2].asc(nulls_first=True),
         )
         .limit(100)
     )
