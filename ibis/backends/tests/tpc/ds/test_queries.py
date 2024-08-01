@@ -2144,7 +2144,9 @@ def test_44(store_sales, item):
             > 0.9
             * (
                 store_sales.filter(_.ss_store_sk == 4, _.ss_addr_sk.isnull())
+                .group_by(_.ss_store_sk)
                 .agg(_.ss_net_profit.mean())
+                .drop("ss_store_sk")
                 .as_scalar()
             )
         )
