@@ -518,9 +518,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             try:
                 df = self._session.table(table_name)
             except AnalysisException as e:
-                # we can alternative check for e.getErrorClass == 'TABLE_OR_VIEW_NOT_FOUND'
-                if e.getSqlState() == "42P01":
-                    # spark sqlerror state for undefined_table see https://spark.apache.org/docs/3.4.1/sql-error-conditions-sqlstates.html
+                if e.getErrorClass == "TABLE_OR_VIEW_NOT_FOUND":
                     raise com.TableNotFound(table_name)
 
             struct = PySparkType.to_ibis(df.schema)
