@@ -1616,6 +1616,7 @@ def test_32(catalog_sales, item, date_dim):
             lambda t: (
                 t.cs_ext_discount_amt
                 > catalog_sales.view()
+                .filter(_.cs_item_sk == t.i_item_sk)
                 .join(
                     date_dim.view().filter(
                         _.d_date.between(date("2000-01-27"), date("2000-04-26"))
