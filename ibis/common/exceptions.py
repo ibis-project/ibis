@@ -22,9 +22,7 @@ if TYPE_CHECKING:
 
 
 class TableNotFound(Exception):
-    def __init__(self, table_name, message="Table not found"):
-        self.message = f"{message}: {table_name!r}"
-        super().__init__(self.message)
+    """Exception to raise when a table cannot be found."""
 
 
 class IbisError(Exception):
