@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import contextlib
 import json
-import re
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
 import pydruid.db
 import sqlglot as sg
+import sqlglot.expressions as sge
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -126,6 +126,21 @@ class Backend(SQLBackend):
             schema[name] = dtype
         return sch.Schema(schema)
 
+    def _table_exists(self, name: str):
+        quoted = self.compiler.quoted
+        t = sg.table("TABLES", db="INFORMATION_SCHEMA", quoted=quoted)
+        table_name = sg.column("TABLE_NAME", quoted=quoted)
+        query = (
+            sg.select(table_name)
+            .from_(t)
+            .where(table_name.eq(sge.convert(name)))
+            .sql(self.dialect)
+        )
+
+        with self._safe_raw_sql(query) as result:
+            tables = result.fetchall()
+        return bool(tables)
+
     def get_schema(
         self,
         table_name: str,
@@ -141,7 +156,7 @@ class Backend(SQLBackend):
         try:
             schema = self._get_schema_using_query(query)
         except PyDruidProgrammingError as e:
-            if re.search(r"\bINVALID_INPUT\b", str(e)):
+            if not self._table_exists(table_name):
                 raise com.TableNotFound(table_name) from e
             raise
 
