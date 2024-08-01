@@ -1629,3 +1629,34 @@ def test_from_connection(con, top_level):
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     result = int(new_con.execute(ibis.literal(1, type="int")))
     assert result == 1
+
+
+def test_no_accidental_cross_database_table_load(con_create_database):
+    con = con_create_database
+
+    # Create an extra database
+    con.create_database(dbname := gen_name("dummy_db"))
+
+    # Create table with same name in current db and dummy db
+    con.create_table(
+        table := gen_name("table"), schema=(sch1 := ibis.schema({"a": "int32"}))
+    )
+
+    con.create_table(table, schema=ibis.schema({"b": "int64"}), database=dbname)
+
+    # Can grab table object from current db:
+    t = con.table(table)
+    assert t.schema().equals(sch1)
+
+    con.drop_table(table)
+
+    # Now attempting to load same table name without specifying db should fail
+    with pytest.raises(com.IbisError):
+        t = con.table(table)
+
+    # But can load if specify other db
+    t = con.table(table, database=dbname)
+
+    # Clean up
+    con.drop_table(table, database=dbname)
+    con.drop_database(dbname)
