@@ -2153,10 +2153,10 @@ def test_44(store_sales, item):
         .agg(rank_col=_.ss_net_profit.mean())
     )
     ascending = base.select(
-        "item_sk", rnk=rank().over(order_by=_.rank_col.asc())
+        "item_sk", rnk=rank().over(order_by=_.rank_col.asc()) + 1
     ).filter(_.rnk < 11)
     descending = base.select(
-        "item_sk", rnk=rank().over(order_by=_.rank_col.desc())
+        "item_sk", rnk=rank().over(order_by=_.rank_col.desc()) + 1
     ).filter(_.rnk < 11)
     i1 = item
     i2 = item.view()
