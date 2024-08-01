@@ -265,7 +265,7 @@ def test_06(customer_address, customer, store_sales, date_dim, item):
         .group_by(state=_.ca_state)
         .having(_.count() >= 10)
         .agg(cnt=_.count())
-        .order_by(_.cnt, _.state)
+        .order_by(_.cnt.asc(nulls_first=True), _.state.asc(nulls_first=True))
         .limit(100)
     )
 
