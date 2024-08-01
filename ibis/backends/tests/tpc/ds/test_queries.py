@@ -2473,16 +2473,16 @@ def test_49(
 
     return (
         in_web.mutate(
-            return_rank=rank().over(order_by=_.return_ratio),
-            currency_rank=rank().over(order_by=_.currency_ratio),
+            return_rank=rank().over(order_by=_.return_ratio) + 1,
+            currency_rank=rank().over(order_by=_.currency_ratio) + 1,
         )
         .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
         .mutate(channel=lit("web"))
         .relocate("channel", before="item")
         .union(
             in_cat.mutate(
-                return_rank=rank().over(order_by=_.return_ratio),
-                currency_rank=rank().over(order_by=_.currency_ratio),
+                return_rank=rank().over(order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(order_by=_.currency_ratio) + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("catalog"))
@@ -2490,8 +2490,8 @@ def test_49(
         )
         .union(
             in_store.mutate(
-                return_rank=rank().over(order_by=_.return_ratio),
-                currency_rank=rank().over(order_by=_.currency_ratio),
+                return_rank=rank().over(order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(order_by=_.currency_ratio) + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("store"))
@@ -2501,8 +2501,8 @@ def test_49(
             _.channel,
             _.item,
             _.return_ratio,
-            return_rank=_.return_rank + 1,
-            currency_rank=_.currency_rank + 1,
+            return_rank=_.return_rank,
+            currency_rank=_.currency_rank,
         )
         .order_by(
             _.channel.asc(nulls_first=True),
