@@ -1633,4 +1633,4 @@ def test_from_connection(con, top_level):
 
 def test_table_not_found(con):
     with pytest.raises(com.TableNotFound, match="Table not found"):
-        con.table(util.gen_name("table_not_found"))
+        con.table(gen_name("table_not_found"))
