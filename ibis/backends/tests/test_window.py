@@ -19,6 +19,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     PsycoPg2InternalError,
     Py4JJavaError,
+    PyDruidProgrammingError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
@@ -26,7 +27,12 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = [
     pytest.mark.notimpl(
-        ["druid"], raises=(com.OperationNotDefinedError, com.TableNotFound)
+        ["druid"],
+        raises=(
+            com.OperationNotDefinedError,
+            com.TableNotFound,
+            PyDruidProgrammingError,
+        ),
     )
 ]
 
