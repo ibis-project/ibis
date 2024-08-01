@@ -228,12 +228,15 @@ class Backend(SQLBackend, CanCreateDatabase):
         ).sql(self.dialect)
 
         with self.begin() as cur:
+            query = sge.Describe(this=table).sql(self.dialect)
+
             try:
-                cur.execute(sge.Describe(this=table).sql(self.dialect))
-                result = cur.fetchall()
+                cur.execute(query)
             except ProgrammingError as e:
                 if e.args[0] == NO_SUCH_TABLE:
                     raise com.TableNotFound(name) from e
+            else:
+                result = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
         fields = {
