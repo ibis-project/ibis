@@ -115,6 +115,8 @@ class TestConf(BackendTest):
                     table_name,
                     con.read_parquet(path),
                     database=f'IBIS_TESTING."{schema}"',
+                    temp=True,
+                    overwrite=True,
                 )
 
     def _transform_tpc_sql(self, parsed, *, suite, leaves):
