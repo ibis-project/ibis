@@ -21,8 +21,8 @@ in
     name = "ibis-testing-data";
     owner = "ibis-project";
     repo = "testing-data";
-    rev = "747fffe044db20fcfb36115c58559d805fb6cf5a";
-    sha256 = "sha256-ARjWMwgJCapDvxyOK4+Hde6gBqX4KHLPIvFP5E5IOx8=";
+    rev = "b26bd40cf29004372319df620c4bbe41420bb6f8";
+    sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };

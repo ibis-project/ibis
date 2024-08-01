@@ -110,7 +110,7 @@ def test_03(date_dim, store_sales, item):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 @pytest.mark.notimpl(
     ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
 )
@@ -265,7 +265,7 @@ def test_06(customer_address, customer, store_sales, date_dim, item):
         .group_by(state=_.ca_state)
         .having(_.count() >= 10)
         .agg(cnt=_.count())
-        .order_by(_.cnt, _.state)
+        .order_by(_.cnt.asc(nulls_first=True), _.state.asc(nulls_first=True))
         .limit(100)
     )
 
@@ -942,7 +942,8 @@ def test_12(web_sales, item, date_dim):
         .mutate(
             revenueratio=_.itemrevenue
             * 100.000
-            / _.itemrevenue.sum().over(group_by=_.i_class)
+            # snowflake divide by zero is an error, all others return a value (null, nan, or inf)
+            / _.itemrevenue.sum().over(group_by=_.i_class).nullif(0.0)
         )
         .order_by(_.i_category, _.i_class, _.i_item_id, _.i_item_desc, "revenueratio")
         .limit(100)
@@ -1603,10 +1604,15 @@ def test_31(store_sales, date_dim, customer_address, web_sales):
     raises=ClickHouseDatabaseError,
     reason="correlated subqueries don't exist in clickhouse",
 )
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="Given correlated subquery is not supported",
+)
 def test_32(catalog_sales, item, date_dim):
     return (
         catalog_sales.join(
-            item.filter(_.i_manager_id == 977), [("cs_item_sk", "i_item_sk")]
+            item.filter(_.i_manufact_id == 977), [("cs_item_sk", "i_item_sk")]
         )
         .join(
             date_dim.filter(_.d_date.between(date("2000-01-27"), date("2000-04-26"))),
@@ -1616,6 +1622,7 @@ def test_32(catalog_sales, item, date_dim):
             lambda t: (
                 t.cs_ext_discount_amt
                 > catalog_sales.view()
+                .filter(_.cs_item_sk == t.i_item_sk)
                 .join(
                     date_dim.view().filter(
                         _.d_date.between(date("2000-01-27"), date("2000-04-26"))
@@ -1882,22 +1889,18 @@ def test_36(store_sales, date_dim, item, store):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_37(item, inventory, date_dim, catalog_sales):
     return (
-        item.filter(
+        item.join(inventory, [("i_item_sk", "inv_item_sk")])
+        .join(date_dim, [("inv_date_sk", "d_date_sk")])
+        .join(catalog_sales, [("i_item_sk", "cs_item_sk")])
+        .filter(
             _.i_current_price.between(68, 68 + 30),
             _.i_manufact_id.isin((677, 940, 694, 808)),
+            _.inv_quantity_on_hand.between(100, 500),
+            _.d_date.between(date("2000-02-01"), date("2000-04-01")),
         )
-        .join(
-            inventory.filter(_.inv_quantity_on_hand.between(100, 500)),
-            [("i_item_sk", "inv_item_sk")],
-        )
-        .join(
-            date_dim.filter(_.d_date.between(date("2000-02-01"), date("2000-04-01"))),
-            [("inv_date_sk", "d_date_sk")],
-        )
-        .join(catalog_sales, [("i_item_sk", "cs_item_sk")])
         .group_by(_.i_item_id, _.i_item_desc, _.i_current_price)
         .agg()
         .order_by(_.i_item_id)
@@ -2014,7 +2017,7 @@ def test_40(catalog_sales, catalog_returns, warehouse, item, date_dim):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
@@ -2032,7 +2035,7 @@ def test_41(item):
             _.i_manufact_id.between(738, 738 + 40),
             lambda i1: item.filter(
                 lambda s: (
-                    (i1.i_manufact_id == s.i_manufact_id)
+                    (i1.i_manufact == s.i_manufact)
                     & (
                         (
                             (s.i_category == "Women")
@@ -2061,7 +2064,7 @@ def test_41(item):
                     )
                 )
                 | (
-                    (i1.i_manufact_id == s.i_manufact_id)
+                    (i1.i_manufact == s.i_manufact)
                     & (
                         (
                             (s.i_category == "Women")
@@ -2133,7 +2136,7 @@ def test_43(date_dim, store_sales, store):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_44(store_sales, item):
     base = (
         store_sales.filter(_.ss_store_sk == 4)
@@ -2143,17 +2146,19 @@ def test_44(store_sales, item):
             > 0.9
             * (
                 store_sales.filter(_.ss_store_sk == 4, _.ss_addr_sk.isnull())
+                .group_by(_.ss_store_sk)
                 .agg(_.ss_net_profit.mean())
+                .drop("ss_store_sk")
                 .as_scalar()
             )
         )
         .agg(rank_col=_.ss_net_profit.mean())
     )
     ascending = base.select(
-        "item_sk", rnk=rank().over(order_by=_.rank_col.asc())
+        "item_sk", rnk=rank().over(order_by=_.rank_col.asc()) + 1
     ).filter(_.rnk < 11)
     descending = base.select(
-        "item_sk", rnk=rank().over(order_by=_.rank_col.desc())
+        "item_sk", rnk=rank().over(order_by=_.rank_col.desc()) + 1
     ).filter(_.rnk < 11)
     i1 = item
     i2 = item.view()
@@ -2391,7 +2396,6 @@ def test_48(store_sales, store, customer_demographics, customer_address, date_di
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Ambiguous reference")
 def test_49(
     web_sales,
     web_returns,
@@ -2470,16 +2474,17 @@ def test_49(
 
     return (
         in_web.mutate(
-            return_rank=rank().over(order_by=_.return_ratio),
-            currency_rank=rank().over(order_by=_.currency_ratio),
+            return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+            currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio) + 1,
         )
         .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
         .mutate(channel=lit("web"))
         .relocate("channel", before="item")
         .union(
             in_cat.mutate(
-                return_rank=rank().over(order_by=_.return_ratio),
-                currency_rank=rank().over(order_by=_.currency_ratio),
+                return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio)
+                + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("catalog"))
@@ -2487,25 +2492,20 @@ def test_49(
         )
         .union(
             in_store.mutate(
-                return_rank=rank().over(order_by=_.return_ratio),
-                currency_rank=rank().over(order_by=_.currency_ratio),
+                return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio)
+                + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("store"))
             .relocate("channel", before="item")
         )
-        .select(
-            _.channel,
-            _.item,
-            _.return_ratio,
-            return_rank=_.return_rank + 1,
-            currency_rank=_.currency_rank + 1,
-        )
+        .drop("currency_ratio")
         .order_by(
-            _.channel.asc(nulls_first=True),
-            _.return_rank.asc(nulls_first=True),
-            _.currency_rank.asc(nulls_first=True),
-            _.item.asc(nulls_first=True),
+            _[0].asc(nulls_first=True),
+            _[3].asc(nulls_first=True),
+            _[4].asc(nulls_first=True),
+            _[1].asc(nulls_first=True),
         )
         .limit(100)
     )
@@ -2913,7 +2913,7 @@ def test_57(item, catalog_sales, date_dim, call_center):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_58(store_sales, item, date_dim, catalog_sales, web_sales):
     date_filter = lambda t: t.d_date.isin(
         date_dim.filter(
@@ -3093,7 +3093,6 @@ def test_61(store_sales, store, promotion, date_dim, customer, customer_address,
     )
     all_sales = (
         store_sales.join(store, [("ss_store_sk", "s_store_sk")])
-        .join(promotion, [("ss_promo_sk", "p_promo_sk")])
         .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
         .join(customer, [("ss_customer_sk", "c_customer_sk")])
         .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
