@@ -307,10 +307,14 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         try:
             table = self._table_env.from_path(qualified_name)
         except Py4JJavaError as e:
-            # This seems to msg specific but not sure what a good work around is
+            # This seems too msg specific but not sure what a good work around is
+            #
+            # Flink doesn't have a way to check whether a table exists other
+            # than to all tables and check potentially every element in the list
             if re.search(
-                rf"Table `{re.escape(table_name)}` was not found",
+                "table .+ was not found",
                 str(e.java_exception.toString()),
+                flags=re.IGNORECASE,
             ):
                 raise exc.TableNotFound(table_name) from e
             raise
