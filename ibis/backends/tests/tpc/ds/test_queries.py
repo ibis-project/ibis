@@ -1899,19 +1899,15 @@ def test_36(store_sales, date_dim, item, store):
 @tpc_test("ds")
 def test_37(item, inventory, date_dim, catalog_sales):
     return (
-        item.filter(
+        item.join(inventory, [("i_item_sk", "inv_item_sk")])
+        .join(date_dim, [("inv_date_sk", "d_date_sk")])
+        .join(catalog_sales, [("i_item_sk", "cs_item_sk")])
+        .filter(
             _.i_current_price.between(68, 68 + 30),
             _.i_manufact_id.isin((677, 940, 694, 808)),
+            _.inv_quantity_on_hand.between(100, 500),
+            _.d_date.between(date("2000-02-01"), date("2000-04-01")),
         )
-        .join(
-            inventory.filter(_.inv_quantity_on_hand.between(100, 500)),
-            [("i_item_sk", "inv_item_sk")],
-        )
-        .join(
-            date_dim.filter(_.d_date.between(date("2000-02-01"), date("2000-04-01"))),
-            [("inv_date_sk", "d_date_sk")],
-        )
-        .join(catalog_sales, [("i_item_sk", "cs_item_sk")])
         .group_by(_.i_item_id, _.i_item_desc, _.i_current_price)
         .agg()
         .order_by(_.i_item_id)
