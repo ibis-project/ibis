@@ -1212,6 +1212,37 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current backend.
+
+        Parameters
+        ----------
+        path
+            The data source. May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the pyarrow loading function.
+            See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.read_table.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+        import pyarrow.parquet as pq
+
+        table = pq.read_table(path, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet")
+        self.create_table(table_name, table)
+        return self.table(table_name)
+
     def _cached(self, expr: ir.Table):
         """Cache the provided expression.
 
