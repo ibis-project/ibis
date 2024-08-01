@@ -862,6 +862,13 @@ def test_10(
     ["datafusion"],
     reason="Exception: Optimizer rule 'common_sub_expression_eliminate' failed",
 )
+@pytest.mark.notyet(
+    ["trino"],
+    reason="exceeds memory limit on some machines",
+    raises=TrinoQueryError,
+    # trino can sometimes *not* exceed memory limits ¯\_(ツ)_/¯
+    strict=False,
+)
 def test_11(customer, store_sales, web_sales, date_dim):
     def agg(*, sale_type: str, table, join_key):
         prefix = f"{sale_type}s"
@@ -2482,16 +2489,17 @@ def test_49(
 
     return (
         in_web.mutate(
-            return_rank=rank().over(order_by=_.return_ratio) + 1,
-            currency_rank=rank().over(order_by=_.currency_ratio) + 1,
+            return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+            currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio) + 1,
         )
         .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
         .mutate(channel=lit("web"))
         .relocate("channel", before="item")
         .union(
             in_cat.mutate(
-                return_rank=rank().over(order_by=_.return_ratio) + 1,
-                currency_rank=rank().over(order_by=_.currency_ratio) + 1,
+                return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio)
+                + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("catalog"))
@@ -2499,20 +2507,15 @@ def test_49(
         )
         .union(
             in_store.mutate(
-                return_rank=rank().over(order_by=_.return_ratio) + 1,
-                currency_rank=rank().over(order_by=_.currency_ratio) + 1,
+                return_rank=rank().over(range=(None, 0), order_by=_.return_ratio) + 1,
+                currency_rank=rank().over(range=(None, 0), order_by=_.currency_ratio)
+                + 1,
             )
             .filter((_.return_rank <= 10) | (_.currency_rank <= 10))
             .mutate(channel=lit("store"))
             .relocate("channel", before="item")
         )
-        .select(
-            _.channel,
-            _.item,
-            _.return_ratio,
-            return_rank=_.return_rank,
-            currency_rank=_.currency_rank,
-        )
+        .drop("currency_ratio")
         .order_by(
             _[0].asc(nulls_first=True),
             _[3].asc(nulls_first=True),
