@@ -1,7 +1,7 @@
 SELECT dt.d_year,
        item.i_category_id,
        item.i_category,
-       sum(ss_ext_sales_price)
+       sum(ss_ext_sales_price) total_sales
 FROM date_dim dt,
      store_sales,
      item
