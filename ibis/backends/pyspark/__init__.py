@@ -524,8 +524,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             try:
                 df = self._session.table(table_name)
             except AnalysisException as e:
-                if e.getErrorClass() == "TABLE_OR_VIEW_NOT_FOUND":
+                if not self._session.catalog.tableExists(table_name):
                     raise com.TableNotFound(table_name) from e
+                raise
 
             struct = PySparkType.to_ibis(df.schema)
 
