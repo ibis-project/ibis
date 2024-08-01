@@ -110,7 +110,7 @@ def test_03(date_dim, store_sales, item):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 @pytest.mark.notimpl(
     ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
 )
