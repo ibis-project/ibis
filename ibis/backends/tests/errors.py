@@ -96,9 +96,9 @@ except ImportError:
     SnowflakeProgrammingError = None
 
 try:
-    from trino.exceptions import TrinoQueryError, TrinoUserError
+    from trino.exceptions import TrinoUserError
 except ImportError:
-    TrinoQueryError = TrinoUserError = None
+    TrinoUserError = None
 
 try:
     from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero

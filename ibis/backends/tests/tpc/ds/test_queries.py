@@ -11,7 +11,6 @@ from ibis import selectors as s
 from ibis.backends.tests.errors import (
     ArrowNotImplementedError,
     ClickHouseDatabaseError,
-    TrinoQueryError,
     TrinoUserError,
 )
 from ibis.backends.tests.tpc.conftest import tpc_test
@@ -114,13 +113,6 @@ def test_03(date_dim, store_sales, item):
 @tpc_test("ds")
 @pytest.mark.notimpl(
     ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
-)
-@pytest.mark.notyet(
-    ["trino"],
-    reason="exceeds memory limit on some machines",
-    raises=TrinoQueryError,
-    # trino can sometimes *not* exceed memory limits ¯\_(ツ)_/¯
-    strict=False,
 )
 def test_04(customer, store_sales, catalog_sales, web_sales, date_dim):
     def profile(sales, *, name):
@@ -861,13 +853,6 @@ def test_10(
 @pytest.mark.notyet(
     ["datafusion"],
     reason="Exception: Optimizer rule 'common_sub_expression_eliminate' failed",
-)
-@pytest.mark.notyet(
-    ["trino"],
-    reason="exceeds memory limit on some machines",
-    raises=TrinoQueryError,
-    # trino can sometimes *not* exceed memory limits ¯\_(ツ)_/¯
-    strict=False,
 )
 def test_11(customer, store_sales, web_sales, date_dim):
     def agg(*, sale_type: str, table, join_key):
