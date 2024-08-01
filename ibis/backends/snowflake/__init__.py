@@ -668,7 +668,7 @@ $$"""
             # https://mariadb.com/kb/en/mariadb-error-code-reference/
             # and the least helpful version: https://docs.snowflake.com/en/developer-guide/snowflake-scripting/exceptions#handling-an-exception
             if e.sqlstate == "42S02":
-                raise com.TableNotFound(table.sql(self.dialect))
+                raise com.TableNotFound(table.sql(self.dialect)) from e
             raise
 
         type_mapper = self.compiler.type_mapper
