@@ -133,12 +133,13 @@ class Backend(SQLBackend):
         catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
+        query = (
+            sg.select(STAR)
+            .from_(sg.table(table_name, db=database, catalog=catalog))
+            .sql(self.dialect)
+        )
         try:
-            schema = self._get_schema_using_query(
-                sg.select(STAR)
-                .from_(sg.table(table_name, db=database, catalog=catalog))
-                .sql(self.dialect)
-            )
+            schema = self._get_schema_using_query(query)
         except PyDruidProgrammingError as e:
             if re.search(r"\bINVALID_INPUT\b", str(e)):
                 raise com.TableNotFound(table_name) from e
