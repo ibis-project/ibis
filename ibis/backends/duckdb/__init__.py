@@ -341,11 +341,23 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         """
         conditions = [sg.column("table_name").eq(sge.convert(table_name))]
 
-        if catalog is not None:
-            conditions.append(sg.column("table_catalog").eq(sge.convert(catalog)))
+        # If no catalog.database is specified, assume the current ones
+        db = database or self.current_database
+        cat = catalog or self.current_catalog
 
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
+        # If a catalog isn't specified, then include temp tables in the
+        # returned values
+        # temp tables live in the `temp` catalog
+        # We assume that we should return temp tables that match the database
+        # specified
+        if catalog is None:
+            conditions.append(
+                sg.column("table_catalog").isin(sge.convert(cat), sge.convert("temp"))
+            )
+        else:
+            conditions.append(sg.column("table_catalog").eq(sge.convert(cat)))
+
+        conditions.append(sg.column("table_schema").eq(sge.convert(db)))
 
         query = (
             sg.select(
