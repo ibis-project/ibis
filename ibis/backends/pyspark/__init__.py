@@ -11,7 +11,13 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
-from pyspark.errors.exceptions.base import AnalysisException
+
+try:
+    from pyspark.errors.exceptions.base import AnalysisException  # PySpark 3.5+
+except ImportError:
+    from pyspark.sql.utils import AnalysisException  # PySpark 3.3
+
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
