@@ -313,6 +313,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
                 str(e.java_exception.toString()),
             ):
                 raise exc.TableNotFound(table_name) from e
+            raise
 
         pyflink_schema = table.get_schema()
 

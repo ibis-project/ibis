@@ -143,6 +143,7 @@ class Backend(SQLBackend):
         except PyDruidProgrammingError as e:
             if re.search(r"\bINVALID_INPUT\b", str(e)):
                 raise com.TableNotFound(table_name) from e
+            raise
 
         return schema
 
