@@ -2394,7 +2394,6 @@ def test_48(store_sales, store, customer_demographics, customer_address, date_di
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Ambiguous reference")
 def test_49(
     web_sales,
     web_returns,
