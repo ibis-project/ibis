@@ -2033,7 +2033,7 @@ def test_41(item):
             _.i_manufact_id.between(738, 738 + 40),
             lambda i1: item.filter(
                 lambda s: (
-                    (i1.i_manufact_id == s.i_manufact_id)
+                    (i1.i_manufact == s.i_manufact)
                     & (
                         (
                             (s.i_category == "Women")
@@ -2062,7 +2062,7 @@ def test_41(item):
                     )
                 )
                 | (
-                    (i1.i_manufact_id == s.i_manufact_id)
+                    (i1.i_manufact == s.i_manufact)
                     & (
                         (
                             (s.i_category == "Women")
