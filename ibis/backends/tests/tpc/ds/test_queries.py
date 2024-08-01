@@ -1606,7 +1606,7 @@ def test_31(store_sales, date_dim, customer_address, web_sales):
 def test_32(catalog_sales, item, date_dim):
     return (
         catalog_sales.join(
-            item.filter(_.i_manager_id == 977), [("cs_item_sk", "i_item_sk")]
+            item.filter(_.i_manufact_id == 977), [("cs_item_sk", "i_item_sk")]
         )
         .join(
             date_dim.filter(_.d_date.between(date("2000-01-27"), date("2000-04-26"))),
