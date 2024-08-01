@@ -3096,7 +3096,6 @@ def test_61(store_sales, store, promotion, date_dim, customer, customer_address,
     )
     all_sales = (
         store_sales.join(store, [("ss_store_sk", "s_store_sk")])
-        .join(promotion, [("ss_promo_sk", "p_promo_sk")])
         .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
         .join(customer, [("ss_customer_sk", "c_customer_sk")])
         .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
