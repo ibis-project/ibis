@@ -343,11 +343,11 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         conditions = [TRUE]
 
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+        if table_loc.catalog or table_loc.db:
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
         col = "table_name"
