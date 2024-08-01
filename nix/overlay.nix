@@ -19,10 +19,10 @@ in
 {
   ibisTestingData = pkgs.fetchFromGitHub {
     name = "ibis-testing-data";
-    owner = "ibis-project";
+    owner = "cpcloud";
     repo = "testing-data";
-    rev = "747fffe044db20fcfb36115c58559d805fb6cf5a";
-    sha256 = "sha256-ARjWMwgJCapDvxyOK4+Hde6gBqX4KHLPIvFP5E5IOx8=";
+    rev = "325f5f8d7aece1177c81827460d7b92be294657e";
+    sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };

@@ -1882,7 +1882,7 @@ def test_36(store_sales, date_dim, item, store):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_37(item, inventory, date_dim, catalog_sales):
     return (
         item.filter(
@@ -2014,7 +2014,7 @@ def test_40(catalog_sales, catalog_returns, warehouse, item, date_dim):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
@@ -2133,7 +2133,7 @@ def test_43(date_dim, store_sales, store):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_44(store_sales, item):
     base = (
         store_sales.filter(_.ss_store_sk == 4)
@@ -2913,7 +2913,7 @@ def test_57(item, catalog_sales, date_dim, call_center):
     )
 
 
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
 def test_58(store_sales, item, date_dim, catalog_sales, web_sales):
     date_filter = lambda t: t.d_date.isin(
         date_dim.filter(
