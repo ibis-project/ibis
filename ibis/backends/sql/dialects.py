@@ -358,6 +358,7 @@ Oracle.Generator.TRANSFORMS |= {
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
     sge.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
+    sge.GroupConcat: rename_func("listagg"),
 }
 
 # TODO: can delete this after bumping sqlglot version > 20.9.0
