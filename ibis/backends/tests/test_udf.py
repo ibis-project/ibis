@@ -6,7 +6,11 @@ from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
-from ibis.backends.pyspark import PYSPARK_LT_35
+try:
+    from ibis.backends.pyspark import PYSPARK_LT_35
+except ImportError:
+    # Workaround when pyspark is not installed
+    PYSPARK_LT_35 = True
 from ibis.backends.tests.errors import Py4JJavaError
 
 no_python_udfs = mark.notimpl(
