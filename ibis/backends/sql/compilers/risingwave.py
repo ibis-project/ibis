@@ -58,12 +58,6 @@ class RisingWaveCompiler(PostgresCompiler):
             op, left=left, right=right, how=how, where=where
         )
 
-    def visit_First(self, op, *, arg, where):
-        return self.agg.first_value(arg, where=where)
-
-    def visit_Last(self, op, *, arg, where):
-        return self.agg.last_value(arg, where=where)
-
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
             "Y": "year",
