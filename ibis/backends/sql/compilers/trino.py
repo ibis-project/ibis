@@ -85,7 +85,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArraySort: "array_sort",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayLength: "cardinality",
-        ops.ArrayCollect: "array_agg",
         ops.ArrayIntersect: "array_intersect",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
