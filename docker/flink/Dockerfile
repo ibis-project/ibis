@@ -1,4 +1,4 @@
-ARG FLINK_VERSION=1.19.1
+ARG FLINK_VERSION=1.20.0
 FROM flink:${FLINK_VERSION}
 
 # ibis-flink requires PyFlink dependency
