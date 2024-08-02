@@ -45,14 +45,14 @@ def test_python_udf(t, df):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.skipif(PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+@pytest.mark.xfail(PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
 def test_pyarrow_udf(t, df):
     result = t.mutate(repeated=pyarrow_repeat(t.str_col, 2)).execute()
     expected = df.assign(repeated=df.str_col * 2)
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.skipif(not PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+@pytest.mark.xfail(not PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
 def test_illegal_udf_type(t):
     @ibis.udf.scalar.pyarrow
     def my_add_one(x) -> str:
