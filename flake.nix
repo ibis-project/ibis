@@ -65,7 +65,6 @@
 
         # necessary for quarto and quartodoc
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}:''${PWD}/docs
-        export PYSPARK_PYTHON="$(which python)"
       '';
 
       preCommitDeps = with pkgs; [
@@ -110,6 +109,7 @@
 
         inherit shellHook;
 
+        PYSPARK_PYTHON = "${env}/bin/python";
         PGPASSWORD = "postgres";
         MYSQL_PWD = "ibis";
         MSSQL_SA_PASSWORD = "1bis_Testing!";
