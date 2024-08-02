@@ -6,6 +6,7 @@ from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
+
 try:
     from ibis.backends.pyspark import PYSPARK_LT_35
 except ImportError:
