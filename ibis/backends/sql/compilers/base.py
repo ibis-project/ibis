@@ -434,14 +434,17 @@ class SQLGlotCompiler(abc.ABC):
 
             return impl
 
+        for op, target_name in cls.SIMPLE_OPS.items():
+            setattr(cls, methodname(op), make_impl(op, target_name))
+
         # unconditionally raise an exception for unsupported operations
+        #
+        # these *must* be defined after SIMPLE_OPS to handle compilers that
+        # subclass other compilers
         for op in cls.UNSUPPORTED_OPS:
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
-
-        for op, target_name in cls.SIMPLE_OPS.items():
-            setattr(cls, methodname(op), make_impl(op, target_name))
 
         # raise on any remaining unsupported operations
         for op in ALL_OPERATIONS:
