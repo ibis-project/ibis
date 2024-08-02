@@ -32,11 +32,6 @@ class RisingWaveCompiler(PostgresCompiler):
         ),
     )
 
-    SIMPLE_OPS = {
-        ops.First: "first_value",
-        ops.Last: "last_value",
-    }
-
     def visit_DateNow(self, op):
         return self.cast(sge.CurrentTimestamp(), dt.date)
 
@@ -48,6 +43,12 @@ class RisingWaveCompiler(PostgresCompiler):
         return super().visit_Correlation(
             op, left=left, right=right, how=how, where=where
         )
+
+    def visit_First(self, op, *, arg, where):
+        return self.agg.first_value(arg, where=where)
+
+    def visit_Last(self, op, *, arg, where):
+        return self.agg.last_value(arg, where=where)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
