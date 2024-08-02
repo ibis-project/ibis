@@ -132,10 +132,7 @@ class AggGen:
             )
 
         if where is not None and not self.supports_filter:
-            args = tuple(
-                arg if isinstance(arg, sge.Literal) else compiler.if_(where, arg, NULL)
-                for arg in args
-            )
+            args = tuple(compiler.if_(where, arg, NULL) for arg in args)
 
         if order_by and self.supports_order_by:
             *rest, last = args
