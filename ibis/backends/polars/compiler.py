@@ -1414,10 +1414,11 @@ def execute_group_concat(op, **kw):
     if (where := op.where) is not None:
         predicate &= translate(where, **kw)
 
+    arg = arg.filter(predicate)
+
     if order_by := op.order_by:
         keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
         descending = [k.descending for k in order_by]
         arg = arg.sort_by(keys, descending=descending)
 
-    no_nulls = arg.filter(predicate)
-    return pl.when(no_nulls.count() > 0).then(no_nulls.str.join(sep)).otherwise(None)
+    return pl.when(arg.count() > 0).then(arg.str.join(sep)).otherwise(None)

@@ -1328,7 +1328,6 @@ def test_group_concat(
     ],
     raises=com.UnsupportedOperationError,
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize("filtered", [False, True])
 def test_group_concat_ordered(alltypes, df, filtered):
     ibis_cond = (_.id % 13 == 0) if filtered else None
