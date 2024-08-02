@@ -171,13 +171,9 @@ class MySQLCompiler(SQLGlotCompiler):
                 "Only string literal separators are supported"
             )
 
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-
-        if order_by:
-            arg = sge.Order(this=arg, expressions=order_by)
-
-        return self.f.group_concat(arg, sep)
+        return super().visit_GroupConcat(
+            op, arg=arg, sep=sep, where=where, order_by=order_by
+        )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 5) % 7
