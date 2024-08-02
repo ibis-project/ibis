@@ -13,6 +13,7 @@ from ibis.backends.sql.compilers.base import (
     NULL,
     STAR,
     TRUE,
+    AggGen,
     SQLGlotCompiler,
 )
 from ibis.backends.sql.datatypes import MSSQLType
@@ -51,6 +52,8 @@ def rewrite_rows_range_order_by_window(_, **kwargs):
 
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
+
+    agg = AggGen(supports_order_by=True, requires_within_group=True)
 
     dialect = MSSQL
     type_mapper = MSSQLType
