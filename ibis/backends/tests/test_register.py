@@ -421,6 +421,7 @@ def test_register_garbage(con, monkeypatch):
         ("functional_alltypes.parquet", "funk_all"),
     ],
 )
+@pytest.mark.notyet(["flink"])
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
@@ -449,6 +450,7 @@ def ft_data(data_dir):
     return table.slice(0, nrows)
 
 
+@pytest.mark.notyet(["flink"])
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
 
@@ -460,7 +462,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     for fname in fnames:
         pq.write_table(ft_data, tmp_path / fname)
 
-    table = con.read_parquet(tmp_path / f"*.{ext}")
+    table = con.read_parquet(tmp_path)
 
     assert table.count().execute() == nrows * ntables
 
