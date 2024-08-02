@@ -43,7 +43,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "first",  # could use any_value for postgres>=16
-        ops.ArrayCollect: "array_agg",
         ops.ArrayRemove: "array_remove",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
