@@ -175,6 +175,15 @@ class BigQueryCompiler(SQLGlotCompiler):
             "timestamp difference with mixed timezone/timezoneless values is not implemented"
         )
 
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        if order_by:
+            sep = sge.Order(this=sep, expressions=order_by)
+
+        return sge.GroupConcat(this=arg, separator=sep)
+
     def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
 
