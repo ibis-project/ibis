@@ -488,3 +488,12 @@ class DataFusionCompiler(SQLGlotCompiler):
             args.append(sge.convert(name))
             args.append(value)
         return self.f.named_struct(*args)
+
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "DataFusion does not support order-sensitive group_concat"
+            )
+        return super().visit_GroupConcat(
+            op, arg=arg, sep=sep, where=where, order_by=order_by
+        )
