@@ -1282,7 +1282,6 @@ def test_date_quantile(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
     backend, alltypes, df, ibis_cond, pandas_cond, ibis_sep, pandas_sep
@@ -1621,7 +1620,6 @@ def test_grouped_case(backend, con):
 @pytest.mark.notimpl(
     ["datafusion"], raises=Exception, reason="not supported in datafusion"
 )
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
@@ -1640,13 +1638,17 @@ def test_group_concat_over_window(backend, con):
             "s": ["a|b|c", "b|a|c", "b|b|b|c|a"],
             "token": ["a", "b", "c"],
             "pk": [1, 1, 2],
+            "id": [1, 2, 3],
         }
     )
     expected = input_df.assign(test=["a|b|c|b|a|c", "b|a|c", "b|b|b|c|a"])
 
     table = ibis.memtable(input_df)
-    w = ibis.window(group_by="pk", preceding=0, following=None)
-    expr = table.mutate(test=table.s.group_concat(sep="|").over(w)).order_by("pk")
+    expr = table.mutate(
+        test=table.s.group_concat(sep="|").over(
+            group_by="pk", order_by="id", rows=(0, None)
+        )
+    ).order_by("id")
 
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)
