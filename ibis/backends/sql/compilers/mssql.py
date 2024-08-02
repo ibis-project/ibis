@@ -53,7 +53,7 @@ def rewrite_rows_range_order_by_window(_, **kwargs):
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    agg = AggGen(supports_order_by=True, requires_within_group=True)
+    agg = AggGen(supports_order_by=True)
 
     dialect = MSSQL
     type_mapper = MSSQLType

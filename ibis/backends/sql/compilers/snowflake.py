@@ -40,7 +40,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     type_mapper = SnowflakeType
     no_limit_value = NULL
 
-    agg = AggGen(supports_order_by=True, requires_within_group=True)
+    agg = AggGen(supports_order_by=True)
 
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,

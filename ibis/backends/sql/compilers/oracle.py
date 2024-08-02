@@ -23,7 +23,7 @@ from ibis.backends.sql.rewrites import (
 class OracleCompiler(SQLGlotCompiler):
     __slots__ = ()
 
-    agg = AggGen(supports_order_by=True, requires_within_group=True)
+    agg = AggGen(supports_order_by=True)
 
     dialect = Oracle
     type_mapper = OracleType
