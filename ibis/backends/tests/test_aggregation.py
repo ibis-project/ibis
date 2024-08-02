@@ -622,7 +622,11 @@ def test_reduction_ops(
     ["druid", "impala", "mssql", "mysql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=com.UnsupportedOperationError,
+    reason="risingwave requires an `order_by` for these aggregations",
+)
 @pytest.mark.parametrize("method", ["first", "last"])
 @pytest.mark.parametrize(
     "filtered",
@@ -661,6 +665,52 @@ def test_first_last(backend, alltypes, method, filtered):
     expr = getattr(t.new, method)(where=where)
     res = expr.execute()
     assert res == 30
+
+
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "dask",
+        "exasol",
+        "flink",
+        "pandas",
+        "pyspark",
+        "sqlite",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.notimpl(
+    ["druid", "impala", "mssql", "mysql", "oracle"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize("method", ["first", "last"])
+@pytest.mark.parametrize(
+    "filtered",
+    [
+        param(
+            False,
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                )
+            ],
+        ),
+        True,
+    ],
+)
+def test_first_last_ordered(backend, alltypes, method, filtered):
+    t = alltypes.mutate(new=alltypes.int_col.nullif(0).nullif(9))
+    where = None
+    sol = 1 if method == "last" else 8
+    if filtered:
+        where = _.int_col != sol
+        sol = 2 if method == "last" else 7
+
+    expr = getattr(t.new, method)(where=where, order_by=t.int_col.desc())
+    res = expr.execute()
+    assert res == sol
 
 
 @pytest.mark.notimpl(
@@ -1207,6 +1257,11 @@ def test_date_quantile(alltypes):
                     raises=GoogleBadRequest,
                     reason="Argument 2 to STRING_AGG must be a literal or query parameter",
                 ),
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="polars doesn't support expression separators",
+                ),
             ],
         ),
     ],
@@ -1218,23 +1273,15 @@ def test_date_quantile(alltypes):
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=[
-                pytest.mark.notyet(["trino"], raises=TrinoUserError),
-            ],
             id="is_in",
         ),
         param(
             lambda t: t.string_col.notin(["1", "7"]),
             lambda t: ~t.string_col.isin(["1", "7"]),
-            marks=[
-                pytest.mark.notyet(["trino"], raises=TrinoUserError),
-            ],
             id="not_in",
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
     backend, alltypes, df, ibis_cond, pandas_cond, ibis_sep, pandas_sep
@@ -1265,6 +1312,89 @@ def test_group_concat(
     backend.assert_frame_equal(
         result.replace(np.nan, None), expected.replace(np.nan, None)
     )
+
+
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "datafusion",
+        "dask",
+        "druid",
+        "flink",
+        "impala",
+        "pandas",
+        "pyspark",
+        "sqlite",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.parametrize("filtered", [False, True])
+def test_group_concat_ordered(alltypes, df, filtered):
+    ibis_cond = (_.id % 13 == 0) if filtered else None
+    pd_cond = (df.id % 13 == 0) if filtered else True
+    expr = (
+        alltypes.filter(_.bigint_col == 10)
+        .id.cast("str")
+        .group_concat(":", where=ibis_cond, order_by=_.id.desc())
+    )
+    result = expr.execute()
+    expected = ":".join(
+        df.id[(df.bigint_col == 10) & pd_cond].sort_values(ascending=False).astype(str)
+    )
+    assert result == expected
+
+
+@pytest.mark.notimpl(
+    [
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "sqlite",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    [
+        "clickhouse",
+        "dask",
+        "pandas",
+        "pyspark",
+    ],
+    raises=com.UnsupportedOperationError,
+)
+@pytest.mark.parametrize(
+    "filtered",
+    [
+        param(
+            True,
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                )
+            ],
+        ),
+        False,
+    ],
+)
+def test_collect_ordered(alltypes, df, filtered):
+    ibis_cond = (_.id % 13 == 0) if filtered else None
+    pd_cond = (df.id % 13 == 0) if filtered else True
+    result = (
+        alltypes.filter(_.bigint_col == 10)
+        .id.cast("str")
+        .collect(where=ibis_cond, order_by=_.id.desc())
+        .execute()
+    )
+    expected = list(
+        df.id[(df.bigint_col == 10) & pd_cond].sort_values(ascending=False).astype(str)
+    )
+    assert result == expected
 
 
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
@@ -1489,7 +1619,6 @@ def test_grouped_case(backend, con):
 @pytest.mark.notimpl(
     ["datafusion"], raises=Exception, reason="not supported in datafusion"
 )
-@pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(["clickhouse"], raises=ClickHouseDatabaseError)
@@ -1508,13 +1637,17 @@ def test_group_concat_over_window(backend, con):
             "s": ["a|b|c", "b|a|c", "b|b|b|c|a"],
             "token": ["a", "b", "c"],
             "pk": [1, 1, 2],
+            "id": [1, 2, 3],
         }
     )
     expected = input_df.assign(test=["a|b|c|b|a|c", "b|a|c", "b|b|b|c|a"])
 
     table = ibis.memtable(input_df)
-    w = ibis.window(group_by="pk", preceding=0, following=None)
-    expr = table.mutate(test=table.s.group_concat(sep="|").over(w)).order_by("pk")
+    expr = table.mutate(
+        test=table.s.group_concat(sep="|").over(
+            group_by="pk", order_by="id", rows=(0, None)
+        )
+    ).order_by("id")
 
     result = con.execute(expr)
     backend.assert_frame_equal(result, expected)

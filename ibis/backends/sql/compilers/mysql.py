@@ -165,14 +165,19 @@ class MySQLCompiler(SQLGlotCompiler):
             sge.Distinct(expressions=list(map(func, op.arg.schema.keys())))
         )
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if not isinstance(op.sep, ops.Literal):
             raise com.UnsupportedOperationError(
                 "Only string literal separators are supported"
             )
+
         if where is not None:
-            arg = self.if_(where, arg)
-        return self.f.group_concat(arg, sep)
+            arg = self.if_(where, arg, NULL)
+
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+
+        return sge.GroupConcat(this=arg, separator=sep)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return (self.f.dayofweek(arg) + 5) % 7

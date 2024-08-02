@@ -34,7 +34,7 @@ class TrinoCompiler(SQLGlotCompiler):
     dialect = Trino
     type_mapper = TrinoType
 
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
         exclude_nulls_from_array_collect,
@@ -85,7 +85,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArraySort: "array_sort",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayLength: "cardinality",
-        ops.ArrayCollect: "array_agg",
         ops.ArrayIntersect: "array_intersect",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
@@ -370,15 +369,27 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
-    def visit_First(self, op, *, arg, where):
+    def visit_First(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.f.element_at(self.agg.array_agg(arg, where=where), 1)
+        return self.f.element_at(
+            self.agg.array_agg(arg, where=where, order_by=order_by), 1
+        )
 
-    def visit_Last(self, op, *, arg, where):
+    def visit_Last(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.f.element_at(self.agg.array_agg(arg, where=where), -1)
+        return self.f.element_at(
+            self.agg.array_agg(arg, where=where, order_by=order_by), -1
+        )
+
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        cond = arg.is_(sg.not_(NULL, copy=False))
+        where = cond if where is None else sge.And(this=cond, expression=where)
+        array = self.agg.array_agg(
+            self.cast(arg, dt.string), where=where, order_by=order_by
+        )
+        return self.f.array_join(array, sep)
 
     def visit_ArrayZip(self, op, *, arg):
         max_zip_arguments = 5

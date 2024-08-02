@@ -34,7 +34,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     dialect = DuckDB
     type_mapper = DuckDBType
 
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
         exclude_nulls_from_array_collect,
@@ -476,15 +476,15 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg, pattern, replacement, "g", dialect=self.dialect
         )
 
-    def visit_First(self, op, *, arg, where):
+    def visit_First(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.first(arg, where=where)
+        return self.agg.first(arg, where=where, order_by=order_by)
 
-    def visit_Last(self, op, *, arg, where):
+    def visit_Last(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.last(arg, where=where)
+        return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"

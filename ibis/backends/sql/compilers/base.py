@@ -63,6 +63,9 @@ class AggGen:
     supports_filter
         Whether the backend supports a FILTER clause in the aggregate.
         Defaults to False.
+    supports_order_by
+        Whether the backend supports an ORDER BY clause in (relevant)
+        aggregates. Defaults to False.
     """
 
     class _Accessor:
@@ -79,10 +82,13 @@ class AggGen:
 
         __getitem__ = __getattr__
 
-    __slots__ = ("supports_filter",)
+    __slots__ = ("supports_filter", "supports_order_by")
 
-    def __init__(self, *, supports_filter: bool = False):
+    def __init__(
+        self, *, supports_filter: bool = False, supports_order_by: bool = False
+    ):
         self.supports_filter = supports_filter
+        self.supports_order_by = supports_order_by
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -96,6 +102,7 @@ class AggGen:
         name: str,
         *args: Any,
         where: Any = None,
+        order_by: tuple = (),
     ):
         """Compile the specified aggregate.
 
@@ -109,21 +116,31 @@ class AggGen:
             Any arguments to pass to the aggregate.
         where
             An optional column filter to apply before performing the aggregate.
-
+        order_by
+            Optional ordering keys to use to order the rows before performing
+            the aggregate.
         """
         func = compiler.f[name]
 
-        if where is None:
-            return func(*args)
-
-        if self.supports_filter:
-            return sge.Filter(
-                this=func(*args),
-                expression=sge.Where(this=where),
+        if order_by and not self.supports_order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                f"not supported for the {compiler.dialect} backend"
             )
-        else:
+
+        if where is not None and not self.supports_filter:
             args = tuple(compiler.if_(where, arg, NULL) for arg in args)
-            return func(*args)
+
+        if order_by and self.supports_order_by:
+            *rest, last = args
+            out = func(*rest, sge.Order(this=last, expressions=order_by))
+        else:
+            out = func(*args)
+
+        if where is not None and self.supports_filter:
+            out = sge.Filter(this=out, expression=sge.Where(this=where))
+
+        return out
 
 
 class VarGen:
@@ -424,8 +441,10 @@ class SQLGlotCompiler(abc.ABC):
 
             if issubclass(op, ops.Reduction):
 
-                def impl(self, _, *, _name: str = target_name, where, **kw):
-                    return self.agg[_name](*kw.values(), where=where)
+                def impl(
+                    self, _, *, _name: str = target_name, where, order_by=(), **kw
+                ):
+                    return self.agg[_name](*kw.values(), where=where, order_by=order_by)
 
             else:
 

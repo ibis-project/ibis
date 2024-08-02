@@ -20,6 +20,7 @@ class SQLiteCompiler(SQLGlotCompiler):
     dialect = SQLite
     type_mapper = SQLiteType
 
+    # We could set `supports_order_by=True` for SQLite >= 3.44.0 (2023-11-01).
     agg = AggGen(supports_filter=True)
 
     NAN = NULL

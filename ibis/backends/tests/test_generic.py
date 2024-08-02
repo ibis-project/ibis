@@ -1510,8 +1510,8 @@ def test_pivot_wider(backend):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function last(double precision) does not exist, do you mean left or least",
+    raises=com.UnsupportedOperationError,
+    reason="first/last requires an order_by",
 )
 @pytest.mark.notyet(
     ["datafusion"],
@@ -1575,8 +1575,8 @@ def test_distinct_on_keep(backend, on, keep):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function first(double precision) does not exist",
+    raises=com.UnsupportedOperationError,
+    reason="first/last requires an order_by",
 )
 @pytest.mark.notyet(
     ["datafusion"],

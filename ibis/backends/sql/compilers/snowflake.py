@@ -10,7 +10,14 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.backends.sql.compilers.base import NULL, STAR, C, FuncGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import (
+    NULL,
+    STAR,
+    AggGen,
+    C,
+    FuncGen,
+    SQLGlotCompiler,
+)
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
@@ -32,6 +39,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = Snowflake
     type_mapper = SnowflakeType
     no_limit_value = NULL
+
+    agg = AggGen(supports_order_by=True)
+
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
@@ -351,22 +361,23 @@ class SnowflakeCompiler(SQLGlotCompiler):
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def visit_First(self, op, *, arg, where):
-        return self.f.get(self.agg.array_agg(arg, where=where), 0)
+    def visit_First(self, op, *, arg, where, order_by):
+        return self.f.get(self.agg.array_agg(arg, where=where, order_by=order_by), 0)
 
-    def visit_Last(self, op, *, arg, where):
-        expr = self.agg.array_agg(arg, where=where)
+    def visit_Last(self, op, *, arg, where, order_by):
+        expr = self.agg.array_agg(arg, where=where, order_by=order_by)
         return self.f.get(expr, self.f.array_size(expr) - 1)
 
-    def visit_GroupConcat(self, op, *, arg, where, sep):
-        if where is None:
-            return self.f.listagg(arg, sep)
+    def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
 
-        return self.if_(
-            self.f.count_if(where) > 0,
-            self.f.listagg(self.if_(where, arg, NULL), sep),
-            NULL,
-        )
+        out = self.f.listagg(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         if offset is not None:

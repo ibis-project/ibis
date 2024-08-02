@@ -20,7 +20,12 @@ if TYPE_CHECKING:
 
 
 class ClickhouseAggGen(AggGen):
-    def aggregate(self, compiler, name, *args, where=None):
+    def aggregate(self, compiler, name, *args, where=None, order_by=()):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         # Clickhouse aggregate functions all have filtering variants with a
         # `If` suffix (e.g. `SumIf` instead of `Sum`).
         if where is not None:
@@ -433,7 +438,12 @@ class ClickHouseCompiler(SQLGlotCompiler):
             delimiter, self.cast(arg, dt.String(nullable=False))
         )
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         call = self.agg.groupArray(arg, where=where)
         return self.if_(self.f.empty(call), NULL, self.f.arrayStringConcat(call, sep))
 
