@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import itertools
 from functools import partial
-from typing import Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -34,31 +33,6 @@ class SnowflakeFuncGen(FuncGen):
     udf = FuncGen(namespace="ibis_udfs.public")
 
 
-class SnowflakeAggGen(AggGen):
-    def aggregate(
-        self,
-        compiler: SQLGlotCompiler,
-        name: str,
-        *args: Any,
-        where: Any = None,
-        order_by: tuple = (),
-    ):
-        func = compiler.f[name]
-
-        if where is not None:
-            args = tuple(
-                arg if isinstance(arg, sge.Literal) else compiler.if_(where, arg, NULL)
-                for arg in args
-            )
-
-        out = func(*args)
-
-        if order_by:
-            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
-
-        return out
-
-
 class SnowflakeCompiler(SQLGlotCompiler):
     __slots__ = ()
 
@@ -66,7 +40,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     type_mapper = SnowflakeType
     no_limit_value = NULL
 
-    agg = SnowflakeAggGen()
+    agg = AggGen(supports_order_by=True, requires_within_group=True)
 
     rewrites = (
         exclude_unsupported_window_frame_from_row_number,
@@ -395,7 +369,9 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.f.get(expr, self.f.array_size(expr) - 1)
 
     def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
-        out = self.agg.listagg(arg, sep, where=where, order_by=order_by)
+        out = sge.WithinGroup(
+            this=self.f.listagg(arg, sep), expression=sge.Order(expressions=order_by)
+        )
         if where is not None:
             out = self.if_(self.f.count_if(where) > 0, out, NULL)
         return out
