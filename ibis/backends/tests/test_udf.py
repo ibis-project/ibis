@@ -6,6 +6,7 @@ from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
+from ibis.backends.pyspark import PYSPARK_LT_35
 from ibis.backends.tests.errors import Py4JJavaError
 
 no_python_udfs = mark.notimpl(
@@ -29,6 +30,13 @@ cloudpickle_version_mismatch = mark.notimpl(
     condition=sys.version_info >= (3, 11),
     raises=Py4JJavaError,
     reason="Docker image has Python 3.10, results in `cloudpickle` version mismatch",
+)
+
+pyspark_version_mismatch = mark.notimpl(
+    ["pyspark"],
+    condition=PYSPARK_LT_35,
+    raises=NotImplementedError,
+    reason="pyarrow UDFs require PySpark 3.5+",
 )
 
 
@@ -174,7 +182,8 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
                     ["snowflake", "sqlite", "flink"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pyarrow UDFs",
-                )
+                ),
+                pyspark_version_mismatch,
             ],
         ),
     ],

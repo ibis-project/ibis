@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from ibis.expr.api import Watermark
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
-
+PYSPARK_LT_35 = vparse(pyspark.__version__) < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
 
@@ -368,6 +368,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 udf_func = udf.__func__
                 spark_udf = F.udf(udf_func, udf_return)
             elif udf.__input_type__ == InputType.PYARROW:
+                # raise not implemented error if running on pyspark < 3.4
+                if PYSPARK_LT_35:
+                    raise NotImplementedError(
+                        "pyarrow UDFs are only supported in pyspark >= 3.5"
+                    )
                 udf_func = udf.__func__
                 spark_udf = F.udf(udf_func, udf_return, useArrow=True)
             else:

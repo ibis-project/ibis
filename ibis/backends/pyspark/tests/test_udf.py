@@ -4,6 +4,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
+from ibis.backends.pyspark import PYSPARK_LT_35
 
 pytest.importorskip("pyspark")
 
@@ -44,7 +45,25 @@ def test_python_udf(t, df):
     tm.assert_frame_equal(result, expected)
 
 
+@pytest.mark.skipif(PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
 def test_pyarrow_udf(t, df):
     result = t.mutate(repeated=pyarrow_repeat(t.str_col, 2)).execute()
     expected = df.assign(repeated=df.str_col * 2)
     tm.assert_frame_equal(result, expected)
+
+
+@pytest.mark.skipif(not PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+def test_illegal_udf_type(t):
+    @ibis.udf.scalar.pyarrow
+    def my_add_one(x) -> str:
+        import pyarrow.compute as pac
+
+        return pac.add(pac.binary_length(x), 1)
+
+    expr = t.select(repeated=my_add_one(t.str_col))
+
+    with pytest.raises(
+        NotImplementedError,
+        match="pyarrow UDFs are only supported in pyspark >= 3.5",
+    ):
+        expr.execute()
