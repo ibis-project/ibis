@@ -70,7 +70,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.DateFromYMD: "date",
         ops.Divide: "ieee_divide",
         ops.EndsWith: "ends_with",
-        ops.GroupConcat: "string_agg",
         ops.GeoArea: "st_area",
         ops.GeoAsBinary: "st_asbinary",
         ops.GeoAsText: "st_astext",
