@@ -1402,3 +1402,22 @@ def execute_array_all(op, **kw):
     arg = translate(op.arg, **kw)
     no_nulls = arg.list.drop_nulls()
     return pl.when(no_nulls.list.len() == 0).then(None).otherwise(no_nulls.list.all())
+
+
+@translate.register(ops.GroupConcat)
+def execute_group_concat(op, **kw):
+    arg = translate(op.arg, **kw)
+    sep = _literal_value(op.sep)
+
+    predicate = arg.is_not_null()
+
+    if (where := op.where) is not None:
+        predicate &= translate(where, **kw)
+
+    if order_by := op.order_by:
+        keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
+        descending = [k.descending for k in order_by]
+        arg = arg.sort_by(keys, descending=descending)
+
+    no_nulls = arg.filter(predicate)
+    return pl.when(no_nulls.count() > 0).then(no_nulls.str.join(sep)).otherwise(None)

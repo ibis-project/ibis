@@ -1257,6 +1257,11 @@ def test_date_quantile(alltypes):
                     raises=GoogleBadRequest,
                     reason="Argument 2 to STRING_AGG must be a literal or query parameter",
                 ),
+                pytest.mark.notimpl(
+                    ["polars"],
+                    raises=com.UnsupportedArgumentError,
+                    reason="polars doesn't support expression separators",
+                ),
             ],
         ),
     ],
@@ -1277,7 +1282,6 @@ def test_date_quantile(alltypes):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 def test_group_concat(
