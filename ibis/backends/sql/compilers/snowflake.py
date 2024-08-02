@@ -369,11 +369,14 @@ class SnowflakeCompiler(SQLGlotCompiler):
         return self.f.get(expr, self.f.array_size(expr) - 1)
 
     def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
-        out = sge.WithinGroup(
-            this=self.f.listagg(arg, sep), expression=sge.Order(expressions=order_by)
-        )
         if where is not None:
-            out = self.if_(self.f.count_if(where) > 0, out, NULL)
+            arg = self.if_(where, arg, NULL)
+
+        out = self.f.listagg(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
         return out
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
