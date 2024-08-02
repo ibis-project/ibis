@@ -128,7 +128,7 @@ class AggGen:
         if order_by and not self.supports_order_by:
             raise com.UnsupportedOperationError(
                 "ordering of order-sensitive aggregations via `order_by` is "
-                "not supported for this backend"
+                f"not supported for the {compiler.dialect} backend"
             )
 
         if where is not None and not self.supports_filter:
