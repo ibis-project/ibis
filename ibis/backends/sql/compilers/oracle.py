@@ -6,7 +6,7 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import OracleType
 from ibis.backends.sql.dialects import Oracle
 from ibis.backends.sql.rewrites import (
@@ -22,6 +22,8 @@ from ibis.backends.sql.rewrites import (
 
 class OracleCompiler(SQLGlotCompiler):
     __slots__ = ()
+
+    agg = AggGen(supports_order_by=True, requires_within_group=True)
 
     dialect = Oracle
     type_mapper = OracleType
@@ -446,3 +448,14 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_ExtractIsoYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
+
+    def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        out = self.f.listagg(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out

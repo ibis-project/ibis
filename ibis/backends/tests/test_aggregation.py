@@ -1325,11 +1325,6 @@ def test_group_concat(
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="ORA-00904: 'GROUP_CONCAT': invalid identifier",
-)
 @pytest.mark.parametrize("filtered", [False, True])
 def test_group_concat_ordered(alltypes, df, filtered):
     ibis_cond = (_.id % 13 == 0) if filtered else None
