@@ -65,6 +65,7 @@
 
         # necessary for quarto and quartodoc
         export PYTHONPATH=''${PWD}''${PYTHONPATH:+:}''${PYTHONPATH}:''${PWD}/docs
+        export PYSPARK_PYTHON="$(which python)"
       '';
 
       preCommitDeps = with pkgs; [
