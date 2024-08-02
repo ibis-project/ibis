@@ -1334,12 +1334,12 @@ def test_group_concat(
 def test_group_concat_ordered(alltypes, df, filtered):
     ibis_cond = (_.id % 13 == 0) if filtered else None
     pd_cond = (df.id % 13 == 0) if filtered else True
-    result = (
+    expr = (
         alltypes.filter(_.bigint_col == 10)
         .id.cast("str")
         .group_concat(":", where=ibis_cond, order_by=_.id.desc())
-        .execute()
     )
+    result = expr.execute()
     expected = ":".join(
         df.id[(df.bigint_col == 10) & pd_cond].sort_values(ascending=False).astype(str)
     )
