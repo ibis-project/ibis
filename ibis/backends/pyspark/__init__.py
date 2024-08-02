@@ -359,18 +359,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _register_udfs(self, expr: ir.Expr) -> None:
         node = expr.op()
         for udf in node.find(ops.ScalarUDF):
-            if udf.__input_type__ not in (InputType.PANDAS, InputType.BUILTIN):
-                raise NotImplementedError(
-                    "Only Builtin UDFs and Pandas UDFs are supported in the PySpark backend"
-                )
-            # register pandas UDFs
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_return = PySparkType.from_ibis(udf.dtype)
             if udf.__input_type__ == InputType.PANDAS:
-                udf_name = self.compiler.__sql_name__(udf)
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
-                udf_return = PySparkType.from_ibis(udf.dtype)
                 spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
-                self._session.udf.register(udf_name, spark_udf)
-
+            elif udf.__input_type__ == InputType.PYTHON:
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return)
+            elif udf.__input_type__ == InputType.PYARROW:
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return, useArrow=True)
+            else:
+                # Builtin functions don't need to be registered
+                continue
+            self._session.udf.register(udf_name, spark_udf)
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
