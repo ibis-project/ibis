@@ -425,6 +425,9 @@ def test_register_garbage(con, monkeypatch):
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
+    if con.name in ["oracle", "exasol"]:
+        pytest.skip("Skip Exasol and Oracle because of the global pytestmark")
+
     fname = Path(fname)
     fname = Path(data_dir) / "parquet" / fname.name
     table = pq.read_table(fname)
@@ -462,7 +465,11 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     for fname in fnames:
         pq.write_table(ft_data, tmp_path / fname)
 
-    table = con.read_parquet(tmp_path)
+    if con.name == "clickhouse":
+        # clickhouse does not support read directory
+        table = con.read_parquet(tmp_path / f"*.{ext}")
+    else:
+        table = con.read_parquet(tmp_path)
 
     assert table.count().execute() == nrows * ntables
 
