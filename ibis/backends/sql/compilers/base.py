@@ -82,16 +82,18 @@ class AggGen:
 
         __getitem__ = __getattr__
 
-    __slots__ = ("supports_filter", "supports_order_by")
+    __slots__ = ("supports_filter", "supports_order_by", "requires_within_group")
 
     def __init__(
         self,
         *,
         supports_filter: bool = False,
         supports_order_by: bool = False,
+        requires_within_group: bool = False,
     ):
         self.supports_filter = supports_filter
         self.supports_order_by = supports_order_by
+        self.requires_within_group = requires_within_group
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -135,10 +137,15 @@ class AggGen:
             args = tuple(compiler.if_(where, arg, NULL) for arg in args)
 
         if order_by and self.supports_order_by:
-            *rest, last = args
-            args = (*rest, sge.Order(this=last, expressions=order_by))
-
-        out = func(*args)
+            if self.requires_within_group:
+                out = sge.WithinGroup(
+                    this=func(*args), expression=sge.Order(expressions=order_by)
+                )
+            else:
+                *rest, last = args
+                out = func(*rest, sge.Order(this=last, expressions=order_by))
+        else:
+            out = func(*args)
 
         if where is not None and self.supports_filter:
             out = sge.Filter(this=out, expression=sge.Where(this=where))
