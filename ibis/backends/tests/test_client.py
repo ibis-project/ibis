@@ -27,12 +27,14 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
     ExaQueryError,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
     PyODBCProgrammingError,
+    PySparkAnalysisException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1631,6 +1633,16 @@ def test_from_connection(con, top_level):
     assert result == 1
 
 
+@pytest.mark.never(
+    ["postgres"],
+    raises=com.UnsupportedOperationError,
+    reason="tables cannot be created in other databases",
+)
+@pytest.mark.notimpl(
+    ["exasol"],
+    raises=com.UnsupportedOperationError,
+    reason="unknown whether tables can be created in other databases",
+)
 def test_no_accidental_cross_database_table_load(con_create_database):
     con = con_create_database
 
@@ -1651,7 +1663,14 @@ def test_no_accidental_cross_database_table_load(con_create_database):
     con.drop_table(table)
 
     # Now attempting to load same table name without specifying db should fail
-    with pytest.raises(com.IbisError):
+    allowed_exceptions = (
+        com.IbisError,
+        *tuple(filter(None, (ClickHouseDatabaseError, PySparkAnalysisException))),
+        # datafusion really needs to get their exception story in order
+        *((Exception,) * (con.name == "datafusion")),
+    )
+
+    with pytest.raises(allowed_exceptions):
         t = con.table(table)
 
     # But can load if specify other db
