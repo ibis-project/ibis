@@ -260,8 +260,8 @@ $$""",
             return sge.HexString(this=value.hex())
         return super().visit_Literal(op, value=value, dtype=dtype)
 
-    def visit_Arbitrary(self, op, *, arg, where):
-        return self.f.get(self.agg.array_agg(arg, where=where), 0)
+    def visit_Arbitrary(self, op, *, arg, where, order_by):
+        return self.f.get(self.agg.array_agg(arg, where=where, order_by=order_by), 0)
 
     def visit_Cast(self, op, *, arg, to):
         if to.is_struct() or to.is_map():

@@ -135,11 +135,11 @@ class DataFusionCompiler(SQLGlotCompiler):
             return self.f.arrow_cast(arg, f"{PyArrowType.from_ibis(to)}".capitalize())
         return self.cast(arg, to)
 
-    def visit_Arbitrary(self, op, *, arg, where):
+    def visit_Arbitrary(self, op, *, arg, where, order_by):
         cond = ~arg.is_(NULL)
         if where is not None:
             cond &= where
-        return self.agg.first_value(arg, where=cond)
+        return self.agg.first_value(arg, where=cond, order_by=order_by)
 
     def visit_Variance(self, op, *, arg, how, where):
         if how == "sample":

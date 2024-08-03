@@ -2004,7 +2004,10 @@ class Column(Value, _FixedTextJupyterMixin):
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
     def arbitrary(
-        self, where: ir.BooleanValue | None = None, how: Any = None
+        self,
+        where: ir.BooleanValue | None = None,
+        how: Any = None,
+        order_by: Any = None,
     ) -> Scalar:
         """Select an arbitrary value in a column.
 
@@ -2018,6 +2021,8 @@ class Column(Value, _FixedTextJupyterMixin):
             A filter expression
         how
             DEPRECATED
+        order_by
+            Order the arbitrary value by this expression
 
         Returns
         -------
@@ -2056,7 +2061,11 @@ class Column(Value, _FixedTextJupyterMixin):
                 removed_in="10.0",
                 instead="call `first` or `last` explicitly",
             )
-        return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.Arbitrary(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+        ).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.

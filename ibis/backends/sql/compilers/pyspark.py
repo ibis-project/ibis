@@ -262,11 +262,9 @@ class PySparkCompiler(SQLGlotCompiler):
             out = sge.IgnoreNulls(this=out)
         return out
 
-    def visit_Arbitrary(self, op, *, arg, where):
+    def visit_Arbitrary(self, op, *, arg, where, order_by):
         # For Spark>=3.4 we could use any_value here
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return sge.IgnoreNulls(this=self.f.first(arg))
+        return sge.IgnoreNulls(this=self.agg.first(arg, where=where, order_by=order_by))
 
     def visit_Median(self, op, *, arg, where):
         return self.agg.percentile(arg, 0.5, where=where)

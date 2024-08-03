@@ -71,6 +71,7 @@ class Arbitrary(Filterable, Reduction):
     """
 
     arg: Column[dt.Any]
+    order_by: VarTuple[SortKey] = ()
 
     dtype = rlz.dtype_like("arg")
 
