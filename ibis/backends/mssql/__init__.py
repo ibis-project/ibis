@@ -178,19 +178,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if name.startswith("ibis_cache_"):
             catalog, database = ("tempdb", "dbo")
             name = "##" + name
-        conditions = [sg.column("table_name").eq(sge.convert(name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                "is_nullable",
-                "numeric_precision",
-                "numeric_scale",
-                "datetime_precision",
+                C.column_name,
+                C.data_type,
+                C.is_nullable,
+                C.numeric_precision,
+                C.numeric_scale,
+                C.datetime_precision,
             )
             .from_(
                 sg.table(
@@ -199,8 +195,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                     catalog=catalog or self.current_catalog,
                 )
             )
-            .where(*conditions)
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -487,13 +486,9 @@ GO"""
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        conditions = []
-
-        if db:
-            conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (
-            sg.select("table_name")
+            sg.select(C.table_name)
             .from_(
                 sg.table(
                     "TABLES",
@@ -501,11 +496,9 @@ GO"""
                     catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
+            .where(C.table_schema.eq(sge.convert(db or self.current_database)))
             .distinct()
         )
-
-        if conditions:
-            sql = sql.where(*conditions)
 
         sql = sql.sql(self.dialect)
 
