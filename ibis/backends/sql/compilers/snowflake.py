@@ -361,12 +361,38 @@ class SnowflakeCompiler(SQLGlotCompiler):
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        out = self.f.array_agg(arg)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out
+
     def visit_First(self, op, *, arg, where, order_by):
-        return self.f.get(self.agg.array_agg(arg, where=where, order_by=order_by), 0)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        out = self.f.array_agg(arg)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return self.f.get(out, 0)
 
     def visit_Last(self, op, *, arg, where, order_by):
-        expr = self.agg.array_agg(arg, where=where, order_by=order_by)
-        return self.f.get(expr, self.f.array_size(expr) - 1)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        out = self.f.array_agg(arg)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return self.f.get(out, self.f.array_size(out) - 1)
 
     def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
         if where is not None:
