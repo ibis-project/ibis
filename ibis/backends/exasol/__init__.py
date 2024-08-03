@@ -345,12 +345,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         if temp:
             raise com.UnsupportedOperationError(
-                "Creating temp tables is not supported by Exasol."
+                f"Creating temp tables is not supported by {self.name}"
             )
 
         if database is not None and database != self.current_database:
             raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Exasol"
+                f"Creating tables in other databases is not supported by {self.name}"
             )
         else:
             database = None

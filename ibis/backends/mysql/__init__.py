@@ -399,7 +399,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if database is not None and database != self.current_database:
             raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
+                f"Creating tables in other databases is not supported by {self.name}"
             )
         else:
             database = None
