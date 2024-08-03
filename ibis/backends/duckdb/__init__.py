@@ -500,7 +500,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         query = (
             sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
             .from_(f.duckdb_extensions())
-            .where(sg.and_(C.installed, C.loaded))
+            .where(C.installed, C.loaded)
         )
         with self._safe_raw_sql(query) as cur:
             installed = map(itemgetter(0), cur.fetchall())

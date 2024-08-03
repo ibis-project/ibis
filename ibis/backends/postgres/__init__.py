@@ -472,7 +472,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 on=n.oid.eq(p.pronamespace),
                 join_type="LEFT",
             )
-            .where(sg.and_(*predicates))
+            .where(*predicates)
         )
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:

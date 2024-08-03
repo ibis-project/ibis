@@ -147,10 +147,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             )
             .from_(sg.table("columns", db="information_schema", catalog=catalog))
             .where(
-                sg.and_(
-                    C.table_name.eq(sge.convert(table_name)),
-                    C.table_schema.eq(sge.convert(database or self.current_database)),
-                )
+                C.table_name.eq(sge.convert(table_name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
             )
             .order_by(C.ordinal_position)
         )
