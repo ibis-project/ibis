@@ -1633,11 +1633,6 @@ def test_from_connection(con, top_level):
     assert result == 1
 
 
-@pytest.mark.never(
-    ["postgres"],
-    raises=com.UnsupportedOperationError,
-    reason="tables cannot be created in other databases",
-)
 @pytest.mark.notimpl(
     ["exasol"],
     raises=com.UnsupportedOperationError,
