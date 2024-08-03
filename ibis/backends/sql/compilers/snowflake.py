@@ -377,7 +377,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
         if order_by:
             out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
 
-        return out
+        if where is None:
+            return out
+
+        return self.if_(self.f.count_if(where) > 0, out, NULL)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         if offset is not None:
