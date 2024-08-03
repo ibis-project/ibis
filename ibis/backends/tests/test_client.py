@@ -1634,6 +1634,11 @@ def test_from_connection(con, top_level):
 
 
 @pytest.mark.notimpl(
+    ["mysql"],
+    raises=com.UnsupportedOperationError,
+    reason="not yet implemented for MySQL",
+)
+@pytest.mark.notimpl(
     ["exasol"],
     raises=com.UnsupportedOperationError,
     reason="unknown whether tables can be created in other databases",
