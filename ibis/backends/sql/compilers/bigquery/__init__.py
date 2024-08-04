@@ -245,7 +245,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         # by default bigquery returns data to python as WKT, and there's really
         # no point in supporting both if we don't need to.
         quoted = self.quoted
-        query = sg.select(
+        result = sg.select(
             sge.Star(
                 replace=[
                     self.f.st_asbinary(sg.column(col, quoted=quoted)).as_(
@@ -266,9 +266,9 @@ class BigQueryCompiler(SQLGlotCompiler):
                 sources.append(sql)
 
         if not sources:
-            return query
+            return result
 
-        sources.append(query)
+        sources.append(result)
         return sources
 
     def _get_udf_source(self, udf_node: ops.ScalarUDF):

@@ -684,7 +684,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params=None,
+        pretty: bool = False,
+        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
         query = self.compiler.to_sqlglot(
@@ -695,8 +700,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             session_project_id=getattr(self._session_dataset, "project", None),
             **kwargs,
         )
-        queries = util.promote_list(query)
-        sql = ";\n".join(query.sql(self.dialect) for query in queries)
+        queries = query if isinstance(query, list) else [query]
+        sql = ";\n".join(query.sql(self.dialect, pretty=pretty) for query in queries)
         self._log(sql)
         return sql
 
