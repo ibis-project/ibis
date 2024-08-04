@@ -246,6 +246,8 @@ build-jupyterlite: build-ibis-for-pyodide
         --debug \
         --no-libarchive \
         --config docs/jupyter_lite_config.json \
+        --apps repl \
+        --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
     # jupyter lite build can copy from the nix store, and preserves the
     # original write bit; without this the next run of this rule will result in
