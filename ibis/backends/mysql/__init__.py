@@ -397,13 +397,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                f"Creating tables in other databases is not supported by {self.name}"
-            )
-        else:
-            database = None
-
         properties = []
 
         if temp:

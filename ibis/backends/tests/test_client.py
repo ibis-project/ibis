@@ -30,6 +30,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
     ImpalaHiveServer2Error,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
@@ -1634,11 +1635,6 @@ def test_from_connection(con, top_level):
 
 
 @pytest.mark.notimpl(
-    ["mysql"],
-    raises=com.UnsupportedOperationError,
-    reason="not yet implemented for MySQL",
-)
-@pytest.mark.notimpl(
     ["exasol"],
     raises=com.UnsupportedOperationError,
     reason="unknown whether tables can be created in other databases",
@@ -1665,7 +1661,16 @@ def test_no_accidental_cross_database_table_load(con_create_database):
     # Now attempting to load same table name without specifying db should fail
     allowed_exceptions = (
         com.IbisError,
-        *tuple(filter(None, (ClickHouseDatabaseError, PySparkAnalysisException))),
+        *tuple(
+            filter(
+                None,
+                (
+                    ClickHouseDatabaseError,
+                    PySparkAnalysisException,
+                    MySQLProgrammingError,
+                ),
+            )
+        ),
         # datafusion really needs to get their exception story in order
         *((Exception,) * (con.name == "datafusion")),
     )
