@@ -17,9 +17,7 @@ from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
 
-dot_sql_never = pytest.mark.never(
-    ["dask", "pandas"], reason="dask and pandas do not accept SQL"
-)
+dot_sql_never = pytest.mark.never(["pandas"], reason="pandas do not accept SQL")
 
 _NAMES = {
     "bigquery": f"ibis_gbq_testing_{getpass.getuser()}_{PYTHON_SHORT_VERSION}.functional_alltypes",
@@ -218,7 +216,7 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = ("pandas", "dask")
+_NO_SQLGLOT_DIALECT = ("pandas",)
 no_sqlglot_dialect = [
     param(dialect, marks=pytest.mark.xfail) for dialect in sorted(_NO_SQLGLOT_DIALECT)
 ]

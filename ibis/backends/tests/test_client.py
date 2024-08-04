@@ -255,7 +255,7 @@ _LIMIT = {
 
 
 @pytest.mark.notimpl(["mssql"])
-@pytest.mark.never(["dask", "pandas"], reason="dask and pandas do not support SQL")
+@pytest.mark.never(["pandas"], reason="pandas does not support SQL")
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
@@ -347,7 +347,6 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "druid",
         "duckdb",
@@ -461,9 +460,7 @@ def employee_data_2_temp_table(
     con.drop_table(temp_table_name, force=True)
 
 
-@pytest.mark.notimpl(
-    ["polars", "pandas", "dask"], reason="`insert` method not implemented"
-)
+@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
 def test_insert_no_overwrite_from_dataframe(
     backend, con, test_employee_data_2, employee_empty_temp_table
 ):
@@ -477,9 +474,7 @@ def test_insert_no_overwrite_from_dataframe(
     )
 
 
-@pytest.mark.notimpl(
-    ["polars", "pandas", "dask"], reason="`insert` method not implemented"
-)
+@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -506,9 +501,7 @@ def test_insert_overwrite_from_dataframe(
     )
 
 
-@pytest.mark.notimpl(
-    ["polars", "pandas", "dask"], reason="`insert` method not implemented"
-)
+@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
 def test_insert_no_overwrite_from_expr(
     backend, con, employee_empty_temp_table, employee_data_2_temp_table
 ):
@@ -524,9 +517,7 @@ def test_insert_no_overwrite_from_expr(
     )
 
 
-@pytest.mark.notimpl(
-    ["polars", "pandas", "dask"], reason="`insert` method not implemented"
-)
+@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
@@ -558,9 +549,7 @@ def test_insert_overwrite_from_expr(
 @pytest.mark.notyet(
     ["trino"], reason="memory connector doesn't allow writing to tables"
 )
-@pytest.mark.notimpl(
-    ["polars", "pandas", "dask"], reason="`insert` method not implemented"
-)
+@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
@@ -587,7 +576,7 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(
-    ["polars", "dask", "pandas"],
+    ["polars", "pandas"],
     raises=AttributeError,
     reason="`insert` method not implemented",
 )
@@ -614,7 +603,6 @@ def test_insert_from_memtable(con, temp_table):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "druid",
         "exasol",
         "impala",
@@ -649,12 +637,7 @@ def test_list_catalogs(con):
 
 
 @pytest.mark.notyet(
-    [
-        "dask",
-        "druid",
-        "pandas",
-        "polars",
-    ],
+    ["druid", "pandas", "polars"],
     raises=AttributeError,
     reason="doesn't support the common notion of a database",
 )
@@ -723,11 +706,6 @@ def test_unsigned_integer_type(con, temp_table):
             "clickhouse://default@localhost:8123/default",
             marks=mark.clickhouse,
             id="clickhouse",
-        ),
-        param(
-            "dask://",
-            marks=mark.dask,
-            id="dask",
         ),
         param(
             "datafusion://",
@@ -907,7 +885,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
-                        "dask",
                         "duckdb",
                         "exasol",
                         "impala",
@@ -934,7 +911,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
-                        "dask",
                         "duckdb",
                         "exasol",
                         "impala",
@@ -961,7 +937,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                     [
                         "bigquery",
                         "clickhouse",
-                        "dask",
                         "duckdb",
                         "exasol",
                         "impala",
@@ -1256,7 +1231,7 @@ def test_set_backend(con, monkeypatch):
     "name",
     [
         param(name, marks=getattr(mark, name), id=name)
-        for name in ("datafusion", "duckdb", "polars", "sqlite", "pandas", "dask")
+        for name in ("datafusion", "duckdb", "polars", "sqlite", "pandas")
     ],
 )
 def test_set_backend_name(name, monkeypatch):
@@ -1299,7 +1274,6 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "dask",
         "datafusion",
         "duckdb",
         "exasol",
@@ -1464,8 +1438,7 @@ def test_list_catalogs_databases(con_create_catalog_database):
 
 
 @pytest.mark.notyet(
-    ["pandas", "dask", "polars", "datafusion"],
-    reason="this is a no-op for in-memory backends",
+    ["pandas", "polars", "datafusion"], reason="this is a no-op for in-memory backends"
 )
 @pytest.mark.notyet(
     ["trino", "clickhouse", "impala", "bigquery", "flink"],
@@ -1572,7 +1545,7 @@ def test_schema_with_caching(alltypes):
 @pytest.mark.notyet(
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
-@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["pandas", "polars"], reason="Doesn't support insert")
 @pytest.mark.notyet(
     ["datafusion"], reason="Doesn't support table creation from records"
 )
@@ -1618,7 +1591,7 @@ DEFAULT_CON_ATTR = "con"
 
 
 @pytest.mark.parametrize("top_level", [True, False])
-@pytest.mark.never(["dask", "pandas", "polars"], reason="don't have connection concept")
+@pytest.mark.never(["pandas", "polars"], reason="don't have a connection concept")
 def test_from_connection(con, top_level):
     backend = getattr(ibis, con.name) if top_level else type(con)
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))

@@ -245,8 +245,7 @@ def test_coalesce(con, expr, expected):
         assert result == pytest.approx(expected)
 
 
-# TODO(dask) - identicalTo - #2553
-@pytest.mark.notimpl(["clickhouse", "dask", "druid", "exasol"])
+@pytest.mark.notimpl(["clickhouse", "druid", "exasol"])
 def test_identical_to(backend, alltypes, sorted_df):
     sorted_alltypes = alltypes.order_by("id")
     df = sorted_df
@@ -364,7 +363,6 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
         "exasol",
         "pandas",
         "pyspark",
-        "dask",
     ]
 )
 @pytest.mark.never(
@@ -562,19 +560,11 @@ def test_drop_null_table(backend, alltypes, how, subset):
         param("id", {"by": "id"}),
         param(_.id, {"by": "id"}),
         param(lambda _: _.id, {"by": "id"}),
-        param(
-            ibis.desc("id"),
-            {"by": "id", "ascending": False},
-        ),
-        param(
-            ["id", "int_col"],
-            {"by": ["id", "int_col"]},
-            marks=pytest.mark.xfail_version(dask=["dask<2024.2.0"]),
-        ),
+        param(ibis.desc("id"), {"by": "id", "ascending": False}),
+        param(["id", "int_col"], {"by": ["id", "int_col"]}),
         param(
             ["id", ibis.desc("int_col")],
             {"by": ["id", "int_col"], "ascending": [True, False]},
-            marks=pytest.mark.xfail_version(dask=["dask<2024.2.0"]),
         ),
     ],
 )
@@ -585,7 +575,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars", "mssql", "druid"])
+@pytest.mark.notimpl(["pandas", "polars", "mssql", "druid"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -722,7 +712,7 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
         getattr(t["col2"], op2)(nulls_first=nf2),
     )
 
-    if (con.name in ("pandas", "dask")) and (nf1 != nf2):
+    if con.name == "pandas" and nf1 != nf2:
         with pytest.raises(
             ValueError,
             match=f"{con.name} does not support specifying null ordering for individual column",
@@ -845,11 +835,6 @@ def test_table_info_large(con):
                     reason="mode is not supported",
                 ),
                 pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
-                ),
-                pytest.mark.notimpl(
                     ["oracle"],
                     raises=(OracleDatabaseError, com.OperationNotDefinedError),
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
@@ -930,11 +915,6 @@ def test_table_info_large(con):
                     ["oracle"],
                     raises=com.OperationNotDefinedError,
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
-                ),
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Unable to concatenate DataFrame with unknown division specifying axis=1",
                 ),
             ],
             id="string_col",
@@ -1170,7 +1150,7 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int32
 
 
-@pytest.mark.notimpl(["dask", "datafusion", "pandas", "polars", "druid"])
+@pytest.mark.notimpl(["datafusion", "pandas", "polars", "druid"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
@@ -1188,7 +1168,6 @@ def test_exists(batting, awards_players, method_name):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "datafusion",
         "mssql",
         "mysql",
@@ -1219,7 +1198,6 @@ def test_typeof(con):
     raises=PsycoPg2InternalError,
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
-@pytest.mark.xfail_version(dask=["dask<2024.2.0"])
 @pytest.mark.notyet(
     ["mssql"],
     raises=PyODBCProgrammingError,
@@ -1245,9 +1223,6 @@ def test_isin_uncorrelated(
 
 @pytest.mark.notimpl(["polars"], reason="incorrect answer")
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.xfail_version(
-    dask=["dask<2024.2.0"], reason="not supported by the backend"
-)
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
@@ -1584,7 +1559,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "risingwave", "flink", "exasol"])
+@pytest.mark.notimpl(["pandas", "risingwave", "flink", "exasol"])
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1643,7 +1618,6 @@ def test_hash(backend, alltypes, dtype):
 @pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
 @pytest.mark.notyet(
     [
-        "dask",
         "datafusion",
         "druid",
         "duckdb",
@@ -1676,7 +1650,6 @@ def test_hashbytes(backend, alltypes):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
@@ -1763,7 +1736,7 @@ def test_cast(con, from_type, to_type, from_val, expected):
     assert result == expected
 
 
-@pytest.mark.notimpl(["pandas", "dask", "oracle", "sqlite"])
+@pytest.mark.notimpl(["pandas", "oracle", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
     [
@@ -1805,7 +1778,6 @@ def test_try_cast(con, from_val, to_type, expected):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "datafusion",
         "druid",
         "exasol",
@@ -1845,7 +1817,6 @@ def test_try_cast_null(con, from_val, to_type):
 @pytest.mark.notimpl(
     [
         "pandas",
-        "dask",
         "datafusion",
         "druid",
         "mysql",
@@ -1872,7 +1843,6 @@ def test_try_cast_table(backend, con):
 @pytest.mark.notimpl(
     [
         "pandas",
-        "dask",
         "datafusion",
         "mysql",
         "oracle",
@@ -2335,14 +2305,6 @@ def test_subsequent_overlapping_order_by(con, backend, alltypes, df):
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
 )
-@pytest.mark.never(
-    ["dask"],
-    raises=(AssertionError, NotImplementedError),
-    reason=(
-        "dask doesn't support deterministic .sort_values(); "
-        "for older dask versions sorting by multiple columns is not supported"
-    ),
-)
 def test_select_sort_sort(backend, alltypes, df):
     t = alltypes
     expr = t.order_by(t.year, t.id.desc()).order_by(t.bool_col)
@@ -2369,15 +2331,6 @@ def test_select_sort_sort(backend, alltypes, df):
     reason=(
         "Query could not be planned. SQL query requires ordering a table by time column"
     ),
-)
-@pytest.mark.never(
-    ["dask"],
-    raises=(AssertionError, NotImplementedError),
-    reason=(
-        "dask doesn't support deterministic .sort_values(); "
-        "for older dask versions sorting by multiple columns is not supported"
-    ),
-    strict=False,
 )
 def test_select_sort_sort_deferred(backend, alltypes, df):
     t = alltypes
@@ -2414,9 +2367,7 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["pandas", "dask"], raises=IndexError, reason="NaN isn't treated as NULL"
-)
+@pytest.mark.notimpl(["pandas"], raises=IndexError, reason="NaN isn't treated as NULL")
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -2436,9 +2387,9 @@ def test_topk_counts_null(con):
     reason="ClickHouse returns False for x.isin([None])",
 )
 @pytest.mark.notimpl(
-    ["pandas", "dask"],
+    ["pandas"],
     raises=AssertionError,
-    reason="null isin semantics are not implemented for pandas or dask",
+    reason="null isin semantics are not implemented for pandas",
 )
 @pytest.mark.never(
     "mssql",
@@ -2452,10 +2403,6 @@ def test_null_isin_null_is_null(con):
 
 
 def test_value_counts_on_tables(backend, df):
-    if backend.name() == "dask":
-        pytest.skip(reason="flaky errors about sorting on multi-partition dataframes")
-    from ibis import selectors as s
-
     t = backend.functional_alltypes
     expr = t[["bigint_col", "int_col"]].value_counts().order_by(s.all())
     result = expr.execute()

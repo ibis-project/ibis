@@ -538,16 +538,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=(AttributeError, TypeError),
-                    reason=(
-                        "For 'is_in' case: 'Series' object has no attribute 'arraycollect'"
-                        "For 'no_cond' case: TypeError: Object "
-                        "<dask.dataframe.groupby.Aggregation object at 0x124569840> is not "
-                        "callable or a string"
-                    ),
-                ),
                 pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError),
             ],
         ),
@@ -668,15 +658,7 @@ def test_first_last(backend, alltypes, method, filtered):
 
 
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "dask",
-        "exasol",
-        "flink",
-        "pandas",
-        "pyspark",
-        "sqlite",
-    ],
+    ["clickhouse", "exasol", "flink", "pandas", "pyspark", "sqlite"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
@@ -809,11 +791,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
-                    ["dask"],
-                    reason="backend implements approximate quantiles",
-                    raises=AssertionError,
-                ),
-                pytest.mark.never(
                     ["trino"],
                     reason="backend implements approximate quantiles",
                     raises=com.OperationNotDefinedError,
@@ -861,11 +838,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                 ),
                 pytest.mark.never(
                     ["pyspark"],
-                    reason="backend implements approximate quantiles",
-                    raises=AssertionError,
-                ),
-                pytest.mark.never(
-                    ["dask"],
                     reason="backend implements approximate quantiles",
                     raises=AssertionError,
                 ),
@@ -926,11 +898,6 @@ def test_quantile(
             lambda t, where: t.G[where].cov(t.RBI[where], ddof=0),
             id="covar_pop",
             marks=[
-                pytest.mark.notyet(
-                    ["dask"],
-                    reason="dask doesn't support `cov(ddof=0)` yet",
-                    raises=com.UnsupportedOperationError,
-                ),
                 pytest.mark.notimpl(
                     ["polars", "druid"],
                     raises=com.OperationNotDefinedError,
@@ -976,11 +943,6 @@ def test_quantile(
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id="corr_pop",
             marks=[
-                pytest.mark.notyet(
-                    ["dask"],
-                    raises=com.UnsupportedOperationError,
-                    reason="dask doesn't support `corr(ddof=0)` yet",
-                ),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=com.OperationNotDefinedError,
@@ -1045,11 +1007,6 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).cov(t.G[where] <= 34.0, ddof=0),
             id="covar_pop_bool",
             marks=[
-                pytest.mark.notyet(
-                    ["dask"],
-                    raises=com.UnsupportedOperationError,
-                    reason="dask doesn't support `cov(ddof=0)` yet",
-                ),
                 pytest.mark.notimpl(
                     ["polars", "druid"],
                     raises=com.OperationNotDefinedError,
@@ -1074,11 +1031,6 @@ def test_quantile(
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id="corr_pop_bool",
             marks=[
-                pytest.mark.notyet(
-                    ["dask"],
-                    raises=com.UnsupportedOperationError,
-                    reason="dask doesn't support `corr(ddof=0)` yet",
-                ),
                 pytest.mark.notimpl(
                     ["druid"],
                     raises=com.OperationNotDefinedError,
@@ -1157,7 +1109,6 @@ def test_approx_median(alltypes):
     ["impala", "mysql", "mssql", "druid", "trino"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notyet(["dask"], raises=NotImplementedError)
 @pytest.mark.never(
     ["flink"],
     reason="backend doesn't implement approximate quantiles yet",
@@ -1185,7 +1136,6 @@ def test_median(alltypes, df):
 @pytest.mark.notyet(
     ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
 )
-@pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
 @pytest.mark.notyet(
     ["snowflake"],
     raises=SnowflakeProgrammingError,
@@ -1231,7 +1181,6 @@ def test_string_quantile(alltypes, func):
     raises=SnowflakeProgrammingError,
     reason="doesn't support median of dates",
 )
-@pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
 @pytest.mark.notyet(
     ["polars"], raises=PolarsInvalidOperationError, reason="not supported upstream"
@@ -1318,7 +1267,6 @@ def test_group_concat(
     [
         "clickhouse",
         "datafusion",
-        "dask",
         "druid",
         "flink",
         "impala",
@@ -1345,26 +1293,11 @@ def test_group_concat_ordered(alltypes, df, filtered):
 
 
 @pytest.mark.notimpl(
-    [
-        "druid",
-        "exasol",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "oracle",
-        "sqlite",
-    ],
+    ["druid", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "dask",
-        "pandas",
-        "pyspark",
-    ],
-    raises=com.UnsupportedOperationError,
+    ["clickhouse", "pandas", "pyspark"], raises=com.UnsupportedOperationError
 )
 @pytest.mark.parametrize(
     "filtered",
@@ -1428,11 +1361,6 @@ def test_topk_op(alltypes, df):
 )
 @pytest.mark.notyet(
     ["druid"], raises=PyDruidProgrammingError, reason="Java NullPointerException"
-)
-@pytest.mark.notimpl(
-    ["dask"],
-    raises=NotImplementedError,
-    reason="sorting on aggregations not yet implemented",
 )
 @pytest.mark.notyet(
     ["flink"], raises=Py4JError, reason="Flink doesn't support semi joins"
@@ -1653,7 +1581,6 @@ def test_group_concat_over_window(backend, con):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail_version(dask=["dask<2024.2.0"])
 def test_value_counts_on_expr(backend, alltypes, df):
     expr = alltypes.bigint_col.add(1).value_counts()
     columns = expr.columns
@@ -1689,7 +1616,7 @@ def test_group_by_expr(backend, con):
             ibis.null("str"),
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask"],
+                    ["pandas"],
                     reason="nulls are discarded by default in group bys",
                     raises=IndexError,
                 ),

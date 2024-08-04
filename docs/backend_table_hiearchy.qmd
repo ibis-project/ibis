@@ -20,7 +20,6 @@ use the terms `catalog` and `database` and map them onto the appropriate fields.
 |------------|----------------|------------|
 | bigquery   | project        | database   |
 | clickhouse |                | database   |
-| dask       |                | NA         |
 | datafusion | catalog        | schema     |
 | druid      | dataSourceType | dataSource |
 | duckdb     | database       | schema     |

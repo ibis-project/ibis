@@ -452,17 +452,8 @@ def test_schema_from_to_numpy_dtypes():
     assert restored_dtypes == expected_dtypes
 
 
-@pytest.mark.parametrize(
-    ("from_method", "to_method"),
-    [
-        pytest.param(
-            "from_pandas",
-            "to_pandas",
-            marks=pytest.mark.skipif(not has_pandas, reason="pandas not installed"),
-        ),
-    ],
-)
-def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
+def test_schema_from_to_pandas_dtypes():
+    pd = pytest.importorskip("pandas")
     pandas_schema = pd.Series(
         [
             ("a", np.dtype("int64")),
@@ -471,7 +462,7 @@ def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
             ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit="ns")),
         ]
     )
-    ibis_schema = getattr(sch.Schema, from_method)(pandas_schema)
+    ibis_schema = sch.Schema.from_pandas(pandas_schema)
     assert ibis_schema == sch.schema(pandas_schema)
 
     expected = sch.Schema(
@@ -484,7 +475,7 @@ def test_schema_from_to_pandas_dask_dtypes(from_method, to_method):
     )
     assert ibis_schema == expected
 
-    restored_dtypes = getattr(ibis_schema, to_method)()
+    restored_dtypes = ibis_schema.to_pandas()
     expected_dtypes = [
         ("a", np.dtype("int64")),
         ("b", np.dtype("object")),

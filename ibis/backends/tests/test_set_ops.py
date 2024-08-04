@@ -72,7 +72,6 @@ def test_union_mixed_distinct(backend, union_subsets):
                     [
                         "impala",
                         "bigquery",
-                        "dask",
                         "pandas",
                         "sqlite",
                         "snowflake",
@@ -126,7 +125,6 @@ def test_intersect(backend, alltypes, df, distinct):
                     [
                         "impala",
                         "bigquery",
-                        "dask",
                         "pandas",
                         "sqlite",
                         "snowflake",
@@ -227,7 +225,6 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
                     [
                         "impala",
                         "bigquery",
-                        "dask",
                         "mssql",
                         "pandas",
                         "snowflake",

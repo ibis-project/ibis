@@ -1359,7 +1359,7 @@ class Scalar(Value):
 
 @public
 class Column(Value, _FixedTextJupyterMixin):
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None
