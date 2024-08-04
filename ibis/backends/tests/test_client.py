@@ -1635,6 +1635,9 @@ def test_from_connection(con, top_level):
 
 
 @pytest.mark.notimpl(
+    ["flink"], raises=com.IbisError, reason="not yet implemented for Flink"
+)
+@pytest.mark.notimpl(
     ["exasol"],
     raises=com.UnsupportedOperationError,
     reason="unknown whether tables can be created in other databases",
