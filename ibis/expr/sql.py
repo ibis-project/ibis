@@ -384,5 +384,6 @@ def to_sql(
 
     out = compiler.to_sqlglot(expr.unbind(), **kwargs)
     queries = out if isinstance(out, list) else [out]
+    dialect = compiler.dialect
     sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
     return SQLString(sql)
