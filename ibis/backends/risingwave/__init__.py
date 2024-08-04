@@ -586,3 +586,9 @@ class Backend(PostgresBackend):
         )
         with self._safe_raw_sql(src):
             pass
+
+    @property
+    def _session_temp_db(self) -> str | None:
+        # Return `None`, because RisingWave does not implement temp tables like
+        # Postgres
+        return None

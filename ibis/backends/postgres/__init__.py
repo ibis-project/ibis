@@ -304,7 +304,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             cur.execute("SET TIMEZONE = UTC")
 
     @property
-    def _session_temp_db(self):
+    def _session_temp_db(self) -> str | None:
         # Postgres doesn't assign the temporary table database until the first
         # temp table is created in a given session.
         # Before that temp table is created, this will return `None`
