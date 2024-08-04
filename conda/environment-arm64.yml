@@ -7,7 +7,6 @@ dependencies:
   - atpublic >=2.3
   - black >=22.1.0,<25
   - clickhouse-connect >=0.5.23
-  - dask >=2022.9.1
   - datafusion >=0.6
   - db-dtypes >=0.3.0,<2
   - deltalake

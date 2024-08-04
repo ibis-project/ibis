@@ -41,7 +41,7 @@ mark_notimpl_risingwave_hstore = pytest.mark.notimpl(
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(["pandas"], reason="TypeError: iteration over a 0-d array")
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -63,7 +63,7 @@ def test_map_nulls(con, k, v):
 
 
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
-@pytest.mark.notimpl(["pandas", "dask"], reason="TypeError: iteration over a 0-d array")
+@pytest.mark.notimpl(["pandas"], reason="TypeError: iteration over a 0-d array")
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -98,7 +98,7 @@ def test_map_keys_nulls(con, k, v):
             ),
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                    ["pandas"], reason="TypeError: iteration over a 0-d array"
                 )
             ],
             id="null_values",
@@ -110,7 +110,7 @@ def test_map_keys_nulls(con, k, v):
             ),
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                    ["pandas"], reason="TypeError: iteration over a 0-d array"
                 )
             ],
             id="null_both",
@@ -137,7 +137,7 @@ def test_map_values_nulls(con, map):
             ibis.literal(None, type="string"),
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask"],
+                    ["pandas"],
                     reason="result is False instead of None",
                     strict=False,  # passes for contains, but not for get
                 ),
@@ -159,7 +159,7 @@ def test_map_values_nulls(con, map):
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
                 pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                    ["pandas"], reason="TypeError: iteration over a 0-d array"
                 ),
             ],
             id="null_both_non_null_key",
@@ -173,7 +173,7 @@ def test_map_values_nulls(con, map):
             marks=[
                 pytest.mark.notyet("clickhouse", reason="nested types can't be NULL"),
                 pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="TypeError: iteration over a 0-d array"
+                    ["pandas"], reason="TypeError: iteration over a 0-d array"
                 ),
             ],
             id="null_both_null_key",
@@ -233,14 +233,14 @@ def test_map_merge_nulls(con, m1, m2):
     assert con.execute(concatted) is None
 
 
-@pytest.mark.notimpl(["pandas", "dask"])
+@pytest.mark.notimpl(["pandas"])
 def test_map_table(backend):
     table = backend.map
     assert table.kv.type().is_map()
     assert not table.limit(1).execute().empty
 
 
-@pytest.mark.notimpl(["pandas", "dask"])
+@pytest.mark.notimpl(["pandas"])
 @mark_notimpl_risingwave_hstore
 def test_column_map_values(backend):
     table = backend.map
@@ -250,7 +250,7 @@ def test_column_map_values(backend):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pandas", "dask"])
+@pytest.mark.notimpl(["pandas"])
 def test_column_map_merge(backend):
     table = backend.map
     expr = table.select(
@@ -402,9 +402,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
-                pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="DateFromYMD isn't implemented"
-                ),
+                pytest.mark.notimpl(["pandas"], reason="DateFromYMD isn't implemented"),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
             ],
@@ -416,7 +414,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
-                pytest.mark.notyet(["pandas", "dask"]),
+                pytest.mark.notyet(["pandas"]),
                 mark_notyet_postgres,
                 mark_notyet_snowflake,
             ],
@@ -428,7 +426,7 @@ keys = pytest.mark.parametrize(
                 pytest.mark.notyet(
                     "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
-                pytest.mark.notyet(["pandas", "dask"]),
+                pytest.mark.notyet(["pandas"]),
                 mark_notyet_postgres,
                 pytest.mark.notyet(
                     ["flink"],
@@ -478,9 +476,7 @@ values = pytest.mark.parametrize(
         pytest.param(
             [ibis.date(2021, 1, 1), ibis.date(2022, 2, 2)],
             marks=[
-                pytest.mark.notimpl(
-                    ["pandas", "dask"], reason="DateFromYMD isn't implemented"
-                ),
+                pytest.mark.notimpl(["pandas"], reason="DateFromYMD isn't implemented"),
                 mark_notyet_postgres,
             ],
             id="date",

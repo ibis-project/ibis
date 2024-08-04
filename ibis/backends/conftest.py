@@ -461,7 +461,7 @@ def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(discard=("dask", "pandas")),
+    params=_get_backends_to_test(discard=("pandas",)),
     scope="session",
 )
 def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
@@ -476,7 +476,7 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
+    params=_get_backends_to_test(keep=("pandas", "pyspark")),
     scope="session",
 )
 def udf_backend(request, data_dir, tmp_path_factory, worker_id):

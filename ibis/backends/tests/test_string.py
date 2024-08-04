@@ -748,7 +748,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             id="file",
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "dask", "datafusion", "sqlite"],
+                    ["pandas", "datafusion", "sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -825,7 +825,6 @@ def test_capitalize(con, inp, expected):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "pandas",
         "polars",
         "oracle",
@@ -867,7 +866,6 @@ def test_multiple_subs(con):
 @pytest.mark.notimpl(
     [
         "clickhouse",
-        "dask",
         "druid",
         "impala",
         "mssql",
@@ -916,7 +914,6 @@ def test_non_match_regex_search_is_false(con):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "impala",
         "mysql",
         "sqlite",
@@ -939,7 +936,6 @@ def test_re_split(con):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "impala",
         "mysql",
         "sqlite",
@@ -961,7 +957,6 @@ def test_re_split_column(alltypes):
 
 @pytest.mark.notimpl(
     [
-        "dask",
         "impala",
         "mysql",
         "sqlite",
@@ -1009,7 +1004,7 @@ def test_re_split_column_multiple_patterns(alltypes):
     [lambda n: n + "a", lambda n: n + n, lambda n: "a" + n],
     ids=["null-a", "null-null", "a-null"],
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
+@pytest.mark.notimpl(["pandas"], raises=TypeError)
 def test_concat_with_null(con, fn):
     null = ibis.literal(None, type="string")
     expr = fn(null)
@@ -1031,7 +1026,7 @@ def test_concat_with_null(con, fn):
     [lambda args: args[0].concat(*args[1:]), lambda args: reduce(add, args)],
     ids=["concat", "add"],
 )
-@pytest.mark.notimpl(["pandas", "dask"], raises=TypeError)
+@pytest.mark.notimpl(["pandas"], raises=TypeError)
 def test_concat(con, args, method):
     expr = method(args)
     assert pd.isna(con.execute(expr))
@@ -1114,7 +1109,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["dask", "mssql", "pandas", "polars"],
+                    ["mssql", "pandas", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
@@ -1141,7 +1136,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["dask", "mssql", "pandas", "polars"],
+                    ["mssql", "pandas", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
@@ -1209,7 +1204,6 @@ def string_temp_table(backend, con):
                 pytest.mark.notyet(
                     [
                         "clickhouse",
-                        "dask",
                         "datafusion",
                         "duckdb",
                         "mysql",
