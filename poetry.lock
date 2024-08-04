@@ -3130,13 +3130,13 @@ files = [
 
 [[package]]
 name = "jupyterlite-core"
-version = "0.4.0"
+version = "0.3.0"
 description = ""
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jupyterlite_core-0.4.0-py3-none-any.whl", hash = "sha256:5035240760c58a52fb035ad5de3d4ab180817c12a7245a5a18ea6a84f51a752e"},
-    {file = "jupyterlite_core-0.4.0.tar.gz", hash = "sha256:7f2f3b5dd92c053e1da6ea80c4d127deb64654632caa01f360a139b7604fc0ce"},
+    {file = "jupyterlite_core-0.3.0-py3-none-any.whl", hash = "sha256:247cc34ae6fedda41b15ce4778997164508b2039bc92480665cadfe955193467"},
+    {file = "jupyterlite_core-0.3.0.tar.gz", hash = "sha256:5a97e74a93d487c0a2ce6a4615cd721a39686cdce9d329c241404e985157f8f9"},
 ]
 
 [package.dependencies]
@@ -3144,10 +3144,10 @@ doit = ">=0.34,<1"
 jupyter-core = ">=4.7"
 
 [package.extras]
-all = ["jsonschema (>=3)", "jupyter-server", "jupyterlab (>=4.2.4,<4.3)", "jupyterlab-server (>=2.8.1,<3)", "libarchive-c (>=4.0)", "notebook (>=7.2.0,<7.3)", "pkginfo", "tornado (>=6.1)"]
+all = ["jsonschema (>=3)", "jupyter-server", "jupyterlab (>=4.1.1,<4.2)", "jupyterlab-server (>=2.8.1,<3)", "libarchive-c (>=4.0)", "notebook (>=7.1.0,<7.2)", "pkginfo", "tornado (>=6.1)"]
 check = ["jsonschema[format-nongpl] (>=3)"]
 contents = ["jupyter-server"]
-lab = ["jupyterlab (>=4.2.4,<4.3)", "notebook (>=7.2.0,<7.3)"]
+lab = ["jupyterlab (>=4.1.1,<4.2)", "notebook (>=7.1.0,<7.2)"]
 libarchive = ["libarchive-c (>=4.0)"]
 serve = ["tornado (>=6.1)"]
 test = ["ansi2html", "diffoscope", "pytest-console-scripts", "pytest-cov", "pytest-html", "pytest-xdist"]
@@ -3155,21 +3155,21 @@ translation = ["jupyterlab-server (>=2.8.1,<3)"]
 
 [[package]]
 name = "jupyterlite-pyodide-kernel"
-version = "0.4.0"
+version = "0.3.2"
 description = "Python kernel for JupyterLite powered by Pyodide"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "jupyterlite_pyodide_kernel-0.4.0-py3-none-any.whl", hash = "sha256:2f2c801d3912cb6ca553ca44e10ab2bb0c5089a2d7d7b368aab34865f5df63c7"},
-    {file = "jupyterlite_pyodide_kernel-0.4.0.tar.gz", hash = "sha256:568bc7122d790ac48859913b7c632267fc1bc909768c73b021b4edf543b5789a"},
+    {file = "jupyterlite_pyodide_kernel-0.3.2-py3-none-any.whl", hash = "sha256:ae600571fa755b6fd7a2633a171de3fe490f2b1264bef32cdd7e8c34c95cd5ff"},
+    {file = "jupyterlite_pyodide_kernel-0.3.2.tar.gz", hash = "sha256:0698f4f6cb6d7346063af0a02f47bf102400be639c8ed86689815b7c2a138a1b"},
 ]
 
 [package.dependencies]
-jupyterlite-core = ">=0.4.0,<0.5.0"
+jupyterlite-core = ">=0.3.0,<0.4.0"
 pkginfo = "*"
 
 [package.extras]
-dev = ["build", "hatch", "jupyterlab (>=4.2.4,<4.3.0a0)"]
+dev = ["build", "hatch", "jupyterlab (>=4.0.7,<4.1.0a0)"]
 docs = ["ipywidgets (>=8.1.3,<9)", "jupyter-server-mathjax", "jupyterlab-language-pack-fr-fr", "jupyterlab-language-pack-zh-cn", "libarchive-c", "myst-parser", "pydata-sphinx-theme", "sphinx-copybutton"]
 lint = ["ruff (>=0.3.0)"]
 test = ["pytest", "pytest-console-scripts (>=1.4.0)", "pytest-cov", "pytest-html"]
@@ -7745,4 +7745,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "bb5544f142cd278310eafd8dedd2f5d76e48f18b5966485edcff0d637cade985"
+content-hash = "03717a8b1d7b3944ba9e69f6ce2d3b023f406674f7d1b5dca610d85754a4c6ba"
