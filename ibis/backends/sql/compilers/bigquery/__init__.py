@@ -269,7 +269,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         sources.append(result)
         return sources
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> sge.Create:
         name = type(udf_node).__name__
         type_mapper = self.udf_type_mapper
 
@@ -326,9 +326,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         )
 
         return func
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        return self._get_udf_source(udf_node)
 
     @staticmethod
     def _minimize_spec(start, end, spec):

@@ -124,7 +124,7 @@ class PostgresCompiler(SQLGlotCompiler):
             table_expr = table_expr.mutate(**conversions)
         return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF):
         config = udf_node.__config__
         func = udf_node.__func__
         func_name = func.__name__
@@ -147,7 +147,14 @@ class PostgresCompiler(SQLGlotCompiler):
 
         type_mapper = self.type_mapper
         argnames = udf_node.argnames
-        return dict(
+        return """\
+    CREATE OR REPLACE FUNCTION {ident}({signature})
+    RETURNS {return_type}
+    LANGUAGE {language}
+    AS $$
+    {source}
+    return {name}({args})
+    $$""".format(
             name=type(udf_node).__name__,
             ident=self.__sql_name__(udf_node),
             signature=", ".join(
@@ -159,16 +166,6 @@ class PostgresCompiler(SQLGlotCompiler):
             source=source,
             args=", ".join(argnames),
         )
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
-CREATE OR REPLACE FUNCTION {ident}({signature})
-RETURNS {return_type}
-LANGUAGE {language}
-AS $$
-{source}
-return {name}({args})
-$$""".format(**self._get_udf_source(udf_node))
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()

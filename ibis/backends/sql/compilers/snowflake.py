@@ -99,8 +99,8 @@ class SnowflakeCompiler(SQLGlotCompiler):
         super().__init__()
         self.f = SnowflakeFuncGen()
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
+    _UDF_TEMPLATES = {
+        ops.udf.InputType.PYTHON: """\
 {preamble}
 HANDLER = '{func_name}'
 AS $$
@@ -109,10 +109,8 @@ from __future__ import annotations
 from typing import *
 
 {source}
-$$""".format(**self._get_udf_source(udf_node))
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        template = """\
+$$""",
+        ops.udf.InputType.PANDAS: """\
 {preamble}
 HANDLER = 'wrapper'
 AS $$
@@ -128,10 +126,19 @@ import pandas as pd
 @_snowflake.vectorized(input=pd.DataFrame)
 def wrapper(df):
     return {func_name}(*(col for _, col in df.items()))
-$$"""
-        return template.format(**self._get_udf_source(udf_node))
+$$""",
+    }
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+    _UDF_PREAMBLE_LINES = (
+        "CREATE OR REPLACE TEMPORARY FUNCTION {name}({signature})",
+        "RETURNS {return_type}",
+        "LANGUAGE PYTHON",
+        "IMMUTABLE",
+        "RUNTIME_VERSION = '{version}'",
+        "COMMENT = '{comment}'",
+    )
+
+    def _compile_udf(self, udf_node: ops.ScalarUDF):
         import ibis
 
         name = type(udf_node).__name__
@@ -161,7 +168,8 @@ $$"""
         )
         preamble_lines.append(f"PACKAGES = {packages}")
 
-        return dict(
+        template = self._UDF_TEMPLATES[udf_node.__input_type__]
+        return template.format(
             source=source,
             name=name,
             func_name=udf_node.__func_name__,
@@ -176,14 +184,8 @@ $$"""
             ),
         )
 
-    _UDF_PREAMBLE_LINES = (
-        "CREATE OR REPLACE TEMPORARY FUNCTION {name}({signature})",
-        "RETURNS {return_type}",
-        "LANGUAGE PYTHON",
-        "IMMUTABLE",
-        "RUNTIME_VERSION = '{version}'",
-        "COMMENT = '{comment}'",
-    )
+    _compile_pandas_udf = _compile_udf
+    _compile_python_udf = _compile_udf
 
     @staticmethod
     def _minimize_spec(start, end, spec):
