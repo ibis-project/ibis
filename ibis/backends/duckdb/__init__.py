@@ -1557,17 +1557,20 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         con = self.con
 
         for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            register_func = getattr(
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             with contextlib.suppress(duckdb.InvalidInputException):
                 con.remove_function(udf_node.__class__.__name__)
 
-            registration_func = compile_func(udf_node)
+            registration_func = register_func(udf_node)
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_udf(self, udf_node: ops.ScalarUDF):
+    def _register_builtin_udf(self, udf_node: ops.ScalarUDF):
+        """No-op."""
+
+    def _register_udf(self, udf_node: ops.ScalarUDF):
         func = udf_node.__func__
         name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper
@@ -1588,8 +1591,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         return register_udf
 
-    _compile_python_udf = _compile_udf
-    _compile_pyarrow_udf = _compile_udf
+    _register_python_udf = _register_udf
+    _register_pyarrow_udf = _register_udf
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(

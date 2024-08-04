@@ -544,9 +544,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         # _most_ sqlglot backends
         self.con.close()
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF | ops.AggUDF) -> None:
-        """Compile a built-in UDF. No-op by default."""
-
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         raise NotImplementedError(
             f"Python UDFs are not supported in the {self.name} backend"

@@ -688,7 +688,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         expr: ir.Expr,
         limit: str | None = None,
         params=None,
-        pretty: bool = False,
+        pretty: bool = True,
         **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""

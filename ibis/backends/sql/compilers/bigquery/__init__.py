@@ -230,35 +230,33 @@ class BigQueryCompiler(SQLGlotCompiler):
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
 
-        query = sql.transform(
+        result = sql.transform(
             _qualify_memtable,
             dataset=session_dataset_id,
             project=session_dataset_project,
         ).transform(_remove_null_ordering_from_unsupported_window)
 
-        if not geocols:
-            return query
-
-        # if there are any geospatial columns, we have to convert them to WKB,
-        # so interactive mode knows how to display them
-        #
-        # by default bigquery returns data to python as WKT, and there's really
-        # no point in supporting both if we don't need to.
-        quoted = self.quoted
-        result = sg.select(
-            sge.Star(
-                replace=[
-                    self.f.st_asbinary(sg.column(col, quoted=quoted)).as_(
-                        col, quoted=quoted
-                    )
-                    for col in geocols
-                ]
-            )
-        ).from_(query.subquery())
+        if geocols:
+            # if there are any geospatial columns, we have to convert them to WKB,
+            # so interactive mode knows how to display them
+            #
+            # by default bigquery returns data to python as WKT, and there's really
+            # no point in supporting both if we don't need to.
+            quoted = self.quoted
+            result = sg.select(
+                sge.Star(
+                    replace=[
+                        self.f.st_asbinary(sg.column(col, quoted=quoted)).as_(
+                            col, quoted=quoted
+                        )
+                        for col in geocols
+                    ]
+                )
+            ).from_(result.subquery())
 
         sources = []
 
-        for udf_node in expr.op().find(ops.ScalarUDF):
+        for udf_node in table_expr.op().find(ops.ScalarUDF):
             compile_func = getattr(
                 self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
             )
