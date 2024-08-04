@@ -379,7 +379,10 @@ def to_sql(
         except AttributeError as e:
             raise ValueError(f"Unknown dialect {dialect}") from e
 
-    out = compiler_provider.compiler.to_sqlglot(expr.unbind(), **kwargs)
+    if (compiler := getattr(compiler_provider, "compiler", None)) is None:
+        raise NotImplementedError(f"{compiler_provider} is not a SQL backend")
+
+    out = compiler.to_sqlglot(expr.unbind(), **kwargs)
     queries = out if isinstance(out, list) else [out]
     sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
     return SQLString(sql)

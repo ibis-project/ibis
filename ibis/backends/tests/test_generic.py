@@ -1384,22 +1384,6 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
         ibis.memtable(df, columns=columns)
 
 
-@pytest.mark.notimpl(
-    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
-)
-def test_many_subqueries(con, snapshot):
-    def query(t, group_cols):
-        t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
-        return t2.inner_join(t2[["key"]], "key")
-
-    t = ibis.table(dict(street="str"), name="data")
-
-    t2 = query(t, group_cols=["street"])
-    t3 = query(t2, group_cols=["street"])
-
-    snapshot.assert_match(str(ibis.to_sql(t3, dialect=con.name)), "out.sql")
-
-
 @pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=AssertionError)
 @pytest.mark.notyet(
@@ -2289,18 +2273,11 @@ def test_sample_with_seed(backend):
     backend.assert_frame_equal(df1, df2)
 
 
-@pytest.mark.notimpl(
-    ["dask", "pandas", "polars"], raises=NotImplementedError, reason="not a SQL backend"
-)
 def test_simple_memtable_construct(con):
     t = ibis.memtable({"a": [1, 2]})
     expr = t.a
     expected = [1.0, 2.0]
     assert sorted(con.to_pandas(expr).tolist()) == expected
-    # we can't generically check for specific sql, even with a snapshot,
-    # because memtables have a unique name per table per process, so smoke test
-    # it
-    assert str(ibis.to_sql(expr, dialect=con.name)).startswith("SELECT")
 
 
 def test_select_mutate_with_dict(backend):
@@ -2490,3 +2467,14 @@ def test_value_counts_on_tables(backend, df):
     )
     expected = expected.sort_values(expected.columns.tolist()).reset_index(drop=True)
     backend.assert_frame_equal(result, expected, check_dtype=False)
+
+
+def test_union_generates_predictable_aliases(con):
+    t = ibis.memtable(
+        data=[{"island": "Torgerson", "body_mass_g": 3750, "sex": "male"}]
+    )
+    sub1 = t.inner_join(t.view(), "island").mutate(island_right=lambda t: t.island)
+    sub2 = t.inner_join(t.view(), "sex").mutate(sex_right=lambda t: t.sex)
+    expr = ibis.union(sub1, sub2)
+    df = con.execute(expr)
+    assert len(df) == 2

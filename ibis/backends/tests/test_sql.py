@@ -42,17 +42,12 @@ sg = pytest.importorskip("sqlglot")
         ),
     ],
 )
-@pytest.mark.never(
-    ["pandas", "dask"],
-    raises=(exc.IbisError, NotImplementedError, ValueError),
-    reason="Not a SQL backend",
-)
-@pytest.mark.notimpl(["polars"], reason="Not clear how to extract SQL from the backend")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 def test_literal(backend, expr):
     assert "432" in ibis.to_sql(expr, dialect=backend.name())
 
 
-@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 def test_group_by_has_index(backend, snapshot):
     countries = ibis.table(
         dict(continent="string", population="int64"), name="countries"
@@ -75,7 +70,7 @@ def test_group_by_has_index(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 def test_cte_refs_in_topo_order(backend, snapshot):
     mr0 = ibis.table(schema=ibis.schema(dict(key="int")), name="leaf")
 
@@ -88,7 +83,7 @@ def test_cte_refs_in_topo_order(backend, snapshot):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL")
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
     good = t[t.x > 2].x
@@ -96,11 +91,7 @@ def test_isin_bug(con, snapshot):
     snapshot.assert_match(str(ibis.to_sql(expr, dialect=con.name)), "out.sql")
 
 
-@pytest.mark.never(
-    ["pandas", "dask", "polars"],
-    reason="not SQL",
-    raises=NotImplementedError,
-)
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 @pytest.mark.notyet(
     ["exasol", "oracle", "flink"],
     reason="no unnest support",
@@ -165,22 +156,7 @@ def test_union_aliasing(backend_name, snapshot):
     snapshot.assert_match(str(ibis.to_sql(result, dialect=backend_name)), "out.sql")
 
 
-def test_union_generates_predictable_aliases(con):
-    t = ibis.memtable(
-        data=[{"island": "Torgerson", "body_mass_g": 3750, "sex": "male"}]
-    )
-    sub1 = t.inner_join(t.view(), "island").mutate(island_right=lambda t: t.island)
-    sub2 = t.inner_join(t.view(), "sex").mutate(sex_right=lambda t: t.sex)
-    expr = ibis.union(sub1, sub2)
-    df = con.execute(expr)
-    assert len(df) == 2
-
-
-@pytest.mark.never(
-    ["pandas", "dask", "polars"],
-    reason="not SQL",
-    raises=NotImplementedError,
-)
+@pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 @pytest.mark.parametrize(
     "value",
     [
@@ -204,11 +180,28 @@ def test_selects_with_impure_operations_not_merged(con, snapshot, value):
     snapshot.assert_match(sql, "out.sql")
 
 
-@pytest.mark.notyet(["polars"], reason="no sql generation")
-@pytest.mark.never(["pandas", "dask"], reason="no sql generation")
+@pytest.mark.never(
+    ["pandas", "dask", "polars"], reason="not SQL", raises=NotImplementedError
+)
 def test_to_sql_default_backend(con, snapshot, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
 
     t = ibis.memtable({"b": [1, 2]}, name="mytable")
     expr = t.select("b").count()
     snapshot.assert_match(ibis.to_sql(expr), "to_sql.sql")
+
+
+@pytest.mark.notimpl(
+    ["dask", "pandas", "polars"], raises=ValueError, reason="not a SQL backend"
+)
+def test_many_subqueries(backend_name, snapshot):
+    def query(t, group_cols):
+        t2 = t.mutate(key=ibis.row_number().over(ibis.window(order_by=group_cols)))
+        return t2.inner_join(t2[["key"]], "key")
+
+    t = ibis.table(dict(street="str"), name="data")
+
+    t2 = query(t, group_cols=["street"])
+    t3 = query(t2, group_cols=["street"])
+
+    snapshot.assert_match(str(ibis.to_sql(t3, dialect=backend_name)), "out.sql")
