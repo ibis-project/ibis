@@ -601,3 +601,15 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             )
 
         return database
+
+    def _register_builtin_udf(self, udf_node: ops.ScalarUDF):
+        """No-op."""
+
+    def _register_python_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError()
+
+    def _register_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError()
+
+    def _register_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError()

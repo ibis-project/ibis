@@ -1567,9 +1567,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             if registration_func is not None:
                 registration_func(con)
 
-    def _register_builtin_udf(self, udf_node: ops.ScalarUDF):
-        """No-op."""
-
     def _register_udf(self, udf_node: ops.ScalarUDF):
         func = udf_node.__func__
         name = type(udf_node).__name__

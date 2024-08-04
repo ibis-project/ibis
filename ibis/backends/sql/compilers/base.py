@@ -496,6 +496,9 @@ class SQLGlotCompiler(abc.ABC):
     def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
 
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:  # noqa: B027
+        """No-op."""
+
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         raise NotImplementedError(
             f"Python UDFs are not supported in the {self.name} backend"
