@@ -527,38 +527,6 @@ $$ {defn["source"]} $$"""
             with self._safe_raw_sql(";\n".join(udf_sources)):
                 pass
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
-{preamble}
-HANDLER = '{func_name}'
-AS $$
-from __future__ import annotations
-
-from typing import *
-
-{source}
-$$""".format(**self._get_udf_source(udf_node))
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        template = """\
-{preamble}
-HANDLER = 'wrapper'
-AS $$
-from __future__ import annotations
-
-from typing import *
-
-import _snowflake
-import pandas as pd
-
-{source}
-
-@_snowflake.vectorized(input=pd.DataFrame)
-def wrapper(df):
-    return {func_name}(*(col for _, col in df.items()))
-$$"""
-        return template.format(**self._get_udf_source(udf_node))
-
     def to_pyarrow(
         self,
         expr: ir.Expr,

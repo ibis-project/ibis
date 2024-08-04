@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-import textwrap
-from functools import partial
-from itertools import takewhile
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
@@ -29,7 +26,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
-from ibis.common.exceptions import InvalidDecoratorError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -39,12 +35,6 @@ if TYPE_CHECKING:
     import polars as pl
     import psycopg2
     import pyarrow as pa
-
-
-def _verify_source_line(func_name: str, line: str):
-    if line.startswith("@"):
-        raise InvalidDecoratorError(func_name, line)
-    return line
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
@@ -495,60 +485,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         op = ops.udf.scalar.builtin(fake_func, database=database)
         return op
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        config = udf_node.__config__
-        func = udf_node.__func__
-        func_name = func.__name__
-
-        lines, _ = inspect.getsourcelines(func)
-        iter_lines = iter(lines)
-
-        function_premable_lines = list(
-            takewhile(lambda line: not line.lstrip().startswith("def "), iter_lines)
-        )
-
-        if len(function_premable_lines) > 1:
-            raise InvalidDecoratorError(
-                name=func_name, lines="".join(function_premable_lines)
-            )
-
-        source = textwrap.dedent(
-            "".join(map(partial(_verify_source_line, func_name), iter_lines))
-        ).strip()
-
-        type_mapper = self.compiler.type_mapper
-        argnames = udf_node.argnames
-        return dict(
-            name=type(udf_node).__name__,
-            ident=self.compiler.__sql_name__(udf_node),
-            signature=", ".join(
-                f"{argname} {type_mapper.to_string(arg.dtype)}"
-                for argname, arg in zip(argnames, udf_node.args)
-            ),
-            return_type=type_mapper.to_string(udf_node.dtype),
-            language=config.get("language", "plpython3u"),
-            source=source,
-            args=", ".join(argnames),
-        )
-
-    def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
-        """No-op, these are defined in the compiler."""
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
-CREATE OR REPLACE FUNCTION {ident}({signature})
-RETURNS {return_type}
-LANGUAGE {language}
-AS $$
-{source}
-return {name}({args})
-$$""".format(**self._get_udf_source(udf_node))
-
     def _register_udfs(self, expr: ir.Expr) -> None:
         udf_sources = []
+        compiler = self.compiler
         for udf_node in expr.op().find(ops.ScalarUDF):
             compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                compiler, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
             )
             if sql := compile_func(udf_node):
                 udf_sources.append(sql)

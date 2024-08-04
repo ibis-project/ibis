@@ -496,6 +496,21 @@ class SQLGlotCompiler(abc.ABC):
     def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
 
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.name} backend"
+        )
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.name} backend"
+        )
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.name} backend"
+        )
+
     # Concrete API
 
     def if_(self, condition, true, false: sge.Expression | None = None) -> sge.If:

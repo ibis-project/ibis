@@ -544,21 +544,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         # _most_ sqlglot backends
         self.con.close()
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError(
-            f"Python UDFs are not supported in the {self.name} backend"
-        )
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError(
-            f"PyArrow UDFs are not supported in the {self.name} backend"
-        )
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError(
-            f"pandas UDFs are not supported in the {self.name} backend"
-        )
-
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False

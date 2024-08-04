@@ -375,13 +375,13 @@ class Backend(SQLBackend, UrlFromPath):
 
         for udf_node in expr.op().find(ops.ScalarUDF):
             compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             registration_func = compile_func(udf_node)
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+    def _register_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         name = type(udf_node).__name__
         nargs = len(udf_node.__signature__.parameters)
         func = udf_node.__func__

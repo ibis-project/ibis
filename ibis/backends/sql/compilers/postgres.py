@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import inspect
 import string
+import textwrap
 from functools import partial, reduce
+from itertools import takewhile
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -15,10 +18,17 @@ from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
     import ibis.expr.types as ir
+
+
+def _verify_source_line(func_name: str, line: str):
+    if line.startswith("@"):
+        raise InvalidDecoratorError(func_name, line)
+    return line
 
 
 class PostgresUDFNode(ops.Value):
@@ -113,6 +123,52 @@ class PostgresCompiler(SQLGlotCompiler):
         if conversions:
             table_expr = table_expr.mutate(**conversions)
         return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
+
+    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+        config = udf_node.__config__
+        func = udf_node.__func__
+        func_name = func.__name__
+
+        lines, _ = inspect.getsourcelines(func)
+        iter_lines = iter(lines)
+
+        function_premable_lines = list(
+            takewhile(lambda line: not line.lstrip().startswith("def "), iter_lines)
+        )
+
+        if len(function_premable_lines) > 1:
+            raise InvalidDecoratorError(
+                name=func_name, lines="".join(function_premable_lines)
+            )
+
+        source = textwrap.dedent(
+            "".join(map(partial(_verify_source_line, func_name), iter_lines))
+        ).strip()
+
+        type_mapper = self.type_mapper
+        argnames = udf_node.argnames
+        return dict(
+            name=type(udf_node).__name__,
+            ident=self.__sql_name__(udf_node),
+            signature=", ".join(
+                f"{argname} {type_mapper.to_string(arg.dtype)}"
+                for argname, arg in zip(argnames, udf_node.args)
+            ),
+            return_type=type_mapper.to_string(udf_node.dtype),
+            language=config.get("language", "plpython3u"),
+            source=source,
+            args=", ".join(argnames),
+        )
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
+        return """\
+CREATE OR REPLACE FUNCTION {ident}({signature})
+RETURNS {return_type}
+LANGUAGE {language}
+AS $$
+{source}
+return {name}({args})
+$$""".format(**self._get_udf_source(udf_node))
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
