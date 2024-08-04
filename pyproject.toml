@@ -140,7 +140,7 @@ jupyter-cache = { version = ">=1.0.0,<2", python = ">=3.10,<3.13" }
 jupyterlab = { version = ">=4.1.6,<5", python = ">=3.10,<3.13" }
 jupyterlab-night = { version = ">=0.4.6,<1", python = ">=3.10,<3.13" }
 jupyterlite-core = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
-jupyterlite-pyodide-kernel = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
+jupyterlite-pyodide-kernel = { version = ">=0.3,<0.5", python = ">=3.10,<3.13" }
 
 [tool.poetry.extras]
 bigquery = [
