@@ -1636,10 +1636,10 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
     # Create table with same name in current db and dummy db
     con.create_table(
-        table := gen_name("table"), schema=(sch1 := ibis.schema({"a": "int32"}))
+        table := gen_name("table"), schema=(sch1 := ibis.schema({"a": "int"}))
     )
 
-    con.create_table(table, schema=ibis.schema({"b": "int64"}), database=dbname)
+    con.create_table(table, schema=ibis.schema({"b": "string"}), database=dbname)
 
     # Can grab table object from current db:
     t = con.table(table)
