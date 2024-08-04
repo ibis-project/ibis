@@ -109,9 +109,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         sql = super().to_sqlglot(expr, limit=limit, params=params, **kwargs)
 
         table_expr = expr.as_table()
-        geocols = [
-            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        ]
+        geocols = table_expr.schema().geospatial
 
         if not geocols:
             return sql

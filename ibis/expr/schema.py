@@ -64,6 +64,10 @@ class Schema(Concrete, Coercible, MapSet):
         return tuple(self.values())
 
     @attribute
+    def geospatial(self) -> tuple[str, ...]:
+        return tuple(name for name, typ in self.fields.items() if typ.is_geospatial())
+
+    @attribute
     def _name_locs(self) -> dict[str, int]:
         return {v: i for i, v in enumerate(self.names)}
 

@@ -1311,6 +1311,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
         sql = self.compile(table_expr, limit=limit, params=params)
+        if table_expr.schema().geospatial:
+            self._load_extensions(["spatial"])
         return self.con.sql(sql)
 
     def to_pyarrow_batches(

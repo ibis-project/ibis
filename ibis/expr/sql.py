@@ -368,22 +368,18 @@ def to_sql(
     # the default pretty dialect for expressions
     if dialect is None:
         try:
-            backend = expr._find_backend(use_default=True)
+            compiler_provider = expr._find_backend(use_default=True)
         except com.IbisError:
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends
-            compiler_module = sc.duckdb
-        else:
-            compiler_module = backend.compiler
+            compiler_provider = sc.duckdb
     else:
         try:
-            compiler_module = getattr(sc, dialect)
+            compiler_provider = getattr(sc, dialect)
         except AttributeError as e:
             raise ValueError(f"Unknown dialect {dialect}") from e
 
-    compiler = compiler_module.compiler
-
-    out = compiler.to_sqlglot(expr.unbind(), **kwargs)
+    out = compiler_provider.compiler.to_sqlglot(expr.unbind(), **kwargs)
     queries = out if isinstance(out, list) else [out]
     sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
     return SQLString(sql)

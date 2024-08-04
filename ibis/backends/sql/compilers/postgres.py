@@ -107,11 +107,8 @@ class PostgresCompiler(SQLGlotCompiler):
         self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
     ):
         table_expr = expr.as_table()
-        conversions = {
-            name: table_expr[name].as_ewkb()
-            for name, typ in table_expr.schema().items()
-            if typ.is_geospatial()
-        }
+        geocols = table_expr.schema().geospatial
+        conversions = {name: table_expr[name].as_ewkb() for name in geocols}
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
