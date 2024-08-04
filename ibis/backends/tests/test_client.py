@@ -1395,13 +1395,8 @@ def test_create_catalog(con_create_catalog):
 def test_create_database(con_create_database):
     database = gen_name("test_create_database")
     con_create_database.create_database(database)
-    if con_create_database.name == "exasol":
-        database = database.upper()
     assert database in con_create_database.list_databases()
-    database = database.lower()
     con_create_database.drop_database(database)
-    if con_create_database.name == "exasol":
-        database = database.upper()
     assert database not in con_create_database.list_databases()
 
 
@@ -1424,15 +1419,11 @@ def test_create_schema(con_create_database):
     with pytest.warns(FutureWarning):
         con_create_database.create_schema(schema)
     with pytest.warns(FutureWarning):
-        if con_create_database.name == "exasol":
-            schema = schema.upper()
         assert schema in con_create_database.list_schemas()
         schema = schema.lower()
     with pytest.warns(FutureWarning):
         con_create_database.drop_schema(schema)
     with pytest.warns(FutureWarning):
-        if con_create_database.name == "exasol":
-            schema = schema.upper()
         assert schema not in con_create_database.list_schemas()
 
 
