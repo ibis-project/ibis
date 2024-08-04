@@ -55,10 +55,6 @@ clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "numpy",
   "pandas",
 ] }
-dask = { version = ">=2022.9.1,<2024.3.0", optional = true, extras = [
-  "array",
-  "dataframe",
-] }
 datafusion = { version = ">=0.6,<41", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
@@ -81,7 +77,7 @@ pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
 pyspark = { version = ">=3.3.3,<4", optional = true }
-# used to support posix regexen in the pandas, dask and sqlite backends
+# used to support posix regexen in the pandas and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 shapely = { version = ">=2,<3", optional = true }
 # we don't support arbitrarily old versions of this library due to security
@@ -160,16 +156,6 @@ bigquery = [
 ]
 clickhouse = [
   "clickhouse-connect",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
-]
-dask = [
-  "dask",
-  "regex",
-  "packaging",
   "pyarrow",
   "pyarrow-hotfix",
   "numpy",
@@ -264,7 +250,6 @@ geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 [tool.poetry.plugins."ibis.backends"]
 bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
-dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
@@ -322,19 +307,6 @@ filterwarnings = [
   "ignore:is_datetime64tz_dtype is deprecated and will be removed in a future version:DeprecationWarning",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
-  # dask
-  "ignore:Using the ``in`` operator to test for membership in Series is deprecated:FutureWarning",
-  "ignore:In a future version of pandas, a length 1 tuple will be returned when iterating over a groupby:FutureWarning",
-  "ignore:index is deprecated and will be removed in a future release:FutureWarning",
-  "ignore:`meta` is not specified:UserWarning",
-  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
-  "ignore:Possible nested set at position:FutureWarning",
-  'ignore:\s+You did not provide metadata:UserWarning',
-  "ignore:Minimal version of pyarrow will soon be increased:FutureWarning",
-  # Dask deprecation warning - switch to dask-expr
-  "ignore:The current Dask DataFrame implementation is deprecated:DeprecationWarning",
-  # numpy by way of dask
-  'ignore:np\.find_common_type is deprecated:DeprecationWarning',
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
@@ -411,7 +383,6 @@ markers = [
   "never: The backend will never support this / pass this test. Don't bother trying to fix it",
   "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
-  "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",

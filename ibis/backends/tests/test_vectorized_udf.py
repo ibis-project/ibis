@@ -56,9 +56,7 @@ def create_add_one_udf(result_formatter, id):
 
     yield param(add_one_legacy, id=f"add_one_legacy_{id}")
     yield param(
-        add_one_udf,
-        marks=[pytest.mark.notimpl(["pandas", "dask"])],
-        id=f"add_one_modern_{id}",
+        add_one_udf, marks=[pytest.mark.notimpl(["pandas"])], id=f"add_one_modern_{id}"
     )
 
 
@@ -622,7 +620,6 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 
 @pytest.mark.parametrize("udf", demean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
-@pytest.mark.notimpl(["dask"], strict=False)
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = ibis.window(preceding=None, following=None, group_by="year")
 

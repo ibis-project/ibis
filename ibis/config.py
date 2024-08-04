@@ -148,8 +148,6 @@ class Options(Config):
         SQL-related options.
     clickhouse : Config | None
         Clickhouse specific options.
-    dask : Config | None
-        Dask specific options.
     impala : Config | None
         Impala specific options.
     pandas : Config | None
@@ -167,7 +165,6 @@ class Options(Config):
     default_backend: Optional[Any] = None
     sql: SQL = SQL()
     clickhouse: Optional[Config] = None
-    dask: Optional[Config] = None
     impala: Optional[Config] = None
     pandas: Optional[Config] = None
     pyspark: Optional[Config] = None

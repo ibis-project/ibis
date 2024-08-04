@@ -63,7 +63,7 @@ def test_json_getitem_array(json_t):
     assert result == expected
 
 
-@pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
+@pytest.mark.notimpl(["mysql", "pandas", "risingwave"])
 @pytest.mark.notyet(["bigquery", "sqlite"], reason="doesn't support maps")
 @pytest.mark.notyet(["postgres"], reason="only supports map<string, string>")
 @pytest.mark.notyet(
@@ -85,7 +85,7 @@ def test_json_map(backend, json_t):
     backend.assert_series_equal(result, expected)
 
 
-@pytest.mark.notimpl(["dask", "mysql", "pandas", "risingwave"])
+@pytest.mark.notimpl(["mysql", "pandas", "risingwave"])
 @pytest.mark.notyet(["sqlite"], reason="doesn't support arrays")
 @pytest.mark.notyet(
     ["pyspark", "flink"], reason="should work but doesn't deserialize JSON"
@@ -107,7 +107,7 @@ def test_json_array(backend, json_t):
     condition=vparse(sqlite3.sqlite_version) < vparse("3.38.0"),
     reason="JSON not supported in SQLite < 3.38.0",
 )
-@pytest.mark.notimpl(["dask", "pandas", "risingwave"])
+@pytest.mark.notimpl(["pandas", "risingwave"])
 @pytest.mark.notyet(["flink"], reason="should work but doesn't deserialize JSON")
 @pytest.mark.parametrize(
     ("typ", "expected_data"),
