@@ -29,6 +29,7 @@ from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
+    GoogleNotFound,
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
@@ -1659,6 +1660,7 @@ def test_no_accidental_cross_database_table_load(con_create_database):
                 MySQLProgrammingError,
                 ExaQueryError,
                 SnowflakeProgrammingError,
+                GoogleNotFound,
             ),
         ),
         # datafusion really needs to get their exception story in order
