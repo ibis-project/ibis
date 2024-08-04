@@ -1656,24 +1656,28 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
     con.drop_table(table)
 
-    # Now attempting to load same table name without specifying db should fail
     allowed_exceptions = (
         com.IbisError,
-        *tuple(
-            filter(
-                None,
-                (
-                    ClickHouseDatabaseError,
-                    PySparkAnalysisException,
-                    MySQLProgrammingError,
-                    ExaQueryError,
-                ),
-            )
+        # these exception types are None when the backend dependency that
+        # defines them is not installed
+        *filter(
+            None,
+            (
+                ClickHouseDatabaseError,
+                PySparkAnalysisException,
+                MySQLProgrammingError,
+                ExaQueryError,
+            ),
         ),
         # datafusion really needs to get their exception story in order
+        #
+        # we only want to allow base Exception when we're testing datafusion
+        # otherwise any exceptions, including those that are unrelated to the
+        # problem under test will be considered correctly raising
         *((Exception,) * (con.name == "datafusion")),
     )
 
+    # Now attempting to load same table name without specifying db should fail
     with pytest.raises(allowed_exceptions):
         t = con.table(table)
 
