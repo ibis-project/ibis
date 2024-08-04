@@ -501,17 +501,17 @@ class SQLGlotCompiler(abc.ABC):
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         raise NotImplementedError(
-            f"Python UDFs are not supported in the {self.name} backend"
+            f"Python UDFs are not supported in the {self.dialect} backend"
         )
 
     def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
         raise NotImplementedError(
-            f"PyArrow UDFs are not supported in the {self.name} backend"
+            f"PyArrow UDFs are not supported in the {self.dialect} backend"
         )
 
     def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
         raise NotImplementedError(
-            f"pandas UDFs are not supported in the {self.name} backend"
+            f"pandas UDFs are not supported in the {self.dialect} backend"
         )
 
     # Concrete API

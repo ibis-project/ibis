@@ -453,23 +453,6 @@ $$ {defn["source"]} $$"""
             )
         super().reconnect()
 
-    def _define_udf_translation_rules(self, expr):
-        """No-op, these are defined in the compiler."""
-
-    def _register_udfs(self, expr: ir.Expr) -> None:
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql)
-        if udf_sources:
-            # define every udf in one execution to avoid the overhead of db
-            # round trips per udf
-            with self._safe_raw_sql(";\n".join(udf_sources)):
-                pass
-
     def to_pyarrow(
         self,
         expr: ir.Expr,

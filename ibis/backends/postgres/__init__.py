@@ -485,21 +485,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         op = ops.udf.scalar.builtin(fake_func, database=database)
         return op
 
-    def _register_udfs(self, expr: ir.Expr) -> None:
-        udf_sources = []
-        compiler = self.compiler
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                compiler, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql)
-        if udf_sources:
-            # define every udf in one execution to avoid the overhead of
-            # database round trips per udf
-            with self._safe_raw_sql(";\n".join(udf_sources)):
-                pass
-
     def get_schema(
         self,
         name: str,

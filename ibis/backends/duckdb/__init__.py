@@ -70,9 +70,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     name = "duckdb"
     compiler = sc.duckdb.compiler
 
-    def _define_udf_translation_rules(self, expr):
-        """No-op: UDF translation rules are defined in the compiler."""
-
     @property
     def settings(self) -> _Settings:
         return _Settings(self.con)

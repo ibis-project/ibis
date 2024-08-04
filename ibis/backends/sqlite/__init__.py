@@ -365,9 +365,6 @@ class Backend(SQLBackend, UrlFromPath):
                 cur.execute(create_stmt)
                 cur.executemany(insert_stmt, data)
 
-    def _define_udf_translation_rules(self, expr):
-        """No-op, these are defined in the compiler."""
-
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops
 

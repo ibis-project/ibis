@@ -206,6 +206,21 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         sql = parsed.sql(dialect)
         return self._get_schema_using_query(sql)
 
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        udf_sources = []
+        compiler = self.compiler
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                compiler, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            if sql := compile_func(udf_node):
+                udf_sources.append(sql)
+        if udf_sources:
+            # define every udf in one execution to avoid the overhead of db
+            # round trips per udf
+            with self._safe_raw_sql(";\n".join(udf_sources)):
+                pass
+
     def create_view(
         self,
         name: str,
