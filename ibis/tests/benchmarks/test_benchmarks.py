@@ -162,7 +162,7 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
 
 _backends = _get_backend_names(exclude=("pandas",))
 
-_XFAIL_COMPILE_BACKENDS = ("dask", "polars")
+_XFAIL_COMPILE_BACKENDS = ("polars",)
 
 
 @pytest.mark.benchmark(group="compilation")

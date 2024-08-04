@@ -440,10 +440,9 @@ def test_schema_from_to_numpy_dtypes():
     assert restored_dtypes == expected_dtypes
 
 
-def test_schema_from_to_pandas_dask_dtypes():
+def test_schema_from_to_pandas_dtypes():
     np = pytest.importorskip("numpy")
     pd = pytest.importorskip("pandas")
-
     pandas_schema = pd.Series(
         [
             ("a", np.dtype("int64")),
