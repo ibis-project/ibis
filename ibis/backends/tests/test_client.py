@@ -1658,6 +1658,7 @@ def test_no_accidental_cross_database_table_load(con_create_database):
                 PySparkAnalysisException,
                 MySQLProgrammingError,
                 ExaQueryError,
+                SnowflakeProgrammingError,
             ),
         ),
         # datafusion really needs to get their exception story in order

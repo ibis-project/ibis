@@ -646,6 +646,13 @@ $$"""
         catalog: str | None = None,
         database: str | None = None,
     ) -> Iterable[tuple[str, dt.DataType]]:
+        # this will always show temp tables with the same name as a non-temp
+        # table first
+        #
+        # snowflake puts temp tables in the same catalog and database as
+        # non-temp tables and differentiates between them using a different
+        # mechanism than other database that often put temp tables in a hidden
+        # or intentionall-difficult-to-access catalog/database
         table = sg.table(
             table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
