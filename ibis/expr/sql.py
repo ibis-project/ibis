@@ -362,6 +362,8 @@ def to_sql(
         Formatted SQL string
 
     """
+    import ibis.backends.sql.compilers as sc
+
     # try to infer from a non-str expression or if not possible fallback to
     # the default pretty dialect for expressions
     if dialect is None:
@@ -370,18 +372,18 @@ def to_sql(
         except com.IbisError:
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends
-            backend = ibis.duckdb
-            dialect = ibis.options.sql.default_dialect
+            compiler_module = sc.duckdb
         else:
-            dialect = backend.dialect
+            compiler_module = backend.compiler
     else:
         try:
-            backend = getattr(ibis, dialect)
-        except AttributeError:
-            raise ValueError(f"Unknown dialect {dialect}")
-        else:
-            dialect = getattr(backend, "dialect", dialect)
+            compiler_module = getattr(sc, dialect)
+        except AttributeError as e:
+            raise ValueError(f"Unknown dialect {dialect}") from e
 
-    sg_expr = backend._to_sqlglot(expr.unbind(), **kwargs)
-    sql = sg_expr.sql(dialect=dialect, pretty=pretty)
+    compiler = compiler_module.compiler
+
+    out = compiler.to_sqlglot(expr.unbind(), **kwargs)
+    queries = out if isinstance(out, list) else [out]
+    sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
     return SQLString(sql)

@@ -15,6 +15,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -23,7 +24,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import DataFusionCompiler
 from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
@@ -68,7 +68,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     name = "datafusion"
     supports_in_memory_tables = True
     supports_arrays = True
-    compiler = DataFusionCompiler()
+    compiler = sc.datafusion.compiler
 
     @property
     def version(self):
@@ -629,16 +629,17 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             # If it's a memtable, it will get registered in the pre-execute hooks
             self._run_pre_execute_hooks(table)
 
+            compiler = self.compiler
             relname = "_"
             query = sg.select(
                 *(
-                    self.compiler.cast(
+                    compiler.cast(
                         sg.column(col, table=relname, quoted=quoted), dtype
                     ).as_(col, quoted=quoted)
                     for col, dtype in table.schema().items()
                 )
             ).from_(
-                self._to_sqlglot(table).subquery(
+                compiler.to_sqlglot(table).subquery(
                     sg.to_identifier(relname, quoted=quoted)
                 )
             )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import string
 from functools import partial, reduce
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -15,6 +16,9 @@ from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    import ibis.expr.types as ir
 
 
 class PostgresUDFNode(ops.Value):
@@ -98,6 +102,20 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
     }
+
+    def to_sqlglot(
+        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+    ):
+        table_expr = expr.as_table()
+        conversions = {
+            name: table_expr[name].as_ewkb()
+            for name, typ in table_expr.schema().items()
+            if typ.is_geospatial()
+        }
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
 
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
@@ -699,3 +717,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayAll(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="bool_and")
+
+
+compiler = PostgresCompiler()

@@ -480,3 +480,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             result = result.order_by(*sort_keys, copy=False)
 
         return result
+
+
+compiler = MSSQLCompiler()

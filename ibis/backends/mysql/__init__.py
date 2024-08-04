@@ -16,6 +16,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -24,7 +25,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MySQLCompiler
 from ibis.backends.sql.compilers.base import STAR, TRUE, C
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanCreateDatabase):
     name = "mysql"
-    compiler = MySQLCompiler()
+    compiler = sc.mysql.compiler
     supports_create_or_replace = False
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -419,7 +419,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 

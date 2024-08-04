@@ -95,3 +95,6 @@ class RisingWaveCompiler(PostgresCompiler):
         elif dtype.is_json():
             return sge.convert(str(value))
         return None
+
+
+compiler = RisingWaveCompiler()

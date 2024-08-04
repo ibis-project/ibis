@@ -774,3 +774,6 @@ class SnowflakeCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self.cast(self.f.udf.array_avg(arg), op.dtype)
+
+
+compiler = SnowflakeCompiler()

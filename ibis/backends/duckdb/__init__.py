@@ -18,6 +18,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -26,7 +27,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import DuckDBCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
@@ -68,7 +68,7 @@ class _Settings:
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     name = "duckdb"
-    compiler = DuckDBCompiler()
+    compiler = sc.duckdb.compiler
 
     def _define_udf_translation_rules(self, expr):
         """No-op: UDF translation rules are defined in the compiler."""
@@ -94,34 +94,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        sql = super()._to_sqlglot(expr, limit=limit, params=params)
-
-        table_expr = expr.as_table()
-        geocols = [
-            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        ]
-
-        if not geocols:
-            return sql
-        else:
-            self._load_extensions(["spatial"])
-
-        compiler = self.compiler
-        quoted = compiler.quoted
-        return sg.select(
-            sge.Star(
-                replace=[
-                    compiler.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
-                        col, quoted=quoted
-                    )
-                    for col in geocols
-                ]
-            )
-        ).from_(sql.subquery())
 
     def create_table(
         self,
@@ -195,7 +167,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 

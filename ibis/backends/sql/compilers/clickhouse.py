@@ -795,3 +795,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.if_(
             sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
         )
+
+
+compiler = ClickHouseCompiler()

@@ -199,3 +199,6 @@ class DruidCompiler(SQLGlotCompiler):
                 "Z",
             )
         )
+
+
+compiler = DruidCompiler()

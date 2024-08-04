@@ -25,6 +25,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -34,7 +35,6 @@ from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import SnowflakeCompiler
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import SnowflakeType
 
@@ -145,7 +145,7 @@ return count !== 0 ? true : null;""",
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     name = "snowflake"
-    compiler = SnowflakeCompiler()
+    compiler = sc.snowflake.compiler
     supports_python_udfs = True
 
     _latest_udf_python_version = (3, 10)
@@ -943,7 +943,7 @@ $$"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 

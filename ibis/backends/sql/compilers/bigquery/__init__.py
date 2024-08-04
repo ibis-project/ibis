@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -13,6 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
+from ibis.backends.sql.compilers.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql.datatypes import BigQueryType, BigQueryUDFType
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
@@ -21,7 +23,79 @@ from ibis.backends.sql.rewrites import (
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.types as ir
+
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
+
+
+_MEMTABLE_PATTERN = re.compile(
+    r"^_?ibis_(?:[A-Za-z_][A-Za-z_0-9]*)_memtable_[a-z0-9]{26}$"
+)
+
+
+def _qualify_memtable(
+    node: sge.Expression, *, dataset: str | None, project: str | None
+) -> sge.Expression:
+    """Add a BigQuery dataset and project to memtable references."""
+    if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
+        node.args["db"] = dataset
+        node.args["catalog"] = project
+        # make sure to quote table location
+        node = _force_quote_table(node)
+    return node
+
+
+def _remove_null_ordering_from_unsupported_window(
+    node: sge.Expression,
+) -> sge.Expression:
+    """Remove null ordering in window frame clauses not supported by BigQuery.
+
+    BigQuery has only partial support for NULL FIRST/LAST in RANGE windows so
+    we remove it from any window frame clause that doesn't support it.
+
+    Here's the support matrix:
+
+    ✅ sum(x) over (order by y desc nulls last)
+    🚫 sum(x) over (order by y asc nulls last)
+    ✅ sum(x) over (order by y asc nulls first)
+    🚫 sum(x) over (order by y desc nulls first)
+    """
+    if isinstance(node, sge.Window):
+        order = node.args.get("order")
+        if order is not None:
+            for key in order.args["expressions"]:
+                kargs = key.args
+                if kargs.get("desc") is True and kargs.get("nulls_first", False):
+                    kargs["nulls_first"] = False
+                elif kargs.get("desc") is False and not kargs.setdefault(
+                    "nulls_first", True
+                ):
+                    kargs["nulls_first"] = True
+    return node
+
+
+def _force_quote_table(table: sge.Table) -> sge.Table:
+    """Force quote all the parts of a bigquery path.
+
+    The BigQuery identifier quoting semantics are bonkers
+    https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#identifiers
+
+    my-table is OK, but not mydataset.my-table
+
+    mytable-287 is OK, but not mytable-287a
+
+    Just quote everything.
+    """
+    for key in ("this", "db", "catalog"):
+        if (val := table.args[key]) is not None:
+            if isinstance(val, sg.exp.Identifier) and not val.quoted:
+                val.args["quoted"] = True
+            else:
+                table.args[key] = sg.to_identifier(val, quoted=True)
+    return table
 
 
 class BigQueryCompiler(SQLGlotCompiler):
@@ -116,6 +190,149 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimestampNow: "current_timestamp",
         ops.ExtractHost: "net.host",
     }
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        session_dataset_id: str | None = None,
+        session_dataset_project: str | None = None,
+        **kwargs,
+    ) -> Any:
+        """Compile an Ibis expression.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression
+        limit
+            For expressions yielding result sets; retrieve at most this number
+            of values/rows. Overrides any limit already set on the expression.
+        params
+            Named unbound parameters
+        session_dataset_id
+            Optional dataset ID to qualify memtable references
+        session_dataset_project
+            Optional project ID to qualify memtable references
+        kwargs
+            Keyword arguments passed to the compiler
+
+        Returns
+        -------
+        Any
+            The output of compilation. The type of this value depends on the
+            backend.
+
+        """
+        sql = super().to_sqlglot(expr, limit=limit, params=params, **kwargs)
+
+        table_expr = expr.as_table()
+        geocols = [
+            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
+        ]
+
+        query = sql.transform(
+            _qualify_memtable,
+            dataset=session_dataset_id,
+            project=session_dataset_project,
+        ).transform(_remove_null_ordering_from_unsupported_window)
+
+        if not geocols:
+            return query
+
+        # if there are any geospatial columns, we have to convert them to WKB,
+        # so interactive mode knows how to display them
+        #
+        # by default bigquery returns data to python as WKT, and there's really
+        # no point in supporting both if we don't need to.
+        quoted = self.quoted
+        query = sg.select(
+            sge.Star(
+                replace=[
+                    self.f.st_asbinary(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
+                    for col in geocols
+                ]
+            )
+        ).from_(query.subquery())
+
+        sources = []
+
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            if sql := compile_func(udf_node):
+                sources.append(sql)
+
+        if not sources:
+            return query
+
+        sources.append(query)
+        return sources
+
+    def _get_udf_source(self, udf_node: ops.ScalarUDF):
+        name = type(udf_node).__name__
+        type_mapper = self.udf_type_mapper
+
+        body = PythonToJavaScriptTranslator(udf_node.__func__).compile()
+        config = udf_node.__config__
+        libraries = config.get("libraries", [])
+
+        signature = [
+            sge.ColumnDef(
+                this=sg.to_identifier(name, quoted=self.quoted),
+                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
+            )
+            for name, param in udf_node.__signature__.parameters.items()
+        ]
+
+        lines = ['"""']
+
+        if config.get("strict", True):
+            lines.append('"use strict";')
+
+        lines += [
+            body,
+            "",
+            f"return {udf_node.__func_name__}({', '.join(udf_node.argnames)});",
+            '"""',
+        ]
+
+        func = sge.Create(
+            kind="FUNCTION",
+            this=sge.UserDefinedFunction(
+                this=sg.to_identifier(name), expressions=signature, wrapped=True
+            ),
+            # not exactly what I had in mind, but it works
+            #
+            # quoting is too simplistic to handle multiline strings
+            expression=sge.Var(this="\n".join(lines)),
+            exists=False,
+            properties=sge.Properties(
+                expressions=[
+                    sge.TemporaryProperty(),
+                    sge.ReturnsProperty(this=type_mapper.from_ibis(udf_node.dtype)),
+                    sge.StabilityProperty(
+                        this="IMMUTABLE" if config.get("determinism") else "VOLATILE"
+                    ),
+                    sge.LanguageProperty(this=sg.to_identifier("js")),
+                ]
+                + [
+                    sge.Property(
+                        this=sg.to_identifier("library"), value=self.f.array(*libraries)
+                    )
+                ]
+                * bool(libraries)
+            ),
+        )
+
+        return func
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        return self._get_udf_source(udf_node)
 
     @staticmethod
     def _minimize_spec(start, end, spec):
@@ -817,3 +1034,6 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_ArrayAll(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="logical_and")
+
+
+compiler = BigQueryCompiler()

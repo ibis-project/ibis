@@ -480,3 +480,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ):
             raise com.UnsupportedBackendType(f"Unsupported type: {dtype!r}")
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
+
+
+compiler = SQLiteCompiler()

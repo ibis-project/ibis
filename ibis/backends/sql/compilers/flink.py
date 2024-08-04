@@ -563,3 +563,6 @@ class FlinkCompiler(SQLGlotCompiler):
 
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
+
+
+compiler = FlinkCompiler()

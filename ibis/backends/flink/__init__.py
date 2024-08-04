@@ -7,6 +7,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -23,7 +24,6 @@ from ibis.backends.flink.ddl import (
     RenameTable,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import FlinkCompiler
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
@@ -44,7 +44,7 @@ _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pand
 
 class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     name = "flink"
-    compiler = FlinkCompiler()
+    compiler = sc.flink.compiler
     supports_temporary_tables = True
     supports_python_udfs = True
 
@@ -353,11 +353,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         return super().compile(
             expr, params=params, pretty=pretty
         )  # Discard `limit` and other kwargs.
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
-    ) -> str:
-        return super()._to_sqlglot(expr, params=params)
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""

@@ -517,6 +517,30 @@ class SQLGlotCompiler(abc.ABC):
             result[node] = value
         return result
 
+    def to_sqlglot(
+        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
+    ):
+        import ibis
+
+        table_expr = expr.as_table()
+
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
+
+        if params is None:
+            params = {}
+
+        sql = self.translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sge.Subquery)
+
+        if isinstance(sql, sge.Table):
+            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
+
+        assert not isinstance(sql, sge.Subquery)
+        return sql
+
     def translate(self, op, *, params: Mapping[ir.Value, Any]) -> sge.Expression:
         """Translate an ibis operation to a sqlglot expression.
 

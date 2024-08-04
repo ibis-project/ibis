@@ -459,3 +459,6 @@ class OracleCompiler(SQLGlotCompiler):
             out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
 
         return out
+
+
+compiler = OracleCompiler()

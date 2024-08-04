@@ -9,6 +9,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -17,7 +18,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import SQLiteCompiler
 from ibis.backends.sql.compilers.base import C, F
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
@@ -45,7 +45,7 @@ def _quote(name: str) -> str:
 
 class Backend(SQLBackend, UrlFromPath):
     name = "sqlite"
-    compiler = SQLiteCompiler()
+    compiler = sc.sqlite.compiler
     supports_python_udfs = True
 
     @property
@@ -480,7 +480,7 @@ class Backend(SQLBackend, UrlFromPath):
 
             self._run_pre_execute_hooks(obj)
 
-            insert_query = self._to_sqlglot(obj)
+            insert_query = self.compiler.to_sqlglot(obj)
         else:
             insert_query = None
 

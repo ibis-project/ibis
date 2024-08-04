@@ -14,7 +14,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend
-from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -143,29 +142,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = self.compiler.translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sge.Subquery)
-
-        if isinstance(sql, sge.Table):
-            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
-
-        assert not isinstance(sql, sge.Subquery)
-        return sql
-
     def compile(
         self,
         expr: ir.Expr,
@@ -175,7 +151,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
-        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        query = self.compiler.to_sqlglot(expr, limit=limit, params=params, **kwargs)
         sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
         self._log(sql)
         return sql
@@ -220,7 +196,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         compiler = self.compiler
         dialect = compiler.dialect
 
-        cte = self._to_sqlglot(table)
+        cte = compiler.to_sqlglot(table)
         parsed = sg.parse_one(query, read=dialect)
         parsed.args["with"] = cte.args.pop("with", [])
         parsed = parsed.with_(

@@ -18,6 +18,7 @@ import sqlglot.expressions as sge
 from pandas.api.types import is_float_dtype
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -27,7 +28,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import PostgresCompiler
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
 from ibis.common.exceptions import InvalidDecoratorError
 
@@ -49,7 +49,7 @@ def _verify_source_line(func_name: str, line: str):
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "postgres"
-    compiler = PostgresCompiler()
+    compiler = sc.postgres.compiler
     supports_python_udfs = True
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -720,7 +720,7 @@ $$""".format(**self._get_udf_source(udf_node))
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -823,17 +823,3 @@ $$""".format(**self._get_udf_source(udf_node))
         else:
             con.commit()
             return cursor
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        table_expr = expr.as_table()
-        conversions = {
-            name: table_expr[name].as_ewkb()
-            for name, typ in table_expr.schema().items()
-            if typ.is_geospatial()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
