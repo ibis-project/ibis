@@ -951,9 +951,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         delta_table = DeltaTable(source_table, **kwargs)
 
-        return self.read_in_memory(
-            delta_table.to_pyarrow_dataset(), table_name=table_name
-        )
+        self.con.register(table_name, delta_table.to_pyarrow_dataset())
+        return self.table(table_name)
 
     def list_tables(
         self,
