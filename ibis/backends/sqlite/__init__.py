@@ -9,6 +9,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -17,7 +18,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import SQLiteCompiler
 from ibis.backends.sql.compilers.base import C, F
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
@@ -45,7 +45,7 @@ def _quote(name: str) -> str:
 
 class Backend(SQLBackend, UrlFromPath):
     name = "sqlite"
-    compiler = SQLiteCompiler()
+    compiler = sc.sqlite.compiler
     supports_python_udfs = True
 
     @property
@@ -365,9 +365,6 @@ class Backend(SQLBackend, UrlFromPath):
                 cur.execute(create_stmt)
                 cur.executemany(insert_stmt, data)
 
-    def _define_udf_translation_rules(self, expr):
-        """No-op, these are defined in the compiler."""
-
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops
 
@@ -375,13 +372,13 @@ class Backend(SQLBackend, UrlFromPath):
 
         for udf_node in expr.op().find(ops.ScalarUDF):
             compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             registration_func = compile_func(udf_node)
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+    def _register_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         name = type(udf_node).__name__
         nargs = len(udf_node.__signature__.parameters)
         func = udf_node.__func__
@@ -480,7 +477,7 @@ class Backend(SQLBackend, UrlFromPath):
 
             self._run_pre_execute_hooks(obj)
 
-            insert_query = self._to_sqlglot(obj)
+            insert_query = self.compiler.to_sqlglot(obj)
         else:
             insert_query = None
 

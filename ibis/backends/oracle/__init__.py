@@ -17,6 +17,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -24,9 +25,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanListDatabase, CanListSchema
-from ibis.backends.sql import STAR, SQLBackend
-from ibis.backends.sql.compilers import OracleCompiler
-from ibis.backends.sql.compilers.base import C
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
@@ -79,7 +79,7 @@ def metadata_row_to_type(
 
 class Backend(SQLBackend, CanListDatabase, CanListSchema):
     name = "oracle"
-    compiler = OracleCompiler()
+    compiler = sc.oracle.compiler
 
     @cached_property
     def version(self):
@@ -420,7 +420,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 

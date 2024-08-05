@@ -100,7 +100,6 @@ def load_backend(name: str) -> BaseBackend:
     # - compile
     # - has_operation
     # - _from_url
-    # - _to_sqlglot
     #
     # We also copy over the docstring from `do_connect` to the proxy `connect`
     # method, since that's where all the backend-specific kwargs are currently
@@ -121,7 +120,7 @@ def load_backend(name: str) -> BaseBackend:
     proxy.has_operation = backend.has_operation
     proxy.name = name
     proxy._from_url = backend._from_url
-    proxy._to_sqlglot = backend._to_sqlglot
+
     # Add any additional methods that should be exposed at the top level
     for attr in getattr(backend, "_top_level_methods", ()):
         setattr(proxy, attr, getattr(backend, attr))

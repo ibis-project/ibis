@@ -377,3 +377,6 @@ class MySQLCompiler(SQLGlotCompiler):
             self.if_(arg.eq(sge.convert("true")), 1, 0),
             NULL,
         )
+
+
+compiler = MySQLCompiler()

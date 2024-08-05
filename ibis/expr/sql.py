@@ -362,26 +362,28 @@ def to_sql(
         Formatted SQL string
 
     """
+    import ibis.backends.sql.compilers as sc
+
     # try to infer from a non-str expression or if not possible fallback to
     # the default pretty dialect for expressions
     if dialect is None:
         try:
-            backend = expr._find_backend(use_default=True)
+            compiler_provider = expr._find_backend(use_default=True)
         except com.IbisError:
             # default to duckdb for SQL compilation because it supports the
             # widest array of ibis features for SQL backends
-            backend = ibis.duckdb
-            dialect = ibis.options.sql.default_dialect
-        else:
-            dialect = backend.dialect
+            compiler_provider = sc.duckdb
     else:
         try:
-            backend = getattr(ibis, dialect)
-        except AttributeError:
-            raise ValueError(f"Unknown dialect {dialect}")
-        else:
-            dialect = getattr(backend, "dialect", dialect)
+            compiler_provider = getattr(sc, dialect)
+        except AttributeError as e:
+            raise ValueError(f"Unknown dialect {dialect}") from e
 
-    sg_expr = backend._to_sqlglot(expr.unbind(), **kwargs)
-    sql = sg_expr.sql(dialect=dialect, pretty=pretty)
+    if (compiler := getattr(compiler_provider, "compiler", None)) is None:
+        raise NotImplementedError(f"{compiler_provider} is not a SQL backend")
+
+    out = compiler.to_sqlglot(expr.unbind(), **kwargs)
+    queries = out if isinstance(out, list) else [out]
+    dialect = compiler.dialect
+    sql = ";\n".join(query.sql(dialect=dialect, pretty=pretty) for query in queries)
     return SQLString(sql)

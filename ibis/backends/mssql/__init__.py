@@ -14,6 +14,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -22,7 +23,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MSSQLCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ def datetimeoffset_to_datetime(value):
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
-    compiler = MSSQLCompiler()
+    compiler = sc.mssql.compiler
     supports_create_or_replace = False
 
     @property
@@ -597,7 +597,7 @@ GO"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -718,21 +718,6 @@ GO"""
             with self._safe_ddl(create_stmt) as cur:
                 if not df.empty:
                     cur.executemany(insert_stmt, data)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-        conversions = {
-            name: ibis.ifelse(table_expr[name], 1, 0).cast("boolean")
-            for name, typ in table_expr.schema().items()
-            if typ.is_boolean()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params)
 
     def _cursor_batches(
         self,

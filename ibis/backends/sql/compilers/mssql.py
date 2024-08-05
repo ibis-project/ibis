@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -25,6 +26,11 @@ from ibis.backends.sql.rewrites import (
     replace,
 )
 from ibis.common.deferred import var
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.operations as ir
 
 y = var("y")
 start = var("start")
@@ -133,17 +139,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Max: "max",
     }
 
-    @property
-    def NAN(self):
-        return self.f.double("NaN")
-
-    @property
-    def POS_INF(self):
-        return self.f.double("Infinity")
-
-    @property
-    def NEG_INF(self):
-        return self.f.double("-Infinity")
+    NAN = sg.func("double", sge.convert("NaN"))
+    POS_INF = sg.func("double", sge.convert("Infinity"))
+    NEG_INF = sg.func("double", sge.convert("-Infinity"))
 
     @staticmethod
     def _generate_groups(groups):
@@ -160,7 +158,28 @@ class MSSQLCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def visit_RandomUUID(self, op, **kwargs):
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
+        import ibis
+
+        table_expr = expr.as_table()
+        conversions = {
+            name: ibis.ifelse(table_expr[name], 1, 0).cast(dt.boolean)
+            for name, typ in table_expr.schema().items()
+            if typ.is_boolean()
+        }
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super().to_sqlglot(table_expr, limit=limit, params=params)
+
+    def visit_RandomUUID(self, op, **_):
         return self.f.newid()
 
     def visit_StringLength(self, op, *, arg):
@@ -480,3 +499,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             result = result.order_by(*sort_keys, copy=False)
 
         return result
+
+
+compiler = MSSQLCompiler()

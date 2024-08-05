@@ -13,6 +13,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from impala.error import Error as ImpylaError
 
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.schema as sch
@@ -38,7 +39,6 @@ from ibis.backends.impala.udf import (
     wrap_udf,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import ImpalaCompiler
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -64,7 +64,7 @@ __all__ = (
 
 class Backend(SQLBackend):
     name = "impala"
-    compiler = ImpalaCompiler()
+    compiler = sc.impala.compiler
 
     supports_in_memory_tables = True
 

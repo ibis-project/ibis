@@ -14,6 +14,7 @@ from pyspark import SparkConf
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
@@ -24,7 +25,6 @@ from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import PySparkCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
@@ -104,7 +104,7 @@ def _interval_to_string(interval):
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "pyspark"
-    compiler = PySparkCompiler()
+    compiler = sc.pyspark.compiler
 
     class Options(ibis.config.Config):
         """PySpark options.

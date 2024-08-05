@@ -19,6 +19,7 @@ import sqlglot.expressions as sge
 from pydata_google_auth import cache
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -32,9 +33,7 @@ from ibis.backends.bigquery.client import (
     schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.datatypes import BigQuerySchema
-from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import BigQueryCompiler
 from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
@@ -150,7 +149,7 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
-    compiler = BigQueryCompiler()
+    compiler = sc.bigquery.compiler
     supports_in_memory_tables = True
     supports_python_udfs = False
 
@@ -652,68 +651,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         return BigQuerySchema.to_ibis(job.schema)
 
-    def _to_sqlglot(
-        self,
-        expr: ir.Expr,
-        limit: str | None = None,
-        params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs,
-    ) -> Any:
-        """Compile an Ibis expression.
-
-        Parameters
-        ----------
-        expr
-            Ibis expression
-        limit
-            For expressions yielding result sets; retrieve at most this number
-            of values/rows. Overrides any limit already set on the expression.
-        params
-            Named unbound parameters
-        kwargs
-            Keyword arguments passed to the compiler
-
-        Returns
-        -------
-        Any
-            The output of compilation. The type of this value depends on the
-            backend.
-
-        """
-        self._define_udf_translation_rules(expr)
-        sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-
-        table_expr = expr.as_table()
-        geocols = [
-            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        ]
-
-        query = sql.transform(
-            _qualify_memtable,
-            dataset=getattr(self._session_dataset, "dataset_id", None),
-            project=getattr(self._session_dataset, "project", None),
-        ).transform(_remove_null_ordering_from_unsupported_window)
-
-        if not geocols:
-            return query
-
-        # if there are any geospatial columns, we have to convert them to WKB,
-        # so interactive mode knows how to display them
-        #
-        # by default bigquery returns data to python as WKT, and there's really
-        # no point in supporting both if we don't need to.
-        compiler = self.compiler
-        quoted = compiler.quoted
-        f = compiler.f
-        return sg.select(
-            sge.Star(
-                replace=[
-                    f.st_asbinary(sg.column(col, quoted=quoted)).as_(col, quoted=quoted)
-                    for col in geocols
-                ]
-            )
-        ).from_(query.subquery())
-
     def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
             bigquery_param(
@@ -747,19 +684,25 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params=None,
+        pretty: bool = True,
+        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
-        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql.sql(self.name, pretty=True))
-
-        sql = ";\n".join([*udf_sources, query.sql(dialect=self.name, pretty=True)])
+        session_dataset = self._session_dataset
+        query = self.compiler.to_sqlglot(
+            expr,
+            limit=limit,
+            params=params,
+            session_dataset_id=getattr(session_dataset, "dataset_id", None),
+            session_project=getattr(session_dataset, "project", None),
+            **kwargs,
+        )
+        queries = query if isinstance(query, list) else [query]
+        sql = ";\n".join(query.sql(self.dialect, pretty=pretty) for query in queries)
         self._log(sql)
         return sql
 
@@ -1201,68 +1144,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
             force=True,
         )
-
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        name = type(udf_node).__name__
-        type_mapper = self.compiler.udf_type_mapper
-
-        body = PythonToJavaScriptTranslator(udf_node.__func__).compile()
-        config = udf_node.__config__
-        libraries = config.get("libraries", [])
-
-        signature = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
-            )
-            for name, param in udf_node.__signature__.parameters.items()
-        ]
-
-        lines = ['"""']
-
-        if config.get("strict", True):
-            lines.append('"use strict";')
-
-        lines += [
-            body,
-            "",
-            f"return {udf_node.__func_name__}({', '.join(udf_node.argnames)});",
-            '"""',
-        ]
-
-        func = sge.Create(
-            kind="FUNCTION",
-            this=sge.UserDefinedFunction(
-                this=sg.to_identifier(name), expressions=signature, wrapped=True
-            ),
-            # not exactly what I had in mind, but it works
-            #
-            # quoting is too simplistic to handle multiline strings
-            expression=sge.Var(this="\n".join(lines)),
-            exists=False,
-            properties=sge.Properties(
-                expressions=[
-                    sge.TemporaryProperty(),
-                    sge.ReturnsProperty(this=type_mapper.from_ibis(udf_node.dtype)),
-                    sge.StabilityProperty(
-                        this="IMMUTABLE" if config.get("determinism") else "VOLATILE"
-                    ),
-                    sge.LanguageProperty(this=sg.to_identifier("js")),
-                ]
-                + [
-                    sge.Property(
-                        this=sg.to_identifier("library"),
-                        value=self.compiler.f.array(*libraries),
-                    )
-                ]
-                * bool(libraries)
-            ),
-        )
-
-        return func
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        return self._get_udf_source(udf_node)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""

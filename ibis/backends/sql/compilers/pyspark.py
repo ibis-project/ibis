@@ -634,3 +634,6 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+
+compiler = PySparkCompiler()

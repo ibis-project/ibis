@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from functools import partial, reduce
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -15,6 +16,12 @@ from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.types as ir
+
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",
@@ -97,6 +104,33 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
     }
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        sql = super().to_sqlglot(expr, limit=limit, params=params)
+
+        table_expr = expr.as_table()
+        geocols = table_expr.schema().geospatial
+
+        if not geocols:
+            return sql
+
+        quoted = self.quoted
+        return sg.select(
+            sge.Star(
+                replace=[
+                    self.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
+                    for col in geocols
+                ]
+            )
+        ).from_(sql.subquery())
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
@@ -614,3 +648,6 @@ class DuckDBCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
+
+
+compiler = DuckDBCompiler()

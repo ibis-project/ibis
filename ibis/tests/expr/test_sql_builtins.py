@@ -16,6 +16,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
@@ -223,3 +224,11 @@ def test_no_arguments_errors(function):
         SignatureValidationError, match=".+ has failed due to the following errors:"
     ):
         function()
+
+
+@pytest.mark.parametrize(
+    "name", [name.lower().removesuffix("compiler") for name in sc.__all__]
+)
+def test_compile_without_dependencies(name):
+    table = ibis.table({"a": "int64"}, name="t")
+    assert isinstance(ibis.to_sql(table, dialect=name), str)

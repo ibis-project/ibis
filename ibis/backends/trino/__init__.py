@@ -14,13 +14,13 @@ import sqlglot.expressions as sge
 import trino
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import TrinoCompiler
 from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "trino"
-    compiler = TrinoCompiler()
+    compiler = sc.trino.compiler
     supports_create_or_replace = False
     supports_temporary_tables = False
 
@@ -490,7 +490,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     )
                     for name, typ in (schema or table.schema()).items()
                 )
-            ).from_(self._to_sqlglot(table).subquery())
+            ).from_(self.compiler.to_sqlglot(table).subquery())
         else:
             select = None
 

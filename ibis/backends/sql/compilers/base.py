@@ -496,6 +496,24 @@ class SQLGlotCompiler(abc.ABC):
     def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
 
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:  # noqa: B027
+        """No-op."""
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.dialect} backend"
+        )
+
     # Concrete API
 
     def if_(self, condition, true, false: sge.Expression | None = None) -> sge.If:
@@ -516,6 +534,34 @@ class SQLGlotCompiler(abc.ABC):
                 node = node.arg
             result[node] = value
         return result
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        import ibis
+
+        table_expr = expr.as_table()
+
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
+
+        if params is None:
+            params = {}
+
+        sql = self.translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sge.Subquery)
+
+        if isinstance(sql, sge.Table):
+            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
+
+        assert not isinstance(sql, sge.Subquery)
+        return sql
 
     def translate(self, op, *, params: Mapping[ir.Value, Any]) -> sge.Expression:
         """Translate an ibis operation to a sqlglot expression.

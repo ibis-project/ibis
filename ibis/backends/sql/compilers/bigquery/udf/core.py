@@ -10,8 +10,8 @@ import textwrap
 from collections import ChainMap
 from typing import TYPE_CHECKING
 
-from ibis.backends.bigquery.udf.find import find_names
-from ibis.backends.bigquery.udf.rewrite import rewrite
+from ibis.backends.sql.compilers.bigquery.udf.find import find_names
+from ibis.backends.sql.compilers.bigquery.udf.rewrite import rewrite
 
 if TYPE_CHECKING:
     from collections.abc import Callable

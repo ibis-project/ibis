@@ -250,3 +250,6 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_BitwiseXor(self, op, *, left, right):
         return self.cast(self.f.bit_xor(left, right), op.dtype)
+
+
+compiler = ExasolCompiler()

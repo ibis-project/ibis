@@ -652,3 +652,6 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
+
+
+compiler = TrinoCompiler()

@@ -18,6 +18,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -26,7 +27,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import DuckDBCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
@@ -68,10 +68,7 @@ class _Settings:
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     name = "duckdb"
-    compiler = DuckDBCompiler()
-
-    def _define_udf_translation_rules(self, expr):
-        """No-op: UDF translation rules are defined in the compiler."""
+    compiler = sc.duckdb.compiler
 
     @property
     def settings(self) -> _Settings:
@@ -94,34 +91,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
         return self.con.execute(query, **kwargs)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **_: Any
-    ):
-        sql = super()._to_sqlglot(expr, limit=limit, params=params)
-
-        table_expr = expr.as_table()
-        geocols = [
-            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        ]
-
-        if not geocols:
-            return sql
-        else:
-            self._load_extensions(["spatial"])
-
-        compiler = self.compiler
-        quoted = compiler.quoted
-        return sg.select(
-            sge.Star(
-                replace=[
-                    compiler.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
-                        col, quoted=quoted
-                    )
-                    for col in geocols
-                ]
-            )
-        ).from_(sql.subquery())
 
     def create_table(
         self,
@@ -195,7 +164,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -1325,6 +1294,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
         sql = self.compile(table_expr, limit=limit, params=params)
+        if table_expr.schema().geospatial:
+            self._load_extensions(["spatial"])
         return self.con.sql(sql)
 
     def to_pyarrow_batches(
@@ -1569,17 +1540,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         con = self.con
 
         for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            register_func = getattr(
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             with contextlib.suppress(duckdb.InvalidInputException):
                 con.remove_function(udf_node.__class__.__name__)
 
-            registration_func = compile_func(udf_node)
+            registration_func = register_func(udf_node)
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_udf(self, udf_node: ops.ScalarUDF):
+    def _register_udf(self, udf_node: ops.ScalarUDF):
         func = udf_node.__func__
         name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper
@@ -1600,8 +1571,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         return register_udf
 
-    _compile_python_udf = _compile_udf
-    _compile_pyarrow_udf = _compile_udf
+    _register_python_udf = _register_udf
+    _register_pyarrow_udf = _register_udf
 
     def _get_temp_view_definition(self, name: str, definition: str) -> str:
         return sge.Create(
