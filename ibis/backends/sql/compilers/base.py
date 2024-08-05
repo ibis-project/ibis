@@ -536,7 +536,12 @@ class SQLGlotCompiler(abc.ABC):
         return result
 
     def to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **_: Any,
     ):
         import ibis
 

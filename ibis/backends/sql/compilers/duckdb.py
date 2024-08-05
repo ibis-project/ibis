@@ -18,6 +18,8 @@ from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import ibis.expr.types as ir
 
 
@@ -104,7 +106,12 @@ class DuckDBCompiler(SQLGlotCompiler):
     }
 
     def to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
     ):
         sql = super().to_sqlglot(expr, limit=limit, params=params, **kwargs)
 

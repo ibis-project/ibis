@@ -194,11 +194,12 @@ class BigQueryCompiler(SQLGlotCompiler):
     def to_sqlglot(
         self,
         expr: ir.Expr,
+        *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         session_dataset_id: str | None = None,
         session_dataset_project: str | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> Any:
         """Compile an Ibis expression.
 

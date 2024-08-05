@@ -22,6 +22,8 @@ from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     import ibis.expr.types as ir
 
 
@@ -114,7 +116,12 @@ class PostgresCompiler(SQLGlotCompiler):
     }
 
     def to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
     ):
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
