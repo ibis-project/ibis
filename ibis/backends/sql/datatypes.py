@@ -193,12 +193,11 @@ class SqlglotType(TypeMapper):
 
         try:
             sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-            return cls.to_ibis(sgtype, nullable=nullable)
         except sg.errors.ParseError:
             # If sqlglot can't parse the type fall back to `dt.unknown`
-            pass
-
-        return dt.unknown
+            return dt.unknown
+        else:
+            return cls.to_ibis(sgtype, nullable=nullable)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
