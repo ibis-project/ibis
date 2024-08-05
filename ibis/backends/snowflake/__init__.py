@@ -143,7 +143,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     compiler = sc.snowflake.compiler
     supports_python_udfs = True
 
-    _latest_udf_python_version = (3, 10)
     _top_level_methods = ("from_connection", "from_snowpark")
 
     def __init__(self, *args, _from_snowpark: bool = False, **kwargs) -> None:
