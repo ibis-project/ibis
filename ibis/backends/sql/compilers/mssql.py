@@ -133,17 +133,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Max: "max",
     }
 
-    @property
-    def NAN(self):
-        return self.f.double("NaN")
-
-    @property
-    def POS_INF(self):
-        return self.f.double("Infinity")
-
-    @property
-    def NEG_INF(self):
-        return self.f.double("-Infinity")
+    NAN = sg.func("double", sge.convert("NaN"))
+    POS_INF = sg.func("double", sge.convert("Infinity"))
+    NEG_INF = sg.func("double", sge.convert("-Infinity"))
 
     @staticmethod
     def _generate_groups(groups):
