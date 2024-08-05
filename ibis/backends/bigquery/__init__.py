@@ -696,7 +696,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             expr,
             limit=limit,
             params=params,
-            session_dataset_id=getattr(self._session_dataset, "dataset", None),
+            session_dataset_id=getattr(self._session_dataset, "dataset_id", None),
             session_project_id=getattr(self._session_dataset, "project", None),
             **kwargs,
         )
