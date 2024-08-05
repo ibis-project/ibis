@@ -251,7 +251,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
                 "mssql": decimal.Decimal("1"),
@@ -294,7 +293,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
@@ -328,7 +326,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
@@ -383,7 +380,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
                 "risingwave": decimal.Decimal("Infinity"),
-                "pandas": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
@@ -447,7 +443,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
                 "risingwave": decimal.Decimal("-Infinity"),
-                "pandas": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
@@ -512,7 +507,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": None,
                 "postgres": float("nan"),
                 "risingwave": float("nan"),
-                "pandas": decimal.Decimal("NaN"),
                 "pyspark": decimal.Decimal("NaN"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
@@ -1301,7 +1295,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result.astype("float64"), expected)
 
 
-@pytest.mark.notimpl(["pandas", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
     ["risingwave"],

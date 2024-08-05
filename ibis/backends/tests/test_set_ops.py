@@ -70,15 +70,7 @@ def test_union_mixed_distinct(backend, union_subsets):
             False,
             marks=[
                 pytest.mark.notyet(
-                    [
-                        "impala",
-                        "bigquery",
-                        "pandas",
-                        "sqlite",
-                        "snowflake",
-                        "mssql",
-                        "exasol",
-                    ],
+                    ["impala", "bigquery", "sqlite", "snowflake", "mssql", "exasol"],
                     reason="backend doesn't support INTERSECT ALL",
                 ),
                 pytest.mark.notimpl(
@@ -123,15 +115,7 @@ def test_intersect(backend, alltypes, df, distinct):
             False,
             marks=[
                 pytest.mark.notyet(
-                    [
-                        "impala",
-                        "bigquery",
-                        "pandas",
-                        "sqlite",
-                        "snowflake",
-                        "mssql",
-                        "exasol",
-                    ],
+                    ["impala", "bigquery", "sqlite", "snowflake", "mssql", "exasol"],
                     reason="backend doesn't support EXCEPT ALL",
                 ),
                 pytest.mark.notimpl(
@@ -223,15 +207,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
             False,
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "bigquery",
-                        "mssql",
-                        "pandas",
-                        "snowflake",
-                        "sqlite",
-                        "exasol",
-                    ]
+                    ["impala", "bigquery", "mssql", "snowflake", "sqlite", "exasol"]
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],

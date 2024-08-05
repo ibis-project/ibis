@@ -259,7 +259,6 @@ impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
 mssql = "ibis.backends.mssql"
 oracle = "ibis.backends.oracle"
-pandas = "ibis.backends.pandas"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 risingwave = "ibis.backends.risingwave"
@@ -392,7 +391,6 @@ markers = [
   "mysql: MySQL tests",
   "mssql: MS SQL Server tests",
   "oracle: Oracle tests",
-  "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
   "risingwave: RisingWave tests",
