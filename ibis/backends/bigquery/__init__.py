@@ -692,12 +692,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
+        session_dataset = self._session_dataset
         query = self.compiler.to_sqlglot(
             expr,
             limit=limit,
             params=params,
-            session_dataset_id=getattr(self._session_dataset, "dataset_id", None),
-            session_project_id=getattr(self._session_dataset, "project", None),
+            session_dataset_id=getattr(session_dataset, "dataset_id", None),
+            session_project=getattr(session_dataset, "project", None),
             **kwargs,
         )
         queries = query if isinstance(query, list) else [query]

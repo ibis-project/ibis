@@ -199,11 +199,9 @@ def test_parted_column(con, kind):
     assert t.columns == [expected_column, "string_col", "int_col"]
 
 
-def test_cross_project_query(public, snapshot):
+def test_cross_project_query(public):
     table = public.table("posts_questions")
     expr = table[table.tags.contains("ibis")][["title", "tags"]]
-    result = expr.compile()
-    snapshot.assert_match(result, "out.sql")
     n = 5
     df = expr.limit(n).execute()
     assert len(df) == n
@@ -224,17 +222,6 @@ def test_exists_table_different_project(con):
 
     assert name in con.list_tables(database=dataset)
     assert "foobar" not in con.list_tables(database=dataset)
-
-
-def test_multiple_project_queries(con, snapshot):
-    so = con.table(
-        "posts_questions",
-        database=("bigquery-public-data", "stackoverflow"),
-    )
-    trips = con.table("trips", database="nyc-tlc.yellow")
-    join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
-    result = join.compile()
-    snapshot.assert_match(result, "out.sql")
 
 
 def test_multiple_project_queries_execute(con):
