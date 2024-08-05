@@ -1018,7 +1018,10 @@ class Value(Expr):
         return builder.else_(default).end()
 
     def collect(
-        self, where: ir.BooleanValue | None = None, order_by: Any = None
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        ignore_null: bool = True,
     ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
@@ -1033,6 +1036,9 @@ class Value(Expr):
             An ordering key (or keys) to use to order the rows before
             aggregating. If not provided, the order of the items in the result
             is undefined and backend specific.
+        ignore_null
+            Whether to ignore null values when performing this aggregation. Set
+            to `False` to include nulls in the result.
 
         Returns
         -------
@@ -1093,6 +1099,7 @@ class Value(Expr):
             self,
             where=self._bind_to_parent_table(where),
             order_by=self._bind_order_by(order_by),
+            ignore_null=ignore_null,
         ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:

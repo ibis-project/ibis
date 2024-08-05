@@ -71,7 +71,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayFlatten,
         ops.ArraySort,
         ops.ArrayStringJoin,

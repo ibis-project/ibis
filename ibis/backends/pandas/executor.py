@@ -320,6 +320,17 @@ class PandasExecutor(Dispatched, PandasUtils):
         return cls.agg(lambda x: x.std(ddof=ddof), arg, where)
 
     @classmethod
+    def visit(cls, op: ops.ArrayCollect, arg, where, order_by, ignore_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+        return cls.agg(
+            (lambda x: x.dropna().tolist() if ignore_null else x.tolist()), arg, where
+        )
+
+    @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):
         if where is None:
 

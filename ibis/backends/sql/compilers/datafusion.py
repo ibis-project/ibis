@@ -14,7 +14,6 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 
@@ -24,11 +23,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
-
-    rewrites = (
-        exclude_nulls_from_array_collect,
-        *SQLGlotCompiler.rewrites,
-    )
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
@@ -330,6 +324,12 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        if ignore_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_Covariance(self, op, *, left, right, how, where):
         x = op.left

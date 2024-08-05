@@ -529,28 +529,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: len(t[where]),
             id="count_star",
         ),
-        param(
-            lambda t, where: t.string_col.nullif("3").collect(where=where),
-            lambda t, where: t.string_col[t.string_col != "3"][where].tolist(),
-            id="collect",
-            marks=[
-                pytest.mark.notimpl(
-                    ["impala", "mysql", "sqlite", "mssql", "druid", "oracle", "exasol"],
-                    raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=(AttributeError, TypeError),
-                    reason=(
-                        "For 'is_in' case: 'Series' object has no attribute 'arraycollect'"
-                        "For 'no_cond' case: TypeError: Object "
-                        "<dask.dataframe.groupby.Aggregation object at 0x124569840> is not "
-                        "callable or a string"
-                    ),
-                ),
-                pytest.mark.notyet(["flink"], raises=com.OperationNotDefinedError),
-            ],
-        ),
     ],
 )
 @pytest.mark.parametrize(
@@ -1395,6 +1373,59 @@ def test_collect_ordered(alltypes, df, filtered):
         df.id[(df.bigint_col == 10) & pd_cond].sort_values(ascending=False).astype(str)
     )
     assert result == expected
+
+
+@pytest.mark.notimpl(
+    ["druid", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "sqlite"],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(
+    ["dask"], raises=AttributeError, reason="Dask doesn't implement tolist()"
+)
+@pytest.mark.parametrize(
+    "filtered",
+    [
+        param(
+            True,
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                )
+            ],
+        ),
+        False,
+    ],
+)
+@pytest.mark.parametrize(
+    "ignore_null",
+    [
+        True,
+        param(
+            False,
+            marks=[
+                pytest.mark.notimpl(
+                    ["clickhouse", "pyspark", "snowflake"],
+                    raises=com.UnsupportedOperationError,
+                    reason="`ignore_null=False` is not supported",
+                )
+            ],
+        ),
+    ],
+)
+def test_collect(alltypes, df, filtered, ignore_null):
+    ibis_cond = (_.id % 13 == 0) if filtered else None
+    pd_cond = (df.id % 13 == 0) if filtered else slice(None)
+    res = (
+        alltypes.string_col.nullif("3")
+        .collect(where=ibis_cond, ignore_null=ignore_null)
+        .length()
+        .execute()
+    )
+    vals = df.string_col[(df.string_col != "3")] if ignore_null else df.string_col
+    sol = len(vals[pd_cond])
+    assert res == sol
 
 
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)

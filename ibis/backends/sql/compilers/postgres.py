@@ -17,7 +17,6 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -42,8 +41,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
-
-    rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
@@ -357,6 +354,12 @@ class PostgresCompiler(SQLGlotCompiler):
                 sg.select(self.f.explode(left)), sg.select(self.f.explode(right))
             )
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        if ignore_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_Log2(self, op, *, arg):
         return self.cast(

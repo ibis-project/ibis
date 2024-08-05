@@ -42,7 +42,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.Array,
         ops.ArrayConcat,
         ops.ArrayStringJoin,
-        ops.ArrayCollect,
         ops.ArrayContains,
         ops.ArrayFlatten,
         ops.ArrayLength,
