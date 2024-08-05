@@ -10,7 +10,7 @@
 # well and serially it takes on the order of 7-8 minutes to execute serially
 let
   extras = [ "decompiler" "visualization" ];
-  backends = [ "datafusion" "duckdb" "pandas" "polars" "sqlite" ];
+  backends = [ "datafusion" "duckdb" "polars" "sqlite" ];
 in
 poetry2nix.mkPoetryApplication {
   python = python3;

@@ -160,7 +160,7 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
     benchmark(builtin, expr)
 
 
-_backends = _get_backend_names(exclude=("pandas",))
+_backends = _get_backend_names()
 
 _XFAIL_COMPILE_BACKENDS = ("polars",)
 

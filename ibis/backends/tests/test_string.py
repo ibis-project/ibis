@@ -748,7 +748,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             id="file",
             marks=[
                 pytest.mark.notimpl(
-                    ["pandas", "datafusion", "sqlite"],
+                    ["datafusion", "sqlite"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -824,17 +824,7 @@ def test_capitalize(con, inp, expected):
 
 
 @pytest.mark.notimpl(
-    [
-        "pandas",
-        "polars",
-        "oracle",
-        "flink",
-        "sqlite",
-        "mssql",
-        "mysql",
-        "exasol",
-        "impala",
-    ],
+    ["polars", "oracle", "flink", "sqlite", "mssql", "mysql", "exasol", "impala"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_string_join(con):
@@ -870,7 +860,6 @@ def test_multiple_subs(con):
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "polars",
         "sqlite",
         "flink",
@@ -922,7 +911,6 @@ def test_non_match_regex_search_is_false(con):
         "oracle",
         "flink",
         "exasol",
-        "pandas",
         "bigquery",
     ],
     raises=com.OperationNotDefinedError,
@@ -944,7 +932,6 @@ def test_re_split(con):
         "oracle",
         "flink",
         "exasol",
-        "pandas",
         "bigquery",
     ],
     raises=com.OperationNotDefinedError,
@@ -965,7 +952,6 @@ def test_re_split_column(alltypes):
         "oracle",
         "flink",
         "exasol",
-        "pandas",
         "bigquery",
     ],
     raises=com.OperationNotDefinedError,
@@ -1004,7 +990,6 @@ def test_re_split_column_multiple_patterns(alltypes):
     [lambda n: n + "a", lambda n: n + n, lambda n: "a" + n],
     ids=["null-a", "null-null", "a-null"],
 )
-@pytest.mark.notimpl(["pandas"], raises=TypeError)
 def test_concat_with_null(con, fn):
     null = ibis.literal(None, type="string")
     expr = fn(null)
@@ -1026,7 +1011,6 @@ def test_concat_with_null(con, fn):
     [lambda args: args[0].concat(*args[1:]), lambda args: reduce(add, args)],
     ids=["concat", "add"],
 )
-@pytest.mark.notimpl(["pandas"], raises=TypeError)
 def test_concat(con, args, method):
     expr = method(args)
     assert pd.isna(con.execute(expr))
@@ -1109,7 +1093,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["mssql", "pandas", "polars"],
+                    ["mssql", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
@@ -1136,7 +1120,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["mssql", "pandas", "polars"],
+                    ["mssql", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
@@ -1207,7 +1191,6 @@ def string_temp_table(backend, con):
                         "datafusion",
                         "duckdb",
                         "mysql",
-                        "pandas",
                         "postgres",
                         "risingwave",
                     ],

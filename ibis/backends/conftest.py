@@ -4,7 +4,6 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
-import operator
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -12,7 +11,6 @@ from typing import TYPE_CHECKING, Any
 import _pytest
 import pytest
 from packaging.requirements import Requirement
-from packaging.version import parse as vparse
 
 import ibis
 from ibis import util
@@ -28,22 +26,6 @@ from ibis.util import promote_tuple
 if TYPE_CHECKING:
     from ibis.backends import BaseBackend
     from ibis.backends.tests.base import BackendTest
-
-
-def compare_versions(module_name, given_version, op):
-    try:
-        current_version = importlib.metadata.version(module_name)
-        return op(vparse(current_version), vparse(given_version))
-    except importlib.metadata.PackageNotFoundError:
-        return False
-
-
-def is_newer_than(module_name, given_version):
-    return compare_versions(module_name, given_version, operator.gt)
-
-
-def is_older_than(module_name, given_version):
-    return compare_versions(module_name, given_version, operator.lt)
 
 
 TEST_TABLES = {
@@ -486,7 +468,7 @@ def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(discard=("pandas",)),
+    params=_get_backends_to_test(),
     scope="session",
 )
 def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
@@ -501,7 +483,7 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(keep=("pandas", "pyspark")),
+    params=_get_backends_to_test(keep=("pyspark",)),
     scope="session",
 )
 def udf_backend(request, data_dir, tmp_path_factory, worker_id):

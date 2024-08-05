@@ -15,7 +15,6 @@ import ibis.common.exceptions as com
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",

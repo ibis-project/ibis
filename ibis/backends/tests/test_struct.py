@@ -244,12 +244,6 @@ def test_keyword_fields(con, nullable):
     raises=PolarsColumnNotFoundError,
     reason="doesn't seem to support IN-style subqueries on structs",
 )
-@pytest.mark.notimpl(
-    # https://github.com/pandas-dev/pandas/issues/58909
-    ["pandas"],
-    raises=TypeError,
-    reason="unhashable type: 'dict'",
-)
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.5"],
     reason="requires pyspark 3.5",
