@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -25,6 +26,11 @@ from ibis.backends.sql.rewrites import (
     replace,
 )
 from ibis.common.deferred import var
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.operations as ir
 
 y = var("y")
 start = var("start")
@@ -151,6 +157,28 @@ class MSSQLCompiler(SQLGlotCompiler):
         ):
             return None
         return spec
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
+        import ibis
+
+        table_expr = expr.as_table()
+        conversions = {
+            name: ibis.ifelse(table_expr[name], 1, 0).cast(dt.boolean)
+            for name, typ in table_expr.schema().items()
+            if typ.is_boolean()
+        }
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
 
     def visit_RandomUUID(self, op, **_):
         return self.f.newid()

@@ -726,21 +726,6 @@ GO"""
                 if not df.empty:
                     cur.executemany(insert_stmt, data)
 
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-        conversions = {
-            name: ibis.ifelse(table_expr[name], 1, 0).cast("boolean")
-            for name, typ in table_expr.schema().items()
-            if typ.is_boolean()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super().compiler.to_sqlglot(table_expr, limit=limit, params=params)
-
     def _cursor_batches(
         self,
         expr: ir.Expr,
