@@ -13,15 +13,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import BaseBackend, NoUrl
-from ibis.backends.pandas.rewrites import (
-    bind_unbound_table,
-    replace_parameter,
-    rewrite_join,
-)
 from ibis.backends.polars.compiler import translate
+from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
 from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.expr.rewrites import lower_stringslice
+from ibis.expr.rewrites import lower_stringslice, replace_parameter
 from ibis.formats.polars import PolarsSchema
 from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 

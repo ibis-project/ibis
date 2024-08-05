@@ -628,7 +628,7 @@ def test_first_last(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "exasol", "flink", "pandas", "pyspark", "sqlite"],
+    ["clickhouse", "exasol", "flink", "pyspark", "sqlite"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
@@ -1154,9 +1154,6 @@ def test_median(alltypes, df):
 )
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
-@pytest.mark.notimpl(
-    ["pandas"], raises=TypeError, reason="results aren't correctly typed"
-)
 @pytest.mark.parametrize(
     "func",
     [
@@ -1285,16 +1282,7 @@ def test_group_concat(
 
 
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "datafusion",
-        "druid",
-        "flink",
-        "impala",
-        "pandas",
-        "pyspark",
-        "sqlite",
-    ],
+    ["clickhouse", "datafusion", "druid", "flink", "impala", "pyspark", "sqlite"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.parametrize("filtered", [False, True])
@@ -1318,7 +1306,7 @@ def test_group_concat_ordered(alltypes, df, filtered):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    ["clickhouse", "pandas", "pyspark", "flink"], raises=com.UnsupportedOperationError
+    ["clickhouse", "pyspark", "flink"], raises=com.UnsupportedOperationError
 )
 @pytest.mark.parametrize("filtered", [True, False])
 def test_collect_ordered(alltypes, df, filtered):
@@ -1653,21 +1641,7 @@ def test_group_by_expr(backend, con):
 
 
 @pytest.mark.parametrize(
-    "value",
-    [
-        ibis.literal("a"),
-        param(
-            ibis.null("str"),
-            marks=[
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    reason="nulls are discarded by default in group bys",
-                    raises=IndexError,
-                ),
-            ],
-        ),
-    ],
-    ids=["string", "null"],
+    "value", [ibis.literal("a"), ibis.null("str")], ids=["string", "null"]
 )
 @pytest.mark.notyet(
     ["mssql"], raises=PyODBCProgrammingError, reason="not supported by the database"

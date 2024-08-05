@@ -93,7 +93,6 @@ def test_coerced_to_value(typehint, value, expected):
     assert pat.match(value, {}) == expected
 
 
-@pytest.mark.pandas
 def test_coerced_to_interval_value():
     import pandas as pd
 

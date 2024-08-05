@@ -244,7 +244,6 @@ _LIMIT = {
 
 
 @pytest.mark.notimpl(["mssql"])
-@pytest.mark.never(["pandas"], reason="pandas does not support SQL")
 def test_sql(backend, con):
     # execute the expression using SQL query
     table = backend.format_table("functional_alltypes")
@@ -343,7 +342,6 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -481,7 +479,7 @@ def employee_data_2_temp_table(
     con.drop_table(temp_table_name, force=True)
 
 
-@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
+@pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 def test_insert_no_overwrite_from_dataframe(
     backend, con, test_employee_data_2, employee_empty_temp_table
 ):
@@ -495,7 +493,7 @@ def test_insert_no_overwrite_from_dataframe(
     )
 
 
-@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
+@pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -519,7 +517,7 @@ def test_insert_overwrite_from_dataframe(
     )
 
 
-@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
+@pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 def test_insert_no_overwrite_from_expr(
     backend, con, employee_empty_temp_table, employee_data_2_temp_table
 ):
@@ -535,7 +533,7 @@ def test_insert_no_overwrite_from_expr(
     )
 
 
-@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
+@pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
@@ -559,7 +557,7 @@ def test_insert_overwrite_from_expr(
     )
 
 
-@pytest.mark.notimpl(["polars", "pandas"], reason="`insert` method not implemented")
+@pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
@@ -586,11 +584,10 @@ def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
 
 
 @pytest.mark.notimpl(
-    ["polars", "pandas"],
-    raises=AttributeError,
-    reason="`insert` method not implemented",
+    ["polars"], raises=AttributeError, reason="`insert` method not implemented"
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notimpl(["polars"], raises=AttributeError)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -618,7 +615,6 @@ def test_insert_from_memtable(con, temp_table):
         "impala",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "flink",
         "sqlite",
@@ -647,7 +643,7 @@ def test_list_catalogs(con):
 
 
 @pytest.mark.notyet(
-    ["druid", "pandas", "polars"],
+    ["druid", "polars"],
     raises=AttributeError,
     reason="doesn't support the common notion of a database",
 )
@@ -731,11 +727,6 @@ def test_unsigned_integer_type(con, temp_table):
             "mysql://ibis:ibis@localhost:3306",
             marks=mark.mysql,
             id="mysql",
-        ),
-        param(
-            "pandas://",
-            marks=mark.pandas,
-            id="pandas",
         ),
         param(
             "polars://",
@@ -901,7 +892,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "mssql",
                         "mysql",
                         "oracle",
-                        "pandas",
                         "postgres",
                         "pyspark",
                         "risingwave",
@@ -927,7 +917,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "mssql",
                         "mysql",
                         "oracle",
-                        "pandas",
                         "postgres",
                         "pyspark",
                         "risingwave",
@@ -953,7 +942,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "mssql",
                         "mysql",
                         "oracle",
-                        "pandas",
                         "polars",
                         "postgres",
                         "pyspark",
@@ -1249,7 +1237,7 @@ def test_set_backend(con, monkeypatch):
     "name",
     [
         param(name, marks=getattr(mark, name), id=name)
-        for name in ("datafusion", "duckdb", "polars", "sqlite", "pandas")
+        for name in ("datafusion", "duckdb", "polars", "sqlite")
     ],
 )
 def test_set_backend_name(name, monkeypatch):
@@ -1298,7 +1286,6 @@ def test_set_backend_url(url, monkeypatch):
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -1456,7 +1443,7 @@ def test_list_catalogs_databases(con_create_catalog_database):
 
 
 @pytest.mark.notyet(
-    ["pandas", "polars", "datafusion"], reason="this is a no-op for in-memory backends"
+    ["polars", "datafusion"], reason="this is a no-op for in-memory backends"
 )
 @pytest.mark.notyet(
     ["trino", "clickhouse", "impala", "bigquery", "flink"],
@@ -1563,7 +1550,7 @@ def test_schema_with_caching(alltypes):
 @pytest.mark.notyet(
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
-@pytest.mark.notyet(["pandas", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notyet(
     ["datafusion"], reason="Doesn't support table creation from records"
 )
@@ -1609,7 +1596,7 @@ DEFAULT_CON_ATTR = "con"
 
 
 @pytest.mark.parametrize("top_level", [True, False])
-@pytest.mark.never(["pandas", "polars"], reason="don't have a connection concept")
+@pytest.mark.never(["polars"], reason="don't have a connection concept")
 def test_from_connection(con, top_level):
     backend = getattr(ibis, con.name) if top_level else type(con)
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
@@ -1717,7 +1704,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
-@pytest.mark.notyet(["pandas", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["polars"], reason="Doesn't support insert")
 @pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
 @pytest.mark.notimpl(
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
@@ -1742,7 +1729,6 @@ def test_insert_into_table_missing_columns(con, temp_table):
     assert result == expected_result
 
 
-@pytest.mark.never(["pandas"], raises=AssertionError, reason="backend is going away")
 @pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
 @pytest.mark.notyet(
     ["clickhouse", "flink"],

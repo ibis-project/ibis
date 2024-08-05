@@ -16,7 +16,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.selectors as s
 from ibis import _
-from ibis.backends.conftest import is_newer_than, is_older_than
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     ExaQueryError,
@@ -355,7 +354,7 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     raises=PyDruidProgrammingError,
     reason="requires enabling window functions",
 )
-@pytest.mark.notimpl(["polars", "pandas"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["oracle"],
     raises=OracleDatabaseError,
@@ -570,7 +569,7 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pandas", "polars", "mssql", "druid"])
+@pytest.mark.notimpl(["polars", "mssql", "druid"])
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
@@ -707,19 +706,12 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
         getattr(t["col2"], op2)(nulls_first=nf2),
     )
 
-    if con.name == "pandas" and nf1 != nf2:
-        with pytest.raises(
-            ValueError,
-            match=f"{con.name} does not support specifying null ordering for individual column",
-        ):
-            con.execute(expr)
-    else:
-        result = con.execute(expr).reset_index(drop=True)
-        expected = pd.DataFrame(expected)
+    result = con.execute(expr).reset_index(drop=True)
+    expected = pd.DataFrame(expected)
 
-        tm.assert_frame_equal(
-            result.replace({np.nan: None}), expected.replace({np.nan: None})
-        )
+    tm.assert_frame_equal(
+        result.replace({np.nan: None}), expected.replace({np.nan: None})
+    )
 
 
 @pytest.mark.notyet(
@@ -818,11 +810,6 @@ def test_table_info_large(con):
                     ["oracle"],
                     raises=(OracleDatabaseError, com.OperationNotDefinedError),
                     reason="Mode is not supported and ORA-02000: missing AS keyword",
-                ),
-                pytest.mark.notimpl(
-                    ["pandas"],
-                    condition=is_newer_than("pandas", "2.1.0"),
-                    reason="FutureWarning: concat empty or all-NA entries is deprecated",
                 ),
                 pytest.mark.notyet(
                     ["polars"],
@@ -1090,7 +1077,7 @@ def test_int_scalar(alltypes):
     assert result.dtype == np.int32
 
 
-@pytest.mark.notimpl(["datafusion", "pandas", "polars", "druid"])
+@pytest.mark.notimpl(["datafusion", "polars", "druid"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
@@ -1107,17 +1094,7 @@ def test_exists(batting, awards_players, method_name):
 
 
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "mssql",
-        "mysql",
-        "pandas",
-        "pyspark",
-        "polars",
-        "druid",
-        "oracle",
-        "exasol",
-    ],
+    ["datafusion", "mssql", "mysql", "pyspark", "polars", "druid", "oracle", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 def test_typeof(con):
@@ -1131,7 +1108,7 @@ def test_typeof(con):
 @pytest.mark.notimpl(["polars"], reason="incorrect answer")
 @pytest.mark.notyet(["impala"], reason="can't find table in subquery")
 @pytest.mark.notimpl(["datafusion", "druid"])
-@pytest.mark.notimpl(["pyspark"], condition=is_older_than("pyspark", "3.5.0"))
+@pytest.mark.xfail_version(pyspark=["pyspark<3.5"])
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 @pytest.mark.notyet(
     ["risingwave"],
@@ -1390,9 +1367,7 @@ def test_select_distinct_order_by_expr(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["polars", "pandas"],
-    reason="We don't fuse these ops yet for non-SQL backends",
-    strict=False,
+    ["polars"], reason="We don't fuse these ops yet for non-SQL backends", strict=False
 )
 @pytest.mark.parametrize(
     "ops",
@@ -1546,7 +1521,7 @@ def test_distinct_on_keep_is_none(backend, on):
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["pandas", "risingwave", "flink", "exasol"])
+@pytest.mark.notimpl(["risingwave", "flink", "exasol"])
 @pytest.mark.notyet(
     [
         "sqlite",
@@ -1611,7 +1586,6 @@ def test_hash(backend, alltypes, dtype):
         "flink",
         "impala",
         "mysql",
-        "pandas",
         "polars",
         "postgres",
         "pyspark",
@@ -1642,7 +1616,6 @@ def test_hashbytes(backend, alltypes):
         "impala",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -1684,7 +1657,6 @@ def test_hexdigest(backend, alltypes):
             [0, 1, 2],
             ["0", "1", "2"],
             marks=[
-                pytest.mark.notimpl(["pandas"], reason="casts to ['0']"),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -1723,7 +1695,7 @@ def test_cast(con, from_type, to_type, from_val, expected):
     assert result == expected
 
 
-@pytest.mark.notimpl(["pandas", "oracle", "sqlite"])
+@pytest.mark.notimpl(["oracle", "sqlite"])
 @pytest.mark.parametrize(
     ("from_val", "to_type", "expected"),
     [
@@ -1770,7 +1742,6 @@ def test_try_cast(con, from_val, to_type, expected):
         "exasol",
         "mysql",
         "oracle",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",
@@ -1803,7 +1774,6 @@ def test_try_cast_null(con, from_val, to_type):
 
 @pytest.mark.notimpl(
     [
-        "pandas",
         "datafusion",
         "druid",
         "mysql",
@@ -1829,7 +1799,6 @@ def test_try_cast_table(backend, con):
 
 @pytest.mark.notimpl(
     [
-        "pandas",
         "datafusion",
         "mysql",
         "oracle",
@@ -2355,7 +2324,6 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["pandas"], raises=IndexError, reason="NaN isn't treated as NULL")
 @pytest.mark.notimpl(
     ["druid"],
     raises=AttributeError,
@@ -2373,11 +2341,6 @@ def test_topk_counts_null(con):
     "clickhouse",
     raises=AssertionError,
     reason="ClickHouse returns False for x.isin([None])",
-)
-@pytest.mark.notimpl(
-    ["pandas"],
-    raises=AssertionError,
-    reason="null isin semantics are not implemented for pandas",
 )
 @pytest.mark.never(
     "mssql",

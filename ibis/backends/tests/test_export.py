@@ -27,10 +27,7 @@ from ibis.backends.tests.errors import (
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 
-limit = [
-    # limit not implemented for pandas-family backends
-    param(42, id="limit", marks=pytest.mark.notimpl(["pandas"])),
-]
+limit = [param(42, id="limit")]
 
 no_limit = [param(None, id="nolimit")]
 
@@ -138,7 +135,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "flink"])
+@pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -153,7 +150,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "datafusion", "flink"])
+@pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -170,7 +167,6 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas"])
 @pytest.mark.notimpl(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -270,7 +266,6 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -423,7 +418,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
-@pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
+@pytest.mark.notyet(["mssql"], raises=PyDeltaTableError)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")

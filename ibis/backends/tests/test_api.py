@@ -26,7 +26,6 @@ def test_version(backend):
         "sqlite",
         "datafusion",
         "exasol",
-        "pandas",
         "druid",
         "oracle",
         "bigquery",
