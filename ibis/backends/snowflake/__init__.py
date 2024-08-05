@@ -487,10 +487,10 @@ $$ {defn["source"]} $$"""
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        chunk_size: int = 1_000_000,
     ) -> Iterator[pd.DataFrame | pd.Series | Any]:
         self._run_pre_execute_hooks(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
+        sql = self.compile(expr, limit=limit, params=params)
         target_schema = expr.as_table().schema()
         converter = functools.partial(
             SnowflakePandasData.convert_table, schema=target_schema
