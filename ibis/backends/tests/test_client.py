@@ -27,12 +27,16 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
+    ClickHouseDatabaseError,
     ExaQueryError,
+    GoogleNotFound,
     ImpalaHiveServer2Error,
+    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
     PyODBCProgrammingError,
+    PySparkAnalysisException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -1392,13 +1396,8 @@ def test_create_catalog(con_create_catalog):
 def test_create_database(con_create_database):
     database = gen_name("test_create_database")
     con_create_database.create_database(database)
-    if con_create_database.name == "exasol":
-        database = database.upper()
     assert database in con_create_database.list_databases()
-    database = database.lower()
     con_create_database.drop_database(database)
-    if con_create_database.name == "exasol":
-        database = database.upper()
     assert database not in con_create_database.list_databases()
 
 
@@ -1421,15 +1420,11 @@ def test_create_schema(con_create_database):
     with pytest.warns(FutureWarning):
         con_create_database.create_schema(schema)
     with pytest.warns(FutureWarning):
-        if con_create_database.name == "exasol":
-            schema = schema.upper()
         assert schema in con_create_database.list_schemas()
         schema = schema.lower()
     with pytest.warns(FutureWarning):
         con_create_database.drop_schema(schema)
     with pytest.warns(FutureWarning):
-        if con_create_database.name == "exasol":
-            schema = schema.upper()
         assert schema not in con_create_database.list_schemas()
 
 
@@ -1629,3 +1624,62 @@ def test_from_connection(con, top_level):
     new_con = backend.from_connection(getattr(con, CON_ATTR.get(con.name, "con")))
     result = int(new_con.execute(ibis.literal(1, type="int")))
     assert result == 1
+
+
+@pytest.mark.notimpl(
+    ["flink"], raises=com.IbisError, reason="not yet implemented for Flink"
+)
+def test_no_accidental_cross_database_table_load(con_create_database):
+    con = con_create_database
+
+    # Create an extra database
+    con.create_database(dbname := gen_name("dummy_db"))
+
+    # Create table with same name in current db and dummy db
+    con.create_table(
+        table := gen_name("table"), schema=(sch1 := ibis.schema({"a": "int"}))
+    )
+
+    con.create_table(table, schema=ibis.schema({"b": "string"}), database=dbname)
+
+    # Can grab table object from current db:
+    t = con.table(table)
+    assert t.schema().equals(sch1)
+
+    con.drop_table(table)
+
+    # NOTE: this entire block of exception type munging goes away once we unify
+    # table-not-found exceptions
+
+    # always allowed to raise
+    always_allowed = (com.IbisError,)
+
+    # these exception types are None when the backend dependency that
+    # defines them is not installed
+    allowed_when_installed = filter(
+        None,
+        (
+            ClickHouseDatabaseError,
+            PySparkAnalysisException,
+            MySQLProgrammingError,
+            ExaQueryError,
+            SnowflakeProgrammingError,
+            GoogleNotFound,
+        ),
+    )
+
+    # we only want to allow base Exception when we're testing datafusion
+    # otherwise any exceptions, including those that are unrelated to the
+    # problem under test will be considered correctly raising
+    datafusion_only = (Exception,) * (con.name == "datafusion")
+
+    # Now attempting to load same table name without specifying db should fail
+    with pytest.raises((*always_allowed, *allowed_when_installed, *datafusion_only)):
+        t = con.table(table)
+
+    # But can load if specify other db
+    t = con.table(table, database=dbname)
+
+    # Clean up
+    con.drop_table(table, database=dbname)
+    con.drop_database(dbname)

@@ -337,41 +337,29 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         -------
         sch.Schema
             Ibis schema
-
         """
-        conditions = [sg.column("table_name").eq(sge.convert(table_name))]
-
-        if catalog is not None:
-            conditions.append(sg.column("table_catalog").eq(sge.convert(catalog)))
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
-
-        query = (
-            sg.select(
-                "column_name",
-                "data_type",
-                sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
+        query = sge.Describe(
+            this=sg.table(
+                table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
             )
-            .from_(sg.table("columns", db="information_schema"))
-            .where(sg.and_(*conditions))
-            .order_by("ordinal_position")
-        )
+        ).sql(self.dialect)
 
-        with self._safe_raw_sql(query) as cur:
-            meta = cur.fetch_arrow_table()
-
-        if not meta:
+        try:
+            result = self.con.sql(query)
+        except duckdb.CatalogException:
             raise exc.IbisError(f"Table not found: {table_name!r}")
+        else:
+            meta = result.fetch_arrow_table()
 
         names = meta["column_name"].to_pylist()
-        types = meta["data_type"].to_pylist()
-        nullables = meta["nullable"].to_pylist()
+        types = meta["column_type"].to_pylist()
+        nullables = meta["null"].to_pylist()
 
+        type_mapper = self.compiler.type_mapper
         return sch.Schema(
             {
-                name: self.compiler.type_mapper.from_string(typ, nullable=nullable)
-                for name, typ, nullable in zip(names, types, nullables)
+                name: type_mapper.from_string(typ, nullable=null == "YES")
+                for name, typ, null in zip(names, types, nullables)
             }
         )
 
@@ -512,7 +500,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         query = (
             sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
             .from_(f.duckdb_extensions())
-            .where(sg.and_(C.installed, C.loaded))
+            .where(C.installed, C.loaded)
         )
         with self._safe_raw_sql(query) as cur:
             installed = map(itemgetter(0), cur.fetchall())

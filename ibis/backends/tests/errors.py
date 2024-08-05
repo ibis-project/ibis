@@ -55,8 +55,9 @@ except ImportError:
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
+    from google.api_core.exceptions import NotFound as GoogleNotFound
 except ImportError:
-    GoogleBadRequest = None
+    GoogleBadRequest = GoogleNotFound = None
 
 try:
     from polars.exceptions import ColumnNotFoundError as PolarsColumnNotFoundError

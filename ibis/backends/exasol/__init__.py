@@ -345,15 +345,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         if temp:
             raise com.UnsupportedOperationError(
-                "Creating temp tables is not supported by Exasol."
+                f"Creating temp tables is not supported by {self.name}"
             )
-
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Exasol"
-            )
-        else:
-            database = None
 
         quoted = self.compiler.quoted
 
@@ -435,7 +428,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             raise NotImplementedError(
                 "`catalog` argument is not supported for the Exasol backend"
             )
-        drop_schema = sg.exp.Drop(kind="SCHEMA", this=name, exists=force)
+        drop_schema = sg.exp.Drop(
+            kind="SCHEMA",
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            exists=force,
+        )
         with self.begin() as con:
             con.execute(drop_schema.sql(dialect=self.dialect))
 
@@ -446,7 +443,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             raise NotImplementedError(
                 "`catalog` argument is not supported for the Exasol backend"
             )
-        create_database = sg.exp.Create(kind="SCHEMA", this=name, exists=force)
+        create_database = sg.exp.Create(
+            kind="SCHEMA",
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            exists=force,
+        )
         open_database = self.current_database
         with self.begin() as con:
             con.execute(create_database.sql(dialect=self.dialect))

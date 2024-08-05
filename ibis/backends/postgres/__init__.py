@@ -303,6 +303,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
 
+    @property
+    def _session_temp_db(self) -> str | None:
+        # Postgres doesn't assign the temporary table database until the first
+        # temp table is created in a given session.
+        # Before that temp table is created, this will return `None`
+        # After a temp table is created, it will return `pg_temp_N` where N is
+        # some integer
+        res = self.raw_sql(
+            "select nspname from pg_namespace where oid = pg_my_temp_schema()"
+        ).fetchone()
+        if res is not None:
+            return res[0]
+        return res
+
     def list_tables(
         self,
         like: str | None = None,
@@ -458,7 +472,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 on=n.oid.eq(p.pronamespace),
                 join_type="LEFT",
             )
-            .where(sg.and_(*predicates))
+            .where(*predicates)
         )
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:
@@ -571,6 +585,16 @@ $$""".format(**self._get_udf_source(udf_node))
 
         format_type = self.compiler.f["pg_catalog.format_type"]
 
+        # If no database is specified, assume the current database
+        db = database or self.current_database
+
+        dbs = [sge.convert(db)]
+
+        # If a database isn't specified, then include temp tables in the
+        # returned values
+        if database is None and (temp_table_db := self._session_temp_db) is not None:
+            dbs.append(sge.convert(temp_table_db))
+
         type_info = (
             sg.select(
                 a.attname.as_("column_name"),
@@ -591,7 +615,7 @@ $$""".format(**self._get_udf_source(udf_node))
             .where(
                 a.attnum > 0,
                 sg.not_(a.attisdropped),
-                n.nspname.eq(sge.convert(database)) if database is not None else TRUE,
+                n.nspname.isin(*dbs),
                 c.relname.eq(sge.convert(name)),
             )
             .order_by(a.attnum)

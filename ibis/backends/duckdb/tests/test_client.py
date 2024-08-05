@@ -345,3 +345,33 @@ def test_hugging_face(con, url, method_name):
     method = getattr(con, method_name)
     t = method(url)
     assert t.count().execute() > 0
+
+
+def test_multiple_tables_with_the_same_name(tmp_path):
+    # check within the same database
+    path = tmp_path / "test1.ddb"
+    with duckdb.connect(str(path)) as con:
+        con.execute("CREATE TABLE t (x INT)")
+        con.execute("CREATE SCHEMA s")
+        con.execute("CREATE TABLE s.t (y STRING)")
+
+    con = ibis.duckdb.connect(path)
+    t1 = con.table("t")
+    t2 = con.table("t", database="s")
+    assert t1.schema() == ibis.schema({"x": "int32"})
+    assert t2.schema() == ibis.schema({"y": "string"})
+
+    path = tmp_path / "test2.ddb"
+    with duckdb.connect(str(path)) as c:
+        c.execute("CREATE TABLE t (y DOUBLE[])")
+
+    # attach another catalog and check that too
+    con.attach(path, name="w")
+    t1 = con.table("t")
+    t2 = con.table("t", database="s")
+    assert t1.schema() == ibis.schema({"x": "int32"})
+    assert t2.schema() == ibis.schema({"y": "string"})
+
+    t3 = con.table("t", database="w.main")
+
+    assert t3.schema() == ibis.schema({"y": "array<float64>"})
