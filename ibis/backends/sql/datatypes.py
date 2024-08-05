@@ -467,11 +467,8 @@ class PostgresType(SqlglotType):
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
         if text.lower().startswith("vector"):
             text = "vector"
-        if dtype := cls.unknown_type_strings.get(text.lower()):
-            return dtype
 
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
+        return super().from_string(text, nullable=nullable)
 
 
 class RisingWaveType(PostgresType):
