@@ -321,26 +321,27 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
             register_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             register_func(udf_node)
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
-        import pyflink.table.udf
+        from pyflink.table.udf import udf
 
         from ibis.backends.flink.datatypes import FlinkType
 
         name = type(udf_node).__name__
         self._table_env.drop_temporary_function(name)
-        udf = pyflink.table.udf.udf(
+
+        func = udf(
             udf_node.__func__,
             result_type=FlinkType.from_ibis(udf_node.dtype),
             func_type=_INPUT_TYPE_TO_FUNC_TYPE[udf_node.__input_type__],
         )
-        self._table_env.create_temporary_function(name, udf)
+        self._table_env.create_temporary_function(name, func)
 
-    _compile_pandas_udf = _register_udf
-    _compile_python_udf = _register_udf
+    _register_pandas_udf = _register_udf
+    _register_python_udf = _register_udf
 
     def compile(
         self,
