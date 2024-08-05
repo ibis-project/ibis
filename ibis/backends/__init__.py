@@ -1043,14 +1043,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
 
-    def _to_sqlglot(self, expr: ir.Expr, **kwargs) -> sg.exp.Expression:
-        """Convert an Ibis expression to a sqlglot expression.
-
-        Called by `ibis.to_sql`; gives the backend an opportunity to generate
-        nicer SQL for human consumption.
-        """
-        raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
-
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""
 

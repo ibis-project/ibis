@@ -100,7 +100,6 @@ def load_backend(name: str) -> BaseBackend:
     # - compile
     # - has_operation
     # - _from_url
-    # - _to_sqlglot
     #
     # We also copy over the docstring from `do_connect` to the proxy `connect`
     # method, since that's where all the backend-specific kwargs are currently
