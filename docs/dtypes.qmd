@@ -1,0 +1,101 @@
+## How Ibis deals with datatypes of execution output
+
+The document aims to specify how new backends and to extent possible existing backends output will be typed
+in in-memory containers.
+
+It will also stipulate the structure of the output where there might be ambiguity.
+
+We start with PyArrow, which we then use to inform the pandas output specification.
+
+
+### Things to cover
+
+1. Nullability
+1. Types that aren't possible in a given backend
+1. Representation of complex types where there are multiple possible representations
+1. Representation of scalar null values
+1. Representation of scalar non-null values
+
+If an Ibis type matches a type in the output format exactly, **including
+nullability**, then a full description will not be given and it can be assumed that
+
+### Nullability
+
+`None` will be the chosen for value NULL values in display and execution for all output formats.
+
+### PyArrow
+
+#### Boolean
+
+#### Fixed with integer types: `int{8,16,32,64}`
+
+Matches exactly
+
+#### Fixed with floating point types: `float{32,64}`
+
+Matches exactly
+
+#### Decimal types: `decimal(p, s)`
+
+Arrow supports decimal64, decimal128 and decimal256(?).
+
+The appropriate type will be chosen depending on precision.
+
+#### String
+
+Matches exactly
+
+#### Binary
+
+Matches exactly
+
+#### Timestamp
+
+TODO
+
+#### Date
+
+PyArrow has date32 and date64
+
+#### Time
+
+PyArrow has time32 and time64
+
+#### Interval
+
+Yikes
+
+#### JSON
+
+Also yikes, but see the new canonical extension type coming up.
+
+#### Geospatial
+
+Currently these will display as shapely values, and carry an underlying binary representation.
+
+#### Array
+
+Sometimes a numpy array (nesting is a problem for PyArrow)
+Sometimes a list
+
+#### Map
+
+Matches exactly
+
+#### Struct
+
+Matches exactly
+
+#### Inet
+
+String
+
+#### Macaddr
+
+String
+
+#### UUID
+
+String
+
+### pandas
