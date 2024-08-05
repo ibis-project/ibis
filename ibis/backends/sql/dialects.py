@@ -5,6 +5,7 @@ import math
 from copy import deepcopy
 
 import sqlglot.expressions as sge
+import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
@@ -218,6 +219,16 @@ class Flink(Hive):
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
         }
+
+        # Flink is like Hive except where it might actually be convenient
+        #
+        # UNNEST works like the SQL standard, and not like Hive, so we have to
+        # override sqlglot here and convince it that flink is not like Hive
+        # when it comes to unnesting
+        TRANSFORMS.pop(sge.Unnest, None)
+
+        def unnest_sql(self, expression: sge.Unnest) -> str:
+            return sgn.Generator.unnest_sql(self, expression)
 
         def struct_sql(self, expression: sge.Struct) -> str:
             from sqlglot.optimizer.annotate_types import annotate_types
