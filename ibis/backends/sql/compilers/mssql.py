@@ -164,7 +164,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs: Any,
     ):
         """Compile an Ibis expression to a sqlglot object."""
         import ibis
@@ -178,7 +177,7 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
-        return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
+        return super().to_sqlglot(table_expr, limit=limit, params=params)
 
     def visit_RandomUUID(self, op, **_):
         return self.f.newid()

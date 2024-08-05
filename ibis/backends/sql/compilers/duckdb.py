@@ -111,9 +111,8 @@ class DuckDBCompiler(SQLGlotCompiler):
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs: Any,
     ):
-        sql = super().to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        sql = super().to_sqlglot(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial

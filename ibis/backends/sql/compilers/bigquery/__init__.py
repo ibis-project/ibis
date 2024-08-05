@@ -198,8 +198,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         session_dataset_id: str | None = None,
-        session_dataset_project: str | None = None,
-        **kwargs: Any,
+        session_project: str | None = None,
     ) -> Any:
         """Compile an Ibis expression.
 
@@ -213,11 +212,9 @@ class BigQueryCompiler(SQLGlotCompiler):
         params
             Named unbound parameters
         session_dataset_id
-            Optional dataset ID to qualify memtable references
-        session_dataset_project
-            Optional project ID to qualify memtable references
-        kwargs
-            Keyword arguments passed to the compiler
+            Optional dataset ID to qualify memtable references.
+        session_project
+            Optional project ID to qualify memtable references.
 
         Returns
         -------
@@ -226,7 +223,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             backend.
 
         """
-        sql = super().to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        sql = super().to_sqlglot(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
@@ -234,7 +231,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         result = sql.transform(
             _qualify_memtable,
             dataset=session_dataset_id,
-            project=session_dataset_project,
+            project=session_project,
         ).transform(_remove_null_ordering_from_unsupported_window)
 
         if geocols:

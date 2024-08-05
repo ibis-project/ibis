@@ -121,7 +121,6 @@ class PostgresCompiler(SQLGlotCompiler):
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs: Any,
     ):
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
@@ -129,7 +128,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
         if conversions:
             table_expr = table_expr.mutate(**conversions)
-        return super().to_sqlglot(table_expr, limit=limit, params=params, **kwargs)
+        return super().to_sqlglot(table_expr, limit=limit, params=params)
 
     def _compile_python_udf(self, udf_node: ops.ScalarUDF):
         config = udf_node.__config__

@@ -541,7 +541,6 @@ class SQLGlotCompiler(abc.ABC):
         *,
         limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        **_: Any,
     ):
         import ibis
 
