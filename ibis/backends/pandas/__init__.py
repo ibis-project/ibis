@@ -171,11 +171,13 @@ class BasePandasBackend(BaseBackend, NoUrl):
         return ops.DatabaseTable(name, overridden_schema, self).to_expr()
 
     def get_schema(self, table_name, *, database=None):
-        try:
-            schema = self.schemas[table_name]
-        except KeyError:
-            df = self.dictionary[table_name]
-            self.schemas[table_name] = schema = PandasData.infer_table(df)
+        df = self.dictionary.get(table_name)
+        if df is None:
+            raise com.TableNotFound(table_name)
+        else:
+            schema = self.schemas.get(table_name)
+            if schema is None:
+                self.schemas[table_name] = schema = PandasData.infer_table(df)
 
         return schema
 

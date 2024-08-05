@@ -11,7 +11,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-from ibis.backends.tests.errors import PyDruidProgrammingError
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
     ["sqlite"],
@@ -292,7 +291,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=com.TableNotFound)
 @pytest.mark.parametrize(
     ("how", "nrows", "gen_right", "keys"),
     [

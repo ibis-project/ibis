@@ -14,6 +14,8 @@ import numpy as np
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
+from pymysql.constants.ER import NO_SUCH_TABLE
+from pymysql.err import ProgrammingError
 
 import ibis
 import ibis.common.exceptions as com
@@ -211,7 +213,6 @@ class Backend(SQLBackend, CanCreateDatabase):
                 .limit(0)
                 .sql(self.dialect)
             )
-
             return sch.Schema(
                 {
                     field.name: _type_from_cursor_info(descr, field)
@@ -227,8 +228,15 @@ class Backend(SQLBackend, CanCreateDatabase):
         ).sql(self.dialect)
 
         with self.begin() as cur:
-            cur.execute(sge.Describe(this=table).sql(self.dialect))
-            result = cur.fetchall()
+            query = sge.Describe(this=table).sql(self.dialect)
+
+            try:
+                cur.execute(query)
+            except ProgrammingError as e:
+                if e.args[0] == NO_SUCH_TABLE:
+                    raise com.TableNotFound(name) from e
+            else:
+                result = cur.fetchall()
 
         type_mapper = self.compiler.type_mapper
         fields = {

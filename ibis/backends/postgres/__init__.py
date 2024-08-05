@@ -603,7 +603,7 @@ $$""".format(**self._get_udf_source(udf_node))
             rows = cur.fetchall()
 
         if not rows:
-            raise com.IbisError(f"Table not found: {name!r}")
+            raise com.TableNotFound(name)
 
         return sch.Schema(
             {

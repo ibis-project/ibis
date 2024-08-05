@@ -27,7 +27,12 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 
 pytestmark = [
     pytest.mark.notimpl(
-        ["druid"], raises=(com.OperationNotDefinedError, PyDruidProgrammingError)
+        ["druid"],
+        raises=(
+            com.OperationNotDefinedError,
+            com.TableNotFound,
+            PyDruidProgrammingError,
+        ),
     )
 ]
 

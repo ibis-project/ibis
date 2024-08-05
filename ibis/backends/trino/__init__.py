@@ -160,7 +160,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         if not meta:
             fqn = sg.table(table_name, db=database, catalog=catalog).sql(self.name)
-            raise com.IbisError(f"Table not found: {fqn}")
+            raise com.TableNotFound(fqn)
 
         return sch.Schema(
             {
