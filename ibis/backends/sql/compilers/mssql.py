@@ -152,7 +152,7 @@ class MSSQLCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def visit_RandomUUID(self, op, **kwargs):
+    def visit_RandomUUID(self, op, **_):
         return self.f.newid()
 
     def visit_StringLength(self, op, *, arg):
