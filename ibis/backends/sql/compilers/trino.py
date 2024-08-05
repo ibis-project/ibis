@@ -22,7 +22,6 @@ from ibis.backends.sql.compilers.base import (
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
-    exclude_nulls_from_array_collect,
     exclude_unsupported_window_frame_from_ops,
 )
 from ibis.util import gen_name
@@ -37,7 +36,6 @@ class TrinoCompiler(SQLGlotCompiler):
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
-        exclude_nulls_from_array_collect,
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )
@@ -177,6 +175,12 @@ class TrinoCompiler(SQLGlotCompiler):
             self.f.coalesce(self.f.contains(arg, other), FALSE),
             NULL,
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        if ignore_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_JSONGetItem(self, op, *, arg, index):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'

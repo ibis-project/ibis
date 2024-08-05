@@ -440,10 +440,11 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(
-            this=self.agg.array_agg(arg, where=where, order_by=order_by)
-        )
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        out = self.agg.array_agg(arg, where=where, order_by=order_by)
+        if ignore_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)

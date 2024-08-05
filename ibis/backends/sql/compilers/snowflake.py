@@ -455,7 +455,12 @@ $$""",
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def _array_collect(self, *, arg, where, order_by):
+    def _array_collect(self, *, arg, where, order_by, ignore_null=True):
+        if not ignore_null:
+            raise com.UnsupportedOperationError(
+                "`ignore_null=False` is not supported by the snowflake backend"
+            )
+
         if where is not None:
             arg = self.if_(where, arg, NULL)
 
@@ -466,8 +471,10 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by):
-        return self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        return self._array_collect(
+            arg=arg, where=where, order_by=order_by, ignore_null=ignore_null
+        )
 
     def visit_First(self, op, *, arg, where, order_by):
         out = self._array_collect(arg=arg, where=where, order_by=order_by)

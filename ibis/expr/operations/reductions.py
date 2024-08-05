@@ -368,6 +368,7 @@ class ArrayCollect(Filterable, Reduction):
 
     arg: Column
     order_by: VarTuple[SortKey] = ()
+    ignore_null: bool = True
 
     @attribute
     def dtype(self):

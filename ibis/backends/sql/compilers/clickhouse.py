@@ -61,7 +61,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Arbitrary: "any",
         ops.ArgMax: "argMax",
         ops.ArgMin: "argMin",
-        ops.ArrayCollect: "groupArray",
         ops.ArrayContains: "has",
         ops.ArrayFlatten: "arrayFlatten",
         ops.ArrayIntersect: "arrayIntersect",
@@ -603,6 +602,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        if not ignore_null:
+            raise com.UnsupportedOperationError(
+                "`ignore_null=False` is not supported by the pyspark backend"
+            )
+        return self.agg.groupArray(arg, where=where, order_by=order_by)
 
     def visit_CountDistinctStar(
         self, op: ops.CountDistinctStar, *, where, **_: Any

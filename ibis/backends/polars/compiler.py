@@ -989,7 +989,7 @@ def array_column(op, **kw):
 def array_collect(op, in_group_by=False, **kw):
     arg = translate(op.arg, **kw)
 
-    predicate = arg.is_not_null()
+    predicate = arg.is_not_null() if op.ignore_null else True
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 

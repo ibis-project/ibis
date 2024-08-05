@@ -75,7 +75,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayDistinct,
         ops.ArrayFlatten,

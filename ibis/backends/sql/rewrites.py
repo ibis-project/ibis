@@ -386,14 +386,6 @@ def exclude_unsupported_window_frame_from_ops(_, **kwargs):
     return _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,))
 
 
-@replace(p.ArrayCollect)
-def exclude_nulls_from_array_collect(_, **kwargs):
-    where = ops.NotNull(_.arg)
-    if _.where is not None:
-        where = ops.And(where, _.where)
-    return _.copy(where=where)
-
-
 # Rewrite rules for lowering a high-level operation into one composed of more
 # primitive operations.
 

@@ -27,7 +27,6 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayFlatten,

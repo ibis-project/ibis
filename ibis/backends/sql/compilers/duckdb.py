@@ -14,7 +14,6 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -42,11 +41,6 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
-
-    rewrites = (
-        exclude_nulls_from_array_collect,
-        *SQLGlotCompiler.rewrites,
-    )
 
     LOWERED_OPS = {
         ops.Sample: None,
@@ -153,6 +147,12 @@ class DuckDBCompiler(SQLGlotCompiler):
                 self.f.array(),
             ),
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+        if ignore_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.list_extract(arg, index + self.cast(index >= 0, op.index.dtype))

@@ -67,7 +67,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,
