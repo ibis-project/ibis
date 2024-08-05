@@ -227,12 +227,7 @@ def test_no_arguments_errors(function):
 
 
 @pytest.mark.parametrize(
-    "name",
-    [
-        name.removesuffix("Compiler").lower()
-        for name in dir(sc)
-        if name.endswith("Compiler")
-    ],
+    "name", [name.lower().removesuffix("compiler") for name in sc.__all__]
 )
 def test_compile_without_dependencies(name):
     table = ibis.table({"a": "int64"}, name="t")

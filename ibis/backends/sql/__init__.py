@@ -617,14 +617,20 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
         return database
 
-    def _register_builtin_udf(self, udf_node: ops.ScalarUDF):
+    def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
         """No-op."""
 
     def _register_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError()
-
-    def _register_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.dialect} backend"
+        )
 
     def _register_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError()
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _register_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.dialect} backend"
+        )
