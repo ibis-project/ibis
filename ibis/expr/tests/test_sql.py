@@ -173,8 +173,7 @@ tpch_catalog = {
 }
 
 
-@pytest.mark.xfail(raises=KeyError, reason="column aliasing issue?")
-def test_parse_sql_tpch1():
+def test_parse_sql_tpch1(snapshot):
     sql = """
 SELECT
     l_returnflag,
@@ -199,4 +198,6 @@ ORDER BY
     l_linestatus;
     """
 
-    _ = ibis.parse_sql(sql, tpch_catalog)
+    expr = ibis.parse_sql(sql, tpch_catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "ibis_tpch1.py")
