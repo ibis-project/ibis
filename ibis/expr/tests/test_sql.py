@@ -200,4 +200,4 @@ ORDER BY
 
     expr = ibis.parse_sql(sql, tpch_catalog)
     code = ibis.decompile(expr, format=True)
-    snapshot.assert_match(code, "ibis_tpch1.py")
+    snapshot.assert_match(code, "ibis_tpch1.py.txt")
