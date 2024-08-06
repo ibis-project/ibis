@@ -34,6 +34,7 @@ agg = f.aggregate(
         f.l_quantity.mean().name("avg_qty"),
         f.l_extendedprice.mean().name("avg_price"),
         f.l_discount.mean().name("avg_disc"),
+        f.count().name("count_order"),
     ],
     by=[f.l_returnflag, f.l_linestatus],
 )

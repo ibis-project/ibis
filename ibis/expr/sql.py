@@ -388,7 +388,7 @@ def datatype(datatype, catalog):
 
 @convert.register(sge.Count)
 def count(count, catalog):
-    return lambda t: t.count()
+    return ibis._.count()
 
 
 @public
