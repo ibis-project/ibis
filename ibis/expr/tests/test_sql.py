@@ -169,7 +169,28 @@ tpch_catalog = {
         "l_shipinstruct": "string",
         "l_shipmode": "string",
         "l_comment": "string",
-    }
+    },
+    "customer": [
+        ("c_custkey", "int64"),
+        ("c_name", "string"),
+        ("c_address", "string"),
+        ("c_nationkey", "int16"),
+        ("c_phone", "string"),
+        ("c_acctbal", "decimal"),
+        ("c_mktsegment", "string"),
+        ("c_comment", "string"),
+    ],
+    "orders": [
+        ("o_orderkey", "int64"),
+        ("o_custkey", "int64"),
+        ("o_orderstatus", "string"),
+        ("o_totalprice", "decimal(12,2)"),
+        ("o_orderdate", "string"),
+        ("o_orderpriority", "string"),
+        ("o_clerk", "string"),
+        ("o_shippriority", "int32"),
+        ("o_comment", "string"),
+    ],
 }
 
 
@@ -201,3 +222,34 @@ ORDER BY
     expr = ibis.parse_sql(sql, tpch_catalog)
     code = ibis.decompile(expr, format=True)
     snapshot.assert_match(code, "ibis_tpch1.py.txt")
+
+
+def test_parse_sql_tpch3(snapshot):
+    sql = """
+        SELECT
+            l_orderkey,
+            sum(l_extendedprice * (1 - l_discount)) AS revenue,
+            o_orderdate,
+            o_shippriority
+        FROM
+            customer,
+            orders,
+            lineitem
+        WHERE
+            c_mktsegment = 'BUILDING'
+            AND c_custkey = o_custkey
+            AND l_orderkey = o_orderkey
+            AND o_orderdate < CAST('1995-03-15' AS date)
+            AND l_shipdate > CAST('1995-03-15' AS date)
+        GROUP BY
+            l_orderkey,
+            o_orderdate,
+            o_shippriority
+        ORDER BY
+            revenue DESC,
+            o_orderdate
+        LIMIT 10"""
+
+    expr = ibis.parse_sql(sql, tpch_catalog)
+    code = ibis.decompile(expr, format=True)
+    snapshot.assert_match(code, "ibis_tpch3.py.txt")
