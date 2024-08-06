@@ -16,6 +16,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -24,7 +25,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MySQLCompiler
 from ibis.backends.sql.compilers.base import STAR, TRUE, C
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanCreateDatabase):
     name = "mysql"
-    compiler = MySQLCompiler()
+    compiler = sc.mysql.compiler
     supports_create_or_replace = False
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -343,11 +343,11 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         conditions = [TRUE]
 
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+        if table_loc.catalog or table_loc.db:
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
         col = "table_name"
@@ -397,13 +397,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
-            )
-        else:
-            database = None
-
         properties = []
 
         if temp:
@@ -419,7 +412,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 

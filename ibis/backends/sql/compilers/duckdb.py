@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from functools import partial, reduce
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -15,6 +16,12 @@ from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
 from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.types as ir
+
 
 _INTERVAL_SUFFIXES = {
     "ms": "milliseconds",
@@ -34,7 +41,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     dialect = DuckDB
     type_mapper = DuckDBType
 
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
         exclude_nulls_from_array_collect,
@@ -97,6 +104,33 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
     }
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        sql = super().to_sqlglot(expr, limit=limit, params=params)
+
+        table_expr = expr.as_table()
+        geocols = table_expr.schema().geospatial
+
+        if not geocols:
+            return sql
+
+        quoted = self.quoted
+        return sg.select(
+            sge.Star(
+                replace=[
+                    self.f.st_aswkb(sg.column(col, quoted=quoted)).as_(
+                        col, quoted=quoted
+                    )
+                    for col in geocols
+                ]
+            )
+        ).from_(sql.subquery())
 
     def visit_StructColumn(self, op, *, names, values):
         return sge.Struct.from_arg_list(
@@ -476,15 +510,15 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg, pattern, replacement, "g", dialect=self.dialect
         )
 
-    def visit_First(self, op, *, arg, where):
+    def visit_First(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.first(arg, where=where)
+        return self.agg.first(arg, where=where, order_by=order_by)
 
-    def visit_Last(self, op, *, arg, where):
+    def visit_Last(self, op, *, arg, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.last(arg, where=where)
+        return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
@@ -614,3 +648,6 @@ class DuckDBCompiler(SQLGlotCompiler):
             .from_(parent)
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
+
+
+compiler = DuckDBCompiler()

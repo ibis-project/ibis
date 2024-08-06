@@ -12,6 +12,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -20,7 +21,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import ExasolCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -39,7 +39,7 @@ _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "exasol"
-    compiler = ExasolCompiler()
+    compiler = sc.exasol.compiler
     supports_temporary_tables = False
     supports_create_or_replace = False
     supports_in_memory_tables = False
@@ -345,15 +345,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         if temp:
             raise com.UnsupportedOperationError(
-                "Creating temp tables is not supported by Exasol."
+                f"Creating temp tables is not supported by {self.name}"
             )
-
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Exasol"
-            )
-        else:
-            database = None
 
         quoted = self.compiler.quoted
 
@@ -367,7 +360,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -435,7 +428,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             raise NotImplementedError(
                 "`catalog` argument is not supported for the Exasol backend"
             )
-        drop_schema = sg.exp.Drop(kind="SCHEMA", this=name, exists=force)
+        drop_schema = sg.exp.Drop(
+            kind="SCHEMA",
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            exists=force,
+        )
         with self.begin() as con:
             con.execute(drop_schema.sql(dialect=self.dialect))
 
@@ -446,7 +443,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             raise NotImplementedError(
                 "`catalog` argument is not supported for the Exasol backend"
             )
-        create_database = sg.exp.Create(kind="SCHEMA", this=name, exists=force)
+        create_database = sg.exp.Create(
+            kind="SCHEMA",
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            exists=force,
+        )
         open_database = self.current_database
         with self.begin() as con:
             con.execute(create_database.sql(dialect=self.dialect))

@@ -146,7 +146,7 @@ class BackendTest(abc.ABC):
 
     def load_tpcds(self) -> None:
         """Load TPC-DS data."""
-        self._load_tpc(suite="ds", scale_factor="0.2")
+        self._load_tpc(suite="ds", scale_factor="0.45")
 
     @classmethod
     def load_data(

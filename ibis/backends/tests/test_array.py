@@ -602,7 +602,7 @@ def test_array_position(con, a, expected_array):
 @builtin_array
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
-    ("inp", "exp"),
+    ("input", "expected"),
     [
         param(
             [[3, 2], [], [42, 2], [2, 2], []],
@@ -612,7 +612,8 @@ def test_array_position(con, a, expected_array):
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
-                    reason="SQL validation failed; Flink does not support ARRAY[]",  # https://issues.apache.org/jira/browse/FLINK-20578
+                    # https://issues.apache.org/jira/browse/FLINK-20578
+                    reason="SQL validation failed; Flink does not support empty array construction",
                 )
             ],
         ),
@@ -652,11 +653,10 @@ def test_array_position(con, a, expected_array):
         ),
     ],
 )
-def test_array_remove(con, inp, exp):
-    t = ibis.memtable({"a": inp})
+def test_array_remove(con, input, expected):
+    t = ibis.memtable({"a": input})
     expr = t.a.remove(2)
     result = con.execute(expr)
-    expected = pd.Series(exp, dtype="object")
 
     lhs = frozenset(
         # arg, things are coming back as nan
@@ -665,7 +665,7 @@ def test_array_remove(con, inp, exp):
         else None
         for v in result.values
     )
-    rhs = frozenset(tuple(v) if v is not None else None for v in expected.values)
+    rhs = frozenset(tuple(v) if v is not None else None for v in expected)
     assert lhs == rhs
 
 

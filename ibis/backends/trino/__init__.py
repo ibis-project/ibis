@@ -14,13 +14,13 @@ import sqlglot.expressions as sge
 import trino
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import TrinoCompiler
 from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "trino"
-    compiler = TrinoCompiler()
+    compiler = sc.trino.compiler
     supports_create_or_replace = False
     supports_temporary_tables = False
 
@@ -139,20 +139,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             Ibis schema
 
         """
-        conditions = [sg.column("table_name").eq(sge.convert(table_name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
-
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
+                C.column_name,
+                C.data_type,
+                C.is_nullable.eq(sge.convert("YES")).as_("nullable"),
             )
             .from_(sg.table("columns", db="information_schema", catalog=catalog))
-            .where(sg.and_(*conditions))
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(table_name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -162,9 +160,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             fqn = sg.table(table_name, db=database, catalog=catalog).sql(self.name)
             raise com.IbisError(f"Table not found: {fqn}")
 
+        type_mapper = self.compiler.type_mapper
+
         return sch.Schema(
             {
-                name: self.compiler.type_mapper.from_string(typ, nullable=nullable)
+                name: type_mapper.from_string(typ, nullable=nullable)
                 for name, typ, nullable in meta
             }
         )
@@ -236,7 +236,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         query = "SHOW TABLES"
 
-        if table_loc is not None:
+        if table_loc.catalog or table_loc.db:
             table_loc = table_loc.sql(dialect=self.dialect)
             query += f" IN {table_loc}"
 
@@ -490,7 +490,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     )
                     for name, typ in (schema or table.schema()).items()
                 )
-            ).from_(self._to_sqlglot(table).subquery())
+            ).from_(self.compiler.to_sqlglot(table).subquery())
         else:
             select = None
 

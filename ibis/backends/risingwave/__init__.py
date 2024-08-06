@@ -11,12 +11,12 @@ import sqlglot.expressions as sge
 from psycopg2 import extras
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres import Backend as PostgresBackend
-from ibis.backends.sql.compilers import RisingWaveCompiler
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -45,7 +45,7 @@ def format_properties(props):
 
 class Backend(PostgresBackend):
     name = "risingwave"
-    compiler = RisingWaveCompiler()
+    compiler = sc.risingwave.compiler
     supports_python_udfs = False
 
     def do_connect(
@@ -202,7 +202,7 @@ class Backend(PostgresBackend):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -586,3 +586,9 @@ class Backend(PostgresBackend):
         )
         with self._safe_raw_sql(src):
             pass
+
+    @property
+    def _session_temp_db(self) -> str | None:
+        # Return `None`, because RisingWave does not implement temp tables like
+        # Postgres
+        return None

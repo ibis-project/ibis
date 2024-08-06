@@ -6,7 +6,10 @@ import tempfile
 
 import pytest
 
-from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator, SymbolTable
+from ibis.backends.sql.compilers.bigquery.udf.core import (
+    PythonToJavaScriptTranslator,
+    SymbolTable,
+)
 
 
 def test_symbol_table():

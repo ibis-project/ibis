@@ -1,0 +1,24 @@
+name: Set milestone on issues closed by PR
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.repository }}-${{ github.head_ref || github.sha }}-${{ github.workflow }}
+
+permissions:
+  issues: write
+  pull-requests: read
+
+jobs:
+  set-milestone:
+    if: github.repository == 'ibis-project/ibis'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set milestone
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./ci/set-milestone-on-issue.sh "${GITHUB_SHA}"

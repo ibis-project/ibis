@@ -36,10 +36,10 @@ FROM
    WHERE (web.return_rank <= 10
           OR web.currency_rank <= 10)
    UNION SELECT 'catalog' AS channel,
-                catalog.item,
-                catalog.return_ratio,
-                catalog.return_rank,
-                catalog.currency_rank
+                CATALOG.item,
+                CATALOG.return_ratio,
+                CATALOG.return_rank,
+                CATALOG.currency_rank
    FROM
      (SELECT item,
              return_ratio,
@@ -63,8 +63,8 @@ FROM
            AND d_year = 2001
            AND d_moy = 12
          GROUP BY cs.cs_item_sk) in_cat) CATALOG
-   WHERE (catalog.return_rank <= 10
-          OR catalog.currency_rank <=10)
+   WHERE (CATALOG.return_rank <= 10
+          OR CATALOG.currency_rank <=10)
    UNION SELECT 'store' AS channel,
                 store.item,
                 store.return_ratio,

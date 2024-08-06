@@ -320,3 +320,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         if not dtype.is_float32():
             return self.cast(sign, dtype)
         return sign
+
+
+compiler = ImpalaCompiler()

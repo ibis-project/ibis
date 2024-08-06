@@ -19,7 +19,13 @@ from ibis.backends.sql.rewrites import (
 
 
 class FlinkAggGen(AggGen):
-    def aggregate(self, compiler, name, *args, where=None):
+    def aggregate(self, compiler, name, *args, where=None, order_by=()):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
         func = compiler.f[name]
         if where is not None:
             # Flink does support FILTER, but it's broken for:
@@ -557,3 +563,6 @@ class FlinkCompiler(SQLGlotCompiler):
 
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
+
+
+compiler = FlinkCompiler()

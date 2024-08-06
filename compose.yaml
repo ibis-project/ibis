@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.7.1.2915-alpine
+    image: clickhouse/clickhouse-server:24.7.2.13-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.7.29
+    image: bitnami/minio:2024.8.3
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -346,7 +346,7 @@ services:
       - druid
 
   oracle:
-    image: gvenzl/oracle-free:23.4-slim
+    image: gvenzl/oracle-free:23.5-slim
     environment:
       ORACLE_PASSWORD: ibis
       ORACLE_DATABASE: IBIS_TESTING

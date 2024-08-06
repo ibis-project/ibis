@@ -399,7 +399,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
-def test_roundtrip_delta(backend, con, alltypes, tmp_path):
+def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
     else:
@@ -410,10 +410,11 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path):
     path = tmp_path / "test.delta"
     t.to_delta(path)
 
-    dt = con.read_delta(path)
-    result = con.to_pandas(dt)
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    dt = ibis.read_delta(path)
+    result = dt.to_pandas()
 
-    backend.assert_frame_equal(result, expected, check_dtype=con.name != "duckdb")
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(

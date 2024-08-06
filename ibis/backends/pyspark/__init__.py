@@ -14,6 +14,7 @@ from pyspark import SparkConf
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
@@ -24,7 +25,6 @@ from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import PySparkCompiler
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
     from ibis.expr.api import Watermark
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
-
+PYSPARK_LT_35 = vparse(pyspark.__version__) < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
 
@@ -104,7 +104,7 @@ def _interval_to_string(interval):
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "pyspark"
-    compiler = PySparkCompiler()
+    compiler = sc.pyspark.compiler
 
     class Options(ibis.config.Config):
         """PySpark options.
@@ -359,18 +359,26 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _register_udfs(self, expr: ir.Expr) -> None:
         node = expr.op()
         for udf in node.find(ops.ScalarUDF):
-            if udf.__input_type__ not in (InputType.PANDAS, InputType.BUILTIN):
-                raise NotImplementedError(
-                    "Only Builtin UDFs and Pandas UDFs are supported in the PySpark backend"
-                )
-            # register pandas UDFs
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_return = PySparkType.from_ibis(udf.dtype)
             if udf.__input_type__ == InputType.PANDAS:
-                udf_name = self.compiler.__sql_name__(udf)
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
-                udf_return = PySparkType.from_ibis(udf.dtype)
                 spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
-                self._session.udf.register(udf_name, spark_udf)
-
+            elif udf.__input_type__ == InputType.PYTHON:
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return)
+            elif udf.__input_type__ == InputType.PYARROW:
+                # raise not implemented error if running on pyspark < 3.5
+                if PYSPARK_LT_35:
+                    raise NotImplementedError(
+                        "pyarrow UDFs are only supported in pyspark >= 3.5"
+                    )
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return, useArrow=True)
+            else:
+                # Builtin functions don't need to be registered
+                continue
+            self._session.udf.register(udf_name, spark_udf)
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)

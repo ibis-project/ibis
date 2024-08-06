@@ -14,6 +14,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -22,7 +23,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MSSQLCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
@@ -75,7 +75,7 @@ def datetimeoffset_to_datetime(value):
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
-    compiler = MSSQLCompiler()
+    compiler = sc.mssql.compiler
     supports_create_or_replace = False
 
     @property
@@ -178,19 +178,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if name.startswith("ibis_cache_"):
             catalog, database = ("tempdb", "dbo")
             name = "##" + name
-        conditions = [sg.column("table_name").eq(sge.convert(name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                "is_nullable",
-                "numeric_precision",
-                "numeric_scale",
-                "datetime_precision",
+                C.column_name,
+                C.data_type,
+                C.is_nullable,
+                C.numeric_precision,
+                C.numeric_scale,
+                C.datetime_precision,
             )
             .from_(
                 sg.table(
@@ -199,8 +195,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                     catalog=catalog or self.current_catalog,
                 )
             )
-            .where(*conditions)
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -487,13 +486,9 @@ GO"""
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        conditions = []
-
-        if table_loc is not None:
-            conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (
-            sg.select("table_name")
+            sg.select(C.table_name)
             .from_(
                 sg.table(
                     "TABLES",
@@ -501,11 +496,9 @@ GO"""
                     catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
+            .where(C.table_schema.eq(sge.convert(db or self.current_database)))
             .distinct()
         )
-
-        if conditions:
-            sql = sql.where(*conditions)
 
         sql = sql.sql(self.dialect)
 
@@ -604,7 +597,7 @@ GO"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -725,21 +718,6 @@ GO"""
             with self._safe_ddl(create_stmt) as cur:
                 if not df.empty:
                     cur.executemany(insert_stmt, data)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-        conversions = {
-            name: ibis.ifelse(table_expr[name], 1, 0).cast("boolean")
-            for name, typ in table_expr.schema().items()
-            if typ.is_boolean()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params)
 
     def _cursor_batches(
         self,

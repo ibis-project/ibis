@@ -109,6 +109,7 @@
 
         inherit shellHook;
 
+        PYSPARK_PYTHON = "${env}/bin/python";
         PGPASSWORD = "postgres";
         MYSQL_PWD = "ibis";
         MSSQL_SA_PASSWORD = "1bis_Testing!";

@@ -240,15 +240,11 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_LastValue(self, op, *, arg):
         return sge.IgnoreNulls(this=self.f.last(arg))
 
-    def visit_First(self, op, *, arg, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return sge.IgnoreNulls(this=self.f.first(arg))
+    def visit_First(self, op, *, arg, where, order_by):
+        return sge.IgnoreNulls(this=self.agg.first(arg, where=where, order_by=order_by))
 
-    def visit_Last(self, op, *, arg, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return sge.IgnoreNulls(this=self.f.last(arg))
+    def visit_Last(self, op, *, arg, where, order_by):
+        return sge.IgnoreNulls(this=self.agg.last(arg, where=where, order_by=order_by))
 
     def visit_Arbitrary(self, op, *, arg, where):
         # For Spark>=3.4 we could use any_value here
@@ -259,7 +255,12 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_Median(self, op, *, arg, where):
         return self.agg.percentile(arg, 0.5, where=where)
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         if where is not None:
             arg = self.if_(where, arg, NULL)
         collected = self.f.collect_list(arg)
@@ -633,3 +634,6 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+
+compiler = PySparkCompiler()

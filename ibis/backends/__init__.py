@@ -1035,13 +1035,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
-        self._define_udf_translation_rules(expr)
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
-
-    def _define_udf_translation_rules(self, expr: ir.Expr):
-        if self.supports_python_udfs:
-            raise NotImplementedError(self.name)
 
     def compile(
         self,
@@ -1050,14 +1045,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     ) -> Any:
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
-
-    def _to_sqlglot(self, expr: ir.Expr, **kwargs) -> sg.exp.Expression:
-        """Convert an Ibis expression to a sqlglot expression.
-
-        Called by `ibis.to_sql`; gives the backend an opportunity to generate
-        nicer SQL for human consumption.
-        """
-        raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
 
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""
