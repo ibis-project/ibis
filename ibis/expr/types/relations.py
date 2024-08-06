@@ -3759,7 +3759,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ ABW     │ SP.URB.TOTL │ 2004   │ 42317.0 │
         └─────────┴─────────────┴────────┴─────────┘
 
-        `pivot_longer` has some preprocessing capabiltiies like stripping a prefix and applying
+        `pivot_longer` has some preprocessing capabilities like stripping a prefix and applying
         a function to column names
 
         >>> billboard = ibis.examples.billboard.fetch()
