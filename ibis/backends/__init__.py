@@ -474,6 +474,58 @@ class _FileIOHandler:
                     writer.write_batch(batch)
 
     @util.experimental
+    def to_parquet_dir(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        filename_prefix: str = "out",
+        write_batches: bool = False,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file in a directory.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        path
+            The data source. A string or Path to the directory where the parquet file will be written.
+        filename_prefix
+            The prefix name of the parquet file. What is before `.parquet`.
+        write_batches
+            If True writes each batch into a different file.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+
+        """
+
+        dir_path = Path(path)
+        dir_path.mkdir(parents=True, exist_ok=True)
+
+        dir_path_file = dir_path / filename_prefix
+
+        if write_batches:
+            self._import_pyarrow()
+            import pyarrow.parquet as pq
+
+            with expr.to_pyarrow_batches(params=params) as batch_reader:
+                for i, batch in enumerate(batch_reader):
+                    file_path = f"{dir_path_file}_{i}.parquet"
+                    with pq.ParquetWriter(file_path, batch.schema, **kwargs) as writer:
+                        writer.write_batch(batch)
+        else:
+            self.to_parquet(expr, f"{dir_path_file}.parquet", params=params, **kwargs)
+
+    @util.experimental
     def to_csv(
         self,
         expr: ir.Table,

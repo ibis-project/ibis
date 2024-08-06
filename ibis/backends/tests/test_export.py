@@ -215,6 +215,28 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     )
 
 
+###new-test###
+@pytest.mark.parametrize("write_batches", [True, False])
+def test_table_to_parquet_dir(tmp_path, backend, awards_players, write_batches):
+    outparquet_dir = tmp_path
+    awards_players.to_parquet_dir(outparquet_dir, "out", write_batches=write_batches)
+
+    if write_batches:
+        # the batch is so small we write only one, wonder if we should modify test
+        parquet_files = list(outparquet_dir.glob("*.parquet"))
+        df_list = [pd.read_parquet(file) for file in parquet_files]
+        df = pd.concat(df_list).reset_index(drop=True)
+    else:
+        df = pd.read_parquet(f"{outparquet_dir}/out.parquet")
+
+    backend.assert_frame_equal(
+        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+    )
+
+
+###new test
+
+
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",

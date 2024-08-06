@@ -605,6 +605,41 @@ class Expr(Immutable, Coercible):
         self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
 
     @experimental
+    def to_parquet_dir(
+        self,
+        path: str | Path,
+        filename_prefix: str = "out",
+        write_batches: bool = False,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file in a directory.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the directory where the parquet file will be written.
+        filename_prefix
+            The prefix name of the parquet file. What is before `.parquet`.
+        write_batches
+            If True writes each batch into a different file.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+
+        """
+        self._find_backend(use_default=True).to_parquet_dir(
+            self, path, filename_prefix, write_batches, **kwargs
+        )
+
+    @experimental
     def to_csv(
         self,
         path: str | Path,
