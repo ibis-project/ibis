@@ -209,7 +209,8 @@ def convert_join(join, catalog):
                     predicate = left_key == right_key
                 else:
                     predicate &= left_key == right_key
-        else:
+
+        if "condition" in desc.keys():
             condition = desc["condition"]
             predicate = convert(condition, catalog=catalog)
 
