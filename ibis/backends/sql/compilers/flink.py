@@ -104,8 +104,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ArrayRemove: "array_remove",
         ops.ArrayUnion: "array_union",
         ops.ExtractDayOfYear: "dayofyear",
-        ops.First: "first_value",
-        ops.Last: "last_value",
         ops.MapKeys: "map_keys",
         ops.MapValues: "map_values",
         ops.Power: "power",
@@ -306,6 +304,20 @@ class FlinkCompiler(SQLGlotCompiler):
             )
 
         return self.f.array_slice(*args)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the flink backend"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the flink backend"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Not(self, op, *, arg):
         return sg.not_(self.cast(arg, dt.boolean))

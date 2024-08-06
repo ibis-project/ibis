@@ -1021,7 +1021,7 @@ class Value(Expr):
         self,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
-        ignore_null: bool = True,
+        include_null: bool = False,
     ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
@@ -1036,9 +1036,9 @@ class Value(Expr):
             An ordering key (or keys) to use to order the rows before
             aggregating. If not provided, the order of the items in the result
             is undefined and backend specific.
-        ignore_null
-            Whether to ignore null values when performing this aggregation. Set
-            to `False` to include nulls in the result.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Returns
         -------
@@ -1099,7 +1099,7 @@ class Value(Expr):
             self,
             where=self._bind_to_parent_table(where),
             order_by=self._bind_order_by(order_by),
-            ignore_null=ignore_null,
+            include_null=include_null,
         ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
@@ -2116,7 +2116,10 @@ class Column(Value, _FixedTextJupyterMixin):
         return self.as_table().group_by(name).aggregate(metric)
 
     def first(
-        self, where: ir.BooleanValue | None = None, order_by: Any = None
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
     ) -> Value:
         """Return the first value of a column.
 
@@ -2129,6 +2132,9 @@ class Column(Value, _FixedTextJupyterMixin):
             An ordering key (or keys) to use to order the rows before
             aggregating. If not provided, the meaning of `first` is undefined
             and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2159,9 +2165,15 @@ class Column(Value, _FixedTextJupyterMixin):
             self,
             where=self._bind_to_parent_table(where),
             order_by=self._bind_order_by(order_by),
+            include_null=include_null,
         ).to_expr()
 
-    def last(self, where: ir.BooleanValue | None = None, order_by: Any = None) -> Value:
+    def last(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> Value:
         """Return the last value of a column.
 
         Parameters
@@ -2173,6 +2185,9 @@ class Column(Value, _FixedTextJupyterMixin):
             An ordering key (or keys) to use to order the rows before
             aggregating. If not provided, the meaning of `last` is undefined
             and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2203,6 +2218,7 @@ class Column(Value, _FixedTextJupyterMixin):
             self,
             where=self._bind_to_parent_table(where),
             order_by=self._bind_order_by(order_by),
+            include_null=include_null,
         ).to_expr()
 
     def rank(self) -> ir.IntegerColumn:

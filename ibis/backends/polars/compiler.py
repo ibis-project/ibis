@@ -741,8 +741,7 @@ for cls in _reductions:
 def execute_first_last(op, **kw):
     arg = translate(op.arg, **kw)
 
-    # polars doesn't ignore nulls by default for these methods
-    predicate = arg.is_not_null()
+    predicate = True if getattr(op, "include_null", False) else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 
@@ -991,7 +990,7 @@ def array_column(op, **kw):
 def array_collect(op, in_group_by=False, **kw):
     arg = translate(op.arg, **kw)
 
-    predicate = arg.is_not_null() if op.ignore_null else True
+    predicate = True if op.include_null else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 

@@ -320,15 +320,45 @@ class PandasExecutor(Dispatched, PandasUtils):
         return cls.agg(lambda x: x.std(ddof=ddof), arg, where)
 
     @classmethod
-    def visit(cls, op: ops.ArrayCollect, arg, where, order_by, ignore_null):
+    def visit(cls, op: ops.ArrayCollect, arg, where, order_by, include_null):
         if order_by:
             raise UnsupportedOperationError(
                 "ordering of order-sensitive aggregations via `order_by` is "
                 "not supported for this backend"
             )
         return cls.agg(
-            (lambda x: x.dropna().tolist() if ignore_null else x.tolist()), arg, where
+            (lambda x: x.tolist() if include_null else x.dropna().tolist()), arg, where
         )
+
+    @classmethod
+    def visit(cls, op: ops.First, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def first(arg):
+            if not include_null:
+                arg = arg.dropna()
+            return arg.iat[0] if len(arg) else None
+
+        return cls.agg(first, arg, where)
+
+    @classmethod
+    def visit(cls, op: ops.Last, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def last(arg):
+            if not include_null:
+                arg = arg.dropna()
+            return arg.iat[-1] if len(arg) else None
+
+        return cls.agg(last, arg, where)
 
     @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):

@@ -455,10 +455,10 @@ $$""",
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def _array_collect(self, *, arg, where, order_by, ignore_null=True):
-        if not ignore_null:
+    def _array_collect(self, *, arg, where, order_by, include_null):
+        if include_null:
             raise com.UnsupportedOperationError(
-                "`ignore_null=False` is not supported by the snowflake backend"
+                "`include_null=True` is not supported by the snowflake backend"
             )
 
         if where is not None:
@@ -471,17 +471,21 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
         return self._array_collect(
-            arg=arg, where=where, order_by=order_by, ignore_null=ignore_null
+            arg=arg, where=where, order_by=order_by, include_null=include_null
         )
 
-    def visit_First(self, op, *, arg, where, order_by):
-        out = self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        out = self._array_collect(
+            arg=arg, where=where, order_by=order_by, include_null=include_null
+        )
         return self.f.get(out, 0)
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        out = self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        out = self._array_collect(
+            arg=arg, where=where, order_by=order_by, include_null=include_null
+        )
         return self.f.get(out, self.f.array_size(out) - 1)
 
     def visit_GroupConcat(self, op, *, arg, where, sep, order_by):

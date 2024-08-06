@@ -176,8 +176,8 @@ class TrinoCompiler(SQLGlotCompiler):
             NULL,
         )
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
-        if ignore_null:
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.array_agg(arg, where=where, order_by=order_by)
@@ -373,16 +373,18 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
-    def visit_First(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), 1
         )
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), -1
         )

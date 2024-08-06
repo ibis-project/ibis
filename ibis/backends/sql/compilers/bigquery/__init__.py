@@ -440,9 +440,14 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by bigquery"
+            )
         out = self.agg.array_agg(arg, where=where, order_by=order_by)
-        if ignore_null:
+        if not include_null:
             out = sge.IgnoreNulls(this=out)
         return out
 
@@ -690,26 +695,40 @@ class BigQueryCompiler(SQLGlotCompiler):
             self.f.generate_timestamp_array, start, stop, step, op.step.dtype
         )
 
-    def visit_First(self, op, *, arg, where, order_by):
+    def visit_First(self, op, *, arg, where, order_by, include_null):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported "
+                    "by bigquery"
+                )
 
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
 
-        array = self.f.array_agg(
-            sge.Limit(this=sge.IgnoreNulls(this=arg), expression=sge.convert(1)),
-        )
+        if not include_null:
+            arg = sge.IgnoreNulls(this=arg)
+
+        array = self.f.array_agg(sge.Limit(this=arg, expression=sge.convert(1)))
         return array[self.f.safe_offset(0)]
 
-    def visit_Last(self, op, *, arg, where, order_by):
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported "
+                    "by bigquery"
+                )
 
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
 
-        array = self.f.array_reverse(self.f.array_agg(sge.IgnoreNulls(this=arg)))
+        if not include_null:
+            arg = sge.IgnoreNulls(this=arg)
+
+        array = self.f.array_reverse(self.f.array_agg(arg))
         return array[self.f.safe_offset(0)]
 
     def visit_ArrayFilter(self, op, *, arg, body, param):

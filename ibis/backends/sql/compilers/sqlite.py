@@ -90,8 +90,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
         ops.BitXor: "_ibis_bit_xor",
-        ops.First: "_ibis_first",
-        ops.Last: "_ibis_last",
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
@@ -248,6 +246,14 @@ class SQLiteCompiler(SQLGlotCompiler):
             self.cast(self.f.json_extract_scalar(arg, "$"), dt.int64),
             NULL,
         )
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        func = "_ibis_first_include_null" if include_null else "_ibis_first"
+        return self.agg[func](arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        func = "_ibis_last_include_null" if include_null else "_ibis_last"
+        return self.agg[func](arg, where=where, order_by=order_by)
 
     def visit_Variance(self, op, *, arg, how, where):
         return self.agg[f"_ibis_var_{op.how}"](arg, where=where)

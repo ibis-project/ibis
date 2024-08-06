@@ -71,8 +71,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.Covariance,
-        ops.First,
-        ops.Last,
         ops.Levenshtein,
         ops.Median,
         ops.Mode,
