@@ -375,3 +375,29 @@ def test_multiple_tables_with_the_same_name(tmp_path):
     t3 = con.table("t", database="w.main")
 
     assert t3.schema() == ibis.schema({"y": "array<float64>"})
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        {"columns": {"lat": "float64", "lon": "float64", "geom": "geometry"}},
+        {"types": {"geom": "geometry"}},
+    ],
+)
+@pytest.mark.parametrize("all_varchar", [True, False])
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
+@pytest.mark.xdist_group(name="duckdb-extensions")
+def test_read_csv_with_types(tmp_path, input, all_varchar):
+    con = ibis.duckdb.connect()
+    data = b"""\
+lat,lon,geom
+1.0,2.0,POINT (1 2)
+2.0,3.0,POINT (2 3)"""
+    path = tmp_path / "data.csv"
+    path.write_bytes(data)
+    t = con.read_csv(path, all_varchar=all_varchar, **input)
+    assert t.schema()["geom"].is_geospatial()

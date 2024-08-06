@@ -20,6 +20,7 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
@@ -637,6 +638,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self,
         source_list: str | list[str] | tuple[str],
         table_name: str | None = None,
+        columns: Mapping[str, str | dt.DataType] | None = None,
+        types: Mapping[str, str | dt.DataType] | None = None,
         **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV file as a table in the current database.
@@ -644,20 +647,71 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         Parameters
         ----------
         source_list
-            The data source(s). May be a path to a file or directory of CSV files, or an
-            iterable of CSV files.
+            The data source(s). May be a path to a file or directory of CSV
+            files, or an iterable of CSV files.
         table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
+            An optional name to use for the created table. This defaults to a
+            sequentially generated name.
+        columns
+            An optional mapping of **all** column names to their types.
+        types
+            An optional mapping of a **subset** of column names to their types.
         **kwargs
-            Additional keyword arguments passed to DuckDB loading function.
-            See https://duckdb.org/docs/data/csv for more information.
+            Additional keyword arguments passed to DuckDB loading function. See
+            https://duckdb.org/docs/data/csv for more information.
 
         Returns
         -------
         ir.Table
             The just-registered table
 
+        Examples
+        --------
+        Generate some data
+
+        >>> import tempfile
+        >>> data = b'''
+        ... lat,lon,geom
+        ... 1.0,2.0,POINT (1 2)
+        ... 2.0,3.0,POINT (2 3)
+        ... '''
+        >>> with tempfile.NamedTemporaryFile(delete=False) as f:
+        ...     nbytes = f.write(data)
+
+        Import Ibis
+
+        >>> import ibis
+        >>> from ibis import _
+        >>> ibis.options.interactive = True
+        >>> con = ibis.duckdb.connect()
+
+        Read the raw CSV file
+
+        >>> t = con.read_csv(f.name)
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ lat     ┃ lon     ┃ geom        ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ float64 │ float64 │ string      │
+        ├─────────┼─────────┼─────────────┤
+        │     1.0 │     2.0 │ POINT (1 2) │
+        │     2.0 │     3.0 │ POINT (2 3) │
+        └─────────┴─────────┴─────────────┘
+
+        Load the `spatial` extension and read the CSV file again, using
+        specific column types
+
+        >>> con.load_extension("spatial")
+        >>> t = con.read_csv(f.name, types={"geom": "geometry"})
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ lat     ┃ lon     ┃ geom                 ┃
+        ┡━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+        │ float64 │ float64 │ geospatial:geometry  │
+        ├─────────┼─────────┼──────────────────────┤
+        │     1.0 │     2.0 │ <POINT (1 2)>        │
+        │     2.0 │     3.0 │ <POINT (2 3)>        │
+        └─────────┴─────────┴──────────────────────┘
         """
         source_list = util.normalize_filenames(source_list)
 
@@ -673,27 +727,35 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             self._load_extensions(["httpfs"])
 
         kwargs.setdefault("header", True)
-        kwargs["auto_detect"] = kwargs.pop("auto_detect", "columns" not in kwargs)
+        kwargs["auto_detect"] = kwargs.pop("auto_detect", columns is None)
         # TODO: clean this up
         # We want to _usually_ quote arguments but if we quote `columns` it messes
         # up DuckDB's struct parsing.
-        options = [
-            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
-        ]
+        options = [C[key].eq(sge.convert(val)) for key, val in kwargs.items()]
 
-        if (columns := kwargs.pop("columns", None)) is not None:
-            options.append(
-                sg.to_identifier("columns").eq(
-                    sge.Struct(
-                        expressions=[
-                            sge.PropertyEQ(
-                                this=sge.convert(key), expression=sge.convert(value)
-                            )
-                            for key, value in columns.items()
-                        ]
-                    )
+        def make_struct_argument(obj: Mapping[str, str | dt.DataType]) -> sge.Struct:
+            expressions = []
+            geospatial = False
+            type_mapper = self.compiler.type_mapper
+
+            for name, typ in obj.items():
+                typ = dt.dtype(typ)
+                geospatial |= typ.is_geospatial()
+                sgtype = type_mapper.from_ibis(typ)
+                prop = sge.PropertyEQ(
+                    this=sge.to_identifier(name), expression=sge.convert(sgtype)
                 )
-            )
+                expressions.append(prop)
+
+            if geospatial:
+                self._load_extensions(["spatial"])
+            return sge.Struct(expressions=expressions)
+
+        if columns is not None:
+            options.append(C.columns.eq(make_struct_argument(columns)))
+
+        if types is not None:
+            options.append(C.types.eq(make_struct_argument(types)))
 
         self._create_temp_view(
             table_name,
