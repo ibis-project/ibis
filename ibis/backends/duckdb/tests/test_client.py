@@ -385,6 +385,12 @@ def test_multiple_tables_with_the_same_name(tmp_path):
     ],
 )
 @pytest.mark.parametrize("all_varchar", [True, False])
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
+@pytest.mark.xdist_group(name="duckdb-extensions")
 def test_read_csv_with_types(tmp_path, input, all_varchar):
     con = ibis.duckdb.connect()
     data = b"""\
