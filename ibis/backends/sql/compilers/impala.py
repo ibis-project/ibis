@@ -31,8 +31,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Covariance,
         ops.DateDelta,
         ops.ExtractDayOfYear,
-        ops.First,
-        ops.Last,
         ops.Levenshtein,
         ops.Map,
         ops.Median,

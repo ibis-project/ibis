@@ -355,11 +355,25 @@ class PostgresCompiler(SQLGlotCompiler):
             )
         )
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
-        if ignore_null:
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.array_agg(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.first(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Log2(self, op, *, arg):
         return self.cast(

@@ -240,11 +240,27 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_LastValue(self, op, *, arg):
         return sge.IgnoreNulls(this=self.f.last(arg))
 
-    def visit_First(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(this=self.agg.first(arg, where=where, order_by=order_by))
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.first(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(this=self.agg.last(arg, where=where, order_by=order_by))
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.last(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
     def visit_Arbitrary(self, op, *, arg, where):
         # For Spark>=3.4 we could use any_value here
@@ -397,10 +413,10 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.concat_ws(sep, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
-        if not ignore_null:
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
             raise com.UnsupportedOperationError(
-                "`ignore_null=False` is not supported by the pyspark backend"
+                "`include_null=True` is not supported by the pyspark backend"
             )
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 

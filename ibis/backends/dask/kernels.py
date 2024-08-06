@@ -17,13 +17,6 @@ rowwise = {
 }
 
 
-def maybe_pandas_reduction(func):
-    def inner(df):
-        return df.reduction(func) if isinstance(df, dd.Series) else func(df)
-
-    return inner
-
-
 reductions = {
     **pandas_kernels.reductions,
     ops.Mode: lambda x: x.mode().loc[0],
@@ -31,10 +24,7 @@ reductions = {
     ops.BitAnd: lambda x: x.reduction(np.bitwise_and.reduce),
     ops.BitOr: lambda x: x.reduction(np.bitwise_or.reduce),
     ops.BitXor: lambda x: x.reduction(np.bitwise_xor.reduce),
-    ops.Arbitrary: lambda x: x.reduction(pandas_kernels.first),
-    # Window functions are calculated locally using pandas
-    ops.Last: maybe_pandas_reduction(pandas_kernels.last),
-    ops.First: maybe_pandas_reduction(pandas_kernels.first),
+    ops.Arbitrary: lambda x: x.reduction(pandas_kernels.arbitrary),
 }
 
 serieswise = {

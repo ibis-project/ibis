@@ -617,13 +617,43 @@ def test_reduction_ops(
                     ["datafusion"],
                     raises=Exception,
                     reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                    strict=False,
                 )
             ],
         ),
         True,
     ],
 )
-def test_first_last(backend, alltypes, method, filtered):
+@pytest.mark.parametrize(
+    "include_null",
+    [
+        False,
+        param(
+            True,
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "exasol",
+                        "flink",
+                        "postgres",
+                        "risingwave",
+                        "snowflake",
+                    ],
+                    raises=com.UnsupportedOperationError,
+                    reason="`include_null=True` is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["bigquery", "pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Can't mix `where` and `include_null=True`",
+                    strict=False,
+                ),
+            ],
+        ),
+    ],
+)
+def test_first_last(backend, alltypes, method, filtered, include_null):
     # `first` and `last` effectively choose an arbitrary value when no
     # additional order is specified. *Most* backends will result in the
     # first/last element in a column being selected (at least when operating on
@@ -641,9 +671,13 @@ def test_first_last(backend, alltypes, method, filtered):
 
     t = alltypes.mutate(new=new)
 
-    expr = getattr(t.new, method)(where=where)
+    expr = getattr(t.new, method)(where=where, include_null=include_null)
     res = expr.execute()
-    assert res == 30
+    if include_null:
+        # no ordering, so technically could be either 30 or NULL
+        assert res == 30 or pd.isna(res)
+    else:
+        assert res == 30
 
 
 @pytest.mark.notimpl(
@@ -673,23 +707,59 @@ def test_first_last(backend, alltypes, method, filtered):
                     ["datafusion"],
                     raises=Exception,
                     reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                    strict=False,
                 )
             ],
         ),
         True,
     ],
 )
-def test_first_last_ordered(backend, alltypes, method, filtered):
+@pytest.mark.parametrize(
+    "include_null",
+    [
+        False,
+        param(
+            True,
+            marks=[
+                pytest.mark.notimpl(
+                    [
+                        "clickhouse",
+                        "exasol",
+                        "flink",
+                        "postgres",
+                        "risingwave",
+                        "snowflake",
+                    ],
+                    raises=com.UnsupportedOperationError,
+                    reason="`include_null=True` is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["bigquery", "pyspark"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Can't mix `where` and `include_null=True`",
+                    strict=False,
+                ),
+            ],
+        ),
+    ],
+)
+def test_first_last_ordered(backend, alltypes, method, filtered, include_null):
     t = alltypes.mutate(new=alltypes.int_col.nullif(0).nullif(9))
-    where = None
-    sol = 1 if method == "last" else 8
     if filtered:
-        where = _.int_col != sol
+        where = _.int_col != (1 if method == "last" else 8)
         sol = 2 if method == "last" else 7
+    else:
+        where = None
+        sol = 1 if method == "last" else 8
 
-    expr = getattr(t.new, method)(where=where, order_by=t.int_col.desc())
+    expr = getattr(t.new, method)(
+        where=where, order_by=t.int_col.desc(), include_null=include_null
+    )
     res = expr.execute()
-    assert res == sol
+    if include_null:
+        assert pd.isna(res)
+    else:
+        assert res == sol
 
 
 @pytest.mark.notimpl(
@@ -1400,31 +1470,37 @@ def test_collect_ordered(alltypes, df, filtered):
     ],
 )
 @pytest.mark.parametrize(
-    "ignore_null",
+    "include_null",
     [
-        True,
+        False,
         param(
-            False,
+            True,
             marks=[
                 pytest.mark.notimpl(
                     ["clickhouse", "pyspark", "snowflake"],
                     raises=com.UnsupportedOperationError,
-                    reason="`ignore_null=False` is not supported",
-                )
+                    reason="`include_null=True` is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["bigquery"],
+                    raises=com.UnsupportedOperationError,
+                    reason="Can't mix `where` and `include_null=True`",
+                    strict=False,
+                ),
             ],
         ),
     ],
 )
-def test_collect(alltypes, df, filtered, ignore_null):
+def test_collect(alltypes, df, filtered, include_null):
     ibis_cond = (_.id % 13 == 0) if filtered else None
     pd_cond = (df.id % 13 == 0) if filtered else slice(None)
     res = (
         alltypes.string_col.nullif("3")
-        .collect(where=ibis_cond, ignore_null=ignore_null)
+        .collect(where=ibis_cond, include_null=include_null)
         .length()
         .execute()
     )
-    vals = df.string_col[(df.string_col != "3")] if ignore_null else df.string_col
+    vals = df.string_col if include_null else df.string_col[(df.string_col != "3")]
     sol = len(vals[pd_cond])
     assert res == sol
 

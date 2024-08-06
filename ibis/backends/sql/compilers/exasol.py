@@ -87,8 +87,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.Log10: "log10",
         ops.All: "min",
         ops.Any: "max",
-        ops.First: "first_value",
-        ops.Last: "last_value",
     }
 
     @staticmethod
@@ -135,6 +133,20 @@ class ExasolCompiler(SQLGlotCompiler):
             arg = sge.Order(this=arg, expressions=order_by)
 
         return sge.GroupConcat(this=arg, separator=sep)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the exasol backend"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the exasol backend"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.length(start)).eq(start)

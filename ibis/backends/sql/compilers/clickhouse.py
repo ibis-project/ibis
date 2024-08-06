@@ -90,13 +90,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ExtractWeekOfYear: "toISOWeek",
         ops.ExtractYear: "toYear",
         ops.ExtractIsoYear: "toISOYear",
-        ops.First: "any",
         ops.IntegerRange: "range",
         ops.IsInf: "isInfinite",
         ops.IsNan: "isNaN",
         ops.IsNull: "isNull",
         ops.LStrip: "trimLeft",
-        ops.Last: "anyLast",
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.MapKeys: "mapKeys",
@@ -603,12 +601,26 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, ignore_null):
-        if not ignore_null:
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
             raise com.UnsupportedOperationError(
-                "`ignore_null=False` is not supported by the pyspark backend"
+                "`include_null=True` is not supported by the clickhouse backend"
             )
         return self.agg.groupArray(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.any(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.anyLast(arg, where=where, order_by=order_by)
 
     def visit_CountDistinctStar(
         self, op: ops.CountDistinctStar, *, where, **_: Any
