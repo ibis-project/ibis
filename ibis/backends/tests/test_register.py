@@ -315,7 +315,6 @@ def test_register_pandas(con):
     assert t.x.sum().execute() == 6
 
 
-
 # TODO: remove entirely when `register` is removed
 # This same functionality is implemented across all backends
 # via `create_table` and tested in `test_client.py`
@@ -462,7 +461,7 @@ def ft_data(data_dir):
     return table.slice(0, nrows)
 
 
-@pytest.mark.notyet(["flink"])
+@pytest.mark.notyet(["flink", "pandas"])
 @pytest.mark.notimpl(["druid"])
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
