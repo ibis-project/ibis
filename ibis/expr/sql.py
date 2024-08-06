@@ -96,6 +96,66 @@ def convert_scan(scan, catalog):
     return table
 
 
+def qualify_sort_keys(keys, table_name):
+    # The sqlglot planner doesn't fully qualify sort keys
+    #
+    # - Sort: lineitem (132849388268768)
+    #   Context:
+    #     Key:
+    #       - "l_returnflag"
+    #       - "l_linestatus"
+    #
+    # For now we do a naive thing here and prepend the name of the sort
+    # operation itself, which (maybe?) is the name of the parent table.
+    table = sg.to_identifier(table_name, quoted=True)
+
+    def transformer(node):
+        if isinstance(node, sge.Column) and not node.table:
+            node.args["table"] = table
+        return node
+
+    sort_keys = [key.transform(transformer) for key in keys]
+
+    return sort_keys
+
+
+def qualify_projections(projections, groups):
+    # The sqlglot planner will (sometimes) alias projections to the aggregate
+    # that precedes it.
+    #
+    # - Sort: lineitem (132849388268768)
+    #   Context:
+    #     Key:
+    #       - "l_returnflag"
+    #       - "l_linestatus"
+    #   Projections:
+    #     - lineitem._g0 AS "l_returnflag"
+    #     - lineitem._g1 AS "l_linestatus"
+    #     <snip>
+    #   Dependencies:
+    #   - Aggregate: lineitem (132849388268864)
+    #     Context:
+    #       Aggregations:
+    #         <snip>
+    #       Group:
+    #         - "lineitem"."l_returnflag"  <-- this is _g0
+    #         - "lineitem"."l_linestatus"  <-- this is _g1
+    #         <snip>
+    #
+    #  These aliases are stored in a dictionary in the aggregate `groups`, so if
+    #  those are pulled out beforehand then we can use them to replace the
+    #  aliases in the projections.
+
+    def transformer(node):
+        if isinstance(node, sge.Alias) and (name := node.this.name).startswith("_g"):
+            return groups[0][name]
+        return node
+
+    projects = [project.transform(transformer) for project in projections]
+
+    return projects
+
+
 @convert.register(sgp.Sort)
 def convert_sort(sort, catalog):
     catalog = catalog.overlay(sort)
@@ -103,11 +163,20 @@ def convert_sort(sort, catalog):
     table = catalog[sort.name]
 
     if sort.key:
-        keys = [convert(key, catalog=catalog) for key in sort.key]
+        keys = [
+            convert(key, catalog=catalog)
+            for key in qualify_sort_keys(sort.key, sort.name)
+        ]
         table = table.order_by(keys)
 
     if sort.projections:
-        projs = [convert(proj, catalog=catalog) for proj in sort.projections]
+        # group definitions that may be used in projections are defined
+        # in the aggregate in dependencies...
+        groups = [val.group for val in sort.dependencies]
+        projs = [
+            convert(proj, catalog=catalog)
+            for proj in qualify_projections(sort.projections, groups)
+        ]
         table = table.select(projs)
 
     return table
@@ -155,9 +224,37 @@ def convert_join(join, catalog):
     return left_table
 
 
+def replace_operands(agg):
+    # The sqlglot planner will pull out computed operands into a separate
+    # section and alias them #
+    # e.g.
+    # Context:
+    #   Aggregations:
+    #     - SUM("_a_0") AS "sum_disc_price"
+    #   Operands:
+    #     - "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS _a_0
+    #
+    # For the purposes of decompiling, we want these to be inline, so here we
+    # replace those new aliases with the parsed sqlglot expression
+    operands = {operand.alias: operand.this for operand in agg.operands}
+
+    def transformer(node):
+        if isinstance(node, sge.Column) and node.name in operands.keys():
+            return operands[node.name]
+        return node
+
+    aggs = [item.transform(transformer) for item in agg.aggregations]
+
+    agg.aggregations = aggs
+
+    return agg
+
+
 @convert.register(sgp.Aggregate)
 def convert_aggregate(agg, catalog):
     catalog = catalog.overlay(agg)
+
+    agg = replace_operands(agg)
 
     table = catalog[agg.source]
     if agg.aggregations:
@@ -205,7 +302,7 @@ def convert_column(column, catalog):
 @convert.register(sge.Ordered)
 def convert_ordered(ordered, catalog):
     this = convert(ordered.this, catalog=catalog)
-    desc = ordered.args["desc"]  # not exposed as an attribute
+    desc = ordered.args.get("desc", False)  # not exposed as an attribute
     return ibis.desc(this) if desc else ibis.asc(this)
 
 
@@ -259,7 +356,6 @@ _reduction_methods = {
     sge.Quantile: "quantile",
     sge.Sum: "sum",
     sge.Avg: "mean",
-    sge.Count: "count",
 }
 
 
@@ -288,6 +384,11 @@ def cast(cast, catalog):
 @convert.register(sge.DataType)
 def datatype(datatype, catalog):
     return SqlglotType().to_ibis(datatype)
+
+
+@convert.register(sge.Count)
+def count(count, catalog):
+    return lambda t: t.count()
 
 
 @public
