@@ -19,7 +19,7 @@ alltypes = ibis.table(
 )
 agg = alltypes.aggregate([alltypes.f.sum().name("metric")], by=[alltypes.a, alltypes.g])
 selfreference = agg.view()
-joinchain = agg.inner_join(selfreference, agg.g == selfreference.g).select(
+joinchain = agg.inner_join(selfreference, (agg.g == selfreference.g)).select(
     agg.a, agg.g, agg.metric
 )
 selfreference1 = joinchain.view()

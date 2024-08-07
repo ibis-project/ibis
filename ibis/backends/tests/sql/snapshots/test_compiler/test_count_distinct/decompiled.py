@@ -19,6 +19,6 @@ functional_alltypes = ibis.table(
         "month": "int32",
     },
 )
-f = functional_alltypes.filter(functional_alltypes.bigint_col > 0)
+f = functional_alltypes.filter((functional_alltypes.bigint_col > 0))
 
 result = f.aggregate([f.int_col.nunique().name("nunique")], by=[f.string_col])

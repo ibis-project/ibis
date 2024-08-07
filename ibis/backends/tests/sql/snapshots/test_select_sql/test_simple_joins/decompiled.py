@@ -10,5 +10,5 @@ star2 = ibis.table(
 )
 
 result = star1.inner_join(
-    star2, [star1.foo_id == star2.foo_id, star1.bar_id == star2.foo_id]
+    star2, [(star1.foo_id == star2.foo_id), (star1.bar_id == star2.foo_id)]
 ).select(star1.c, star1.f, star1.foo_id, star1.bar_id)
