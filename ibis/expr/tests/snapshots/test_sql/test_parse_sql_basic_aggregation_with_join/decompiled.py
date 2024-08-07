@@ -15,7 +15,9 @@ call = ibis.table(
         "call_attempts": "int64",
     },
 )
-joinchain = employee.left_join(call, employee.id == call.employee_id).select(
+joinchain = employee.left_join(
+    call, [(employee.id == call.employee_id), ibis.literal(True)]
+).select(
     employee.first_name,
     employee.last_name,
     employee.id,

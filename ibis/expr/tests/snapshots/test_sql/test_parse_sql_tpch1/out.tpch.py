@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import ibis
+
 
 lineitem = ibis.table(
     name="lineitem",
@@ -24,14 +23,14 @@ lineitem = ibis.table(
     },
 )
 lit = ibis.literal(1)
-f = lineitem.filter(lineitem.l_shipdate <= ibis.literal("1998-09-02").cast("date"))
-multiply = f.l_extendedprice * (lit - f.l_discount)
+f = lineitem.filter((lineitem.l_shipdate <= ibis.literal("1998-09-02").cast("date")))
+multiply = f.l_extendedprice * ((lit - f.l_discount))
 agg = f.aggregate(
     [
         f.l_quantity.sum().name("sum_qty"),
         f.l_extendedprice.sum().name("sum_base_price"),
         multiply.sum().name("sum_disc_price"),
-        ((multiply) * (lit + f.l_tax)).sum().name("sum_charge"),
+        ((multiply) * ((lit + f.l_tax))).sum().name("sum_charge"),
         f.l_quantity.mean().name("avg_qty"),
         f.l_extendedprice.mean().name("avg_price"),
         f.l_discount.mean().name("avg_disc"),

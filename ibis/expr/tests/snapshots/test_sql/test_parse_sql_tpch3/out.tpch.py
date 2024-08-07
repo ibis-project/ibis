@@ -1,6 +1,5 @@
-from __future__ import annotations
-
 import ibis
+
 
 customer = ibis.table(
     name="customer",
@@ -53,8 +52,18 @@ lineitem = ibis.table(
 )
 cast = ibis.literal("1995-03-15").cast("date")
 joinchain = (
-    customer.inner_join(orders, [lit, (orders.o_orderdate.cast("timestamp") < cast)])
-    .inner_join(lineitem, [lit, (lineitem.l_shipdate > cast)])
+    customer.inner_join(
+        orders,
+        [
+            (customer.c_custkey == orders.o_custkey),
+            lit,
+            (orders.o_orderdate.cast("timestamp") < cast),
+        ],
+    )
+    .inner_join(
+        lineitem,
+        [(orders.o_orderkey == lineitem.l_orderkey), lit, (lineitem.l_shipdate > cast)],
+    )
     .select(
         customer.c_custkey,
         customer.c_name,
@@ -91,9 +100,9 @@ joinchain = (
         lineitem.l_comment,
     )
 )
-f = joinchain.filter(joinchain.c_mktsegment == "BUILDING")
+f = joinchain.filter((joinchain.c_mktsegment == "BUILDING"))
 agg = f.aggregate(
-    [(f.l_extendedprice * (1 - f.l_discount)).sum().name("revenue")],
+    [(f.l_extendedprice * ((1 - f.l_discount))).sum().name("revenue")],
     by=[f.l_orderkey, f.o_orderdate, f.o_shippriority],
 )
 s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
