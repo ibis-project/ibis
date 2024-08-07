@@ -245,24 +245,6 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
     def _convert_object(self, obj: Any) -> Any:
         return _convert_object(obj, self)
-        if isinstance(obj, pd.DataFrame):
-            return obj
-        elif isinstance(obj, ir.Table):
-            op = obj.op()
-            if isinstance(op, ops.InMemoryTable):
-                return op.data.to_frame()
-            else:
-                raise com.BackendConversionError(
-                    f"Unable to convert {obj.__class__} object "
-                    f"to backend type: {self.__class__.backend_table_type}"
-                )
-        elif isinstance(obj, pa.Table):
-            return obj.to_pandas()
-        else:
-            raise com.BackendConversionError(
-                f"Unable to convert {obj.__class__} object "
-                f"to backend type: {self.__class__.backend_table_type}"
-            )
 
     @classmethod
     @lru_cache
