@@ -345,7 +345,11 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["exasol"])
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by exasol",
+)
 @pytest.mark.notimpl(
     ["druid"],
     raises=PyDruidProgrammingError,
