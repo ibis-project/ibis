@@ -6,9 +6,6 @@ import webbrowser
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from public import public
-from rich.console import Console
-from rich.jupyter import JupyterMixin
-from rich.text import Text
 
 import ibis
 import ibis.expr.operations as ops
@@ -20,7 +17,6 @@ from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
 from ibis.expr.format import pretty
-from ibis.expr.types.pretty import to_rich
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -31,19 +27,28 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import torch
+    from rich.console import Console
 
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
     from ibis.expr.visualize import EdgeAttributeGetter, NodeAttributeGetter
 
 
-class _FixedTextJupyterMixin(JupyterMixin):
-    """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+try:
+    from rich.jupyter import JupyterMixin
+except ImportError:
 
-    def _repr_mimebundle_(self, *args, **kwargs):
-        bundle = super()._repr_mimebundle_(*args, **kwargs)
-        bundle["text/plain"] = bundle["text/plain"].rstrip()
-        return bundle
+    class _FixedTextJupyterMixin:
+        """No-op when rich is not installed."""
+else:
+
+    class _FixedTextJupyterMixin(JupyterMixin):
+        """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+        def _repr_mimebundle_(self, *args, **kwargs):
+            bundle = super()._repr_mimebundle_(*args, **kwargs)
+            bundle["text/plain"] = bundle["text/plain"].rstrip()
+            return bundle
 
 
 @public
@@ -61,6 +66,8 @@ class Expr(Immutable, Coercible):
         return pretty(self.op(), scope=scope)
 
     def _interactive_repr(self) -> str:
+        from rich.console import Console
+
         console = Console(force_terminal=False)
         with console.capture() as capture:
             try:
@@ -96,8 +103,12 @@ class Expr(Immutable, Coercible):
 
         try:
             if opts.interactive:
+                from ibis.expr.types.pretty import to_rich
+
                 rich_object = to_rich(self, console_width=console_width)
             else:
+                from rich.text import Text
+
                 rich_object = Text(self._noninteractive_repr())
         except Exception as e:
             # In IPython exceptions inside of _repr_mimebundle_ are swallowed to

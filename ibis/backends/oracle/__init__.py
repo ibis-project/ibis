@@ -11,7 +11,6 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
 import oracledb
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -534,7 +533,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(self.name)
 
-            data = op.data.to_frame().replace({np.nan: None})
+            data = op.data.to_frame().replace(float("nan"), None)
             insert_stmt = self._build_insert_template(
                 name, schema=schema, placeholder=":{i:d}"
             )

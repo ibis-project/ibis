@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import _pytest
-import pandas as pd
 import pytest
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
@@ -571,7 +570,7 @@ def geo_df(geo):
 
 
 @pytest.fixture
-def temp_table(con) -> str:
+def temp_table(con):
     """Return a temporary table name.
 
     Parameters
@@ -590,7 +589,7 @@ def temp_table(con) -> str:
 
 
 @pytest.fixture
-def temp_table2(con) -> str:
+def temp_table2(con):
     name = util.gen_name("temp_table2")
     yield name
     with contextlib.suppress(NotImplementedError):
@@ -606,7 +605,7 @@ def temp_table_orig(con, temp_table):
 
 
 @pytest.fixture
-def temp_view(ddl_con) -> str:
+def temp_view(ddl_con):
     """Return a temporary view name.
 
     Parameters
@@ -625,7 +624,7 @@ def temp_view(ddl_con) -> str:
 
 
 @pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend) -> str:
+def alternate_current_database(ddl_con, ddl_backend):
     """Create a temporary database and yield its name. Drops the created
     database upon completion.
 
@@ -646,48 +645,6 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
 
     with contextlib.suppress(com.UnsupportedOperationError):
         ddl_con.drop_database(name, force=True)
-
-
-@pytest.fixture
-def test_employee_schema() -> ibis.schema:
-    sch = ibis.schema(
-        [
-            ("first_name", "string"),
-            ("last_name", "string"),
-            ("department_name", "string"),
-            ("salary", "float64"),
-        ]
-    )
-
-    return sch
-
-
-@pytest.fixture
-def test_employee_data_1():
-    df = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
-
-    return df
-
-
-@pytest.fixture
-def test_employee_data_2():
-    df2 = pd.DataFrame(
-        {
-            "first_name": ["X", "Y", "Z"],
-            "last_name": ["A", "B", "C"],
-            "department_name": ["XX", "YY", "ZZ"],
-            "salary": [400.0, 500.0, 600.0],
-        }
-    )
-
-    return df2
 
 
 @pytest.fixture

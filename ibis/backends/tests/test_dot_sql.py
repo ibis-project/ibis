@@ -3,8 +3,6 @@ from __future__ import annotations
 import contextlib
 import getpass
 
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlglot as sg
 from pytest import param
@@ -16,6 +14,9 @@ from ibis import _
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
 from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
+
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas"], reason="dask and pandas do not accept SQL"

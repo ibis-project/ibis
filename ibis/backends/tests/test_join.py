@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -12,6 +10,9 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends.tests.errors import PyDruidProgrammingError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
     ["sqlite"],

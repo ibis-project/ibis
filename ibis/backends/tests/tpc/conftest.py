@@ -11,7 +11,6 @@ import sqlglot as sg
 from dateutil.relativedelta import relativedelta
 
 import ibis
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -66,6 +65,8 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
         @getattr(pytest.mark, name)
         @functools.wraps(test)
         def wrapper(*args, backend, **kwargs):
+            from ibis.formats.pandas import PandasData
+
             backend_name = backend.name()
             if not getattr(backend, f"supports_{name}"):
                 pytest.skip(

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -10,6 +8,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.conftest import is_older_than
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle", "risingwave"])
 

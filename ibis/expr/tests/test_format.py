@@ -349,8 +349,6 @@ def test_destruct_selection(snapshot):
     expr = table.aggregate(multi_output_udf(table["col"]).destructure())
     result = repr(expr)
 
-    assert "sum:  StructField(ReductionVectorizedUDF" in result
-    assert "mean: StructField(ReductionVectorizedUDF" in result
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -371,6 +369,8 @@ def test_format_dummy_table(snapshot):
 
 
 def test_format_in_memory_table(snapshot):
+    pytest.importorskip("pandas")
+
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.sum() + t.y.sum()
 

@@ -3,13 +3,16 @@ from __future__ import annotations
 import datetime
 import decimal
 
-import pandas as pd
 import pytest
-from rich.console import Console
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.expr.types.pretty import format_column, format_values
+
+pytest.importorskip("rich")
+
+from ibis.expr.types.pretty import format_column, format_values  # noqa: E402
+
+pd = pytest.importorskip("pandas")
 
 null = "NULL"
 
@@ -179,6 +182,8 @@ def test_all_empty_groups_repr():
 
 
 def test_non_interactive_column_repr():
+    from rich.console import Console
+
     t = ibis.table(dict(names="string", values="int"))
     expr = t.names
     console = Console()

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import warnings
 from functools import partial
 from importlib.util import find_spec as _find_spec
 from typing import TYPE_CHECKING
@@ -24,14 +23,6 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
-_has_arrow_dtype = hasattr(pd, "ArrowDtype")
-
-if not _has_arrow_dtype:
-    warnings.warn(
-        f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
-        "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
-    )
-
 geospatial_supported = _find_spec("geopandas") is not None
 
 
@@ -47,7 +38,7 @@ class PandasType(NumpyType):
                 return dt.String(nullable=nullable)
             return cls.to_ibis(typ.categories.dtype, nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
-            if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
+            if isinstance(typ, pd.ArrowDtype):
                 return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
             else:
                 name = typ.__class__.__name__.replace("Dtype", "")

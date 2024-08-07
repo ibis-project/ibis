@@ -13,8 +13,6 @@ import sys
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
-import numpy as np
-import pandas as pd
 import pytest
 import rich.console
 import toolz
@@ -46,6 +44,8 @@ if TYPE_CHECKING:
     from ibis.backends import BaseBackend
 
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
 
@@ -429,6 +429,18 @@ def test_create_drop_view(ddl_con, temp_view):
 
 
 @pytest.fixture
+def test_employee_schema() -> ibis.schema:
+    return ibis.schema(
+        {
+            "first_name": "string",
+            "last_name": "string",
+            "department_name": "string",
+            "salary": "float64",
+        }
+    )
+
+
+@pytest.fixture
 def employee_empty_temp_table(backend, con, test_employee_schema):
     temp_table_name = gen_name("temp_employee_empty_table")
     _create_temp_table_with_schema(backend, con, temp_table_name, test_employee_schema)
@@ -437,9 +449,16 @@ def employee_empty_temp_table(backend, con, test_employee_schema):
 
 
 @pytest.fixture
-def employee_data_1_temp_table(
-    backend, con, test_employee_schema, test_employee_data_1
-):
+def employee_data_1_temp_table(backend, con, test_employee_schema):
+    test_employee_data_1 = pd.DataFrame(
+        {
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
+        }
+    )
+
     temp_table_name = gen_name("temp_employee_data_1")
     _create_temp_table_with_schema(
         backend, con, temp_table_name, test_employee_schema, data=test_employee_data_1
@@ -447,6 +466,22 @@ def employee_data_1_temp_table(
     assert temp_table_name in con.list_tables()
     yield temp_table_name
     con.drop_table(temp_table_name, force=True)
+
+
+@pytest.fixture
+def test_employee_data_2():
+    import pandas as pd
+
+    df2 = pd.DataFrame(
+        {
+            "first_name": ["X", "Y", "Z"],
+            "last_name": ["A", "B", "C"],
+            "department_name": ["XX", "YY", "ZZ"],
+            "salary": [400.0, 500.0, 600.0],
+        }
+    )
+
+    return df2
 
 
 @pytest.fixture
@@ -1117,6 +1152,8 @@ def test_dunder_array_column(alltypes, dtype):
 
 @pytest.mark.parametrize("interactive", [True, False])
 def test_repr(alltypes, interactive, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     expr = alltypes.select("date_string_col")
@@ -1132,6 +1169,8 @@ def test_repr(alltypes, interactive, monkeypatch):
 
 @pytest.mark.parametrize("show_types", [True, False])
 def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options.repr.interactive, "show_types", show_types)
 
@@ -1145,6 +1184,8 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", True)
 
     cols = {f"c_{i}": ibis._.id + i for i in range(50)}
@@ -1184,6 +1225,8 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
 @pytest.mark.parametrize("expr_type", ["table", "column"])
 @pytest.mark.parametrize("interactive", [True, False])
 def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     if expr_type == "column":

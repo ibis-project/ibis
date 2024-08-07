@@ -6,8 +6,6 @@ import operator
 import warnings
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 import sqlglot as sg
 import toolz
@@ -40,6 +38,9 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])

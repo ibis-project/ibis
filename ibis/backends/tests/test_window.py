@@ -3,8 +3,6 @@ from __future__ import annotations
 from functools import partial
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -24,6 +22,9 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 pytestmark = [
     pytest.mark.notimpl(

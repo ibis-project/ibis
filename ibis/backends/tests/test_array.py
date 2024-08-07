@@ -6,9 +6,6 @@ from collections import Counter
 from datetime import datetime
 from functools import partial
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import pytz
 import toolz
@@ -34,6 +31,10 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 pytestmark = [
     pytest.mark.never(

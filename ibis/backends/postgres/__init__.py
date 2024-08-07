@@ -8,8 +8,6 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
-import pandas as pd
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pandas.api.types import is_float_dtype
@@ -139,7 +137,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             convert_df = df.convert_dtypes()
             for col in convert_df.columns:
                 if not is_float_dtype(convert_df[col]):
-                    df[col] = df[col].replace(np.nan, None)
+                    df[col] = df[col].replace(float("nan"), None)
 
             data = df.itertuples(index=False)
             sql = self._build_insert_template(
