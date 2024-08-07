@@ -112,6 +112,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    supports_qualify = True
+
     UNSUPPORTED_OPS = (
         ops.DateDiff,
         ops.ExtractAuthority,

@@ -42,6 +42,8 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
+    supports_qualify = True
+
     LOWERED_OPS = {
         ops.Sample: None,
         ops.StringSlice: None,

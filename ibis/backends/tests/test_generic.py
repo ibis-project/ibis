@@ -345,28 +345,16 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "duckdb",
-        "impala",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "snowflake",
-        "polars",
-        "mssql",
-        "trino",
-        "druid",
-        "oracle",
-        "exasol",
-        "pandas",
-        "pyspark",
-        "dask",
-    ]
+@pytest.mark.notimpl(["polars", "druid", "exasol", "pandas", "dask"])
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by oracle",
+)
+@pytest.mark.never(
+    ["mssql"],
+    raises=PyODBCProgrammingError,
+    reason="sqlglot transform produces an order by in a subquery, which is not allowed by mssql",
 )
 @pytest.mark.never(
     ["flink"],

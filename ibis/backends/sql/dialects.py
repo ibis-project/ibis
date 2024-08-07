@@ -368,7 +368,13 @@ Oracle.Generator.TRANSFORMS |= {
     sge.Stddev: rename_func("stddev_pop"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
-    sge.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
+    sge.Select: transforms.preprocess(
+        [
+            transforms.eliminate_semi_and_anti_joins,
+            transforms.eliminate_distinct_on,
+            transforms.eliminate_qualify,
+        ]
+    ),
     sge.GroupConcat: rename_func("listagg"),
 }
 
