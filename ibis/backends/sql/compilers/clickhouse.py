@@ -42,6 +42,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     agg = ClickhouseAggGen()
 
+    supports_qualify = True
+
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.CumeDist,

@@ -267,6 +267,9 @@ class SQLGlotCompiler(abc.ABC):
     copy_func_args: bool = False
     """Whether to copy function arguments when generating SQL."""
 
+    supports_qualify: bool = False
+    """Whether the backend supports the QUALIFY clause."""
+
     NAN: ClassVar[sge.Expression] = sge.Cast(
         this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
     )
@@ -1249,15 +1252,21 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys):
             return parent
 
         result = parent
 
         if selections:
-            if op.is_star_selection():
+            # if there are `qualify` predicates then sqlglot adds a hidden
+            # column to implement the functionality if the dialect doesn't
+            # support it
+            #
+            # using STAR in that case would lead to an extra column, so in that
+            # case we have to spell out the columns
+            if op.is_star_selection() and (not qualified or self.supports_qualify):
                 fields = [STAR]
             else:
                 fields = self._cleanup_names(selections)
@@ -1265,6 +1274,9 @@ class SQLGlotCompiler(abc.ABC):
 
         if predicates:
             result = result.where(*predicates, copy=False)
+
+        if qualified:
+            result = result.qualify(*qualified, copy=False)
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)

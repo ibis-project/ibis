@@ -345,37 +345,29 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "duckdb",
-        "impala",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "snowflake",
-        "polars",
-        "mssql",
-        "trino",
-        "druid",
-        "oracle",
-        "exasol",
-        "pandas",
-        "pyspark",
-        "dask",
-    ]
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by exasol",
 )
-@pytest.mark.never(
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="requires enabling window functions",
+)
+@pytest.mark.notimpl(["polars", "dask", "pandas"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by oracle",
+)
+@pytest.mark.notyet(
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
 # TODO(kszucs): this is not supported at the expression level
 def test_filter_with_window_op(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.order_by("id")
-    table = sorted_alltypes
+    table = alltypes
     window = ibis.window(group_by=table.id)
     table = table.filter(lambda t: t["id"].mean().over(window) > 3).order_by("id")
     result = table.execute()

@@ -45,6 +45,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = Snowflake
     type_mapper = SnowflakeType
     no_limit_value = NULL
+    supports_qualify = True
 
     agg = AggGen(supports_order_by=True)
 

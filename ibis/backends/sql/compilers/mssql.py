@@ -477,9 +477,9 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys):
             return parent
 
         result = parent
@@ -491,6 +491,9 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         if predicates:
             result = result.where(*predicates, copy=True)
+
+        if qualified:
+            result = result.qualify(*qualified, copy=True)
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
