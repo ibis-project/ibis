@@ -203,8 +203,8 @@ def convert_join(join, catalog):
         right_table = catalog[right_name]
         join_kind = _join_types[desc["side"]]
 
+        predicate = None
         if desc["join_key"]:
-            predicate = None
             for left_key, right_key in zip(desc["source_key"], desc["join_key"]):
                 left_key = convert(left_key, catalog=catalog)
                 right_key = convert(right_key, catalog=catalog)
@@ -215,7 +215,10 @@ def convert_join(join, catalog):
 
         if "condition" in desc.keys():
             condition = desc["condition"]
-            predicate = convert(condition, catalog=catalog)
+            if predicate is None:
+                predicate = convert(condition, catalog=catalog)
+            else:
+                predicate &= convert(condition, catalog=catalog)
 
         left_table = left_table.join(right_table, predicates=predicate, how=join_kind)
 
