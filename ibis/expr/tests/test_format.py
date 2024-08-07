@@ -349,8 +349,6 @@ def test_destruct_selection(snapshot):
     expr = table.aggregate(multi_output_udf(table["col"]).destructure())
     result = repr(expr)
 
-    assert "sum:  StructField(ReductionVectorizedUDF" in result
-    assert "mean: StructField(ReductionVectorizedUDF" in result
     snapshot.assert_match(result, "repr.txt")
 
 
