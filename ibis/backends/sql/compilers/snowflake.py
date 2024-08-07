@@ -559,6 +559,12 @@ $$""",
             self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "fragment")), ""
         )
 
+    def visit_ExtractUserInfo(self, op, *, arg):
+        host = self.f.get(self.f.parse_url(arg), "host")
+        return self.if_(
+            host.like(sge.convert("%@%")), self.f.split_part(host, "@", 1), NULL
+        )
+
     def visit_Unnest(self, op, *, arg):
         sep = sge.convert(util.guid())
         split = self.f.split(
