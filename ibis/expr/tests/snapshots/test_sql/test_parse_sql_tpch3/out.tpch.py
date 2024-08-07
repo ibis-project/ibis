@@ -1,5 +1,6 @@
-import ibis
+from __future__ import annotations
 
+import ibis
 
 customer = ibis.table(
     name="customer",
@@ -90,9 +91,9 @@ joinchain = (
         lineitem.l_comment,
     )
 )
-f = joinchain.filter((joinchain.c_mktsegment == "BUILDING"))
+f = joinchain.filter(joinchain.c_mktsegment == "BUILDING")
 agg = f.aggregate(
-    [(f.l_extendedprice * ((1 - f.l_discount))).sum().name("revenue")],
+    [(f.l_extendedprice * (1 - f.l_discount)).sum().name("revenue")],
     by=[f.l_orderkey, f.o_orderdate, f.o_shippriority],
 )
 s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
