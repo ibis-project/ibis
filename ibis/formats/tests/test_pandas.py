@@ -3,18 +3,19 @@ from __future__ import annotations
 from datetime import time
 from decimal import Decimal
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 pa = pytest.importorskip("pyarrow")
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
+
+from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E402
 
 
 @pytest.mark.parametrize(
