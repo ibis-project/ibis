@@ -85,7 +85,6 @@ def gzip_csv(data_dir, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -114,7 +113,6 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -140,7 +138,6 @@ def test_register_csv_gz(con, data_dir, gzip_csv):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -199,7 +196,6 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -237,7 +233,6 @@ def test_register_parquet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
@@ -285,7 +280,6 @@ def test_register_iterator_parquet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -321,7 +315,6 @@ def test_register_pandas(con):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -348,7 +341,6 @@ def test_register_pyarrow_tables(con):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
@@ -388,7 +380,6 @@ def test_csv_reregister_schema(con, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
@@ -517,7 +508,6 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "clickhouse",
-        "dask",
         "datafusion",
         "impala",
         "mssql",

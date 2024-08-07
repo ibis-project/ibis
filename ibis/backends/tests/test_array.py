@@ -361,7 +361,6 @@ def test_unnest_no_nulls(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl("dask", raises=ValueError)
 @pytest.mark.notimpl(
     "pandas",
     raises=ValueError,
@@ -435,7 +434,7 @@ def test_array_slice(backend, start, stop):
     reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.notimpl(
-    ["dask", "pandas"],
+    ["pandas"],
     raises=com.OperationNotDefinedError,
     reason="Operation 'ArrayMap' is not implemented for this backend",
 )
@@ -484,11 +483,10 @@ def test_array_map(con, input, output, func):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "flink", "pandas", "polars"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "pandas", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
-    ["dask", "pandas"],
+    ["pandas"],
     raises=com.OperationNotDefinedError,
     reason="Operation 'ArrayMap' is not implemented for this backend",
 )
@@ -787,10 +785,7 @@ def test_array_union(con, a, b, expected_array):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["dask", "pandas", "polars", "flink"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["pandas", "polars", "flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -879,7 +874,6 @@ def test_unnest_struct_with_multiple_fields(con):
 
 array_zip_notimpl = pytest.mark.notimpl(
     [
-        "dask",
         "datafusion",
         "druid",
         "oracle",
@@ -1158,8 +1152,7 @@ def test_unnest_empty_array(con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "polars", "dask", "pandas"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "polars", "pandas"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
@@ -1179,7 +1172,7 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "polars", "sqlite", "dask", "pandas", "sqlite"],
+    ["datafusion", "flink", "polars", "sqlite", "pandas", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 def test_complex_array_map(con):
@@ -1371,9 +1364,6 @@ def test_repr_timestamp_array(con, monkeypatch):
 @pytest.mark.notimpl(
     ["pandas"], raises=ValueError, reason="reindex on duplicate values"
 )
-@pytest.mark.notimpl(
-    ["dask"], raises=AssertionError, reason="DataFrame.index are different"
-)
 def test_unnest_range(con):
     expr = ibis.range(2).unnest().name("x").as_table().mutate({"y": 1.0})
     result = con.execute(expr)
@@ -1405,7 +1395,7 @@ def test_array_literal_with_exprs(con, input, expected):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "postgres", "pandas", "polars", "risingwave", "dask", "flink"],
+    ["datafusion", "postgres", "pandas", "polars", "risingwave", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -1425,8 +1415,7 @@ def test_zip_unnest_lift(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "pandas", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.parametrize(
     "colspec",
@@ -1441,8 +1430,7 @@ def test_table_unnest(backend, colspec):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "pandas", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 def test_table_unnest_with_offset(backend):
     t = backend.array_types
@@ -1467,8 +1455,7 @@ def test_table_unnest_with_offset(backend):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "pandas", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 def test_table_unnest_with_keep_empty(con):
     t = ibis.memtable(pd.DataFrame({"y": [[], None, ["a"]]}))
@@ -1478,8 +1465,7 @@ def test_table_unnest_with_keep_empty(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "pandas", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
     ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
@@ -1493,8 +1479,7 @@ def test_table_unnest_column_expr(backend):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pandas", "polars", "dask", "flink"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "pandas", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
@@ -1522,7 +1507,7 @@ def test_table_unnest_array_of_struct_of_array(con):
 
 
 notimpl_aggs = pytest.mark.notimpl(
-    ["datafusion", "flink", "pandas", "dask"], raises=com.OperationNotDefinedError
+    ["datafusion", "flink", "pandas"], raises=com.OperationNotDefinedError
 )
 
 

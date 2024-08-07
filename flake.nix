@@ -134,9 +134,7 @@
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        # move back to 3.12 when dask-expr is supported or the dask backend is
-        # removed
-        default = ibis310;
+        default = ibis312;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";

@@ -28,7 +28,6 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask"])
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
@@ -55,7 +54,6 @@ def test_single_field(struct, field, expected):
     tm.assert_series_equal(result.field, pd.Series(expected, name="field"))
 
 
-@pytest.mark.notimpl(["dask"])
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
@@ -251,7 +249,7 @@ def test_keyword_fields(con, nullable):
 )
 @pytest.mark.notimpl(
     # https://github.com/pandas-dev/pandas/issues/58909
-    ["pandas", "dask"],
+    ["pandas"],
     raises=TypeError,
     reason="unhashable type: 'dict'",
 )
