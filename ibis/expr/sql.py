@@ -148,7 +148,7 @@ def qualify_projections(projections, groups):
 
     def transformer(node):
         if isinstance(node, sge.Alias) and (name := node.this.name).startswith("_g"):
-            return groups[0][name]
+            return groups[name]
         return node
 
     projects = [project.transform(transformer) for project in projections]
@@ -170,9 +170,12 @@ def convert_sort(sort, catalog):
         table = table.order_by(keys)
 
     if sort.projections:
+        groups = {}
         # group definitions that may be used in projections are defined
         # in the aggregate in dependencies...
-        groups = [val.group for val in sort.dependencies]
+        for dep in sort.dependencies:
+            if (group := getattr(dep, "group", None)) is not None:
+                groups |= group
         projs = [
             convert(proj, catalog=catalog)
             for proj in qualify_projections(sort.projections, groups)
