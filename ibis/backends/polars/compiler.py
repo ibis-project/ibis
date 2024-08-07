@@ -8,8 +8,6 @@ from collections.abc import Mapping
 from functools import partial, reduce, singledispatch
 from math import isnan
 
-import numpy as np
-import pandas as pd
 import polars as pl
 
 import ibis.common.exceptions as com
@@ -834,7 +832,7 @@ def count_star(op, **kw):
 
 @translate.register(ops.TimestampNow)
 def timestamp_now(op, **_):
-    return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
+    return pl.lit(datetime.datetime.now())
 
 
 @translate.register(ops.DateNow)
@@ -1175,12 +1173,12 @@ def elementwise_udf(op, **kw):
 
 @translate.register(ops.E)
 def execute_e(op, **_):
-    return pl.lit(np.e)
+    return pl.lit(math.e)
 
 
 @translate.register(ops.Pi)
 def execute_pi(op, **_):
-    return pl.lit(np.pi)
+    return pl.lit(math.pi)
 
 
 @translate.register(ops.Time)
