@@ -38,17 +38,17 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 atpublic = ">=2.3,<6"
-numpy = ">=1.23.2,<3"
-pandas = ">=1.5.3,<3"
 parsy = ">=2,<3"
-pyarrow = { version = ">=10.0.1,<18", optional = true }
-pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
-rich = ">=12.4.4,<14"
 sqlglot = ">=23.4,<25.10"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
+numpy = { version = ">=1.23.2,<3", optional = true }
+pandas = { version = ">=1.5.3,<3", optional = true }
+pyarrow = { version = ">=10.0.1,<18", optional = true }
+pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
+rich = { version = ">=12.4.4,<14", optional = true }
 black = { version = ">=22.1.0,<25", optional = true }
 clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "arrow",
@@ -150,26 +150,98 @@ bigquery = [
   "pyarrow",
   "pyarrow-hotfix",
   "pydata-google-auth",
+  "numpy",
+  "pandas",
+  "rich",
 ]
-clickhouse = ["clickhouse-connect", "pyarrow", "pyarrow-hotfix"]
-dask = ["dask", "regex", "packaging", "pyarrow", "pyarrow-hotfix"]
-datafusion = ["datafusion", "pyarrow", "pyarrow-hotfix"]
-druid = ["pydruid", "pyarrow", "pyarrow-hotfix"]
-duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix"]
-exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix"]
-flink = ["pyarrow", "pyarrow-hotfix"]
-impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
-mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix"]
-mysql = ["pymysql", "pyarrow", "pyarrow-hotfix"]
-oracle = ["oracledb", "pyarrow", "pyarrow-hotfix"]
-pandas = ["regex", "packaging", "pyarrow", "pyarrow-hotfix"]
-polars = ["polars", "pyarrow", "pyarrow-hotfix"]
-postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
-pyspark = ["pyspark", "packaging", "pyarrow", "pyarrow-hotfix"]
-snowflake = ["snowflake-connector-python", "pyarrow", "pyarrow-hotfix"]
-sqlite = ["regex", "pyarrow", "pyarrow-hotfix"]
-risingwave = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
-trino = ["trino", "pyarrow", "pyarrow-hotfix"]
+clickhouse = [
+  "clickhouse-connect",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+dask = [
+  "dask",
+  "regex",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+datafusion = [
+  "datafusion",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+druid = ["pydruid", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+flink = ["pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+impala = ["impyla", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+mysql = ["pymysql", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+oracle = [
+  "oracledb",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+pandas = [
+  "regex",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+polars = [
+  "polars",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+pyspark = [
+  "pyspark",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+snowflake = [
+  "snowflake-connector-python",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+sqlite = ["regex", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+risingwave = [
+  "psycopg2",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+trino = ["trino", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
