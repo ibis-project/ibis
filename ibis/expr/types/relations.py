@@ -22,7 +22,6 @@ from ibis.common.selectors import Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
-from ibis.expr.types.pretty import to_rich
 from ibis.expr.types.temporal import TimestampColumn
 from ibis.util import deprecated
 
@@ -529,6 +528,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …        │ … │
         └─────────┴──────────┴───┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_columns=max_columns,

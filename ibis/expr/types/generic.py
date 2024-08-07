@@ -14,7 +14,6 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
-from ibis.expr.types.pretty import to_rich
 from ibis.util import deprecated, promote_list, warn_deprecated
 
 if TYPE_CHECKING:
@@ -1419,6 +1418,8 @@ class Column(Value, _FixedTextJupyterMixin):
         │ …      │
         └────────┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_rows=max_rows,
