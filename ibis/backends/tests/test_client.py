@@ -429,6 +429,18 @@ def test_create_drop_view(ddl_con, temp_view):
 
 
 @pytest.fixture
+def test_employee_schema() -> ibis.schema:
+    return ibis.schema(
+        {
+            "first_name": "string",
+            "last_name": "string",
+            "department_name": "string",
+            "salary": "float64",
+        }
+    )
+
+
+@pytest.fixture
 def employee_empty_temp_table(backend, con, test_employee_schema):
     temp_table_name = gen_name("temp_employee_empty_table")
     _create_temp_table_with_schema(backend, con, temp_table_name, test_employee_schema)
@@ -437,9 +449,16 @@ def employee_empty_temp_table(backend, con, test_employee_schema):
 
 
 @pytest.fixture
-def employee_data_1_temp_table(
-    backend, con, test_employee_schema, test_employee_data_1
-):
+def employee_data_1_temp_table(backend, con, test_employee_schema):
+    test_employee_data_1 = pd.DataFrame(
+        {
+            "first_name": ["A", "B", "C"],
+            "last_name": ["D", "E", "F"],
+            "department_name": ["AA", "BB", "CC"],
+            "salary": [100.0, 200.0, 300.0],
+        }
+    )
+
     temp_table_name = gen_name("temp_employee_data_1")
     _create_temp_table_with_schema(
         backend, con, temp_table_name, test_employee_schema, data=test_employee_data_1
@@ -447,6 +466,22 @@ def employee_data_1_temp_table(
     assert temp_table_name in con.list_tables()
     yield temp_table_name
     con.drop_table(temp_table_name, force=True)
+
+
+@pytest.fixture
+def test_employee_data_2():
+    import pandas as pd
+
+    df2 = pd.DataFrame(
+        {
+            "first_name": ["X", "Y", "Z"],
+            "last_name": ["A", "B", "C"],
+            "department_name": ["XX", "YY", "ZZ"],
+            "salary": [400.0, 500.0, 600.0],
+        }
+    )
+
+    return df2
 
 
 @pytest.fixture
