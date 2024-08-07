@@ -729,7 +729,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             "user:pass",
             marks=[
                 pytest.mark.notyet(
-                    ["bigquery", "clickhouse", "snowflake", "trino"],
+                    ["bigquery", "clickhouse", "trino"],
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )
