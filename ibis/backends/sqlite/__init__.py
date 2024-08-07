@@ -19,7 +19,6 @@ from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C, F
-from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
 
 if TYPE_CHECKING:
@@ -303,6 +302,8 @@ class Backend(SQLBackend, UrlFromPath):
         self, cursor: sqlite3.Cursor, schema: sch.Schema
     ) -> pd.DataFrame:
         import pandas as pd
+
+        from ibis.backends.sqlite.converter import SQLitePandasData
 
         df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
         return SQLitePandasData.convert_table(df, schema)

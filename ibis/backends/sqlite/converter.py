@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import pandas as pd
+from packaging.version import parse as vparse
 
 from ibis.formats.pandas import PandasData
 
 # The "mixed" format was added in pandas 2
-_DATETIME_FORMAT = "mixed" if pd.__version__ >= "2.0.0" else None
+_DATETIME_FORMAT = "mixed" if vparse(pd.__version__) >= vparse("2.0.0") else None
 
 
 class SQLitePandasData(PandasData):
