@@ -4344,8 +4344,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     … │        … │        … │        … │
         └───────┴──────────┴──────────┴──────────┘
         """
-        import pandas as pd
-
         import ibis.selectors as s
         from ibis.expr.rewrites import _, p, x
 
@@ -4367,23 +4365,25 @@ class Table(Expr, _FixedTextJupyterMixin):
         if names is None:
             # no names provided, compute them from the data
             names = self.select(names_from).distinct().execute()
+            columns = names.columns.tolist()
+            names = list(names.itertuples(index=False))
         else:
             if not (columns := [col.get_name() for col in names_from.expand(self)]):
                 raise com.IbisInputError(
                     f"No matching names columns in `names_from`: {orig_names_from}"
                 )
-            names = pd.DataFrame(list(map(util.promote_list, names)), columns=columns)
+            names = list(map(tuple, map(util.promote_list, names)))
 
         if names_sort:
-            names = names.sort_values(by=names.columns.tolist())
+            names.sort()
 
         values_cols = values_from.expand(self)
         more_than_one_value = len(values_cols) > 1
         aggs = {}
 
-        names_cols_exprs = [self[col] for col in names.columns]
+        names_cols_exprs = [self[col] for col in columns]
 
-        for keys in names.itertuples(index=False):
+        for keys in names:
             where = ibis.and_(*map(operator.eq, names_cols_exprs, keys))
 
             for values_col in values_cols:
