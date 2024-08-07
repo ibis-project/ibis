@@ -608,8 +608,6 @@ class Expr(Immutable, Coercible):
     def to_parquet_dir(
         self,
         path: str | Path,
-        filename_prefix: str = "out",
-        write_batches: bool = False,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -635,9 +633,7 @@ class Expr(Immutable, Coercible):
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
 
         """
-        self._find_backend(use_default=True).to_parquet_dir(
-            self, path, filename_prefix, write_batches, **kwargs
-        )
+        self._find_backend(use_default=True).to_parquet_dir(self, path, **kwargs)
 
     @experimental
     def to_csv(

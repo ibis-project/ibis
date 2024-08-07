@@ -478,8 +478,6 @@ class _FileIOHandler:
         self,
         expr: ir.Table,
         path: str | Path,
-        filename_prefix: str = "out",
-        write_batches: bool = False,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -495,10 +493,6 @@ class _FileIOHandler:
             The ibis expression to execute and persist to parquet.
         path
             The data source. A string or Path to the directory where the parquet file will be written.
-        filename_prefix
-            The prefix name of the parquet file. What is before `.parquet`.
-        write_batches
-            If True writes each batch into a different file.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
@@ -507,23 +501,17 @@ class _FileIOHandler:
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
 
         """
+        self._import_pyarrow()
+        import pyarrow.parquet as pq
 
         dir_path = Path(path)
         dir_path.mkdir(parents=True, exist_ok=True)
 
-        dir_path_file = dir_path / filename_prefix
-
-        if write_batches:
-            self._import_pyarrow()
-            import pyarrow.parquet as pq
-
-            with expr.to_pyarrow_batches(params=params) as batch_reader:
-                for i, batch in enumerate(batch_reader):
-                    file_path = f"{dir_path_file}_{i}.parquet"
-                    with pq.ParquetWriter(file_path, batch.schema, **kwargs) as writer:
-                        writer.write_batch(batch)
-        else:
-            self.to_parquet(expr, f"{dir_path_file}.parquet", params=params, **kwargs)
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            for i, batch in enumerate(batch_reader):
+                file_path = f"{dir_path}/out_{i}.parquet"
+                with pq.ParquetWriter(file_path, batch.schema, **kwargs) as writer:
+                    writer.write_batch(batch)
 
     @util.experimental
     def to_csv(
