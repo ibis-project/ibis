@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hypothesis as h
 import hypothesis.strategies as st
-import numpy as np
 import pytest
 
 import ibis
@@ -157,11 +156,13 @@ def test_schema_array_dtype(schema):
 
 @h.given(its.primitive_dtypes())
 def test_primitive_dtypes_to_pandas(dtype):
+    np = pytest.importorskip("numpy")
     assert isinstance(dtype.to_pandas(), np.dtype)
 
 
 @h.given(its.schema())
 def test_schema_to_pandas(schema):
+    pytest.importorskip("pandas")
     pandas_schema = schema.to_pandas()
     assert len(pandas_schema) == len(schema)
 

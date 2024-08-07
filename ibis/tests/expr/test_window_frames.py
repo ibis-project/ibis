@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 from pytest import param
 
@@ -264,11 +263,15 @@ def test_window_api_properly_determines_how():
     assert ibis.window(between=(None, 5)).how == "rows"
     assert ibis.window(between=(1, 3)).how == "rows"
     assert ibis.window(5).how == "rows"
-    assert ibis.window(np.int64(7)).how == "rows"
     assert ibis.window(ibis.interval(days=3)).how == "range"
     assert ibis.window(3.1).how == "range"
     assert ibis.window(following=3.14).how == "range"
     assert ibis.window(following=3).how == "rows"
+
+
+def test_window_api_properly_determines_how_numpy():
+    np = pytest.importorskip("numpy")
+    assert ibis.window(np.int64(7)).how == "rows"
 
 
 def test_window_api_mutually_exclusive_options():
