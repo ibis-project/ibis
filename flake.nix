@@ -122,9 +122,9 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis310 ibis311 ibis312;
+        inherit (pkgs) ibisCore310 ibisCore311 ibisCore312 ibisLocal310 ibisLocal311 ibisLocal312;
 
-        default = pkgs.ibis312;
+        default = pkgs.ibisCore312;
 
         inherit (pkgs) update-lock-files gen-examples check-release-notes-spelling;
       };
