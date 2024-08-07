@@ -3,8 +3,6 @@ from __future__ import annotations
 import datetime
 from collections import OrderedDict
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -12,6 +10,9 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.backends.tests.errors import OracleDatabaseError, PsycoPg2InternalError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 
 @pytest.mark.parametrize(

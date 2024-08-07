@@ -3,8 +3,6 @@ from __future__ import annotations
 from datetime import date
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -31,6 +29,9 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.legacy.udf.vectorized import reduction
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 with pytest.warns(FutureWarning, match="v9.0"):
 

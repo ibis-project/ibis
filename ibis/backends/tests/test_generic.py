@@ -6,9 +6,6 @@ import decimal
 from collections import Counter
 from operator import invert, methodcaller, neg
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import toolz
 from pytest import param
@@ -37,6 +34,10 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",

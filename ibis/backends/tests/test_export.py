@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from operator import methodcaller
 
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -25,6 +24,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 
+pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 
 limit = [

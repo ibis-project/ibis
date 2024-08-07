@@ -13,8 +13,6 @@ import sys
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
-import numpy as np
-import pandas as pd
 import pytest
 import rich.console
 import toolz
@@ -46,6 +44,8 @@ if TYPE_CHECKING:
     from ibis.backends import BaseBackend
 
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
 
@@ -1117,6 +1117,8 @@ def test_dunder_array_column(alltypes, dtype):
 
 @pytest.mark.parametrize("interactive", [True, False])
 def test_repr(alltypes, interactive, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     expr = alltypes.select("date_string_col")
@@ -1132,6 +1134,8 @@ def test_repr(alltypes, interactive, monkeypatch):
 
 @pytest.mark.parametrize("show_types", [True, False])
 def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", True)
     monkeypatch.setattr(ibis.options.repr.interactive, "show_types", show_types)
 
@@ -1145,6 +1149,8 @@ def test_interactive_repr_show_types(alltypes, show_types, monkeypatch):
 
 @pytest.mark.parametrize("is_jupyter", [True, False])
 def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", True)
 
     cols = {f"c_{i}": ibis._.id + i for i in range(50)}
@@ -1184,6 +1190,8 @@ def test_interactive_repr_max_columns(alltypes, is_jupyter, monkeypatch):
 @pytest.mark.parametrize("expr_type", ["table", "column"])
 @pytest.mark.parametrize("interactive", [True, False])
 def test_repr_mimebundle(alltypes, interactive, expr_type, monkeypatch):
+    pytest.importorskip("rich")
+
     monkeypatch.setattr(ibis.options, "interactive", interactive)
 
     if expr_type == "column":
