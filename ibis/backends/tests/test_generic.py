@@ -345,13 +345,19 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["polars", "druid", "exasol", "pandas", "dask"])
+@pytest.mark.notimpl(["exasol"])
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="requires enabling window functions",
+)
+@pytest.mark.notimpl(["polars", "dask", "pandas"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["oracle"],
     raises=OracleDatabaseError,
     reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by oracle",
 )
-@pytest.mark.never(
+@pytest.mark.notyet(
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
