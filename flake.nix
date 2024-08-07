@@ -110,10 +110,6 @@
         inherit shellHook;
 
         PYSPARK_PYTHON = "${env}/bin/python";
-        PGPASSWORD = "postgres";
-        MYSQL_PWD = "ibis";
-        MSSQL_SA_PASSWORD = "1bis_Testing!";
-        DRUID_URL = "druid://localhost:8082/druid/v2/sql";
 
         # needed for mssql+pyodbc
         ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
