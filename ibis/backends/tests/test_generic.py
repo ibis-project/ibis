@@ -352,18 +352,12 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by oracle",
 )
 @pytest.mark.never(
-    ["mssql"],
-    raises=PyODBCProgrammingError,
-    reason="sqlglot transform produces an order by in a subquery, which is not allowed by mssql",
-)
-@pytest.mark.never(
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
 # TODO(kszucs): this is not supported at the expression level
 def test_filter_with_window_op(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.order_by("id")
-    table = sorted_alltypes
+    table = alltypes
     window = ibis.window(group_by=table.id)
     table = table.filter(lambda t: t["id"].mean().over(window) > 3).order_by("id")
     result = table.execute()
