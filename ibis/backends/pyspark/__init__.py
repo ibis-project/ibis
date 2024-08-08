@@ -1286,7 +1286,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             df = df.write.format(format)
             for k, v in (options or {}).items():
                 df = df.option(k, v)
-            df.save(path)
+            df.save(os.fspath(path))
             return None
         sq = df.writeStream.format(format)
         sq = sq.option("path", os.fspath(path))
