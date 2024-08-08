@@ -620,7 +620,7 @@ class Expr(Immutable, Coercible):
         Parameters
         ----------
         directory
-            The data source. A string or Path to the directory where the parquet file will be written.
+            The data target. A string or Path to the directory where the parquet file will be written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
