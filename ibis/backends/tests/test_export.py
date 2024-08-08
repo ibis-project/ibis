@@ -215,7 +215,6 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     )
 
 
-###new-test###
 def test_table_to_parquet_dir(tmp_path, backend, awards_players):
     outparquet_dir = tmp_path
     awards_players.to_parquet_dir(outparquet_dir)
@@ -228,9 +227,6 @@ def test_table_to_parquet_dir(tmp_path, backend, awards_players):
     backend.assert_frame_equal(
         awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
     )
-
-
-###new test
 
 
 @pytest.mark.notimpl(
