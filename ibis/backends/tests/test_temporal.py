@@ -579,7 +579,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "snowflake", "mssql", "oracle", "druid", "exasol"],
+    ["datafusion", "sqlite", "mssql", "oracle", "druid", "exasol"],
     raises=com.OperationNotDefinedError,
 )
 def test_integer_to_interval_timestamp(
@@ -637,7 +637,6 @@ def test_integer_to_interval_timestamp(
         "impala",
         "mysql",
         "sqlite",
-        "snowflake",
         "polars",
         "mssql",
         "druid",
@@ -1017,10 +1016,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    ["snowflake", "mssql", "exasol", "druid"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["mssql", "exasol", "druid"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1030,10 +1026,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.notimpl(
-    ["snowflake", "mssql", "exasol", "druid"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["mssql", "exasol", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=AssertionError, reason="incorrect results")
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()

@@ -65,8 +65,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.MultiQuantile,
-        ops.IntervalFromInteger,
         ops.IntervalAdd,
+        ops.IntervalSubtract,
+        ops.IntervalMultiply,
+        ops.IntervalFloorDivide,
         ops.TimestampDiff,
     )
 
@@ -266,6 +268,8 @@ $$""",
             return self.if_(self.f.is_object(arg), arg, NULL)
         elif to.is_array():
             return self.if_(self.f.is_array(arg), arg, NULL)
+        elif op.arg.dtype.is_integer() and to.is_interval():
+            return sge.Interval(this=arg, unit=self.v[to.unit.name])
         return self.cast(arg, to)
 
     def visit_ToJSONMap(self, op, *, arg):
@@ -365,14 +369,17 @@ $$""",
     def visit_TimestampDelta(self, op, *, part, left, right):
         return self.f.timestampdiff(part, right, left, dialect=self.dialect)
 
-    def visit_TimestampDateAdd(self, op, *, left, right):
-        if not isinstance(op.right, ops.Literal):
-            raise com.OperationNotDefinedError(
-                f"right side of {type(op).__name__} operation must be an interval literal"
-            )
-        return sg.exp.Add(this=left, expression=right)
+    def visit_TimestampAdd(self, op, *, left, right):
+        return self.f.timestampadd(right.unit, right.this, left, dialect=self.dialect)
 
-    visit_DateAdd = visit_TimestampAdd = visit_TimestampDateAdd
+    def visit_TimestampSub(self, op, *, left, right):
+        return self.f.timestampadd(right.unit, -right.this, left, dialect=self.dialect)
+
+    visit_DateAdd = visit_TimestampAdd
+    visit_DateSub = visit_TimestampSub
+
+    def visit_IntervalFromInteger(self, op, *, arg, unit):
+        return sge.Interval(this=arg, unit=self.v[unit.name])
 
     def visit_IntegerRange(self, op, *, start, stop, step):
         return self.if_(
