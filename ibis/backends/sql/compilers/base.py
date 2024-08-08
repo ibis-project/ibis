@@ -659,6 +659,11 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
+
+        if from_.is_integer() and to.is_interval():
+            return self._make_interval(arg, to.unit)
+
         return self.cast(arg, to)
 
     def visit_ScalarSubquery(self, op, *, rel):
@@ -941,8 +946,11 @@ class SQLGlotCompiler(abc.ABC):
             ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
         )
 
+    def _make_interval(self, arg, unit):
+        return sge.Interval(this=arg, unit=self.v[unit.singular])
+
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=arg, unit=self.v[unit.singular.upper()])
+        return self._make_interval(arg, unit)
 
     ### String Instruments
     def visit_Strip(self, op, *, arg):

@@ -3,7 +3,6 @@ from __future__ import annotations
 import sqlglot.expressions as sge
 
 import ibis.common.exceptions as com
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers import PostgresCompiler
@@ -87,13 +86,8 @@ class RisingWaveCompiler(PostgresCompiler):
 
     visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        if op.arg.shape == ds.scalar:
-            return sge.Interval(this=arg, unit=self.v[unit.name])
-        elif op.arg.shape == ds.columnar:
-            return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
-        else:
-            raise ValueError("Invalid shape for converting to interval")
+    def _make_interval(self, arg, unit):
+        return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():

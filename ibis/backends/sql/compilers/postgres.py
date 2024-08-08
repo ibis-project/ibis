@@ -632,7 +632,7 @@ class PostgresCompiler(SQLGlotCompiler):
         slice_expr = sge.Slice(this=start + 1, expression=stop)
         return sge.paren(arg, copy=False)[slice_expr]
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
+    def _make_interval(self, arg, unit):
         plural = unit.plural
         if plural == "minutes":
             plural = "mins"
@@ -666,11 +666,6 @@ class PostgresCompiler(SQLGlotCompiler):
             if (timezone := to.timezone) is not None:
                 arg = self.f.timezone(timezone, arg)
             return arg
-        elif from_.is_integer() and to.is_interval():
-            unit = to.unit
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit), arg=arg, unit=unit
-            )
         elif from_.is_string() and to.is_binary():
             # Postgres and Python use the words "decode" and "encode" in
             # opposite ways, sweet!
@@ -678,7 +673,7 @@ class PostgresCompiler(SQLGlotCompiler):
         elif from_.is_binary() and to.is_string():
             return self.f.encode(arg, "escape")
 
-        return self.cast(arg, op.to)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     visit_TryCast = visit_Cast
 

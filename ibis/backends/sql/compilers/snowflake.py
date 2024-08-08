@@ -268,9 +268,7 @@ $$""",
             return self.if_(self.f.is_object(arg), arg, NULL)
         elif to.is_array():
             return self.if_(self.f.is_array(arg), arg, NULL)
-        elif op.arg.dtype.is_integer() and to.is_interval():
-            return sge.Interval(this=arg, unit=self.v[to.unit.name])
-        return self.cast(arg, to)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_ToJSONMap(self, op, *, arg):
         return self.if_(self.f.is_object(arg), arg, NULL)

@@ -11,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
-    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
@@ -1100,11 +1099,6 @@ def test_first_last(backend):
     ["mssql"], raises=PyODBCProgrammingError, reason="not support by the backend"
 )
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="bug in Flink")
-@pytest.mark.notyet(
-    ["exasol"],
-    raises=ExaQueryError,
-    reason="database can't handle UTC timestamps in DataFrames",
-)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
