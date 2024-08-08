@@ -49,7 +49,7 @@ tpch_catalog = {
     ],
 }
 
-root = Path(__file__).absolute().parents[2]
+root = Path(__file__).absolute().parents[3]
 
 SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h"
 
@@ -61,7 +61,7 @@ SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h
         param(SQL_QUERY_PATH / "03.sql", id="tpch3"),
     ],
 )
-def test_parse_sql_tpch(tpch_query_file, snapshot):
+def test_parse_sql_tpch(tpch_query_file, snapshot, con):
     with open(tpch_query_file) as f:
         sql = f.read()
 
