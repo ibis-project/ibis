@@ -22,7 +22,7 @@ orders = ibis.table(
         "o_custkey": "int64",
         "o_orderstatus": "string",
         "o_totalprice": "decimal(12, 2)",
-        "o_orderdate": "string",
+        "o_orderdate": "date",
         "o_orderpriority": "string",
         "o_clerk": "string",
         "o_shippriority": "int32",
@@ -54,11 +54,7 @@ cast = ibis.literal("1995-03-15").cast("date")
 joinchain = (
     customer.inner_join(
         orders,
-        [
-            (customer.c_custkey == orders.o_custkey),
-            lit,
-            (orders.o_orderdate.cast("timestamp") < cast),
-        ],
+        [(customer.c_custkey == orders.o_custkey), lit, (orders.o_orderdate < cast)],
     )
     .inner_join(
         lineitem,

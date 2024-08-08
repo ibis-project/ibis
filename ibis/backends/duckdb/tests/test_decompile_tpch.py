@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
 import pytest
 from pytest import param
 
 import ibis
+from ibis.backends.tests.tpc.conftest import compare_tpc_results
+from ibis.formats.pandas import PandasData
 
 tpch_catalog = {
     "lineitem": {
@@ -41,7 +44,7 @@ tpch_catalog = {
         ("o_custkey", "int64"),
         ("o_orderstatus", "string"),
         ("o_totalprice", "decimal(12,2)"),
-        ("o_orderdate", "string"),
+        ("o_orderdate", "date"),
         ("o_orderpriority", "string"),
         ("o_clerk", "string"),
         ("o_shippriority", "int32"),
@@ -55,16 +58,36 @@ SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h
 
 
 @pytest.mark.parametrize(
-    "tpch_query_file",
+    "tpch_query",
     [
-        param(SQL_QUERY_PATH / "01.sql", id="tpch1"),
-        param(SQL_QUERY_PATH / "03.sql", id="tpch3"),
+        param(1, id="tpch01"),
+        param(3, id="tpch03"),
     ],
 )
-def test_parse_sql_tpch(tpch_query_file, snapshot, con):
+def test_parse_sql_tpch(tpch_query, snapshot, con, data_dir):
+    tpch_query_file = SQL_QUERY_PATH / f"{tpch_query:02d}.sql"
     with open(tpch_query_file) as f:
         sql = f.read()
 
     expr = ibis.parse_sql(sql, tpch_catalog)
     code = ibis.decompile(expr, format=True)
-    snapshot.assert_match(code, "out.tpch.py")
+    snapshot.assert_match(code, "out_tpch.py")
+
+    con.raw_sql("USE tpch")
+
+    # Get results from executing SQL directly on DuckDB
+    expected_df = con.con.execute(sql).df()
+
+    SNAPSHOT_MODULE = f"ibis.backends.duckdb.tests.snapshots.test_decompile_tpch.test_parse_sql_tpch.tpch{tpch_query:02d}.out_tpch"
+
+    module = importlib.import_module(SNAPSHOT_MODULE)
+
+    result_df = con.to_pandas(module.result)
+
+    # Then set the expected columns so we can coerce the datatypes
+    # of the pandas dataframe correctly
+    expected_df.columns = result_df.columns
+
+    expected_df = PandasData.convert_table(expected_df, module.result.schema())
+
+    compare_tpc_results(result_df, expected_df)
