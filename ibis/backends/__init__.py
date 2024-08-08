@@ -507,11 +507,9 @@ class _FileIOHandler:
         dir_path = Path(path)
         dir_path.mkdir(parents=True, exist_ok=True)
 
+        import pyarrow.dataset as ds
         with expr.to_pyarrow_batches(params=params) as batch_reader:
-            for i, batch in enumerate(batch_reader):
-                file_path = f"{dir_path}/out_{i}.parquet"
-                with pq.ParquetWriter(file_path, batch.schema, **kwargs) as writer:
-                    writer.write_batch(batch)
+            ds.write_dataset(batch_reader, base_dir=dir_path, format="parquet", **kwargs)
 
     @util.experimental
     def to_csv(
