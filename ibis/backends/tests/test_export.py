@@ -216,10 +216,9 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 
 
 def test_table_to_parquet_dir(tmp_path, backend, awards_players):
-    outparquet_dir = tmp_path
+    outparquet_dir = tmp_path / "out"
     awards_players.to_parquet_dir(outparquet_dir)
 
-    # the batch is so small we write only one, wonder if we should modify test
     parquet_files = list(outparquet_dir.glob("*.parquet"))
     df_list = [pd.read_parquet(file) for file in parquet_files]
     df = pd.concat(df_list).reset_index(drop=True)

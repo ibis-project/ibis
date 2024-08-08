@@ -496,20 +496,21 @@ class _FileIOHandler:
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
 
-        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
 
         """
         self._import_pyarrow()
-        import pyarrow.parquet as pq
+        import pyarrow.dataset as ds
 
         dir_path = Path(path)
-        dir_path.mkdir(parents=True, exist_ok=True)
 
-        import pyarrow.dataset as ds
+        # by default write_dataset creates the directory
         with expr.to_pyarrow_batches(params=params) as batch_reader:
-            ds.write_dataset(batch_reader, base_dir=dir_path, format="parquet", **kwargs)
+            ds.write_dataset(
+                batch_reader, base_dir=dir_path, format="parquet", **kwargs
+            )
 
     @util.experimental
     def to_csv(
