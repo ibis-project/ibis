@@ -28,6 +28,7 @@ from ibis.backends.tests.errors import (
     MySQLOperationalError,
     MySQLProgrammingError,
     OracleDatabaseError,
+    OracleInterfaceError,
     PolarsInvalidOperationError,
     PolarsPanicException,
     PsycoPg2InternalError,
@@ -500,6 +501,11 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=com.UnsupportedOperationError,
                     reason="month not implemented",
                 ),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=OracleInterfaceError,
+                    reason="cursor not open, probably a bug in the sql generated",
+                ),
             ],
         ),
         param(
@@ -512,11 +518,8 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=ValueError,
                     reason="Metadata inference failed in `add`.",
                 ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=com.UnsupportedOperationError,
-                    reason="week not implemented",
-                ),
+                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -579,8 +582,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "mssql", "oracle", "druid", "exasol"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "sqlite", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
@@ -614,12 +616,20 @@ def test_integer_to_interval_timestamp(
         param("Q", marks=pytest.mark.xfail),
         param(
             "M",
-            marks=pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+            marks=[
+                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=OracleInterfaceError,
+                    reason="cursor not open, probably a bug in the sql generated",
+                ),
+            ],
         ),
         param(
             "W",
             marks=[
                 pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -631,32 +641,21 @@ def test_integer_to_interval_timestamp(
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "flink",
-        "impala",
-        "mysql",
-        "sqlite",
-        "polars",
-        "mssql",
-        "druid",
-        "oracle",
-    ],
+    ["datafusion", "flink", "impala", "sqlite", "polars", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    [
-        "sqlite",
-    ],
+    ["sqlite"],
     raises=(com.UnsupportedOperationError, com.OperationNotDefinedError),
     reason="Handling unsupported op error for DateAdd with weeks",
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
-    array = alltypes.date_string_col.split("/")
-    month, day, year = array[0], array[1], array[2]
-    date_col = ibis.literal("-").join(["20" + year, month, day]).cast("date")
+    month = alltypes.date_string_col[:2]
+    day = alltypes.date_string_col[3:5]
+    year = alltypes.date_string_col[6:8]
+    date_col = ("20" + year + "-" + month + "-" + day).cast("date")
     expr = (date_col + interval).name("tmp")
 
     with warnings.catch_warnings():
@@ -1727,9 +1726,6 @@ def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     backend.assert_series_equal(golden, result.timestamp_col)
 
 
-@pytest.mark.notimpl(
-    ["oracle"], raises=OracleDatabaseError, reason="ORA-01861 literal does not match"
-)
 def test_date_scalar_from_iso(con):
     expr = ibis.literal("2022-02-24")
     expr2 = ibis.date(expr)
@@ -1739,11 +1735,6 @@ def test_date_scalar_from_iso(con):
 
 
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="ORA-22849 type CLOB is not supported",
-)
 @pytest.mark.notimpl(["exasol"], raises=AssertionError, strict=False)
 def test_date_column_from_iso(backend, con, alltypes, df):
     expr = (
@@ -1830,7 +1821,6 @@ def build_date_col(t):
 
 @pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @pytest.mark.parametrize(
     ("left_fn", "right_fn"),
     [
@@ -2064,8 +2054,8 @@ def test_delta(con, start, end, unit, expected):
                 ),
                 pytest.mark.notimpl(
                     ["oracle"],
-                    raises=com.UnsupportedOperationError,
-                    reason="backend doesn't support sub-second interval precision",
+                    raises=com.OperationNotDefinedError,
+                    reason="TimestampBucket not implemented",
                 ),
             ],
             id="milliseconds",
