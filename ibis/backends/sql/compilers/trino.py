@@ -442,17 +442,20 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def _make_interval(self, arg, unit):
         short = unit.short
-        if short in ("Y", "Q", "M", "W"):
+        if short in ("Q", "W"):
             raise com.UnsupportedOperationError(f"Interval unit {unit!r} not supported")
+
+        if isinstance(arg, sge.Literal):
+            # force strings in interval literals because trino requires it
+            arg.args["is_string"] = True
+            return super()._make_interval(arg, unit)
+
+        elif short in ("Y", "M"):
+            return arg * super()._make_interval(sge.convert("1"), unit)
         elif short in ("D", "h", "m", "s", "ms", "us"):
-            if isinstance(arg, sge.Literal):
-                # force strings in interval literals because trino requires it
-                arg.args["is_string"] = True
-                return super()._make_interval(arg, unit)
-            else:
-                return self.f.parse_duration(
-                    self.f.concat(self.cast(arg, dt.string), short.lower())
-                )
+            return self.f.parse_duration(
+                self.f.concat(self.cast(arg, dt.string), short.lower())
+            )
         else:
             raise com.UnsupportedOperationError(
                 f"Interval unit {unit.name!r} not supported"
