@@ -227,15 +227,16 @@ def test_table_to_parquet_dir(tmp_path, backend, awards_players):
             outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
         )
 
-    parquet_files = sorted(outparquet_dir.glob("*.parquet"), key=lambda path: int(path.with_suffix("").name.split("-")[1])
+    parquet_files = sorted(
+        outparquet_dir.glob("*.parquet"),
+        key=lambda path: int(path.with_suffix("").name.split("-")[1]),
+    )
+
     df_list = [pd.read_parquet(file) for file in parquet_files]
     df = pd.concat(df_list).reset_index(drop=True)
 
-    awd_df = awards_players.to_pandas().fillna(pd.NA)
-    columns = list(set(awd_df.columns) & set(df.columns))
-
     backend.assert_frame_equal(
-        awd_df.sort_values(by=columns), df.fillna(pd.NA).sort_values(by=columns)
+        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
     )
 
 
