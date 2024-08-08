@@ -1283,10 +1283,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     ) -> StreamingQuery | None:
         df = self._session.sql(self.compile(expr, params=params, limit=limit))
         if self.mode == "batch":
-            df = df.write.format(format)
+            df = df.write.format(format).mode(
+                "overwrite"
+            )  # df = df.write.format(format)
             for k, v in (options or {}).items():
                 df = df.option(k, v)
-            df.save(path)
+            df.save(os.fspath(path))  # df.save(path)
             return None
         sq = df.writeStream.format(format)
         sq = sq.option("path", os.fspath(path))
