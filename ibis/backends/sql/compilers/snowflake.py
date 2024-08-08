@@ -378,9 +378,6 @@ $$""",
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=arg, unit=self.v[unit.name])
-
     def visit_IntegerRange(self, op, *, start, stop, step):
         return self.if_(
             step.neq(0), self.f.array_generate_range(start, stop, step), self.f.array()
