@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -57,6 +58,14 @@ root = Path(__file__).absolute().parents[3]
 SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h"
 
 
+@contextmanager
+def set_database(con, db):
+    olddb = con.current_database
+    con.raw_sql(f"USE {db}")
+    yield
+    con.raw_sql(f"USE {olddb}")
+
+
 @pytest.mark.parametrize(
     "tpch_query",
     [
@@ -73,16 +82,15 @@ def test_parse_sql_tpch(tpch_query, snapshot, con, data_dir):
     code = ibis.decompile(expr, format=True)
     snapshot.assert_match(code, "out_tpch.py")
 
-    con.raw_sql("USE tpch")
-
-    # Get results from executing SQL directly on DuckDB
-    expected_df = con.con.execute(sql).df()
-
+    # Import just-created snapshot
     SNAPSHOT_MODULE = f"ibis.backends.duckdb.tests.snapshots.test_decompile_tpch.test_parse_sql_tpch.tpch{tpch_query:02d}.out_tpch"
-
     module = importlib.import_module(SNAPSHOT_MODULE)
 
-    result_df = con.to_pandas(module.result)
+    with set_database(con, "tpch"):
+        # Get results from executing SQL directly on DuckDB
+        expected_df = con.con.execute(sql).df()
+        # Get results from decompiled ibis query
+        result_df = con.to_pandas(module.result)
 
     # Then set the expected columns so we can coerce the datatypes
     # of the pandas dataframe correctly
