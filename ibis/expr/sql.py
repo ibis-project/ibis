@@ -182,6 +182,9 @@ def convert_sort(sort, catalog):
         ]
         table = table.select(projs)
 
+    if isinstance(sort.limit, int):
+        table = table.limit(sort.limit)
+
     return table
 
 

@@ -248,7 +248,8 @@ def test_parse_sql_tpch3(snapshot):
         ORDER BY
             revenue DESC,
             o_orderdate
-        LIMIT 10"""
+        LIMIT 10
+    """
 
     expr = ibis.parse_sql(sql, tpch_catalog)
     code = ibis.decompile(expr, format=True)

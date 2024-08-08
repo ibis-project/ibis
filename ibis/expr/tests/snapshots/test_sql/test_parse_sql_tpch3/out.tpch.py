@@ -107,4 +107,4 @@ agg = f.aggregate(
 )
 s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
 
-result = s.select(s.l_orderkey, s.revenue, s.o_orderdate, s.o_shippriority)
+result = s.select(s.l_orderkey, s.revenue, s.o_orderdate, s.o_shippriority).limit(10)
