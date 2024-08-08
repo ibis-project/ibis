@@ -504,12 +504,10 @@ class _FileIOHandler:
         self._import_pyarrow()
         import pyarrow.dataset as ds
 
-        dir_path = Path(path)
-
         # by default write_dataset creates the directory
         with expr.to_pyarrow_batches(params=params) as batch_reader:
             ds.write_dataset(
-                batch_reader, base_dir=dir_path, format="parquet", **kwargs
+                batch_reader, base_dir=directory, format="parquet", **kwargs
             )
 
     @util.experimental

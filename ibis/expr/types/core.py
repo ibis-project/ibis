@@ -607,7 +607,7 @@ class Expr(Immutable, Coercible):
     @experimental
     def to_parquet_dir(
         self,
-        path: str | Path,
+        directory: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -619,12 +619,8 @@ class Expr(Immutable, Coercible):
 
         Parameters
         ----------
-        path
+        directory
             The data source. A string or Path to the directory where the parquet file will be written.
-        filename_prefix
-            The prefix name of the parquet file. What is before `.parquet`.
-        write_batches
-            If True writes each batch into a different file.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
@@ -633,7 +629,7 @@ class Expr(Immutable, Coercible):
         https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
 
         """
-        self._find_backend(use_default=True).to_parquet_dir(self, path, **kwargs)
+        self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
 
     @experimental
     def to_csv(
