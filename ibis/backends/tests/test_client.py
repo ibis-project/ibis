@@ -340,7 +340,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
 
     con_no_data.reconnect()
     # verify table no longer exist after reconnect
-    assert temp_table not in con_no_data.tables.keys()
+    assert temp_table not in con_no_data.list_tables()
 
 
 @mark.notimpl(
