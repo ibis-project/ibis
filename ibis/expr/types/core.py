@@ -624,9 +624,9 @@ class Expr(Immutable, Coercible):
         params
             Mapping of scalar parameter expressions to value.
         **kwargs
-            Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+            
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
 
         """
         self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
