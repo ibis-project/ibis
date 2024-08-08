@@ -477,7 +477,7 @@ class _FileIOHandler:
     def to_parquet_dir(
         self,
         expr: ir.Table,
-        path: str | Path,
+        directory: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
