@@ -649,8 +649,7 @@ def test_integer_to_interval_timestamp(
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "impala", "sqlite", "druid"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "flink", "sqlite", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"],
