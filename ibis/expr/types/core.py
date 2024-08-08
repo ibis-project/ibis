@@ -625,7 +625,7 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value.
         **kwargs
             Additional keyword arguments passed to pyarrow.dataset.write_dataset
-            
+
         https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
 
         """
