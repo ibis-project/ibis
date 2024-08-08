@@ -327,9 +327,7 @@ class TrinoCompiler(SQLGlotCompiler):
         elif dtype.is_time():
             return self.cast(value.isoformat(), dtype)
         elif dtype.is_interval():
-            return sge.Interval(
-                this=sge.convert(str(value)), unit=self.v[dtype.resolution.upper()]
-            )
+            return self._make_interval(sge.convert(str(value)), dtype.unit)
         elif dtype.is_binary():
             return self.f.from_hex(value.hex())
         else:
@@ -442,15 +440,23 @@ class TrinoCompiler(SQLGlotCompiler):
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        unit = op.unit.short
-        if unit in ("Y", "Q", "M", "W"):
+    def _make_interval(self, arg, unit):
+        short = unit.short
+        if short in ("Y", "Q", "M", "W"):
             raise com.UnsupportedOperationError(f"Interval unit {unit!r} not supported")
-        return self.f.parse_duration(
-            self.f.concat(
-                self.cast(arg, dt.String(nullable=op.arg.dtype.nullable)), unit.lower()
+        elif short in ("D", "h", "m", "s", "ms", "us"):
+            if isinstance(arg, sge.Literal):
+                # force strings in interval literals because trino requires it
+                arg.args["is_string"] = True
+                return super()._make_interval(arg, unit)
+            else:
+                return self.f.parse_duration(
+                    self.f.concat(self.cast(arg, dt.string), short.lower())
+                )
+        else:
+            raise com.UnsupportedOperationError(
+                f"Interval unit {unit.name!r} not supported"
             )
-        )
 
     def visit_Range(self, op, *, start, stop, step):
         def zero_value(dtype):
@@ -492,13 +498,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit=to.unit),
-                arg=arg,
-                unit=to.unit,
-            )
-        elif from_.is_integer() and to.is_timestamp():
+        if from_.is_integer() and to.is_timestamp():
             return self.f.from_unixtime(arg, to.timezone or "UTC")
         return super().visit_Cast(op, arg=arg, to=to)
 

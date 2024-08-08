@@ -400,8 +400,6 @@ class MSSQLCompiler(SQLGlotCompiler):
             return arg
         elif from_.is_integer() and to.is_timestamp():
             return self.f.dateadd(self.v.s, arg, "1970-01-01 00:00:00")
-        elif from_.is_integer() and to.is_interval():
-            return sge.Interval(this=arg, unit=self.v[to.unit.singular])
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_Sum(self, op, *, arg, where):

@@ -191,9 +191,7 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return sge.Interval(this=sge.convert(arg), unit=to.unit.singular.upper())
-        elif from_.is_temporal() and to.is_integer():
+        if from_.is_temporal() and to.is_integer():
             return 1_000_000 * self.f.unix_timestamp(arg)
         return super().visit_Cast(op, arg=arg, to=to)
 

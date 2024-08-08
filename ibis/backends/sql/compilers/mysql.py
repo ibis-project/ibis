@@ -119,8 +119,6 @@ class MySQLCompiler(SQLGlotCompiler):
             # MariaDB does not support casting to JSON because it's an alias
             # for TEXT (except when casting of course!)
             return arg
-        elif from_.is_integer() and to.is_interval():
-            return sge.Interval(this=arg, unit=self.v[to.unit.singular.upper()])
         elif from_.is_integer() and to.is_timestamp():
             return self.f.from_unixtime(arg)
         return super().visit_Cast(op, arg=arg, to=to)

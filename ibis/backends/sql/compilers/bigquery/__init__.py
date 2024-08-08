@@ -584,8 +584,6 @@ class BigQueryCompiler(SQLGlotCompiler):
                     f"BigQuery does not allow extracting date part `{from_.unit}` from intervals"
                 )
             return self.f.extract(self.v[to.resolution.upper()], arg)
-        elif from_.is_integer() and to.is_interval():
-            return sge.Interval(this=arg, unit=self.v[to.unit.singular])
         elif from_.is_floating() and to.is_integer():
             return self.cast(self.f.trunc(arg), dt.int64)
         return super().visit_Cast(op, arg=arg, to=to)
