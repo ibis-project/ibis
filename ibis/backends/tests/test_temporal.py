@@ -611,13 +611,21 @@ def test_integer_to_interval_timestamp(
     [
         param(
             "Y",
-            marks=pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+            marks=[
+                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["polars"], raises=TypeError, reason="not supported by polars"
+                ),
+            ],
         ),
         param("Q", marks=pytest.mark.xfail),
         param(
             "M",
             marks=[
                 pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["polars"], raises=TypeError, reason="not supported by polars"
+                ),
                 pytest.mark.notyet(
                     ["oracle"],
                     raises=OracleInterfaceError,
@@ -641,7 +649,7 @@ def test_integer_to_interval_timestamp(
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "impala", "sqlite", "polars", "druid"],
+    ["datafusion", "flink", "impala", "sqlite", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
