@@ -227,7 +227,7 @@ def test_table_to_parquet_dir(tmp_path, backend, awards_players):
             outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
         )
 
-    parquet_files = list(outparquet_dir.glob("*.parquet"))
+    parquet_files = sorted(outparquet_dir.glob("*.parquet"), key=lambda path: int(path.with_suffix("").name.split("-")[1])
     df_list = [pd.read_parquet(file) for file in parquet_files]
     df = pd.concat(df_list).reset_index(drop=True)
 
