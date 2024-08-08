@@ -643,13 +643,18 @@ def test_integer_to_interval_timestamp(
                     raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="week is not a valid unit in Flink",
+                ),
             ],
         ),
         "D",
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "sqlite", "druid"], raises=com.OperationNotDefinedError
+    ["datafusion", "sqlite", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["sqlite"],
