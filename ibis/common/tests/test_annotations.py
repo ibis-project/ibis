@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import inspect
+import pickle
 from typing import Annotated, Union
 
 import pytest
@@ -140,20 +141,20 @@ def test_parameter():
         return int(x) + this["other"]
 
     annot = argument(fn)
-    p = Parameter("test", annotation=annot)
+    p = Parameter.from_argument("test", annotation=annot)
 
     assert p.annotation is annot
     assert p.default is inspect.Parameter.empty
     assert p.annotation.pattern.match("2", {"other": 1}) == 3
 
     ofn = optional(fn)
-    op = Parameter("test", annotation=ofn)
+    op = Parameter.from_argument("test", annotation=ofn)
     assert op.annotation.pattern == Option(fn, default=None)
     assert op.default is None
     assert op.annotation.pattern.match(None, {"other": 1}) is None
 
     with pytest.raises(TypeError, match="annotation must be an instance of Argument"):
-        Parameter("wrong", annotation=Attribute(lambda x, context: x))
+        Parameter.from_argument("wrong", annotation=Attribute(lambda x, context: x))
 
 
 def test_signature():
@@ -163,8 +164,8 @@ def test_signature():
     def add_other(x, this):
         return int(x) + this["other"]
 
-    other = Parameter("other", annotation=Argument(to_int))
-    this = Parameter("this", annotation=Argument(add_other))
+    other = Parameter.from_argument("other", annotation=Argument(to_int))
+    this = Parameter.from_argument("this", annotation=Argument(add_other))
 
     sig = Signature(parameters=[other, this])
     assert sig.validate(None, args=(1, 2), kwargs={}) == {"other": 1, "this": 3}
@@ -275,8 +276,8 @@ def test_signature_unbind():
     def add_other(x, this):
         return int(x) + this["other"]
 
-    other = Parameter("other", annotation=Argument(to_int))
-    this = Parameter("this", annotation=Argument(add_other))
+    other = Parameter.from_argument("other", annotation=Argument(to_int))
+    this = Parameter.from_argument("this", annotation=Argument(add_other))
 
     sig = Signature(parameters=[other, this])
     params = sig.validate(None, args=(1,), kwargs=dict(this=2))
@@ -286,14 +287,16 @@ def test_signature_unbind():
     assert kwargs == {}
 
 
-a = Parameter("a", annotation=Argument(CoercedTo(float)))
-b = Parameter("b", annotation=Argument(CoercedTo(float)))
-c = Parameter("c", annotation=Argument(CoercedTo(float), default=0))
-d = Parameter(
+a = Parameter.from_argument("a", annotation=Argument(CoercedTo(float)))
+b = Parameter.from_argument("b", annotation=Argument(CoercedTo(float)))
+c = Parameter.from_argument("c", annotation=Argument(CoercedTo(float), default=0))
+d = Parameter.from_argument(
     "d",
     annotation=Argument(TupleOf(CoercedTo(float)), default=()),
 )
-e = Parameter("e", annotation=Argument(Option(CoercedTo(float)), default=None))
+e = Parameter.from_argument(
+    "e", annotation=Argument(Option(CoercedTo(float)), default=None)
+)
 sig = Signature(parameters=[a, b, c, d, e])
 
 
@@ -480,3 +483,14 @@ def test_multiple_validation_failures():
         test(1.0, 2.0, 3.0, 4, c=5.0, d=6)
 
     assert len(excinfo.value.errors) == 2
+
+
+def test_pickle():
+    a = Parameter.from_argument("a", annotation=Argument(int))
+    assert pickle.loads(pickle.dumps(a)) == a
+
+
+def test_cloudpickle():
+    cloudpickle = pytest.importorskip("cloudpickle")
+    a = Parameter.from_argument("a", annotation=Argument(int))
+    assert cloudpickle.loads(cloudpickle.dumps(a)) == a
