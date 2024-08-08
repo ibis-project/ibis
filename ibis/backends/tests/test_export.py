@@ -217,17 +217,25 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
 
 def test_table_to_parquet_dir(tmp_path, backend, awards_players):
     outparquet_dir = tmp_path / "out"
-    # max_ force to write more than one parquet file
-    awards_players.to_parquet_dir(
-        outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
-    )
+
+    if backend.name() == "pyspark":
+        # pyspark already writes more than one file
+        awards_players.to_parquet_dir(outparquet_dir)
+    else:
+        # max_ force pyarrow to write more than one parquet file
+        awards_players.to_parquet_dir(
+            outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
+        )
 
     parquet_files = list(outparquet_dir.glob("*.parquet"))
     df_list = [pd.read_parquet(file) for file in parquet_files]
     df = pd.concat(df_list).reset_index(drop=True)
 
+    awd_df = awards_players.to_pandas().fillna(pd.NA)
+    columns = list(set(awd_df.columns) & set(df.columns))
+
     backend.assert_frame_equal(
-        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+        awd_df.sort_values(by=columns), df.fillna(pd.NA).sort_values(by=columns)
     )
 
 
