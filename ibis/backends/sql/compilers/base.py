@@ -942,9 +942,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(
-            this=sge.convert(arg), unit=sge.Var(this=unit.singular.upper())
-        )
+        return sge.Interval(this=arg, unit=self.v[unit.singular.upper()])
 
     ### String Instruments
     def visit_Strip(self, op, *, arg):

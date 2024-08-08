@@ -86,14 +86,12 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.BitXor,
         ops.Covariance,
         ops.CountDistinctStar,
-        ops.DateAdd,
         ops.DateDiff,
-        ops.DateSub,
         ops.EndsWith,
         ops.IntervalAdd,
-        ops.IntervalFromInteger,
-        ops.IntervalMultiply,
         ops.IntervalSubtract,
+        ops.IntervalMultiply,
+        ops.IntervalFloorDivide,
         ops.IsInf,
         ops.IsNan,
         ops.LPad,
@@ -115,9 +113,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.StructColumn,
-        ops.TimestampAdd,
         ops.TimestampDiff,
-        ops.TimestampSub,
         ops.Unnest,
     )
 
@@ -404,6 +400,8 @@ class MSSQLCompiler(SQLGlotCompiler):
             return arg
         elif from_.is_integer() and to.is_timestamp():
             return self.f.dateadd(self.v.s, arg, "1970-01-01 00:00:00")
+        elif from_.is_integer() and to.is_interval():
+            return sge.Interval(this=arg, unit=self.v[to.unit.singular])
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_Sum(self, op, *, arg, where):
@@ -499,6 +497,19 @@ class MSSQLCompiler(SQLGlotCompiler):
             result = result.order_by(*sort_keys, copy=False)
 
         return result
+
+    def visit_TimestampAdd(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    def visit_TimestampSub(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, -self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    visit_DateAdd = visit_TimestampAdd
+    visit_DateSub = visit_TimestampSub
 
 
 compiler = MSSQLCompiler()

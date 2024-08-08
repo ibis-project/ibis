@@ -67,7 +67,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.TimestampDelta,
         ops.TimestampFromYMDHMS,
         ops.TimeFromHMS,
-        ops.IntervalFromInteger,
         ops.DayOfWeekIndex,
         ops.DayOfWeekName,
         ops.DateDiff,
@@ -138,30 +137,37 @@ class OracleCompiler(SQLGlotCompiler):
         elif dtype.is_uuid():
             return sge.convert(str(value))
         elif dtype.is_interval():
-            if dtype.unit.short in ("Y", "M"):
-                return self.f.numtoyminterval(value, dtype.unit.name)
-            elif dtype.unit.short in ("D", "h", "m", "s"):
-                return self.f.numtodsinterval(value, dtype.unit.name)
-            else:
-                raise com.UnsupportedOperationError(
-                    f"Intervals with precision {dtype.unit.name} not supported in Oracle."
-                )
+            return self._value_to_interval(value, dtype.unit)
 
         return super().visit_Literal(op, value=value, dtype=dtype)
 
+    def _value_to_interval(self, arg, unit):
+        short = unit.short
+
+        if short in ("Y", "M"):
+            return self.f.numtoyminterval(arg, unit.singular)
+        elif short in ("D", "h", "m", "s"):
+            return self.f.numtodsinterval(arg, unit.singular)
+        elif short == "ms":
+            return self.f.numtodsinterval(arg / 1e3, "second")
+        elif short in "us":
+            return self.f.numtodsinterval(arg / 1e6, "second")
+        elif short in "ns":
+            return self.f.numtodsinterval(arg / 1e9, "second")
+        else:
+            raise com.UnsupportedArgumentError(
+                f"Interval {unit.name} not supported by Oracle"
+            )
+
     def visit_Cast(self, op, *, arg, to):
-        if to.is_interval():
+        from_ = op.arg.dtype
+        if from_.is_numeric() and to.is_interval():
             # CASTing to an INTERVAL in Oracle requires specifying digits of
             # precision that are a pain.  There are two helper functions that
             # should be used instead.
-            if to.unit.short in ("D", "h", "m", "s"):
-                return self.f.numtodsinterval(arg, to.unit.name)
-            elif to.unit.short in ("Y", "M"):
-                return self.f.numtoyminterval(arg, to.unit.name)
-            else:
-                raise com.UnsupportedArgumentError(
-                    f"Interval {to.unit.name} not supported by Oracle"
-                )
+            return self._value_to_interval(arg, to.unit)
+        elif from_.is_string() and to.is_date():
+            return self.f.to_date(arg, "FXYYYY-MM-DD")
         return self.cast(arg, to)
 
     def visit_Limit(self, op, *, parent, n, offset):
@@ -456,6 +462,9 @@ class OracleCompiler(SQLGlotCompiler):
             out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
 
         return out
+
+    def visit_IntervalFromInteger(self, op, *, arg, unit):
+        return self._value_to_interval(arg, unit)
 
 
 compiler = OracleCompiler()
