@@ -708,7 +708,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop",
             marks=[
                 pytest.mark.notimpl(
-                    ["snowflake", "sqlite", "bigquery", "exasol"],
+                    ["snowflake", "sqlite", "bigquery", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
@@ -729,7 +729,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-add-interval-binop-different-units",
             marks=[
                 pytest.mark.notimpl(
-                    ["sqlite", "polars", "snowflake", "bigquery", "exasol"],
+                    ["sqlite", "polars", "snowflake", "bigquery", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
@@ -786,7 +786,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             id="timestamp-subtract-timestamp",
             marks=[
                 pytest.mark.notimpl(
-                    ["bigquery", "snowflake", "sqlite", "exasol"],
+                    ["bigquery", "snowflake", "sqlite", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -829,7 +829,8 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="DayTimeIntervalType added in pyspark 3.3",
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "druid", "flink"], raises=com.OperationNotDefinedError
+                    ["bigquery", "druid", "flink", "mssql"],
+                    raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
                     ["datafusion"],
@@ -845,7 +846,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_temporal_binop(backend, con, alltypes, df, expr_fn, expected_fn):
     expr = expr_fn(alltypes, backend).name("tmp")
     expected = expected_fn(df, backend)
@@ -916,7 +916,7 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
     ],
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["sqlite", "mssql"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["sqlite"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
@@ -1016,7 +1016,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["mssql", "exasol", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1026,7 +1026,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
-@pytest.mark.notimpl(["mssql", "exasol", "druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=AssertionError, reason="incorrect results")
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
