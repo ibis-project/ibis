@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import torch
-    from rich.console import Console
+    from rich.console import Console, RenderableType
 
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
@@ -51,6 +51,15 @@ else:
             return bundle
 
 
+def _capture_rich_renderable(renderable: RenderableType) -> str:
+    from rich.console import Console
+
+    console = Console(force_terminal=False)
+    with console.capture() as capture:
+        console.print(renderable)
+    return capture.get().rstrip()
+
+
 @public
 class Expr(Immutable, Coercible):
     """Base expression class."""
@@ -65,30 +74,15 @@ class Expr(Immutable, Coercible):
             scope = None
         return pretty(self.op(), scope=scope)
 
-    def _interactive_repr(self) -> str:
-        from rich.console import Console
-
-        console = Console(force_terminal=False)
-        with console.capture() as capture:
-            try:
-                console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e!r}",
-                    "Expression repr follows:",
-                    self._noninteractive_repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
-
     def __repr__(self) -> str:
         if ibis.options.interactive:
-            return self._interactive_repr()
+            return _capture_rich_renderable(self)
         else:
             return self._noninteractive_repr()
 
     def __rich_console__(self, console: Console, options):
+        from rich.text import Text
+
         if console.is_jupyter:
             # Rich infers a console width in jupyter notebooks, but since
             # notebooks can use horizontal scroll bars we don't want to apply a
@@ -107,9 +101,15 @@ class Expr(Immutable, Coercible):
 
                 rich_object = to_rich(self, console_width=console_width)
             else:
-                from rich.text import Text
-
                 rich_object = Text(self._noninteractive_repr())
+        except TranslationError as e:
+            lines = [
+                "Translation to backend failed",
+                f"Error message: {e!r}",
+                "Expression repr follows:",
+                self._noninteractive_repr(),
+            ]
+            return Text("\n".join(lines))
         except Exception as e:
             # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
             # allow calling several display functions and choosing to display
