@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import operator
+import sqlite3
 import warnings
 from operator import methodcaller
 
@@ -42,6 +43,17 @@ from ibis.common.annotations import ValidationError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
+
+sqlite_without_ymd_intervals = pytest.mark.notyet(
+    ["sqlite"],
+    condition=sqlite3.sqlite_version_info < (3, 46, 0),
+    raises=com.UnsupportedOperationError,
+)
+sqlite_without_hms_intervals = pytest.mark.notyet(
+    ["sqlite"],
+    condition=sqlite3.sqlite_version_info < (3, 42, 0),
+    raises=com.UnsupportedOperationError,
+)
 
 
 @pytest.mark.parametrize("attr", ["year", "month", "day"])
@@ -473,11 +485,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=ValueError,
                     reason="Metadata inference failed in `add`.",
                 ),
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=com.UnsupportedOperationError,
-                    reason="year not implemented",
-                ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param("Q", pd.offsets.DateOffset, marks=pytest.mark.xfail),
@@ -506,6 +514,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=OracleInterfaceError,
                     reason="cursor not open, probably a bug in the sql generated",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -530,12 +539,13 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
-        param("D", pd.offsets.DateOffset),
-        param("h", pd.Timedelta),
-        param("m", pd.Timedelta),
-        param("s", pd.Timedelta),
+        param("D", pd.offsets.DateOffset, marks=sqlite_without_ymd_intervals),
+        param("h", pd.Timedelta, marks=sqlite_without_hms_intervals),
+        param("m", pd.Timedelta, marks=sqlite_without_hms_intervals),
+        param("s", pd.Timedelta, marks=sqlite_without_hms_intervals),
         param(
             "ms",
             pd.Timedelta,
@@ -553,6 +563,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: millisecond",
                 ),
+                sqlite_without_hms_intervals,
             ],
         ),
         param(
@@ -560,7 +571,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.Timedelta,
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse"], raises=com.UnsupportedOperationError
+                    ["clickhouse", "sqlite"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notimpl(
                     ["trino"],
@@ -582,7 +593,7 @@ def test_date_truncate(backend, alltypes, df, unit):
     ],
 )
 @pytest.mark.notimpl(
-    ["datafusion", "sqlite", "druid", "exasol"], raises=com.OperationNotDefinedError
+    ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
@@ -603,7 +614,8 @@ def test_integer_to_interval_timestamp(
         expected = df.timestamp_col + offset
 
     expected = backend.default_series_rename(expected)
-    backend.assert_series_equal(result, expected.astype(result.dtype))
+    expected = expected.astype(result.dtype)
+    backend.assert_series_equal(result, expected)
 
 
 @pytest.mark.parametrize(
@@ -616,6 +628,7 @@ def test_integer_to_interval_timestamp(
                 pytest.mark.notyet(
                     ["polars"], raises=TypeError, reason="not supported by polars"
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param("Q", marks=pytest.mark.xfail),
@@ -631,6 +644,7 @@ def test_integer_to_interval_timestamp(
                     raises=OracleInterfaceError,
                     reason="cursor not open, probably a bug in the sql generated",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -648,19 +662,13 @@ def test_integer_to_interval_timestamp(
                     raises=Py4JJavaError,
                     reason="week is not a valid unit in Flink",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
-        "D",
+        param("D", marks=sqlite_without_ymd_intervals),
     ],
 )
-@pytest.mark.notimpl(
-    ["datafusion", "sqlite", "druid"], raises=com.OperationNotDefinedError
-)
-@pytest.mark.notimpl(
-    ["sqlite"],
-    raises=(com.UnsupportedOperationError, com.OperationNotDefinedError),
-    reason="Handling unsupported op error for DateAdd with weeks",
-)
+@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
     interval = alltypes.int_col.to_interval(unit=unit)
@@ -705,10 +713,9 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             lambda t, _: t.timestamp_col + pd.Timedelta(days=4),
             id="timestamp-add-interval",
             marks=[
-                pytest.mark.notimpl(
-                    ["sqlite", "exasol"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -730,6 +737,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=ValidationError,
                     reason="Given argument with datatype interval('D') is not implicitly castable to string",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -746,6 +754,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(["impala"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(["mysql"], raises=sg.ParseError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -753,10 +762,9 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             lambda t, _: t.timestamp_col - pd.Timedelta(days=17),
             id="timestamp-subtract-interval",
             marks=[
-                pytest.mark.notimpl(
-                    ["sqlite", "exasol"], raises=com.OperationNotDefinedError
-                ),
+                pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -772,6 +780,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     ["exasol", "druid"], raises=com.OperationNotDefinedError
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -787,6 +796,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     ["exasol", "druid"], raises=com.OperationNotDefinedError
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -823,6 +833,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=Exception,
                     reason="pyarrow.lib.ArrowInvalid: Casting from duration[us] to duration[s] would lose data",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
         param(
@@ -834,11 +845,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
             ),
             id="date-subtract-date",
             marks=[
-                pytest.mark.xfail_version(
-                    pyspark=["pyspark<3.3"],
-                    raises=AttributeError,
-                    reason="DayTimeIntervalType added in pyspark 3.3",
-                ),
                 pytest.mark.notimpl(
                     ["bigquery", "druid", "flink", "mssql"],
                     raises=com.OperationNotDefinedError,
@@ -893,13 +899,14 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=Exception,
                     reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
-        param("5W", plus, id="weeks-plus"),
-        param("3d", plus, id="three-days-plus"),
-        param("2h", plus, id="two-hours-plus"),
-        param("3m", plus, id="three-minutes-plus"),
-        param("10s", plus, id="ten-seconds-plus"),
+        param("5W", plus, id="weeks-plus", marks=sqlite_without_ymd_intervals),
+        param("3d", plus, id="three-days-plus", marks=sqlite_without_ymd_intervals),
+        param("2h", plus, id="two-hours-plus", marks=sqlite_without_hms_intervals),
+        param("3m", plus, id="three-minutes-plus", marks=sqlite_without_hms_intervals),
+        param("10s", plus, id="ten-seconds-plus", marks=sqlite_without_hms_intervals),
         param(
             "36500d",
             minus,
@@ -917,17 +924,19 @@ minus = lambda t, td: t.timestamp_col - pd.Timedelta(td)
                     raises=Exception,
                     reason="TableException: DAY_INTERVAL_TYPES precision is not supported: 5",
                 ),
+                sqlite_without_ymd_intervals,
             ],
         ),
-        param("5W", minus, id="weeks-minus"),
-        param("3d", minus, id="three-days-minus"),
-        param("2h", minus, id="two-hours-minus"),
-        param("3m", minus, id="three-minutes-minus"),
-        param("10s", minus, id="ten-seconds-minus"),
+        param("5W", minus, id="weeks-minus", marks=sqlite_without_ymd_intervals),
+        param("3d", minus, id="three-days-minus", marks=sqlite_without_ymd_intervals),
+        param("2h", minus, id="two-hours-minus", marks=sqlite_without_hms_intervals),
+        param(
+            "3m", minus, id="three-minutes-minus", marks=sqlite_without_hms_intervals
+        ),
+        param("10s", minus, id="ten-seconds-minus", marks=sqlite_without_hms_intervals),
     ],
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
-@pytest.mark.notimpl(["sqlite"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_temporal_binop_pandas_timedelta(
     backend, con, alltypes, df, timedelta, temporal_fn
@@ -1028,6 +1037,7 @@ def test_timestamp_comparison_filter_numpy(backend, con, alltypes, df, func_name
 
 
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
+@sqlite_without_ymd_intervals
 def test_interval_add_cast_scalar(backend, alltypes):
     timestamp_date = alltypes.timestamp_col.date()
     delta = ibis.literal(10).cast("interval('D')")
@@ -1039,6 +1049,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 
 @pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["flink"], raises=AssertionError, reason="incorrect results")
+@sqlite_without_ymd_intervals
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
