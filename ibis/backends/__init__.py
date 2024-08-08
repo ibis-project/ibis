@@ -474,6 +474,43 @@ class _FileIOHandler:
                     writer.write_batch(batch)
 
     @util.experimental
+    def to_parquet_dir(
+        self,
+        expr: ir.Table,
+        directory: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file in a directory.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        directory
+            The data source. A string or Path to the directory where the parquet file will be written.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
+
+        """
+        self._import_pyarrow()
+        import pyarrow.dataset as ds
+
+        # by default write_dataset creates the directory
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            ds.write_dataset(
+                batch_reader, base_dir=directory, format="parquet", **kwargs
+            )
+
+    @util.experimental
     def to_csv(
         self,
         expr: ir.Table,

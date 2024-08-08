@@ -215,6 +215,31 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     )
 
 
+def test_table_to_parquet_dir(tmp_path, backend, awards_players):
+    outparquet_dir = tmp_path / "out"
+
+    if backend.name() == "pyspark":
+        # pyspark already writes more than one file
+        awards_players.to_parquet_dir(outparquet_dir)
+    else:
+        # max_ force pyarrow to write more than one parquet file
+        awards_players.to_parquet_dir(
+            outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
+        )
+
+    parquet_files = sorted(
+        outparquet_dir.glob("*.parquet"),
+        key=lambda path: int(path.with_suffix("").name.split("-")[1]),
+    )
+
+    df_list = [pd.read_parquet(file) for file in parquet_files]
+    df = pd.concat(df_list).reset_index(drop=True)
+
+    backend.assert_frame_equal(
+        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+    )
+
+
 @pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
