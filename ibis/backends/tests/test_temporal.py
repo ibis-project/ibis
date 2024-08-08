@@ -505,11 +505,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     reason="duration() got an unexpected keyword argument 'months'",
                 ),
                 pytest.mark.notyet(
-                    ["trino"],
-                    raises=com.UnsupportedOperationError,
-                    reason="month not implemented",
-                ),
-                pytest.mark.notyet(
                     ["oracle"],
                     raises=OracleInterfaceError,
                     reason="cursor not open, probably a bug in the sql generated",
@@ -624,7 +619,6 @@ def test_integer_to_interval_timestamp(
         param(
             "Y",
             marks=[
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(
                     ["polars"], raises=TypeError, reason="not supported by polars"
                 ),
@@ -635,7 +629,6 @@ def test_integer_to_interval_timestamp(
         param(
             "M",
             marks=[
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(
                     ["polars"], raises=TypeError, reason="not supported by polars"
                 ),
