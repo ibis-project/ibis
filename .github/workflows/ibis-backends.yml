@@ -481,6 +481,10 @@ jobs:
       - name: show installed deps
         run: poetry run pip list
 
+      - name: show version of python-linked sqlite
+        if: matrix.backend.name == 'sqlite'
+        run: poetry run python -c 'import sqlite3; print(sqlite3.sqlite_version)'
+
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup

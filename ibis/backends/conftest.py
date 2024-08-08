@@ -151,7 +151,7 @@ TEST_TABLES = {
 # For now, many of our tests don't do this, and we're working to change this situation
 # by improving all tests file by file. All files that have already been improved are
 # added to this list to prevent regression.
-FIlES_WITH_STRICT_EXCEPTION_CHECK = [
+FILES_WITH_STRICT_EXCEPTION_CHECK = [
     "ibis/backends/tests/test_api.py",
     "ibis/backends/tests/test_array.py",
     "ibis/backends/tests/test_aggregation.py",
@@ -337,7 +337,7 @@ def pytest_runtest_call(item):
     for marker in item.iter_markers(name="notimpl"):
         if backend in marker.args[0]:
             if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                item.location[0] in FILES_WITH_STRICT_EXCEPTION_CHECK
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notimpl requires a raises")
@@ -351,7 +351,7 @@ def pytest_runtest_call(item):
     for marker in item.iter_markers(name="notyet"):
         if backend in marker.args[0]:
             if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                item.location[0] in FILES_WITH_STRICT_EXCEPTION_CHECK
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notyet requires a raises")
