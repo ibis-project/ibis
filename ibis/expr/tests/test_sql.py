@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
+from pytest import param
 
 import ibis
 
@@ -193,63 +196,21 @@ tpch_catalog = {
     ],
 }
 
+root = Path(__file__).absolute().parents[2]
 
-def test_parse_sql_tpch1(snapshot):
-    sql = """
-SELECT
-    l_returnflag,
-    l_linestatus,
-    sum(l_quantity) AS sum_qty,
-    sum(l_extendedprice) AS sum_base_price,
-    sum(l_extendedprice * (1 - l_discount)) AS sum_disc_price,
-    sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) AS sum_charge,
-    avg(l_quantity) AS avg_qty,
-    avg(l_extendedprice) AS avg_price,
-    avg(l_discount) AS avg_disc,
-    count(*) AS count_order
-FROM
-    lineitem
-WHERE
-    l_shipdate <= CAST('1998-09-02' AS date)
-GROUP BY
-    l_returnflag,
-    l_linestatus
-ORDER BY
-    l_returnflag,
-    l_linestatus;
-    """
-
-    expr = ibis.parse_sql(sql, tpch_catalog)
-    code = ibis.decompile(expr, format=True)
-    snapshot.assert_match(code, "out.tpch.py")
+SQL_QUERY_PATH = root / "backends" / "tests" / "tpc" / "queries" / "duckdb" / "h"
 
 
-def test_parse_sql_tpch3(snapshot):
-    sql = """
-        SELECT
-            l_orderkey,
-            sum(l_extendedprice * (1 - l_discount)) AS revenue,
-            o_orderdate,
-            o_shippriority
-        FROM
-            customer,
-            orders,
-            lineitem
-        WHERE
-            c_mktsegment = 'BUILDING'
-            AND c_custkey = o_custkey
-            AND l_orderkey = o_orderkey
-            AND o_orderdate < CAST('1995-03-15' AS date)
-            AND l_shipdate > CAST('1995-03-15' AS date)
-        GROUP BY
-            l_orderkey,
-            o_orderdate,
-            o_shippriority
-        ORDER BY
-            revenue DESC,
-            o_orderdate
-        LIMIT 10
-    """
+@pytest.mark.parametrize(
+    "tpch_query_file",
+    [
+        param(SQL_QUERY_PATH / "01.sql", id="tpch1"),
+        param(SQL_QUERY_PATH / "03.sql", id="tpch3"),
+    ],
+)
+def test_parse_sql_tpch(tpch_query_file, snapshot):
+    with open(tpch_query_file) as f:
+        sql = f.read()
 
     expr = ibis.parse_sql(sql, tpch_catalog)
     code = ibis.decompile(expr, format=True)
