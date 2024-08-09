@@ -359,7 +359,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "datafusion", "exasol"],
+                    ["mysql", "sqlite", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -370,7 +370,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "mysql", "sqlite", "trino", "datafusion", "exasol"],
+                    ["mysql", "sqlite", "trino", "datafusion", "exasol"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(
@@ -388,7 +388,6 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                 pytest.mark.notimpl(
                     [
                         "bigquery",
-                        "clickhouse",
                         "duckdb",
                         "impala",
                         "mysql",

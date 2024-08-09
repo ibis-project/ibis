@@ -372,24 +372,23 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.toDateTime(arg)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
-        converters = {
-            "Y": "toStartOfYear",
-            "Q": "toStartOfQuarter",
-            "M": "toStartOfMonth",
-            "W": "toMonday",
-            "D": "toDate",
-            "h": "toStartOfHour",
-            "m": "toStartOfMinute",
-            "s": "toDateTime",
-        }
+        if (short := unit.short) == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
 
-        unit = unit.short
-        if (converter := converters.get(unit)) is None:
-            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        if short in ("s", "ms", "us", "ns"):
+            arg = self.f.toDateTime64(arg, op.arg.dtype.scale or 0)
+        return self.f[func](arg)
 
-        return self.f[converter](arg)
+    visit_TimeTruncate = visit_TimestampTruncate
 
-    visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
+    def visit_DateTruncate(self, op, *, arg, unit):
+        if unit.short == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
+        return self.f[func](arg)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         if offset is not None:
