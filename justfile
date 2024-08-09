@@ -102,7 +102,7 @@ ci-doctest *args:
     just _doctest "poetry run" {{ args }}
 
 # download testing data
-download-data owner="ibis-project" repo="testing-data" rev="master":
+download-data owner="deepyaman" repo="testing-data" rev="chore/generate-float-data":
     #!/usr/bin/env bash
     set -euo pipefail
 
