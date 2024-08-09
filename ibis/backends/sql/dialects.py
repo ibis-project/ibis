@@ -212,6 +212,7 @@ class Flink(Hive):
             sge.ArrayConcat: rename_func("array_concat"),
             sge.ArraySize: rename_func("cardinality"),
             sge.ArrayAgg: rename_func("array_agg"),
+            sge.ArraySort: rename_func("array_sort"),
             sge.Length: rename_func("char_length"),
             sge.TryCast: lambda self,
             e: f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})",
