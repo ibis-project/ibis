@@ -93,7 +93,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         from psycopg2.extras import execute_batch
 
         schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+        if null_columns := schema.null_fields:
             raise exc.IbisTypeError(
                 f"{self.name} cannot yet reliably handle `null` typed columns; "
                 f"got null typed columns: {null_columns}"
