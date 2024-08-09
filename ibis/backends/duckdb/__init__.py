@@ -169,6 +169,16 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         else:
             query = None
 
+        if schema is None:
+            schema = table.schema()
+
+        if schema.nulls:
+            raise exc.UnsupportedBackendType(
+                "DuckDB does not support creating tables with NULL typed columns. "
+                "Ensure that every column has non-NULL type. "
+                f"NULL columns: {schema.nulls}"
+            )
+
         column_defs = [
             sge.ColumnDef(
                 this=sg.to_identifier(colname, quoted=self.compiler.quoted),
@@ -179,7 +189,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                     else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
                 ),
             )
-            for colname, typ in (schema or table.schema()).items()
+            for colname, typ in schema.items()
         ]
 
         if overwrite:

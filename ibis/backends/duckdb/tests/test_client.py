@@ -11,6 +11,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
@@ -403,3 +404,22 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
+
+
+def test_create_table_with_nulls(con):
+    t = ibis.memtable({"a": [None]})
+    schema = t.schema()
+
+    assert schema == ibis.schema({"a": "null"})
+    assert schema.nulls == ("a",)
+
+    name = gen_name("duckdb_all_nulls")
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, obj=t)
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, obj=t, schema=schema)
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, schema=schema)
