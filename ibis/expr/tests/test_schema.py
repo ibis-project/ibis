@@ -479,3 +479,9 @@ def test_schema_from_to_pandas_dask_dtypes():
         ("d", pd.DatetimeTZDtype(tz="US/Eastern", unit="ns")),
     ]
     assert restored_dtypes == expected_dtypes
+
+
+def test_nulls():
+    assert sch.schema({"a": "int64", "b": "string"}).nulls == ()
+    assert sch.schema({"a": "null", "b": "string"}).nulls == ("a",)
+    assert sch.schema({"a": "null", "b": "null"}).nulls == ("a", "b")
