@@ -955,6 +955,12 @@ def timestamp_diff(op, **kw):
     return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
+@translate.register(ops.ArraySort)
+def array_sort(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.list.sort()
+
+
 @translate.register(ops.ArrayLength)
 def array_length(op, **kw):
     arg = translate(op.arg, **kw)
