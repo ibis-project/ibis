@@ -303,7 +303,6 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
@@ -331,7 +330,6 @@ def test_unnest_idempotent(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
