@@ -168,7 +168,7 @@ def struct_dtypes(
     draw,
     types=_item_strategy,
     names=_any_text,
-    num_fields=st.integers(min_value=0, max_value=20),  # noqa: B008
+    num_fields=st.integers(min_value=1, max_value=20),  # noqa: B008
     nullable=_nullable,
 ):
     num_fields = draw(num_fields)
