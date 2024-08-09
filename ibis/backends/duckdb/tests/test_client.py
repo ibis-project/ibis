@@ -11,6 +11,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
@@ -420,3 +421,22 @@ def test_memtable_doesnt_leak(con, monkeypatch):
     df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
     assert name not in con.list_tables()
     assert len(df) == 3
+
+
+def test_create_table_with_nulls(con):
+    t = ibis.memtable({"a": [None]})
+    schema = t.schema()
+
+    assert schema == ibis.schema({"a": "null"})
+    assert schema.nulls == ("a",)
+
+    name = gen_name("duckdb_all_nulls")
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, obj=t)
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, obj=t, schema=schema)
+
+    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+        con.create_table(name, schema=schema)

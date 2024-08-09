@@ -171,6 +171,16 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         else:
             query = None
 
+        if schema is None:
+            schema = table.schema()
+
+        if schema.nulls:
+            raise exc.UnsupportedBackendType(
+                "DuckDB does not support creating tables with NULL typed columns. "
+                "Ensure that every column has non-NULL type. "
+                f"NULL columns: {schema.nulls}"
+            )
+
         if overwrite:
             temp_name = util.gen_name("duckdb_table")
         else:
