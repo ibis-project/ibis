@@ -375,6 +375,13 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self._register_udfs(expr)
 
         table_expr = expr.as_table()
+
+        if null_columns := table_expr.schema().null_fields:
+            raise exc.IbisTypeError(
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+
         sql = self.compile(table_expr, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
 
