@@ -3,10 +3,13 @@ from __future__ import annotations
 import abc
 import collections.abc
 import functools
+import glob
 import importlib.metadata
 import keyword
 import re
 import urllib.parse
+import urllib.request
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -1235,6 +1238,61 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
         )
+
+    def read_parquet(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current backend.
+
+        Parameters
+        ----------
+        path
+            The data source. May be a path to a file, an iterable of files,
+            or directory of parquet files.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the pyarrow loading function.
+            See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.read_table.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        """
+
+        table = self._get_pyarrow_table_from_path(path, **kwargs)
+        table_name = table_name or util.gen_name("read_parquet")
+        self.create_table(table_name, table)
+        return self.table(table_name)
+
+    def _get_pyarrow_table_from_path(self, path: str | Path, **kwargs) -> pa.Table:
+        pq = util.import_object("pyarrow.parquet")
+
+        path = str(path)
+        # handle url
+        if util.is_url(path):
+            headers = kwargs.pop("headers", {})
+            req_info = urllib.request.Request(path, headers=headers)  # noqa: S310
+            with urllib.request.urlopen(req_info) as req:  # noqa: S310
+                with BytesIO(req.read()) as reader:
+                    return pq.read_table(reader)
+
+        # handle fsspec compatible url
+        if util.is_fsspec_url(path):
+            return pq.read_table(path, **kwargs)
+
+        # Handle local file paths or patterns
+        paths = glob.glob(path)
+        if not paths:
+            raise ValueError(f"No files found matching pattern: {path!r}")
+        elif len(paths) == 1:
+            paths = paths[0]
+
+        return pq.read_table(paths, **kwargs)
 
     def _cached(self, expr: ir.Table):
         """Cache the provided expression.
