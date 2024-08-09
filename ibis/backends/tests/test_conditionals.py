@@ -63,17 +63,12 @@ def test_substitute(backend):
     "inp, exp",
     [
         pytest.param(
-            lambda: ibis.literal(1)
-            .case()
-            .when(1, "one")
-            .when(2, "two")
-            .else_("other")
-            .end(),
+            lambda: ibis.literal(1).cases((1, "one"), (2, "two"), else_="other"),
             "one",
             id="one_kwarg",
         ),
         pytest.param(
-            lambda: ibis.literal(5).case().when(1, "one").when(2, "two").end(),
+            lambda: ibis.literal(5).cases((1, "one"), (2, "two")),
             None,
             id="fallthrough",
         ),
@@ -99,13 +94,8 @@ def test_value_cases_column(batting):
     np = pytest.importorskip("numpy")
 
     df = batting.to_pandas()
-    expr = (
-        batting.RBI.case()
-        .when(5, "five")
-        .when(4, "four")
-        .when(3, "three")
-        .else_("could be good?")
-        .end()
+    expr = batting.RBI.cases(
+        (5, "five"), (4, "four"), (3, "three"), else_="could be good?"
     )
     result = expr.execute()
     expected = np.select(
@@ -118,7 +108,7 @@ def test_value_cases_column(batting):
 
 
 def test_ibis_cases_scalar():
-    expr = ibis.literal(5).case().when(5, "five").when(4, "four").end()
+    expr = ibis.literal(5).cases((5, "five"), (4, "four"))
     result = expr.execute()
     assert result == "five"
 
@@ -133,12 +123,8 @@ def test_ibis_cases_column(batting):
 
     t = batting
     df = batting.to_pandas()
-    expr = (
-        ibis.case()
-        .when(t.RBI < 5, "really bad team")
-        .when(t.teamID == "PH1", "ph1 team")
-        .else_(t.teamID)
-        .end()
+    expr = ibis.cases(
+        (t.RBI < 5, "really bad team"), (t.teamID == "PH1", "ph1 team"), else_=t.teamID
     )
     result = expr.execute()
     expected = np.select(
@@ -153,5 +139,75 @@ def test_ibis_cases_column(batting):
 @pytest.mark.notimpl("clickhouse", reason="special case this and returns 'oops'")
 def test_value_cases_null(con):
     """CASE x WHEN NULL never gets hit"""
-    e = ibis.literal(5).nullif(5).case().when(None, "oops").else_("expected").end()
+    e = ibis.literal(5).nullif(5).cases((None, "oops"), else_="expected")
     assert con.execute(e) == "expected"
+
+
+@pytest.mark.broken("pyspark", reason="raises a ResourceWarning that we can't catch")
+def test_ibis_case_is_deprecated(con):
+    # just to make sure that the deprecated .case() method still works
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert con.execute(ibis.case().when(True, "yes").end()) == "yes"
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert pd.isna(con.execute(ibis.case().when(False, "yes").end()))
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert con.execute(ibis.case().when(False, "yes").else_("no").end()) == "no"
+
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert con.execute(ibis.literal("a").case().when("a", "yes").end()) == "yes"
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert pd.isna(con.execute(ibis.literal("a").case().when("b", "yes").end()))
+    with pytest.warns(FutureWarning, match=".cases"):
+        assert (
+            con.execute(ibis.literal("a").case().when("b", "yes").else_("no").end())
+            == "no"
+        )
+
+
+@pytest.mark.parametrize(
+    "inp, exp",
+    [
+        pytest.param(
+            lambda: ibis.literal(1).cases([(1, "one"), (2, "two")], "other"),
+            "one",
+            id="basic",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases([(1, "one"), (2, "two")], default="other"),
+            "one",
+            id="one_kwarg",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases(
+                case_result_pairs=[(1, "one"), (2, "two")], default="other"
+            ),
+            "one",
+            id="two_kwargs",
+        ),
+        pytest.param(
+            lambda: ibis.literal(1).cases(
+                default="other", case_result_pairs=[(1, "one"), (2, "two")]
+            ),
+            "one",
+            id="two_kwargs_swapped",
+        ),
+        pytest.param(
+            lambda: ibis.literal(5).cases([(1, "one"), (2, "two")], "other"),
+            "other",
+            id="other",
+        ),
+        pytest.param(
+            lambda: ibis.literal(5).cases([(1, "one"), (2, "two")]),
+            None,
+            id="fallthrough",
+        ),
+    ],
+)
+def test_value_cases_old_api_is_deprecated(con, inp, exp):
+    with pytest.warns(FutureWarning):
+        i = inp()
+    result = con.execute(i)
+    if exp is None:
+        assert pd.isna(result)
+    else:
+        assert result == exp

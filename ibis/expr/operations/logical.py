@@ -154,7 +154,7 @@ class IfElse(Value):
     Equivalent to
 
     ```python
-    bool_expr.case().when(True, true_expr).else_(false_or_null_expr)
+    bool_expr.cases((True, true_expr), else_=false_or_null_expr)
     ```
 
     Many backends implement this as a built-in function.

@@ -304,16 +304,12 @@ def ifelse(op, bool_expr, true_expr, false_null_expr):
 
 @translate.register(ops.SimpleCase)
 @translate.register(ops.SearchedCase)
-def switch_case(op, cases, results, default, base=None):
-    out = f"{base}.case()" if base else "ibis.case()"
-
-    for case, result in zip(cases, results):
-        out = f"{out}.when({case}, {result})"
-
-    if default is not None:
-        out = f"{out}.else_({default})"
-
-    return f"{out}.end()"
+def switch_cases(op, cases, results, default, base=None):
+    namespace = f"{base}" if base else "ibis"
+    case_strs = [f"({case}, {result})" for case, result in zip(cases, results)]
+    cases_str = ", ".join(case_strs)
+    else_str = f", else_={default}" if default is not None else ""
+    return f"{namespace}.cases({cases_str}{else_str})"
 
 
 _infix_ops = {

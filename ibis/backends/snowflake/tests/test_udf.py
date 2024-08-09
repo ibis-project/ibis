@@ -8,7 +8,6 @@ import pandas.testing as tm
 import pytest
 from pytest import param
 
-import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
 
@@ -122,36 +121,23 @@ def test_xgboost_model(con):
         df.columns = ["CARAT_SCALED", "CUT_ENCODED", "COLOR_ENCODED", "CLARITY_ENCODED"]
         return model.predict(df)
 
-    def cases(value, mapping):
-        """This should really be a top-level function or method."""
-        expr = ibis.case()
-        for k, v in mapping.items():
-            expr = expr.when(value == k, v)
-        return expr.end()
-
     diamonds = con.tables.DIAMONDS
     expr = diamonds.mutate(
         predicted_price=predict_price(
             (_.carat - _.carat.mean()) / _.carat.std(),
-            cases(
-                _.cut,
-                {
-                    c: i
-                    for i, c in enumerate(
-                        ("Fair", "Good", "Very Good", "Premium", "Ideal"), start=1
-                    )
-                },
+            _.cut.cases(
+                (c, i)
+                for i, c in enumerate(
+                    ("Fair", "Good", "Very Good", "Premium", "Ideal"), start=1
+                )
             ),
-            cases(_.color, {c: i for i, c in enumerate("DEFGHIJ", start=1)}),
-            cases(
-                _.clarity,
-                {
-                    c: i
-                    for i, c in enumerate(
-                        ("I1", "IF", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2"),
-                        start=1,
-                    )
-                },
+            _.color.cases((c, i) for i, c in enumerate("DEFGHIJ", start=1)),
+            _.clarity.cases(
+                (c, i)
+                for i, c in enumerate(
+                    ("I1", "IF", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2"),
+                    start=1,
+                )
             ),
         )
     )

@@ -685,13 +685,7 @@ def test_summary_non_numeric(batting, batting_df):
 
 def test_non_range_index():
     def do_replace(col):
-        return col.cases(
-            (
-                (1, "one"),
-                (2, "two"),
-            ),
-            default="unk",
-        )
+        return col.cases((1, "one"), (2, "two"), else_="unk")
 
     df = pd.DataFrame(
         {
