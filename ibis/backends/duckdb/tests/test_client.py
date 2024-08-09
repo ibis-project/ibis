@@ -411,15 +411,17 @@ def test_create_table_with_nulls(con):
     schema = t.schema()
 
     assert schema == ibis.schema({"a": "null"})
-    assert schema.nulls == ("a",)
+    assert schema.null_fields == ("a",)
 
     name = gen_name("duckdb_all_nulls")
 
-    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+    match = "NULL typed columns"
+
+    with pytest.raises(com.IbisTypeError, match=match):
         con.create_table(name, obj=t)
 
-    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+    with pytest.raises(com.IbisTypeError, match=match):
         con.create_table(name, obj=t, schema=schema)
 
-    with pytest.raises(com.UnsupportedBackendType, match="NULL typed columns"):
+    with pytest.raises(com.IbisTypeError, match=match):
         con.create_table(name, schema=schema)

@@ -7,6 +7,7 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
@@ -595,9 +596,27 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
 
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.min()
     res = method(expr)
+
     assert converter(res) is None
 
 
+# flink
+@pytest.mark.notyet(
+    [
+        "clickhouse",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "risingwave",
+        "trino",
+    ],
+    raises=com.IbisTypeError,
+    reason="unable to handle null typed columns as input",
+)
 def test_all_null_column(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t)

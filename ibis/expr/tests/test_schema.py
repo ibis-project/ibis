@@ -481,7 +481,7 @@ def test_schema_from_to_pandas_dask_dtypes():
     assert restored_dtypes == expected_dtypes
 
 
-def test_nulls():
-    assert sch.schema({"a": "int64", "b": "string"}).nulls == ()
-    assert sch.schema({"a": "null", "b": "string"}).nulls == ("a",)
-    assert sch.schema({"a": "null", "b": "null"}).nulls == ("a", "b")
+def test_null_fields():
+    assert sch.schema({"a": "int64", "b": "string"}).null_fields == ()
+    assert sch.schema({"a": "null", "b": "string"}).null_fields == ("a",)
+    assert sch.schema({"a": "null", "b": "null"}).null_fields == ("a", "b")

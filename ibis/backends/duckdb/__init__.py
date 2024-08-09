@@ -172,11 +172,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         if schema is None:
             schema = table.schema()
 
-        if schema.nulls:
-            raise exc.UnsupportedBackendType(
+        if null_fields := schema.null_fields:
+            raise exc.IbisTypeError(
                 "DuckDB does not support creating tables with NULL typed columns. "
                 "Ensure that every column has non-NULL type. "
-                f"NULL columns: {schema.nulls}"
+                f"NULL columns: {null_fields}"
             )
 
         column_defs = [
@@ -1422,7 +1422,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     ) -> pa.Table:
         table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
         schema = expr.as_table().schema()
-        if not schema.nulls:
+        if not schema.null_fields:
             return expr.__pyarrow_result__(table)
 
         arrays = [

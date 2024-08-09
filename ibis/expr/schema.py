@@ -68,7 +68,7 @@ class Schema(Concrete, Coercible, MapSet):
         return tuple(name for name, typ in self.fields.items() if typ.is_geospatial())
 
     @attribute
-    def nulls(self) -> tuple[str, ...]:
+    def null_fields(self) -> tuple[str, ...]:
         return tuple(name for name, typ in self.fields.items() if typ.is_null())
 
     @attribute

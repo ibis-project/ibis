@@ -504,6 +504,11 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
+        if null_columns := schema.null_fields:
+            raise exc.IbisTypeError(
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
 
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
