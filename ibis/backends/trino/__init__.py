@@ -550,7 +550,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
+        if null_columns := schema.null_fields:
             raise com.IbisTypeError(
                 "Trino cannot yet reliably handle `null` typed columns; "
                 f"got null typed columns: {null_columns}"

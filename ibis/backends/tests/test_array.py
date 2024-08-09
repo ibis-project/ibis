@@ -1101,6 +1101,9 @@ def test_array_intersect(con, data):
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaDatabaseError)
+@pytest.mark.notyet(
+    ["flink"], raises=ValueError, reason="array of struct is not supported"
+)
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
@@ -1120,8 +1123,8 @@ def test_unnest_struct(con):
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
-@pytest.mark.notimpl(
-    ["flink"], reason="flink unnests a and b as separate columns", raises=Py4JJavaError
+@pytest.mark.notyet(
+    ["flink"], raises=ValueError, reason="array of struct is not supported"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaDatabaseError)
 def test_unnest_struct_with_multiple_fields(con):
@@ -1229,9 +1232,7 @@ def test_zip_null(con, fn):
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
 @pytest.mark.notyet(
-    ["flink"],
-    raises=Py4JJavaError,
-    reason="does not seem to support field selection on unnest",
+    ["flink"], raises=ValueError, reason="array of struct is not supported"
 )
 @pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_array_of_struct_unnest(con):
@@ -1765,15 +1766,16 @@ def test_table_unnest_column_expr(backend):
     assert set(result.values) == set(expected.replace({np.nan: None}).values)
 
 
-@pytest.mark.notimpl(
-    ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(
     ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
+)
+@pytest.mark.notyet(
+    ["flink"], raises=ValueError, reason="array of struct is not supported"
 )
 def test_table_unnest_array_of_struct_of_array(con):
     t = ibis.memtable(

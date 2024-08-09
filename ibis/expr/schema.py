@@ -71,6 +71,10 @@ class Schema(Concrete, Coercible, MapSet):
         return tuple(name for name, typ in self.fields.items() if typ.is_geospatial())
 
     @attribute
+    def null_fields(self) -> tuple[str, ...]:
+        return tuple(name for name, typ in self.fields.items() if typ.is_null())
+
+    @attribute
     def _name_locs(self) -> dict[str, int]:
         return {v: i for i, v in enumerate(self.names)}
 

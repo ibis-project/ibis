@@ -26,7 +26,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, UrlFromPath
-from ibis.backends.duckdb.converter import DuckDBPandasData
+from ibis.backends.duckdb.converter import DuckDBPandasData, DuckDBPyArrowData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
@@ -148,8 +148,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
-        if schema is not None:
-            schema = ibis.schema(schema)
 
         quoted = self.compiler.quoted
         dialect = self.dialect
@@ -172,16 +170,25 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         else:
             query = None
 
+        if schema is None:
+            schema = table.schema()
+        else:
+            schema = ibis.schema(schema)
+
+        if null_fields := schema.null_fields:
+            raise exc.IbisTypeError(
+                "DuckDB does not support creating tables with NULL typed columns. "
+                "Ensure that every column has non-NULL type. "
+                f"NULL columns: {null_fields}"
+            )
+
         if overwrite:
             temp_name = util.gen_name("duckdb_table")
         else:
             temp_name = name
 
         initial_table = sg.table(temp_name, catalog=catalog, db=database, quoted=quoted)
-        target = sge.Schema(
-            this=initial_table,
-            expressions=(schema or table.schema()).to_sqlglot(dialect),
-        )
+        target = sge.Schema(this=initial_table, expressions=schema.to_sqlglot(dialect))
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -252,7 +259,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
-        if any(typ.is_geospatial() for typ in table_schema.types):
+        if table_schema.geospatial:
             self.load_extension("spatial")
         return ops.DatabaseTable(
             name,
@@ -1302,7 +1309,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         **_: Any,
     ) -> pa.Table:
         table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
-        return expr.__pyarrow_result__(table)
+        return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
         self,

@@ -11,6 +11,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.conftest import LINUX, SANDBOXED, not_windows
 from ibis.util import gen_name
@@ -442,3 +443,25 @@ def test_pyarrow_batches_chunk_size(con):  # 10443
     batches = con.to_pyarrow_batches(t, chunk_size=-1)
     with pytest.raises(TypeError):
         next(batches)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        dict(obj=ibis.memtable({"a": [None]})),
+        dict(obj=ibis.memtable({"a": [None]}), schema=ibis.schema({"a": "null"})),
+        dict(schema=ibis.schema({"a": "null"})),
+    ],
+    ids=["obj", "obj-schema", "schema"],
+)
+def test_create_table_with_nulls(con, kwargs):
+    t = ibis.memtable({"a": [None]})
+    schema = t.schema()
+
+    assert schema == ibis.schema({"a": "null"})
+    assert schema.null_fields == ("a",)
+
+    name = gen_name("duckdb_all_nulls")
+
+    with pytest.raises(com.IbisTypeError, match="NULL typed columns"):
+        con.create_table(name, **kwargs)

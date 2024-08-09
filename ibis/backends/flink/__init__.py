@@ -375,13 +375,22 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             expr, params=params, pretty=pretty
         )  # Discard `limit` and other kwargs.
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        if null_columns := op.schema.null_fields:
+            raise exc.IbisTypeError(
+                f"{self.name} cannot yet reliably handle `null` typed columns; "
+                f"got null typed columns: {null_columns}"
+            )
+        self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
+
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_view(name, temp=True, force=True)
+
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
-        self._verify_in_memory_tables_are_unique(expr)
-        self._register_udfs(expr)
+        self._run_pre_execute_hooks(expr)
 
-        table_expr = expr.as_table()
-        sql = self.compile(table_expr, **kwargs)
+        sql = self.compile(expr.as_table(), **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
 
         return expr.__pandas_result__(df)
