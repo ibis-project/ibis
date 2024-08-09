@@ -72,7 +72,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ArgMax,
         ops.ArgMin,
         ops.ArrayFlatten,
-        ops.ArraySort,
         ops.ArrayStringJoin,
         ops.Correlation,
         ops.CountDistinctStar,
@@ -102,6 +101,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ArrayLength: "cardinality",
         ops.ArrayPosition: "array_position",
         ops.ArrayRemove: "array_remove",
+        ops.ArraySort: "array_sort",
         ops.ArrayUnion: "array_union",
         ops.ExtractDayOfYear: "dayofyear",
         ops.MapKeys: "map_keys",
@@ -576,10 +576,20 @@ class FlinkCompiler(SQLGlotCompiler):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+        # the only way to get filtering *and* respecting nulls is to use
+        # `FILTER` syntax, but it's broken in various ways for other aggregates
+        out = self.f.array_agg(arg)
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.array_agg(arg, where=where, order_by=order_by)
+        if where is not None:
+            out = sge.Filter(this=out, expression=sge.Where(this=where))
+        return out
 
 
 compiler = FlinkCompiler()

@@ -316,13 +316,13 @@ def test_unnest_idempotent(backend):
             ["scalar_column", array_types.x.cast("!array<int64>").unnest().name("x")]
         )
         .group_by("scalar_column")
-        .aggregate(x=lambda t: t.x.collect())
+        .aggregate(x=lambda t: t.x.collect().sort())
         .order_by("scalar_column")
     )
     result = expr.execute().reset_index(drop=True)
     expected = (
         df[["scalar_column", "x"]]
-        .assign(x=df.x.map(lambda arr: [i for i in arr if not pd.isna(i)]))
+        .assign(x=df.x.map(lambda arr: sorted(i for i in arr if not pd.isna(i))))
         .sort_values("scalar_column")
         .reset_index(drop=True)
     )
@@ -718,20 +718,34 @@ def test_array_unique(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "polars"],
-    raises=com.OperationNotDefinedError,
-)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=AssertionError,
     reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
 )
-def test_array_sort(con):
-    t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
+@pytest.mark.parametrize(
+    "data",
+    (
+        param(
+            [[3, 2], [], [42, 42], []],
+            marks=[
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="flink cannot handle empty arrays",
+                )
+            ],
+        ),
+        [[3, 2], [42, 42]],
+    ),
+    ids=["empty", "nonempty"],
+)
+def test_array_sort(con, data):
+    t = ibis.memtable({"a": data, "id": range(len(data))})
     expr = t.mutate(a=t.a.sort()).order_by("id")
     result = con.execute(expr)
-    expected = pd.Series([[2, 3], [], [42, 42], []], dtype="object")
+    expected = pd.Series(list(map(sorted, data)), dtype="object")
 
     assert frozenset(map(tuple, result["a"].values)) == frozenset(
         map(tuple, expected.values)

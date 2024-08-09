@@ -1480,13 +1480,13 @@ def test_collect_ordered(alltypes, df, filtered):
 def test_collect(alltypes, df, filtered, include_null):
     ibis_cond = (_.id % 13 == 0) if filtered else None
     pd_cond = (df.id % 13 == 0) if filtered else slice(None)
-    res = (
+    expr = (
         alltypes.string_col.nullif("3")
         .collect(where=ibis_cond, include_null=include_null)
         .length()
-        .execute()
     )
-    vals = df.string_col if include_null else df.string_col[(df.string_col != "3")]
+    res = expr.execute()
+    vals = df.string_col if include_null else df.string_col[df.string_col != "3"]
     sol = len(vals[pd_cond])
     assert res == sol
 
