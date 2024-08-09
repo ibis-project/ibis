@@ -342,7 +342,7 @@ def binary(op, left, right):
     operator = _infix_ops[type(op)]
     left = _maybe_add_parens(op.left, left)
     right = _maybe_add_parens(op.right, right)
-    return f"{left} {operator} {right}"
+    return _maybe_add_parens(op, f"{left} {operator} {right}")
 
 
 @translate.register(ops.InValues)

@@ -29,8 +29,8 @@ result = alltypes.select(
     .end()
     .name("col1"),
     ibis.case()
-    .when(alltypes.g == lit, lit2)
-    .when(alltypes.g == lit1, alltypes.g)
+    .when((alltypes.g == lit), lit2)
+    .when((alltypes.g == lit1), alltypes.g)
     .else_(ibis.literal(None))
     .end()
     .name("col2"),
