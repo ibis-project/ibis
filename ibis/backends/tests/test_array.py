@@ -718,7 +718,6 @@ def test_array_unique(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=AssertionError,
