@@ -316,7 +316,8 @@ def test_unnest_idempotent(backend):
             ["scalar_column", array_types.x.cast("!array<int64>").unnest().name("x")]
         )
         .group_by("scalar_column")
-        .aggregate(x=lambda t: t.x.collect().sort())
+        .aggregate(x=lambda t: t.x.collect())
+        .mutate(x=lambda t: t.x.sort())
         .order_by("scalar_column")
     )
     result = expr.execute().reset_index(drop=True)
@@ -718,11 +719,6 @@ def test_array_unique(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notyet(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
-)
 @pytest.mark.parametrize(
     "data",
     (
@@ -733,12 +729,17 @@ def test_array_unique(con, input, expected):
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="flink cannot handle empty arrays",
-                )
+                ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=AssertionError,
+                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
+                ),
             ],
+            id="empty",
         ),
-        [[3, 2], [42, 42]],
+        param([[3, 2], [42, 42]], id="nonempty"),
     ),
-    ids=["empty", "nonempty"],
 )
 def test_array_sort(con, data):
     t = ibis.memtable({"a": data, "id": range(len(data))})
