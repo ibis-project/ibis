@@ -1394,25 +1394,11 @@ def test_group_concat_ordered(alltypes, df, filtered):
 
 
 @pytest.mark.notimpl(
-    [
-        "druid",
-        "exasol",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "oracle",
-        "sqlite",
-    ],
+    ["druid", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
-    [
-        "clickhouse",
-        "dask",
-        "pandas",
-        "pyspark",
-    ],
+    ["clickhouse", "dask", "pandas", "pyspark", "flink"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.parametrize(
@@ -1447,7 +1433,7 @@ def test_collect_ordered(alltypes, df, filtered):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "sqlite"],
+    ["druid", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(

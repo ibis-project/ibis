@@ -575,5 +575,11 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
 
 compiler = FlinkCompiler()
