@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
 
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
+pat = pytest.importorskip("pyarrow.types")
 
 limit = [
     # limit not implemented for pandas-family backends
@@ -595,3 +596,9 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.min()
     res = method(expr)
     assert converter(res) is None
+
+
+def test_all_null_column(con):
+    t = ibis.memtable({"a": [None]})
+    result = con.to_pyarrow(t)
+    assert pat.is_null(result["a"].type)

@@ -26,7 +26,7 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
-from ibis.backends.duckdb.converter import DuckDBPandasData
+from ibis.backends.duckdb.converter import DuckDBPandasData, DuckDBPyArrowData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 from ibis.common.dispatch import lazy_singledispatch
@@ -275,7 +275,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         # load geospatial only if geo columns
-        if any(typ.is_geospatial() for typ in table_schema.types):
+        if table_schema.geospatial:
             self.load_extension("spatial")
         return ops.DatabaseTable(
             name,
@@ -1411,7 +1411,15 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         **_: Any,
     ) -> pa.Table:
         table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
-        return expr.__pyarrow_result__(table)
+        schema = expr.as_table().schema()
+        if not schema.nulls:
+            return expr.__pyarrow_result__(table)
+
+        arrays = [
+            DuckDBPyArrowData.convert_column(table[name], dtype=typ)
+            for name, typ in schema.items()
+        ]
+        return pa.Table.from_arrays(arrays, names=list(schema.keys()))
 
     def execute(
         self,
