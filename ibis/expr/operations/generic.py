@@ -189,7 +189,7 @@ class Impure(Value):
 
 
 @public
-class TimestampNow(Constant):
+class TimestampNow(Impure):
     """Return the current timestamp."""
 
     dtype = dt.timestamp
@@ -197,7 +197,7 @@ class TimestampNow(Constant):
 
 
 @public
-class DateNow(Constant):
+class DateNow(Impure):
     """Return the current date."""
 
     dtype = dt.date
