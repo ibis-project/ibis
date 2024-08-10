@@ -127,13 +127,12 @@ try:
     from psycopg2.errors import ProgrammingError as PsycoPg2ProgrammingError
     from psycopg2.errors import SyntaxError as PsycoPg2SyntaxError
     from psycopg2.errors import UndefinedObject as PsycoPg2UndefinedObject
-    from psycopg2.errors import UniqueViolation as PsycoPg2UniqueViolation
 except ImportError:
     PsycoPg2SyntaxError = PsycoPg2IndeterminateDatatype = (
         PsycoPg2InvalidTextRepresentation
     ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = (
         PsycoPg2OperationalError
-    ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = PsycoPg2UniqueViolation = None
+    ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = None
 
 try:
     from psycopg.errors import ArraySubscriptError as PsycoPgArraySubscriptError

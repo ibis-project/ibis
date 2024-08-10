@@ -38,7 +38,6 @@ _method_overrides = {
     ops.StringContains: "contains",
     ops.StringSQLILike: "ilike",
     ops.StringSQLLike: "like",
-    ops.TimestampNow: "now",
 }
 
 
@@ -82,6 +81,11 @@ class CallStatement:
 def translate(op, *args, **kwargs):
     """Translate an ibis operation into a Python expression."""
     raise NotImplementedError(op)
+
+
+@translate.register(ops.TimestampNow)
+def now(_):
+    return "ibis.now()"
 
 
 @translate.register(ops.Value)
