@@ -193,6 +193,7 @@ class TimestampNow(Constant):
     """Return the current timestamp."""
 
     dtype = dt.timestamp
+    shape = ds.scalar
 
 
 @public
@@ -200,6 +201,7 @@ class DateNow(Constant):
     """Return the current date."""
 
     dtype = dt.date
+    shape = ds.scalar
 
 
 @public
