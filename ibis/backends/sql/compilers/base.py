@@ -1613,6 +1613,31 @@ class SQLGlotCompiler(abc.ABC):
         )
         return sg.select(*columns_to_keep).from_(parent)
 
+    def add_query_to_expr(self, *, name: str, table: ir.Table, query: str) -> str:
+        dialect = self.dialect
+
+        compiled_ibis_expr = self.to_sqlglot(table)
+
+        # pull existing CTEs from the compiled Ibis expression and combine them
+        # with the new query
+        parsed = reduce(
+            lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
+            compiled_ibis_expr.ctes,
+            sg.parse_one(query, read=dialect),
+        )
+
+        # remove all ctes from the compiled expression, since they're now in
+        # our larger expression
+        compiled_ibis_expr.args.pop("with", None)
+
+        # add the new str query as a CTE
+        parsed = parsed.with_(
+            sg.to_identifier(name, quoted=self.quoted), as_=compiled_ibis_expr
+        )
+
+        # generate the SQL string
+        return parsed.sql(dialect)
+
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to
 # autogenerate the base class implementations as well.

@@ -191,18 +191,10 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             The schema inferred from `query`
         """
 
-    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        compiler = self.compiler
-        dialect = compiler.dialect
-
-        cte = compiler.to_sqlglot(table)
-        parsed = sg.parse_one(query, read=dialect)
-        parsed.args["with"] = cte.args.pop("with", [])
-        parsed = parsed.with_(
-            sg.to_identifier(name, quoted=compiler.quoted), as_=cte, dialect=dialect
-        )
-
-        sql = parsed.sql(dialect)
+    def _get_sql_string_view_schema(
+        self, *, name: str, table: ir.Table, query: str
+    ) -> sch.Schema:
+        sql = self.compiler.add_query_to_expr(name=name, table=table, query=query)
         return self._get_schema_using_query(sql)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
