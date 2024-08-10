@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import operator
+import sys
 from collections.abc import Mapping
 from functools import reduce
 from typing import TYPE_CHECKING, Any
@@ -230,6 +231,9 @@ def complexity(node):
     def accum(node, *args):
         if isinstance(node, ops.Field):
             return 1
+        elif isinstance(node, ops.Impure):
+            # consider (potentially) impure functions maximally complex
+            return sys.maxsize
         else:
             return 1 + sum(args)
 

@@ -51,7 +51,7 @@ class InputType(enum.Enum):
 
 
 @public
-class ScalarUDF(ops.Value):
+class ScalarUDF(ops.Impure):
     @attribute
     def shape(self):
         if not (args := getattr(self, "args")):  # noqa: B009
@@ -65,7 +65,7 @@ class ScalarUDF(ops.Value):
 
 
 @public
-class AggUDF(ops.Reduction):
+class AggUDF(ops.Reduction, ops.Impure):
     where: Optional[ops.Value[dt.Boolean]] = None
 
 
