@@ -409,3 +409,19 @@ def test_subquery_with_join(con):
     expr = s.join(w, "a").select(a=w.a).select(b=lambda t: t.a + 1)
     result = expr.to_pandas()
     assert set(result["b"].tolist()) == {2, 3, 4}
+
+
+def test_alias_column_ref(con):
+    data = {"user_id": [1, 2, 3], "account_id": [4, 5, 6]}
+    t = con.create_table(gen_name("clickhouse_temp_table"), data, temp=True)
+    expr = t.alias("df").sql("select *, halfMD5(account_id) as id_md5 from df")
+
+    result = expr.execute()
+
+    assert len(result) == 3
+
+    assert result.columns.tolist() == ["user_id", "account_id", "id_md5"]
+
+    assert result.user_id.notnull().all()
+    assert result.account_id.notnull().all()
+    assert result.id_md5.notnull().all()
