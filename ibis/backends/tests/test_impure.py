@@ -99,9 +99,7 @@ mark_impures = pytest.mark.parametrize(
             lambda table: my_random(table.float_col),
             marks=[
                 *no_udfs,
-                pytest.mark.notyet(
-                    ["flink", "postgres"], reason="instances are uncorrelated"
-                ),
+                pytest.mark.notyet(["flink"], reason="instances are uncorrelated"),
             ],
             id="udf",
         ),

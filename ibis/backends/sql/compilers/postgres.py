@@ -161,13 +161,13 @@ class PostgresCompiler(SQLGlotCompiler):
         type_mapper = self.type_mapper
         argnames = udf_node.argnames
         return """\
-    CREATE OR REPLACE FUNCTION {ident}({signature})
-    RETURNS {return_type}
-    LANGUAGE {language}
-    AS $$
-    {source}
-    return {name}({args})
-    $$""".format(
+CREATE OR REPLACE FUNCTION {ident}({signature})
+RETURNS {return_type}
+LANGUAGE {language}
+AS $$
+{source}
+return {name}({args})
+$$""".format(
             name=type(udf_node).__name__,
             ident=self.__sql_name__(udf_node),
             signature=", ".join(
