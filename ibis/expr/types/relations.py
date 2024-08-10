@@ -3553,7 +3553,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             name = util.gen_name("sql_query")
             expr = self
 
-        schema = backend._get_sql_string_view_schema(name, expr, query)
+        schema = backend._get_sql_string_view_schema(name=name, table=expr, query=query)
         node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
         return node.to_expr()
 
