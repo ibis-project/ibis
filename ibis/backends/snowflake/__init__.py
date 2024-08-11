@@ -728,6 +728,7 @@ $$ {defn["source"]} $$"""
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
+        self._log(query)
         cur = self.con.cursor()
         try:
             cur.execute(query, **kwargs)

@@ -88,6 +88,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         pass
 
     def raw_sql(self, query: str) -> TableResult:
+        self._log(query)
         return self._table_env.execute_sql(query)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:

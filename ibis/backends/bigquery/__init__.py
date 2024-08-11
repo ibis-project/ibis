@@ -666,6 +666,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         ]
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
+        self._log(query)
 
         job_config = bq.job.QueryJobConfig(query_parameters=query_parameters or [])
         return self.client.query_and_wait(
@@ -737,7 +738,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         schema = expr.as_table().schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
 
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
         query = self.raw_sql(sql, params=params, **kwargs)
 
         arrow_t = query.to_arrow(
@@ -799,7 +799,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._import_pyarrow()
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
         query = self.raw_sql(sql, params=params, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
@@ -822,7 +821,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         self._register_in_memory_tables(expr)
         sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
         query = self.raw_sql(sql, params=params, page_size=chunk_size, **kwargs)
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
