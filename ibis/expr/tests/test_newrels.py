@@ -1829,3 +1829,12 @@ def test_expr_in_join_projection():
             "lit6": "int64",
         }
     )
+
+
+def test_analytic_dereference():
+    t = ibis.table({"a": "int"})
+    ix = ibis.row_number()
+    expr = t.mutate(ix=ix).filter(ix == 5)
+    assert expr.op().predicates == (
+        ops.Equals(ops.WindowFunction(ops.RowNumber()), ops.Literal(5, dtype="int8")),
+    )
