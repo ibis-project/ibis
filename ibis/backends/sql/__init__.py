@@ -436,7 +436,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         source_cols = source.columns
         columns = (
             source_cols
-            if not set(target_cols := self.get_schema(target).names).difference(
+            if not set(target_cols := self.get_schema(target, catalog=catalog, database=db).names).difference(
                 source_cols
             )
             else target_cols
