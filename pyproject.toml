@@ -338,11 +338,12 @@ filterwarnings = [
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
   # pandas by way of polars when comparing arrays
-  'ignore:The truth value of an empty array is ambiguous.:DeprecationWarning',
+  'ignore:The truth value of an empty array is ambiguous\.:DeprecationWarning',
   # druid
   'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
   'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
+  'ignore:`StructValue\.destructure` is deprecated as of v10\.0; use lift or unpack instead:FutureWarning',
   # spark
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
   "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
