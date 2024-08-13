@@ -626,12 +626,10 @@ class agg(_UDF):
         ... def favg(a: float) -> float:
         ...     '''Compute the average of a column using Kahan summation.'''
         >>> t = ibis.examples.penguins.fetch()
-        >>> expr = favg(t.bill_length_mm)
-        >>> expr
-        ┌──────────────────────────────┐
-        │ np.float64(43.9219298245614) │
-        └──────────────────────────────┘
-
+        >>> favg(t.bill_length_mm)
+        ┌──────────┐
+        │ 43.92193 │
+        └──────────┘
         """
         return _wrap(
             cls._make_wrapper,

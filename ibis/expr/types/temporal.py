@@ -278,9 +278,9 @@ class TimeValue(_TimeComponentMixin, Value):
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
         >>> end.delta(start, "hour")
-        ┌──────────────┐
-        │ np.int64(22) │
-        └──────────────┘
+        ┌────┐
+        │ 22 │
+        └────┘
         >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
         ... 2016-02-01T00:23:56,2016-02-01T00:42:28
         ... 2016-02-01T00:12:14,2016-02-01T00:21:41
@@ -445,9 +445,9 @@ class DateValue(Value, _DateComponentMixin):
         >>> start = ibis.date("1992-09-30")
         >>> end = ibis.date("1992-10-01")
         >>> end.delta(start, "day")
-        ┌─────────────┐
-        │ np.int64(1) │
-        └─────────────┘
+        ┌───┐
+        │ 1 │
+        └───┘
         >>> prez = ibis.examples.presidential.fetch()
         >>> prez.mutate(
         ...     years_in_office=prez.end.delta(prez.start, "year"),
@@ -779,9 +779,9 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
         >>> end.delta(start, "hour")
-        ┌──────────────┐
-        │ np.int64(22) │
-        └──────────────┘
+        ┌────┐
+        │ 22 │
+        └────┘
         >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
         ... 2016-02-01T00:23:56,2016-02-01T00:42:28
         ... 2016-02-01T00:12:14,2016-02-01T00:21:41
