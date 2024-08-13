@@ -304,3 +304,9 @@ _We've added 3 or 4 new backends since the switch_
 - Spend time on dev ex
 
 # Questions?
+
+![](../../logo.svg){fig-align="center"}
+
+::: {.r-fit-text}
+<https://ibis-project.org>
+:::
