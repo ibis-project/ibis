@@ -1,5 +1,6 @@
 ---
-title: "Test 20 databases on every commit"
+title: "Testing 20 databases on every commit"
+author: Phillip Cloud
 execute:
   echo: true
 format:
