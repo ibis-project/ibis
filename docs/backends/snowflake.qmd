@@ -79,7 +79,8 @@ con = ibis.snowflake.connect(
     user="user",
     password="password",
     account="safpqpq-sq55555",
-    database="IBIS_TESTING/IBIS_TESTING",
+    database="IBIS_TESTING",
+    schema="IBIS_TESTING",
 )
 ```
 
@@ -119,7 +120,8 @@ APIs. All values of `authenticator` are supported.
 con = ibis.snowflake.connect(
     user="user",
     account="safpqpq-sq55555",
-    database="my_database/my_schema",
+    database="my_database",
+    schema="my_schema",
     warehouse="my_warehouse",
     authenticator="externalbrowser",
 )
