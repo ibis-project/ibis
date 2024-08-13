@@ -1,7 +1,7 @@
 ---
 title: "Testing 20 databases on every commit"
 author: Phillip Cloud
-date: "2024-8-15"
+date: "2024-08-15"
 execute:
   echo: true
 format:
