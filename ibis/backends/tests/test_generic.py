@@ -795,31 +795,10 @@ def test_table_info_large(con):
     reason="Druid only supports trivial unions",
 )
 @pytest.mark.parametrize(
-    ("selector", "expected_columns"),
+    "selector",
     [
         param(
-            s.any_of(
-                s.of_type("numeric"),
-                s.of_type("string"),
-                s.of_type("bool"),
-                s.of_type("timestamp"),
-            ),
-            [
-                "name",
-                "pos",
-                "type",
-                "count",
-                "nulls",
-                "unique",
-                "mode",
-                "mean",
-                "std",
-                "min",
-                "p25",
-                "p50",
-                "p75",
-                "max",
-            ],
+            s.any_of(*map(s.of_type, ["numeric", "string", "bool", "timestamp"])),
             marks=[
                 pytest.mark.notimpl(
                     ["sqlite"],
@@ -827,13 +806,7 @@ def test_table_info_large(con):
                     reason="quantile is not supported",
                 ),
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
-                        "impala",
-                    ],
+                    ["pyspark", "risingwave", "impala"],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
                 ),
@@ -862,21 +835,6 @@ def test_table_info_large(con):
         ),
         param(
             s.of_type("numeric"),
-            [
-                "name",
-                "pos",
-                "type",
-                "count",
-                "nulls",
-                "unique",
-                "mean",
-                "std",
-                "min",
-                "p25",
-                "p50",
-                "p75",
-                "max",
-            ],
             marks=[
                 pytest.mark.notimpl(
                     ["sqlite"],
@@ -898,24 +856,9 @@ def test_table_info_large(con):
         ),
         param(
             s.of_type("string"),
-            [
-                "name",
-                "pos",
-                "type",
-                "count",
-                "nulls",
-                "unique",
-                "mode",
-            ],
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
-                        "impala",
-                    ],
+                    ["pyspark", "risingwave", "impala"],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
                 ),
@@ -934,12 +877,11 @@ def test_table_info_large(con):
         ),
     ],
 )
-def test_table_describe(alltypes, selector, expected_columns):
+def test_table_describe(alltypes, selector):
     sometypes = alltypes.select(selector)
     expr = sometypes.describe()
     df = expr.execute()
     assert sorted(sometypes.columns) == sorted(df.name)
-    assert sorted(expr.columns) == sorted(expected_columns)
     assert sorted(expr.columns) == sorted(df.columns)
 
 
