@@ -240,7 +240,7 @@ _CI must complete "quickly"_
 
 # How does this stack up?
 
-## Terminology
+## Terminology {auto-animate=true}
 
 ::: {.fragment}
 Job
@@ -268,7 +268,7 @@ my_other_job:
 ```
 :::
 
-## Job metrics
+## Job metrics {auto-animate=true}
 
 ![](https://storage.googleapis.com/posit-conf-2024/jobs.svg){fig-align="center"}
 
@@ -278,7 +278,7 @@ _We've added 3 or 4 new backends since the switch_
 :::
 :::
 
-## Workflow metrics
+## Workflow metrics {auto-animate=true}
 
 ![Queue time and workflow duration](https://storage.googleapis.com/posit-conf-2024/workflows.svg){fig-align="center"}
 
