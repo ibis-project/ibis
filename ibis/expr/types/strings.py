@@ -1695,9 +1695,9 @@ class StringValue(Value):
         >>> ibis.options.interactive = True
         >>> s = ibis.literal("kitten")
         >>> s.levenshtein("sitting")
-        ┌─────────────┐
-        │ np.int64(3) │
-        └─────────────┘
+        ┌───┐
+        │ 3 │
+        └───┘
         """
         return ops.Levenshtein(self, other).to_expr()
 
