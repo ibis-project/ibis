@@ -1,5 +1,5 @@
 ---
-title: "Test 20 databases on every commit"
+title: "Test 20 databases on every commit @ PyCon 2024"
 subtitle: "It's not hyperbole"
 author:
   - Phillip Cloud
