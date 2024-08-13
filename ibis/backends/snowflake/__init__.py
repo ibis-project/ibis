@@ -1201,8 +1201,6 @@ $$ {defn["source"]} $$"""
         obj
             The source data or expression to insert
         schema
-            The name of the schema that the table is located in
-        schema
             [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
