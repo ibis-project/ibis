@@ -1362,7 +1362,7 @@ def test_string_to_date(alltypes, fmt):
     for i, val in enumerate(result_as["date"]):
         assert val.strftime("%m/%d/%y") == result_as["date_string_col"][i]
 
-    for i, val in enumerate(result_as["date"]):
+    for i, val in enumerate(result_to["date"]):
         assert val.strftime("%m/%d/%y") == result_to["date_string_col"][i]
 
 
