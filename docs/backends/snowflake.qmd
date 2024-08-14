@@ -79,8 +79,8 @@ con = ibis.snowflake.connect(
     user="user",
     password="password",
     account="safpqpq-sq55555",
-    database="IBIS_TESTING",
-    schema="IBIS_TESTING",
+    database="my_database",
+    schema="my_schema",
 )
 ```
 
