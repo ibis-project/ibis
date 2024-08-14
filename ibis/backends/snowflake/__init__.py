@@ -545,7 +545,7 @@ $$ {defn["source"]} $$"""
         # snowflake puts temp tables in the same catalog and database as
         # non-temp tables and differentiates between them using a different
         # mechanism than other database that often put temp tables in a hidden
-        # or intentionall-difficult-to-access catalog/database
+        # or intentionally-difficult-to-access catalog/database
         table = sg.table(
             table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
