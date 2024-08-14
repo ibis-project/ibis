@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -1013,7 +1014,7 @@ class NumericColumn(Column, NumericValue):
 
 @public
 class IntegerValue(NumericValue):
-    def to_timestamp(
+    def as_timestamp(
         self,
         unit: Literal["s", "ms", "us"] = "s",
     ) -> ir.TimestampValue:
@@ -1031,7 +1032,7 @@ class IntegerValue(NumericValue):
         """
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
-    def to_interval(
+    def as_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
     ) -> ir.IntervalValue:
@@ -1048,6 +1049,20 @@ class IntegerValue(NumericValue):
             An interval in units of `unit`
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
+
+    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    def to_timestamp(
+        self,
+        unit: Literal["s", "ms", "us"] = "s",
+    ) -> ir.TimestampValue:
+        return self.as_timestamp(unit=unit)
+
+    @deprecated(as_of="10.0", instead="use as_interval() instead")
+    def to_interval(
+        self,
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+    ) -> ir.IntervalValue:
+        return self.as_interval(unit=unit)
 
     def convert_base(
         self,
