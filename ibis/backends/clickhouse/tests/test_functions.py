@@ -438,7 +438,7 @@ def test_literal_none_to_nullable_column(alltypes):
 
 def test_timestamp_from_integer(con, alltypes, assert_sql):
     # timestamp_col has datetime type
-    expr = alltypes.int_col.to_timestamp()
+    expr = alltypes.int_col.as_timestamp()
     assert_sql(expr, "out.sql")
     assert len(con.execute(expr))
 
