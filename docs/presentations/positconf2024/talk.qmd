@@ -18,7 +18,7 @@ format:
 - 0 DBs  ✅
 - 1 DB   😇
 - 2 DBs  😬
-- 5+ DBs 😱
+- 3+ DBs 😱
 :::
 
 ::: {.fragment}
