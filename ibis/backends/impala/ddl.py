@@ -105,6 +105,13 @@ class CreateTable(ImpalaBase, CreateDDL):
     def _location(self):
         return f"LOCATION '{self.path}'" if self.path else None
 
+    def _tbl_properties(self):
+        return (
+            self.format_tblproperties(self.tbl_properties)
+            if self.tbl_properties
+            else None
+        )
+
     def _storage(self):
         # By the time we're here, we have a valid format
         return f"STORED AS {self.format}"
@@ -152,53 +159,10 @@ class CreateTableWithSchema(CreateTable):
             yield self._storage()
 
         yield self._location()
+        yield self._tbl_properties()
 
 
-class AlterTable(ImpalaBase, DDL):
-    def __init__(
-        self,
-        table,
-        location=None,
-        format=None,
-        tbl_properties=None,
-        serde_properties=None,
-    ):
-        self.table = table
-        self.location = location
-        self.format = self.sanitize_format(format)
-        self.tbl_properties = tbl_properties
-        self.serde_properties = serde_properties
-
-    def _wrap_command(self, cmd):
-        return f"ALTER TABLE {cmd}"
-
-    def _format_properties(self, prefix=""):
-        tokens = []
-
-        if self.location is not None:
-            tokens.append(f"LOCATION '{self.location}'")
-
-        if self.format is not None:
-            tokens.append(f"FILEFORMAT {self.format}")
-
-        if self.tbl_properties is not None:
-            tokens.append(self.format_tblproperties(self.tbl_properties))
-
-        if self.serde_properties is not None:
-            tokens.append(self.format_serdeproperties(self.serde_properties))
-
-        if len(tokens) > 0:
-            return "\n{}{}".format(prefix, "\n".join(tokens))
-        else:
-            return ""
-
-    def compile(self):
-        props = self._format_properties()
-        action = f"{self.table} SET {props}"
-        return self._wrap_command(action)
-
-
-class RenameTable(AlterTable):
+class RenameTable(ImpalaBase, DDL):
     def __init__(
         self,
         old_name: str,
@@ -214,7 +178,7 @@ class RenameTable(AlterTable):
         )
 
     def compile(self):
-        return self._wrap_command(f"{self._old} RENAME TO {self._new}")
+        return f"ALTER TABLE {self._old} RENAME TO {self._new}"
 
 
 class DropTable(ImpalaBase, DropObject):
@@ -258,6 +222,7 @@ class CTAS(CreateTable):
         can_exist=False,
         path=None,
         partition=None,
+        tbl_properties=None,
     ):
         super().__init__(
             table_name,
@@ -267,6 +232,7 @@ class CTAS(CreateTable):
             can_exist=can_exist,
             path=path,
             partition=partition,
+            tbl_properties=tbl_properties,
         )
         self.select = select
 
@@ -275,6 +241,7 @@ class CTAS(CreateTable):
         yield self._partitioned_by()
         yield self._storage()
         yield self._location()
+        yield self._tbl_properties()
         yield "AS"
         yield self.select
 
@@ -432,45 +399,10 @@ class CreateTableAvro(CreateTable):
         yield "\n".join(self.table_format.to_ddl())
 
 
-class LoadData(ImpalaBase, DDL):
-    """Generate DDL for LOAD DATA command.
+class PartitionProperties(ImpalaBase, DDL):
+    _command = ""
+    _property_prefix = ""
 
-    Cannot be cancelled
-    """
-
-    def __init__(
-        self,
-        table_name,
-        path,
-        database=None,
-        partition=None,
-        partition_schema=None,
-        overwrite=False,
-    ):
-        self.table_name = table_name
-        self.database = database
-        self.path = path
-
-        self.partition = partition
-        self.partition_schema = partition_schema
-
-        self.overwrite = overwrite
-
-    def compile(self):
-        overwrite = "OVERWRITE " if self.overwrite else ""
-
-        if self.partition is not None:
-            partition = "\n" + self.format_partition(
-                self.partition, self.partition_schema
-            )
-        else:
-            partition = ""
-
-        scoped_name = self.scoped_name(self.table_name, self.database)
-        return f"LOAD DATA INPATH {self.path!r} {overwrite}INTO TABLE {scoped_name}{partition}"
-
-
-class PartitionProperties(AlterTable):
     def __init__(
         self,
         table,
@@ -481,51 +413,56 @@ class PartitionProperties(AlterTable):
         tbl_properties=None,
         serde_properties=None,
     ):
-        super().__init__(
-            table,
-            location=location,
-            format=format,
-            tbl_properties=tbl_properties,
-            serde_properties=serde_properties,
-        )
+        self.table = table
+        self.location = location
+        self.format = self.sanitize_format(format)
+        self.tbl_properties = tbl_properties
+        self.serde_properties = serde_properties
         self.partition = partition
         self.partition_schema = partition_schema
 
-    def _compile(self, cmd, property_prefix=""):
+    def compile(self):
         part = self.format_partition(self.partition, self.partition_schema)
-        if cmd:
-            part = f"{cmd} {part}"
+        if self._command:
+            part = f"{self._command} {part}"
 
-        props = self._format_properties(property_prefix)
-        action = f"{self.table} {part}{props}"
-        return self._wrap_command(action)
+        props = self._format_properties()
+        return f"ALTER TABLE {self.table} {part}{props}"
+
+    def _format_properties(self):
+        tokens = []
+
+        if self.location is not None:
+            tokens.append(f"LOCATION '{self.location}'")
+
+        if self.format is not None:
+            tokens.append(f"FILEFORMAT {self.format}")
+
+        if self.tbl_properties is not None:
+            tokens.append(self.format_tblproperties(self.tbl_properties))
+
+        if self.serde_properties is not None:
+            tokens.append(self.format_serdeproperties(self.serde_properties))
+
+        if len(tokens) > 0:
+            return "\n{}{}".format(self._property_prefix, "\n".join(tokens))
+        else:
+            return ""
 
 
 class AddPartition(PartitionProperties):
     dialect = "hive"
-
-    def __init__(self, table, partition, partition_schema, location=None):
-        super().__init__(table, partition, partition_schema, location=location)
-
-    def compile(self):
-        return self._compile("ADD")
+    _command = "ADD"
 
 
 class AlterPartition(PartitionProperties):
     dialect = "hive"
-
-    def compile(self):
-        return self._compile("", "SET ")
+    _property_prefix = "SET "
 
 
 class DropPartition(PartitionProperties):
     dialect = "hive"
-
-    def __init__(self, table, partition, partition_schema):
-        super().__init__(table, partition, partition_schema)
-
-    def compile(self):
-        return self._compile("DROP")
+    _command = "DROP"
 
 
 class CacheTable(ImpalaBase, DDL):

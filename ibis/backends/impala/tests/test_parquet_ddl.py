@@ -42,10 +42,7 @@ def test_query_parquet_file_with_schema(con, test_data_dir):
 
     table = con.parquet_file(hdfs_path, schema=schema)
 
-    name = table._qualified_name
-
-    # table exists
-    con.table(name)
+    assert table.get_name() in con.list_tables()
 
     expr = table.r_name.value_counts()
     expr.execute()
