@@ -1332,7 +1332,7 @@ class StringValue(Value):
         """
         return ops.StringToDate(self, format_str).to_expr()
 
-    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    @deprecated(as_of="10.0", instead="use as_date() instead")
     def to_date(self, format_str: str) -> ir.DateValue:
         return self.as_date(format_str=format_str)
 
