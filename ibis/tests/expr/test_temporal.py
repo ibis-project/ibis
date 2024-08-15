@@ -940,3 +940,8 @@ def test_today():
     result = ibis.today()
     assert isinstance(result, ir.DateScalar)
     assert isinstance(result.op(), ops.DateNow)
+
+
+def test_to_date_deprecation():
+    with pytest.warns(FutureWarning, match="v10.0"):
+        ibis.literal("20170206").to_date("%Y%m%d")

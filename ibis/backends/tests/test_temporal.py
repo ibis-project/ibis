@@ -1183,17 +1183,11 @@ def test_integer_to_timestamp(backend, con, unit):
     # convert the timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)
     expr_as = int_expr.as_timestamp(unit).name("tmp")
-    result_as = con.execute(expr_as)
-
-    with pytest.warns(FutureWarning, match="v10.0"):
-        expr_to = int_expr.to_timestamp(unit).name("tmp")
-
-    result_to = con.execute(expr_to)
+    result = con.execute(expr_as)
 
     expected = pd.Timestamp(pandas_ts, unit="ns").floor(backend_unit)
 
-    assert result_as == expected
-    assert result_to == expected
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -1267,18 +1261,12 @@ def test_integer_to_timestamp(backend, con, unit):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
-    result_as = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
-
-    with pytest.warns(FutureWarning, match="v10.0"):
-        result_to = table.mutate(date=table.date_string_col.to_timestamp(fmt)).execute()
+    result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime
-    for i, val in enumerate(result_as["date"]):
-        assert val.strftime("%m/%d/%y") == result_as["date_string_col"][i]
-
-    for i, val in enumerate(result_to["date"]):
-        assert val.strftime("%m/%d/%y") == result_to["date_string_col"][i]
+    for i, val in enumerate(result["date"]):
+        assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
 @pytest.mark.parametrize(
@@ -1352,18 +1340,12 @@ def test_string_to_timestamp(alltypes, fmt):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_date(alltypes, fmt):
     table = alltypes
-    result_as = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
-
-    with pytest.warns(FutureWarning, match="v10.0"):
-        result_to = table.mutate(date=table.date_string_col.to_date(fmt)).execute()
+    result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime
-    for i, val in enumerate(result_as["date"]):
-        assert val.strftime("%m/%d/%y") == result_as["date_string_col"][i]
-
-    for i, val in enumerate(result_to["date"]):
-        assert val.strftime("%m/%d/%y") == result_to["date_string_col"][i]
+    for i, val in enumerate(result["date"]):
+        assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
 
 
 @pytest.mark.parametrize(
