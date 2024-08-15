@@ -129,7 +129,6 @@ ipykernel = { version = ">=6.25.1,<7", python = ">=3.10,<3.13" }
 itables = { version = ">=1.6.3,<2.2", python = ">=3.10,<3.13" }
 nbclient = { version = ">=0.8.0,<1", python = ">=3.10,<3.13" }
 plotly = { version = ">=5.16.1,<6", python = ">=3.10,<3.13" }
-matplotlib = { version = "<3.9.1", python = ">=3.10,<3.13", platform = "windows" }
 plotnine = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
 py-cpuinfo = { version = ">=9,<10", python = ">=3.10,<3.13" }
 quartodoc = { version = ">=0.6.1,<1", python = ">=3.10,<3.13" }
