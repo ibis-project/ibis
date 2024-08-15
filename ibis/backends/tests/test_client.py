@@ -1726,3 +1726,36 @@ def test_no_accidental_cross_database_table_load(con_create_database):
     # Clean up
     con.drop_table(table, database=dbname)
     con.drop_database(dbname)
+
+
+@pytest.mark.notyet(["druid"], reason="can't create tables")
+def test_cross_database_join(con_create_database, monkeypatch):
+    con = con_create_database
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    left = ibis.memtable({"a": [1], "b": [2]})
+    right = ibis.memtable({"a": [1], "c": [3]})
+
+    # Create an extra database
+    con.create_database(dbname := gen_name("dummy_db"))
+
+    # Insert left into current_database
+    left = con.create_table(left_table := gen_name("left"), obj=left)
+
+    # Insert right into new database
+    right = con.create_table(
+        right_table := gen_name("right"), obj=right, database=dbname
+    )
+
+    expr = left.join(right, "a")
+    assert expr.columns == ["a", "b", "c"]
+
+    result = expr.to_pyarrow()
+    expected = pa.Table.from_pydict({"a": [1], "b": [2], "c": [3]})
+
+    assert result.equals(expected)
+
+    con.drop_table(left_table)
+    con.drop_table(right_table, database=dbname)
+    con.drop_database(dbname)
