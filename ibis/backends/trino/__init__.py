@@ -21,7 +21,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import C
+from ibis.backends.sql.compilers.base import AlterTable, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -514,7 +514,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
                 # rename the new table to the original table name
                 cur.execute(
-                    sge.AlterTable(
+                    AlterTable(
                         this=table_ref,
                         exists=True,
                         actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
