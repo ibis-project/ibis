@@ -415,7 +415,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             The schema of the table to create; optional, but one of `obj` or
             `schema` must be specified
         database
-            Not yet implemented.
+            The database to insert the table into.
+            If not provided, the current database is used.
+            You can provide a single database name, like `"mydb"`. For
+            multi-level hierarchies, you can pass in a dotted string path like
+            `"catalog.database"` or a tuple of strings like `("catalog",
+            "database")`.
         temp
             This parameter is not yet supported in the Trino backend, because
             Trino doesn't implement temporary tables
@@ -436,13 +441,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 "Temporary tables are not supported in the Trino backend"
             )
 
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         quoted = self.compiler.quoted
-        orig_table_ref = sg.to_identifier(name, quoted=quoted)
+        orig_table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if overwrite:
             name = util.gen_name(f"{self.name}_overwrite")
 
-        table_ref = sg.table(name, catalog=database, quoted=quoted)
+        table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if schema is not None and obj is None:
             column_defs = [
@@ -524,7 +532,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         if temp_memtable_view is not None:
             self.drop_table(temp_memtable_view)
 
-        return self.table(orig_table_ref.name)
+        return self.table(orig_table_ref.name, database=(catalog, db))
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
