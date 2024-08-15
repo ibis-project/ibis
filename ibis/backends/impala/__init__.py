@@ -247,12 +247,12 @@ class Backend(SQLBackend):
         try:
             for k, v in self.options.items():
                 q = f"SET {k} = {v!r}"
-                util.log(q)
+                self._log(q)
                 cursor.execute_async(q)
 
             cursor._wait_to_finish()
 
-            util.log(query)
+            self._log(query)
             cursor.execute_async(query)
 
             cursor._wait_to_finish()

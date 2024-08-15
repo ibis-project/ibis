@@ -747,7 +747,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
-
+        self._log(query)
         con = self.con
         cursor = con.cursor()
 

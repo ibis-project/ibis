@@ -126,6 +126,7 @@ class Backend(SQLBackend, UrlFromPath):
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         if not isinstance(query, str):
             query = query.sql(dialect=self.name)
+        self._log(query)
         return self.con.execute(query, **kwargs)
 
     @contextlib.contextmanager

@@ -335,6 +335,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
+        self._log(query)
 
         con = self.con
         cursor = con.cursor()

@@ -219,6 +219,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.name)
+        self._log(query)
 
         con = self.con
         cursor = con.cursor()
