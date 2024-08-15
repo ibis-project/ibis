@@ -81,6 +81,29 @@ def test_get_schema(con, server_type, expected_type, temp_table):
     assert con.sql(f"SELECT * FROM [{temp_table}]").schema() == expected_schema
 
 
+def test_schema_type_order(con, temp_table):
+    columns = []
+    pairs = {}
+
+    for i, db_type in enumerate(DB_TYPES):
+        if isinstance(db_type, tuple) and len(db_type) == 2:
+            server_type, expected_type = db_type
+            column_name = f"col_{i}"
+            columns.append(f"{column_name} {server_type}")
+            pairs[column_name] = expected_type
+
+    stmt = f"CREATE TABLE [{temp_table}] ({', '.join(columns)})"
+
+    with con.begin() as c:
+        c.execute(stmt)
+
+    expected_schema = ibis.schema(pairs)
+
+    assert con.get_schema(temp_table) == expected_schema
+    assert con.table(temp_table).schema() == expected_schema
+    assert con.sql(f"SELECT * FROM [{temp_table}]").schema() == expected_schema
+
+
 def test_builtin_scalar_udf(con):
     @udf.scalar.builtin
     def difference(a: str, b: str) -> int:
