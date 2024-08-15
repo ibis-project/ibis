@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot.expressions as sge
 import toolz
 from packaging.version import parse as vparse
 from pytest import mark, param
@@ -1750,3 +1751,48 @@ def test_cross_database_join(con_create_database, monkeypatch):
     con.drop_table(left_table)
     con.drop_table(right_table, database=dbname)
     con.drop_database(dbname)
+
+
+@pytest.mark.notyet(
+    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notimpl(
+    ["flink"], reason="Temp tables are implemented as views, which don't support insert"
+)
+def test_insert_into_table_missing_columns(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    table_name = gen_name("table")
+    sg_default_constraint = sge.ColumnConstraint(
+        kind=sge.DefaultColumnConstraint(this=sge.Literal(this=1, is_string=False))
+    )
+    sg_cols = [
+        sge.ColumnDef(
+            this="a",
+            kind=sge.DataType(this=sge.DataType.Type.INT),
+            constraints=[sg_default_constraint],
+        ),
+        sge.ColumnDef(
+            this="b",
+            kind=sge.DataType(
+                this=sge.DataType.Type.VARCHAR,
+                expressions=[
+                    sge.DataTypeParam(this=sge.Literal(this=10, is_string=False))
+                ],
+            ),
+        ),
+    ]
+    sg_table = sge.Create(
+        kind="TABLE",
+        this=sge.Schema(
+            this=table_name,
+            expressions=sg_cols,
+        ),
+    )
+    con.raw_sql(sg_table.sql(con.dialect))
+    con.insert(table_name, [{"b": "hello"}])
+
+    result = con.table(table_name).to_pyarrow().to_pydict()
+    expected_result = {"a": [1], "b": ["hello"]}
+
+    assert result == expected_result

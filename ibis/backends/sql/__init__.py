@@ -427,17 +427,19 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         # ordering.
         source_cols = source.columns
         columns = (
-            source_cols
-            if not set(target_cols := self.get_schema(target).names).difference(
-                source_cols
-            )
-            else target_cols
+            target_cols
+            if set(target_cols := self.get_schema(target).names).difference(source_cols)
+            else source_cols
         )
 
         query = sge.insert(
             expression=self.compile(source),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
-            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
+            columns=[
+                sg.to_identifier(col, quoted=quoted)
+                for col in columns
+                if col in source_cols
+            ],
             dialect=compiler.dialect,
         )
         return query
