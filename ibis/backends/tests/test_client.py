@@ -1729,6 +1729,9 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
 
 @pytest.mark.notyet(["druid"], reason="can't create tables")
+@pytest.mark.notyet(
+    ["flink"], reason="can't create non-temporary tables from in-memory data"
+)
 def test_cross_database_join(con_create_database, monkeypatch):
     con = con_create_database
 
