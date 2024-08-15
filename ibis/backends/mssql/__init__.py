@@ -244,24 +244,21 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         # us to pre-filter the columns we want back.
         # The syntax is:
         # `sys.dm_exec_describe_first_result_set(@tsql, @params, @include_browse_information)`
-        query = f"""SELECT name,
-                        is_nullable AS nullable,
-                        system_type_name,
-                        precision,
-                        scale
-                    FROM
-                        sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)"""
+        query = f"""
+        SELECT
+          name,
+          is_nullable,
+          system_type_name,
+          precision,
+          scale
+        FROM sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)
+        ORDER BY column_ordinal
+        """
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
 
         schema = {}
-        for (
-            name,
-            nullable,
-            system_type_name,
-            precision,
-            scale,
-        ) in sorted(rows, key=itemgetter(1)):
+        for name, nullable, system_type_name, precision, scale in rows:
             newtyp = self.compiler.type_mapper.from_string(
                 system_type_name, nullable=nullable
             )

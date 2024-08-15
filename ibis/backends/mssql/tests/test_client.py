@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import pytest
+import sqlglot as sg
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
 
-DB_TYPES = [
+RAW_DB_TYPES = [
     # Exact numbers
     ("BIGINT", dt.int64),
     ("BIT", dt.boolean),
@@ -36,23 +38,9 @@ DB_TYPES = [
     ("DATETIME", dt.Timestamp(scale=3)),
     # Characters strings
     ("CHAR", dt.string),
-    param(
-        "TEXT",
-        dt.string,
-        marks=pytest.mark.notyet(
-            ["mssql"], reason="Not supported by UTF-8 aware collations"
-        ),
-    ),
     ("VARCHAR", dt.string),
     # Unicode character strings
     ("NCHAR", dt.string),
-    param(
-        "NTEXT",
-        dt.string,
-        marks=pytest.mark.notyet(
-            ["mssql"], reason="Not supported by UTF-8 aware collations"
-        ),
-    ),
     ("NVARCHAR", dt.string),
     # Binary strings
     ("BINARY", dt.binary),
@@ -67,6 +55,23 @@ DB_TYPES = [
     ("GEOGRAPHY", dt.geography),
     ("HIERARCHYID", dt.string),
 ]
+PARAM_TYPES = [
+    param(
+        "TEXT",
+        dt.string,
+        marks=pytest.mark.notyet(
+            ["mssql"], reason="Not supported by UTF-8 aware collations"
+        ),
+    ),
+    param(
+        "NTEXT",
+        dt.string,
+        marks=pytest.mark.notyet(
+            ["mssql"], reason="Not supported by UTF-8 aware collations"
+        ),
+    ),
+]
+DB_TYPES = RAW_DB_TYPES + PARAM_TYPES
 
 
 @pytest.mark.parametrize(("server_type", "expected_type"), DB_TYPES, ids=str)
@@ -79,6 +84,40 @@ def test_get_schema(con, server_type, expected_type, temp_table):
     assert con.get_schema(temp_table) == expected_schema
     assert con.table(temp_table).schema() == expected_schema
     assert con.sql(f"SELECT * FROM [{temp_table}]").schema() == expected_schema
+
+
+def test_schema_type_order(con, temp_table):
+    columns = []
+    pairs = {}
+
+    quoted = con.compiler.quoted
+    dialect = con.dialect
+    table_id = sg.to_identifier(temp_table, quoted=quoted)
+
+    for i, (server_type, expected_type) in enumerate(RAW_DB_TYPES):
+        column_name = f"col_{i}"
+        columns.append(
+            sge.ColumnDef(
+                this=sg.to_identifier(column_name, quoted=quoted), kind=server_type
+            )
+        )
+        pairs[column_name] = expected_type
+
+    query = sge.Create(
+        kind="TABLE", this=sge.Schema(this=table_id, expressions=columns)
+    )
+    stmt = query.sql(dialect)
+
+    with con.begin() as c:
+        c.execute(stmt)
+
+    expected_schema = ibis.schema(pairs)
+
+    assert con.get_schema(temp_table) == expected_schema
+    assert con.table(temp_table).schema() == expected_schema
+
+    raw_sql = sg.select("*").from_(table_id).sql(dialect)
+    assert con.sql(raw_sql).schema() == expected_schema
 
 
 def test_builtin_scalar_udf(con):
