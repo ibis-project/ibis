@@ -28,7 +28,7 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, C
+from ibis.backends.sql.compilers.base import STAR, AlterTable, C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.util import deprecated
@@ -236,7 +236,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                     )
                 else:
                     cur.execute(
-                        sge.AlterTable(
+                        AlterTable(
                             this=initial_table,
                             actions=[sge.RenameTable(this=final_table)],
                         ).sql(self.name)

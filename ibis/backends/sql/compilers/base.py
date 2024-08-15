@@ -33,6 +33,16 @@ from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 
+try:
+    from sqlglot.expressions import Alter
+except ImportError:
+    from sqlglot.expressions import AlterTable
+else:
+
+    def AlterTable(*args, kind="TABLE", **kwargs):
+        return Alter(*args, kind=kind, **kwargs)
+
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
