@@ -58,7 +58,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.Levenshtein,
         ops.Median,
         ops.MultiQuantile,
-        ops.Quantile,
         ops.RandomUUID,
         ops.ReductionVectorizedUDF,
         ops.RegexExtract,
@@ -186,6 +185,16 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_CountDistinctStar(self, op, *, arg, where):
         raise com.UnsupportedOperationError(
             "COUNT(DISTINCT *) is not supported in Exasol"
+        )
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
         )
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
