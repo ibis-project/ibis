@@ -1378,6 +1378,11 @@ def execute_timestamp_range(op, **kw):
     return pl.datetime_ranges(start, stop, f"{step}{unit}", closed="left")
 
 
+@translate.register(ops.UnixDate)
+def execute_unix_date(op, **kw):
+    return translate(op.arg, **kw).dt.epoch("d")
+
+
 @translate.register(ops.DropColumns)
 def execute_drop_columns(op, **kw):
     parent = translate(op.parent, **kw)

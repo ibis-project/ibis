@@ -466,4 +466,13 @@ class TimestampDelta(TemporalDelta):
     right: Value[dt.Timestamp]
 
 
+@public
+class UnixDate(Value):
+    """Convert a date to a UNIX timestamp."""
+
+    arg: Value[dt.Date]
+    dtype = dt.int64
+    shape = rlz.shape_like("arg")
+
+
 public(ExtractTimestampField=ExtractTemporalField)
