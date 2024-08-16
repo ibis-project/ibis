@@ -42,7 +42,7 @@ feel free to register one.
      [link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data),
      unzip the files, and save them to your local disk.
 2. Option 2: Kaggle API
-    * Go to your Kaggle account settings: [Kaggle Account Settings](https://www.kaggle.com/account).
+    * Go to your `Kaggle Account Settings`.
     * Under the `API` section, click on `Create New API Token`. This will download the `kaggle.json`
     file to your computer.
     * Place the `kaggle.json` file in the correct directory, normally it is under your home directory
@@ -99,22 +99,21 @@ ibis.set_backend(con)
 
 Set data path:
 ```{python}
-# Change the root path to yours
+# change the root path to yours
 ROOT = Path("/Users/claypot/Downloads/home-credit-credit-risk-model-stability")
 TRAIN_DIR = ROOT / "parquet_files" / "train"
 TEST_DIR = ROOT / "parquet_files" / "test"
 ```
 
 ## Data loading and processing
-We'll use Ibis to read the parquet files (with the same data also available in CSV format)
-and perform the necessary processing for the next step.
+We'll use Ibis to read the Parquet files and perform the necessary processing for the next step.
 
 ### Directory structure and tables
 Since there are many data files, let's start by examining the directory structure and
 tables within the train directory:
 
 ```bash
-# Change this to your directory
+# change this to your directory
 tree -L 2 ~/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
 ```
 
@@ -161,11 +160,11 @@ The `train_base.parquet` file is the base table, while the others are feature ta
 Let's take a quick look at these tables.
 
 #### Base table
-The base table (`train_base.parquet`) contains the unique id, a binary target flag
-and other information for the training samples. This unique id will serve as the
+The base table (`train_base.parquet`) contains the unique ID, a binary target flag
+and other information for the training samples. This unique ID will serve as the
 linking key for joining with other feature tables.
 
-* `case_id` - This is the unique id for each loan. You'll need this ID to
+* `case_id` - This is the unique ID for each loan. You'll need this ID to
   join feature tables to the base table. There are about 1.5m unique loans.
 * `date_decision` - This refers to the date when a decision was made regarding the
   approval of the loan.
@@ -184,7 +183,6 @@ ibis.read_parquet(TRAIN_DIR / "train_base.parquet").head(5)
 ```
 
 #### Feature tables
-
 The remaining files contain features, consisting of approximately 370 features from
 previous loan applications and external data sources. Their definitions can be found in the feature
 definition [file]((https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data))
@@ -233,7 +231,6 @@ feature definition and these Kaggle notebooks:
   EDA](https://www.kaggle.com/code/sergiosaharovskiy/home-credit-crms-2024-eda-and-submission)
 
 ### Data loading and processing
-
 We will perform the following data processing steps using Ibis and IbisML:
 
 * **Convert data types**: Ensure consistency by converting data types, as the same column
@@ -246,7 +243,6 @@ We will perform the following data processing steps using Ibis and IbisML:
   join these tables with the base table.
 
 #### Convert data types
-
 We'll use IbisML to create a chain of `Cast` steps, forming a recipe for data type
 conversion across the dataset. This conversion is based on the provided information
 extracted from column names. Columns that have similar transformations are indicated by a
@@ -262,7 +258,7 @@ capital letter at the end of their names:
 For example, we'll define a IbisML transformation step to convert columns ends with `P`
 to floating number:
 ```{python}
-# Convert columns ends with P to floating number
+# convert columns ends with P to floating number
 step_cast_P_to_float = ml.Cast(ml.endswith("P"), dt.float64)
 ```
 
@@ -270,11 +266,11 @@ Next, let's define additional type conversion transformations based on the postf
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to define more steps"
-# Convert columns ends with A to floating number
+# convert columns ends with A to floating number
 step_cast_A_to_float = ml.Cast(ml.endswith("A"), dt.float64)
-# Convert columns ends with D to date
+# convert columns ends with D to date
 step_cast_D_to_date = ml.Cast(ml.endswith("D"), dt.date)
-# Convert columns ends with M to str
+# convert columns ends with M to str
 step_cast_M_to_str = ml.Cast(ml.endswith("M"), dt.str)
 ```
 
@@ -290,7 +286,7 @@ data_type_recipes = ml.Recipe(
     step_cast_D_to_date,
     step_cast_M_to_str,
     step_cast_A_to_float,
-    # Cast some special columns
+    # cast some special columns
     ml.Cast(["date_decision"], "date"),
     ml.Cast(["case_id", "WEEK_NUM", "num_group1", "num_group2"], dt.int64),
     ml.Cast(
@@ -322,7 +318,6 @@ selectors [documentation](https://ibis-project.github.io/ibis-ml/reference/selec
 :::
 
 #### Aggregate features
-
 For tables with a depth greater than 0 that can't be directly joined with the base table,
 we need to aggregate the features by the `case_id`. You could compute the different statistics for numeric columns and
 non-numeric columns.
@@ -347,7 +342,6 @@ we'll only collect the maximum value of the features here.
 :::
 
 #### Put them together
-
 We'll put them together in a function reads parquet files, optionally handles regex patterns for
 multiple sub-files, applies data type transformations defined by `data_type_recipes`, and
 performs aggregation based on `case_id` if specified by the depth parameter.
@@ -368,21 +362,21 @@ def read_and_process_files(file_path, depth=None, is_regex=False):
         ibis.Table: The processed Ibis table.
     """
     if is_regex:
-        # Read and union multiple files
+        # read and union multiple files
         chunks = []
         for path in glob(str(file_path)):
             chunk = ibis.read_parquet(path)
-            # Transform table using IbisML Recipe
+            # transform table using IbisML Recipe
             chunk = data_type_recipes.fit(chunk).to_ibis(chunk)
             chunks.append(chunk)
         table = ibis.union(*chunks)
     else:
-        # Read a single file
+        # read a single file
         table = ibis.read_parquet(file_path)
-        # Transform table using IbisML
+        # transform table using IbisML
         table = data_type_recipes.fit(table).to_ibis(table)
 
-    # Perform aggregation if depth is 1 or 2
+    # perform aggregation if depth is 1 or 2
     if depth in [1, 2]:
         table = agg_by_id(table)
 
@@ -418,7 +412,7 @@ train_data_store = {
         read_and_process_files(TRAIN_DIR / "train_credit_bureau_b_2.parquet", 2),
     ],
 }
-# We won't be submitting the predictions, so let's comment out the test data.
+# we won't be submitting the predictions, so let's comment out the test data.
 # test_data_store = {
 #     "df_base": read_and_process_files(TEST_DIR / "test_base.parquet"),
 #     "depth_0": [
@@ -465,7 +459,8 @@ total_rows = df_train.count().execute()
 print(f"There is {total_rows} rows and {len(df_train.columns)} columns")
 ```
 ### Select features
-Since there are ~370 features, we'll only select part of good ones for this post:
+Given the large number of features (~370), we'll focus on selecting just a few of the most
+informative ones by name for demonstration purposes in this post:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to select important features for the train dataset"
@@ -473,13 +468,13 @@ df_train = df_train.select(
     "case_id",
     "date_decision",
     "target",
-    # Number of credit bureau queries for the last X days.
+    # number of credit bureau queries for the last X days.
     "days30_165L",
     "days360_512L",
     "days90_310L",
-    # Number of tax deduction payments
+    # number of tax deduction payments
     "pmtscount_423L",
-    # Sum of tax deductions for the client
+    # sum of tax deductions for the client
     "pmtssum_45A",
     "dateofbirth_337D",
     "education_1103M",
@@ -498,15 +493,15 @@ df_train = df_train.select(
     "applicationcnt_361L",
     "applications30d_658L",
     "applicationscnt_1086L",
-    # Average days past or before due of payment during the last 24 months.
+    # average days past or before due of payment during the last 24 months.
     "avgdbddpdlast24m_3658932P",
-    # Average days past or before due of payment during the last 3 months.
+    # average days past or before due of payment during the last 3 months.
     "avgdbddpdlast3m_4187120P",
-    # End date of active contract.
+    # end date of active contract.
     "max_contractmaturitydate_151D",
-    # Credit limit of an active loan.
+    # credit limit of an active loan.
     "max_credlmt_1052A",
-    # Number of credits in credit bureau
+    # number of credits in credit bureau
     "max_credquantity_1099L",
     "max_dpdmaxdatemonth_804T",
     "max_dpdmaxdateyear_742T",
@@ -519,14 +514,14 @@ df_train = df_train.select(
     "max_childnum_21L",
     "max_currdebt_94A",
     "max_employedfrom_700D",
-    # Client's main income amount in their previous application
+    # client's main income amount in their previous application
     "max_mainoccupationinc_437A",
     "max_profession_152M",
     "max_rejectreason_755M",
     "max_status_219L",
-    # Credit amount of the active contract provided by the credit bureau
+    # credit amount of the active contract provided by the credit bureau
     "max_amount_1115A",
-    # Amount of unpaid debt for existing contracts
+    # amount of unpaid debt for existing contracts
     "max_debtpastduevalue_732A",
     "max_debtvalue_227A",
     "max_installmentamount_833A",
@@ -560,7 +555,6 @@ df_train[df_train.columns[:10]].describe()
 ```
 
 ## Last-mile data preprocessing
-
 We will perform the following transformation before feeding the data to models:
 
 * Missing value imputation
@@ -570,9 +564,9 @@ We will perform the following transformation before feeding the data to models:
 * Scaling and normalization
 
 ::: {.callout-note}
-IbisML provides a set of transformations, you could find the roadmap in this github
-[thread](https://github.com/ibis-project/ibis-ml/issues/32) and the guides from the
-IbisML [website](https://ibis-project.github.io/ibis-ml/).
+IbisML provides a set of transformations. You can find the
+[roadmap](https://github.com/ibis-project/ibis-ml/issues/32).
+The [IbisML website](https://ibis-project.github.io/ibis-ml/) also includes tutorials and API documentation..
 :::
 
 ### Impute features
@@ -649,7 +643,6 @@ step_handle_outliers = ml.HandleUnivariateOutliers(
 ```
 
 ### Construct recipe
-
 We'll construct the last mile preprocessing [recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe)
 by chaining all transformation steps, which will be fitted to the training dataset and later applied test datasets.
 
@@ -663,11 +656,11 @@ last_mile_preprocessing = ml.Recipe(
     ohe_step,
     ml.Drop(ml.string()),
     # handle numeric cols
-    # Capping outliers
+    # capping outliers
     step_handle_outliers,
     step_impute_median,
     ml.ScaleMinMax(ml.numeric()),
-    # Fill missing value
+    # fill missing value
     ml.FillNA(ml.numeric(), 0),
     ml.Cast(ml.numeric(), "float32"),
 )
@@ -675,12 +668,11 @@ print(f"Last-mile preprocessing recipe: \n{last_mile_preprocessing}")
 ```
 
 ## Modeling
-
 After completing data preprocessing with Ibis and IbisML, we proceed to the modeling
 phase. Here are two approaches:
 
 * Use IbisML as a independent data preprocessing component and hand off the data to downstream modeling
-    frameworks with various output formats:
+frameworks with various output formats:
      - Pandas Dataframe
      - NumPy Array
      - Polars Dataframe
@@ -688,13 +680,12 @@ phase. Here are two approaches:
      - xgboost.DMatrix
      - Pyarrow Table
 * Use IbisML recipes as components within an sklearn Pipeline and
-    train models similarly to how you would do with sklearn pipeline.
+train models similarly to how you would do with sklearn pipeline.
 
 We will build an XGBoost model within a scikit-learn pipeline, and a neural network classifier using the
 output transformed by IbisML recipes.
 
 ### Train and test data splitting
-
 We'll use hashing on the unique key to consistently split rows to different groups.
 Hashing is robust to underlying changes in the data, such as adding, deleting, or
 reordering rows. This deterministic process ensures that each data point is always
@@ -705,15 +696,16 @@ assigned to the same split, thereby enhancing reproducibility.
 #| code-summary: "Show code to split data into train and test"
 import random
 
-# This enables the analysis to be reproducible when random numbers are used
+# this enables the analysis to be reproducible when random numbers are used
 random.seed(222)
 random_key = str(random.getrandbits(256))
 
-# Put 3/4 of the data into the training set
+# put 3/4 of the data into the training set
 df_train = df_train.mutate(
     train_flag=(df_train.case_id.cast(dt.str) + random_key).hash().abs() % 4 < 3
 )
 # split the dataset by train_flag
+# todo: use ml.train_test_split() after next release
 train_data = df_train[df_train.train_flag].drop("train_flag")
 test_data = df_train[~df_train.train_flag].drop("train_flag")
 
@@ -738,14 +730,14 @@ minor deviation from the intended ratio is a normal consequence of hash-based
 partitioning.
 :::
 
-### xgboost
+### XGBoost
 In this section, we integrate XGBoost into a scikit-learn pipeline to create a
 streamlined workflow for training and evaluating our model.
 
 We'll set up a pipeline that includes two components:
 
-* preprocessing: This step applies the `last_mile_preprocessing` for final data preprocessing.
-* model: This step applies the `xgb.XGBClassifier()` to train the XGBoost model.
+* **Preprocessing**: This step applies the `last_mile_preprocessing` for final data preprocessing.
+* **Modeling**: This step applies the `xgb.XGBClassifier()` to train the XGBoost model.
 
 ```{python}
 #| code-fold: true
@@ -762,32 +754,31 @@ model = xgb.XGBClassifier(
     colsample_bytree=0.8,
     random_state=42,
 )
-# Create the pipeline with the last mile ML recipes and the model
+# create the pipeline with the last mile ML recipes and the model
 pipe = Pipeline([("last_mile_recipes", last_mile_preprocessing), ("model", model)])
-# Fit the pipeline on the training data
+# fit the pipeline on the training data
 pipe.fit(X_train, y_train)
 ```
 
-Let's evaluate the model on the test data using gini index:
+Let's evaluate the model on the test data using Gini index:
 ```{python}
 #| code-fold: true
-#| code-summary: "Show code to calculate gini for the test dataset"
+#| code-summary: "Show code to calculate the Gini score for the test dataset"
 y_pred_proba = pipe.predict_proba(X_test)[:, 1]
-# Calculate the AUC score
+# calculate the AUC score
 auc = roc_auc_score(y_test, y_pred_proba)
 
-# Calculate the Gini score
+# calculate the Gini score
 gini_score = 2 * auc - 1
 print(f"gini_score for test dataset: {gini_score:,}")
 ```
 
 ::: {.callout-note}
-The competition is evaluated using a gini stability metric. For more information, check this
+The competition is evaluated using a Gini stability metric. For more information, see the
 [evaluation guidelines](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/overview/evaluation)
 :::
 
 ### Neural network classifier
-
 Build a neural network classifier using PyTorch and PyTorch Lightning.
 
 ::: {.callout-warning}
@@ -801,7 +792,7 @@ Let's first train the recipe:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to train the IbisML recipe"
-# Train preprocessing recipe using training dataset
+# train preprocessing recipe using training dataset
 last_mile_preprocessing.fit(X_train, y_train)
 ```
 
@@ -811,7 +802,7 @@ transform both the train and test datasets using the same recipe. The default ou
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to transform the datasets using fitted recipe"
-# Transform train and test dataset using IbisML recipe
+# transform train and test dataset using IbisML recipe
 X_train_transformed = last_mile_preprocessing.transform(X_train)
 X_test_transformed = last_mile_preprocessing.transform(X_test)
 print(f"train data shape = {X_train_transformed.shape}")
@@ -868,7 +859,7 @@ class NeuralNetClassifier(pl.LightningModule):
             x = x.to(self.device)
             return self.sigmoid(self(x))
 
-# Initialize your Lightning Module
+# initialize your Lightning Module
 nn_classifier = NeuralNetClassifier(input_dim=X_train_transformed.shape[1])
 ```
 
@@ -894,7 +885,7 @@ Initialize the PyTorch Lightning Trainer:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to construct PyTorch Lightning Trainer"
-# Initialize a Trainer
+# initialize a Trainer
 trainer = Trainer(max_epochs=2)
 print(nn_classifier)
 ```
@@ -903,7 +894,7 @@ Let's train the classifier:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to train the pytorch classifier"
-# Train the model
+# train the model
 trainer.fit(nn_classifier, train_loader, val_loader)
 ```
 
@@ -916,7 +907,6 @@ y_pred
 ```
 
 ## Takeaways
-
 IbisML provides a powerful suite of last-mile preprocessing transformations, including an advanced column selector
 that streamlines the selection and transformation of specific columns in your dataset.
 
