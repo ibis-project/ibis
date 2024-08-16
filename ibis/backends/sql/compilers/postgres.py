@@ -226,6 +226,19 @@ class PostgresCompiler(SQLGlotCompiler):
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        expr = sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        if where is not None:
+            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
+        return expr
+
+    visit_MultiQuantile = visit_Quantile
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(

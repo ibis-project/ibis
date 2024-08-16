@@ -74,8 +74,6 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.Levenshtein,
         ops.Median,
         ops.Mode,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RegexReplace,
         ops.RegexSplit,
         ops.RowID,

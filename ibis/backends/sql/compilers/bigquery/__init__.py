@@ -120,8 +120,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.ExtractUserInfo,
         ops.FindInSet,
         ops.Median,
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.RegexSplit,
         ops.RowID,
         ops.TimestampDiff,

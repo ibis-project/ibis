@@ -38,8 +38,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.IsInf,
         ops.Covariance,
         ops.Correlation,
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.Median,
         ops.ApproxMedian,
         ops.Array,
