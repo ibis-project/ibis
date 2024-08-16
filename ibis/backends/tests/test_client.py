@@ -15,12 +15,14 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
 from packaging.version import parse as vparse
 from pytest import mark, param
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -1763,17 +1765,19 @@ def test_cross_database_join(con_create_database, monkeypatch):
 def test_insert_into_table_missing_columns(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     table_name = gen_name("table")
+    quoted = getattr(sc, con.dialect.__name__.lower()).compiler.quoted
+
     sg_default_constraint = sge.ColumnConstraint(
         kind=sge.DefaultColumnConstraint(this=sge.Literal(this=1, is_string=False))
     )
     sg_cols = [
         sge.ColumnDef(
-            this="a",
+            this=sg.to_identifier("a", quoted=quoted),
             kind=sge.DataType(this=sge.DataType.Type.INT),
             constraints=[sg_default_constraint],
         ),
         sge.ColumnDef(
-            this="b",
+            this=sg.to_identifier("b", quoted=quoted),
             kind=sge.DataType(
                 this=sge.DataType.Type.VARCHAR,
                 expressions=[
@@ -1785,7 +1789,7 @@ def test_insert_into_table_missing_columns(con, monkeypatch):
     sg_table = sge.Create(
         kind="TABLE",
         this=sge.Schema(
-            this=table_name,
+            this=sg.to_identifier(table_name, quoted=quoted),
             expressions=sg_cols,
         ),
     )
@@ -1796,3 +1800,5 @@ def test_insert_into_table_missing_columns(con, monkeypatch):
     expected_result = {"a": [1], "b": ["hello"]}
 
     assert result == expected_result
+
+    con.drop_table(table_name)
