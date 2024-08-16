@@ -592,7 +592,7 @@ def test_date_truncate(backend, alltypes, df, unit):
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
-    interval = alltypes.int_col.to_interval(unit=unit)
+    interval = alltypes.int_col.as_interval(unit=unit)
     expr = (alltypes.timestamp_col + interval).name("tmp")
 
     def convert_to_offset(offset, displacement_type=displacement_type):
@@ -663,7 +663,7 @@ def test_integer_to_interval_timestamp(
 @pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
-    interval = alltypes.int_col.to_interval(unit=unit)
+    interval = alltypes.int_col.as_interval(unit=unit)
     month = alltypes.date_string_col[:2]
     day = alltypes.date_string_col[3:5]
     year = alltypes.date_string_col[6:8]
@@ -1182,8 +1182,9 @@ def test_integer_to_timestamp(backend, con, unit):
 
     # convert the timestamp to the input unit being tested
     int_expr = ibis.literal(pandas_ts // factor)
-    expr = int_expr.to_timestamp(unit).name("tmp")
-    result = con.execute(expr)
+    expr_as = int_expr.as_timestamp(unit).name("tmp")
+    result = con.execute(expr_as)
+
     expected = pd.Timestamp(pandas_ts, unit="ns").floor(backend_unit)
 
     assert result == expected
@@ -1260,7 +1261,7 @@ def test_integer_to_timestamp(backend, con, unit):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_timestamp(alltypes, fmt):
     table = alltypes
-    result = table.mutate(date=table.date_string_col.to_timestamp(fmt)).execute()
+    result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime
@@ -1339,7 +1340,7 @@ def test_string_to_timestamp(alltypes, fmt):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_string_to_date(alltypes, fmt):
     table = alltypes
-    result = table.mutate(date=table.date_string_col.to_date(fmt)).execute()
+    result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
 
     # TEST: do we get the same date out, that we put in?
     # format string assumes that we are using pandas' strftime

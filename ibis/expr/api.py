@@ -860,7 +860,7 @@ def timestamp(
             )
         return ops.TimestampFromYMDHMS(*args).to_expr()
     elif isinstance(value_or_year, (numbers.Real, ir.IntegerValue)):
-        raise TypeError("Use ibis.literal(...).to_timestamp() instead")
+        raise TypeError("Use ibis.literal(...).as_timestamp() instead")
     elif isinstance(value_or_year, ir.Expr):
         return value_or_year.cast(dt.Timestamp(timezone=timezone))
     else:
