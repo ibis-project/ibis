@@ -106,7 +106,7 @@ def test_timestamp_tz_column(simple_con):
         ibis.util.gen_name("snowflake_timestamp_tz_column"),
         schema=ibis.schema({"ts": "string"}),
         temp=True,
-    ).mutate(ts=lambda t: t.ts.to_timestamp("YYYY-MM-DD HH24-MI-SS"))
+    ).mutate(ts=lambda t: t.ts.as_timestamp("YYYY-MM-DD HH24-MI-SS"))
     expr = t.ts
     assert expr.execute().empty
 
