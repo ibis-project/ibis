@@ -40,8 +40,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.Greatest,
         ops.IntervalFromInteger,
         ops.Least,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RowID,
         ops.Strftime,
         ops.TimeDelta,

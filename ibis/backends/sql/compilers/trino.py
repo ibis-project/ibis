@@ -46,8 +46,6 @@ class TrinoCompiler(SQLGlotCompiler):
     NEG_INF = -POS_INF
 
     UNSUPPORTED_OPS = (
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.Median,
         ops.RowID,
         ops.TimestampBucket,
