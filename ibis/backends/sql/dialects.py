@@ -251,6 +251,26 @@ class Flink(Hive):
             sge.Interval: _interval_with_precision,
         }
 
+        def date_from_parts_sql(self, e: sge.DateFromParts):
+            string = sge.DataType(this=sge.DataType.Type.VARCHAR)
+            zero = sge.convert("0")
+            padded_year = sge.func(
+                "lpad", sge.Cast(this=e.args["year"], to=string), sge.convert(4), zero
+            )
+            padded_month = sge.func(
+                "lpad", sge.Cast(this=e.args["month"], to=string), sge.convert(2), zero
+            )
+            padded_day = sge.func(
+                "lpad", sge.Cast(this=e.args["day"], to=string), sge.convert(2), zero
+            )
+            dash = sge.convert("-")
+            return sge.Cast(
+                this=sg.func(
+                    "concat", padded_year, dash, padded_month, dash, padded_day
+                ),
+                to=sge.DataType(this=sge.DataType.Type.DATE),
+            ).sql(self.dialect)
+
         # Flink is like Hive except where it might actually be convenient
         #
         # UNNEST works like the SQL standard, and not like Hive, so we have to

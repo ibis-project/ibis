@@ -370,14 +370,6 @@ class FlinkCompiler(SQLGlotCompiler):
             self.f.concat(padded_hour, ":", padded_minute, ":", padded_second), op.dtype
         )
 
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        padded_year = self.f.lpad(self.cast(year, dt.string), 4, "0")
-        padded_month = self.f.lpad(self.cast(month, dt.string), 2, "0")
-        padded_day = self.f.lpad(self.cast(day, dt.string), 2, "0")
-        return self.cast(
-            self.f.concat(padded_year, "-", padded_month, "-", padded_day), op.dtype
-        )
-
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):
