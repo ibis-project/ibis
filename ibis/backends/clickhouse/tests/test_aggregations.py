@@ -62,7 +62,7 @@ def test_reduction_invalid_where(alltypes, reduction):
         ),
         (
             lambda t, cond: t.int_col.approx_median(),
-            lambda df, cond: np.int32(df.int_col.median()),
+            lambda df, cond: df.int_col.median(),
         ),
         (
             lambda t, cond: t.double_col.min(),
