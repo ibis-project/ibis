@@ -850,7 +850,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                         "mysql",
                         "sqlite",
                         "druid",
-                        "exasol",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1210,7 +1209,7 @@ def test_median(alltypes, df):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
+    ["impala", "mysql", "mssql", "trino", "flink"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1226,6 +1225,11 @@ def test_median(alltypes, df):
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="doesn't support median of strings",
+)
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="doesn't support quantile on strings",
 )
 @pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
@@ -1270,6 +1274,11 @@ def test_string_quantile(alltypes, func):
 @pytest.mark.notyet(
     ["pyspark"],
     raises=PySparkAnalysisException,
+    reason="doesn't support quantile on dates",
+)
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=ExaQueryError,
     reason="doesn't support quantile on dates",
 )
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
