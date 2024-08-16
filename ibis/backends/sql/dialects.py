@@ -501,4 +501,14 @@ Trino.Generator.TRANSFORMS |= {
     sge.FirstValue: rename_func("first_value"),
     sge.Join: transforms.preprocess([make_cross_joins_explicit]),
     sge.LastValue: rename_func("last_value"),
+    sge.DateFromParts: lambda self, e: sg.func(
+        "from_iso8601_date",
+        sg.func(
+            "format",
+            sge.convert("%04d-%02d-%02d"),
+            e.args["year"],
+            e.args["month"],
+            e.args["day"],
+        ),
+    ).sql(self.dialect),
 }
