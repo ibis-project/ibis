@@ -185,7 +185,7 @@ ibis.read_parquet(TRAIN_DIR / "train_base.parquet").head(5)
 #### Feature tables
 The remaining files contain features, consisting of approximately 370 features from
 previous loan applications and external data sources. Their definitions can be found in the feature
-definition [file]((https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data))
+definition [file](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data)
 from the competition website.
 
 There are several things we want to mention for the feature tables:
