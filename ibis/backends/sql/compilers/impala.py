@@ -154,18 +154,6 @@ class ImpalaCompiler(SQLGlotCompiler):
             return self.f.ln(arg)
         return self.f.log(base, arg, dialect=self.dialect)
 
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        return self.cast(
-            self.f.concat(
-                self.f.lpad(self.cast(year, dt.string), 4, "0"),
-                "-",
-                self.f.lpad(self.cast(month, dt.string), 2, "0"),
-                "-",
-                self.f.lpad(self.cast(day, dt.string), 2, "0"),
-            ),
-            dt.date,
-        )
-
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_date() or dtype.is_timestamp():
             # hack to return a string literal because impala doesn't support a

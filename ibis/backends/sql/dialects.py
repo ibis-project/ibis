@@ -336,6 +336,43 @@ class Impala(Hive):
             sge.CurrentDate: rename_func("current_date"),
         }
 
+        def date_from_parts_sql(self, e: sge.DateFromParts):
+            return sge.Cast(
+                this=sg.func(
+                    "concat",
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["year"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(4),
+                        sge.convert("0"),
+                    ),
+                    sge.convert("-"),
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["month"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(2),
+                        sge.convert("0"),
+                    ),
+                    sge.convert("-"),
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["day"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(2),
+                        sge.convert("0"),
+                    ),
+                ),
+                to=sge.DataType(this=sge.DataType.Type.DATE),
+            ).sql(self.dialect)
+
 
 class MSSQL(TSQL):
     class Generator(TSQL.Generator):
