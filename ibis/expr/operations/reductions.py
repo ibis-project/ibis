@@ -211,6 +211,11 @@ class Median(QuantileBase):
 
 
 @public
+class ApproxMedian(Median):
+    """Compute the approximate median of a column."""
+
+
+@public
 class Quantile(QuantileBase):
     """Compute the quantile of a column."""
 
@@ -326,25 +331,6 @@ class ArgMin(Filterable, Reduction):
 
 
 @public
-class ApproxCountDistinct(Filterable, Reduction):
-    """Approximate number of unique values."""
-
-    arg: Column
-
-    # Impala 2.0 and higher returns a DOUBLE
-    dtype = dt.int64
-
-
-@public
-class ApproxMedian(Filterable, Reduction):
-    """Compute the approximate median of a set of comparable values."""
-
-    arg: Column
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class GroupConcat(Filterable, Reduction):
     """Concatenate strings in a group with a given separator character."""
 
@@ -362,6 +348,11 @@ class CountDistinct(Filterable, Reduction):
     arg: Column
 
     dtype = dt.int64
+
+
+@public
+class ApproxCountDistinct(CountDistinct):
+    """Approximate number of unique values."""
 
 
 @public

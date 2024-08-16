@@ -1644,13 +1644,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        ┌──────┐
-        │ 4030 │
-        └──────┘
+        ┌────────┐
+        │ 4030.0 │
+        └────────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        ┌──────┐
-        │ 3700 │
-        └──────┘
+        ┌────────┐
+        │ 3700.0 │
+        └────────┘
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
