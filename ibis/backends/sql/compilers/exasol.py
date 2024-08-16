@@ -32,7 +32,6 @@ class ExasolCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
-        ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
         ops.ArrayDistinct,
@@ -56,7 +55,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.IsInf,
         ops.IsNan,
         ops.Levenshtein,
-        ops.Median,
         ops.MultiQuantile,
         ops.RandomUUID,
         ops.ReductionVectorizedUDF,
@@ -186,6 +184,11 @@ class ExasolCompiler(SQLGlotCompiler):
         raise com.UnsupportedOperationError(
             "COUNT(DISTINCT *) is not supported in Exasol"
         )
+
+    def visit_Median(self, op, *, arg, where):
+        return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)
+
+    visit_ApproxMedian = visit_Median
 
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
