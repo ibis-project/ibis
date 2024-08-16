@@ -454,6 +454,16 @@ Oracle.Generator.TRANSFORMS |= {
         ]
     ),
     sge.GroupConcat: rename_func("listagg"),
+    sge.DateFromParts: lambda self, e: sg.func(
+        "to_date",
+        sg.func(
+            "concat",
+            sg.func("lpad", e.args["year"], sge.convert(4), sge.convert("0")),
+            sg.func("lpad", e.args["month"], sge.convert(2), sge.convert("0")),
+            sg.func("lpad", e.args["day"], sge.convert(2), sge.convert("0")),
+        ),
+        sge.convert("FXYYYYMMDD"),
+    ).sql(self.dialect),
 }
 
 # TODO: can delete this after bumping sqlglot version > 20.9.0

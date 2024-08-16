@@ -130,10 +130,6 @@ class OracleCompiler(SQLGlotCompiler):
                 return self.f.to_timestamp(
                     value.isoformat(), 'YYYY-MM-DD"T"HH24:MI:SS.FF6'
                 )
-        elif dtype.is_date():
-            return self.f.to_date(
-                f"{value.year:04d}-{value.month:02d}-{value.day:02d}", "FXYYYY-MM-DD"
-            )
         elif dtype.is_uuid():
             return sge.convert(str(value))
         elif dtype.is_interval():
@@ -474,6 +470,9 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         return self._value_to_interval(arg, unit)
+
+    def visit_UnixDate(self, op, *, arg):
+        return arg - self.f.date_from_parts(1970, 1, 1)
 
 
 compiler = OracleCompiler()
