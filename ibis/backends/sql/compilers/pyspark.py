@@ -283,6 +283,13 @@ class PySparkCompiler(SQLGlotCompiler):
         collected = self.if_(self.f.size(collected).eq(0), NULL, collected)
         return self.f.array_join(collected, sep)
 
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.percentile(arg, quantile)
+
+    visit_MultiQuantile = visit_Quantile
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
             left = self.cast(left, dt.Int32(nullable=left_type.nullable))
