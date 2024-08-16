@@ -865,11 +865,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
-                    ["pyspark"],
-                    reason="backend implements approximate quantiles",
-                    raises=AssertionError,
-                ),
-                pytest.mark.never(
                     ["flink"],
                     reason="backend doesn't implement approximate quantiles yet",
                     raises=com.OperationNotDefinedError,
@@ -904,11 +899,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     ["trino"],
                     reason="backend implements approximate quantiles",
                     raises=com.OperationNotDefinedError,
-                ),
-                pytest.mark.never(
-                    ["pyspark"],
-                    reason="backend implements approximate quantiles",
-                    raises=AssertionError,
                 ),
                 pytest.mark.never(
                     ["dask"],
@@ -1276,6 +1266,11 @@ def test_string_quantile(alltypes, func):
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="doesn't support median of dates",
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=PySparkAnalysisException,
+    reason="doesn't support quantile on dates",
 )
 @pytest.mark.notimpl(["dask"], raises=(AssertionError, NotImplementedError, TypeError))
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
