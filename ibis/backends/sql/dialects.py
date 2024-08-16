@@ -4,6 +4,7 @@ import contextlib
 import math
 from copy import deepcopy
 
+import sqlglot as sg
 import sqlglot.expressions as sge
 import sqlglot.generator as sgn
 from sqlglot import transforms
@@ -27,6 +28,32 @@ ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySort: rename_func("arraySort"),
     sge.LogicalAnd: rename_func("min"),
     sge.LogicalOr: rename_func("max"),
+    sge.DateFromParts: lambda self, e: sg.func(
+        "toDate",
+        sg.func(
+            "concat",
+            sg.func(
+                "leftPad",
+                sg.func("toString", e.args["year"]),
+                sge.convert(4),
+                sge.convert("0"),
+            ),
+            sge.convert("-"),
+            sg.func(
+                "leftPad",
+                sg.func("toString", e.args["month"]),
+                sge.convert(2),
+                sge.convert("0"),
+            ),
+            sge.convert("-"),
+            sg.func(
+                "leftPad",
+                sg.func("toString", e.args["day"]),
+                sge.convert(2),
+                sge.convert("0"),
+            ),
+        ),
+    ).sql(self.dialect),
 }
 
 
