@@ -1637,6 +1637,12 @@ class SQLGlotCompiler(abc.ABC):
         # generate the SQL string
         return parsed.sql(dialect)
 
+    def visit_UnixDate(self, op, *, arg):
+        epoch = sge.DateFromParts(
+            year=sge.convert(1970), month=sge.convert(1), day=sge.convert(1)
+        )
+        return sge.DateDiff(this=arg, expression=epoch, unit=self.v.DAY)
+
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to
 # autogenerate the base class implementations as well.
