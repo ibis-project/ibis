@@ -237,11 +237,11 @@ def test_multiple_project_queries_execute(con):
     assert len(result) == 5
 
 
-def test_string_to_timestamp(con):
+def test_string_as_timestamp(con):
     timestamp = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone("UTC")
     )
-    expr = ibis.literal("2017-02-06").to_timestamp("%F")
+    expr = ibis.literal("2017-02-06").as_timestamp("%F")
     result = con.execute(expr)
     assert result == timestamp
 
@@ -249,7 +249,7 @@ def test_string_to_timestamp(con):
         datetime.datetime(year=2017, month=2, day=6, hour=5),
         tz=pytz.timezone("UTC"),
     )
-    expr_tz = ibis.literal("2017-02-06 America/New_York").to_timestamp("%F %Z")
+    expr_tz = ibis.literal("2017-02-06 America/New_York").as_timestamp("%F %Z")
     result_tz = con.execute(expr_tz)
     assert result_tz == timestamp_tz
 
