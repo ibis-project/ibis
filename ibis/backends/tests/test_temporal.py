@@ -2297,3 +2297,14 @@ def test_date_scalar(con, value, func):
     assert isinstance(result, datetime.date)
 
     assert result == datetime.date.fromisoformat(value)
+
+
+@pytest.mark.notyet(
+    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+)
+def test_simple_unix_date_offset(con):
+    d = ibis.date("2023-04-07")
+    expr = d.epoch()
+    result = con.execute(expr)
+    delta = datetime.date(2023, 4, 7) - datetime.date(1970, 1, 1)
+    assert result == delta.days
