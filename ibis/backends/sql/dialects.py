@@ -249,27 +249,42 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
-        }
-
-        def date_from_parts_sql(self, e: sge.DateFromParts):
-            string = sge.DataType(this=sge.DataType.Type.VARCHAR)
-            zero = sge.convert("0")
-            padded_year = sge.func(
-                "lpad", sge.Cast(this=e.args["year"], to=string), sge.convert(4), zero
-            )
-            padded_month = sge.func(
-                "lpad", sge.Cast(this=e.args["month"], to=string), sge.convert(2), zero
-            )
-            padded_day = sge.func(
-                "lpad", sge.Cast(this=e.args["day"], to=string), sge.convert(2), zero
-            )
-            dash = sge.convert("-")
-            return sge.Cast(
+            sge.DateFromParts: lambda self, e: sge.Cast(
                 this=sg.func(
-                    "concat", padded_year, dash, padded_month, dash, padded_day
+                    "concat",
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["year"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(4),
+                        sge.convert("0"),
+                    ),
+                    sge.convert("-"),
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["month"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(2),
+                        sge.convert("0"),
+                    ),
+                    sge.convert("-"),
+                    sg.func(
+                        "lpad",
+                        sge.Cast(
+                            this=e.args["day"],
+                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
+                        ),
+                        sge.convert(2),
+                        sge.convert("0"),
+                    ),
                 ),
                 to=sge.DataType(this=sge.DataType.Type.DATE),
-            ).sql(self.dialect)
+            ).sql(self.dialect),
+        }
 
         # Flink is like Hive except where it might actually be convenient
         #
@@ -354,10 +369,7 @@ class Impala(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.Interval: lambda self, e: _interval(self, e, quote_arg=False),
             sge.CurrentDate: rename_func("current_date"),
-        }
-
-        def date_from_parts_sql(self, e: sge.DateFromParts):
-            return sge.Cast(
+            sge.DateFromParts: lambda self, e: sge.Cast(
                 this=sg.func(
                     "concat",
                     sg.func(
@@ -391,7 +403,8 @@ class Impala(Hive):
                     ),
                 ),
                 to=sge.DataType(this=sge.DataType.Type.DATE),
-            ).sql(self.dialect)
+            ).sql(self.dialect),
+        }
 
 
 class MSSQL(TSQL):

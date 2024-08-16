@@ -1477,9 +1477,6 @@ DATE_BACKEND_TYPES = {
     ["pandas", "dask", "exasol", "risingwave", "druid"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
-    ["oracle"], raises=OracleDatabaseError, reason="ORA-00936 missing expression"
-)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -1711,9 +1708,6 @@ def test_interval_literal(con, backend):
 @pytest.mark.notimpl(
     ["pandas", "dask", "exasol", "risingwave", "druid"],
     raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["oracle"], raises=OracleDatabaseError, reason="ORA-00936: missing expression"
 )
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
@@ -2300,7 +2294,8 @@ def test_date_scalar(con, value, func):
 
 
 @pytest.mark.notyet(
-    ["dask", "datafusion", "pandas"], raises=com.OperationNotDefinedError
+    ["dask", "datafusion", "pandas", "druid", "exasol"],
+    raises=com.OperationNotDefinedError,
 )
 def test_simple_unix_date_offset(con):
     d = ibis.date("2023-04-07")

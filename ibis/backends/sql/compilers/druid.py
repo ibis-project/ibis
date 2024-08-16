@@ -62,6 +62,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.TimestampDelta,
         ops.Translate,
         ops.TypeOf,
+        ops.UnixDate,
         ops.Unnest,
         ops.Variance,
     )

@@ -468,7 +468,7 @@ class TimestampDelta(TemporalDelta):
 
 @public
 class UnixDate(Value):
-    """Convert a date to a UNIX timestamp."""
+    """Return the number of days since the UNIX epoch."""
 
     arg: Value[dt.Date]
     dtype = dt.int64
