@@ -445,6 +445,9 @@ Snowflake.Generator.TRANSFORMS |= {
 }
 
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
+SQLite.Generator.TRANSFORMS |= {
+    sge.DateFromParts: rename_func("_ibis_date_from_parts"),
+}
 
 
 # TODO(cpcloud): remove this hack once

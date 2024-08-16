@@ -5,6 +5,7 @@ import inspect
 import math
 import operator
 from collections import defaultdict
+from datetime import date
 from typing import TYPE_CHECKING, Any, NamedTuple
 from urllib.parse import parse_qs, urlsplit
 from uuid import uuid4
@@ -355,6 +356,11 @@ def _ibis_extract_user_info(url):
     password = url_parts.password or ""
 
     return f"{username}:{password}"
+
+
+@udf
+def _ibis_date_from_parts(year, month, day):
+    return date(year, month, day).isoformat()
 
 
 class _ibis_var:
