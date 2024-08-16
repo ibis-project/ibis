@@ -1,9 +1,10 @@
 ---
-title: "Using IbisML for a Kagge competition: credit risk model stability"
+title: "Using IbisML and DuckDB for a Kaggle competition: credit risk model stability"
 author: "Jiting Xu"
-date: "2024-07-25"
+date: "2024-08-15"
 categories:
     - blog
+    - DuckDB
     - machine learning
     - feature engineering
 execute:
@@ -11,11 +12,11 @@ execute:
 ---
 
 ## Introduction
-In this post, we'll demonstrate how to use Ibis and IbisML end-to-end for a Kaggle competition -
-[Credit risk model stability](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability).
+In this post, we'll demonstrate how to use Ibis and IbisML end-to-end for the
+[credit risk model stability Kaggle competition](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability).
 
-1. Load data and perform feature engineering with Ibis on a duckdb backend
-2. Conduct last-mile ML data preprocessing with IbisML
+1. Load data and perform feature engineering on DuckDB backend using IbisML
+2. Perform last-mile ML data preprocessing on DuckDB backend using IbisML
 3. Train two models using different frameworks:
     * An XGBoost model within a scikit-learn pipeline.
     * A neural network with PyTorch and PyTorch Lightning
@@ -36,13 +37,13 @@ To run this example, you'll need to download the data from Kaggle website with a
 You need a Kaggle account to download the data. If you do not have one,
 feel free to register one.
 
-1. Option 1: Manual Download
+1. Option 1: Manual download
      * Log into your Kaggle account and download all data from this
      [link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data),
      unzip the files, and save them to your local disk.
 2. Option 2: Kaggle API
     * Go to your Kaggle account settings: [Kaggle Account Settings](https://www.kaggle.com/account).
-    * Under the "API" section, click on "Create New API Token". This will download the `kaggle.json`
+    * Under the `API` section, click on `Create New API Token`. This will download the `kaggle.json`
     file to your computer.
     * Place the `kaggle.json` file in the correct directory, normally it is under your home directory
     `~/.kaggle`:
@@ -60,29 +61,53 @@ feel free to register one.
         ```
 
 ### Install libraries
-To use Ibis and IbisML with the DuckDB backend, you'll need to install the necessary packages:
+To use Ibis and IbisML with the DuckDB backend for building models, you'll need to install the
+necessary packages. Depending on your preferred machine learning framework, you can choose
+one of the following installation commands:
+
+For PyTorch-based models:
+
 ```{.bash}
-pip install 'ibis-framework[duckdb]' ibis-ml
+pip install 'ibis-framework[duckdb]' ibis-ml torch pytorch-lightning
 ```
 
-When building models, ensure you have the required libraries installed:
-```{.bash}
-# PyTorch
-pip install torch torchvision pytorch-lightning
+For XGBoost and scikit-learn-based models:
 
-# XGBoost and sklearn
-pip install sklearn xgboost
+```{.bash}
+pip install 'ibis-framework[duckdb]' ibis-ml xgboost[scikit-learn]
 ```
+
+Import libraries:
+```{python}
+import ibis
+import ibis.expr.datatypes as dt
+from ibis import _
+import ibis_ml as ml
+from pathlib import Path
+from glob import glob
+
+# enable interactive mode for ibis
+ibis.options.interactive = True
+```
+
+Set the backend for computing:
+```{python}
+con = ibis.duckdb.connect()
+# DuckDB is the default backend for Ibis
+ibis.set_backend(con)
+```
+
+Set data path:
+```{python}
+# Change the root path to yours
+ROOT = Path("/Users/claypot/Downloads/home-credit-credit-risk-model-stability")
+TRAIN_DIR = ROOT / "parquet_files" / "train"
+TEST_DIR = ROOT / "parquet_files" / "test"
+```
+
 ## Data loading and processing
 We'll use Ibis to read the parquet files (with the same data also available in CSV format)
- and perform the necessary processing for the next step.
-
-::: {.callout-tip}
-You can perform the same process with a different backend, such as
-Polars, BigQuery, Spark, or other Ibis-supported backends. Move the datasets to the
-desired database and set the Ibis backend using the reference: [Work with multiple
-backends](https://ibis-project.org/how-to/input-output/multiple-backends).
-:::
+and perform the necessary processing for the next step.
 
 ### Directory structure and tables
 Since there are many data files, let's start by examining the directory structure and
@@ -90,13 +115,13 @@ tables within the train directory:
 
 ```bash
 # Change this to your directory
-tree -L 2 /Users/claypot/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
+tree -L 2 ~/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
 ```
 
-:::{.callout-note title="Data files overview" collapse="true"}
+:::{.callout-note title="Click to show data files" collapse="true"}
 
 ```bash
-/Users/claypot/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
+~/Downloads/home-credit-credit-risk-model-stability/parquet_files/train
 ├── train_applprev_1_0.parquet
 ├── train_applprev_1_1.parquet
 ├── train_applprev_2.parquet
@@ -137,68 +162,58 @@ Let's take a quick look at these tables.
 
 #### Base table
 The base table (`train_base.parquet`) contains the unique id, a binary target flag
-and other information for the training samples. This unique ID will serve as the
+and other information for the training samples. This unique id will serve as the
 linking key for joining with other feature tables.
 
-* `case_id` - This is the unique identifier for each loan. You'll need this ID to
+* `case_id` - This is the unique id for each loan. You'll need this ID to
   join feature tables to the base table. There are about 1.5m unique loans.
 * `date_decision` - This refers to the date when a decision was made regarding the
   approval of the loan.
-* `WEEK_NUM` - This is the week number used for aggregation.
+* `WEEK_NUM` - This is the week number used for aggregation. In the test sample,
+    `WEEK_NUM` continues sequentially from the last training value of `WEEK_NUM`.
 * `MONTH` - This column represents the month when the approval decision was made.
 * `target` - This is the binary target flag, determined after a certain period based on
   whether or not the client defaulted on the specific loan.
 
+Here is several examples from the base table:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to get the top 5 rows of base table"
+ibis.read_parquet(TRAIN_DIR / "train_base.parquet").head(5)
+```
+
 #### Feature tables
 
 The remaining files contain features, consisting of approximately 370 features from
-previous loan applications and external data sources. Their definitions can be found
-in the file `feature_definitions.csv` from the competition website
-[link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data).
+previous loan applications and external data sources. Their definitions can be found in the feature
+definition [file]((https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data))
+from the competition website.
 
-::: {.callout-note}
-There are several things we want to mention:
+There are several things we want to mention for the feature tables:
 
-1. **Union datasets**: One dataset could be saved into multiple parquet files, such as
+* **Union datasets**: One dataset could be saved into multiple parquet files, such as
 `train_applprev_1_0.parquet` and `train_applprev_1_1.parquet`, We need to union this data.
-2. **Dataset levels**: Datasets may have different levels, which we will explain as
+* **Dataset levels**: Datasets may have different levels, which we will explain as
 follows:
-     * **Depth = 0**: For depth = 0 tables, features can be directly joined with the base
-       table and used as features.
-     * **Depth > 0**: For depth > 0 tables, statistics should be collected by aggregation
-       using `case_id`.
-:::
+     * **Depth = 0**: Each row in the table is identified by a unique `case_id`.
+     In this case, you can directly join the features with the base table and use them as
+     features for further analysis or processing.
+     * **Depth > 0**:  You will group the data based on the `case_id` and perform calculations
+     or aggregations within each group.
 
-Import libraries:
-```{python}
-import ibis
-import ibis.expr.datatypes as dt
-from ibis import _
-import ibis_ml as ml
-from pathlib import Path
-from glob import glob
+Here are two examples of tables with different levels.
 
-# enable interactive mode for ibis
-ibis.options.interactive = True
-```
-Set data path:
-```{python}
-# Change the root path to yours
-ROOT = Path("/Users/claypot/Downloads/home-credit-credit-risk-model-stability")
-TRAIN_DIR = ROOT / "parquet_files" / "train"
-TEST_DIR = ROOT / "parquet_files" / "test"
-```
-Here are several examples of tables with different levels.
-
-Example of table with depth = 0. Features can be directly joined with the base table.
+Example of table with depth = 0, `case_id` is the row identifier, features can be directly joined
+ with the base table.
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to get the top 5 rows of user static data"
 ibis.read_parquet(TRAIN_DIR / "train_static_cb_0.parquet").head(5)
 ```
-Example of a table with depth = 1.
-We need to aggregate the features and collect statistics based on `case_id` then join
-with the base table.
+
+Example of a table with depth = 1, we need to aggregate the features and collect statistics
+based on `case_id` then join with the base table.
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to get the top 5 rows of credit bureau data"
@@ -208,10 +223,10 @@ ibis.read_parquet(TRAIN_DIR / "train_credit_bureau_b_1.parquet").relocate(
 ```
 
 For more details on features and its exploratory data analysis (EDA), you can refer to
-feature dictionary and these Kaggle notebooks:
+feature definition and these Kaggle notebooks:
 
 * [Feature
-  dictionary](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data#:~:text=calendar_view_week-,feature_definitions,-.csv)
+  definition](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/data#:~:text=calendar_view_week-,feature_definitions,-.csv)
 * [Home credit risk prediction
   EDA](https://www.kaggle.com/code/loki97/home-credit-risk-prediction-eda)
 * [Home credit CRMS 2024
@@ -244,22 +259,32 @@ capital letter at the end of their names:
 * T - Unspecified Transform
 * L - Unspecified Transform
 
-We'll define the
-[recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe) for
-data processing, which will be used to clean the dataset:
-
+For example, we'll define a IbisML transformation step to convert columns ends with `P`
+to floating number:
 ```{python}
-#| code-fold: true
-#| code-summary: "Show code to define the recipe"
 # Convert columns ends with P to floating number
 step_cast_P_to_float = ml.Cast(ml.endswith("P"), dt.float64)
+```
+
+Next, let's define additional type conversion transformations based on the postfix of column names:
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to define more steps"
 # Convert columns ends with A to floating number
 step_cast_A_to_float = ml.Cast(ml.endswith("A"), dt.float64)
 # Convert columns ends with D to date
 step_cast_D_to_date = ml.Cast(ml.endswith("D"), dt.date)
 # Convert columns ends with M to str
 step_cast_M_to_str = ml.Cast(ml.endswith("M"), dt.str)
+```
 
+We'll construct the
+[IbisML Recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe)
+which chains together all the transformation steps.
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to construct the recipe"
 data_type_recipes = ml.Recipe(
     step_cast_P_to_float,
     step_cast_D_to_date,
@@ -299,11 +324,10 @@ selectors [documentation](https://ibis-project.github.io/ibis-ml/reference/selec
 #### Aggregate features
 
 For tables with a depth greater than 0 that can't be directly joined with the base table,
-we need to aggregate the features by the `case_id`. You could compute the minimum,
-maximum, mean, median, and standard deviation for numeric columns, and the maximum and
-minimum for non-numeric columns.
+we need to aggregate the features by the `case_id`. You could compute the different statistics for numeric columns and
+non-numeric columns.
 
-Here, we use the maximum as an example.
+Here, we use the `maximum` as an example.
 
 ```{python}
 #| code-fold: true
@@ -318,13 +342,14 @@ def agg_by_id(table):
     )
 ```
 ::: {.callout-tip}
-For better predicting power, you need to collect different statistics based on the meaning of features. For simplicity, we'll only collect the maximum value of the features here.
+For better predicting power, you need to collect different statistics based on the meaning of features. For simplicity,
+we'll only collect the maximum value of the features here.
 :::
 
-#### Read and process the data files
+#### Put them together
 
-We will define a function reads parquet files, optionally handles regex patterns for
-multiple sub-files, applies data type transformations using `data_type_recipes`, and
+We'll put them together in a function reads parquet files, optionally handles regex patterns for
+multiple sub-files, applies data type transformations defined by `data_type_recipes`, and
 performs aggregation based on `case_id` if specified by the depth parameter.
 
 ```{python}
@@ -365,7 +390,7 @@ def read_and_process_files(file_path, depth=None, is_regex=False):
 ```
 
 Let's define two dictionaries, `train_data_store` and `test_data_store`, that organize and
-store processed datasets for training and testing.
+store processed datasets for training and testing datasets.
 
 ```{python}
 #| code-fold: true
@@ -436,7 +461,8 @@ Generate train and test datasets:
 #| code-summary: "Show code to generate train and test datasets"
 df_train = join_data(**train_data_store)
 # df_test = join_data(**test_data_store)
-print(f"There is {df_train.count()} rows and {len(df_train.columns)} columns")
+total_rows = df_train.count().execute()
+print(f"There is {total_rows} rows and {len(df_train.columns)} columns")
 ```
 ### Select features
 Since there are ~370 features, we'll only select part of good ones for this post:
@@ -552,8 +578,8 @@ IbisML [website](https://ibis-project.github.io/ibis-ml/).
 ### Impute features
 Impute all numeric columns using the median. In real-life scenarios, it's important to
 understand the meaning of each feature and apply the appropriate imputation method for
-different features. For more imputation steps, please refer to this
-[doc](https://ibis-project.github.io/ibis-ml/reference/steps-imputation.html).
+different features. For more imputations, please refer to this
+[documentation](https://ibis-project.github.io/ibis-ml/reference/steps-imputation.html).
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to impute all numeric columns with median"
@@ -624,8 +650,8 @@ step_handle_outliers = ml.HandleUnivariateOutliers(
 
 ### Construct recipe
 
-We'll construct a [Recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe)
-by chaining all transformation steps, which will be applied to the train and test datasets later.
+We'll construct the last mile preprocessing [recipe](https://ibis-project.github.io/ibis-ml/reference/core.html#ibis_ml.Recipe)
+by chaining all transformation steps, which will be fitted to the training dataset and later applied test datasets.
 
 ```{python}
 #| code-fold: true
@@ -653,18 +679,19 @@ print(f"Last-mile preprocessing recipe: \n{last_mile_preprocessing}")
 After completing data preprocessing with Ibis and IbisML, we proceed to the modeling
 phase. Here are two approaches:
 
-1. Use IbisML as a independent data preprocessing component and hand off the data to downstream modeling
+* Use IbisML as a independent data preprocessing component and hand off the data to downstream modeling
     frameworks with various output formats:
      - Pandas Dataframe
-     - Numpy Array
+     - NumPy Array
      - Polars Dataframe
      - Dask Dataframe
      - xgboost.DMatrix
      - Pyarrow Table
-2. Use IbisML recipes as components within an sklearn Pipeline and
+* Use IbisML recipes as components within an sklearn Pipeline and
     train models similarly to how you would do with sklearn pipeline.
 
-We will build an XGBoost model within a scikit-learn pipeline, and a neural network classifier using the output transformed by IbisML recipes.
+We will build an XGBoost model within a scikit-learn pipeline, and a neural network classifier using the
+output transformed by IbisML recipes.
 
 ### Train and test data splitting
 
@@ -696,7 +723,9 @@ y_train = train_data.target.cast(dt.float32).name("target")
 X_test = test_data.drop("target")
 y_test = test_data.target.cast(dt.float32).name("target")
 
-print(f"train dataset size = {X_train.count()} \ntest data size = {X_test.count()}")
+train_cnt = X_train.count().execute()
+test_cnt = X_test.count().execute()
+print(f"train dataset size = {train_cnt} \ntest data size = {test_cnt}")
 ```
 
 ::: {.callout-warning}
@@ -754,20 +783,8 @@ print(f"gini_score for test dataset: {gini_score:,}")
 
 ::: {.callout-note}
 The competition is evaluated using a gini stability metric. For more information, check this
-[link](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/overview/evaluation)
+[evaluation guidelines](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability/overview/evaluation)
 :::
-
-Let's force the garbage collection to release unreferenced memory.
-```{python}
-#| code-fold: true
-#| code-summary: "Show code to force garbage collection to free unreferenced memory"
-import gc
-
-del y_pred_proba
-del model
-del pipe
-gc.collect()
-```
 
 ### Neural network classifier
 
@@ -789,8 +806,7 @@ last_mile_preprocessing.fit(X_train, y_train)
 ```
 
 In the previous cell, we trained the recipe using the training dataset. Now, we will
-transform both the train and test datasets using the same recipe. The default output format
-is `Numpy Array`
+transform both the train and test datasets using the same recipe. The default output format is a `NumPy array`
 
 ```{python}
 #| code-fold: true
@@ -802,7 +818,7 @@ print(f"train data shape = {X_train_transformed.shape}")
 print(f"test data shape = {X_test_transformed.shape}")
 ```
 
-Let's define a neural network classifier using pytorch and pytorch lighting:
+Let's define a neural network classifier using PyTorch and PyTorch Lighting:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to define a torch classifier"
@@ -852,10 +868,14 @@ class NeuralNetClassifier(pl.LightningModule):
             x = x.to(self.device)
             return self.sigmoid(self(x))
 
-
 # Initialize your Lightning Module
 nn_classifier = NeuralNetClassifier(input_dim=X_train_transformed.shape[1])
+```
 
+Now, we'll create the PyTorch DataLoader using the output from IbisML:
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to convert IbisML output to tensor"
 y_train_array = y_train.to_pandas().to_numpy().astype(np.float32)
 x_train_tensor = torch.from_numpy(X_train_transformed)
 y_train_tensor = torch.from_numpy(y_train_array)
@@ -868,7 +888,12 @@ val_dataset = TensorDataset(X_test_tensor, y_test_tensor)
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=False)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
+```
 
+Initialize the PyTorch Lightning Trainer:
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to construct PyTorch Lightning Trainer"
 # Initialize a Trainer
 trainer = Trainer(max_epochs=2)
 print(nn_classifier)
@@ -889,6 +914,21 @@ Let's use the trained model to make a prediction:
 y_pred = nn_classifier.predict_proba(X_test_tensor[:10])
 y_pred
 ```
+
+## Takeaways
+
+IbisML provides a powerful suite of last-mile preprocessing transformations, including an advanced column selector
+that streamlines the selection and transformation of specific columns in your dataset.
+
+It integrates seamlessly with scikit-learn pipelines, allowing you to incorporate preprocessing recipes directly into
+your workflow. Additionally, IbisML supports a variety of data output formats such as Dask, NumPy, and Arrow, ensuring
+compatibility with different machine learning frameworks.
+
+Another key advantage of IbisML is its flexibility in performing data preprocessing across multiple backends, including
+DuckDB, Polars, Spark, BigQuery, and other Ibis-supported platforms. This enables you to preprocess your training data
+using the backend that best suits your needs, whether for large or small datasets, on local machines or compute backends,
+and in both development and production environments. Stay tuned for a future post where we will explore this capability in
+more detail.
 
 ## Reference
 * [1st Place Solution](https://www.kaggle.com/code/yuuniekiri/fork-of-home-credit-risk-lightgbm)
