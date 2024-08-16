@@ -478,9 +478,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
-            marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
