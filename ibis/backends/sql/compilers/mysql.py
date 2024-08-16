@@ -205,16 +205,6 @@ class MySQLCompiler(SQLGlotCompiler):
             path = self.f.concat("$.", index)
         return self.f.json_extract(arg, path)
 
-    def visit_DateFromYMD(self, op, *, year, month, day):
-        return self.f.str_to_date(
-            self.f.concat(
-                self.f.lpad(year, 4, "0"),
-                self.f.lpad(month, 2, "0"),
-                self.f.lpad(day, 2, "0"),
-            ),
-            "%Y%m%d",
-        )
-
     def visit_FindInSet(self, op, *, needle, values):
         return self.f.find_in_set(needle, self.f.concat_ws(",", values))
 

@@ -363,6 +363,16 @@ MySQL.Generator.TRANSFORMS |= {
     sge.RegexpLike: (
         lambda _, e: f"({e.this.sql('mysql')} RLIKE {e.expression.sql('mysql')})"
     ),
+    sge.DateFromParts: lambda self, e: sg.func(
+        "str_to_date",
+        sg.func(
+            "concat",
+            sg.func("lpad", e.args["year"], sge.convert(4), sge.convert("0")),
+            sg.func("lpad", e.args["month"], sge.convert(2), sge.convert("0")),
+            sg.func("lpad", e.args["day"], sge.convert(2), sge.convert("0")),
+        ),
+        sge.convert("%Y%m%d"),
+    ).sql(self.dialect),
 }
 
 
