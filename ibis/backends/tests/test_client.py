@@ -36,7 +36,6 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
-    TrinoUserError,
 )
 from ibis.util import gen_name
 
@@ -523,9 +522,6 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
-@pytest.mark.notyet(
-    ["trino"], raises=TrinoUserError, reason="requires a non-memory connector"
-)
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 def test_insert_overwrite_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_2
@@ -566,11 +562,6 @@ def test_insert_no_overwrite_from_expr(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
 @pytest.mark.notyet(
-    ["trino"],
-    raises=TrinoUserError,
-    reason="requires a non-memory connector for truncation",
-)
-@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
@@ -590,9 +581,6 @@ def test_insert_overwrite_from_expr(
     )
 
 
-@pytest.mark.notyet(
-    ["trino"], reason="memory connector doesn't allow writing to tables"
-)
 @pytest.mark.notimpl(
     ["polars", "pandas", "dask"], reason="`insert` method not implemented"
 )
