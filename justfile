@@ -254,16 +254,10 @@ build-ibis-for-pyodide:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # TODO(cpcloud): remove when:
-    # 1. pyarrow release contains pyodide
-    # 2. ibis supports this version of pyarrow
     rm -rf dist/
-    poetry add 'pyarrow>=10.0.1' --allow-prereleases
     poetry build --format wheel
-    git checkout poetry.lock pyproject.toml
-    jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
+    jq '{"PipliteAddon": {"piplite_urls": [$ibis]}}' -nM \
         --arg ibis dist/*.whl \
-        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         > docs/jupyter_lite_config.json
 
 # build the jupyterlite deployment

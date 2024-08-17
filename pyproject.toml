@@ -127,6 +127,7 @@ griffe = { version = "<1", python = ">=3.10,<3.13" }
 ipykernel = { version = ">=6.25.1,<7", python = ">=3.10,<3.13" }
 itables = { version = ">=1.6.3,<2.2", python = ">=3.10,<3.13" }
 nbclient = { version = ">=0.8.0,<1", python = ">=3.10,<3.13" }
+notebook = { version = ">=7.2.0,<7.3", python = ">=3.10,<3.13" }
 plotly = { version = ">=5.16.1,<6", python = ">=3.10,<3.13" }
 plotnine = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
 py-cpuinfo = { version = ">=9,<10", python = ">=3.10,<3.13" }
@@ -139,8 +140,8 @@ lonboard = { version = "0.9.3", python = ">=3.10,<3.13" }
 jupyter-cache = { version = ">=1.0.0,<2", python = ">=3.10,<3.13" }
 jupyterlab = { version = ">=4.2.5,<5", python = ">=3.10,<3.13" }
 jupyterlab-night = { version = ">=0.4.6,<1", python = ">=3.10,<3.13" }
-jupyterlite-core = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
-jupyterlite-pyodide-kernel = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
+jupyterlite-core = { version = ">=0.4,<0.5", python = ">=3.10,<3.13" }
+jupyterlite-pyodide-kernel = { version = ">=0.4,<0.5", python = ">=3.10,<3.13" }
 
 [tool.poetry.extras]
 bigquery = [
