@@ -4,8 +4,10 @@ import contextlib
 import csv
 import gzip
 import os
+import urllib
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 from pytest import param
@@ -450,6 +452,102 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
 
     if in_table_name is not None:
         assert table.op().name == in_table_name
+    assert table.count().execute()
+
+
+# test reading a Parquet file from a URL request for backends using pyarrow
+# that do not have their own implementation
+@pytest.mark.parametrize(
+    ("url", "in_table_name"),
+    [
+        ("http://example.com/functional_alltypes.parquet", "http_table"),
+        ("sftp://example.com/path/to/functional_alltypes.parquet", "sftp_table"),
+    ],
+)
+@pytest.mark.notimpl(
+    [
+        "druid",
+        "flink",
+        "duckdb",
+        "pandas",
+        "polars",
+        "bigquery",
+        "dask",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+    ]
+)
+def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
+    pytest.importorskip("pyarrow.parquet")
+
+    headers = {"User-Agent": "test-agent"}
+    fname = Path("functional_alltypes.parquet")
+    fname = Path(data_dir) / "parquet" / fname.name
+    mock_calls = []
+
+    mock_request = mock.create_autospec(urllib.request.Request)
+
+    def mock_urlopen(request, *args, **kwargs):
+        mock_calls.append((request, args, kwargs))
+        return open(fname, "rb")  # noqa: SIM115
+
+    monkeypatch.setattr("urllib.request.Request", mock_request)
+    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+
+    table = con.read_parquet(url, in_table_name, headers=headers)
+
+    mock_request.assert_called_once_with(url, headers=headers)
+    called_url = mock_request.call_args[0][0]
+    called_headers = mock_request.call_args[1]
+    assert url == called_url
+    assert called_headers["headers"] == headers
+    assert len(mock_calls) == 1
+    assert table.count().execute()
+
+    if in_table_name is not None:
+        assert table.op().name == in_table_name
+
+
+# test read_parquet from a fsspec url for backends using pyarrow
+# that do not have their own implementation
+@pytest.mark.notimpl(
+    [
+        "druid",
+        "flink",
+        "duckdb",
+        "pandas",
+        "polars",
+        "bigquery",
+        "dask",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+    ]
+)
+@pytest.mark.parametrize(
+    "fsspec_url",
+    [
+        "s3://data-bucket/datasets/sample.parquet",
+        "gs://data-bucket/datasets/sample.parquet",
+    ],
+)
+def test_read_parquet_fsspec_url(con, fsspec_url, data_dir, monkeypatch):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    mock_calls = []
+    fname = Path("functional_alltypes.parquet")
+    fname = Path(data_dir) / "parquet" / fname.name
+
+    def mock_read_table(args, **kwargs):
+        mock_calls.append((args, kwargs))
+        parquet_file = pq.ParquetFile(fname)
+        return parquet_file.read()
+
+    monkeypatch.setattr(pq, "read_table", mock_read_table)
+    table = con.read_parquet(fsspec_url)
+
+    assert len(mock_calls) == 1
     assert table.count().execute()
 
 
