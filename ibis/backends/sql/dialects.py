@@ -76,6 +76,7 @@ class Exasol(Postgres):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
             sge.Interval: _interval,
             sge.GroupConcat: _group_concat,
+            sge.ApproxDistinct: rename_func("approximate_count_distinct"),
         }
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
