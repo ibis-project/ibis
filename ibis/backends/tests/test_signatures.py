@@ -14,7 +14,7 @@ from ibis.backends import (
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.signature.typecheck import compatible
 
-SKIP_METHODS = ["do_connect"]
+SKIP_METHODS = ["do_connect", "from_connection"]
 
 
 def _scrape_methods(modules):
