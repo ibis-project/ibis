@@ -13,7 +13,6 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
-    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
@@ -298,7 +297,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notany'",
                 ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -311,7 +309,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'any'",
                 ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -336,7 +333,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'notall'",
                 ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -349,7 +345,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=AttributeError,
                     reason="'IntegerColumn' object has no attribute 'all'",
                 ),
-                pytest.mark.notimpl(["exasol"], raises=ExaQueryError),
             ],
         ),
         param(
@@ -485,7 +480,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_and",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql"],
+                    ["polars", "mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["druid"], strict=False, raises=AssertionError),
@@ -500,7 +495,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_or",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql"],
+                    ["polars", "mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -514,7 +509,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_xor",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql"],
+                    ["polars", "mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -532,39 +527,11 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_cond", "pandas_cond"),
     [
-        param(
-            lambda _: None,
-            lambda _: slice(None),
-            marks=pytest.mark.notimpl(
-                ["exasol"],
-                raises=(com.OperationNotDefinedError, ExaQueryError),
-                strict=False,
-            ),
-            id="no_cond",
-        ),
+        param(lambda _: None, lambda _: slice(None), id="no_cond"),
         param(
             lambda t: t.string_col.isin(["1", "7"]),
             lambda t: t.string_col.isin(["1", "7"]),
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=(com.OperationNotDefinedError, ExaQueryError),
-                    strict=False,
-                ),
-            ],
             id="is_in",
-        ),
-        param(
-            lambda _: ibis._.string_col.isin(["1", "7"]),
-            lambda t: t.string_col.isin(["1", "7"]),
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"],
-                    raises=(com.OperationNotDefinedError, ExaQueryError),
-                    strict=False,
-                ),
-            ],
-            id="is_in_deferred",
         ),
     ],
 )

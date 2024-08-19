@@ -6,7 +6,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import NULL, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ExasolType
 from ibis.backends.sql.dialects import Exasol
 from ibis.backends.sql.rewrites import (
@@ -63,7 +63,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
-        ops.StandardDev,
         ops.Strftime,
         ops.StringJoin,
         ops.StringSplit,
@@ -77,7 +76,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.TimestampSub,
         ops.TypeOf,
         ops.Unnest,
-        ops.Variance,
     )
 
     SIMPLE_OPS = {
@@ -179,6 +177,16 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
+
+    def visit_CountDistinct(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_CountStar(self, op, *, arg, where):
+        if where is not None:
+            return self.f.sum(self.cast(where, op.dtype))
+        return self.f.count(STAR)
 
     def visit_CountDistinctStar(self, op, *, arg, where):
         raise com.UnsupportedOperationError(
