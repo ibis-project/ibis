@@ -476,6 +476,7 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
         "clickhouse",
         "datafusion",
         "snowflake",
+        "pyspark",
     ]
 )
 def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
@@ -516,13 +517,13 @@ def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch
         "druid",
         "flink",
         "duckdb",
-        "pandas",
         "polars",
         "bigquery",
         "dask",
         "clickhouse",
         "datafusion",
         "snowflake",
+        "pyspark",
     ]
 )
 @pytest.mark.parametrize(
