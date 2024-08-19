@@ -189,9 +189,11 @@ class ExasolCompiler(SQLGlotCompiler):
         return self.f.count(STAR)
 
     def visit_CountDistinctStar(self, op, *, arg, where):
-        raise com.UnsupportedOperationError(
-            "COUNT(DISTINCT *) is not supported in Exasol"
-        )
+        cols = [sg.column(k, quoted=self.quoted) for k in op.arg.schema.keys()]
+        if where is not None:
+            cols = [self.if_(where, c, NULL) for c in cols]
+        row = sge.Tuple(expressions=cols)
+        return self.f.count(sge.Distinct(expressions=[row]))
 
     def visit_Median(self, op, *, arg, where):
         return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)

@@ -13,6 +13,7 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
@@ -790,7 +791,6 @@ def test_arbitrary(backend, alltypes, df, filtered):
     raises=com.OperationNotDefinedError,
     reason="no one has attempted implementation yet",
 )
-@pytest.mark.notimpl(["exasol"], raises=com.UnsupportedOperationError)
 def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
     table = alltypes[["int_col", "double_col", "string_col"]]
     expr = table.nunique(where=ibis_cond(table))
