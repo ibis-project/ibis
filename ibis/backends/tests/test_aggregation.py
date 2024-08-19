@@ -13,6 +13,7 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
