@@ -44,7 +44,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.ArrayUnion,
         ops.ArrayZip,
         ops.BitwiseNot,
-        ops.Covariance,
         ops.CumeDist,
         ops.DateAdd,
         ops.DateSub,
@@ -119,6 +118,20 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
+
+    def visit_Correlation(self, op, *, left, right, how, where):
+        if how == "sample":
+            raise com.UnsupportedOperationError(
+                "Exasol only implements `pop` correlation coefficient"
+            )
+
+        if (left_type := op.left.dtype).is_boolean():
+            left = self.cast(left, dt.Int32(nullable=left_type.nullable))
+
+        if (right_type := op.right.dtype).is_boolean():
+            right = self.cast(right, dt.Int32(nullable=right_type.nullable))
+
+        return self.agg.corr(left, right, where=where)
 
     def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if where is not None:

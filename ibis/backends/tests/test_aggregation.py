@@ -1013,7 +1013,7 @@ def test_quantile(
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["postgres", "duckdb", "snowflake", "risingwave"],
+                    ["postgres", "duckdb", "snowflake", "risingwave", "exasol"],
                     raises=com.UnsupportedOperationError,
                     reason="backend only implements population correlation coefficient",
                 ),
@@ -1114,7 +1114,7 @@ def test_quantile(
         ),
     ],
 )
-@pytest.mark.notimpl(["mssql", "exasol"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError)
 def test_corr_cov(
     con,
     batting,
