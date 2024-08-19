@@ -66,7 +66,7 @@ def test_to_parquet_dir(con_streaming, tmp_path):
     path = tmp_path / "out"
     con_streaming.to_parquet_dir(
         t.limit(5),
-        path=path,
+        directory=path,
         options={"checkpointLocation": tmp_path / "checkpoint"},
     )
     sleep(2)

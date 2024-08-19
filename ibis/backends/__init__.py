@@ -493,7 +493,8 @@ class _FileIOHandler:
         expr
             The ibis expression to execute and persist to parquet.
         directory
-            The data source. A string or Path to the directory where the parquet file will be written.
+            A string or Path to the directory where the parquet file will be
+            written.
         params
             Mapping of scalar parameter expressions to value.
         **kwargs

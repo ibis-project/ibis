@@ -1314,7 +1314,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_parquet_dir(
         self,
         expr: ir.Expr,
-        path: str | Path,
+        directory: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
@@ -1325,8 +1326,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         ----------
         expr
             The ibis expression to execute and persist to parquet.
-        path
-            The data source. A string or Path to the parquet directory.
+        directory
+            A string or Path to the parquet directory.
         params
             Mapping of scalar parameter expressions to value.
         limit
@@ -1341,7 +1342,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             Returns a Pyspark StreamingQuery object if in streaming mode, otherwise None
         """
         self._run_pre_execute_hooks(expr)
-        return self._to_filesystem_output(expr, "parquet", path, params, limit, options)
+        return self._to_filesystem_output(
+            expr, "parquet", directory, params, limit, options
+        )
 
     @util.experimental
     def to_csv_dir(
