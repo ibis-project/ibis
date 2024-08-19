@@ -782,10 +782,7 @@ def test_table_info_large(con):
     reason="quantile and mode is not supported",
 )
 @pytest.mark.notimpl(
-    [
-        "exasol",
-        "druid",
-    ],
+    ["druid"],
     raises=com.OperationNotDefinedError,
     reason="Mode and StandardDev is not supported",
 )
@@ -829,10 +826,10 @@ def test_table_info_large(con):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
+                        "exasol",
                         "impala",
+                        "pyspark",
+                        "risingwave",
                     ],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
@@ -911,10 +908,10 @@ def test_table_info_large(con):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
+                        "exasol",
                         "impala",
+                        "pyspark",
+                        "risingwave",
                     ],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
@@ -958,10 +955,7 @@ def test_table_describe(alltypes, selector, expected_columns):
     reason="quantile is not supported",
 )
 @pytest.mark.notimpl(
-    [
-        "exasol",
-        "druid",
-    ],
+    ["druid"],
     raises=com.OperationNotDefinedError,
     reason="StandardDev is not supported",
 )
