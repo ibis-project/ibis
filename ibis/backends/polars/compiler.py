@@ -785,6 +785,7 @@ def execute_mode(op, **kw):
 
 
 @translate.register(ops.Quantile)
+@translate.register(ops.ApproxQuantile)
 def execute_quantile(op, **kw):
     arg = translate(op.arg, **kw)
     quantile = translate(op.quantile, **kw)

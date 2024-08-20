@@ -223,6 +223,13 @@ class Quantile(QuantileBase):
 
 
 @public
+class ApproxQuantile(Quantile):
+    """Compute the approximate quantile of a column."""
+
+    arg: Column[dt.Numeric]
+
+
+@public
 class MultiQuantile(Filterable, Reduction):
     """Compute multiple quantiles of a column."""
 
@@ -235,6 +242,13 @@ class MultiQuantile(Filterable, Reduction):
         if dtype.is_numeric():
             dtype = dt.higher_precedence(dtype, dt.float64)
         return dt.Array(dtype)
+
+
+@public
+class ApproxMultiQuantile(MultiQuantile):
+    """Compute multiple approximate quantiles of a column."""
+
+    arg: Column[dt.Numeric]
 
 
 class VarianceBase(Filterable, Reduction):

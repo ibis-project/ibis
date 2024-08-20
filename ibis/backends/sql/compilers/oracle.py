@@ -308,6 +308,15 @@ class OracleCompiler(SQLGlotCompiler):
         )
         return expr
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        return sge.WithinGroup(
+            this=self.f.approx_percentile(quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg)

@@ -64,6 +64,16 @@ from ibis.common.exceptions import IbisTypeError
             ops.ArrayCollect,
             id="collect",
         ),
+        param(
+            lambda t, where: t.int_col.approx_quantile(0.5, where=where),
+            ops.ApproxQuantile,
+            id="approx_quantile",
+        ),
+        param(
+            lambda t, where: t.int_col.approx_quantile([0.25, 0.5, 0.75], where=where),
+            ops.ApproxMultiQuantile,
+            id="approx_multi_quantile",
+        ),
     ],
 )
 @pytest.mark.parametrize(
