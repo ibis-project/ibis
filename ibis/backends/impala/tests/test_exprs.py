@@ -58,7 +58,7 @@ def test_builtins(con, alltypes):
         i4.as_timestamp("s"),
         i4.as_timestamp("ms"),
         i4.as_timestamp("us"),
-        i8.as_timestamp(),
+        i8.as_timestamp("s"),
         d.abs(),
         d.cast("decimal(12, 2)"),
         d.cast("int32"),
@@ -193,7 +193,7 @@ def test_column_types(alltypes_df, col, expected):
     [
         (L(50000).as_timestamp("s"), pd.to_datetime(50000, unit="s")),
         (L(50000).as_timestamp("ms"), pd.to_datetime(50000, unit="ms")),
-        (L(5 * 10**8).as_timestamp(), pd.to_datetime(5 * 10**8, unit="s")),
+        (L(5 * 10**8).as_timestamp("s"), pd.to_datetime(5 * 10**8, unit="s")),
         (
             ibis.timestamp("2009-05-17 12:34:56").truncate("y"),
             pd.Timestamp("2009-01-01"),

@@ -235,7 +235,7 @@ def test_timestamp_day_of_week(method_name, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda col: col.as_timestamp(),
+        lambda col: col.as_timestamp("s"),
         lambda col: col.as_timestamp("ms"),
         lambda col: col.as_timestamp("us"),
     ],
