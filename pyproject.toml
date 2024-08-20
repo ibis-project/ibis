@@ -381,6 +381,8 @@ filterwarnings = [
   'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
   # pandas 2.2 warnings coming directly from the way flink uses pandas
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
+  # snowpark logging warnings
+  "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
