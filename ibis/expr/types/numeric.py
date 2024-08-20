@@ -1016,7 +1016,7 @@ class NumericColumn(Column, NumericValue):
 class IntegerValue(NumericValue):
     def as_timestamp(
         self,
-        unit: Literal["s", "ms", "us"] = "s",
+        unit: Literal["s", "ms", "us"],
     ) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
