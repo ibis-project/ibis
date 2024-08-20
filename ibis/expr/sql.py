@@ -96,29 +96,6 @@ def convert_scan(scan, catalog):
     return table
 
 
-def qualify_sort_keys(keys, table_name):
-    # The sqlglot planner doesn't fully qualify sort keys
-    #
-    # - Sort: lineitem (132849388268768)
-    #   Context:
-    #     Key:
-    #       - "l_returnflag"
-    #       - "l_linestatus"
-    #
-    # For now we do a naive thing here and prepend the name of the sort
-    # operation itself, which (maybe?) is the name of the parent table.
-    table = sg.to_identifier(table_name, quoted=True)
-
-    def transformer(node):
-        if isinstance(node, sge.Column) and not node.table:
-            node.args["table"] = table
-        return node
-
-    sort_keys = [key.transform(transformer) for key in keys]
-
-    return sort_keys
-
-
 def qualify_projections(projections, groups):
     # The sqlglot planner will (sometimes) alias projections to the aggregate
     # that precedes it.
@@ -163,10 +140,7 @@ def convert_sort(sort, catalog):
     table = catalog[sort.name]
 
     if sort.key:
-        keys = [
-            convert(key, catalog=catalog)
-            for key in qualify_sort_keys(sort.key, sort.name)
-        ]
+        keys = [convert(key, catalog=None) for key in sort.key]
         table = table.order_by(keys)
 
     if sort.projections:
@@ -311,9 +285,14 @@ def convert_column(column, catalog):
 
 @convert.register(sge.Ordered)
 def convert_ordered(ordered, catalog):
-    this = convert(ordered.this, catalog=catalog)
+    this = ibis._[ordered.this.name]
     desc = ordered.args.get("desc", False)  # not exposed as an attribute
-    return ibis.desc(this) if desc else ibis.asc(this)
+    nulls_first = ordered.args.get("nulls_first", False)
+    return (
+        ibis.desc(this, nulls_first=nulls_first)
+        if desc
+        else ibis.asc(this, nulls_first=nulls_first)
+    )
 
 
 _unary_operations = {

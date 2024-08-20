@@ -101,6 +101,6 @@ agg = f.aggregate(
     [(f.l_extendedprice * ((1 - f.l_discount))).sum().name("revenue")],
     by=[f.l_orderkey, f.o_orderdate, f.o_shippriority],
 )
-s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc())
+s = agg.order_by(agg.revenue.desc(), agg.o_orderdate.asc(nulls_first=True))
 
 result = s.select(s.l_orderkey, s.revenue, s.o_orderdate, s.o_shippriority).limit(10)
