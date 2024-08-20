@@ -335,7 +335,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 C.data_type,
                 C.data_precision,
                 C.data_scale,
-                C.nullable.eq(sge.convert("Y")).as_("nullable"),
+                C.nullable,
             )
             .from_(sg.table("all_tab_columns"))
             .where(
@@ -357,7 +357,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 type_string=type_string,
                 precision=precision,
                 scale=scale,
-                nullable=nullable,
+                nullable=nullable == "Y",
             )
             for name, type_string, precision, scale, nullable in results
         }
@@ -582,7 +582,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 C.data_type,
                 C.data_precision,
                 C.data_scale,
-                C.nullable.eq(sge.convert("Y")),
+                C.nullable,
             )
             .from_("all_tab_columns")
             .where(C.table_name.eq(sge.convert(name)))
@@ -608,7 +608,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 type_string=type_string,
                 precision=precision,
                 scale=scale,
-                nullable=nullable,
+                nullable=nullable == "Y",
             )
             schema[name] = typ
 
