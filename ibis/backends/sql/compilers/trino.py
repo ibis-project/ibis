@@ -133,6 +133,13 @@ class TrinoCompiler(SQLGlotCompiler):
 
         return self.agg.corr(left, right, where=where)
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        return self.agg.approx_quantile(arg, quantile, where=where)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
+
     def visit_BitXor(self, op, *, arg, where):
         a, b = map(sg.to_identifier, "ab")
         input_fn = combine_fn = sge.Lambda(

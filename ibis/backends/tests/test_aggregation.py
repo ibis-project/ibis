@@ -825,7 +825,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(
-                    ["snowflake"],
+                    ["snowflake", "risingwave"],
                     reason="backend doesn't implement array of quantiles as input",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -844,11 +844,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend doesn't implement approximate quantiles yet",
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
-                    raises=PsycoPg2InternalError,
-                ),
             ],
         ),
     ],
@@ -862,14 +857,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    "risingwave",
-                    raises=PsycoPg2InternalError,
-                    reason="probably incorrect filter syntax but not sure",
-                ),
+                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
             ],
         ),
     ],
@@ -886,6 +874,67 @@ def test_quantile(
     result = expr.execute().squeeze()
     expected = expected_fn(df, pandas_cond(df))
     assert pytest.approx(result) == expected
+
+
+@pytest.mark.parametrize(
+    "filtered",
+    [
+        False,
+        param(
+            True,
+            marks=[
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
+                    strict=False,
+                )
+            ],
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "multi",
+    [
+        False,
+        param(
+            True,
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle", "snowflake", "polars", "risingwave"],
+                    raises=com.OperationNotDefinedError,
+                    reason="multi-quantile not yet implemented",
+                ),
+                pytest.mark.notyet(
+                    ["mssql", "exasol"],
+                    raises=com.UnsupportedBackendType,
+                    reason="array types not supported",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notyet(
+    ["druid", "flink", "impala", "mysql", "sqlite"],
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
+    reason="quantiles (approximate or otherwise) not supported",
+)
+def test_approx_quantile(con, filtered, multi):
+    t = ibis.memtable({"x": [0, 25, 25, 50, 75, 75, 100, 125, 125, 150, 175, 175, 200]})
+    where = t.x <= 100 if filtered else None
+    q = [0.25, 0.75] if multi else 0.25
+    res = con.execute(t.x.approx_quantile(q, where=where))
+    if multi:
+        assert isinstance(res, list)
+        assert all(pd.api.types.is_float(r) for r in res)
+        sol = [25, 75] if filtered else [50, 150]
+    else:
+        assert pd.api.types.is_float(res)
+        sol = 25 if filtered else 50
+
+    # Give pretty wide bounds for approximation - we're mostly testing that
+    # the call is valid and the filtering logic is applied properly.
+    assert res == pytest.approx(sol, abs=10)
 
 
 @pytest.mark.parametrize(

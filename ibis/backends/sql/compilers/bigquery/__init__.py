@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import decimal
+import math
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -391,6 +393,41 @@ class BigQueryCompiler(SQLGlotCompiler):
             sep = sge.Order(this=sep, expressions=order_by)
 
         return sge.GroupConcat(this=arg, separator=sep)
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not isinstance(op.quantile, ops.Literal):
+            raise com.UnsupportedOperationError(
+                "quantile must be a literal in BigQuery"
+            )
+
+        # BigQuery syntax is `APPROX_QUANTILES(col, resolution)` to return
+        # `resolution + 1` quantiles array. To handle this, we compute the
+        # resolution ourselves then restructure the output array as needed.
+        # To avoid excessive resolution we arbitrarily cap it at 100,000 -
+        # since these are approximate quantiles anyway this seems fine.
+        quantiles = util.promote_list(op.quantile.value)
+        fracs = [decimal.Decimal(str(q)).as_integer_ratio() for q in quantiles]
+        resolution = min(math.lcm(*(den for _, den in fracs)), 100_000)
+        indices = [(num * resolution) // den for num, den in fracs]
+
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+
+        array = self.f.approx_quantiles(
+            arg, sge.IgnoreNulls(this=sge.convert(resolution))
+        )
+        if isinstance(op, ops.ApproxQuantile):
+            return array[indices[0]]
+
+        if indices == list(range(resolution + 1)):
+            return array
+        else:
+            return sge.Array(expressions=[array[i] for i in indices])
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
 
     def visit_FloorDivide(self, op, *, left, right):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
