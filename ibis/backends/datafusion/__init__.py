@@ -40,6 +40,11 @@ try:
 except ImportError:
     SessionConfig = None
 
+try:
+    from datafusion import RuntimeConfig
+except ImportError:
+    RuntimeConfig = None
+
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
@@ -105,7 +110,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 ).with_information_schema(True)
             else:
                 df_config = None
-            self.con = SessionContext(df_config)
+            if RuntimeConfig is None:
+                self.con = SessionContext(df_config)
+            else:
+                # datafusion 40.1.0 has a bug where SessionContext requires
+                # both SessionConfig and RuntimeConfig be provided.
+                self.con = SessionContext(df_config, RuntimeConfig())
 
         self._register_builtin_udfs()
 
