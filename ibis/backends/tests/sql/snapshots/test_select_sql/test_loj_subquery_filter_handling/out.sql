@@ -8,13 +8,13 @@ FROM (
     *
   FROM "foo" AS "t0"
   WHERE
-    "t0"."id" < CAST(2 AS TINYINT)
+    "t0"."id" < 2
 ) AS "t4"
 LEFT OUTER JOIN (
   SELECT
     *
   FROM "bar" AS "t1"
   WHERE
-    "t1"."id" < CAST(3 AS TINYINT)
+    "t1"."id" < 3
 ) AS "t5"
   ON "t4"."id" = "t5"."id" AND "t4"."desc" = "t5"."desc"

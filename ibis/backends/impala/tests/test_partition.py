@@ -5,7 +5,6 @@ from posixpath import join as pjoin
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from impala.error import HiveServer2Error
 
 import ibis
 from ibis import util
@@ -142,10 +141,14 @@ def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
     table = con.table(temp_table)
 
     part = {"year": 2007, "month": 4}
@@ -159,10 +162,14 @@ def test_add_drop_partition_no_location(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_owned_by_impala(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
 
     table = con.table(temp_table)
 
@@ -181,10 +188,14 @@ def test_add_drop_partition_owned_by_impala(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
 
     table = con.table(temp_table)
 

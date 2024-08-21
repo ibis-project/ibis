@@ -13,6 +13,7 @@ from ibis.common.annotations import annotated, attribute
 from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
+from ibis.common.selectors import Selector  # noqa: TCH001
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
 if TYPE_CHECKING:
@@ -95,12 +96,6 @@ class SimpleCaseBuilder(Builder):
             case_expr = ibis.literal(case_expr)
         if not isinstance(result_expr, ir.Value):
             result_expr = ibis.literal(result_expr)
-
-        if not rlz.comparable(self.base, case_expr.op()):
-            raise TypeError(
-                f"Base expression {rlz._arg_type_error_format(self.base)} and "
-                f"case {rlz._arg_type_error_format(case_expr)} are not comparable"
-            )
         return self.copy(
             cases=self.cases + (case_expr,), results=self.results + (result_expr,)
         )
@@ -145,8 +140,8 @@ class WindowBuilder(Builder):
     how: Literal["rows", "range"] = "rows"
     start: Optional[RangeWindowBoundary] = None
     end: Optional[RangeWindowBoundary] = None
-    groupings: VarTuple[Union[str, Resolver, ops.Value]] = ()
-    orderings: VarTuple[Union[str, Resolver, ops.SortKey]] = ()
+    groupings: VarTuple[Union[str, Resolver, Selector, ops.Value]] = ()
+    orderings: VarTuple[Union[str, Resolver, Selector, ops.SortKey]] = ()
 
     @attribute
     def _table(self):

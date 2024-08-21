@@ -48,7 +48,7 @@ class ArraySlice(Value):
     stop: Optional[Value[dt.Integer]] = None
 
     dtype = rlz.dtype_like("arg")
-    shape = rlz.shape_like("arg")
+    shape = rlz.shape_like("args")
 
 
 @public
@@ -71,13 +71,11 @@ class ArrayConcat(Value):
 
     arg: VarTuple[Value[dt.Array]]
 
+    shape = rlz.shape_like("arg")
+
     @attribute
     def dtype(self):
         return dt.Array(dt.highest_precedence(arg.dtype.value_type for arg in self.arg))
-
-    @attribute
-    def shape(self):
-        return rlz.highest_precedence_shape(self.arg)
 
 
 @public
@@ -268,3 +266,60 @@ class TimestampRange(Range):
     start: Value[dt.Timestamp]
     stop: Value[dt.Timestamp]
     step: Value[dt.Interval]
+
+
+class ArrayAgg(Value):
+    arg: Value[dt.Array]
+    shape = rlz.shape_like("args")
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        return self.arg.dtype.value_type
+
+
+@public
+class ArrayMin(ArrayAgg):
+    """Compute the minimum value of an array."""
+
+
+@public
+class ArrayMax(ArrayAgg):
+    """Compute the maximum value of an array."""
+
+
+# in duckdb summing an array of ints leads to an int, but for other backends
+# it might lead to a float??
+@public
+class ArraySum(ArrayAgg):
+    """Compute the sum of an array."""
+
+    arg: Value[dt.Array[dt.Numeric]]
+
+
+@public
+class ArrayMean(ArrayAgg):
+    """Compute the average of an array."""
+
+    arg: Value[dt.Array[dt.Numeric]]
+
+    @attribute
+    def dtype(self) -> dt.DataType:
+        dtype = self.arg.dtype.value_type
+        if dtype.is_floating() or dtype.is_integer():
+            return dt.float64
+        # do nothing for decimal types
+        return dtype
+
+
+@public
+class ArrayAny(ArrayAgg):
+    """Compute whether any array element is true."""
+
+    arg: Value[dt.Array[dt.Boolean]]
+
+
+@public
+class ArrayAll(ArrayAgg):
+    """Compute whether all array elements are true."""
+
+    arg: Value[dt.Array[dt.Boolean]]

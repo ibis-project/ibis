@@ -340,6 +340,7 @@ Ibis already works well with dashboarding libraries like:
 - [Streamlit](https://github.com/streamlit/streamlit)
 - [Dash](https://github.com/plotly/dash)
 - [Quarto dashboards](https://github.com/quarto-dev/quarto-cli)
+- [Shiny](https://shiny.posit.co/py/)
 
 Ibis already works well with machine learning libraries like:
 

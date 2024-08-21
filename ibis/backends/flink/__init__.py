@@ -6,12 +6,14 @@ from typing import TYPE_CHECKING, Any
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanCreateDatabase, NoUrl
-from ibis.backends.flink.compiler import FlinkCompiler
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableWithSchema,
@@ -42,7 +44,7 @@ _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pand
 
 class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     name = "flink"
-    compiler = FlinkCompiler()
+    compiler = sc.flink.compiler
     supports_temporary_tables = True
     supports_python_udfs = True
 
@@ -69,6 +71,18 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         """
         self._table_env = table_env
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, table_env: TableEnvironment) -> Backend:
+        """Create a Flink `Backend` from an existing table environment.
+
+        Parameters
+        ----------
+        table_env
+            A table environment.
+        """
+        return ibis.flink.connect(table_env)
 
     def disconnect(self) -> None:
         pass
@@ -307,26 +321,27 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
             register_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             register_func(udf_node)
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
-        import pyflink.table.udf
+        from pyflink.table.udf import udf
 
         from ibis.backends.flink.datatypes import FlinkType
 
         name = type(udf_node).__name__
         self._table_env.drop_temporary_function(name)
-        udf = pyflink.table.udf.udf(
+
+        func = udf(
             udf_node.__func__,
             result_type=FlinkType.from_ibis(udf_node.dtype),
             func_type=_INPUT_TYPE_TO_FUNC_TYPE[udf_node.__input_type__],
         )
-        self._table_env.create_temporary_function(name, udf)
+        self._table_env.create_temporary_function(name, func)
 
-    _compile_pandas_udf = _register_udf
-    _compile_python_udf = _register_udf
+    _register_pandas_udf = _register_udf
+    _register_python_udf = _register_udf
 
     def compile(
         self,
@@ -339,11 +354,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         return super().compile(
             expr, params=params, pretty=pretty
         )  # Discard `limit` and other kwargs.
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
-    ) -> str:
-        return super()._to_sqlglot(expr, params=params)
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
@@ -445,27 +455,21 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         # In-memory data is created as views in `pyflink`
         if obj is not None:
-            if isinstance(obj, pd.DataFrame):
-                dataframe = obj
+            if not isinstance(obj, ir.Table):
+                obj = ibis.memtable(obj)
 
-            elif isinstance(obj, pa.Table):
-                dataframe = obj.to_pandas()
-
-            elif isinstance(obj, ir.Table):
-                # Note (mehmet): If obj points to in-memory data, we create a view.
-                # Other cases are unsupported for now, e.g., obj is of UnboundTable.
-                # See TODO right below for more context on how we handle in-memory data.
-                op = obj.op()
-                if isinstance(op, ops.InMemoryTable):
-                    dataframe = op.data.to_frame()
-                else:
-                    raise exc.IbisError(
-                        "`obj` is of type ibis.expr.types.Table but it is not in-memory. "
-                        "Currently, only in-memory tables are supported. "
-                        "See ibis.memtable() for info on creating in-memory table."
-                    )
+            # Note (mehmet): If obj points to in-memory data, we create a view.
+            # Other cases are unsupported for now, e.g., obj is of UnboundTable.
+            # See TODO right below for more context on how we handle in-memory data.
+            op = obj.op()
+            if isinstance(op, ops.InMemoryTable):
+                dataframe = op.data.to_frame()
             else:
-                raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
+                raise exc.IbisError(
+                    "`obj` is of type ibis.expr.types.Table but it is not in-memory. "
+                    "Currently, only in-memory tables are supported. "
+                    "See ibis.memtable() for info on creating in-memory table."
+                )
 
             # TODO (mehmet): Flink requires a source connector to create regular tables.
             # In-memory data can only be created as a view (virtual table). So we decided

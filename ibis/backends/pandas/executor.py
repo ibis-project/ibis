@@ -30,7 +30,11 @@ from ibis.backends.pandas.rewrites import (
     plan,
 )
 from ibis.common.dispatch import Dispatched
-from ibis.common.exceptions import OperationNotDefinedError, UnboundExpressionError
+from ibis.common.exceptions import (
+    OperationNotDefinedError,
+    UnboundExpressionError,
+    UnsupportedOperationError,
+)
 from ibis.formats.pandas import PandasData, PandasType
 from ibis.util import any_of, gen_name
 
@@ -185,7 +189,7 @@ class PandasExecutor(Dispatched, PandasUtils):
 
         unit = units.get(unit.short, unit.short)
 
-        if unit in "YMWD":
+        if unit in "YQMWD":
             return arg.dt.to_period(unit).dt.to_timestamp()
         try:
             return arg.dt.floor(unit)
@@ -253,7 +257,12 @@ class PandasExecutor(Dispatched, PandasUtils):
     ############################# Reductions ##################################
 
     @classmethod
-    def visit(cls, op: ops.Reduction, arg, where):
+    def visit(cls, op: ops.Reduction, arg, where, order_by=()):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         func = cls.kernels.reductions[type(op)]
         return cls.agg(func, arg, where)
 
@@ -311,6 +320,47 @@ class PandasExecutor(Dispatched, PandasUtils):
         return cls.agg(lambda x: x.std(ddof=ddof), arg, where)
 
     @classmethod
+    def visit(cls, op: ops.ArrayCollect, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+        return cls.agg(
+            (lambda x: x.tolist() if include_null else x.dropna().tolist()), arg, where
+        )
+
+    @classmethod
+    def visit(cls, op: ops.First, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def first(arg):
+            if not include_null:
+                arg = arg.dropna()
+            return arg.iat[0] if len(arg) else None
+
+        return cls.agg(first, arg, where)
+
+    @classmethod
+    def visit(cls, op: ops.Last, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def last(arg):
+            if not include_null:
+                arg = arg.dropna()
+            return arg.iat[-1] if len(arg) else None
+
+        return cls.agg(last, arg, where)
+
+    @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):
         if where is None:
 
@@ -344,7 +394,13 @@ class PandasExecutor(Dispatched, PandasUtils):
         return agg
 
     @classmethod
-    def visit(cls, op: ops.GroupConcat, arg, sep, where):
+    def visit(cls, op: ops.GroupConcat, arg, sep, where, order_by):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
         if where is None:
 
             def agg(df):
@@ -642,6 +698,9 @@ class PandasExecutor(Dispatched, PandasUtils):
         if how == "cross":
             assert not left_on and not right_on
             return cls.merge(left, right, how="cross")
+        elif how == "positional":
+            assert not left_on and not right_on
+            return cls.concat([left, right], axis=1)
         elif how == "anti":
             df = cls.merge(
                 left,

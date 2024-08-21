@@ -28,5 +28,5 @@ SELECT
 FROM "t9" AS "t11"
 INNER JOIN "t9" AS "t12"
   ON "t11"."year" = (
-    "t12"."year" - CAST(1 AS TINYINT)
+    "t12"."year" - 1
   )

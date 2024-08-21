@@ -1,0 +1,762 @@
+---
+title: "Querying 1TB on a laptop with Python dataframes"
+author: "Cody Peterson"
+date: "2024-07-08"
+image: ibis-duckdb-sort.gif
+categories:
+    - benchmark
+    - duckdb
+    - datafusion
+    - polars
+---
+
+***TPC-H benchmark at `sf=1024` via DuckDB, DataFusion, and Polars on a MacBook
+Pro with 96GiB of RAM.***
+
+---
+
+pandas requires your dataframe to fit in memory. Out-of-memory (OOM) errors are
+common when working on larger datasets, though the corresponding size of data on
+disk can be surprising. The creator of pandas and Ibis noted in ["Apache
+Arrow and the '10 Things I Hate About
+pandas'"](https://wesmckinney.com/blog/apache-arrow-pandas-internals):
+
+> To put it simply, **we weren’t thinking about analyzing 100 GB or 1 TB datasets
+> in 2011**. [In 2017], my rule of thumb for pandas is that **you should have 5 to
+> 10 times as much RAM as the size of your dataset**. So if you have a 10 GB
+> dataset, you should really have about 64, preferably 128 GB of RAM if you want
+> to avoid memory management problems. This comes as a shock to users who expect
+> to be able to analyze datasets that are within a factor of 2 or 3 the size of
+> their computer’s RAM.
+
+Today with Ibis you can reliably and efficiently process a 1TB dataset on a
+laptop with <1/10th the RAM.
+
+:::{.callout-important}
+This represents **a 50-100X improvement** in RAM requirements for Python
+dataframes in just 7 years thanks to [composable data
+systems](https://wesmckinney.com/blog/looking-back-15-years) and [hard work by
+the DuckDB team](https://duckdb.org/2024/06/26/benchmarks-over-time).
+:::
+
+## Exploring the data with Python dataframes
+
+I've generated ~1TB (`sf=1024`) of [TPC-H data](https://www.tpc.org/tpch) on my
+MacBook Pro with 96 GiB of RAM. We'll start exploring it with pandas, Polars,
+and Ibis and discuss where and why they start to struggle.
+
+:::{.callout-tip title="Generating the data" collapse="true"}
+See [the previous post](../ibis-bench/index.qmd#reproducing-the-benchmark) for
+instructions on generating the data. I used `bench gen-data -s 1024 -n 128`,
+partitioning the data to avoid OOM errors while it generated.
+
+I'd recommend instead generating a smaller scale factor and copying it as many
+times as needed, as generating the data at `sf=1024` can take a long time.
+:::
+
+To follow along, install the required packages:
+
+```bash
+pip install pandas 'ibis-framework[duckdb,datafusion]' polars-u64-idx plotly
+```
+
+:::{.callout-note title="Why polars-u64-idx?" collapse="true"}
+We need to use `polars-u64-idx` instead of `polars` [to work with >4.2 billion
+rows](https://docs.pola.rs/user-guide/installation/#big-index).
+:::
+
+Imports and setup:
+
+```{python}
+import os
+import glob
+import ibis
+import pandas as pd
+import polars as pl
+import plotly.express as px
+
+px.defaults.template = "plotly_dark"
+ibis.options.interactive = True
+```
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.set_backend("duckdb")
+ibis.get_backend().raw_sql("PRAGMA disable_progress_bar;");
+```
+
+Let's check the number of rows across all tables in the TPC-H data:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to get number of rows in TPC-H data"
+sf = 1024
+n = 128
+data_dir = f"tpch_data/parquet/sf={sf}/n={n}"
+tables = glob.glob(f"{data_dir}/*")
+
+total_rows = 0
+
+for table in tables:
+    t = ibis.read_parquet(f"{table}/*.parquet")
+    total_rows += t.count().to_pyarrow().as_py()
+
+print(f"total rows: {total_rows:,}")
+```
+
+Over 8.8 billion rows!
+
+We can compute and visualize the sizes of the tables in the TPC-H data (as
+compressed Parquet files on disk):
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to get sizes of tables in TPC-H data"
+def get_dir_size(path):
+    from pathlib import Path
+
+    return sum(p.stat().st_size for p in Path(path).rglob("*") if p.is_file())
+
+
+sizes = [get_dir_size(table) for table in tables]
+names = [os.path.basename(table) for table in tables]
+
+tmp = ibis.memtable({"name": names, "size": sizes})
+tmp = tmp.mutate(size_gb=tmp["size"] / (1024**3))
+tmp = tmp.mutate(size_gb_mem=tmp["size_gb"] * 11 / 5)
+tmp = tmp.order_by(ibis.desc("size_gb"))
+
+c = px.bar(
+    tmp,
+    x="name",
+    y="size_gb",
+    title="table sizes in TPC-H data",
+    hover_data=["size_gb_mem"],
+    labels={
+        "name": "table name",
+        "size_gb": "size (GB on-disk in compressed Parquet files)",
+        "size_gb_mem": "size (approximate GB in memory)",
+    },
+)
+
+print(
+    f"total size: {tmp['size_gb'].sum().to_pyarrow().as_py():,.2f}GBs (compressed Parquet files)"
+)
+c
+```
+
+In-memory this would be about 1TB. Uncompressed CSV files would be >1TB on disk.
+
+Let's explore the largest table, `lineitem`. This table in memory is ~6X larger
+than RAM.
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to explore the lineitem table"
+table_name = "lineitem"
+data = f"{data_dir}/{table_name}/*.parquet"
+
+t = ibis.read_parquet(data)
+print(f"rows: {t.count().to_pyarrow().as_py():,} | columns: {len(t.columns)}")
+```
+
+Over 6 billion rows!
+
+Let's try to display the first few rows with Ibis, pandas, and Polars:
+
+::: {.panel-tabset}
+
+## Ibis
+
+```{python}
+t = ibis.read_parquet(data)
+t.head(3)
+```
+
+## pandas
+
+```{.python}
+df = pd.concat([pd.read_parquet(f) for f in glob.glob(data)], ignore_index=True) # <1>
+df.head(3)
+```
+
+1. Work around lack of reading multiple parquet files in pandas
+
+```html
+The Kernel crashed while executing code in the current cell or a previous cell.
+Please review the code in the cell(s) to identify a possible cause of the failure.
+Click here for more info.
+View Jupyter log for further details.
+```
+
+## Polars (eager)
+
+```{.python}
+df = pl.read_parquet(data)
+df.head(3)
+```
+
+```html
+The Kernel crashed while executing code in the current cell or a previous cell.
+Please review the code in the cell(s) to identify a possible cause of the failure.
+Click here for more info.
+View Jupyter log for further details.
+```
+
+## Polars (lazy)
+
+```{python}
+df = pl.scan_parquet(data)
+df.head(3).collect()
+```
+
+## Polars (lazy, streaming)
+
+```{python}
+df = pl.scan_parquet(data)
+df.head(3).collect(streaming=True)
+```
+
+:::
+
+Ibis, with the default backend of DuckDB, can display the first few rows. Polars
+(lazy) can too in regular and streaming mode.  For lazily computation, an
+underlying query engine has the opportunity to determine a subset of data to be
+read into memory that satisfies a given query. For example, to display any three
+rows from the `lineitem` table it can just read the first three rows from the
+first Parquet file in the dataset.
+
+Both pandas and Polars (eager) crash Python as they must load all the data into
+memory to construct their dataframes. This is expected because the table in
+memory ~6X larger than our 96GiB of RAM.
+
+:::{.callout-tip title="Visualize the Ibis expression tree" collapse="true"}
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to visualize the Ibis expression tree"
+from ibis.expr.visualize import to_graph
+
+to_graph(t.head(3))
+```
+
+:::
+
+Let's try something more challenging: [partially
+sorting](https://en.wikipedia.org/wiki/Partial_sorting) the `lineitem` table.
+This forces at least some columns from all rows of data to pass through the
+query engine to determine the top 3 rows per the specified ordering. Since the
+data is larger than RAM, only "streaming" engines can handle this. We'll try
+with the methods that worked on the previous query and add in the DataFusion
+backend for Ibis.
+
+::: {.panel-tabset}
+
+## Ibis (DuckDB)
+
+```{.python}
+ibis.set_backend("duckdb")
+t = ibis.read_parquet(data)
+t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3)
+```
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.set_backend("duckdb")
+ibis.get_backend().raw_sql("PRAGMA disable_progress_bar;")
+t = ibis.read_parquet(data)
+t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3)
+```
+
+![CPU/RAM while Ibis with the DuckDB backend sorting](ibis-duckdb-sort.gif)
+
+## Ibis (DataFusion)
+
+```{python}
+ibis.set_backend("datafusion")
+t = ibis.read_parquet(data)
+t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3)
+```
+
+![CPU/RAM while Ibis with the DataFusion backend sorting](ibis-datafusion-sort.gif)
+
+## Polars (lazy)
+
+```{.python}
+df = pl.scan_parquet(data)
+(
+    df.sort(pl.col("l_orderkey"), pl.col("l_partkey"), pl.col("l_suppkey"))
+    .head(3)
+    .collect()
+)
+```
+
+```html
+The Kernel crashed while executing code in the current cell or a previous cell.
+Please review the code in the cell(s) to identify a possible cause of the failure.
+Click here for more info.
+View Jupyter log for further details.
+```
+
+![CPU/RAM while Polars with the lazy API sorting](polars-lazy-sort.gif)
+
+## Polars (lazy, streaming)
+
+```{.python}
+df = pl.scan_parquet(data)
+(
+    df.sort(pl.col("l_orderkey"), pl.col("l_partkey"), pl.col("l_suppkey"))
+    .head(3)
+    .collect(streaming=True)
+)
+```
+
+```html
+PanicException: called `Result::unwrap()` on an `Err` value: "SendError(..)"
+```
+
+See [GitHub
+issue](https://github.com/pola-rs/polars/issues/17289#issuecomment-2200469528).
+
+![CPU/RAM while Polars with the lazy API, streaming engine sorting](polars-lazy-streaming-sort.gif)
+
+:::
+
+:::{.callout-tip title="Visualize the Ibis expression tree" collapse="true"}
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to visualize the Ibis expression tree"
+from ibis.expr.visualize import to_graph
+
+to_graph(t.order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"]).head(3))
+```
+
+:::
+
+Ibis with the DuckDB and DataFusion backends complete this in about 2 minutes
+each. Polars (lazy) crashes the kernel after about 2 minutes with its default
+mode and panics in streaming mode.
+
+**Streaming is an overloaded term here**. In the context of Ibis, a streaming
+backend refers to a near real-time data processing engine like [Apache
+Flink](https://ibis-project.org/backends/flink) or
+[RisingWave](https://ibis-project.org/backends/risingwave). In the context of
+Polars, streaming is a separate engine from the default that can handle
+larger-than-memory data. This general paradigm is already used by DuckDB and
+DataFusion, hence their ability to complete the above query. [The Polars team
+does not recommend using their current streaming engine for
+benchmarking](https://github.com/pola-rs/polars/issues/16694#issuecomment-2146668559)
+and has [announced a new version of their streaming
+engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design).
+
+As we'll see in the benchmark result, some queries will fail to complete with
+Polars and DataFusion. These queries are killed by the operating system due to a
+lack of memory.
+
+:::{.callout-tip title="Sampling large datasets with Ibis" collapse="true"}
+If we want to work with pandas or Polars dataframes at larger scales, we can use
+Ibis to sample or filter the data (and perform any other operations) with
+computation pushed to a more scalable backend. Then just output the Ibis
+dataframe to pandas or Polars for downstream use:
+
+```{python}
+#| code-fold: true
+#| echo: false
+ibis.set_backend("duckdb")
+ibis.get_backend().raw_sql("PRAGMA disable_progress_bar;");
+```
+
+:::{.panel-tabset}
+
+## pandas
+
+```{python}
+t = ibis.read_parquet(data)
+
+df = (
+    t.sample(fraction=0.0001)
+    .order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"])
+    .to_pandas()
+)
+df.head(3)
+```
+
+## Polars
+
+```{python}
+t = ibis.read_parquet(data)
+
+df = (
+    t.sample(fraction=0.0001)
+    .order_by(t["l_orderkey"], t["l_partkey"], t["l_suppkey"])
+    .to_polars()
+)
+df.head(3)
+```
+
+:::
+
+We can also use this to iterate more quickly on a subset of data with Ibis to
+construct our queries. Once we're happy with them, we can change one line of
+code to run them on the full data.
+
+:::
+
+## 1TB TPC-H benchmark results
+
+Let's delve into the results of benchmarking ~1TB (`sf=1024`) TPC-H queries on a
+laptop.
+
+:::{.callout-important title="Not an official TPC-H benchmark"}
+This is not an [official TPC-H benchmark](https://www.tpc.org/tpch). We ran a
+derivate of the TPC-H benchmark.
+:::
+
+:::{.callout-warning title="Key differences from previous benchmarking"}
+See [the prior benchmark post](../ibis-bench/index.qmd) for more details and key
+considerations. Key differences in this iteration include:
+
+1. `polars-u64-idx` was used instead of `polars`
+2. [Some Polars queries were
+ updated](https://github.com/lostmygithubaccount/ibis-bench/pull/5)
+3. Parquet files were generated with `n=128` partitions
+    - this was done to avoid OOM errors when generating the data
+    - this should have little impact on the query execution time
+4. Queries 18 and 21 for Polars, 9 and 18 for DataFusion were skipped
+    - they ran for a very long time without completing or failing
+    - the prior benchmark indicates these queries would likely eventually fail
+
+The Python package versions used were:
+
+- `ibis-framework==9.1.0`
+- `datafusion==38.0.1`
+- `duckdb==1.0.0`
+- `polars-u64-idx==1.0.0`
+
+The three systems tested were:
+
+- `ibis-duckdb`: Ibis dataframe code on the DuckDB backend
+- `ibis-datafusion`: Ibis dataframe code on the DataFusion backend
+- `polars-lazy`: Polars (lazy API) dataframe code
+:::
+
+To follow along, install the required packages:
+
+```bash
+pip install 'ibis-framework[duckdb]' gcsfs plotly great-tables
+```
+
+The code for reading and analyzing the data is collapsed below.
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to read and analyze the benchmark data"
+import ibis
+import gcsfs
+import plotly.express as px
+
+from great_tables import GT, md
+
+px.defaults.template = "plotly_dark"
+
+ibis.set_backend("duckdb")
+ibis.options.interactive = True
+ibis.options.repr.interactive.max_rows = 3
+
+fs = gcsfs.GCSFileSystem()
+ibis.get_backend().register_filesystem(fs)
+
+t = (
+    ibis.read_parquet(
+        "gs://ibis-bench/1tbc/cache/file_id=*.parquet",
+    )
+    .select(
+        "system",
+        "sf",
+        "n_partitions",
+        "query_number",
+        "execution_seconds",
+        "timestamp",
+    )
+    .mutate(timestamp=ibis._["timestamp"].cast("timestamp"))
+    .order_by("system", "query_number")
+    .cache()
+)
+
+systems = sorted(t.distinct(on="system")["system"].collect().to_pyarrow().as_py())
+
+agg = (
+    t.mutate(
+        run_num=ibis.row_number().over(
+            group_by=["system", "sf", "n_partitions", "query_number"],
+            order_by=["timestamp"],
+        )
+    )
+    .relocate(t.columns[:4], "run_num")
+    .group_by("system", "query_number", "run_num")
+    .agg(execution_seconds=ibis._["execution_seconds"].mean())
+    .order_by("system", "query_number", "run_num")
+)
+agg2 = (
+    agg.group_by("system", "query_number")
+    .agg(avg_execution_seconds=agg.execution_seconds.mean().round(2))
+    .order_by("system", "query_number")
+)
+piv = agg2.pivot_wider(
+    names_from="system", values_from=["avg_execution_seconds"]
+).order_by("query_number")
+
+
+def x_vs_y(piv, x, y):
+    return ibis.ifelse(
+        piv[x] < piv[y],
+        -1,
+        1,
+    ) * (
+        (
+            (piv[x] - piv[y])
+            / ibis.ifelse(
+                piv[y] > piv[x],
+                piv[x],
+                piv[y],
+            )
+        ).abs()
+    ).round(4)
+
+
+comparisons = [
+    ("ibis-datafusion", "ibis-duckdb"),
+    ("polars-lazy", "ibis-datafusion"),
+    ("polars-lazy", "ibis-duckdb"),
+]
+
+comparisons = {f"{x}_v_{y}": x_vs_y(piv, x, y) for x, y in comparisons}
+
+piv2 = piv.mutate(**comparisons)
+piv2 = piv2.order_by("query_number").relocate("query_number", systems)
+
+agg3 = (
+    agg2.group_by("system")
+    .agg(
+        queries_completed=agg2["avg_execution_seconds"].count(),
+        execution_seconds=agg2["avg_execution_seconds"].sum().round(2),
+        seconds_per_query=agg2["avg_execution_seconds"].mean().round(2),
+    )
+    .order_by(ibis.desc("queries_completed"))
+)
+agg3
+```
+
+`ibis-duckdb` completed all 22/22 queries **in under 30 minutes**. If you need
+to run batch data jobs on a similar amount of data, a laptop might be all you
+need!
+
+`ibis-datafusion` only completed 17/22 queries, though recall [3 are failing due
+to a bug that's already been
+fixed](../ibis-bench/index.qmd#failing-datafusion-queries). A new Python release
+for DataFusion hasn't been made yet, so we ran with the old version. Assuming
+those queries would complete, only 2 queries would be failing due to lack of
+memory. More investigation would be needed to determine the work needed for all
+22 queries to pass under these conditions.
+
+`polars-lazy` only completed 13/22 queries, with 8 failing due lack of memory.
+The [new streaming
+engine](https://pola.rs/posts/announcing-polars-1/#new-engine-design) will
+likely help with this.
+
+Let's plot execution time for each query and system:
+
+:::{.callout-tip title="You can de-select systems in the legend"}
+It might be easier to look at 2 systems at a time. You can click on a system in
+the legend of the plot to de-select it.
+:::
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to plot execution time by query and system"
+c = px.bar(
+    agg2,
+    x="query_number",
+    y="avg_execution_seconds",
+    title="Average execution time by query",
+    color="system",
+    barmode="group",
+    log_y=True,
+)
+c
+```
+
+Let's show a [Great Tables](https://github.com/posit-dev/great-tables) table of
+pivoted data including relative speed differences between the systems:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to create Great Table table from pivoted aggregated benchmark data"
+color_palette = "plasma"
+na_color = "black"
+style_color = "cyan"
+
+tbl = (
+    GT(
+        piv2.mutate(**{" ": ibis.literal("")})
+        .select(
+            "query_number",
+            *systems,
+            " ",
+            *list(comparisons.keys()),
+        )
+        .to_polars()
+    )
+    .opt_stylize(
+        style=1,
+        color=style_color,
+    )
+    .tab_header(
+        title=md("1TB (`sf=1024`) TPC-H queries"),
+        subtitle=md("*on a laptop* (MacBook Pro | Apple M2 Max | 96GiB RAM)"),
+    )
+    .tab_spanner(label="execution time (seconds)", columns=systems)
+    .tab_spanner(label="   ", columns=" ")
+    .tab_spanner(label="relative speed difference†", columns=list(comparisons))
+    .tab_source_note(
+        source_note=md(
+            "†[Relative speed difference formula](https://docs.coiled.io/blog/tpch#measurements), with negative values indicating A was faster than B for A_v_B"
+        )
+    )
+    .tab_source_note(
+        source_note=md(
+            "Benchmark results source data (public bucket): `gs://ibis-bench/1tbc/cache/file_id=*.parquet`"
+        )
+    )
+    .fmt_percent(list(comparisons), decimals=2, scale_values=True)
+    .data_color(
+        columns=systems,
+        domain=[0, agg2["avg_execution_seconds"].max().to_pyarrow().as_py()],
+        palette=color_palette,
+        na_color=na_color,
+    )
+    .data_color(
+        columns=" ",
+        palette=["#333333", "#333333"],
+    )
+    .data_color(
+        columns=list(comparisons),
+        domain=[
+            min(
+                [piv2[c].min().to_pyarrow().as_py() for c in list(comparisons)],
+            ),
+            max(
+                [piv2[c].max().to_pyarrow().as_py() for c in list(comparisons)],
+            ),
+        ],
+        palette=color_palette,
+        na_color=na_color,
+    )
+)
+tbl
+```
+
+You can use the code above to further explore and visualize the results.
+
+## Why does this matter?
+
+The ability to run all 1TB TPC-H queries on a relatively standard laptop with
+minimal setup represents a significant shift in the Python data ecosystem that
+benefits individual data practitioners and organizations.
+
+### Scale up, then scale out
+
+Distributed systems are hard and introduce complexity for data workloads. While
+distributed OLAP query engines have their place, the threshold for considering
+them against a single-node OLAP query engine has been raised drastically over
+the last few years. You can [see how much DuckDB has improved over the
+years](https://duckdb.org/2024/06/26/benchmarks-over-time) and it shows in this
+benchmark.
+
+It's a good idea to start with a single node and see how far you can get. You'll
+need to consider the tradeoffs for your own situation to make a decision. With
+Ibis, you can write your queries once and try them on different engines to see
+which is best for your workload.
+
+### Composable data systems are here
+
+Ibis separates the query from the engine. It translates dataframe code into an
+intermediate representation (IR) in the backend's native language -- often SQL,
+sometimes other Python dataframe code. This separation allows you **to use a
+single dataframe API for the best engine(s) across your workload(s)**.
+
+If you need to analyze data in
+[Postgres](https://ibis-project.org/backends/postgres), you can use Ibis. If you
+need to [speed that up with
+DuckDB](https://duckdb.org/2022/09/30/postgres-scanner.html), you can [use
+Ibis](https://ibis-project.org/backends/duckdb#ibis.backends.duckdb.Backend.read_postgres).
+If you need to scale out with [Dask](https://ibis-project.org/backends/dask) or
+[PySpark](https://ibis-project.org/backends/pyspark) or
+[Trino](https://ibis-project.org/backends/trino), you can use Ibis. If you need
+to [scale out on distributed GPUs you can use
+Ibis](../why-voda-supports-ibis/index.qmd). If another query engine comes along
+and is best for your workload, you can probably use Ibis. New backends are
+fairly easy to add!
+
+### It's efficient
+
+How much money does your organization spend on data transformation per terabyte?
+Using [the GCP pricing calculator](https://cloud.google.com/products/calculator)
+we'll sample the monthly cost of some cloud instances including a few TBs of
+solid-state hard drive space. Hover over to see the vCPUs and RAM for each
+instance.
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show code to plot monthly cost of various GCP instances"
+data = {
+    "m1-megamem-40": {"vCPUs": 40, "RAM": 961, "cost": 6200},
+    "m1-ultramem-80": {"vCPUs": 80, "RAM": 1922, "cost": 10900},
+    "m1-ultramem-160": {"vCPUs": 160, "RAM": 3844, "cost": 20100},
+    "h3-standard-88": {"vCPUs": 88, "RAM": 352, "cost": 4600},
+    "c2-standard-30": {"vCPUs": 30, "RAM": 120, "cost": 1600},
+    "c2-standard-60": {"vCPUs": 60, "RAM": 240, "cost": 2700},
+}
+
+t = ibis.memtable(
+    {
+        "name": list(data.keys()),
+        "vCPUs": [v["vCPUs"] for v in data.values()],
+        "RAM (GBs)": [v["RAM"] for v in data.values()],
+        "cost": [v["cost"] for v in data.values()],
+    }
+).order_by("cost")
+
+c = px.bar(
+    t,
+    x="name",
+    y="cost",
+    title="Monthly cost (USD) of various GCP instances",
+    hover_data=["vCPUs", "RAM (GBs)"],
+)
+c
+```
+
+For ~$1,600/month we can get a machine with more CPU cores and RAM than the
+laptop benchmarked in this post. This cost assumes you're running the machine
+24/7 -- if you only needed to run a workload similar to the benchmark here,
+you'd only need to run the machine <1 hour per day using Ibis with the default
+DuckDB backend. This can serve as a good anchor when evaluating your cost of
+compute for data.
+
+A composable data system with Python dataframe and SQL user experiences can
+scale vertically to handle workloads into 10TB+ range with modern single-node
+OLAP query engines. If you need a distributed query engine or a better
+single-node query engine for your workload materializes, you can swap them out
+without changing your queries. However, note that with vertical scaling you're
+likely to hit storage or network bottlenecks before compute bottlenecks on real
+workloads.
+
+## Next steps
+
+We'll follow up on this post once new versions that fix issues or improve
+performance significantly are released. If you're interested in getting started
+with Ibis, see [our tutorial](/tutorials/getting_started.qmd).

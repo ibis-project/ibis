@@ -13,6 +13,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from impala.error import Error as ImpylaError
 
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.schema as sch
@@ -20,7 +21,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.impala import ddl, udf
 from ibis.backends.impala.client import ImpalaTable
-from ibis.backends.impala.compiler import ImpalaCompiler
 from ibis.backends.impala.ddl import (
     CTAS,
     CreateDatabase,
@@ -45,6 +45,7 @@ if TYPE_CHECKING:
     from pathlib import Path
     from urllib.parse import ParseResult
 
+    import impala.hiveserver2 as hs2
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -63,7 +64,7 @@ __all__ = (
 
 class Backend(SQLBackend):
     name = "impala"
-    compiler = ImpalaCompiler()
+    compiler = sc.impala.compiler
 
     supports_in_memory_tables = True
 
@@ -131,7 +132,7 @@ class Backend(SQLBackend):
         ca_cert
             Local path to 3rd party CA certificate or copy of server
             certificate for self-signed certificates. If SSL is enabled, but
-            this argument is ``None``, then certificate validation is skipped.
+            this argument is `None`, then certificate validation is skipped.
         user
             LDAP user to authenticate
         password
@@ -183,6 +184,25 @@ class Backend(SQLBackend):
             cur.ping()
 
         self.con = con
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: hs2.HiveServer2Connection) -> Backend:
+        """Create an Impala `Backend` from an existing HS2 connection.
+
+        Parameters
+        ----------
+        con
+            An existing connection to HiveServer2 (HS2).
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         self.options = {}
 
     @cached_property
@@ -451,6 +471,7 @@ class Backend(SQLBackend):
         format="parquet",
         location=None,
         partition=None,
+        tbl_properties: Mapping[str, Any] | None = None,
         like_parquet=None,
     ) -> ir.Table:
         """Create a new table using an Ibis table expression or in-memory data.
@@ -481,6 +502,8 @@ class Backend(SQLBackend):
         partition
             Must pass a schema to use this. Cannot partition from an
             expression.
+        tbl_properties
+            Table properties to set on table creation.
         like_parquet
             Can specify instead of a schema
 
@@ -514,6 +537,7 @@ class Backend(SQLBackend):
                     format=format,
                     external=True if location is not None else external,
                     partition=partition,
+                    tbl_properties=tbl_properties,
                     path=location,
                 )
             )
@@ -529,6 +553,7 @@ class Backend(SQLBackend):
                     external=external,
                     path=location,
                     partition=partition,
+                    tbl_properties=tbl_properties,
                 )
             )
         return self.table(name, database=database or self.current_database)

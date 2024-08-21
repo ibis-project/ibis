@@ -45,14 +45,10 @@ class RefCountedCache:
         populate: Callable[[str, Any], None],
         lookup: Callable[[str], Any],
         finalize: Callable[[Any], None],
-        generate_name: Callable[[], str],
-        key: Callable[[Any], Any],
     ) -> None:
         self.populate = populate
         self.lookup = lookup
         self.finalize = finalize
-        self.generate_name = generate_name
-        self.key = key or (lambda x: x)
 
         self.cache: dict[Any, CacheEntry] = dict()
 
@@ -70,8 +66,10 @@ class RefCountedCache:
 
     def store(self, input):
         """Compute and store a reference to `key`."""
-        key = self.key(input)
-        name = self.generate_name()
+        from ibis.util import gen_name
+
+        key = input.op()
+        name = gen_name("cache")
         self.populate(name, input)
         cached = self.lookup(name)
         finalizer = finalize(cached, self._release, key)

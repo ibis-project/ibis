@@ -4,20 +4,16 @@ from __future__ import annotations
 
 import contextlib
 import inspect
-import textwrap
-from functools import partial
-from itertools import takewhile
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
-import pandas as pd
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pandas.api.types import is_float_dtype
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
@@ -26,10 +22,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
-from ibis.backends.postgres.compiler import PostgresCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import TRUE, C, ColGen, F
-from ibis.common.exceptions import InvalidDecoratorError
+from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -37,18 +31,13 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import psycopg2
     import pyarrow as pa
-
-
-def _verify_source_line(func_name: str, line: str):
-    if line.startswith("@"):
-        raise InvalidDecoratorError(func_name, line)
-    return line
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "postgres"
-    compiler = PostgresCompiler()
+    compiler = sc.postgres.compiler
     supports_python_udfs = True
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -148,7 +137,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             convert_df = df.convert_dtypes()
             for col in convert_df.columns:
                 if not is_float_dtype(convert_df[col]):
-                    df[col] = df[col].replace(np.nan, None)
+                    df[col] = df[col].replace(float("nan"), None)
 
             data = df.itertuples(index=False)
             sql = self._build_insert_template(
@@ -280,8 +269,41 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             **kwargs,
         )
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+        """Create an Ibis client from an existing connection to a PostgreSQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a PostgreSQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         with self.begin() as cur:
             cur.execute("SET TIMEZONE = UTC")
+
+    @property
+    def _session_temp_db(self) -> str | None:
+        # Postgres doesn't assign the temporary table database until the first
+        # temp table is created in a given session.
+        # Before that temp table is created, this will return `None`
+        # After a temp table is created, it will return `pg_temp_N` where N is
+        # some integer
+        res = self.raw_sql(
+            "select nspname from pg_namespace where oid = pg_my_temp_schema()"
+        ).fetchone()
+        if res is not None:
+            return res[0]
+        return res
 
     def list_tables(
         self,
@@ -438,7 +460,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 on=n.oid.eq(p.pronamespace),
                 join_type="LEFT",
             )
-            .where(sg.and_(*predicates))
+            .where(*predicates)
         )
 
         def split_name_type(arg: str) -> tuple[str, dt.DataType]:
@@ -475,69 +497,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         op = ops.udf.scalar.builtin(fake_func, database=database)
         return op
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        config = udf_node.__config__
-        func = udf_node.__func__
-        func_name = func.__name__
-
-        lines, _ = inspect.getsourcelines(func)
-        iter_lines = iter(lines)
-
-        function_premable_lines = list(
-            takewhile(lambda line: not line.lstrip().startswith("def "), iter_lines)
-        )
-
-        if len(function_premable_lines) > 1:
-            raise InvalidDecoratorError(
-                name=func_name, lines="".join(function_premable_lines)
-            )
-
-        source = textwrap.dedent(
-            "".join(map(partial(_verify_source_line, func_name), iter_lines))
-        ).strip()
-
-        type_mapper = self.compiler.type_mapper
-        argnames = udf_node.argnames
-        return dict(
-            name=type(udf_node).__name__,
-            ident=self.compiler.__sql_name__(udf_node),
-            signature=", ".join(
-                f"{argname} {type_mapper.to_string(arg.dtype)}"
-                for argname, arg in zip(argnames, udf_node.args)
-            ),
-            return_type=type_mapper.to_string(udf_node.dtype),
-            language=config.get("language", "plpython3u"),
-            source=source,
-            args=", ".join(argnames),
-        )
-
-    def _define_udf_translation_rules(self, expr: ir.Expr) -> None:
-        """No-op, these are defined in the compiler."""
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
-CREATE OR REPLACE FUNCTION {ident}({signature})
-RETURNS {return_type}
-LANGUAGE {language}
-AS $$
-{source}
-return {name}({args})
-$$""".format(**self._get_udf_source(udf_node))
-
-    def _register_udfs(self, expr: ir.Expr) -> None:
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql)
-        if udf_sources:
-            # define every udf in one execution to avoid the overhead of
-            # database round trips per udf
-            with self._safe_raw_sql(";\n".join(udf_sources)):
-                pass
-
     def get_schema(
         self,
         name: str,
@@ -550,6 +509,16 @@ $$""".format(**self._get_udf_source(udf_node))
         n = ColGen(table="n")
 
         format_type = self.compiler.f["pg_catalog.format_type"]
+
+        # If no database is specified, assume the current database
+        db = database or self.current_database
+
+        dbs = [sge.convert(db)]
+
+        # If a database isn't specified, then include temp tables in the
+        # returned values
+        if database is None and (temp_table_db := self._session_temp_db) is not None:
+            dbs.append(sge.convert(temp_table_db))
 
         type_info = (
             sg.select(
@@ -571,7 +540,7 @@ $$""".format(**self._get_udf_source(udf_node))
             .where(
                 a.attnum > 0,
                 sg.not_(a.attisdropped),
-                n.nspname.eq(sge.convert(database)) if database is not None else TRUE,
+                n.nspname.isin(*dbs),
                 c.relname.eq(sge.convert(name)),
             )
             .order_by(a.attnum)
@@ -700,7 +669,7 @@ $$""".format(**self._get_udf_source(udf_node))
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -803,17 +772,3 @@ $$""".format(**self._get_udf_source(udf_node))
         else:
             con.commit()
             return cursor
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
-    ):
-        table_expr = expr.as_table()
-        conversions = {
-            name: table_expr[name].as_ewkb()
-            for name, typ in table_expr.schema().items()
-            if typ.is_geospatial()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params, **kwargs)

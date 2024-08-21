@@ -2,40 +2,11 @@ from __future__ import annotations
 
 from operator import methodcaller
 from time import sleep
-from unittest import mock
 
 import pandas as pd
 import pytest
 
-from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.pyspark import Backend
 from ibis.backends.pyspark.datatypes import PySparkSchema
-
-
-@pytest.fixture(scope="session", autouse=True)
-def default_session_fixture():
-    with mock.patch.object(Backend, "write_to_memory", write_to_memory, create=True):
-        yield
-
-
-def write_to_memory(self, expr, table_name):
-    if self.mode == "batch":
-        raise NotImplementedError
-    df = self._session.sql(expr.compile())
-    df.writeStream.format("memory").queryName(table_name).start()
-
-
-@pytest.fixture(autouse=True, scope="function")
-def stop_active_jobs(con_streaming):
-    yield
-    for sq in con_streaming._session.streams.active:
-        sq.stop()
-        sq.awaitTermination()
-
-
-@pytest.fixture
-def awards_players_schema():
-    return TEST_TABLES["awards_players"]
 
 
 @pytest.mark.parametrize(

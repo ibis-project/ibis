@@ -1,8 +1,10 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-import pyarrow as pa
+import pytest
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+pa = pytest.importorskip("pyarrow")
 
 array_types = pd.DataFrame(
     [

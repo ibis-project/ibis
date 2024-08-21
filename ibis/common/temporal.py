@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 import datetime
 import numbers
 from decimal import Decimal
@@ -168,6 +169,9 @@ def normalize_timedelta(
     3000000
 
     """
+    with contextlib.suppress(AttributeError):
+        value = value.item()
+
     if isinstance(value, datetime.timedelta):
         # datetime.timedelta only stores days, seconds, and microseconds internally
         if value.days and not (value.seconds or value.microseconds):

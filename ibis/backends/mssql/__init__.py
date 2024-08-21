@@ -14,6 +14,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -21,9 +22,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.mssql.compiler import MSSQLCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, C
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -54,9 +54,28 @@ def datetimeoffset_to_datetime(value):
     )
 
 
+# For testing we use the collation "Latin1_General_100_BIN2_UTF8"
+# which is case-sensitive and supports UTF8.
+# This allows us to (hopefully) support both case-sensitive and case-insensitive
+# collations.
+# It DOES mean, though, that we need to be correct in our usage of case when
+# referring to system tables and views.
+# So, the correct casing for the tables and views we use often (and the
+# corresponding columns):
+#
+#
+# Info schema tables:
+# - INFORMATION_SCHEMA.COLUMNS
+# - INFORMATION_SCHEMA.SCHEMATA
+# - INFORMATION_SCHEMA.TABLES
+# Temp table location: tempdb.dbo
+# Catalogs: sys.databases
+# Databases: sys.schemas
+
+
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "mssql"
-    compiler = MSSQLCompiler()
+    compiler = sc.mssql.compiler
     supports_create_or_replace = False
 
     @property
@@ -112,23 +131,43 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if user is None and password is None:
             kwargs.setdefault("Trusted_Connection", "yes")
 
-        con = pyodbc.connect(
+        if database is not None:
+            # passing database=None tries to interpolate "None" into the
+            # connection string and use it as a database
+            kwargs["database"] = database
+
+        self.con = pyodbc.connect(
             user=user,
-            server=host,
-            port=port,
+            server=f"{host},{port}",
             password=password,
-            database=database,
             driver=driver,
             **kwargs,
         )
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pyodbc.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a MSSQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a MSSQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self):
         # -155 is the code for datetimeoffset
-        con.add_output_converter(-155, datetimeoffset_to_datetime)
+        self.con.add_output_converter(-155, datetimeoffset_to_datetime)
 
-        with closing(con.cursor()) as cur:
+        with closing(self.con.cursor()) as cur:
             cur.execute("SET DATEFIRST 1")
-
-        self.con = con
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
@@ -139,29 +178,28 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if name.startswith("ibis_cache_"):
             catalog, database = ("tempdb", "dbo")
             name = "##" + name
-        conditions = [sg.column("table_name").eq(sge.convert(name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                "is_nullable",
-                "numeric_precision",
-                "numeric_scale",
-                "datetime_precision",
+                C.column_name,
+                C.data_type,
+                C.is_nullable,
+                C.numeric_precision,
+                C.numeric_scale,
+                C.datetime_precision,
             )
             .from_(
                 sg.table(
-                    "columns",
-                    db="information_schema",
+                    "COLUMNS",
+                    db="INFORMATION_SCHEMA",
                     catalog=catalog or self.current_catalog,
                 )
             )
-            .where(*conditions)
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -196,24 +234,31 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return sch.Schema(mapping)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
+        # Docs describing usage of dm_exec_describe_first_result_set
+        # https://learn.microsoft.com/en-us/sql/relational-databases/system-dynamic-management-views/sys-dm-exec-describe-first-result-set-transact-sql?view=sql-server-ver16
         tsql = sge.convert(str(query)).sql(self.dialect)
-        query = f"EXEC sp_describe_first_result_set @tsql = N{tsql}"
+
+        # For some reason when using "Latin1_General_100_BIN2_UTF8"
+        # the stored procedure `sp_describe_first_result_set` starts throwing errors about DLL loading.
+        # This "dynamic management function" uses the same algorithm and allows
+        # us to pre-filter the columns we want back.
+        # The syntax is:
+        # `sys.dm_exec_describe_first_result_set(@tsql, @params, @include_browse_information)`
+        query = f"""
+        SELECT
+          name,
+          is_nullable,
+          system_type_name,
+          precision,
+          scale
+        FROM sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)
+        ORDER BY column_ordinal
+        """
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
 
         schema = {}
-        for (
-            _,
-            _,
-            name,
-            nullable,
-            _,
-            system_type_name,
-            _,
-            precision,
-            scale,
-            *_,
-        ) in sorted(rows, key=itemgetter(1)):
+        for name, nullable, system_type_name, precision, scale in rows:
             newtyp = self.compiler.type_mapper.from_string(
                 system_type_name, nullable=nullable
             )
@@ -252,6 +297,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
     @contextlib.contextmanager
     def begin(self):
+        with contextlib.closing(self.con.cursor()) as cur:
+            yield cur
+
+    @contextlib.contextmanager
+    def _ddl_begin(self):
         con = self.con
         cur = con.cursor()
         try:
@@ -273,6 +323,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             cur.execute(query, *args, **kwargs)
             yield cur
 
+    @contextlib.contextmanager
+    def _safe_ddl(self, query, *args, **kwargs):
+        with contextlib.suppress(AttributeError):
+            query = query.sql(self.dialect)
+
+        with self._ddl_begin() as cur:
+            cur.execute(query, *args, **kwargs)
+            yield cur
+
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
@@ -280,15 +339,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         con = self.con
         cursor = con.cursor()
 
-        try:
-            cursor.execute(query, **kwargs)
-        except Exception:
-            con.rollback()
-            cursor.close()
-            raise
-        else:
-            con.commit()
-            return cursor
+        cursor.execute(query, **kwargs)
+        return cursor
 
     def create_catalog(self, name: str, force: bool = False) -> None:
         expr = (
@@ -309,11 +361,11 @@ GO"""
             if force
             else stmt
         )
-        with self._safe_raw_sql(create_stmt):
+        with self._safe_ddl(create_stmt):
             pass
 
     def drop_catalog(self, name: str, force: bool = False) -> None:
-        with self._safe_raw_sql(
+        with self._safe_ddl(
             sge.Drop(
                 kind="DATABASE",
                 this=sg.to_identifier(name, quoted=self.compiler.quoted),
@@ -431,25 +483,19 @@ GO"""
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        conditions = []
-
-        if table_loc is not None:
-            conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (
-            sg.select("table_name")
+            sg.select(C.table_name)
             .from_(
                 sg.table(
-                    "tables",
-                    db="information_schema",
+                    "TABLES",
+                    db="INFORMATION_SCHEMA",
                     catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
+            .where(C.table_schema.eq(sge.convert(db or self.current_database)))
             .distinct()
         )
-
-        if conditions:
-            sql = sql.where(*conditions)
 
         sql = sql.sql(self.dialect)
 
@@ -463,8 +509,8 @@ GO"""
     ) -> list[str]:
         query = sg.select(C.schema_name).from_(
             sg.table(
-                "schemata",
-                db="information_schema",
+                "SCHEMATA",
+                db="INFORMATION_SCHEMA",
                 catalog=catalog or self.current_catalog,
             )
         )
@@ -548,7 +594,7 @@ GO"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -584,7 +630,7 @@ GO"""
 
         this = sg.table(name, catalog=catalog, db=db, quoted=self.compiler.quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
-        with self._safe_raw_sql(create_stmt) as cur:
+        with self._safe_ddl(create_stmt) as cur:
             if query is not None:
                 # You can specify that a table is temporary for the sqlglot `Create` but not
                 # for the subsequent `Insert`, so we need to shove a `#` in
@@ -666,24 +712,9 @@ GO"""
             data = df.itertuples(index=False)
 
             insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
-            with self._safe_raw_sql(create_stmt) as cur:
+            with self._safe_ddl(create_stmt) as cur:
                 if not df.empty:
                     cur.executemany(insert_stmt, data)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-        conversions = {
-            name: ibis.ifelse(table_expr[name], 1, 0).cast("boolean")
-            for name, typ in table_expr.schema().items()
-            if typ.is_boolean()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params)
 
     def _cursor_batches(
         self,

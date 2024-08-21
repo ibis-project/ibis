@@ -1,9 +1,9 @@
 SELECT
   CASE
-    WHEN "t0"."f" > CAST(0 AS TINYINT)
-    THEN "t0"."d" * CAST(2 AS TINYINT)
-    WHEN "t0"."c" < CAST(0 AS TINYINT)
-    THEN "t0"."a" * CAST(2 AS TINYINT)
-    ELSE CAST(NULL AS BIGINT)
+    WHEN "t0"."f" > 0
+    THEN "t0"."d" * 2
+    WHEN "t0"."c" < 0
+    THEN "t0"."a" * 2
+    ELSE NULL
   END AS "tmp"
 FROM "alltypes" AS "t0"

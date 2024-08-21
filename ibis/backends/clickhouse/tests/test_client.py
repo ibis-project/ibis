@@ -13,6 +13,14 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config, udf
+from ibis.backends.clickhouse.tests.conftest import (
+    CLICKHOUSE_HOST,
+    CLICKHOUSE_PASS,
+    CLICKHOUSE_PORT,
+    CLICKHOUSE_USER,
+    IBIS_TEST_CLICKHOUSE_DB,
+)
+from ibis.backends.tests.errors import ClickHouseDatabaseError
 from ibis.util import gen_name
 
 cc = pytest.importorskip("clickhouse_connect")
@@ -350,7 +358,7 @@ def test_create_table_no_syntax_error(con):
 
 
 def test_password_with_bracket():
-    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}['
+    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}[]'
     quoted_pass = quote_plus(password)
     host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
     user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
@@ -359,3 +367,61 @@ def test_password_with_bracket():
         cc.driver.exceptions.DatabaseError, match="password is incorrect"
     ):
         ibis.clickhouse.connect(host=host, user=user, port=port, password=quoted_pass)
+
+
+def test_from_url(con):
+    assert ibis.connect(
+        f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/{IBIS_TEST_CLICKHOUSE_DB}"
+    )
+
+
+def test_invalid_port(con):
+    port = 9999
+    url = f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{port}/{IBIS_TEST_CLICKHOUSE_DB}"
+    with pytest.raises(cc.driver.exceptions.DatabaseError):
+        ibis.connect(url)
+
+
+def test_subquery_with_join(con):
+    name = gen_name("clickhouse_tmp_table")
+
+    s = con.create_table(name, pa.Table.from_pydict({"a": [1, 2, 3]}), temp=True)
+
+    sql = f"""
+    SELECT
+      "o"."a"
+    FROM (
+      SELECT
+        "w"."a"
+      FROM "{name}" AS "s"
+      INNER JOIN "{name}" AS "w"
+      USING ("a")
+    ) AS "o"
+    """
+    with pytest.raises(
+        ClickHouseDatabaseError, match="Identifier 'o.a' cannot be resolved"
+    ):
+        # https://github.com/ClickHouse/ClickHouse/issues/66133
+        con.sql(sql)
+
+    # this works because we add the additional alias in the inner query
+    w = s.view()
+    expr = s.join(w, "a").select(a=w.a).select(b=lambda t: t.a + 1)
+    result = expr.to_pandas()
+    assert set(result["b"].tolist()) == {2, 3, 4}
+
+
+def test_alias_column_ref(con):
+    data = {"user_id": [1, 2, 3], "account_id": [4, 5, 6]}
+    t = con.create_table(gen_name("clickhouse_temp_table"), data, temp=True)
+    expr = t.alias("df").sql("select *, halfMD5(account_id) as id_md5 from df")
+
+    result = expr.execute()
+
+    assert len(result) == 3
+
+    assert result.columns.tolist() == ["user_id", "account_id", "id_md5"]
+
+    assert result.user_id.notnull().all()
+    assert result.account_id.notnull().all()
+    assert result.id_md5.notnull().all()

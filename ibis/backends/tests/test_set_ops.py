@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -11,6 +10,8 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import _
 from ibis.backends.tests.errors import PsycoPg2InternalError, PyDruidProgrammingError
+
+pd = pytest.importorskip("pandas")
 
 
 @pytest.fixture
@@ -35,7 +36,7 @@ def union_subsets(alltypes, df):
 
 
 @pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_union(backend, union_subsets, distinct):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -49,7 +50,7 @@ def test_union(backend, union_subsets, distinct):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_union_mixed_distinct(backend, union_subsets):
     (a, b, c), (da, db, dc) = union_subsets
 
@@ -93,7 +94,7 @@ def test_union_mixed_distinct(backend, union_subsets):
     ],
 )
 @pytest.mark.notimpl(["polars"])
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_intersect(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
     b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))
@@ -147,7 +148,7 @@ def test_intersect(backend, alltypes, df, distinct):
     ],
 )
 @pytest.mark.notimpl(["polars"])
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_difference(backend, alltypes, df, distinct):
     a = alltypes.filter((_.id >= 5200) & (_.id <= 5210))
     b = alltypes.filter((_.id >= 5205) & (_.id <= 5215))
@@ -187,7 +188,7 @@ def test_table_set_operations_api(alltypes, method):
     "distinct",
     [
         param(
-            True, marks=pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+            True, marks=pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
         ),
         False,
     ],
@@ -265,7 +266,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
     ],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_top_level_intersect_difference(
     backend, con, alltypes, distinct, opname, expected, ordered
 ):

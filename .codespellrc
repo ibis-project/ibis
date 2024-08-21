@@ -1,6 +1,6 @@
 [codespell]
 # local codespell matches `./docs`, pre-commit codespell matches `docs`
-skip = *.lock,.direnv,.git,./docs/_freeze,./docs/_output/**,./docs/_inv/**,docs/_freeze/**,*.svg,*.css,*.html,*.js,ibis/backends/tests/tpc/queries/duckdb/ds/44.sql
-ignore-regex = \b(i[if]f|I[IF]F|AFE)\b
+skip = *.lock,.direnv,.git,./docs/_freeze,./docs/_output/**,./docs/_inv/**,docs/_freeze/**,*.svg,*.css,*.html,*.js,ibis/backends/tests/tpc/queries/duckdb/ds/*.sql
+ignore-regex = \b(i[if]f|I[IF]F|AFE|alls)\b
 builtin = clear,rare,names
 ignore-words-list = tim,notin,ang

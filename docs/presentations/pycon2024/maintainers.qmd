@@ -1,6 +1,7 @@
 ---
-title: "Test 20 databases on every commit"
+title: "Test 20 databases on every commit @ PyCon 2024"
 subtitle: "It's not hyperbole"
+date: "2024-05-19"
 author:
   - Phillip Cloud
 execute:
@@ -245,6 +246,7 @@ _CI must complete "quickly"_
 
 ::: {.callout-warning}
 ## Opinions follow
+Opinions herein…
 :::
 
 - **Env setup needs to be _fast_**: avoid constraint solving
@@ -282,7 +284,8 @@ _We've added 3 or 4 new backends since the switch_
 ## Tools: GitHub Actions {.smaller}
 
 ::: {.callout-note}
-### I don't work for GitHub
+## I don't work for GitHub
+…even though it might seem like it
 :::
 
 - Pay for the [the Teams plan](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits) to get more concurrency

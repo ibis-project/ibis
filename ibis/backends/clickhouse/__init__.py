@@ -17,6 +17,7 @@ import toolz
 from clickhouse_connect.driver.external import ExternalData
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
@@ -24,10 +25,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend, CanCreateDatabase
-from ibis.backends.clickhouse.compiler import ClickHouseCompiler
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compilers.base import C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -44,7 +44,7 @@ def _to_memtable(v):
 
 class Backend(SQLBackend, CanCreateDatabase):
     name = "clickhouse"
-    compiler = ClickHouseCompiler()
+    compiler = sc.clickhouse.compiler
 
     # ClickHouse itself does, but the client driver does not
     supports_temporary_tables = False
@@ -84,6 +84,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             "password": unquote_plus(url.password or ""),
             "host": url.hostname,
             "database": database or "",
+            "port": url.port,
             **kwargs,
         }
 
@@ -161,6 +162,21 @@ class Backend(SQLBackend, CanCreateDatabase):
             settings=settings,
             **kwargs,
         )
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: cc.driver.Client) -> Backend:
+        """Create an Ibis client from an existing ClickHouse Connect Client instance.
+
+        Parameters
+        ----------
+        con
+            An existing ClickHouse Connect Client instance.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
 
     @property
     def version(self) -> str:
@@ -716,7 +732,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         expression = None
 
         if obj is not None:
-            expression = self._to_sqlglot(obj)
+            expression = self.compiler.to_sqlglot(obj)
             external_tables.update(self._collect_in_memory_tables(obj))
 
         code = sge.Create(
@@ -743,7 +759,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        expression = self._to_sqlglot(obj)
+        expression = self.compiler.to_sqlglot(obj)
         src = sge.Create(
             this=sg.table(name, db=database),
             kind="VIEW",

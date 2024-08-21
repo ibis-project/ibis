@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import abc
 import functools
 import inspect
 import math
@@ -31,6 +30,7 @@ class _UDF(NamedTuple):
 
 _SQLITE_UDF_REGISTRY = {}
 _SQLITE_UDAF_REGISTRY = {}
+UNSET = object()
 
 
 def ignore_nulls(f):
@@ -77,8 +77,8 @@ def udf(func=None, *, skip_if_exists=False, deterministic=True):
     Returns
     -------
     callable
-        A callable object that returns ``None`` if any of its inputs are
-        ``None``.
+        A callable object that returns `None` if any of its inputs are
+        `None`.
 
     """
     if func is None:
@@ -441,14 +441,11 @@ class _ibis_bit_xor(_ibis_bit_agg):
         super().__init__(operator.xor)
 
 
-class _ibis_first_last(abc.ABC):
-    def __init__(self) -> None:
+class _ibis_first_last:
+    def __init__(self):
         self.value = None
 
-    @abc.abstractmethod
-    def step(self, value): ...
-
-    def finalize(self) -> int | None:
+    def finalize(self):
         return self.value
 
 
@@ -460,10 +457,26 @@ class _ibis_first(_ibis_first_last):
 
 
 @udaf
+class _ibis_first_include_null(_ibis_first_last):
+    def __init__(self):
+        self.value = UNSET
+
+    def step(self, value):
+        if self.value is UNSET:
+            self.value = value
+
+
+@udaf
 class _ibis_last(_ibis_first_last):
     def step(self, value):
         if value is not None:
             self.value = value
+
+
+@udaf
+class _ibis_last_include_null(_ibis_first_last):
+    def step(self, value):
+        self.value = value
 
 
 def register_all(con):

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-import pandas as pd
-import pyarrow as pa
-import pyarrow.csv as pcsv
+from operator import methodcaller
+
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -24,23 +23,16 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.formats.pyarrow import PyArrowType
+
+pd = pytest.importorskip("pandas")
+pa = pytest.importorskip("pyarrow")
 
 limit = [
-    param(
-        42,
-        id="limit",
-        # limit not implemented for pandas-family backends
-        marks=[pytest.mark.notimpl(["dask", "pandas"])],
-    ),
+    # limit not implemented for pandas-family backends
+    param(42, id="limit", marks=pytest.mark.notimpl(["dask", "pandas"])),
 ]
 
-no_limit = [
-    param(
-        None,
-        id="nolimit",
-    )
-]
+no_limit = [param(None, id="nolimit")]
 
 limit_no_limit = limit + no_limit
 
@@ -179,7 +171,7 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.broken(
+@pytest.mark.notimpl(
     ["sqlite"],
     raises=pa.ArrowException,
     reason="Test data has empty strings in columns typed as int64",
@@ -217,6 +209,31 @@ def test_table_to_parquet(tmp_path, backend, awards_players):
     awards_players.to_parquet(outparquet)
 
     df = pd.read_parquet(outparquet)
+
+    backend.assert_frame_equal(
+        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+    )
+
+
+def test_table_to_parquet_dir(tmp_path, backend, awards_players):
+    outparquet_dir = tmp_path / "out"
+
+    if backend.name() == "pyspark":
+        # pyspark already writes more than one file
+        awards_players.to_parquet_dir(outparquet_dir)
+    else:
+        # max_ force pyarrow to write more than one parquet file
+        awards_players.to_parquet_dir(
+            outparquet_dir, max_rows_per_file=3000, max_rows_per_group=3000
+        )
+
+    parquet_files = sorted(
+        outparquet_dir.glob("*.parquet"),
+        key=lambda path: int(path.with_suffix("").name.split("-")[1]),
+    )
+
+    df_list = [pd.read_parquet(file) for file in parquet_files]
+    df = pd.concat(df_list).reset_index(drop=True)
 
     backend.assert_frame_equal(
         awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
@@ -330,6 +347,8 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 )
 @pytest.mark.parametrize("delimiter", [";", "\t"], ids=["semicolon", "tab"])
 def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
+    import pyarrow.csv as pcsv
+
     outcsv = tmp_path / "out.csv"
     # avoid pandas NaNonense
     awards_players = awards_players.select("playerID", "awardID", "yearID", "lgID")
@@ -371,6 +390,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
     ],
 )
 def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
+    if backend.name() == "polars":
+        pytest.skip("polars crashes the interpreter")
+
     result = (
         backend.functional_alltypes.limit(1)
         .double_col.cast(dtype)
@@ -421,9 +443,13 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
 
 
 @pytest.mark.notimpl(
-    ["druid"], raises=AttributeError, reason="string type is used for timestamp_col"
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="Invalid SQL generated; druid doesn't know about TIMESTAMPTZ",
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
+    from ibis.formats.pyarrow import PyArrowType
+
     t = alltypes.select(
         tz=alltypes.timestamp_col.cast(
             alltypes.timestamp_col.type().copy(timezone="UTC")
@@ -505,9 +531,8 @@ def test_to_pandas_batches_column(backend, con, n):
     assert sum(map(len, t.to_pandas_batches())) == n
 
 
-@pytest.mark.notimpl(["druid"])
 def test_to_pandas_batches_scalar(backend, con):
-    t = backend.functional_alltypes.timestamp_col.max()
+    t = backend.functional_alltypes.int_col.max()
     expected = t.execute()
 
     result1 = list(con.to_pandas_batches(t))
@@ -540,20 +565,33 @@ def test_table_to_polars(limit, awards_players):
 
 
 @pytest.mark.parametrize("limit", limit_no_limit)
-def test_column_to_polars(limit, awards_players):
-    pl = pytest.importorskip("polars")
-    res = awards_players.awardID.to_polars(limit=limit)
-    assert isinstance(res, pl.Series)
-    if limit is not None:
-        assert len(res) == limit
+@pytest.mark.parametrize(
+    ("output_format", "expected_column_type"),
+    [("pyarrow", "ChunkedArray"), ("polars", "Series")],
+    ids=["pyarrow", "polars"],
+)
+def test_column_to_memory(limit, awards_players, output_format, expected_column_type):
+    mod = pytest.importorskip(output_format)
+    method = methodcaller(f"to_{output_format}", limit=limit)
+    res = method(awards_players.awardID)
+    assert isinstance(res, getattr(mod, expected_column_type))
+    assert (limit is not None and len(res) == limit) or len(
+        res
+    ) == awards_players.count().execute()
 
 
 @pytest.mark.parametrize("limit", no_limit)
-def test_scalar_to_polars(limit, awards_players):
-    pytest.importorskip("polars")
-    scalar = awards_players.yearID.min().to_polars(limit=limit)
-    assert isinstance(scalar, int)
+@pytest.mark.parametrize(
+    ("output_format", "converter"),
+    [("pyarrow", methodcaller("as_py")), ("polars", lambda x: x)],
+    ids=["pyarrow", "polars"],
+)
+def test_scalar_to_memory(limit, awards_players, output_format, converter):
+    pytest.importorskip(output_format)
+    method = methodcaller(f"to_{output_format}", limit=limit)
+    scalar = method(awards_players.yearID.min())
+    assert isinstance(converter(scalar), int)
 
     expr = awards_players.filter(awards_players.awardID == "DEADBEEF").yearID.min()
-    res = expr.to_polars(limit=limit)
-    assert res is None
+    res = method(expr)
+    assert converter(res) is None

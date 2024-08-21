@@ -50,3 +50,9 @@ def test_register_dataset(conn):
     with pytest.warns(FutureWarning, match="v9.1"):
         conn.register(dataset, "my_table")
         assert conn.table("my_table").x.sum().execute() == 6
+
+
+def test_create_table_with_uppercase_name(conn):
+    tab = pa.table({"x": [1, 2, 3]})
+    conn.create_table("MY_TABLE", tab)
+    assert conn.table("MY_TABLE").x.sum().execute() == 6

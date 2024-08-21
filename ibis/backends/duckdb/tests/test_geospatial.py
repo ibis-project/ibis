@@ -184,9 +184,12 @@ def test_geospatial_start_point(lines, lines_gdf):
         param(
             methodcaller("union_all"),
             marks=pytest.mark.xfail(
-                condition=vparse(gpd.__version__) < vparse("1"),
-                raises=AttributeError,
-                reason="union_all doesn't exist",
+                condition=(
+                    vparse(gpd.__version__) < vparse("1")
+                    or vparse(shapely.__version__) >= vparse("2.0.5")
+                ),
+                raises=(AttributeError, AssertionError),
+                reason="union_all doesn't exist; shapely 2.0.5 results in a different value for union_all",
             ),
             id="version>=1",
         ),

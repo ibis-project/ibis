@@ -10,8 +10,10 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
 
 @public
@@ -78,6 +80,8 @@ class First(Filterable, Reduction):
     """Retrieve the first element."""
 
     arg: Column[dt.Any]
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -87,6 +91,8 @@ class Last(Filterable, Reduction):
     """Retrieve the last element."""
 
     arg: Column[dt.Any]
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -344,6 +350,7 @@ class GroupConcat(Filterable, Reduction):
 
     arg: Column
     sep: Value[dt.String]
+    order_by: VarTuple[SortKey] = ()
 
     dtype = dt.string
 
@@ -362,6 +369,8 @@ class ArrayCollect(Filterable, Reduction):
     """Collect values into an array."""
 
     arg: Column
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     @attribute
     def dtype(self):

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 
-from ibis.backends.bigquery.udf.find import find_names
+from ibis.backends.sql.compilers.bigquery.udf.find import find_names
 from ibis.util import is_iterable
 
 
@@ -17,7 +17,7 @@ def parse_stmt(stmt):
 
 
 def eq(left, right):
-    if type(left) != type(right):
+    if type(left) is not type(right):
         return False
 
     if is_iterable(left) and is_iterable(right):

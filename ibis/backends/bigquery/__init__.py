@@ -19,6 +19,7 @@ import sqlglot.expressions as sge
 from pydata_google_auth import cache
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -31,9 +32,7 @@ from ibis.backends.bigquery.client import (
     rename_partitioned_column,
     schema_from_bigquery_table,
 )
-from ibis.backends.bigquery.compiler import BigQueryCompiler
 from ibis.backends.bigquery.datatypes import BigQuerySchema
-from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.datatypes import BigQueryType
 
@@ -150,7 +149,7 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
 
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
-    compiler = BigQueryCompiler()
+    compiler = sc.bigquery.compiler
     supports_in_memory_tables = True
     supports_python_udfs = False
 
@@ -381,27 +380,27 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         auth_cache
             Selects the behavior of the credentials cache.
 
-            ``'default'``
+            `'default'``
                 Reads credentials from disk if available, otherwise
                 authenticates and caches credentials to disk.
 
-            ``'reauth'``
+            `'reauth'``
                 Authenticates and caches credentials to disk.
 
-            ``'none'``
+            `'none'``
                 Authenticates and does **not** cache credentials.
 
-            Defaults to ``'default'``.
+            Defaults to `'default'`.
         partition_column
-            Identifier to use instead of default ``_PARTITIONTIME`` partition
-            column. Defaults to ``'PARTITIONTIME'``.
+            Identifier to use instead of default `_PARTITIONTIME` partition
+            column. Defaults to `'PARTITIONTIME'`.
         client
-            A ``Client`` from the ``google.cloud.bigquery`` package. If not
-            set, one is created using the ``project_id`` and ``credentials``.
+            A `Client` from the `google.cloud.bigquery` package. If not
+            set, one is created using the `project_id` and `credentials`.
         storage_client
-            A ``BigQueryReadClient`` from the
-            ``google.cloud.bigquery_storage_v1`` package. If not set, one is
-            created using the ``project_id`` and ``credentials``.
+            A `BigQueryReadClient` from the
+            `google.cloud.bigquery_storage_v1` package. If not set, one is
+            created using the `project_id` and `credentials`.
         location
             Default location for BigQuery objects.
 
@@ -478,6 +477,37 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         self.partition_column = partition_column
 
+    @util.experimental
+    @classmethod
+    def from_connection(
+        cls,
+        client: bq.Client,
+        partition_column: str | None = "PARTITIONTIME",
+        storage_client: bqstorage.BigQueryReadClient | None = None,
+        dataset_id: str = "",
+    ) -> Backend:
+        """Create a BigQuery `Backend` from an existing `Client`.
+
+        Parameters
+        ----------
+        client
+            A `Client` from the `google.cloud.bigquery` package.
+        partition_column
+            Identifier to use instead of default `_PARTITIONTIME` partition
+            column. Defaults to `'PARTITIONTIME'`.
+        storage_client
+            A `BigQueryReadClient` from the `google.cloud.bigquery_storage_v1`
+            package.
+        dataset_id
+            A dataset id that lives inside of the project attached to `client`.
+        """
+        return ibis.bigquery.connect(
+            client=client,
+            partition_column=partition_column,
+            storage_client=storage_client,
+            dataset_id=dataset_id,
+        )
+
     def disconnect(self) -> None:
         self.client.close()
 
@@ -548,18 +578,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self, name: str, database: str | None = None, schema: str | None = None
     ) -> ir.Table:
         table_loc = self._warn_and_create_table_loc(database, schema)
+        table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
 
-        table = sg.parse_one(name, into=sge.Table, read=self.name)
-
-        # Bigquery, unlike other bcakends, had existing support for specifying
+        # Bigquery, unlike other backends, had existing support for specifying
         # table hierarchy in the table name, e.g. con.table("dataset.table_name")
         # so here we have an extra layer of disambiguation to handle.
 
         # Default `catalog` to None unless we've parsed it out of the database/schema kwargs
         # Raise if there are path specifications in both the name and as a kwarg
-        catalog = None if table_loc is None else table_loc.catalog
+        catalog = table_loc.args["catalog"]  # args access will return None, not ''
         if table.catalog:
-            if table_loc is not None and table_loc.catalog:
+            if table_loc.catalog:
                 raise com.IbisInputError(
                     "Cannot specify catalog both in the table name and as an argument"
                 )
@@ -567,9 +596,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 catalog = table.catalog
 
         # Default `db` to None unless we've parsed it out of the database/schema kwargs
-        db = None if table_loc is None else table_loc.db
+        db = table_loc.args["db"]  # args access will return None, not ''
         if table.db:
-            if table_loc is not None and table_loc.db:
+            if table_loc.db:
                 raise com.IbisInputError(
                     "Cannot specify database both in the table name and as an argument"
                 )
@@ -582,8 +611,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
 
         project, dataset = self._parse_project_and_dataset(database)
-
-        table = sg.parse_one(name, into=sge.Table, read=self.name)
 
         bq_table = self.client.get_table(
             bq.TableReference(
@@ -624,44 +651,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         return BigQuerySchema.to_ibis(job.schema)
 
-    def _to_sqlglot(
-        self,
-        expr: ir.Expr,
-        limit: str | None = None,
-        params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs,
-    ) -> Any:
-        """Compile an Ibis expression.
-
-        Parameters
-        ----------
-        expr
-            Ibis expression
-        limit
-            For expressions yielding result sets; retrieve at most this number
-            of values/rows. Overrides any limit already set on the expression.
-        params
-            Named unbound parameters
-        kwargs
-            Keyword arguments passed to the compiler
-
-        Returns
-        -------
-        Any
-            The output of compilation. The type of this value depends on the
-            backend.
-
-        """
-        self._define_udf_translation_rules(expr)
-        sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-
-        query = sql.transform(
-            _qualify_memtable,
-            dataset=getattr(self._session_dataset, "dataset_id", None),
-            project=getattr(self._session_dataset, "project", None),
-        ).transform(_remove_null_ordering_from_unsupported_window)
-        return query
-
     def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
             bigquery_param(
@@ -695,19 +684,25 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params=None,
+        pretty: bool = True,
+        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
-        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql.sql(self.name, pretty=True))
-
-        sql = ";\n".join([*udf_sources, query.sql(dialect=self.name, pretty=True)])
+        session_dataset = self._session_dataset
+        query = self.compiler.to_sqlglot(
+            expr,
+            limit=limit,
+            params=params,
+            session_dataset_id=getattr(session_dataset, "dataset_id", None),
+            session_project=getattr(session_dataset, "project", None),
+            **kwargs,
+        )
+        queries = query if isinstance(query, list) else [query]
+        sql = ";\n".join(query.sql(self.dialect, pretty=pretty) for query in queries)
         self._log(sql)
         return sql
 
@@ -809,6 +804,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
+        table = table.rename_columns(list(expr.as_table().schema().names))
         return expr.__pyarrow_result__(table)
 
     def to_pyarrow_batches(
@@ -1149,68 +1145,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             force=True,
         )
 
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        name = type(udf_node).__name__
-        type_mapper = self.compiler.udf_type_mapper
-
-        body = PythonToJavaScriptTranslator(udf_node.__func__).compile()
-        config = udf_node.__config__
-        libraries = config.get("libraries", [])
-
-        signature = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
-            )
-            for name, param in udf_node.__signature__.parameters.items()
-        ]
-
-        lines = ['"""']
-
-        if config.get("strict", True):
-            lines.append('"use strict";')
-
-        lines += [
-            body,
-            "",
-            f"return {udf_node.__func_name__}({', '.join(udf_node.argnames)});",
-            '"""',
-        ]
-
-        func = sge.Create(
-            kind="FUNCTION",
-            this=sge.UserDefinedFunction(
-                this=sg.to_identifier(name), expressions=signature, wrapped=True
-            ),
-            # not exactly what I had in mind, but it works
-            #
-            # quoting is too simplistic to handle multiline strings
-            expression=sge.Var(this="\n".join(lines)),
-            exists=False,
-            properties=sge.Properties(
-                expressions=[
-                    sge.TemporaryProperty(),
-                    sge.ReturnsProperty(this=type_mapper.from_ibis(udf_node.dtype)),
-                    sge.StabilityProperty(
-                        this="IMMUTABLE" if config.get("determinism") else "VOLATILE"
-                    ),
-                    sge.LanguageProperty(this=sg.to_identifier("js")),
-                ]
-                + [
-                    sge.Property(
-                        this=sg.to_identifier("library"),
-                        value=self.compiler.f.array(*libraries),
-                    )
-                ]
-                * bool(libraries)
-            ),
-        )
-
-        return func
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        return self._get_udf_source(udf_node)
-
     def _register_udfs(self, expr: ir.Expr) -> None:
         """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""
 
@@ -1289,20 +1223,20 @@ def connect(
     auth_cache
         Selects the behavior of the credentials cache.
 
-        ``'default'``
+        `'default'``
             Reads credentials from disk if available, otherwise
             authenticates and caches credentials to disk.
 
-        ``'reauth'``
+        `'reauth'``
             Authenticates and caches credentials to disk.
 
-        ``'none'``
+        `'none'``
             Authenticates and does **not** cache credentials.
 
-        Defaults to ``'default'``.
+        Defaults to `'default'`.
     partition_column
-        Identifier to use instead of default ``_PARTITIONTIME`` partition
-        column. Defaults to ``'PARTITIONTIME'``.
+        Identifier to use instead of default `_PARTITIONTIME` partition
+        column. Defaults to `'PARTITIONTIME'`.
 
     Returns
     -------

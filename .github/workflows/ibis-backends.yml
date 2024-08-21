@@ -126,7 +126,7 @@ jobs:
             extras:
               - sqlite
           - name: datafusion
-            title: Datafusion
+            title: DataFusion
             extras:
               - datafusion
           - name: polars
@@ -166,7 +166,7 @@ jobs:
             sys-deps:
               - libgeos-dev
           - name: risingwave
-            title: Risingwave
+            title: RisingWave
             serial: true
             services:
               - risingwave
@@ -227,8 +227,8 @@ jobs:
             extras:
               - flink
             additional_deps:
-              - "'apache-flink < 1.20.0'"
-              - "'pandas < 2.2'"
+              - "'apache-flink==1.20.0'"
+              - "'pandas<2.2'"
               - setuptools
             services:
               - flink
@@ -249,8 +249,8 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - "'apache-flink < 1.20.0'"
-                - "'pandas < 2.2'"
+                - "'apache-flink==1.20.0'"
+                - "'pandas<2.2'"
                 - setuptools
               services:
                 - flink
@@ -304,7 +304,7 @@ jobs:
           - os: windows-latest
             backend:
               name: risingwave
-              title: Risingwave
+              title: RisingWave
               serial: true
               services:
                 - risingwave
@@ -400,8 +400,8 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - "'apache-flink < 1.20.0'"
-                - "'pandas < 2.2'"
+                - "'apache-flink==1.20.0'"
+                - "'pandas<2.2'"
                 - setuptools
               services:
                 - flink
@@ -413,8 +413,8 @@ jobs:
               extras:
                 - flink
               additional_deps:
-                - "'apache-flink < 1.20.0'"
-                - "'pandas < 2.2'"
+                - "'apache-flink==1.20.0'"
+                - "'pandas<2.2'"
                 - setuptools
               services:
                 - flink
@@ -480,6 +480,10 @@ jobs:
 
       - name: show installed deps
         run: poetry run pip list
+
+      - name: show version of python-linked sqlite
+        if: matrix.backend.name == 'sqlite'
+        run: poetry run python -c 'import sqlite3; print(sqlite3.sqlite_version)'
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
@@ -680,7 +684,7 @@ jobs:
       matrix:
         include:
           - python-version: "3.10"
-            pyspark-version: "3.3"
+            pyspark-version: "3.3.3"
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
@@ -743,6 +747,11 @@ jobs:
         if: matrix.pyspark-version == '3.5'
         run: poetry run pip install delta-spark
 
+      - name: install iceberg
+        shell: bash
+        if: matrix.pyspark-version == '3.5'
+        run: pushd "$(poetry run python -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")/jars" && curl -LO https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.2/iceberg-spark-runtime-3.5_2.12-1.5.2.jar
+
       - name: run tests
         run: just ci-check -m pyspark
 
@@ -763,6 +772,7 @@ jobs:
     # this job exists so that we can use a single job from this workflow to gate merging
     runs-on: ubuntu-latest
     needs:
+      - test_bigquery_lite
       - test_backends_min_version
       - test_backends
       - test_pyspark

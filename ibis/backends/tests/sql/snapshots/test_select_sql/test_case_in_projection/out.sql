@@ -5,7 +5,7 @@ SELECT
     THEN 'bar'
     WHEN "t0"."g" = 'baz'
     THEN "t0"."g"
-    ELSE CAST(NULL AS TEXT)
+    ELSE NULL
   END AS "col2",
   "t0"."a",
   "t0"."b",

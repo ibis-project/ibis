@@ -31,6 +31,28 @@ if TYPE_CHECKING:
     from ibis.expr.operations.relations import JoinKind
 
 
+def coerce_to_table(data):
+    try:
+        import pandas as pd
+    except ImportError:
+        pass
+    else:
+        if isinstance(data, pd.DataFrame):
+            return ibis.memtable(data)
+
+    try:
+        import pyarrow as pa
+    except ImportError:
+        pass
+    else:
+        if isinstance(data, pa.Table):
+            return ibis.memtable(data)
+
+    if not isinstance(data, Table):
+        raise TypeError(f"right operand must be a Table, got {type(data).__name__}")
+    return data
+
+
 def disambiguate_fields(
     how,
     predicates,
@@ -157,7 +179,11 @@ def prepare_predicates(
         The comparison operation to construct if the input is a pair of
         expression-like objects
     """
-    reverse = {ops.Field(chain, k): v for k, v in chain.values.items()}
+    reverse = {
+        ops.Field(chain, k): v
+        for k, v in chain.values.items()
+        if isinstance(v, ops.Field)
+    }
     deref_right = DerefMap.from_targets(right)
     deref_left = DerefMap.from_targets(chain.tables, extra=reverse)
     deref_both = DerefMap.from_targets([*chain.tables, right], extra=reverse)
@@ -228,16 +254,7 @@ class Join(Table):
         lname: str = "",
         rname: str = "{name}_right",
     ):
-        import pandas as pd
-        import pyarrow as pa
-
-        # TODO(kszucs): factor out to a helper function
-        if isinstance(right, (pd.DataFrame, pa.Table)):
-            right = ibis.memtable(right)
-        elif not isinstance(right, Table):
-            raise TypeError(
-                f"right operand must be a Table, got {type(right).__name__}"
-            )
+        right = coerce_to_table(right)
 
         if how == "left_semi":
             how = "semi"
@@ -252,7 +269,7 @@ class Join(Table):
         # bind and dereference the predicates
         preds = prepare_predicates(chain, right, predicates)
         preds = flatten_predicates(preds)
-        if not preds and how != "cross":
+        if not preds and how not in {"cross", "positional"}:
             # if there are no predicates, default to every row matching unless
             # the join is a cross join, because a cross join already has this
             # behavior

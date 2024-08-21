@@ -6,8 +6,8 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
-# lock dependencies without updating existing versions
-lock:
+# verify poetry version
+check-poetry:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -17,7 +17,28 @@ lock:
         >&2 echo "poetry version must be ${required_version}, got ${version}"
         exit 1
     fi
+
+# lock dependencies without updating existing versions
+lock: check-poetry
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     poetry lock --no-update
+    just export-deps
+
+# update locked dependencies
+update *deps: check-poetry
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    poetry update {{ deps }}
+    just export-deps
+
+# export locked dependencies
+export-deps:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
 
 # show all backends
@@ -156,10 +177,6 @@ view-changelog flags="":
         -- conventional-changelog --config ./.conventionalcommits.js \
         | ([ "{{ flags }}" = "--pretty" ] && glow -p - || cat -)
 
-# run the decouple script to check for prohibited inter-module dependencies
-decouple +args:
-    python ci/check_disallowed_imports.py {{ args }}
-
 # profile something
 profile +args:
     pyinstrument {{ args }}
@@ -171,10 +188,26 @@ docs-apigen *args:
 
 # build documentation
 docs-render:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Check if the folder "reference" exists and has contents
+    if [ ! -d "docs/reference" ] || [ -z "$(ls -A docs/reference)" ]; then
+        just docs-apigen
+    fi
+
     quarto render docs
 
 # preview docs
 docs-preview:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    # Check if the folder "reference" exists and has contents
+    if [ ! -d "docs/reference" ] || [ -z "$(ls -A docs/reference)" ]; then
+        just docs-apigen
+    fi
+
     quarto preview docs
 
 # regen api and preview docs
@@ -200,7 +233,7 @@ build-ibis-for-pyodide:
     git checkout poetry.lock pyproject.toml
     jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
         --arg ibis dist/*.whl \
-        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-0.10.2-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
+        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         > docs/jupyter_lite_config.json
 
 # build the jupyterlite deployment
@@ -213,6 +246,8 @@ build-jupyterlite: build-ibis-for-pyodide
         --debug \
         --no-libarchive \
         --config docs/jupyter_lite_config.json \
+        --apps repl \
+        --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
     # jupyter lite build can copy from the nix store, and preserves the
     # original write bit; without this the next run of this rule will result in

@@ -1,6 +1,6 @@
 SELECT ca_zip,
        ca_city,
-       sum(ws_sales_price)
+       sum(ws_sales_price) total_web_sales
 FROM web_sales,
      customer,
      customer_address,

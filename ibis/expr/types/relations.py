@@ -18,11 +18,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
+from ibis.common.selectors import Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
-from ibis.expr.types.pretty import to_rich
-from ibis.selectors import Selector
+from ibis.expr.types.temporal import TimestampColumn
 from ibis.util import deprecated
 
 if TYPE_CHECKING:
@@ -58,10 +58,10 @@ def _regular_join_method(
     def f(  # noqa: D417
         self: ir.Table,
         right: ir.Table,
-        predicates: str
-        | Sequence[
-            str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue
-        ] = (),
+        predicates: (
+            str
+            | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
+        ) = (),
         *,
         lname: str = "",
         rname: str = "{name}_right",
@@ -76,10 +76,10 @@ def _regular_join_method(
             Boolean or column names to join on
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------
@@ -212,7 +212,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return PolarsData.convert_table(df, self.schema())
 
-    def bind(self, *args, **kwargs):
+    def _fast_bind(self, *args, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
         if len(args) == 1:
             if isinstance(args[0], dict):
@@ -220,7 +220,6 @@ class Table(Expr, _FixedTextJupyterMixin):
                 args = ()
             else:
                 args = util.promote_list(args[0])
-
         # bind positional arguments
         values = []
         for arg in args:
@@ -236,7 +235,28 @@ class Table(Expr, _FixedTextJupyterMixin):
                 )
             (value,) = bindings
             values.append(value.name(key))
+        return values
 
+    def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
+        """Bind column values to a table expression.
+
+        This method handles the binding of every kind of column-like value that
+        Ibis handles, including strings, integers, deferred expressions and
+        selectors, to a table expression.
+
+        Parameters
+        ----------
+        args
+            Column-like values to bind.
+        kwargs
+            Column-like values to bind, with names.
+
+        Returns
+        -------
+        tuple[Value, ...]
+            A tuple of bound values
+        """
+        values = self._fast_bind(*args, **kwargs)
         # dereference the values to `self`
         dm = DerefMap.from_targets(self.op())
         result = []
@@ -508,6 +528,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …        │ … │
         └─────────┴──────────┴───┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_columns=max_columns,
@@ -1216,13 +1238,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
-        ┌───────────────┐
-        │ np.int64(273) │
-        └───────────────┘
+        ┌─────┐
+        │ 273 │
+        └─────┘
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
@@ -1245,7 +1267,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
 
-        The only valid values of `keep` are `"first"`, `"last"` and [`None][None]
+        The only valid values of `keep` are `"first"`, `"last"` and [](`None`).
 
         >>> t.distinct(on="species", keep="second")  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
@@ -1314,7 +1336,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             float between 0 and 1.
         method
             The sampling method to use. The default is "row", which includes
-            each row with a probability of ``fraction``. If method is "block",
+            each row with a probability of `fraction`. If method is "block",
             some backends may instead perform sampling a fraction of blocks of
             rows (where "block" is a backend dependent definition). This is
             identical to "row" for backends lacking a blockwise sampling
@@ -2200,10 +2222,12 @@ class Table(Expr, _FixedTextJupyterMixin):
     )
     def relabel(
         self,
-        substitutions: Mapping[str, str]
-        | Callable[[str], str | None]
-        | str
-        | Literal["snake_case", "ALL_CAPS"],
+        substitutions: (
+            Mapping[str, str]
+            | Callable[[str], str | None]
+            | str
+            | Literal["snake_case", "ALL_CAPS"]
+        ),
     ) -> Table:
         """Deprecated in favor of `Table.rename`."""
         if isinstance(substitutions, Mapping):
@@ -2212,11 +2236,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     def rename(
         self,
-        method: str
-        | Callable[[str], str | None]
-        | Literal["snake_case", "ALL_CAPS"]
-        | Mapping[str, str]
-        | None = None,
+        method: (
+            str
+            | Callable[[str], str | None]
+            | Literal["snake_case", "ALL_CAPS"]
+            | Mapping[str, str]
+            | None
+        ) = None,
         /,
         **substitutions: str,
     ) -> Table:
@@ -2228,16 +2254,16 @@ class Table(Expr, _FixedTextJupyterMixin):
             An optional method for renaming columns. May be one of:
 
             - A format string to use to rename all columns, like
-              ``"prefix_{name}"``.
+              `"prefix_{name}"`.
             - A function from old name to new name. If the function returns
-              ``None`` the old name is used.
-            - The literal strings ``"snake_case"`` or ``"ALL_CAPS"`` to
-              rename all columns using a ``snake_case`` or ``"ALL_CAPS"``
+              `None` the old name is used.
+            - The literal strings `"snake_case"` or `"ALL_CAPS"` to
+              rename all columns using a `snake_case` or `"ALL_CAPS"``
               naming convention respectively.
             - A mapping from new name to old name. Existing columns not present
               in the mapping will passthrough with their original name.
         substitutions
-            Columns to be explicitly renamed, expressed as ``new_name=old_name``
+            Columns to be explicitly renamed, expressed as `new_name=old_name``
             keyword arguments.
 
         Returns
@@ -2272,7 +2298,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────────┴───────────────┴─────────────────────────────────────┘
 
         Rename specific columns by passing keyword arguments like
-        ``new_name="old_name"``
+        `new_name="old_name"``
 
         >>> t.rename(study_name="studyName").head(1)
         ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -2334,22 +2360,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         # A mapping from old_name -> renamed expr
         renamed = {}
 
-        if substitutions:
-            for new_name, old_name in substitutions.items():
-                col = self[old_name]
-                if old_name not in renamed:
-                    renamed[old_name] = col.name(new_name)
-                else:
-                    raise ValueError(
-                        "duplicate new names passed for renaming {old_name!r}"
-                    )
+        for new_name, old_name in substitutions.items():
+            if old_name not in renamed:
+                renamed[old_name] = (new_name, self[old_name].op())
+            else:
+                raise ValueError("duplicate new names passed for renaming {old_name!r}")
 
-        if method is None:
-
-            def rename(c):
-                return None
-
-        elif isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
+        if isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
 
             def rename(c):
                 c = c.strip()
@@ -2387,17 +2404,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             rename = method
 
-        exprs = []
+        exprs = {}
+        fields = self.op().fields
         for c in self.columns:
-            if c in renamed:
-                expr = renamed[c]
+            if (new_name_op := renamed.get(c)) is not None:
+                new_name, op = new_name_op
             else:
-                expr = self[c]
-                if (name := rename(c)) is not None:
-                    expr = expr.name(name)
-            exprs.append(expr)
+                op = fields[c]
+                if rename is None or (new_name := rename(c)) is None:
+                    new_name = c
 
-        return self.select(exprs)
+            exprs[new_name] = op
+
+        return ops.Project(self, exprs).to_expr()
 
     def drop(self, *fields: str | Selector) -> Table:
         """Remove fields from a table.
@@ -2483,9 +2502,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             # no-op if nothing to be dropped
             return self
 
-        columns_to_drop = tuple(
-            map(operator.methodcaller("get_name"), self.bind(*fields))
-        )
+        columns_to_drop = frozenset(map(Expr.get_name, self._fast_bind(*fields)))
         return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
     def filter(
@@ -2591,13 +2608,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ bar    │
         └────────┘
         >>> t.nunique()
-        ┌─────────────┐
-        │ np.int64(2) │
-        └─────────────┘
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> t.nunique(t.a != "foo")
-        ┌─────────────┐
-        │ np.int64(1) │
-        └─────────────┘
+        ┌───┐
+        │ 1 │
+        └───┘
         """
         if where is not None:
             (where,) = bind(self, where)
@@ -2632,13 +2649,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ baz    │
         └────────┘
         >>> t.count()
-        ┌─────────────┐
-        │ np.int64(3) │
-        └─────────────┘
+        ┌───┐
+        │ 3 │
+        └───┘
         >>> t.count(t.a != "foo")
-        ┌─────────────┐
-        │ np.int64(2) │
-        └─────────────┘
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
@@ -2692,17 +2709,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
-        ┌───────────────┐
-        │ np.int64(342) │
-        └───────────────┘
+        ┌─────┐
+        │ 342 │
+        └─────┘
         >>> t.drop_null(how="all").count()  # no rows where all columns are null
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         if subset is not None:
             subset = self.bind(subset)
@@ -3076,17 +3093,19 @@ class Table(Expr, _FixedTextJupyterMixin):
     def join(
         left: Table,
         right: Table,
-        predicates: str
-        | Sequence[
+        predicates: (
             str
-            | ir.BooleanColumn
-            | Literal[True]
-            | Literal[False]
-            | tuple[
-                str | ir.Column | ir.Deferred,
-                str | ir.Column | ir.Deferred,
+            | Sequence[
+                str
+                | ir.BooleanColumn
+                | Literal[True]
+                | Literal[False]
+                | tuple[
+                    str | ir.Column | ir.Deferred,
+                    str | ir.Column | ir.Deferred,
+                ]
             ]
-        ] = (),
+        ) = (),
         how: JoinKind = "inner",
         *,
         lname: str = "",
@@ -3103,13 +3122,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         predicates
             Condition(s) to join on. See examples for details.
         how
-            Join method, e.g. ``"inner"`` or ``"left"``.
+            Join method, e.g. `"inner"` or `"left"`.
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Examples
         --------
@@ -3281,10 +3300,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             Amount of time to look behind when joining
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------
@@ -3316,10 +3335,10 @@ class Table(Expr, _FixedTextJupyterMixin):
             Additional tables to cross join
         lname
             A format string to use to rename overlapping columns in the left
-            table (e.g. ``"left_{name}"``).
+            table (e.g. `"left_{name}"`).
         rname
             A format string to use to rename overlapping columns in the right
-            table (e.g. ``"right_{name}"``).
+            table (e.g. `"right_{name}"`).
 
         Returns
         -------
@@ -3334,9 +3353,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -3371,9 +3390,9 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         from ibis.expr.types.joins import Join
 
@@ -3534,7 +3553,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             name = util.gen_name("sql_query")
             expr = self
 
-        schema = backend._get_sql_string_view_schema(name, expr, query)
+        schema = backend._get_sql_string_view_schema(name=name, table=expr, query=query)
         node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
         return node.to_expr()
 
@@ -3630,9 +3649,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
-        names_transform: Callable[[str], ir.Value]
-        | Mapping[str, Callable[[str], ir.Value]]
-        | None = None,
+        names_transform: (
+            Callable[[str], ir.Value] | Mapping[str, Callable[[str], ir.Value]] | None
+        ) = None,
         values_to: str = "value",
         values_transform: Callable[[ir.Value], ir.Value] | Deferred | None = None,
     ) -> Table:
@@ -3741,7 +3760,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ ABW     │ SP.URB.TOTL │ 2004   │ 42317.0 │
         └─────────┴─────────────┴────────┴─────────┘
 
-        `pivot_longer` has some preprocessing capabiltiies like stripping a prefix and applying
+        `pivot_longer` has some preprocessing capabilities like stripping a prefix and applying
         a function to column names
 
         >>> billboard = ibis.examples.billboard.fetch()
@@ -4325,8 +4344,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     … │        … │        … │        … │
         └───────┴──────────┴──────────┴──────────┘
         """
-        import pandas as pd
-
         import ibis.selectors as s
         from ibis.expr.rewrites import _, p, x
 
@@ -4348,23 +4365,25 @@ class Table(Expr, _FixedTextJupyterMixin):
         if names is None:
             # no names provided, compute them from the data
             names = self.select(names_from).distinct().execute()
+            columns = names.columns.tolist()
+            names = list(names.itertuples(index=False))
         else:
             if not (columns := [col.get_name() for col in names_from.expand(self)]):
                 raise com.IbisInputError(
                     f"No matching names columns in `names_from`: {orig_names_from}"
                 )
-            names = pd.DataFrame(list(map(util.promote_list, names)), columns=columns)
+            names = list(map(tuple, map(util.promote_list, names)))
 
         if names_sort:
-            names = names.sort_values(by=names.columns.tolist())
+            names.sort()
 
         values_cols = values_from.expand(self)
         more_than_one_value = len(values_cols) > 1
         aggs = {}
 
-        names_cols_exprs = [self[col] for col in names.columns]
+        names_cols_exprs = [self[col] for col in columns]
 
-        for keys in names.itertuples(index=False):
+        for keys in names:
             where = ibis.and_(*map(operator.eq, names_cols_exprs, keys))
 
             for values_col in values_cols:
@@ -4555,8 +4574,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ a      │ a      │     1 │     1 │
         └────────┴────────┴───────┴───────┘
         """
-        import ibis.selectors as s
-
         if not columns and before is None and after is None and not kwargs:
             raise com.IbisInputError(
                 "At least one selector or `before` or `after` must be provided"
@@ -4566,63 +4583,81 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.IbisInputError("Cannot specify both `before` and `after`")
 
         sels = {}
-        table_columns = self.columns
 
-        for name, sel in itertools.chain(
-            zip(itertools.repeat(None), map(s._to_selector, columns)),
-            zip(kwargs.keys(), map(s._to_selector, kwargs.values())),
+        schema = self.schema()
+        positions = schema._name_locs
+
+        for new_name, expr in itertools.zip_longest(
+            kwargs.keys(), self._fast_bind(*kwargs.values(), *columns)
         ):
-            for pos in sel.positions(self):
-                renamed = name is not None
-                if pos in sels and renamed:
-                    # **only when renaming**: make sure the last duplicate
-                    # column wins by reinserting the position if it already
-                    # exists
-                    del sels[pos]
-                sels[pos] = name if renamed else table_columns[pos]
+            expr_name = expr.get_name()
+            pos = positions[expr_name]
+            renamed = new_name is not None
+            if renamed and pos in sels:
+                # **only when renaming**: make sure the last duplicate
+                # column wins by reinserting the position if it already
+                # exists
+                #
+                # to do that, we first delete the existing one, which causes
+                # the subsequent insertion to be at the end
+                del sels[pos]
+            sels[pos] = new_name if renamed else expr_name
 
-        ncols = len(table_columns)
+        ncols = len(schema)
 
         if before is not None:
-            where = min(s._to_selector(before).positions(self), default=0)
+            where = min(
+                (positions[expr.get_name()] for expr in self._fast_bind(before)),
+                default=0,
+            )
         elif after is not None:
-            where = max(s._to_selector(after).positions(self), default=ncols - 1) + 1
+            where = (
+                max(
+                    (positions[expr.get_name()] for expr in self._fast_bind(after)),
+                    default=ncols - 1,
+                )
+                + 1
+            )
         else:
             assert before is None and after is None
             where = 0
 
-        # all columns that should come BEFORE the matched selectors
-        front = [self[left] for left in range(where) if left not in sels]
+        columns = schema.names
 
-        # all columns that should come AFTER the matched selectors
-        back = [self[right] for right in range(where, ncols) if right not in sels]
+        fields = self.op().fields
+
+        # all columns that should come BEFORE the matched selectors
+        exprs = {
+            name: fields[name]
+            for name in (columns[left] for left in range(where) if left not in sels)
+        }
 
         # selected columns
-        middle = [self[i].name(name) for i, name in sels.items()]
+        exprs.update((name, fields[columns[i]]) for i, name in sels.items())
 
-        relocated = self.select(*front, *middle, *back)
+        # all columns that should come AFTER the matched selectors
+        exprs.update(
+            (name, fields[name])
+            for name in (
+                columns[right] for right in range(where, ncols) if right not in sels
+            )
+        )
 
-        assert len(relocated.columns) == ncols
+        return ops.Project(self, exprs).to_expr()
 
-        return relocated
-
-    def window_by(self, time_col: ir.Value) -> WindowedTable:
-        """Create a windowing table-valued function (TVF) expression.
-
-        Windowing table-valued functions (TVF) assign rows of a table to windows
-        based on a time attribute column in the table.
-
-        Parameters
-        ----------
-        time_col
-            Column of the table that will be mapped to windows.
-
-        Returns
-        -------
-        WindowedTable
-            WindowedTable expression.
-        """
+    def window_by(
+        self,
+        time_col: str | ir.Value,
+    ) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
+
+        time_col = next(iter(self.bind(time_col)))
+
+        # validate time_col is a timestamp column
+        if not isinstance(time_col, TimestampColumn):
+            raise com.IbisInputError(
+                f"`time_col` must be a timestamp column, got {time_col.type()}"
+            )
 
         return WindowedTable(self, time_col)
 

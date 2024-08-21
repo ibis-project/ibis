@@ -14,14 +14,14 @@ import sqlglot.expressions as sge
 import trino
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
-from ibis.backends.trino.compiler import TrinoCompiler
+from ibis.backends.sql.compilers.base import AlterTable, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     name = "trino"
-    compiler = TrinoCompiler()
+    compiler = sc.trino.compiler
     supports_create_or_replace = False
     supports_temporary_tables = False
 
@@ -139,20 +139,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             Ibis schema
 
         """
-        conditions = [sg.column("table_name").eq(sge.convert(table_name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
-
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                sg.column("is_nullable").eq(sge.convert("YES")).as_("nullable"),
+                C.column_name,
+                C.data_type,
+                C.is_nullable.eq(sge.convert("YES")).as_("nullable"),
             )
             .from_(sg.table("columns", db="information_schema", catalog=catalog))
-            .where(sg.and_(*conditions))
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(table_name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -162,9 +160,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             fqn = sg.table(table_name, db=database, catalog=catalog).sql(self.name)
             raise com.IbisError(f"Table not found: {fqn}")
 
+        type_mapper = self.compiler.type_mapper
+
         return sch.Schema(
             {
-                name: self.compiler.type_mapper.from_string(typ, nullable=nullable)
+                name: type_mapper.from_string(typ, nullable=nullable)
                 for name, typ, nullable in meta
             }
         )
@@ -236,7 +236,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         query = "SHOW TABLES"
 
-        if table_loc is not None:
+        if table_loc.catalog or table_loc.db:
             table_loc = table_loc.sql(dialect=self.dialect)
             query += f" IN {table_loc}"
 
@@ -325,6 +325,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             **kwargs,
         )
 
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: trino.dbapi.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a Trino database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a Trino database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name(f"{self.name}_metadata")
         with self.begin() as cur:
@@ -400,7 +415,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             The schema of the table to create; optional, but one of `obj` or
             `schema` must be specified
         database
-            Not yet implemented.
+            The database to insert the table into.
+            If not provided, the current database is used.
+            You can provide a single database name, like `"mydb"`. For
+            multi-level hierarchies, you can pass in a dotted string path like
+            `"catalog.database"` or a tuple of strings like `("catalog",
+            "database")`.
         temp
             This parameter is not yet supported in the Trino backend, because
             Trino doesn't implement temporary tables
@@ -421,13 +441,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 "Temporary tables are not supported in the Trino backend"
             )
 
+        table_loc = self._to_sqlglot_table(database)
+        catalog, db = self._to_catalog_db_tuple(table_loc)
+
         quoted = self.compiler.quoted
-        orig_table_ref = sg.to_identifier(name, quoted=quoted)
+        orig_table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if overwrite:
             name = util.gen_name(f"{self.name}_overwrite")
 
-        table_ref = sg.table(name, catalog=database, quoted=quoted)
+        table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if schema is not None and obj is None:
             column_defs = [
@@ -475,7 +498,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     )
                     for name, typ in (schema or table.schema()).items()
                 )
-            ).from_(self._to_sqlglot(table).subquery())
+            ).from_(self.compiler.to_sqlglot(table).subquery())
         else:
             select = None
 
@@ -499,7 +522,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
                 # rename the new table to the original table name
                 cur.execute(
-                    sge.AlterTable(
+                    AlterTable(
                         this=table_ref,
                         exists=True,
                         actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
@@ -509,7 +532,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         if temp_memtable_view is not None:
             self.drop_table(temp_memtable_view)
 
-        return self.table(orig_table_ref.name)
+        return self.table(orig_table_ref.name, database=(catalog, db))
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd

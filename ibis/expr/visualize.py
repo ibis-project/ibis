@@ -42,6 +42,11 @@ def get_type(node):
             for right_column, type in right_schema.items()
         ]
         schema = ibis.schema(pairs)
+    else:
+        # Simple relations have the same schema as their parent so avoid
+        # re-rendering the same schema fields for these relations
+        if isinstance(node, ops.relations.Simple):
+            return '<BR ALIGN="LEFT" />:: …'
 
     return '<BR ALIGN="LEFT" />' + '<BR ALIGN="LEFT" />'.join(
         f"<I>{escape(name)}</I>: {escape(str(type))}"
@@ -229,6 +234,7 @@ if __name__ == "__main__":
         .group_by(_.c)
         .having(_.a.mean() > 0.0)
         .aggregate(a_mean=_.a.mean(), b_sum=_.b.sum())
+        .order_by(_.a_mean)
         .mutate(
             arrays=ibis.array([1, 2, 3]),
             maps=ibis.map({"a": 1, "b": 2}),

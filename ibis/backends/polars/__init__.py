@@ -71,8 +71,8 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, _schema: sch.Schema | None = None) -> ir.Table:
-        schema = PolarsSchema.to_ibis(self._tables[name].schema)
+    def table(self, name: str) -> ir.Table:
+        schema = sch.infer(self._tables[name])
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     @deprecated(
@@ -198,7 +198,7 @@ class Backend(BaseBackend, NoUrl):
             table = pl.scan_csv(source_list, **kwargs)
             # triggers a schema computation to handle compressed csv inference
             # and raise a compute error
-            table.schema  # noqa: B018
+            table.collect_schema()
         except pl.exceptions.ComputeError:
             # handles compressed csvs
             table = pl.read_csv(source_list, **kwargs)
@@ -449,21 +449,17 @@ class Backend(BaseBackend, NoUrl):
 
         return translate(node, ctx=self._context)
 
-    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        import sqlglot as sg
+    def _get_sql_string_view_schema(
+        self, *, name: str, table: ir.Table, query: str
+    ) -> sch.Schema:
+        from ibis.backends.sql.compilers.postgres import compiler
 
-        cte = sg.parse_one(str(ibis.to_sql(table, dialect="postgres")), read="postgres")
-        parsed = sg.parse_one(query, read=self.dialect)
-        parsed.args["with"] = cte.args.pop("with", [])
-        parsed = parsed.with_(
-            sg.to_identifier(name, quoted=True), as_=cte, dialect=self.dialect
-        )
-
-        sql = parsed.sql(self.dialect)
+        sql = compiler.add_query_to_expr(name=name, table=table, query=query)
         return self._get_schema_using_query(sql)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        return PolarsSchema.to_ibis(self._context.execute(query, eager=False).schema)
+        lazy_frame = self._context.execute(query, eager=False)
+        return sch.infer(lazy_frame)
 
     def _to_dataframe(
         self,
@@ -477,10 +473,8 @@ class Backend(BaseBackend, NoUrl):
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
-            df = lf.fetch(limit, streaming=streaming)
-        else:
-            df = lf.collect(streaming=streaming)
-        return df
+            lf = lf.limit(limit)
+        return lf.collect(streaming=streaming)
 
     def execute(
         self,
@@ -497,11 +491,15 @@ class Backend(BaseBackend, NoUrl):
             return expr.__pandas_result__(df.to_pandas())
         else:
             assert isinstance(expr, ir.Column), type(expr)
-            if expr.type().is_temporal():
+
+            dtype = expr.type()
+            if dtype.is_temporal():
                 return expr.__pandas_result__(df.to_pandas())
             else:
+                from ibis.formats.pandas import PandasData
+
                 # note: skip frame-construction overhead
-                return df.to_series().to_pandas()
+                return PandasData.convert_column(df.to_series().to_pandas(), dtype)
 
     def to_polars(
         self,

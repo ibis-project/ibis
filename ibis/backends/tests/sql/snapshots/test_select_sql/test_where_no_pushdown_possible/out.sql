@@ -12,4 +12,4 @@ FROM (
     ON "t2"."foo_id" = "t3"."foo_id"
 ) AS "t4"
 WHERE
-  "t4"."diff" > CAST(1 AS TINYINT)
+  "t4"."diff" > 1

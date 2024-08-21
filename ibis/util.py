@@ -10,6 +10,7 @@ import importlib.metadata
 import itertools
 import operator
 import os
+import re
 import sys
 import textwrap
 import types
@@ -150,7 +151,7 @@ def is_function(v: Any) -> bool:
 
 
 def log(msg: str) -> None:
-    """Log `msg` using ``options.verbose_log`` if set, otherwise ``print``."""
+    """Log `msg` using `options.verbose_log` if set, otherwise `print`."""
     from ibis.config import options
 
     if options.verbose:
@@ -171,7 +172,7 @@ def approx_equal(a: Real, b: Real, eps: Real):
 def safe_index(elements: Sequence[int], value: int) -> int:
     """Find the location of `value` in `elements`.
 
-    Return -1 if `value` is not found instead of raising ``ValueError``.
+    Return -1 if `value` is not found instead of raising `ValueError`.
 
     Parameters
     ----------
@@ -499,9 +500,7 @@ def normalize_filename(source: str | Path) -> str:
         source = source.removeprefix(f"{prefix}://")
 
     def _absolufy_paths(name):
-        if not name.startswith(
-            ("http", "s3", "az", "abfs", "abfss", "adl", "gs", "gcs", "azure")
-        ):
+        if re.search(r"^(?:.+)://", name) is None:
             return os.path.abspath(name)
         return name
 

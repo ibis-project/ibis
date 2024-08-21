@@ -11,12 +11,12 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
 import oracledb
 import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -24,9 +24,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanListDatabase, CanListSchema
-from ibis.backends.oracle.compiler import OracleCompiler
-from ibis.backends.sql import STAR, SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
@@ -79,7 +78,7 @@ def metadata_row_to_type(
 
 class Backend(SQLBackend, CanListDatabase, CanListSchema):
     name = "oracle"
-    compiler = OracleCompiler()
+    compiler = sc.oracle.compiler
 
     @cached_property
     def version(self):
@@ -154,6 +153,25 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         # https://python-oracledb.readthedocs.io/en/latest/user_guide/appendix_b.html#statement-caching-in-thin-and-thick-modes
         self.con = oracledb.connect(dsn, user=user, password=password, stmtcachesize=0)
 
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: oracledb.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to an Oracle database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to an Oracle database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
         # turn on autocommit
         # TODO: it would be great if this worked but it doesn't seem to do the trick
         # I had to hack in the commit lines to the compiler
@@ -167,6 +185,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             user=url.username,
             password=unquote_plus(url.password) if url.password is not None else None,
             database=url.path.removeprefix("/"),
+            port=url.port,
             **kwargs,
         )
 
@@ -400,7 +419,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -514,7 +533,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(self.name)
 
-            data = op.data.to_frame().replace({np.nan: None})
+            data = op.data.to_frame().replace(float("nan"), None)
             insert_stmt = self._build_insert_template(
                 name, schema=schema, placeholder=":{i:d}"
             )

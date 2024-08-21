@@ -148,7 +148,7 @@ class Simple(Relation):
 @public
 class DropColumns(Relation):
     parent: Relation
-    columns_to_drop: VarTuple[str]
+    columns_to_drop: frozenset[str]
 
     @attribute
     def schema(self):
@@ -205,6 +205,7 @@ JoinKind = Literal[
     "any_inner",
     "any_left",
     "cross",
+    "positional",
 ]
 
 
@@ -269,13 +270,16 @@ class Filter(Simple):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
-        from ibis.expr.rewrites import ReductionLike
+        from ibis.expr.rewrites import ReductionLike, p
 
         for pred in predicates:
-            if pred.find(ReductionLike, filter=Value):
+            # bare reductions that are not window functions are not allowed
+            if pred.find(ReductionLike, filter=Value) and not pred.find(
+                p.WindowFunction, filter=Value
+            ):
                 raise IntegrityError(
                     f"Cannot add {pred!r} to filter, it is a reduction which "
-                    "must be converted to a scalar subquery first"
+                    "must be converted to a scalar subquery or window function first"
                 )
             if pred.relations and parent not in pred.relations:
                 raise IntegrityError(
@@ -489,12 +493,17 @@ class Distinct(Simple):
 
 
 @public
-class TableUnnest(Simple):
+class TableUnnest(Relation):
     """Cross join unnest operation."""
 
+    parent: Relation
     column: Value[dt.Array]
     offset: typing.Union[str, None]
     keep_empty: bool
+
+    @attribute
+    def values(self):
+        return self.parent.fields
 
     @attribute
     def schema(self):

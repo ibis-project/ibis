@@ -14,8 +14,7 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
-from ibis.expr.types.pretty import to_rich
-from ibis.util import deprecated, warn_deprecated
+from ibis.util import deprecated, promote_list, warn_deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -353,7 +352,7 @@ class Value(Expr):
         Different backends have different names for their native types
 
         >>> ibis.duckdb.connect().execute(ibis.literal(5.4).typeof())
-        'DOUBLE'
+        'DECIMAL(2,1)'
         >>> ibis.sqlite.connect().execute(ibis.literal(5.4).typeof())
         'real'
         """
@@ -1017,7 +1016,12 @@ class Value(Expr):
             builder = builder.when(case, result)
         return builder.else_(default).end()
 
-    def collect(self, where: ir.BooleanValue | None = None) -> ir.ArrayScalar:
+    def collect(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
         This function is called `array_agg`, `list_agg`, or `list` in other systems.
@@ -1025,7 +1029,15 @@ class Value(Expr):
         Parameters
         ----------
         where
-            Filter to apply before aggregation
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Returns
         -------
@@ -1082,7 +1094,12 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.ArrayCollect(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1106,9 +1123,9 @@ class Value(Expr):
         >>> one = ibis.literal(1)
         >>> two = ibis.literal(2)
         >>> two.identical_to(one + one)
-        ┌──────────┐
-        │ np.True_ │
-        └──────────┘
+        ┌──────┐
+        │ True │
+        └──────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -1119,15 +1136,21 @@ class Value(Expr):
         self,
         sep: str = ",",
         where: ir.BooleanValue | None = None,
+        order_by: Any = None,
     ) -> ir.StringScalar:
         """Concatenate values using the indicated separator to produce a string.
 
         Parameters
         ----------
         sep
-            Separator will be used to join strings
+            The separator to use to join strings.
         where
-            Filter expression
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
 
         Returns
         -------
@@ -1152,22 +1175,25 @@ class Value(Expr):
         │           36.7 │          19.3 │
         └────────────────┴───────────────┘
         >>> t.bill_length_mm.group_concat()
-        ┌───────────────────────┐
-        │ '39.1,39.5,40.3,36.7' │
-        └───────────────────────┘
+        ┌─────────────────────┐
+        │ 39.1,39.5,40.3,36.7 │
+        └─────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ")
-        ┌──────────────────────────┐
-        │ '39.1: 39.5: 40.3: 36.7' │
-        └──────────────────────────┘
+        ┌────────────────────────┐
+        │ 39.1: 39.5: 40.3: 36.7 │
+        └────────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ", where=t.bill_depth_mm > 18)
-        ┌──────────────┐
-        │ '39.1: 36.7' │
-        └──────────────┘
+        ┌────────────┐
+        │ 39.1: 36.7 │
+        └────────────┘
         """
         return ops.GroupConcat(
-            self, sep=sep, where=self._bind_to_parent_table(where)
+            self,
+            sep=sep,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
         ).to_expr()
 
     def __hash__(self) -> int:
@@ -1399,6 +1425,8 @@ class Column(Value, _FixedTextJupyterMixin):
         │ …      │
         └────────┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_rows=max_rows,
@@ -1507,6 +1535,11 @@ class Column(Value, _FixedTextJupyterMixin):
                 "base table references to a projection"
             )
 
+    def _bind_order_by(self, value) -> tuple[ops.SortKey, ...]:
+        if value is None:
+            return ()
+        return tuple(self._bind_to_parent_table(v) for v in promote_list(value))
+
     def _bind_to_parent_table(self, value) -> Value | None:
         """Bind an expr to the parent table of `self`."""
         if value is None:
@@ -1539,10 +1572,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def __deferred_repr__(self):
         return f"<column[{self.type()}]>"
 
-    def approx_nunique(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> ir.IntegerScalar:
+    def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
         ::: {.callout-note}
@@ -1572,22 +1602,19 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
-        ┌──────────────┐
-        │ np.int64(94) │
-        └──────────────┘
+        ┌────┐
+        │ 94 │
+        └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
-        ┌──────────────┐
-        │ np.int64(55) │
-        └──────────────┘
+        ┌────┐
+        │ 55 │
+        └────┘
         """
         return ops.ApproxCountDistinct(
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def approx_median(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> Scalar:
+    def approx_median(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Return an approximate of the median of `self`.
 
         ::: {.callout-note}
@@ -1617,13 +1644,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        ┌────────────────┐
-        │ np.int64(4030) │
-        └────────────────┘
+        ┌──────┐
+        │ 4030 │
+        └──────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        ┌────────────────┐
-        │ np.int64(3700) │
-        └────────────────┘
+        ┌──────┐
+        │ 3700 │
+        └──────┘
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1646,13 +1673,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
-        ┌────────────────┐
-        │ np.int64(3800) │
-        └────────────────┘
+        ┌──────┐
+        │ 3800 │
+        └──────┘
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
-        ┌────────────────┐
-        │ np.int64(5550) │
-        └────────────────┘
+        ┌──────┐
+        │ 5550 │
+        └──────┘
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1675,13 +1702,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.max()
-        ┌────────────────┐
-        │ np.int64(6300) │
-        └────────────────┘
+        ┌──────┐
+        │ 6300 │
+        └──────┘
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
-        ┌────────────────┐
-        │ np.int64(4800) │
-        └────────────────┘
+        ┌──────┐
+        │ 4800 │
+        └──────┘
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1704,13 +1731,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.min()
-        ┌────────────────┐
-        │ np.int64(2700) │
-        └────────────────┘
+        ┌──────┐
+        │ 2700 │
+        └──────┘
         >>> t.body_mass_g.min(where=t.species == "Adelie")
-        ┌────────────────┐
-        │ np.int64(2850) │
-        └────────────────┘
+        ┌──────┐
+        │ 2850 │
+        └──────┘
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1735,16 +1762,18 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmax(t.body_mass_g)
-        ┌──────────┐
-        │ 'Gentoo' │
-        └──────────┘
+        ┌────────┐
+        │ Gentoo │
+        └────────┘
         >>> t.species.argmax(t.body_mass_g, where=t.island == "Dream")
-        ┌─────────────┐
-        │ 'Chinstrap' │
-        └─────────────┘
+        ┌───────────┐
+        │ Chinstrap │
+        └───────────┘
         """
         return ops.ArgMax(
-            self, key=key, where=self._bind_to_parent_table(where)
+            self,
+            key=self._bind_to_parent_table(key),
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1768,17 +1797,19 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmin(t.body_mass_g)
-        ┌─────────────┐
-        │ 'Chinstrap' │
-        └─────────────┘
+        ┌───────────┐
+        │ Chinstrap │
+        └───────────┘
 
         >>> t.species.argmin(t.body_mass_g, where=t.island == "Biscoe")
-        ┌──────────┐
-        │ 'Adelie' │
-        └──────────┘
+        ┌────────┐
+        │ Adelie │
+        └────────┘
         """
         return ops.ArgMin(
-            self, key=key, where=self._bind_to_parent_table(where)
+            self,
+            key=self._bind_to_parent_table(key),
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def median(self, where: ir.BooleanValue | None = None) -> Scalar:
@@ -1804,9 +1835,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the median of `bill_depth_mm`
 
         >>> t.bill_depth_mm.median()
-        ┌──────────────────┐
-        │ np.float64(17.3) │
-        └──────────────────┘
+        ┌──────┐
+        │ 17.3 │
+        └──────┘
         >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
         ...     ibis.desc("median_bill_depth")
         ... )
@@ -1870,9 +1901,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the 99th percentile of `bill_depth`
 
         >>> t.bill_depth_mm.quantile(0.99)
-        ┌──────────────────┐
-        │ np.float64(21.1) │
-        └──────────────────┘
+        ┌──────┐
+        │ 21.1 │
+        └──────┘
         >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
         ...     ibis.desc("p99_bill_depth")
         ... )
@@ -1929,23 +1960,19 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.nunique()
-        ┌──────────────┐
-        │ np.int64(94) │
-        └──────────────┘
+        ┌────┐
+        │ 94 │
+        └────┘
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
-        ┌──────────────┐
-        │ np.int64(55) │
-        └──────────────┘
+        ┌────┐
+        │ 55 │
+        └────┘
         """
         return ops.CountDistinct(
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def topk(
-        self,
-        k: int,
-        by: ir.Value | None = None,
-    ) -> ir.Table:
+    def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
         """Return a "top k" expression.
 
         Parameters
@@ -1996,6 +2023,31 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Scalar
             An expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 2], "b": list("aaa"), "c": [4.0, 4.1, 4.2]})
+        >>> t
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ a     ┃ b      ┃ c       ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string │ float64 │
+        ├───────┼────────┼─────────┤
+        │     1 │ a      │     4.0 │
+        │     2 │ a      │     4.1 │
+        │     2 │ a      │     4.2 │
+        └───────┴────────┴─────────┘
+        >>> t.group_by("a").agg(arb=t.b.arbitrary(), c=t.c.sum()).order_by("a")
+        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ a     ┃ arb    ┃ c       ┃
+        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string │ float64 │
+        ├───────┼────────┼─────────┤
+        │     1 │ a      │     4.0 │
+        │     2 │ a      │     8.3 │
+        └───────┴────────┴─────────┘
         """
         if how is not None:
             warn_deprecated(
@@ -2064,8 +2116,26 @@ class Column(Value, _FixedTextJupyterMixin):
         metric = _.count().name(f"{name}_count")
         return self.as_table().group_by(name).aggregate(metric)
 
-    def first(self, where: ir.BooleanValue | None = None) -> Value:
+    def first(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> Value:
         """Return the first value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `first` is undefined
+            and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2084,18 +2154,41 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.first()
-        ┌─────┐
-        │ 'a' │
-        └─────┘
+        ┌───┐
+        │ a │
+        └───┘
         >>> t.chars.first(where=t.chars != "a")
-        ┌─────┐
-        │ 'b' │
-        └─────┘
+        ┌───┐
+        │ b │
+        └───┘
         """
-        return ops.First(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.First(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
-    def last(self, where: ir.BooleanValue | None = None) -> Value:
+    def last(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> Value:
         """Return the last value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `last` is undefined
+            and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2114,15 +2207,20 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.last()
-        ┌─────┐
-        │ 'd' │
-        └─────┘
+        ┌───┐
+        │ d │
+        └───┘
         >>> t.chars.last(where=t.chars != "d")
-        ┌─────┐
-        │ 'c' │
-        └─────┘
+        ┌───┐
+        │ c │
+        └───┘
         """
-        return ops.Last(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.Last(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.
@@ -2318,9 +2416,9 @@ def null(type: dt.DataType | str | None = None) -> Value:
     │ None │
     └──────┘
     >>> ibis.null(str).upper().isnull()
-    ┌──────────┐
-    │ np.True_ │
-    └──────────┘
+    ┌──────┐
+    │ True │
+    └──────┘
     """
     if type is None:
         type = dt.null

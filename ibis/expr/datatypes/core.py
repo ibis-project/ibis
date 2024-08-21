@@ -612,6 +612,9 @@ class Timestamp(Temporal, Parametric):
         elif unit == TimestampUnit.NANOSECOND:
             scale = 9
         else:
+            # TODO: remove raise path as it's never triggered
+            # Timestamp op has a restriction that only the literal
+            # ints from 0 through 9 can be passed as scale
             raise ValueError(f"Invalid unit {unit}")
         return cls(scale=scale, timezone=timezone, nullable=nullable)
 
@@ -627,6 +630,9 @@ class Timestamp(Temporal, Parametric):
         elif 7 <= self.scale <= 9:
             return TimestampUnit.NANOSECOND
         else:
+            # TODO: remove raise path as it's never triggered
+            # TimestampUnit, which is a (child of) Enum
+            # so it'll raise in the Enum class constructor instead
             raise ValueError(f"Invalid scale {self.scale}")
 
     @property
@@ -930,12 +936,19 @@ class JSON(Variadic):
     scalar = "JSONScalar"
     column = "JSONColumn"
 
+    binary: bool = False
+    """True if JSON is stored as binary, e.g., JSONB in PostgreSQL."""
+
+    @property
+    def _pretty_piece(self) -> str:
+        return "b" * self.binary
+
 
 @public
 class GeoSpatial(DataType):
     """Geospatial values."""
 
-    geotype: Optional[Literal["geography", "geometry"]] = None
+    geotype: Literal["geography", "geometry"] = "geometry"
     """The specific geospatial type."""
 
     srid: Optional[int] = None
@@ -1060,7 +1073,8 @@ multilinestring = MultiLineString()
 multipoint = MultiPoint()
 multipolygon = MultiPolygon()
 # json
-json = JSON()
+json = JSON(binary=False)
+jsonb = JSON(binary=True)
 # special string based data type
 uuid = UUID()
 macaddr = MACADDR()
@@ -1101,6 +1115,7 @@ public(
     multipoint=multipoint,
     multipolygon=multipolygon,
     json=json,
+    jsonb=jsonb,
     uuid=uuid,
     macaddr=macaddr,
     inet=inet,

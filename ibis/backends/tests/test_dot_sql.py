@@ -3,10 +3,9 @@ from __future__ import annotations
 import contextlib
 import getpass
 
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import sqlglot as sg
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
@@ -15,12 +14,10 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
-from ibis.backends.tests.errors import (
-    ExaQueryError,
-    GoogleBadRequest,
-    OracleDatabaseError,
-    PolarsComputeError,
-)
+from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
+
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 dot_sql_never = pytest.mark.never(
     ["dask", "pandas"], reason="dask and pandas do not accept SQL"
@@ -28,11 +25,21 @@ dot_sql_never = pytest.mark.never(
 
 _NAMES = {
     "bigquery": f"ibis_gbq_testing_{getpass.getuser()}_{PYTHON_SHORT_VERSION}.functional_alltypes",
-    "exasol": '"functional_alltypes"',
 }
 
 
-@pytest.mark.notyet(["oracle"], reason="table quoting behavior")
+@pytest.fixture(scope="module")
+def ftname_raw(con):
+    return _NAMES.get(con.name, "functional_alltypes")
+
+
+@pytest.fixture(scope="module")
+def ftname(con, ftname_raw):
+    table = sg.parse_one(ftname_raw, into=sge.Table)
+    table = sg.table(table.name, db=table.db, catalog=table.catalog, quoted=True)
+    return table.sql(con.dialect)
+
+
 @dot_sql_never
 @pytest.mark.parametrize(
     "schema",
@@ -41,10 +48,9 @@ _NAMES = {
         param({"s": "string", "new_col": "double"}, id="explicit_schema"),
     ],
 )
-def test_con_dot_sql(backend, con, schema):
+def test_con_dot_sql(backend, con, schema, ftname):
     alltypes = backend.functional_alltypes
     # pull out the quoted name
-    name = _NAMES.get(con.name, "functional_alltypes")
     quoted = True
     cols = [
         sg.column("string_col", quoted=quoted).as_("s", quoted=quoted).sql(con.dialect),
@@ -54,7 +60,7 @@ def test_con_dot_sql(backend, con, schema):
     ]
     t = (
         con.sql(
-            f"SELECT {', '.join(cols)} FROM {name}",
+            f"SELECT {', '.join(cols)} FROM {ftname}",
             schema=schema,
         )
         .group_by("s")  # group by a column from SQL
@@ -119,11 +125,6 @@ def test_table_dot_sql(backend):
 
 
 @dot_sql_never
-@pytest.mark.notyet(
-    ["polars"],
-    raises=PolarsComputeError,
-    reason="polars doesn't support aliased tables",
-)
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
@@ -269,11 +270,6 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
 
 @dot_sql_never
 @pytest.mark.notimpl(["druid", "polars"])
-@pytest.mark.notimpl(
-    ["exasol"],
-    raises=ExaQueryError,
-    reason="loading the test data is a pain because of embedded commas",
-)
 def test_order_by_no_projection(backend):
     con = backend.connection
     expr = (
@@ -287,7 +283,6 @@ def test_order_by_no_projection(backend):
 
 
 @dot_sql_never
-@pytest.mark.notyet(["polars"], raises=PolarsComputeError)
 def test_dot_sql_limit(con):
     expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb").limit(1)
     result = expr.execute()
@@ -340,9 +335,16 @@ def test_cte(alltypes, df):
 
 
 @dot_sql_never
-def test_bare_minimum(con, alltypes, df):
+def test_bare_minimum(alltypes, df, ftname_raw):
     """Test that a backend that supports dot sql can do the most basic thing."""
 
-    name = _NAMES.get(con.name, "functional_alltypes").replace('"', "")
-    expr = alltypes.sql(f'SELECT COUNT(*) AS "n" FROM "{name}"', dialect="duckdb")
+    expr = alltypes.sql(f'SELECT COUNT(*) AS "n" FROM "{ftname_raw}"', dialect="duckdb")
     assert expr.to_pandas().iat[0, 0] == len(df)
+
+
+@dot_sql_never
+def test_embedded_cte(alltypes, ftname_raw):
+    sql = f'WITH "x" AS (SELECT * FROM "{ftname_raw}") SELECT * FROM "x"'
+    expr = alltypes.sql(sql, dialect="duckdb")
+    result = expr.head(1).execute()
+    assert len(result) == 1

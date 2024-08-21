@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Union
 
@@ -63,6 +64,10 @@ class Schema(Concrete, Coercible, MapSet):
         return tuple(self.values())
 
     @attribute
+    def geospatial(self) -> tuple[str, ...]:
+        return tuple(name for name, typ in self.fields.items() if typ.is_geospatial())
+
+    @attribute
     def _name_locs(self) -> dict[str, int]:
         return {v: i for i, v in enumerate(self.names)}
 
@@ -120,18 +125,19 @@ class Schema(Concrete, Coercible, MapSet):
         }
 
         """
+
         pairs = list(values)
-        if len(pairs) == 0:
+        if not pairs:
             return cls({})
 
         names, types = zip(*pairs)
 
         # validate unique field names
-        name_locs = {v: i for i, v in enumerate(names)}
-        if len(name_locs) < len(names):
-            duplicate_names = list(names)
-            for v in name_locs:
-                duplicate_names.remove(v)
+        name_counts = Counter(names)
+        [(_, most_common_count)] = name_counts.most_common(1)
+
+        if most_common_count > 1:
+            duplicate_names = [name for name, count in name_counts.items() if count > 1]
             raise IntegrityError(f"Duplicate column name(s): {duplicate_names}")
 
         # construct the schema
@@ -182,6 +188,9 @@ class Schema(Concrete, Coercible, MapSet):
         from ibis.formats.pyarrow import PyArrowSchema
 
         return PyArrowSchema.from_ibis(self)
+
+    def __arrow_c_schema__(self):
+        return self.to_pyarrow().__arrow_c_schema__()
 
     def to_polars(self):
         """Return the equivalent polars schema."""
@@ -290,7 +299,7 @@ def infer_pyarrow_table(table):
 def infer_polars_dataframe(df):
     from ibis.formats.polars import PolarsSchema
 
-    return PolarsSchema.to_ibis(df.schema)
+    return PolarsSchema.to_ibis(df.collect_schema())
 
 
 # lock the dispatchers to avoid adding new implementations

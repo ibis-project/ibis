@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import pytest
+
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
+from ibis.common.annotations import SignatureValidationError
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 
@@ -42,6 +45,41 @@ def test_ifelse_function_deferred(table):
     res = expr.resolve(table)
     sol = table.g.isnull().ifelse(table.a, 2)
     assert res.equals(sol)
+
+
+def test_case_dshape(table):
+    assert isinstance(ibis.case().when(True, "bar").when(False, "bar").end(), ir.Scalar)
+    assert isinstance(ibis.case().when(True, None).else_("bar").end(), ir.Scalar)
+    assert isinstance(
+        ibis.case().when(table.b == 9, None).else_("bar").end(), ir.Column
+    )
+    assert isinstance(ibis.case().when(True, table.a).else_(42).end(), ir.Column)
+    assert isinstance(ibis.case().when(True, 42).else_(table.a).end(), ir.Column)
+    assert isinstance(ibis.case().when(True, table.a).else_(table.b).end(), ir.Column)
+
+    assert isinstance(ibis.literal(5).case().when(9, 42).end(), ir.Scalar)
+    assert isinstance(ibis.literal(5).case().when(9, 42).else_(43).end(), ir.Scalar)
+    assert isinstance(ibis.literal(5).case().when(table.a, 42).end(), ir.Column)
+    assert isinstance(ibis.literal(5).case().when(9, table.a).end(), ir.Column)
+    assert isinstance(ibis.literal(5).case().when(table.a, table.b).end(), ir.Column)
+    assert isinstance(
+        ibis.literal(5).case().when(9, 42).else_(table.a).end(), ir.Column
+    )
+    assert isinstance(table.a.case().when(9, 42).end(), ir.Column)
+    assert isinstance(table.a.case().when(table.b, 42).end(), ir.Column)
+    assert isinstance(table.a.case().when(9, table.b).end(), ir.Column)
+    assert isinstance(table.a.case().when(table.a, table.b).end(), ir.Column)
+
+
+def test_case_dtype():
+    assert isinstance(
+        ibis.case().when(True, "bar").when(False, "bar").end(), ir.StringValue
+    )
+    assert isinstance(ibis.case().when(True, None).else_("bar").end(), ir.StringValue)
+    with pytest.raises(TypeError):
+        ibis.case().when(True, 5).when(False, "bar").end()
+    with pytest.raises(TypeError):
+        ibis.case().when(True, 5).else_("bar").end()
 
 
 def test_simple_case_expr(table):
@@ -162,8 +200,6 @@ def test_multiple_case_null_else(table):
     op = expr.op()
     assert isinstance(expr, ir.StringColumn)
     assert isinstance(op.default.to_expr(), ir.Value)
-    assert isinstance(op.default, ops.Cast)
-    assert op.default.to == dt.string
 
 
 def test_case_mixed_type():
@@ -177,3 +213,27 @@ def test_case_mixed_type():
     )
     result = t0[expr]
     assert result["label"].type().equals(dt.string)
+
+
+def test_err_on_nonbool_expr(table):
+    with pytest.raises(SignatureValidationError):
+        ibis.case().when(table.a, "bar").else_("baz").end()
+    with pytest.raises(SignatureValidationError):
+        ibis.case().when(ibis.literal(1), "bar").else_("baz").end()
+
+
+def test_err_on_noncomparable(table):
+    # Can't compare an int to a string
+    with pytest.raises(TypeError):
+        table.a.case().when("foo", "bar").end()
+
+
+def test_err_on_empty_cases(table):
+    with pytest.raises(SignatureValidationError):
+        ibis.case().end()
+    with pytest.raises(SignatureValidationError):
+        ibis.case().else_(42).end()
+    with pytest.raises(SignatureValidationError):
+        table.a.case().end()
+    with pytest.raises(SignatureValidationError):
+        table.a.case().else_(42).end()

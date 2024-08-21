@@ -1,4 +1,3 @@
-
 SELECT *
 FROM
   (SELECT i_manager_id,

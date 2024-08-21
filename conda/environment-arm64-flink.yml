@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - python =3.10
+  - python >=3.10,<3.12
   - atpublic >=2.3
   - black >=22.1.0,<25
   - clickhouse-connect >=0.5.23
@@ -27,7 +27,7 @@ dependencies:
   - pins >=0.8.2
   - poetry-core >=1.0.0
   - poetry-dynamic-versioning >=0.18.0
-  - polars >=0.20.17
+  - polars >=1,<2
   - psycopg2 >=2.8.4
   - pyarrow =11.0.0
   - pyarrow-tests
@@ -87,7 +87,6 @@ dependencies:
   - poetry-plugin-export
   - pre-commit
   - prettier
-  - pydeps >=1.12.7
   - pyinstrument
   - ruff >=0.1.8
   - taplo
@@ -97,4 +96,4 @@ dependencies:
   - py4j =0.10.9.7
   - pip
   - pip:
-      - apache-flink >=1.19.1
+      - apache-flink =1.20.0

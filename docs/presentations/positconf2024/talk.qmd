@@ -1,0 +1,312 @@
+---
+title: "Testing 20 databases on every commit"
+author: Phillip Cloud
+date: "2024-08-14"
+execute:
+  echo: true
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    footer: <https://ibis-project.org/presentations/positconf2024/talk>
+---
+
+# Let's all stand!
+
+## Sit if you work with…
+
+::: {.incremental}
+- 0 DBs  ✅
+- 1 DB   😇
+- 2 DBs  😬
+- 3+ DBs 😱
+:::
+
+::: {.fragment}
+::: {.r-fit-text}
+_I feel your pain._
+:::
+:::
+
+## Who?
+
+:::: {.columns}
+
+::: {.column width="50%"}
+### Me
+
+- Phillip Cloud
+- Ibis project
+- Voltron Data
+- Data tools for 10+ years
+:::
+
+::: {.column width="50%"}
+### Where
+
+- {{< fa brands github >}} [`@cpcloud`](https://github.com/cpcloud)
+- {{< fa brands youtube >}} [Phillip in the Cloud](https://www.youtube.com/@cpcloud)
+- {{< fa brands twitter >}} [`@cpcloudy`](https://x.com/cpcloudy)
+:::
+
+::::
+
+# Ever needed to test a complex system?
+
+## Maybe this is you
+
+![](../pycon2024/docker-eye-roll.gif){fig-align="center"}
+
+## Or this
+
+![](../pycon2024/wonka.png){fig-align="center"}
+
+## Or maybe even this
+
+![](https://storage.googleapis.com/posit-conf-2024/fine.jpg){fig-align="center"}
+
+# A complex system: Ibis
+
+![](../../logo.svg){fig-align="center" width="50%" height="50%"}
+
+## What's Ibis?
+
+- Python library
+- Exploratory data analysis
+- Data engineering
+- ML preprocessing
+
+::: {.fragment}
+::: {.r-fit-text}
+_dbplyr, but Python_
+:::
+:::
+
+## One API, 20+ backends {.smaller .scrollable}
+
+```{python}
+#| code-fold: true
+#| echo: false
+import ibis
+
+ibis.options.interactive = True
+
+t = ibis.examples.penguins.fetch()
+t.to_parquet("penguins.parquet")
+```
+
+::: {.panel-tabset}
+
+## DuckDB
+
+```{python}
+con = ibis.connect("duckdb://")
+t = con.read_parquet("penguins.parquet")
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
+
+## Polars
+
+```{python}
+#| code-line-numbers: "1,1"
+con = ibis.connect("polars://")
+t = con.read_parquet("penguins.parquet")
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
+
+## DataFusion
+
+```{python}
+#| code-line-numbers: "1,1"
+con = ibis.connect("datafusion://")
+t = con.read_parquet("penguins.parquet")
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
+
+## PySpark
+
+```{python}
+#| code-line-numbers: "1,1"
+con = ibis.connect("pyspark://")
+t = con.read_parquet("penguins.parquet")
+t.group_by("species", "island").agg(count=t.count()).order_by("count")
+```
+
+## 16+ other DBs
+
+![](../pycon2024/machine.gif){fig-align="center" width="100%" height="100%"}
+
+:::
+
+# Why is this hard to test?
+
+## By the numbers {.smaller}
+
+:::: {.columns}
+::: {.column width="50%"}
+### Backends
+- **17** SQL
+- **3** non-SQL
+- **2** cloud
+:::
+
+::: {.column width="50%"}
+### Engines + APIs
+- **9** distributed SQL
+- **3** dataframe
+- oldest: **~45** years 👀
+- youngest: **~2** years
+:::
+::::
+
+### Other facts
+
+- Latency is variable
+- Deployment models vary
+
+::: {.fragment}
+::: {.r-fit-text}
+_… **Feature development**_❓
+:::
+:::
+
+## Bit of a pickle
+
+![](../pycon2024/picklerick.png)
+
+# How
+
+## High level
+
+### Goal: fast iteration
+
+- fast env setup (dependency management)
+- fast(ish) tests (test-running library)
+- high **job** concurrency (ci/provider)
+- **easy to run**: dev speed ([`just`](https://github.com/casey/just))
+
+::: {.fragment}
+::: {.r-fit-text}
+_CI must complete "quickly"_
+:::
+:::
+
+## Tools: overview
+
+- 📦 **deps**: _poetry_
+- 🖥️ **ci**: _GitHub Actions_
+- 🦁 **"big" backends**: _docker_
+- 🐱 **"small" backends**: _no special tx (duckdb, polars)_
+- 🏃 **tasks**: [`just`](https://github.com/casey/just) (e.g.: `just up postgres`)
+
+## Tools: poetry
+
+- **Env setup must be _fast_**: no constraint solving
+- Poetry is one way; there are others
+- Get yourself a lockfile
+- Downsides?
+
+::: {.fragment}
+::: {.r-fit-text}
+… _Are you doing that **now**_❓
+:::
+:::
+
+## Tools: docker
+
+- Do you use it locally?
+- Use health checks; "dumb" ones are fine
+- Make it easy for devs to use
+
+![](https://storage.googleapis.com/posit-conf-2024/terminal.png){fig-align="center"}
+
+## Tools: GitHub Actions {.smaller}
+
+- Pay for the [the Teams plan](https://docs.github.com/en/actions/learn-github-actions/usage-limits-billing-and-administration#usage-limits) to get more concurrency
+- Automate dependency updates
+
+::: {.columns}
+::: {.column width="50%"}
+### GHA limits
+
+![](../pycon2024/gha.png)
+:::
+
+::: {.column width="50%"}
+### Ibis CI cost
+
+![](../pycon2024/bill.png)
+:::
+:::
+
+# How does this stack up?
+
+## Terminology {auto-animate=true}
+
+::: {.fragment}
+Job
+: a set of commands
+
+```yaml
+my_job:
+  - run: pip install ibis-framework
+  - run: just ci-check -m ${{ matrix.backend.name }}
+  - run: coverage upload
+```
+:::
+
+::: {.fragment}
+Workflow
+: A collection of jobs, one `.yml` file
+
+```yaml
+name: Backends
+
+my_job:
+  - run: ...
+my_other_job:
+  - run: ...
+```
+:::
+
+## Job metrics {auto-animate=true}
+
+![](https://storage.googleapis.com/posit-conf-2024/jobs.svg){fig-align="center"}
+
+::: {.fragment}
+::: {.r-fit-text}
+_We've added 3 or 4 new backends since the switch_
+:::
+:::
+
+## Workflow metrics {auto-animate=true}
+
+![Queue time and workflow duration](https://storage.googleapis.com/posit-conf-2024/workflows.svg){fig-align="center"}
+
+## Workflow metrics {auto-animate=true}
+
+![](https://storage.googleapis.com/posit-conf-2024/workflowscorr.svg){fig-align="center"}
+
+## Workflow metrics {auto-animate=true}
+
+![](https://storage.googleapis.com/posit-conf-2024/workflowscorr.svg){fig-align="center"}
+
+- 🟢 Queues + workflows correlated
+- 🟡 Queues slow + workflows fast: not enough concurrency
+- 🟡 Queues fast + workflows slow: jobs doing too much
+- 🔴 Queues slow + workflows slow: hard to say
+
+# Summary
+
+- Testing complex projects is possible
+- Use docker for dev **and** prod
+- Don't SAT solve in CI
+- Track CI run durations, workflow metrics
+- Spend time on dev ex
+
+# Questions?
+
+![](../../logo.svg){fig-align="center"}
+
+::: {.r-fit-text}
+<https://ibis-project.org>
+:::

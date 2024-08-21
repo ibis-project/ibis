@@ -13,7 +13,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
-from ibis.backends.bigquery.compiler import BigQueryCompiler
+from ibis.backends.sql.compilers import BigQueryCompiler
 from ibis.common.annotations import ValidationError
 
 to_sql = ibis.bigquery.compile
@@ -111,7 +111,7 @@ def test_hashbytes(case, how, dtype, snapshot):
     ),
 )
 def test_integer_to_timestamp(case, unit, snapshot):
-    expr = ibis.literal(case, type=dt.int64).to_timestamp(unit=unit).name("tmp")
+    expr = ibis.literal(case, type=dt.int64).as_timestamp(unit=unit).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -424,12 +424,12 @@ def test_identical_to(alltypes, snapshot):
 
 
 def test_to_timestamp_no_timezone(alltypes, snapshot):
-    expr = alltypes.date_string_col.to_timestamp("%F")
+    expr = alltypes.date_string_col.as_timestamp("%F")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_to_timestamp_timezone(alltypes, snapshot):
-    expr = (alltypes.date_string_col + " America/New_York").to_timestamp("%F %Z")
+    expr = (alltypes.date_string_col + " America/New_York").as_timestamp("%F %Z")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -667,3 +667,13 @@ def test_subquery_scalar_params(snapshot):
     )
     result = ibis.to_sql(expr, params={p: "20140101"}, dialect="bigquery")
     snapshot.assert_match(result, "out.sql")
+
+
+def test_time_from_hms_with_micros(snapshot):
+    literal = ibis.literal(datetime.time(12, 34, 56, 789101))
+    result = ibis.to_sql(literal, dialect="bigquery")
+    snapshot.assert_match(result, "micros.sql")
+
+    literal = ibis.literal(datetime.time(12, 34, 56))
+    result = ibis.to_sql(literal, dialect="bigquery")
+    snapshot.assert_match(result, "no_micros.sql")

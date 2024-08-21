@@ -10,11 +10,12 @@ from urllib.parse import unquote_plus
 import pydruid.db
 import sqlglot as sg
 
+import ibis.backends.sql.compilers as sc
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.backends.druid.compiler import DruidCompiler
+from ibis import util
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR
+from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import DruidType
 
 if TYPE_CHECKING:
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend):
     name = "druid"
-    compiler = DruidCompiler()
+    compiler = sc.druid.compiler
     supports_create_or_replace = False
     supports_in_memory_tables = True
 
@@ -80,6 +81,21 @@ class Backend(SQLBackend):
         """Create an Ibis client using the passed connection parameters."""
         header = kwargs.pop("header", True)
         self.con = pydruid.db.connect(**kwargs, header=header)
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pydruid.db.api.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a Druid database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a Druid database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        return new_backend
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query, *args, **kwargs):

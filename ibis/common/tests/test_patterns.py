@@ -78,7 +78,7 @@ class Double(Pattern):
         return value * 2
 
     def __eq__(self, other):
-        return type(self) == type(other)
+        return type(self) is type(other)
 
     def __hash__(self):
         return hash(type(self))
@@ -306,7 +306,7 @@ def test_coerced_to():
 def test_generic_coerced_to():
     class DataType:
         def __eq__(self, other):
-            return type(self) == type(other)
+            return type(self) is type(other)
 
     class Integer(DataType):
         pass
@@ -316,7 +316,7 @@ def test_generic_coerced_to():
 
     class DataShape:
         def __eq__(self, other):
-            return type(self) == type(other)
+            return type(self) is type(other)
 
     class Scalar(DataShape):
         pass
@@ -348,7 +348,7 @@ def test_generic_coerced_to():
 
         def __eq__(self, other):
             return (
-                type(self) == type(other)
+                type(self) is type(other)
                 and self._value == other._value
                 and self._dtype == other._dtype
             )
@@ -540,7 +540,7 @@ class Foo:
         self.b = b
 
     def __eq__(self, other):
-        return type(self) == type(other) and self.a == other.a and self.b == other.b
+        return type(self) is type(other) and self.a == other.a and self.b == other.b
 
 
 class Bar:
@@ -551,7 +551,7 @@ class Bar:
         self.d = d
 
     def __eq__(self, other):
-        return type(self) == type(other) and self.c == other.c and self.d == other.d
+        return type(self) is type(other) and self.c == other.c and self.d == other.d
 
 
 def test_object_pattern():
@@ -620,7 +620,7 @@ def test_object_pattern_matching_order():
 
         def __eq__(self, other):
             return (
-                type(self) == type(other)
+                type(self) is type(other)
                 and self.a == other.a
                 and self.b == other.b
                 and self.c == other.c
@@ -1161,7 +1161,7 @@ class PlusOne(Coercible):
         return cls(obj + 1)
 
     def __eq__(self, other):
-        return type(self) == type(other) and self.value == other.value
+        return type(self) is type(other) and self.value == other.value
 
 
 class PlusOneRaise(PlusOne):

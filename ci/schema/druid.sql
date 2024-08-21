@@ -36,11 +36,24 @@ PARTITIONED BY ALL TIME;
 
 REPLACE INTO "functional_alltypes"
 OVERWRITE ALL
-SELECT *
+SELECT
+  "id",
+  "bool_col",
+  "tinyint_col",
+  "smallint_col",
+  "int_col",
+  "bigint_col",
+  "float_col",
+  "double_col",
+  "date_string_col",
+  "string_col",
+  TIME_PARSE(CONCAT(REPLACE("timestamp_col", ' ', 'T'), 'Z')) AS "timestamp_col",
+  "year",
+  "month"
 FROM TABLE(
   EXTERN(
-    '{"type":"local","files":["/data/functional_alltypes.parquet"]}',
-    '{"type":"parquet"}',
+    '{"type":"local","files":["/data/functional_alltypes.csv"]}',
+    '{"type":"csv","skipHeaderRows":1,"columns":["id","bool_col","tinyint_col","smallint_col","int_col","bigint_col","float_col","double_col","date_string_col","string_col","timestamp_col","year","month"]}',
     '[{"name":"id","type":"long"},{"name":"bool_col","type":"long"},{"name":"tinyint_col","type":"long"},{"name":"smallint_col","type":"long"},{"name":"int_col","type":"long"},{"name":"bigint_col","type":"long"},{"name":"float_col","type":"double"},{"name":"double_col","type":"double"},{"name":"date_string_col","type":"string"},{"name":"string_col","type":"string"},{"name":"timestamp_col","type":"string"},{"name":"year","type":"long"},{"name":"month","type":"long"}]'
   )
 )

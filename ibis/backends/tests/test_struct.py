@@ -3,11 +3,7 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Mapping
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
-import sqlglot as sg
 from pytest import param
 
 import ibis
@@ -22,10 +18,14 @@ from ibis.backends.tests.errors import (
 )
 from ibis.common.exceptions import IbisError
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
+
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
-    pytest.mark.notimpl(["datafusion", "druid", "oracle", "exasol"]),
+    pytest.mark.notimpl(["druid", "oracle", "exasol"]),
 ]
 
 
@@ -77,6 +77,7 @@ _NULL_STRUCT_LITERAL = ibis.null().cast("struct<a: int64, b: string, c: float64>
 
 
 @pytest.mark.notimpl(["postgres", "risingwave"])
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 def test_literal(backend, con, field):
     query = _STRUCT_LITERAL[field]
@@ -88,6 +89,7 @@ def test_literal(backend, con, field):
 
 
 @pytest.mark.notimpl(["postgres"])
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.parametrize("field", ["a", "b", "c"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="clickhouse doesn't support nullable nested types"
@@ -113,9 +115,7 @@ def test_struct_column(alltypes, df):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave", "polars"])
-@pytest.mark.notyet(
-    ["flink"], reason="flink doesn't support creating struct columns from collect"
-)
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_collect_into_struct(alltypes):
     from ibis import _
 
@@ -145,6 +145,7 @@ def test_collect_into_struct(alltypes):
     reason="struct literals not implemented",
     raises=PsycoPg2InternalError,
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
@@ -157,13 +158,18 @@ def test_field_access_after_case(con):
     ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
-@pytest.mark.notyet(
-    ["clickhouse"], raises=sg.ParseError, reason="sqlglot fails to parse"
-)
 @pytest.mark.parametrize(
     "nullable",
     [
-        param(True, id="nullable"),
+        param(
+            True,
+            marks=pytest.mark.notyet(
+                ["clickhouse"],
+                raises=AssertionError,
+                reason="clickhouse doesn't allow nullable nested types",
+            ),
+            id="nullable",
+        ),
         param(
             False,
             marks=[
@@ -187,16 +193,17 @@ def test_field_access_after_case(con):
         ),
     ],
 )
-@pytest.mark.broken(
+@pytest.mark.notyet(
     ["trino"],
-    raises=sg.ParseError,
-    reason="trino returns unquoted and therefore unparsable struct field names",
+    raises=AssertionError,
+    reason="trino returns unquoted and therefore unparsable struct field names, we fall back to dt.unknown",
 )
 @pytest.mark.notyet(
     ["snowflake"],
     raises=AssertionError,
     reason="snowflake doesn't have strongly typed structs",
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_keyword_fields(con, nullable):
     schema = ibis.schema(
         {
@@ -256,6 +263,7 @@ def test_keyword_fields(con, nullable):
     raises=Py4JJavaError,
     reason="fails to parse due to an unsupported operation; flink docs say the syntax is supported",
 )
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_isin_struct(con):
     needle1 = ibis.struct({"x": 1, "y": 2})
     needle2 = ibis.struct({"x": 2, "y": 3})

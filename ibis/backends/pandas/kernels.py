@@ -144,6 +144,12 @@ def array_position_rowwise(row):
         return -1
 
 
+def array_remove_rowwise(row):
+    if row["arg"] is None:
+        return None
+    return [x for x in row["arg"] if x != row["other"]]
+
+
 def array_slice_rowwise(row):
     arg, start, stop = row["arg"], row["start"], row["stop"]
     if isnull(start) and isnull(stop):
@@ -254,16 +260,9 @@ def round_serieswise(arg, digits):
         return np.round(arg, digits).astype("float64")
 
 
-def first(arg):
-    # first excludes null values unless they're all null
+def arbitrary(arg):
     arg = arg.dropna()
     return arg.iat[0] if len(arg) else None
-
-
-def last(arg):
-    # last excludes null values unless they're all null
-    arg = arg.dropna()
-    return arg.iat[-1] if len(arg) else None
 
 
 reductions = {
@@ -280,12 +279,9 @@ reductions = {
     ops.BitAnd: lambda x: np.bitwise_and.reduce(x.values),
     ops.BitOr: lambda x: np.bitwise_or.reduce(x.values),
     ops.BitXor: lambda x: np.bitwise_xor.reduce(x.values),
-    ops.Last: last,
-    ops.First: first,
-    ops.Arbitrary: first,
+    ops.Arbitrary: arbitrary,
     ops.CountDistinct: lambda x: x.nunique(),
     ops.ApproxCountDistinct: lambda x: x.nunique(),
-    ops.ArrayCollect: lambda x: x.dropna().tolist(),
 }
 
 
@@ -380,11 +376,12 @@ columnwise = {
     ops.Repeat: lambda df: df["arg"] * df["times"],
 }
 
+
 rowwise = {
     ops.ArrayContains: lambda row: row["other"] in row["arg"],
     ops.ArrayIndex: array_index_rowwise,
     ops.ArrayPosition: array_position_rowwise,
-    ops.ArrayRemove: lambda row: [x for x in row["arg"] if x != row["other"]],
+    ops.ArrayRemove: array_remove_rowwise,
     ops.ArrayRepeat: lambda row: np.tile(row["arg"], max(0, row["times"])),
     ops.ArraySlice: array_slice_rowwise,
     ops.ArrayUnion: lambda row: toolz.unique(row["left"] + row["right"]),

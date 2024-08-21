@@ -10,8 +10,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import _pytest
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.requirements import Requirement
 from packaging.version import parse as vparse
@@ -153,7 +151,7 @@ TEST_TABLES = {
 # For now, many of our tests don't do this, and we're working to change this situation
 # by improving all tests file by file. All files that have already been improved are
 # added to this list to prevent regression.
-FIlES_WITH_STRICT_EXCEPTION_CHECK = [
+FILES_WITH_STRICT_EXCEPTION_CHECK = [
     "ibis/backends/tests/test_api.py",
     "ibis/backends/tests/test_array.py",
     "ibis/backends/tests/test_aggregation.py",
@@ -237,11 +235,6 @@ def pytest_collection_modifyitems(session, config, items):
     all_backends = _get_backend_names()
     additional_markers = []
 
-    try:
-        import pyspark
-    except ImportError:
-        pyspark = None
-
     unrecognized_backends = set()
     for item in items:
         # Yell loudly if unrecognized backend in notimpl, notyet or never
@@ -270,23 +263,6 @@ def pytest_collection_modifyitems(session, config, items):
             # anything else is a "core" test and is run by default
             if not any(item.iter_markers(name="benchmark")):
                 item.add_marker(pytest.mark.core)
-
-        # skip or xfail pyspark tests that run afoul of our non-ancient stack
-        for _ in item.iter_markers(name="pyspark"):
-            if not isinstance(item, pytest.DoctestItem):
-                additional_markers.append(
-                    (
-                        item,
-                        [
-                            pytest.mark.skipif(
-                                pyspark is not None
-                                and vparse(pyspark.__version__) < vparse("3.3.3")
-                                and vparse(np.__version__) >= vparse("1.24"),
-                                reason="PySpark doesn't support numpy >= 1.24",
-                            ),
-                        ],
-                    )
-                )
 
     if unrecognized_backends:
         raise pytest.PytestCollectionWarning("\n" + "\n".join(unrecognized_backends))
@@ -361,7 +337,7 @@ def pytest_runtest_call(item):
     for marker in item.iter_markers(name="notimpl"):
         if backend in marker.args[0]:
             if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                item.location[0] in FILES_WITH_STRICT_EXCEPTION_CHECK
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notimpl requires a raises")
@@ -375,7 +351,7 @@ def pytest_runtest_call(item):
     for marker in item.iter_markers(name="notyet"):
         if backend in marker.args[0]:
             if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
+                item.location[0] in FILES_WITH_STRICT_EXCEPTION_CHECK
                 and "raises" not in marker.kwargs.keys()
             ):
                 raise ValueError("notyet requires a raises")
@@ -390,22 +366,6 @@ def pytest_runtest_call(item):
             if "reason" not in marker.kwargs.keys():
                 raise ValueError("never requires a reason")
             kwargs = marker.kwargs.copy()
-            kwargs = _filter_none_from_raises(kwargs)
-            item.add_marker(pytest.mark.xfail(**kwargs))
-
-    # Something has been exposed as broken by a new test and it shouldn't be
-    # imperative for a contributor to fix it just because they happened to
-    # bring it to attention  -- USE SPARINGLY
-    for marker in item.iter_markers(name="broken"):
-        if backend in marker.args[0]:
-            if (
-                item.location[0] in FIlES_WITH_STRICT_EXCEPTION_CHECK
-                and "raises" not in marker.kwargs.keys()
-            ):
-                raise ValueError("broken requires a raises")
-
-            kwargs = marker.kwargs.copy()
-            kwargs.setdefault("reason", f"Feature is failing on {backend}")
             kwargs = _filter_none_from_raises(kwargs)
             item.add_marker(pytest.mark.xfail(**kwargs))
 
@@ -610,7 +570,7 @@ def geo_df(geo):
 
 
 @pytest.fixture
-def temp_table(con) -> str:
+def temp_table(con):
     """Return a temporary table name.
 
     Parameters
@@ -629,7 +589,7 @@ def temp_table(con) -> str:
 
 
 @pytest.fixture
-def temp_table2(con) -> str:
+def temp_table2(con):
     name = util.gen_name("temp_table2")
     yield name
     with contextlib.suppress(NotImplementedError):
@@ -645,7 +605,7 @@ def temp_table_orig(con, temp_table):
 
 
 @pytest.fixture
-def temp_view(ddl_con) -> str:
+def temp_view(ddl_con):
     """Return a temporary view name.
 
     Parameters
@@ -664,7 +624,7 @@ def temp_view(ddl_con) -> str:
 
 
 @pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend) -> str:
+def alternate_current_database(ddl_con, ddl_backend):
     """Create a temporary database and yield its name. Drops the created
     database upon completion.
 
@@ -685,48 +645,6 @@ def alternate_current_database(ddl_con, ddl_backend) -> str:
 
     with contextlib.suppress(com.UnsupportedOperationError):
         ddl_con.drop_database(name, force=True)
-
-
-@pytest.fixture
-def test_employee_schema() -> ibis.schema:
-    sch = ibis.schema(
-        [
-            ("first_name", "string"),
-            ("last_name", "string"),
-            ("department_name", "string"),
-            ("salary", "float64"),
-        ]
-    )
-
-    return sch
-
-
-@pytest.fixture
-def test_employee_data_1():
-    df = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
-
-    return df
-
-
-@pytest.fixture
-def test_employee_data_2():
-    df2 = pd.DataFrame(
-        {
-            "first_name": ["X", "Y", "Z"],
-            "last_name": ["A", "B", "C"],
-            "department_name": ["XX", "YY", "ZZ"],
-            "salary": [400.0, 500.0, 600.0],
-        }
-    )
-
-    return df2
 
 
 @pytest.fixture

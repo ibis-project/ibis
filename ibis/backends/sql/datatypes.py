@@ -20,14 +20,13 @@ _from_sqlglot_types = {
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
+    typecode.DATE32: dt.Date,
     typecode.DOUBLE: dt.Float64,
     typecode.ENUM: dt.String,
     typecode.ENUM8: dt.String,
     typecode.ENUM16: dt.String,
     typecode.FLOAT: dt.Float32,
     typecode.FIXEDSTRING: dt.String,
-    typecode.GEOMETRY: partial(dt.GeoSpatial, geotype="geometry"),
-    typecode.GEOGRAPHY: partial(dt.GeoSpatial, geotype="geography"),
     typecode.HSTORE: partial(dt.Map, dt.string, dt.string),
     typecode.INET: dt.INET,
     typecode.INT128: partial(dt.Decimal, 38, 0),
@@ -35,7 +34,7 @@ _from_sqlglot_types = {
     typecode.INT: dt.Int32,
     typecode.IPADDRESS: dt.INET,
     typecode.JSON: dt.JSON,
-    typecode.JSONB: dt.JSON,
+    typecode.JSONB: partial(dt.JSON, binary=True),
     typecode.LONGBLOB: dt.Binary,
     typecode.LONGTEXT: dt.String,
     typecode.MEDIUMBLOB: dt.Binary,
@@ -43,6 +42,7 @@ _from_sqlglot_types = {
     typecode.MONEY: dt.Decimal(19, 4),
     typecode.NCHAR: dt.String,
     typecode.UUID: dt.UUID,
+    typecode.NAME: dt.String,
     typecode.NULL: dt.Null,
     typecode.NVARCHAR: dt.String,
     typecode.OBJECT: partial(dt.Map, dt.string, dt.json),
@@ -115,7 +115,6 @@ _to_sqlglot_types = {
     dt.Float64: typecode.DOUBLE,
     dt.String: typecode.VARCHAR,
     dt.Binary: typecode.VARBINARY,
-    dt.JSON: typecode.JSON,
     dt.INET: typecode.INET,
     dt.UUID: typecode.UUID,
     dt.MACADDR: typecode.VARCHAR,
@@ -170,8 +169,10 @@ class SqlglotType(TypeMapper):
 
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions)
+        elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
+            dtype = known_typ(nullable=cls.default_nullable)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = dt.unknown
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -192,8 +193,13 @@ class SqlglotType(TypeMapper):
         if dtype := cls.unknown_type_strings.get(text.lower()):
             return dtype
 
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
+        try:
+            sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
+        except sg.errors.ParseError:
+            # If sqlglot can't parse the type fall back to `dt.unknown`
+            return dt.unknown
+        else:
+            return cls.to_ibis(sgtype, nullable=nullable)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
@@ -297,15 +303,31 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_GEOMETRY(
-        cls, arg: sge.DataTypeParam | None = None
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
     ) -> sge.DataType:
         if arg is not None:
-            return _geotypes[str(arg).upper()](nullable=cls.default_nullable)
-        return dt.GeoSpatial(geotype="geometry", nullable=cls.default_nullable)
+            typeclass = _geotypes[arg.this.this]
+        else:
+            typeclass = dt.GeoSpatial
+        if srid is not None:
+            srid = int(srid.this.this)
+        return typeclass(geotype="geometry", nullable=cls.default_nullable, srid=srid)
 
     @classmethod
-    def _from_sqlglot_GEOGRAPHY(cls) -> sge.DataType:
-        return dt.GeoSpatial(geotype="geography", nullable=cls.default_nullable)
+    def _from_sqlglot_GEOGRAPHY(
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
+    ) -> sge.DataType:
+        if arg is not None:
+            typeclass = _geotypes[arg.this.this]
+        else:
+            typeclass = dt.GeoSpatial
+        if srid is not None:
+            srid = int(srid.this.this)
+        return typeclass(geotype="geography", nullable=cls.default_nullable, srid=srid)
+
+    @classmethod
+    def _from_ibis_JSON(cls, dtype: dt.JSON) -> sge.DataType:
+        return sge.DataType(this=typecode.JSONB if dtype.binary else typecode.JSON)
 
     @classmethod
     def _from_ibis_Interval(cls, dtype: dt.Interval) -> sge.DataType:
@@ -373,13 +395,30 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
-        if (geotype := dtype.geotype) is not None:
-            return sge.DataType(this=getattr(typecode, geotype.upper()))
-        return sge.DataType(this=typecode.GEOMETRY)
+        expressions = [None]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
+
+        this = getattr(typecode, dtype.geotype.upper())
+
+        return sge.DataType(this=this, expressions=expressions)
+
+    @classmethod
+    def _from_ibis_SpecificGeometry(cls, dtype: dt.GeoSpatial):
+        expressions = [
+            sge.DataTypeParam(this=sge.Var(this=dtype.__class__.__name__.upper()))
+        ]
+
+        if (srid := dtype.srid) is not None:
+            expressions.append(sge.DataTypeParam(this=sge.convert(srid)))
+
+        this = getattr(typecode, dtype.geotype.upper())
+        return sge.DataType(this=this, expressions=expressions)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
         _from_ibis_MultiLineString
-    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
+    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_SpecificGeometry
 
 
 class PostgresType(SqlglotType):
@@ -413,6 +452,8 @@ class PostgresType(SqlglotType):
             "information_schema.time_stamp": dt.timestamp,
             # the pre-bool version of bool kept for backwards compatibility
             "information_schema.yes_or_no": dt.string,
+            # a case-insensitive string that has it's own type for some reason
+            "citext": dt.string,
         }
     )
 
@@ -428,11 +469,8 @@ class PostgresType(SqlglotType):
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
         if text.lower().startswith("vector"):
             text = "vector"
-        if dtype := cls.unknown_type_strings.get(text.lower()):
-            return dtype
 
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
+        return super().from_string(text, nullable=nullable)
 
 
 class RisingWaveType(PostgresType):
@@ -779,7 +817,9 @@ class BigQueryType(SqlglotType):
         return dt.Timestamp(timezone="UTC", nullable=cls.default_nullable)
 
     @classmethod
-    def _from_sqlglot_GEOGRAPHY(cls) -> dt.GeoSpatial:
+    def _from_sqlglot_GEOGRAPHY(
+        cls, arg: sge.DataTypeParam | None = None, srid: sge.DataTypeParam | None = None
+    ) -> dt.GeoSpatial:
         return dt.GeoSpatial(
             geotype="geography", srid=4326, nullable=cls.default_nullable
         )
@@ -1017,7 +1057,12 @@ class ClickHouseType(SqlglotType):
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
         typ = super().from_ibis(dtype)
+
+        if typ.this == typecode.NULLABLE:
+            return typ
+
         # nested types cannot be nullable in clickhouse
+        typ.args["nullable"] = False
         if dtype.nullable and not (
             dtype.is_map() or dtype.is_array() or dtype.is_struct()
         ):

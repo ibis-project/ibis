@@ -3,15 +3,11 @@ from __future__ import annotations
 import contextlib
 import functools
 import glob
-import inspect
 import itertools
 import json
 import os
-import platform
 import shutil
-import sys
 import tempfile
-import textwrap
 import warnings
 from operator import itemgetter
 from pathlib import Path
@@ -25,6 +21,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -32,11 +29,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
-from ibis.backends.snowflake.compiler import SnowflakeCompiler
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR
-from ibis.backends.sql.datatypes import SnowflakeType
+from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -44,6 +39,8 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import snowflake.connector
+    import snowflake.snowpark
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -74,16 +71,79 @@ return longest.map((_, i) => {
         "returns": "ARRAY",
         "source": """return Array(count).fill(value).flat();""",
     },
+    "ibis_udfs.public.array_sum": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "DOUBLE",
+        "source": """\
+let total = 0.0;
+let allNull = true;
+
+for (val of array) {
+  if (val !== null) {
+    total += val;
+    allNull = false;
+  }
+}
+
+return !allNull ? total : null;""",
+    },
+    "ibis_udfs.public.array_avg": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "DOUBLE",
+        "source": """\
+let count = 0;
+let total = 0.0;
+
+for (val of array) {
+  if (val !== null) {
+    total += val;
+    ++count;
+  }
+}
+
+return count !== 0 ? total / count : null;""",
+    },
+    "ibis_udfs.public.array_any": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "BOOLEAN",
+        "source": """\
+let count = 0;
+
+for (val of array) {
+  if (val === true) {
+    return true;
+  } else if (val === false) {
+    ++count;
+  }
+}
+
+return count !== 0 ? false : null;""",
+    },
+    "ibis_udfs.public.array_all": {
+        "inputs": {"array": "ARRAY"},
+        "returns": "BOOLEAN",
+        "source": """\
+let count = 0;
+
+for (val of array) {
+  if (val === false) {
+    return false;
+  } else if (val === true) {
+    ++count;
+  }
+}
+
+return count !== 0 ? true : null;""",
+    },
 }
 
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     name = "snowflake"
-    compiler = SnowflakeCompiler()
+    compiler = sc.snowflake.compiler
     supports_python_udfs = True
 
-    _latest_udf_python_version = (3, 10)
-    _top_level_methods = ("from_snowpark",)
+    _top_level_methods = ("from_connection", "from_snowpark")
 
     def __init__(self, *args, _from_snowpark: bool = False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -197,7 +257,7 @@ $$ {defn["source"]} $$"""
             `ibis.snowflake.connect(...)` can succeed, while subsequent API
             calls fail if the authentication fails for any reason.
         create_object_udfs
-            Enable object UDF extensions defined by ibis on the first
+            Enable object UDF extensions defined by Ibis on the first
             connection to the database.
         kwargs
             Additional arguments passed to the DBAPI connection call.
@@ -272,9 +332,11 @@ $$ {defn["source"]} $$"""
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
 
-    @util.experimental
+    @util.deprecated(as_of="10.0", instead="use from_connection instead")
     @classmethod
-    def from_snowpark(cls, session, *, create_object_udfs: bool = True) -> Backend:
+    def from_snowpark(
+        cls, session: snowflake.snowpark.Session, *, create_object_udfs: bool = True
+    ) -> Backend:
         """Create an Ibis Snowflake backend from a Snowpark session.
 
         Parameters
@@ -282,7 +344,7 @@ $$ {defn["source"]} $$"""
         session
             A Snowpark session instance.
         create_object_udfs
-            Enable object UDF extensions defined by ibis on the first
+            Enable object UDF extensions defined by Ibis on the first
             connection to the database.
 
         Returns
@@ -322,113 +384,73 @@ $$ {defn["source"]} $$"""
             )
         return backend
 
+    @util.experimental
+    @classmethod
+    def from_connection(
+        cls,
+        con: snowflake.connector.SnowflakeConnection | snowflake.snowpark.Session,
+        *,
+        create_object_udfs: bool = True,
+    ) -> Backend:
+        """Create an Ibis Snowflake backend from an existing connection.
+
+        Parameters
+        ----------
+        con
+            A Snowflake Connector for Python connection or a Snowpark
+            session instance.
+        create_object_udfs
+            Enable object UDF extensions defined by Ibis on the first
+            connection to the database.
+
+        Returns
+        -------
+        Backend
+            An Ibis Snowflake backend instance.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> import snowflake.snowpark as sp  # doctest: +SKIP
+        >>> session = sp.Session.builder.configs(...).create()  # doctest: +SKIP
+        >>> con = ibis.snowflake.from_connection(session)  # doctest: +SKIP
+        >>> batting = con.tables.BATTING  # doctest: +SKIP
+        >>> batting[["playerID", "RBI"]].head()  # doctest: +SKIP
+        ┏━━━━━━━━━━━┳━━━━━━━┓
+        ┃ playerID  ┃ RBI   ┃
+        ┡━━━━━━━━━━━╇━━━━━━━┩
+        │ string    │ int64 │
+        ├───────────┼───────┤
+        │ abercda01 │     0 │
+        │ addybo01  │    13 │
+        │ allisar01 │    19 │
+        │ allisdo01 │    27 │
+        │ ansonca01 │    16 │
+        └───────────┴───────┘
+        """
+        import snowflake.connector
+
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = (
+            con
+            if isinstance(con, snowflake.connector.SnowflakeConnection)
+            else con._conn._conn
+        )
+        with contextlib.suppress(snowflake.connector.errors.ProgrammingError):
+            # stored procs on snowflake don't allow session mutation it seems
+            new_backend._setup_session(
+                session_parameters={}, create_object_udfs=create_object_udfs
+            )
+        return new_backend
+
     def reconnect(self) -> None:
         if self._from_snowpark:
             raise com.IbisError(
                 "Reconnecting is not supported when using a Snowpark session"
             )
         super().reconnect()
-
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        name = type(udf_node).__name__
-        signature = ", ".join(
-            f"{name} {self.compiler.type_mapper.to_string(arg.dtype)}"
-            for name, arg in zip(udf_node.argnames, udf_node.args)
-        )
-        return_type = SnowflakeType.to_string(udf_node.dtype)
-        lines, _ = inspect.getsourcelines(udf_node.__func__)
-        source = textwrap.dedent(
-            "".join(
-                itertools.dropwhile(
-                    lambda line: not line.lstrip().startswith("def "), lines
-                )
-            )
-        ).strip()
-
-        config = udf_node.__config__
-
-        preamble_lines = [*self._UDF_PREAMBLE_LINES]
-
-        if imports := config.get("imports"):
-            preamble_lines.append(f"IMPORTS = ({', '.join(map(repr, imports))})")
-
-        packages = "({})".format(
-            ", ".join(map(repr, ("pandas", *config.get("packages", ()))))
-        )
-        preamble_lines.append(f"PACKAGES = {packages}")
-
-        return dict(
-            source=source,
-            name=name,
-            func_name=udf_node.__func_name__,
-            preamble="\n".join(preamble_lines).format(
-                name=name,
-                signature=signature,
-                return_type=return_type,
-                comment=f"Generated by ibis {ibis.__version__} using Python {platform.python_version()}",
-                version=".".join(
-                    map(str, min(sys.version_info[:2], self._latest_udf_python_version))
-                ),
-            ),
-        )
-
-    _UDF_PREAMBLE_LINES = (
-        "CREATE OR REPLACE TEMPORARY FUNCTION {name}({signature})",
-        "RETURNS {return_type}",
-        "LANGUAGE PYTHON",
-        "IMMUTABLE",
-        "RUNTIME_VERSION = '{version}'",
-        "COMMENT = '{comment}'",
-    )
-
-    def _define_udf_translation_rules(self, expr):
-        """No-op, these are defined in the compiler."""
-
-    def _register_udfs(self, expr: ir.Expr) -> None:
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql)
-        if udf_sources:
-            # define every udf in one execution to avoid the overhead of db
-            # round trips per udf
-            with self._safe_raw_sql(";\n".join(udf_sources)):
-                pass
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> str:
-        return """\
-{preamble}
-HANDLER = '{func_name}'
-AS $$
-from __future__ import annotations
-
-from typing import *
-
-{source}
-$$""".format(**self._get_udf_source(udf_node))
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        template = """\
-{preamble}
-HANDLER = 'wrapper'
-AS $$
-from __future__ import annotations
-
-from typing import *
-
-import _snowflake
-import pandas as pd
-
-{source}
-
-@_snowflake.vectorized(input=pd.DataFrame)
-def wrapper(df):
-    return {func_name}(*(col for _, col in df.items()))
-$$"""
-        return template.format(**self._get_udf_source(udf_node))
 
     def to_pyarrow(
         self,
@@ -465,10 +487,10 @@ $$"""
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        chunk_size: int = 1_000_000,
     ) -> Iterator[pd.DataFrame | pd.Series | Any]:
         self._run_pre_execute_hooks(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
+        sql = self.compile(expr, limit=limit, params=params)
         target_schema = expr.as_table().schema()
         converter = functools.partial(
             SnowflakePandasData.convert_table, schema=target_schema
@@ -517,6 +539,13 @@ $$"""
         catalog: str | None = None,
         database: str | None = None,
     ) -> Iterable[tuple[str, dt.DataType]]:
+        # this will always show temp tables with the same name as a non-temp
+        # table first
+        #
+        # snowflake puts temp tables in the same catalog and database as
+        # non-temp tables and differentiates between them using a different
+        # mechanism than other database that often put temp tables in a hidden
+        # or intentionally-difficult-to-access catalog/database
         table = sg.table(
             table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
@@ -605,7 +634,7 @@ $$"""
         tables_query = "SHOW TABLES"
         views_query = "SHOW VIEWS"
 
-        if table_loc is not None:
+        if table_loc.catalog or table_loc.db:
             tables_query += f" IN {table_loc}"
             views_query += f" IN {table_loc}"
 
@@ -814,7 +843,7 @@ $$"""
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -1171,8 +1200,6 @@ $$"""
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
-        schema
-            The name of the schema that the table is located in
         schema
             [deprecated] The name of the schema that the table is located in
         database

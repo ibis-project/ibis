@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -12,6 +10,9 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends.tests.errors import PyDruidProgrammingError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
     ["sqlite"],
@@ -50,12 +51,7 @@ def check_eq(left, right, how, **kwargs):
         "left",
         param(
             "right",
-            marks=[
-                pytest.mark.broken(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
-                sqlite_right_or_full_mark,
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",
@@ -66,9 +62,6 @@ def check_eq(left, right, how, **kwargs):
                 pytest.mark.notimpl(["mysql"]),
                 sqlite_right_or_full_mark,
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
-                pytest.mark.broken(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
             ],
         ),
     ],
@@ -175,7 +168,7 @@ def test_mutate_then_join_no_column_overlap(batting, awards_players):
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notyet(["dask"], reason="dask doesn't support descending order by")
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins")
-@pytest.mark.skip("risingwave")  # TODO(Kexiang): Risingwave's bug, investigating
+@pytest.mark.skip("risingwave")  # TODO(Kexiang): RisingWave's bug, investigating
 @pytest.mark.parametrize(
     "func",
     [
@@ -384,4 +377,34 @@ def test_join_conflicting_columns(backend, con):
             "z_right": ["f", "e", "d"],
         }
     )
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.never(
+    [
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "postgres",
+        "pyspark",
+        "risingwave",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    reason="Users can implement this with ibis.row_number(): https://github.com/ibis-project/ibis/issues/9486",
+)
+def test_positional_join(backend, con):
+    t1 = ibis.memtable({"x": [1, 2, 3]})
+    t2 = ibis.memtable({"x": [3, 2, 1]})
+    j = t1.join(t2, how="positional")
+    result = con.execute(j)
+    expected = pd.DataFrame({"x": [1, 2, 3], "x_right": [3, 2, 1]})
     backend.assert_frame_equal(result, expected)

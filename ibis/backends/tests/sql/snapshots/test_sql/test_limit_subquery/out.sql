@@ -7,4 +7,4 @@ FROM (
   LIMIT 10
 ) AS "t1"
 WHERE
-  "t1"."f" > CAST(0 AS TINYINT)
+  "t1"."f" > 0

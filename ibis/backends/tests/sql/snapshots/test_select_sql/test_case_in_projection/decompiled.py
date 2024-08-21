@@ -31,7 +31,7 @@ result = alltypes.select(
     ibis.case()
     .when(alltypes.g == lit, lit2)
     .when(alltypes.g == lit1, alltypes.g)
-    .else_(ibis.literal(None).cast("string"))
+    .else_(ibis.literal(None))
     .end()
     .name("col2"),
     alltypes.a,

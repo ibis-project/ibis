@@ -13,4 +13,4 @@ FROM (
     ON "t2"."foo_id" = "t3"."foo_id"
 ) AS "t4"
 WHERE
-  "t4"."f" > CAST(0 AS TINYINT) AND "t4"."value3" < CAST(1000 AS SMALLINT)
+  "t4"."f" > 0 AND "t4"."value3" < 1000

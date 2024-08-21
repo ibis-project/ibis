@@ -2,7 +2,7 @@
 #| echo: false
 #| output: asis
 
-from _utils import get_backend, render_methods
+from _utils import get_backend, render_methods, dump_methods_to_json_for_algolia
 
 # defined in the backend qmd, e.g., ../bigquery.qmd
 module = BACKEND.lower()
@@ -16,6 +16,8 @@ methods = sorted(
     if not value.name.startswith("_")
     if value.name != "do_connect"
 )
+
+dump_methods_to_json_for_algolia(backend, methods)
 
 render_methods(backend, *methods, level=3)
 ```

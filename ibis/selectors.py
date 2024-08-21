@@ -50,7 +50,6 @@ Using a composition of selectors this is much less tiresome:
 
 from __future__ import annotations
 
-import abc
 import functools
 import inspect
 import operator
@@ -67,45 +66,8 @@ from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.exceptions import IbisError
-from ibis.common.grounds import Concrete, Singleton
-
-
-class Selector(Concrete):
-    """A column selector."""
-
-    @abc.abstractmethod
-    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        """Expand `table` into value expressions that match the selector.
-
-        Parameters
-        ----------
-        table
-            An ibis table expression
-
-        Returns
-        -------
-        Sequence[Value]
-            A sequence of value expressions that match the selector
-
-        """
-
-    def positions(self, table: ir.Table) -> Sequence[int]:
-        """Expand `table` into column indices that match the selector.
-
-        Parameters
-        ----------
-        table
-            An ibis table expression
-
-        Returns
-        -------
-        Sequence[int]
-            A sequence of column indices where the selector matches
-
-        """
-        raise NotImplementedError(
-            f"`positions` doesn't make sense for {self.__class__.__name__} selector"
-        )
+from ibis.common.grounds import Singleton
+from ibis.common.selectors import Selector
 
 
 class Predicate(Selector):
@@ -121,11 +83,6 @@ class Predicate(Selector):
 
         """
         return [col for column in table.columns if self.predicate(col := table[column])]
-
-    def positions(self, table: ir.Table) -> Sequence[int]:
-        return [
-            i for i, column in enumerate(table.columns) if self.predicate(table[column])
-        ]
 
     def __and__(self, other: Selector) -> Predicate:
         """Compute the conjunction of two `Selector`s.
@@ -405,13 +362,17 @@ def c(*names: str | ir.Column) -> Predicate:
     """Select specific column names."""
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
 
-    def func(col: ir.Value) -> bool:
-        schema = col.op().rel.schema
-        if extra_cols := (names - schema.keys()):
+    @functools.cache
+    def check_delta(schema):
+        if extra_cols := names - schema._name_locs.keys():
             raise exc.IbisInputError(
                 f"Columns {extra_cols} are not present in {schema.names}"
             )
-        return col.get_name() in names
+
+    def func(col: ir.Value) -> bool:
+        op = col.op()
+        check_delta(op.rel.schema)
+        return op.name in names
 
     return where(func)
 

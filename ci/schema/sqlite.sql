@@ -101,23 +101,23 @@ CREATE TABLE diamonds (
 
 DROP TABLE IF EXISTS json_t;
 
-CREATE TABLE json_t (js JSON);
+CREATE TABLE json_t (rowid BIGINT, js JSON);
 
 INSERT INTO json_t VALUES
-    ('{"a": [1,2,3,4], "b": 1}'),
-    ('{"a":null,"b":2}'),
-    ('{"a":"foo", "c":null}'),
-    ('null'),
-    ('[42,47,55]'),
-    ('[]'),
-    ('"a"'),
-    ('""'),
-    ('"b"'),
-    (NULL),
-    ('true'),
-    ('false'),
-    ('42'),
-    ('37.37');
+    (1, '{"a": [1,2,3,4], "b": 1}'),
+    (2, '{"a":null,"b":2}'),
+    (3, '{"a":"foo", "c":null}'),
+    (4, 'null'),
+    (5, '[42,47,55]'),
+    (6, '[]'),
+    (7, '"a"'),
+    (8, '""'),
+    (9, '"b"'),
+    (10, NULL),
+    (11, 'true'),
+    (12, 'false'),
+    (13, '42'),
+    (14, '37.37');
 
 DROP TABLE IF EXISTS win;
 CREATE TABLE win (g TEXT, x BIGINT NOT NULL, y BIGINT);

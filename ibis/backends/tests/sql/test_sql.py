@@ -523,9 +523,6 @@ def test_double_order_by(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
     # t.b DESC, t.a ASC
     expr = t.order_by(t.a).order_by(t.b.desc())
-    sql = to_sql(expr, pretty=False)
-    expected = '"t0"."b" DESC, "t0"."a" ASC'
-    assert expected in sql
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -533,29 +530,18 @@ def test_double_order_by_same_column(snapshot):
     t = ibis.table(dict(a="int", b="string", c="float"), name="t")
     # t.b ASC, t.a DESC, t.c ASC
     expr = t.order_by(t.a, t.c).order_by(t.b.asc(), t.a.desc())
-    sql = to_sql(expr, pretty=False)
-    expected = '"t0"."b" ASC, "t0"."a" DESC, "t0"."c" ASC'
-    assert expected in sql
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_double_order_by_deferred(snapshot):
     t = ibis.table(dict(a="int", b="string", c="float"), name="t")
     expr = t.order_by(t.a, t.c).order_by(t.b.asc(), _.a.desc())
-    sql = to_sql(expr, pretty=False)
-    expected = '"t0"."b" ASC, "t0"."a" DESC, "t0"."c" ASC'
-    assert expected in sql
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_double_order_by_different_expression(snapshot):
     t = ibis.table(dict(a="int", b="string", c="float"), name="t")
     expr = t.order_by(t.a, t.c).order_by(t.b.asc(), (t.a + 1).desc())
-    sql = to_sql(expr, pretty=False)
-    expected = (
-        '"t0"."b" ASC, "t0"."a" + CAST(1 AS TINYINT) DESC, "t0"."a" ASC, "t0"."c" ASC'
-    )
-    assert expected in sql
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -604,3 +590,17 @@ def test_no_cartesian_join(snapshot):
         ]
     )
     snapshot.assert_match(ibis.to_sql(final, dialect="duckdb"), "out.sql")
+
+
+def test_ctes_in_order():
+    table1 = ibis.table({"id": "int"}, name="table1")
+    table2 = ibis.table({"id": "int"}, name="table2")
+    table3 = ibis.table({"id": "int"}, name="table3")
+
+    ids_table = table1.union(table2).alias("first")
+    info_table = ids_table.union(table3).alias("second")
+
+    expr = ids_table.union(info_table)
+
+    sql = ibis.to_sql(expr, dialect="duckdb")
+    assert sql.find('"first" AS (') < sql.find('"second" AS (')

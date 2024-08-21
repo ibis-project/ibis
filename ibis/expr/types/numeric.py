@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -742,7 +743,7 @@ class NumericValue(Value):
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ GeoPoint(x_cent, y_cent)         ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ point                            │
+        │ point:geometry                   │
         ├──────────────────────────────────┤
         │ <POINT (935996.821 191376.75)>   │
         │ <POINT (1031085.719 164018.754)> │
@@ -836,7 +837,10 @@ class NumericColumn(Column, NumericValue):
             The correlation of `left` and `right`
         """
         return ops.Correlation(
-            self, right, how=how, where=self._bind_to_parent_table(where)
+            self,
+            self._bind_to_parent_table(right),
+            how=how,
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def cov(
@@ -862,7 +866,10 @@ class NumericColumn(Column, NumericValue):
             The covariance of `self` and `right`
         """
         return ops.Covariance(
-            self, right, how=how, where=self._bind_to_parent_table(where)
+            self,
+            self._bind_to_parent_table(right),
+            how=how,
+            where=self._bind_to_parent_table(where),
         ).to_expr()
 
     def mean(
@@ -990,23 +997,26 @@ class NumericColumn(Column, NumericValue):
                 f"Cannot pass both `nbins` (got {nbins}) and `binwidth` (got {binwidth})"
             )
 
-        if binwidth is None or base is None:
+        if base is None:
+            base = self.min() - eps
+
+        if binwidth is None:
             if nbins is None:
                 raise ValueError("`nbins` is required if `binwidth` is not provided")
 
-            if base is None:
-                base = self.min() - eps
-
             binwidth = (self.max() - base) / nbins
 
-        return ((self - base) / binwidth).floor()
+        if nbins is None:
+            nbins = ((self.max() - base) / binwidth).ceil()
+
+        return ((self - base) / binwidth).floor().clip(-1, nbins - 1)
 
 
 @public
 class IntegerValue(NumericValue):
-    def to_timestamp(
+    def as_timestamp(
         self,
-        unit: Literal["s", "ms", "us"] = "s",
+        unit: Literal["s", "ms", "us"],
     ) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
@@ -1022,7 +1032,7 @@ class IntegerValue(NumericValue):
         """
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
-    def to_interval(
+    def as_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
     ) -> ir.IntervalValue:
@@ -1039,6 +1049,20 @@ class IntegerValue(NumericValue):
             An interval in units of `unit`
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
+
+    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    def to_timestamp(
+        self,
+        unit: Literal["s", "ms", "us"] = "s",
+    ) -> ir.TimestampValue:
+        return self.as_timestamp(unit=unit)
+
+    @deprecated(as_of="10.0", instead="use as_interval() instead")
+    def to_interval(
+        self,
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+    ) -> ir.IntervalValue:
+        return self.as_interval(unit=unit)
 
     def convert_base(
         self,

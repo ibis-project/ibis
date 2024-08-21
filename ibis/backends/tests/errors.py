@@ -55,14 +55,15 @@ except ImportError:
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
+    from google.api_core.exceptions import NotFound as GoogleNotFound
 except ImportError:
-    GoogleBadRequest = None
+    GoogleBadRequest = GoogleNotFound = None
 
 try:
-    from polars import ComputeError as PolarsComputeError
-    from polars import PanicException as PolarsPanicException
     from polars.exceptions import ColumnNotFoundError as PolarsColumnNotFoundError
+    from polars.exceptions import ComputeError as PolarsComputeError
     from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
+    from polars.exceptions import PanicException as PolarsPanicException
     from polars.exceptions import SchemaError as PolarsSchemaError
 except ImportError:
     PolarsComputeError = PolarsPanicException = PolarsInvalidOperationError = (
@@ -132,8 +133,9 @@ except ImportError:
 
 try:
     from oracledb.exceptions import DatabaseError as OracleDatabaseError
+    from oracledb.exceptions import InterfaceError as OracleInterfaceError
 except ImportError:
-    OracleDatabaseError = None
+    OracleDatabaseError = OracleInterfaceError = None
 
 try:
     from pyodbc import DataError as PyODBCDataError

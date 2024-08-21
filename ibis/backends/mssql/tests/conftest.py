@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -35,13 +35,23 @@ class TestConf(ServiceBackendTest):
     def test_files(self) -> Iterable[Path]:
         return self.data_dir.joinpath("csv").glob("*.csv")
 
+    def postload(self, **kw: Any):
+        self.connection = self.connect(database=IBIS_TEST_MSSQL_DB, **kw)
+
+    def _load_data(self, *, database: str = IBIS_TEST_MSSQL_DB, **_):
+        with self.connection._safe_raw_sql(
+            "IF DB_ID('ibis_testing') is NULL BEGIN CREATE DATABASE [ibis_testing] END"
+        ):
+            pass
+
+        super()._load_data(database=database, **_)
+
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.mssql.connect(
             host=MSSQL_HOST,
             user=MSSQL_USER,
             password=MSSQL_PASS,
-            database=IBIS_TEST_MSSQL_DB,
             port=MSSQL_PORT,
             driver=MSSQL_PYODBC_DRIVER,
             autocommit=True,

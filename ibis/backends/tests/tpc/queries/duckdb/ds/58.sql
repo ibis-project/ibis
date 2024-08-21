@@ -11,7 +11,7 @@ WITH ss_items AS
         WHERE d_week_seq =
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date = '2000-01-03'))
+             WHERE d_date = date '2000-01-03'))
      AND ss_sold_date_sk = d_date_sk
    GROUP BY i_item_id),
      cs_items AS
@@ -27,7 +27,7 @@ WITH ss_items AS
         WHERE d_week_seq =
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date = '2000-01-03'))
+             WHERE d_date = date '2000-01-03'))
      AND cs_sold_date_sk = d_date_sk
    GROUP BY i_item_id),
      ws_items AS
@@ -43,7 +43,7 @@ WITH ss_items AS
         WHERE d_week_seq =
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date = '2000-01-03'))
+             WHERE d_date = date '2000-01-03'))
      AND ws_sold_date_sk = d_date_sk
    GROUP BY i_item_id)
 SELECT ss_items.item_id,

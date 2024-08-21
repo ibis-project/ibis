@@ -54,7 +54,12 @@ class PolarsType(TypeMapper):
                 timezone = typ.time_zone
             except AttributeError:  # pragma: no cover
                 timezone = typ.tz  # pragma: no cover
-            return dt.Timestamp(timezone=timezone, nullable=nullable)
+
+            # this will raise on polars for seconds "s" unit as it's not supported
+            return dt.Timestamp.from_unit(
+                unit=typ.time_unit, timezone=timezone, nullable=nullable
+            )
+
         elif base_type is pl.Duration:
             try:
                 time_unit = typ.time_unit
@@ -80,7 +85,14 @@ class PolarsType(TypeMapper):
                 scale=9 if dtype.scale is None else dtype.scale,
             )
         elif dtype.is_timestamp():
-            return pl.Datetime("ns", dtype.timezone)
+            unit = dtype.unit.short
+            if unit in {"us", "ns", "ms"}:
+                return pl.Datetime(unit, dtype.timezone)
+            else:
+                # this for "s", if something else is passed, it'll raise at
+                # the from_unit level.
+                return pl.Datetime("ns", dtype.timezone)  # this was the default before
+
         elif dtype.is_interval():
             if dtype.unit.short in {"us", "ns", "ms"}:
                 return pl.Duration(dtype.unit.short)

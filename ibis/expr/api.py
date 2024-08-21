@@ -825,16 +825,16 @@ def timestamp(
     Create a timestamp scalar from a string
 
     >>> ibis.timestamp("2023-01-02T03:04:05")
-    ┌──────────────────────────────────┐
-    │ Timestamp('2023-01-02 03:04:05') │
-    └──────────────────────────────────┘
+    ┌─────────────────────┐
+    │ 2023-01-02 03:04:05 │
+    └─────────────────────┘
 
     Create a timestamp scalar from components
 
     >>> ibis.timestamp(2023, 1, 2, 3, 4, 5)
-    ┌──────────────────────────────────┐
-    │ Timestamp('2023-01-02 03:04:05') │
-    └──────────────────────────────────┘
+    ┌─────────────────────┐
+    │ 2023-01-02 03:04:05 │
+    └─────────────────────┘
 
     Create a timestamp column from components
 
@@ -860,7 +860,7 @@ def timestamp(
             )
         return ops.TimestampFromYMDHMS(*args).to_expr()
     elif isinstance(value_or_year, (numbers.Real, ir.IntegerValue)):
-        raise TypeError("Use ibis.literal(...).to_timestamp() instead")
+        raise TypeError("Use ibis.literal(...).as_timestamp() instead")
     elif isinstance(value_or_year, ir.Expr):
         return value_or_year.cast(dt.Timestamp(timezone=timezone))
     else:
@@ -910,16 +910,16 @@ def date(value_or_year, month=None, day=None, /):
     Create a date scalar from a string
 
     >>> ibis.date("2023-01-02")
-    ┌───────────────────────────┐
-    │ datetime.date(2023, 1, 2) │
-    └───────────────────────────┘
+    ┌────────────┐
+    │ 2023-01-02 │
+    └────────────┘
 
     Create a date scalar from year, month, and day
 
     >>> ibis.date(2023, 1, 2)
-    ┌───────────────────────────┐
-    │ datetime.date(2023, 1, 2) │
-    └───────────────────────────┘
+    ┌────────────┐
+    │ 2023-01-02 │
+    └────────────┘
 
     Create a date column from year, month, and day
 
@@ -983,16 +983,16 @@ def time(value_or_hour, minute=None, second=None, /):
     Create a time scalar from a string
 
     >>> ibis.time("01:02:03")
-    ┌────────────────────────┐
-    │ datetime.time(1, 2, 3) │
-    └────────────────────────┘
+    ┌──────────┐
+    │ 01:02:03 │
+    └──────────┘
 
     Create a time scalar from hour, minute, and second
 
     >>> ibis.time(1, 2, 3)
-    ┌────────────────────────┐
-    │ datetime.time(1, 2, 3) │
-    └────────────────────────┘
+    ┌──────────┐
+    │ 01:02:03 │
+    └──────────┘
 
     Create a time column from hour, minute, and second
 
@@ -2094,8 +2094,8 @@ def range(start, stop, step) -> ir.ArrayValue:
     Integer ranges are supported, as well as timestamp ranges.
 
     ::: {.callout-note}
-    `start` is inclucive and `stop` is exclusive, just like Python's builtin
-    [`range`](range).
+    `start` is inclusive and `stop` is exclusive, just like Python's builtin
+    [](`range`).
 
     When `step` equals 0, however, this function will return an empty array.
 
@@ -2237,7 +2237,9 @@ def _timestamp_range(
     step: datetime.timedelta | ir.IntervalValue,
 ) -> ir.ArrayValue:
     return ops.TimestampRange(
-        start=normalize_datetime(start), stop=normalize_datetime(stop), step=step
+        start=normalize_datetime(start) if isinstance(start, str) else start,
+        stop=normalize_datetime(stop) if isinstance(stop, str) else stop,
+        step=step,
     ).to_expr()
 
 
@@ -2407,9 +2409,9 @@ def coalesce(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.coalesce(None, 4, 5)
-    ┌────────────┐
-    │ np.int8(4) │
-    └────────────┘
+    ┌───┐
+    │ 4 │
+    └───┘
     """
     return ops.Coalesce(args).to_expr()
 
@@ -2433,9 +2435,9 @@ def greatest(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.greatest(None, 4, 5)
-    ┌────────────┐
-    │ np.int8(5) │
-    └────────────┘
+    ┌───┐
+    │ 5 │
+    └───┘
     """
     return ops.Greatest(args).to_expr()
 
@@ -2459,8 +2461,8 @@ def least(*args: Any) -> ir.Value:
     >>> import ibis
     >>> ibis.options.interactive = True
     >>> ibis.least(None, 4, 5)
-    ┌────────────┐
-    │ np.int8(4) │
-    └────────────┘
+    ┌───┐
+    │ 4 │
+    └───┘
     """
     return ops.Least(args).to_expr()

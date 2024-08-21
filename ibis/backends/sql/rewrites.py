@@ -51,6 +51,7 @@ class Select(ops.Relation):
     parent: ops.Relation
     selections: FrozenDict[str, ops.Value] = {}
     predicates: VarTuple[ops.Value[dt.Boolean]] = ()
+    qualified: VarTuple[ops.Value[dt.Boolean]] = ()
     sort_keys: VarTuple[ops.SortKey] = ()
 
     def is_star_selection(self):
@@ -99,10 +100,26 @@ def project_to_select(_, **kwargs):
     return Select(_.parent, selections=_.values)
 
 
+def partition_predicates(predicates):
+    qualified = []
+    unqualified = []
+
+    for predicate in predicates:
+        if predicate.find(ops.WindowFunction, filter=ops.Value):
+            qualified.append(predicate)
+        else:
+            unqualified.append(predicate)
+
+    return unqualified, qualified
+
+
 @replace(p.Filter)
 def filter_to_select(_, **kwargs):
     """Convert a Filter node to a Select node."""
-    return Select(_.parent, selections=_.values, predicates=_.predicates)
+    predicates, qualified = partition_predicates(_.predicates)
+    return Select(
+        _.parent, selections=_.values, predicates=predicates, qualified=qualified
+    )
 
 
 @replace(p.Sort)
@@ -233,6 +250,9 @@ def merge_select_select(_, **kwargs):
     predicates = tuple(p.replace(subs, filter=ops.Value) for p in _.predicates)
     unique_predicates = toolz.unique(_.parent.predicates + predicates)
 
+    qualified = tuple(p.replace(subs, filter=ops.Value) for p in _.qualified)
+    unique_qualified = toolz.unique(_.parent.qualified + qualified)
+
     sort_keys = tuple(s.replace(subs, filter=ops.Value) for s in _.sort_keys)
     sort_key_exprs = {s.expr for s in sort_keys}
     parent_sort_keys = tuple(
@@ -244,22 +264,23 @@ def merge_select_select(_, **kwargs):
         _.parent.parent,
         selections=selections,
         predicates=unique_predicates,
+        qualified=unique_qualified,
         sort_keys=unique_sort_keys,
     )
     return result if complexity(result) <= complexity(_) else _
 
 
-def extract_ctes(node):
-    result = []
+def extract_ctes(node: ops.Relation) -> set[ops.Relation]:
     cte_types = (Select, ops.Aggregate, ops.JoinChain, ops.Set, ops.Limit, ops.Sample)
     dont_count = (ops.Field, ops.CountStar, ops.CountDistinctStar)
 
     g = Graph.from_bfs(node, filter=~InstanceOf(dont_count))
+    result = set()
     for op, dependents in g.invert().items():
         if isinstance(op, ops.View) or (
             len(dependents) > 1 and isinstance(op, cte_types)
         ):
-            result.append(op)
+            result.add(op)
 
     return result
 
@@ -315,14 +336,14 @@ def sqlize(
         simplified = sqlized
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = frozenset(extract_ctes(simplified))
+    ctes = extract_ctes(simplified)
 
     def wrap(node, _, **kwargs):
         new = node.__recreate__(kwargs)
         return CTE(new) if node in ctes else new
 
     result = simplified.replace(wrap)
-    ctes = reversed([cte.parent for cte in result.find(CTE)])
+    ctes = [cte.parent for cte in result.find(CTE, ordered=True)]
 
     return result, ctes
 
@@ -384,14 +405,6 @@ def exclude_unsupported_window_frame_from_rank(_, **kwargs):
 )
 def exclude_unsupported_window_frame_from_ops(_, **kwargs):
     return _.copy(start=None, end=0, order_by=_.order_by or (ops.NULL,))
-
-
-@replace(p.ArrayCollect)
-def exclude_nulls_from_array_collect(_, **kwargs):
-    where = ops.NotNull(_.arg)
-    if _.where is not None:
-        where = ops.And(where, _.where)
-    return _.copy(where=where)
 
 
 # Rewrite rules for lowering a high-level operation into one composed of more

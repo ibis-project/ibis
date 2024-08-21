@@ -4,6 +4,8 @@ import collections
 import decimal
 from typing import TYPE_CHECKING, Union
 
+import pytest
+
 from ibis.common.dispatch import Dispatched, lazy_singledispatch
 
 # ruff: noqa: F811
@@ -222,7 +224,7 @@ def test_dispatched():
 
 
 def test_dispatched_lazy():
-    import pyarrow as pa
+    pa = pytest.importorskip("pyarrow")
 
     empty_pyarrow_table = pa.Table.from_arrays([])
     empty_pandas_table = empty_pyarrow_table.to_pandas()

@@ -474,6 +474,43 @@ class _FileIOHandler:
                     writer.write_batch(batch)
 
     @util.experimental
+    def to_parquet_dir(
+        self,
+        expr: ir.Table,
+        directory: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file in a directory.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to parquet.
+        directory
+            The data source. A string or Path to the directory where the parquet file will be written.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
+
+        """
+        self._import_pyarrow()
+        import pyarrow.dataset as ds
+
+        # by default write_dataset creates the directory
+        with expr.to_pyarrow_batches(params=params) as batch_reader:
+            ds.write_dataset(
+                batch_reader, base_dir=directory, format="parquet", **kwargs
+            )
+
+    @util.experimental
     def to_csv(
         self,
         expr: ir.Table,
@@ -767,13 +804,12 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
+        self._can_reconnect: bool = True
         # expression cache
         self._query_cache = RefCountedCache(
             populate=self._load_into_cache,
             lookup=lambda name: self.table(name).op(),
             finalize=self._clean_up_cached_table,
-            generate_name=functools.partial(util.gen_name, "cache"),
-            key=lambda expr: expr.op(),
         )
 
     @property
@@ -858,7 +894,10 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     # TODO(kszucs): should call self.connect(*self._con_args, **self._con_kwargs)
     def reconnect(self) -> None:
         """Reconnect to the database already configured with connect."""
-        self.do_connect(*self._con_args, **self._con_kwargs)
+        if self._can_reconnect:
+            self.do_connect(*self._con_args, **self._con_kwargs)
+        else:
+            raise exc.IbisError("Cannot reconnect to unconfigured {self.name} backend")
 
     def do_connect(self, *args, **kwargs) -> None:
         """Connect to database specified by `args` and `kwargs`."""
@@ -1030,13 +1069,8 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""
-        self._define_udf_translation_rules(expr)
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
-
-    def _define_udf_translation_rules(self, expr: ir.Expr):
-        if self.supports_python_udfs:
-            raise NotImplementedError(self.name)
 
     def compile(
         self,
@@ -1045,14 +1079,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
     ) -> Any:
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
-
-    def _to_sqlglot(self, expr: ir.Expr, **kwargs) -> sg.exp.Expression:
-        """Convert an Ibis expression to a sqlglot expression.
-
-        Called by `ibis.to_sql`; gives the backend an opportunity to generate
-        nicer SQL for human consumption.
-        """
-        raise NotImplementedError(f"Backend '{self.name}' backend doesn't support SQL")
 
     def execute(self, expr: ir.Expr) -> Any:
         """Execute an expression."""

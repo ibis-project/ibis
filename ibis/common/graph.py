@@ -176,9 +176,9 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
 
     """
     if isinstance(obj, Pattern):
-        ctx = context or {}
 
         def fn(node, _, **kwargs):
+            ctx = context or {}
             # need to first reconstruct the node from the possible rewritten
             # children, so we can match on the new node containing the rewritten
             # child arguments, this way we can propagate the rewritten nodes
@@ -338,6 +338,7 @@ class Node(Hashable):
         finder: FinderLike,
         filter: Optional[FinderLike] = None,
         context: Optional[dict] = None,
+        ordered: bool = False,
     ) -> list[Node]:
         """Find all nodes matching a given pattern or type in the graph.
 
@@ -355,6 +356,8 @@ class Node(Hashable):
             the given filter and stop otherwise.
         context
             Optional context to use if `finder` or `filter` is a pattern.
+        ordered
+            Emit nodes in topological order if `True`.
 
         Returns
         -------
@@ -364,6 +367,8 @@ class Node(Hashable):
         """
         graph = Graph.from_bfs(self, filter=filter, context=context)
         finder = _coerce_finder(finder, context)
+        if ordered:
+            graph, _ = graph.toposort()
         return [node for node in graph.nodes() if finder(node)]
 
     @experimental

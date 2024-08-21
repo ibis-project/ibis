@@ -199,11 +199,9 @@ def test_parted_column(con, kind):
     assert t.columns == [expected_column, "string_col", "int_col"]
 
 
-def test_cross_project_query(public, snapshot):
+def test_cross_project_query(public):
     table = public.table("posts_questions")
     expr = table[table.tags.contains("ibis")][["title", "tags"]]
-    result = expr.compile()
-    snapshot.assert_match(result, "out.sql")
     n = 5
     df = expr.limit(n).execute()
     assert len(df) == n
@@ -226,17 +224,6 @@ def test_exists_table_different_project(con):
     assert "foobar" not in con.list_tables(database=dataset)
 
 
-def test_multiple_project_queries(con, snapshot):
-    so = con.table(
-        "posts_questions",
-        database=("bigquery-public-data", "stackoverflow"),
-    )
-    trips = con.table("trips", database="nyc-tlc.yellow")
-    join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
-    result = join.compile()
-    snapshot.assert_match(result, "out.sql")
-
-
 def test_multiple_project_queries_execute(con):
     posts_questions = con.table(
         "posts_questions", database="bigquery-public-data.stackoverflow"
@@ -250,11 +237,11 @@ def test_multiple_project_queries_execute(con):
     assert len(result) == 5
 
 
-def test_string_to_timestamp(con):
+def test_string_as_timestamp(con):
     timestamp = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone("UTC")
     )
-    expr = ibis.literal("2017-02-06").to_timestamp("%F")
+    expr = ibis.literal("2017-02-06").as_timestamp("%F")
     result = con.execute(expr)
     assert result == timestamp
 
@@ -262,7 +249,7 @@ def test_string_to_timestamp(con):
         datetime.datetime(year=2017, month=2, day=6, hour=5),
         tz=pytz.timezone("UTC"),
     )
-    expr_tz = ibis.literal("2017-02-06 America/New_York").to_timestamp("%F %Z")
+    expr_tz = ibis.literal("2017-02-06 America/New_York").as_timestamp("%F %Z")
     result_tz = con.execute(expr_tz)
     assert result_tz == timestamp_tz
 
@@ -423,6 +410,17 @@ def test_create_temp_table_from_scratch(project_id, dataset_id):
     assert len(t.execute()) == 1
 
 
+def test_create_table_from_scratch_with_spaces(project_id, dataset_id):
+    con = ibis.bigquery.connect(project_id=project_id, dataset_id=dataset_id)
+    name = f"{gen_name('bigquery_temp_table')} with spaces"
+    df = con.tables.functional_alltypes.limit(1)
+    t = con.create_table(name, obj=df)
+    try:
+        assert len(t.execute()) == 1
+    finally:
+        con.drop_table(name)
+
+
 def test_table_suffix():
     con = ibis.connect("bigquery://ibis-gbq")
     t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
@@ -444,3 +442,17 @@ def test_complex_column_name(con):
     )
     result = con.to_pandas(expr)
     assert result == 1
+
+
+def test_geospatial_interactive(con, monkeypatch):
+    pytest.importorskip("geopandas")
+
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    t = con.table("bigquery-public-data.geo_us_boundaries.zip_codes")
+    expr = (
+        t.filter(lambda t: t.zip_code_geom.geometry_type() == "ST_Polygon")
+        .head(1)
+        .zip_code_geom
+    )
+    result = repr(expr)
+    assert "POLYGON" in result

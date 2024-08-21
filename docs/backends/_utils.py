@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from functools import cache, partial
 from typing import TYPE_CHECKING
 
@@ -35,7 +36,17 @@ def find_member_with_docstring(member):
         return member
 
     cls = member.parent
-    for base in cls.resolved_bases:
+    resolved_bases = cls.resolved_bases
+    # If we're a SQLBackend (likely) then also search through to `BaseBackend``
+    if resolved_bases and (sqlbackend := resolved_bases[0]).name == "SQLBackend":
+        for base in sqlbackend.resolved_bases:
+            if base not in resolved_bases:
+                resolved_bases.append(base)
+
+    # Remove `CanCreateSchema` and `CanListSchema` since they are deprecated
+    # and we don't want to document their existence.
+    filtered_bases = filter(lambda x: "schema" not in x.name.lower(), resolved_bases)
+    for base in filtered_bases:
         try:
             parent_member = get_callable(base, member.name)
         except KeyError:
@@ -78,3 +89,28 @@ def render_methods(obj, *methods: str, level: int) -> None:
 
 def render_do_connect(backend, level: int = 4) -> None:
     render_methods(get_backend(backend), "do_connect", level=level)
+
+
+def dump_methods_to_json_for_algolia(backend, methods):
+    backend_algolia_methods = list()
+    backend_name = backend.canonical_path.split(".")[2]
+    base_url_template = "backends/{backend}#ibis.backends.{backend}.Backend.{method}"
+
+    for method in methods:
+        base_url = base_url_template.format(backend=backend_name, method=method)
+        record = {
+            "objectID": base_url,
+            "href": base_url,
+            "title": f"{backend_name}.Backend.{method}",
+            "text": getattr(
+                find_member_with_docstring(backend.all_members[method]).docstring,
+                "value",
+                "",
+            ),
+            "crumbs": ["Backend API", "API", f"{backend_name} methods"],
+        }
+
+        backend_algolia_methods.append(record)
+
+    with open(f"{backend_name}_methods.json", "w") as f:
+        json.dump(backend_algolia_methods, f)

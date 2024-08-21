@@ -266,11 +266,13 @@ def test_connect_duckdb(url, tmp_path):
 @pytest.mark.parametrize(
     "out_method, extension", [("to_csv", "csv"), ("to_parquet", "parquet")]
 )
-def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
-    getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
+def test_connect_local_file(out_method, extension, tmp_path):
+    df = pd.DataFrame({"a": [1, 2, 3]})
+    path = tmp_path / f"out.{extension}"
+    getattr(df, out_method)(path)
     with pytest.warns(FutureWarning, match="v9.1"):
         # ibis.connect uses con.register
-        con = ibis.connect(tmp_path / f"out.{extension}")
+        con = ibis.connect(path)
     t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
@@ -322,3 +324,82 @@ def test_connect_named_in_memory_db():
 
     default_memory_db = ibis.duckdb.connect()
     assert "ork" not in default_memory_db.list_tables()
+
+
+@pytest.mark.parametrize(
+    ("url", "method_name"),
+    [
+        ("hf://datasets/datasets-examples/doc-formats-csv-1/data.csv", "read_csv"),
+        ("hf://datasets/datasets-examples/doc-formats-jsonl-1/data.jsonl", "read_json"),
+        (
+            "hf://datasets/datasets-examples/doc-formats-parquet-1/data/train-00000-of-00001.parquet",
+            "read_parquet",
+        ),
+    ],
+    ids=["csv", "jsonl", "parquet"],
+)
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux is not allowed to access the network and cannot download the httpfs extension",
+    raises=duckdb.Error,
+)
+def test_hugging_face(con, url, method_name):
+    method = getattr(con, method_name)
+    t = method(url)
+    assert t.count().execute() > 0
+
+
+def test_multiple_tables_with_the_same_name(tmp_path):
+    # check within the same database
+    path = tmp_path / "test1.ddb"
+    with duckdb.connect(str(path)) as con:
+        con.execute("CREATE TABLE t (x INT)")
+        con.execute("CREATE SCHEMA s")
+        con.execute("CREATE TABLE s.t (y STRING)")
+
+    con = ibis.duckdb.connect(path)
+    t1 = con.table("t")
+    t2 = con.table("t", database="s")
+    assert t1.schema() == ibis.schema({"x": "int32"})
+    assert t2.schema() == ibis.schema({"y": "string"})
+
+    path = tmp_path / "test2.ddb"
+    with duckdb.connect(str(path)) as c:
+        c.execute("CREATE TABLE t (y DOUBLE[])")
+
+    # attach another catalog and check that too
+    con.attach(path, name="w")
+    t1 = con.table("t")
+    t2 = con.table("t", database="s")
+    assert t1.schema() == ibis.schema({"x": "int32"})
+    assert t2.schema() == ibis.schema({"y": "string"})
+
+    t3 = con.table("t", database="w.main")
+
+    assert t3.schema() == ibis.schema({"y": "array<float64>"})
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        {"columns": {"lat": "float64", "lon": "float64", "geom": "geometry"}},
+        {"types": {"geom": "geometry"}},
+    ],
+)
+@pytest.mark.parametrize("all_varchar", [True, False])
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
+@pytest.mark.xdist_group(name="duckdb-extensions")
+def test_read_csv_with_types(tmp_path, input, all_varchar):
+    con = ibis.duckdb.connect()
+    data = b"""\
+lat,lon,geom
+1.0,2.0,POINT (1 2)
+2.0,3.0,POINT (2 3)"""
+    path = tmp_path / "data.csv"
+    path.write_bytes(data)
+    t = con.read_csv(path, all_varchar=all_varchar, **input)
+    assert t.schema()["geom"].is_geospatial()

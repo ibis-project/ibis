@@ -138,7 +138,7 @@ a defined API for a built-in database function.
 See [the reference documentation](../../reference/index.qmd) for existing APIs.
 :::
 
-Let's the use the DuckDB backend to demonstrate how to access an aggregate
+Let's use the DuckDB backend to demonstrate how to access an aggregate
 function that isn't exposed in ibis:
 [`kurtosis`](https://en.wikipedia.org/wiki/Kurtosis).
 

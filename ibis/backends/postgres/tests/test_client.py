@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import os
+import string
 from urllib.parse import quote_plus
 
 import hypothesis as h
@@ -30,6 +31,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import PsycoPg2OperationalError
+from ibis.util import gen_name
 
 pytest.importorskip("psycopg2")
 
@@ -171,7 +173,7 @@ def test_create_and_drop_table(con, temp_table, params):
             ("numeric", dt.decimal),
             ("numeric(3, 2)", dt.Decimal(3, 2)),
             ("uuid", dt.uuid),
-            ("jsonb", dt.json),
+            ("jsonb", dt.jsonb),
             ("geometry", dt.geometry),
             ("geography", dt.geography),
         ]
@@ -382,7 +384,7 @@ def test_infoschema_dtypes(con):
 
 
 def test_password_with_bracket():
-    password = f"{IBIS_POSTGRES_PASS}["
+    password = f"{IBIS_POSTGRES_PASS}[]"
     quoted_pass = quote_plus(password)
     url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
     with pytest.raises(
@@ -390,3 +392,43 @@ def test_password_with_bracket():
         match=f'password authentication failed for user "{IBIS_POSTGRES_USER}"',
     ):
         ibis.connect(url)
+
+
+def test_create_geospatial_table_with_srid(con):
+    name = gen_name("geospatial")
+    column_names = string.ascii_lowercase
+    column_types = [
+        "Point",
+        "LineString",
+        "Polygon",
+        "MultiLineString",
+        "MultiPoint",
+        "MultiPolygon",
+    ]
+    schema_string = ", ".join(
+        f"{column} geometry({dtype}, 4326)"
+        for column, dtype in zip(column_names, column_types)
+    )
+    con.raw_sql(f"CREATE TEMP TABLE {name} ({schema_string})")
+    schema = con.get_schema(name)
+    assert schema == ibis.schema(
+        {
+            column: getattr(dt, dtype)(srid=4326)
+            for column, dtype in zip(column_names, column_types)
+        }
+    )
+
+
+@pytest.fixture(scope="module")
+def enum_table(con):
+    name = gen_name("enum_table")
+    con.raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
+    con.raw_sql(f"CREATE TEMP TABLE {name} (mood mood)")
+    yield name
+    con.raw_sql(f"DROP TABLE {name}")
+    con.raw_sql("DROP TYPE mood")
+
+
+def test_enum_table(con, enum_table):
+    t = con.table(enum_table)
+    assert t.mood.type() == dt.unknown

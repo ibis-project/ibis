@@ -13,9 +13,9 @@ SELECT ca_state,
        avg(cd_dep_employed_count) avg2,
        cd_dep_college_count,
        count(*) cnt3,
-       min(cd_dep_college_count),
-       max(cd_dep_college_count),
-       avg(cd_dep_college_count)
+       min(cd_dep_college_count) min3,
+       max(cd_dep_college_count) max3,
+       avg(cd_dep_college_count) avg3
 FROM customer c,
      customer_address ca,
      customer_demographics

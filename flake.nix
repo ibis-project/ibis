@@ -109,10 +109,7 @@
 
         inherit shellHook;
 
-        PGPASSWORD = "postgres";
-        MYSQL_PWD = "ibis";
-        MSSQL_SA_PASSWORD = "1bis_Testing!";
-        DRUID_URL = "druid://localhost:8082/druid/v2/sql";
+        PYSPARK_PYTHON = "${env}/bin/python";
 
         # needed for mssql+pyodbc
         ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
@@ -125,11 +122,11 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis310 ibis311 ibis312;
+        inherit (pkgs) ibisCore310 ibisCore311 ibisCore312 ibisLocal310 ibisLocal311 ibisLocal312;
 
-        default = pkgs.ibis312;
+        default = pkgs.ibisCore312;
 
-        inherit (pkgs) update-lock-files gen-examples check-release-notes-spelling;
+        inherit (pkgs) update-lock-files check-release-notes-spelling;
       };
 
       devShells = rec {

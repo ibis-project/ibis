@@ -36,6 +36,7 @@ from ibis.backends.sql.datatypes import DuckDBType
             ("UUID", dt.uuid),
             ("VARCHAR", dt.string),
             ("INTEGER[]", dt.Array(dt.int32)),
+            ("INTEGER[3]", dt.Array(dt.int32)),
             ("MAP(VARCHAR, BIGINT)", dt.Map(dt.string, dt.int64)),
             (
                 "STRUCT(a INTEGER, b VARCHAR, c MAP(VARCHAR, DOUBLE[])[])",

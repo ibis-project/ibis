@@ -8,9 +8,6 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from filelock import FileLock
 
@@ -21,6 +18,10 @@ if TYPE_CHECKING:
 
 
 PYTHON_SHORT_VERSION = f"{sys.version_info.major}{sys.version_info.minor}"
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 
 class BackendTest(abc.ABC):
@@ -146,7 +147,7 @@ class BackendTest(abc.ABC):
 
     def load_tpcds(self) -> None:
         """Load TPC-DS data."""
-        self._load_tpc(suite="ds", scale_factor="0.2")
+        self._load_tpc(suite="ds", scale_factor="0.45")
 
     @classmethod
     def load_data(

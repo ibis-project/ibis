@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import warnings
 from functools import partial
 from importlib.util import find_spec as _find_spec
 from typing import TYPE_CHECKING
@@ -10,7 +9,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 import pandas.api.types as pdt
-import pyarrow as pa
 
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
@@ -23,14 +21,7 @@ from ibis.formats.pyarrow import PyArrowData, PyArrowSchema, PyArrowType
 
 if TYPE_CHECKING:
     import polars as pl
-
-_has_arrow_dtype = hasattr(pd, "ArrowDtype")
-
-if not _has_arrow_dtype:
-    warnings.warn(
-        f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
-        "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
-    )
+    import pyarrow as pa
 
 geospatial_supported = _find_spec("geopandas") is not None
 
@@ -47,7 +38,7 @@ class PandasType(NumpyType):
                 return dt.String(nullable=nullable)
             return cls.to_ibis(typ.categories.dtype, nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
-            if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
+            if isinstance(typ, pd.ArrowDtype):
                 return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
             else:
                 name = typ.__class__.__name__.replace("Dtype", "")
@@ -200,8 +191,10 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_Timestamp(cls, s, dtype, pandas_type):
-        if isinstance(dtype, pd.DatetimeTZDtype):
-            return s.dt.tz_convert(dtype.timezone)
+        if isinstance(pandas_type, pd.DatetimeTZDtype) and isinstance(
+            s.dtype, pd.DatetimeTZDtype
+        ):
+            return s if s.dtype == pandas_type else s.dt.tz_convert(dtype.timezone)
         elif pdt.is_datetime64_dtype(s.dtype):
             return s.dt.tz_localize(dtype.timezone)
         else:
@@ -406,6 +399,9 @@ class PandasDataFrameProxy(TableProxy[pd.DataFrame]):
         return self.obj
 
     def to_pyarrow(self, schema: sch.Schema) -> pa.Table:
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
         pyarrow_schema = PyArrowSchema.from_ibis(schema)
         return pa.Table.from_pandas(self.obj, schema=pyarrow_schema)
 

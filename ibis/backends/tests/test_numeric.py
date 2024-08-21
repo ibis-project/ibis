@@ -6,8 +6,6 @@ import math
 import operator
 from operator import and_, lshift, or_, rshift, xor
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -36,6 +34,9 @@ from ibis.backends.tests.errors import (
 )
 from ibis.expr import datatypes as dt
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+
 
 @pytest.mark.parametrize(
     ("expr", "expected_types"),
@@ -49,7 +50,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "TINYINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -65,7 +66,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "SMALLINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -97,7 +98,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "BIGINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -113,7 +114,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "UTINYINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -129,7 +130,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "USMALLINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -145,7 +146,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "UINTEGER",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -161,7 +162,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
-                "duckdb": "UBIGINT",
+                "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
@@ -177,7 +178,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "real",
-                "duckdb": "FLOAT",
+                "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
@@ -200,7 +201,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "real",
-                "duckdb": "FLOAT",
+                "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
@@ -216,7 +217,7 @@ from ibis.expr import datatypes as dt
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "double",
-                "duckdb": "DOUBLE",
+                "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
@@ -259,6 +260,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
+                "polars": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -303,6 +305,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "datafusion": decimal.Decimal("1.1"),
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
+                "polars": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -351,17 +354,17 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error),
                 pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["duckdb"],
                     reason="Unsupported precision.",
                     raises=DuckDBParserException,
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["pyspark"],
                     reason="Unsupported precision.",
                     raises=(PySparkParseException, PySparkArithmeticException),
                 ),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["trino"], reason="Unsupported precision.", raises=TrinoUserError
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
@@ -371,6 +374,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
+                pytest.mark.notyet(["polars"], raises=RuntimeError),
             ],
             id="decimal-big",
         ),
@@ -395,7 +399,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -404,7 +408,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -412,8 +416,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 15: Column 'Infinity' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -435,6 +439,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-infinity+",
         ),
@@ -459,7 +464,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -468,7 +473,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -476,8 +481,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 16: Column 'Infinity' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -499,6 +504,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-infinity-",
         ),
@@ -526,7 +532,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "duckdb": "FLOAT",
             },
             marks=[
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["clickhouse"],
                     "Unsupported precision. Supported values: [1 : 76]. Current value: None",
                     raises=NotImplementedError,
@@ -535,7 +541,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     ["mysql", "impala"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     "(pydruid.db.exceptions.ProgrammingError) Plan validation failed "
                     "(org.apache.calcite.tools.ValidationException): "
@@ -543,8 +549,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     "column 10: Column 'NaN' not found in any table",
                     raises=PyDruidProgrammingError,
                 ),
-                pytest.mark.broken(["datafusion"], raises=Exception),
-                pytest.mark.broken(
+                pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.notyet(
                     ["oracle"],
                     "(oracledb.exceptions.DatabaseError) DPY-4004: invalid number",
                     raises=OracleDatabaseError,
@@ -566,12 +572,12 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
             ],
             id="decimal-NaN",
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=TypeError)
 def test_decimal_literal(con, backend, expr, expected_types, expected_result):
     backend_name = backend.name()
     result = con.execute(expr)
@@ -1010,7 +1016,7 @@ def test_complex_math_functions_columns(
             id="round",
             marks=[
                 pytest.mark.notimpl(["mssql"], raises=AssertionError),
-                pytest.mark.broken(
+                pytest.mark.notyet(
                     ["druid"],
                     raises=AssertionError,
                     reason="rounding works but behavior differs from pandas",
@@ -1365,8 +1371,8 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
     backend.assert_series_equal(result, expected, check_names=False)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.broken(
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="SQL query requires 'MIN' operator that is not supported.",
@@ -1377,6 +1383,15 @@ def test_histogram(con, alltypes):
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
     assert vc.tolist() == vc_np.tolist()
+    assert (
+        con.execute(
+            ibis.memtable({"value": range(100)})
+            .select(bin=_.value.histogram(10))
+            .value_counts()
+            .bin_count.nunique()
+        )
+        == 1
+    )
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])
@@ -1431,7 +1446,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
             lshift,
             lambda _: 3,
             lambda t: t.int_col,
-            marks=pytest.mark.broken(
+            marks=pytest.mark.notyet(
                 ["impala"],
                 reason="impala's behavior differs from every other backend",
                 raises=AssertionError,

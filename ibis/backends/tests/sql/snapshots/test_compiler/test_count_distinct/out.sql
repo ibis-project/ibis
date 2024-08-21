@@ -6,7 +6,7 @@ FROM (
     *
   FROM "functional_alltypes" AS "t0"
   WHERE
-    "t0"."bigint_col" > CAST(0 AS TINYINT)
+    "t0"."bigint_col" > 0
 ) AS "t1"
 GROUP BY
   1

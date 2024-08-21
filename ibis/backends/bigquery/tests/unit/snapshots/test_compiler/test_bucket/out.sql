@@ -12,6 +12,6 @@ SELECT
       `t0`.`value` <= 3
     )
     THEN 1
-    ELSE CAST(NULL AS INT64)
+    ELSE NULL
   END AS `tmp`
 FROM `t` AS `t0`

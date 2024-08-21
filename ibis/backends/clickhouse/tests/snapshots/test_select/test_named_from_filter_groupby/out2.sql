@@ -1,5 +1,5 @@
 SELECT
-  "t1"."key",
+  "t1"."key" AS "key",
   SUM((
     (
       "t1"."value" + 1

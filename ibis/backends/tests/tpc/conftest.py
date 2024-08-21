@@ -11,7 +11,6 @@ import sqlglot as sg
 from dateutil.relativedelta import relativedelta
 
 import ibis
-from ibis.formats.pandas import PandasData
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -34,7 +33,7 @@ def pytest_pyfunc_call(pyfuncitem):
     return True
 
 
-def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
+def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
     """Decorator for TPC tests.
 
     Parameters
@@ -52,11 +51,22 @@ def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
     def inner(test: Callable[..., ir.Table]):
         name = f"tpc{suite_name}"
 
-        @getattr(pytest.mark, name)
+        # so that clickhouse doesn't run forever when we hit one of its weird cross
+        # join performance black holes
+        #
+        # trino can sometimes take a while as well, especially in CI
+        #
+        # func_only=True doesn't include the fixture setup time in the duration
+        # of the test run, which is important since backends can take a hugely
+        # variable amount of time to load all the TPC-$WHATEVER tables.
+        @pytest.mark.timeout(60, func_only=True)
         @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
+        @getattr(pytest.mark, name)
         @functools.wraps(test)
         def wrapper(*args, backend, **kwargs):
+            from ibis.formats.pandas import PandasData
+
             backend_name = backend.name()
             if not getattr(backend, f"supports_{name}"):
                 pytest.skip(
@@ -68,33 +78,51 @@ def tpc_test(suite_name: Literal["h", "ds"], result_is_empty=False):
             query_number = query_name_match.group(1)
             sql_path_name = f"{query_number}.sql"
 
-            path = Path(__file__).parent.joinpath(
-                "queries", "duckdb", suite_name, sql_path_name
-            )
+            base = Path(__file__).parent / "queries"
+
+            path = base / backend_name / suite_name / sql_path_name
+
+            if path.exists():
+                dialect = backend_name
+            else:
+                dialect = "duckdb"
+                path = base / "duckdb" / suite_name / sql_path_name
+
             raw_sql = path.read_text()
 
-            sql = sg.parse_one(raw_sql, read="duckdb")
+            sql = sg.parse_one(raw_sql, read=dialect)
 
             sql = backend._transform_tpc_sql(
                 sql, suite=suite_name, leaves=backend.list_tpc_tables(suite_name)
             )
 
-            raw_sql = sql.sql(dialect="duckdb", pretty=True)
+            raw_sql = sql.sql(dialect=dialect, pretty=True)
 
-            expected_expr = backend.connection.sql(raw_sql, dialect="duckdb")
+            expected_expr = backend.connection.sql(raw_sql, dialect=dialect)
 
             result_expr = test(*args, **kwargs)
 
             assert result_expr._find_backend(use_default=False) is backend.connection
             result = backend.connection.to_pandas(result_expr)
-            assert (result_is_empty and result.empty) or not result.empty
+
+            assert (result_is_empty and result.empty) or (
+                not result_is_empty and not result.empty
+            )
 
             expected = expected_expr.to_pandas()
-            assert list(map(str.lower, expected.columns)) == result.columns.tolist()
+
+            assert len(expected.columns) == len(result.columns)
+            assert all(
+                r.lower() in e.lower() for r, e in zip(result.columns, expected.columns)
+            )
+
             expected.columns = result.columns
 
             expected = PandasData.convert_table(expected, result_expr.schema())
-            assert (result_is_empty and expected.empty) or not expected.empty
+
+            assert (result_is_empty and expected.empty) or (
+                not result_is_empty and not expected.empty
+            )
 
             assert len(expected) == len(result)
             assert result.columns.tolist() == expected.columns.tolist()

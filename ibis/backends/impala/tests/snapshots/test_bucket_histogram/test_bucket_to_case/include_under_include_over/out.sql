@@ -22,6 +22,6 @@ SELECT
     THEN 3
     WHEN 50 < `t0`.`f`
     THEN 4
-    ELSE CAST(NULL AS TINYINT)
+    ELSE NULL
   END AS `Bucket(f, ())`
 FROM `alltypes` AS `t0`

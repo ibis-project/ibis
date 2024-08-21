@@ -14,15 +14,17 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 
+import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
-from ibis.backends.datafusion.compiler import DataFusionCompiler
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import C
+from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
@@ -66,7 +68,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     name = "datafusion"
     supports_in_memory_tables = True
     supports_arrays = True
-    compiler = DataFusionCompiler()
+    compiler = sc.datafusion.compiler
 
     @property
     def version(self):
@@ -77,12 +79,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
     def do_connect(
         self, config: Mapping[str, str | Path] | SessionContext | None = None
     ) -> None:
-        """Create a Datafusion backend for use with Ibis.
+        """Create a DataFusion `Backend` for use with Ibis.
 
         Parameters
         ----------
         config
-            Mapping of table names to files.
+            Mapping of table names to files or a `SessionContext`
+            instance.
 
         Examples
         --------
@@ -112,6 +115,18 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         for name, path in config.items():
             self.register(path, table_name=name)
 
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: SessionContext) -> Backend:
+        """Create a DataFusion `Backend` from an existing `SessionContext` instance.
+
+        Parameters
+        ----------
+        con
+            A `SessionContext` instance.
+        """
+        return ibis.datafusion.connect(con)
+
     def disconnect(self) -> None:
         pass
 
@@ -125,7 +140,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         src = sge.Create(
             this=table,
             kind="VIEW",
-            expression=sg.parse_one(query, read="datafusion"),
+            expression=sg.parse_one(query, read=self.dialect),
             properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
 
@@ -329,7 +344,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name
             The name of the table
         kwargs
-            Datafusion-specific keyword arguments
+            DataFusion-specific keyword arguments
 
         Examples
         --------
@@ -423,7 +438,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -451,7 +466,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
         **kwargs
-            Additional keyword arguments passed to Datafusion loading function.
+            Additional keyword arguments passed to DataFusion loading function.
 
         Returns
         -------
@@ -537,13 +552,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 # convert the renamed + casted columns into a record batch
                 pa.RecordBatch.from_struct_array(
                     # rename columns to match schema because datafusion lowercases things
-                    pa.RecordBatch.from_arrays(batch.columns, names=names)
+                    pa.RecordBatch.from_arrays(batch.to_pyarrow().columns, names=names)
                     # cast the struct array to the desired types to work around
                     # https://github.com/apache/arrow-datafusion-python/issues/534
                     .to_struct_array()
                     .cast(struct_schema, safe=False)
                 )
-                for batch in frame.collect()
+                for batch in frame.execute_stream()
             )
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), make_gen())
@@ -576,7 +591,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         temp: bool = False,
         overwrite: bool = False,
     ):
-        """Create a table in Datafusion.
+        """Create a table in DataFusion.
 
         Parameters
         ----------
@@ -614,21 +629,23 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             # If it's a memtable, it will get registered in the pre-execute hooks
             self._run_pre_execute_hooks(table)
 
+            compiler = self.compiler
             relname = "_"
             query = sg.select(
                 *(
-                    self.compiler.cast(
+                    compiler.cast(
                         sg.column(col, table=relname, quoted=quoted), dtype
                     ).as_(col, quoted=quoted)
                     for col, dtype in table.schema().items()
                 )
             ).from_(
-                self._to_sqlglot(table).subquery(
+                compiler.to_sqlglot(table).subquery(
                     sg.to_identifier(relname, quoted=quoted)
                 )
             )
         elif obj is not None:
-            _read_in_memory(obj, name, self, overwrite=overwrite)
+            table_ident = sg.table(name, db=database, quoted=quoted).sql(self.dialect)
+            _read_in_memory(obj, table_ident, self, overwrite=overwrite)
             return self.table(name, database=database)
         else:
             query = None
@@ -687,7 +704,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        ident = sg.table(name, db=db, catalog=catalog).sql(self.name)
+        ident = sg.table(name, db=db, catalog=catalog).sql(self.dialect)
         with self._safe_raw_sql(sge.delete(ident)):
             pass
 
@@ -696,7 +713,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
     """Workaround inability to overwrite tables in dataframe API.
 
-    Datafusion has helper methods for loading in-memory data, but these methods
+    DataFusion has helper methods for loading in-memory data, but these methods
     don't allow overwriting tables.
     The SQL interface allows creating tables from existing tables, so we register
     the data as a table using the dataframe API, then run a

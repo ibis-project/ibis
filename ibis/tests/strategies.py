@@ -3,9 +3,9 @@ from __future__ import annotations
 import warnings
 
 import hypothesis as h
-import hypothesis.extra.pandas as past
 import hypothesis.extra.pytz as tzst
 import hypothesis.strategies as st
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -81,7 +81,7 @@ def binary_dtype(nullable=_nullable):
 
 
 def json_dtype(nullable=_nullable):
-    return st.builds(dt.JSON, nullable=nullable)
+    return st.builds(dt.JSON, binary=st.booleans(), nullable=nullable)
 
 
 def inet_dtype(nullable=_nullable):
@@ -178,30 +178,17 @@ def struct_dtypes(
     return dt.Struct(fields, nullable=draw(nullable))
 
 
-def geometry_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geometry"), nullable=nullable)
-
-
-def geography_dtypes(nullable=_nullable):
-    return st.builds(dt.GeoSpatial, geotype=st.just("geography"), nullable=nullable)
-
-
-def specific_geometry_dtypes(nullable=_nullable):
-    return st.one_of(
-        st.builds(dt.Point, nullable=nullable),
-        st.builds(dt.LineString, nullable=nullable),
-        st.builds(dt.Polygon, nullable=nullable),
-        st.builds(dt.MultiPoint, nullable=nullable),
-        st.builds(dt.MultiLineString, nullable=nullable),
-        st.builds(dt.MultiPolygon, nullable=nullable),
-    )
-
-
 def geospatial_dtypes(nullable=_nullable):
+    geotype = st.one_of(st.just("geography"), st.just("geometry"))
+    srid = st.one_of(st.just(None), st.integers(min_value=0))
     return st.one_of(
-        specific_geometry_dtypes(nullable=nullable),
-        geometry_dtypes(nullable=nullable),
-        geography_dtypes(nullable=nullable),
+        st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.Polygon, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPoint, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiLineString, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.MultiPolygon, geotype=geotype, nullable=nullable, srid=srid),
+        st.builds(dt.GeoSpatial, geotype=geotype, nullable=nullable, srid=srid),
     )
 
 
@@ -253,6 +240,9 @@ all_schema = schema(all_dtypes)
 
 @st.composite
 def memtable(draw, schema=schema(primitive_dtypes)):  # noqa: B008
+    pytest.importorskip("pandas")
+    past = pytest.importorskip("hypothesis.extra.pandas")
+
     schema = draw(schema)
 
     columns = [past.column(name, dtype=dtype) for name, dtype in schema.to_pandas()]

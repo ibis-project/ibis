@@ -1,4 +1,4 @@
-SELECT SUM (ss_quantity)
+SELECT SUM (ss_quantity) total
 FROM store_sales,
      store,
      customer_demographics,

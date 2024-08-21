@@ -10,22 +10,21 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
-from ibis.backends.mysql.compiler import MySQLCompiler
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compiler import STAR, TRUE, C
+from ibis.backends.sql.compilers.base import STAR, TRUE, C
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -38,7 +37,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanCreateDatabase):
     name = "mysql"
-    compiler = MySQLCompiler()
+    compiler = sc.mysql.compiler
     supports_create_or_replace = False
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -151,7 +150,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             month : int32
 
         """
-        con = pymysql.connect(
+        self.con = pymysql.connect(
             user=user,
             host=host,
             port=port,
@@ -162,13 +161,30 @@ class Backend(SQLBackend, CanCreateDatabase):
             **kwargs,
         )
 
-        with contextlib.closing(con.cursor()) as cur:
+        self._post_connect()
+
+    @util.experimental
+    @classmethod
+    def from_connection(cls, con: pymysql.Connection) -> Backend:
+        """Create an Ibis client from an existing connection to a MySQL database.
+
+        Parameters
+        ----------
+        con
+            An existing connection to a MySQL database.
+        """
+        new_backend = cls()
+        new_backend._can_reconnect = False
+        new_backend.con = con
+        new_backend._post_connect()
+        return new_backend
+
+    def _post_connect(self) -> None:
+        with contextlib.closing(self.con.cursor()) as cur:
             try:
                 cur.execute("SET @@session.time_zone = 'UTC'")
             except Exception as e:  # noqa: BLE001
                 warnings.warn(f"Unable to set session timezone to UTC: {e}")
-
-        self.con = con
 
     @property
     def current_database(self) -> str:
@@ -301,7 +317,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             [deprecated] The schema to perform the list against.
         database
             Database to list tables from. Default behavior is to show tables in
-            the current database (``self.current_database``).
+            the current database (`self.current_database`).
         """
         if schema is not None:
             self._warn_schema()
@@ -326,11 +342,11 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         conditions = [TRUE]
 
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+        if table_loc.catalog or table_loc.db:
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
         col = "table_name"
@@ -380,13 +396,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
 
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
-            )
-        else:
-            database = None
-
         properties = []
 
         if temp:
@@ -402,7 +411,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
 
@@ -499,7 +508,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             df = op.data.to_frame()
             # nan can not be used with MySQL
-            df = df.replace(np.nan, None)
+            df = df.replace(float("nan"), None)
 
             data = df.itertuples(index=False)
             sql = self._build_insert_template(

@@ -245,8 +245,8 @@ class CoercionError(Exception): ...
 class Coercible(Abstract):
     """Protocol for defining coercible types.
 
-    Coercible types define a special ``__coerce__`` method that accepts an object
-    with an instance of the type. Used in conjunction with the ``coerced_to``
+    Coercible types define a special `__coerce__` method that accepts an object
+    with an instance of the type. Used in conjunction with the `coerced_to``
     pattern to coerce arguments to a specific type.
     """
 

@@ -21,13 +21,17 @@ in
     name = "ibis-testing-data";
     owner = "ibis-project";
     repo = "testing-data";
-    rev = "747fffe044db20fcfb36115c58559d805fb6cf5a";
-    sha256 = "sha256-ARjWMwgJCapDvxyOK4+Hde6gBqX4KHLPIvFP5E5IOx8=";
+    rev = "b26bd40cf29004372319df620c4bbe41420bb6f8";
+    sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
-  ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
-  ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
+  ibisCore310 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python310; };
+  ibisCore311 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python311; };
+  ibisCore312 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python312; };
+
+  ibisLocal310 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python310; };
+  ibisLocal311 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python311; };
+  ibisLocal312 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python312; };
 
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
