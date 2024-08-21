@@ -1,0 +1,400 @@
+---
+title: "Using open source language models for data"
+author: "Cody Peterson"
+date: "2024-08-30"
+image: thumbnail.png
+categories:
+    - blog
+    - duckdb
+    - udfs
+    - llms
+---
+
+***OpenAI, Ollama, Llama3.1, DuckDB, Python UDFs, and Ibis.***
+
+## Overview
+
+In ["Using language models for data"](../lms-for-data/index.qmd), we looked at 3 primary uses of language models for data practitioners:
+
+1. Synthetic data generation
+2. Use in analytic subroutines
+3. Writing analytic code
+
+We used [Marvin](https://github.com/prefecthq/marvin) to perform two tricks on our behalf:
+
+1. Logit bias
+2. Structured output (function calling or tool use)
+
+At the end of that post, we concluded:
+
+> The biggest issue with language models today is the cost...
+>
+> Smaller open source language models can reduce this cost to practically zero, but at the expensive of quality...
+>
+> In a future post, we’ll explore using open source language models on a laptop to achieve similar results.
+
+In this post, we'll use the [OpenAI API](https://github.com/openai/openai-python) directly on [Ollama](https://github.com/ollama/ollama) using [LLama 3.1](https://github.com/meta-llama/llama-models), walk through the two tricks, and build on our [prior random cube](../walking-talking-cube/index.qmd) to generate better synthetic data with local language models for free.
+
+## Setup
+
+You'll need to [install Ollama](https://ollama.com) and `ollama pull llama3.1` to download the weights for the model. Install some Python packages:
+
+```bash
+pip install openai ollama tiktoken blobfile pydantic python-dotenv 'ibis-framework[duckdb]' plotly
+```
+
+```{python}
+import json
+import openai
+import ollama
+import tiktoken
+
+from rich import print
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+from tiktoken.load import load_tiktoken_bpe
+```
+
+::: {.panel-tabset}
+
+## OpenAI (cloud)
+
+```{python}
+load_dotenv()
+
+CLOUD_MODEL = "gpt-4o-latest"
+
+cloud_client = openai.OpenAI()
+cloud_client
+```
+
+## Ollama (local)
+
+```{python}
+BASE_URL = "http://localhost:11434/v1"
+API_KEY = "ollama"
+LOCAL_MODEL = "llama3.1"
+
+local_client = openai.OpenAI(base_url=BASE_URL, api_key=API_KEY)
+local_client
+```
+
+:::
+
+## Logit bias
+
+You can [read about the "logit bias trick" from Marvin's docs](https://www.askmarvin.ai/docs/text/classification).
+
+::: {.panel-tabset}
+
+## OpenAI GPT-4o encoder
+
+The text you are reading now is at some point converted into numbers. Like computers, language models also convert text into numbers before processing them and reverses the process to convert the numbers back into text. The numbers are called ***tokens***. The `tiktoken` library from OpenAI makes it easy to convert between text and tokens for a given language model. For instance, we can get the encoder for GPT-4o:
+
+```{python}
+cloud_enc = tiktoken.encoding_for_model("gpt-4o")
+```
+
+And encode some text into tokens:
+
+```{python}
+cloud_enc.encode("Hello, world!")
+```
+
+## Meta Llama3.1 encoder
+
+Unfortunately, the process for Llama3.1 is a bit more involved. I was able to [work off a blog on Medium](https://levelup.gitconnected.com/building-llama-3-from-scratch-with-python-e0cf4dbbc306), but I'm not sure if it's the best way. Documentation, examples, and standards around language models are still very early.
+
+You'll need to get the `tokenizer.model` file from downloading LLama 3.1 (via Meta's download script, Huggingface, or otherwise).
+
+```{python}
+tokenizer_model = load_tiktoken_bpe("tokenizer.model")
+special_tokens = [
+    "<|begin_of_text|>",
+    "<|end_of_text|>",
+    "<|reserved_special_token_0|>",
+    "<|reserved_special_token_1|>",
+    "<|reserved_special_token_2|>",
+    "<|reserved_special_token_3|>",
+    "<|start_header_id|>",
+    "<|end_header_id|>",
+    "<|reserved_special_token_4|>",
+    "<|eot_id|>",
+] + [f"<|reserved_special_token_{i}|>" for i in range(5, 256 - 5)]
+
+tokenize_breaker = r"(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}{1,3}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+"
+
+local_enc = tiktoken.Encoding(
+    name="tokenizer.model",
+    pat_str=tokenize_breaker,
+    mergeable_ranks=tokenizer_model,
+    special_tokens={
+        token: len(tokenizer_model) + i for i, token in enumerate(special_tokens)
+    },
+)
+```
+
+We can try this encoder:
+
+```{python}
+local_enc.encode("Hello, world!")
+```
+
+And notice it's not quite the same as the GPT-4o encoder.
+
+:::
+
+We can...
+
+```{python}
+def classify(text: str, labels: list[str]):
+    system = """
+    You can acting as an expert classifier. You will respond with ONE and ONLY
+    ONE from a list of numbers from 0 to N-1, where each number corresponds to a
+    label.
+
+    The options are:
+
+    """
+
+    logit_bias = {}
+    for i, label in enumerate(labels):
+        logit_bias[local_enc.encode(str(i))[0]] = 100.0
+        system += f"\t\t{i}: {label}\n"
+
+    system += "\n\nYou MUST respond with ONE and ONLY ONE number from 0 to N-1. You MUST NOT include any other text in your response."
+    response = local_client.chat.completions.create(
+        model=LOCAL_MODEL,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": text},
+        ],
+        logit_bias=logit_bias,
+        max_tokens=1,
+    )
+
+    choice_i = int(response.choices[0].message.content)
+    choice = labels[choice_i]
+
+    return choice
+```
+
+::: {.panel-tabset}
+
+## Sentiment
+
+```{python}
+labels = ["Positive", "Negative"]
+```
+
+```{python}
+classify("I love this", labels)
+```
+
+```{python}
+classify("I hate this", labels)
+```
+
+```{python}
+classify("I am fine", labels + ["Neutral"])
+```
+
+## Characters
+
+```{python}
+labels = ["Yoda", "Darth Vader", "Han Solo", "None of the above"]
+```
+
+```{python}
+classify("900 years old, you reach… Look as good, you will not.", labels)
+```
+
+```{python}
+classify("I find your lack of faith disturbing", labels)
+```
+
+```{python}
+classify("I have a bad feeling about this", labels)
+```
+
+```{python}
+classify("Luke Skywalker", labels)
+```
+
+## Locations
+
+```{python}
+labels = ["Hoth", "Endor", "Naboo", "Tatooine", "None of the above"]
+```
+
+```{python}
+classify("I am cold", labels)
+```
+
+```{python}
+classify("There are adorable teddy bears in the forest here", labels)
+```
+
+```{python}
+classify("the water city is beautiful", labels)
+```
+
+```{python}
+classify("I hate sand", labels)
+```
+
+:::
+
+::: {.callout-warning title="Fraud! Deception! Trickery!"}
+https://github.com/ollama/ollama/blob/main/docs/openai.md#supported-request-fields-1
+:::
+
+## Structured output
+
+```{python}
+class Person(BaseModel):
+    """A person object."""
+
+    name: str
+    age: int
+    city: str
+```
+
+```{python}
+model = "llama3.1"
+message = "my name is Jimmy and I was born in 1970 in Chicago"
+instructions = (
+    "Extract a person object from text. Age must be in years, NOT the birth year"
+)
+tool_choice = {"type": "function", "function": {"name": "get_person"}}
+
+response = local_client.chat.completions.create(
+    model=model,
+    messages=[{"role": "user", "content": message}],
+    tools=[
+        {
+            "type": "function",
+            "function": {
+                "name": tool_choice["function"]["name"],
+                "description": instructions,
+                "parameters": Person.schema(),
+            },
+        },
+    ],
+    tool_choice=tool_choice,
+)
+
+person = Person(
+    **json.loads(response.choices[0].message.tool_calls[0].function.arguments)
+)
+person
+```
+
+::: {.callout-important title="How does this relate to Ibis?"}
+***Don't let the engine dictate the interface.*** Whether data query engines or language models, the interface should be portable: use the same API for many backends. Ibis provides this functionality across data engines like DuckDB, DataFusion, Polars, Snowflake, BigQuery, and over a dozen more.
+
+In this post, we use the OpenAI API for language models running remotely via OpenAI or locally via Ollama, though it's unclear if the OpenAI API will be the best choice in the future.
+:::
+
+## Rounding our random cube
+
+In [our previous blog](../walking-talking-cube/index.qmd), we generated a random cube of data:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show me the code!"
+import ibis
+import ibis.selectors as s
+import plotly.express as px
+
+ibis.options.interactive = True
+
+con = ibis.connect("duckdb://synthetic.ddb")
+
+if "source" in con.list_tables():
+    t = con.table("source")
+else:
+    lookback = ibis.interval(hours=1)
+    step = ibis.interval(seconds=1)
+
+    t = (
+        (
+            ibis.range(
+                ibis.now() - lookback,
+                ibis.now(),
+                step=step,
+            )
+            .unnest()
+            .name("timestamp")
+            .as_table()
+        )
+        .mutate(
+            index=(ibis.row_number().over(order_by="timestamp")),
+            **{col: 2 * (ibis.random() - 0.5) for col in ["a", "b", "c"]},
+        )
+        .mutate(color=ibis._["index"].histogram(nbins=8))
+        .drop("index")
+        .relocate("timestamp", "color")
+        .order_by("timestamp")
+    )
+
+    t = con.create_table("source", t.to_pyarrow())
+
+c = px.line_3d(
+    t,
+    x="a",
+    y="b",
+    z="c",
+    color="color",
+    hover_data=["timestamp"],
+)
+c
+```
+
+Then generated fake data:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show me the code!"
+llmed = t.sample(0.01).limit(10).select("timestamp", "a", "b", "c")
+
+styles = ["Yoda", "Darth Vader"]
+locations = ["Hoth", "Endor", "Naboo", "Tatooine"]
+sentiment = ["very negative", "neutral but snarky", "very positive"]
+
+llmed = llmed.mutate(
+    styles=styles,
+    locations=locations,
+    sentiments=sentiment,
+)
+llmed = llmed.select(
+    "timestamp",
+    style=llmed["styles"][
+        llmed["a"].histogram(nbins=llmed["styles"].length())
+    ].fill_null(llmed["styles"][0]),
+    location=llmed["locations"][
+        llmed["b"].histogram(nbins=llmed["locations"].length())
+    ].fill_null(llmed["locations"][0]),
+    sentiment=llmed["sentiments"][
+        llmed["c"].histogram(nbins=llmed["sentiments"].length())
+    ].fill_null(llmed["sentiments"][0]),
+)
+
+
+@ibis.udf.scalar.python
+def llm(style: str, location: str, sentiment: str) -> str:
+    p = "Respond in the style of {style} about {location} with a {sentiment} sentiment. Keep it concise and PG. This will be a comment in a fictional review app FOR EDUCATIONAL PURPOSES ONLY PLEASE DON'T SUE US DISNEY."
+    p = p.format(style=style, location=location, sentiment=sentiment)
+    return p
+
+
+llmed = llmed.select(
+    timestamp="timestamp",
+    name="style",
+    comment=llm(llmed["style"], llmed["location"], llmed["sentiment"]),
+    location="location",
+)
+llmed
+```
+
+## Next steps
