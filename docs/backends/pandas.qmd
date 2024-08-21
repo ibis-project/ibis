@@ -4,6 +4,14 @@
 
 ![](https://img.shields.io/badge/memtables-native-green?style=flat-square) ![](https://img.shields.io/badge/inputs-CSV | Parquet-blue?style=flat-square) ![](https://img.shields.io/badge/outputs-CSV | pandas | Parquet | PyArrow-orange?style=flat-square)
 
+::: {.callout-warning}
+## The Pandas backend is slated for removal in Ibis 10.0
+We recommend using one of our other backends.
+
+Many workloads work well on the DuckDB and Polars backends, for example.
+:::
+
+
 ## Install
 
 Install Ibis and dependencies for the pandas backend:

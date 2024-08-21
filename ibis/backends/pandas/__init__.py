@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
@@ -51,6 +52,10 @@ class BasePandasBackend(BaseBackend, NoUrl):
         <ibis.backends.pandas.Backend at 0x...>
 
         """
+        warnings.warn(
+            f"The {self.name} backend is slated for removal in 10.0.",
+            DeprecationWarning,
+        )
         self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
