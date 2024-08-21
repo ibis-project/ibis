@@ -1,25 +1,24 @@
 ---
 title: "Using IbisML and DuckDB for a Kaggle competition: credit risk model stability"
 author: "Jiting Xu"
-date: "2024-08-15"
+date: "2024-08-21"
 categories:
     - blog
-    - DuckDB
+    - duckdb
     - machine learning
     - feature engineering
-execute:
-    freeze: auto
 ---
 
 ## Introduction
-In this post, we'll demonstrate how to use Ibis and IbisML end-to-end for the
+In this post, we'll demonstrate how to use Ibis and [IbisML](https://github.com/ibis-project/ibis-ml)
+end-to-end for the
 [credit risk model stability Kaggle competition](https://www.kaggle.com/competitions/home-credit-credit-risk-model-stability).
 
 1. Load data and perform feature engineering on DuckDB backend using IbisML
 2. Perform last-mile ML data preprocessing on DuckDB backend using IbisML
 3. Train two models using different frameworks:
     * An XGBoost model within a scikit-learn pipeline.
-    * A neural network with PyTorch and PyTorch Lightning
+    * A neural network with PyTorch and PyTorch Lightning.
 
 The aim of this competition is to predict which clients are more likely to default on their
 loans by using both internal and external data sources.
@@ -93,6 +92,8 @@ ibis.options.interactive = True
 Set the backend for computing:
 ```{python}
 con = ibis.duckdb.connect()
+# remove the black bars from duckdb's progress bar
+con.raw_sql("set enable_progress_bar = false")
 # DuckDB is the default backend for Ibis
 ibis.set_backend(con)
 ```
@@ -612,7 +613,7 @@ Calculate all the days difference between any date columns and the column `date_
 #| code-summary: "Show code to calculate days difference between date columns and date_decision"
 date_cols = [col_name for col_name in df_train.columns if col_name[-1] == "D"]
 days_to_decision_expr = {
-    # Difference in days
+    # difference in days
     f"{col}_date_decision_diff": (
         _.date_decision.epoch_seconds() - getattr(_, col).epoch_seconds()
     )
