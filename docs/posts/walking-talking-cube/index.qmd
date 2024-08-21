@@ -24,6 +24,7 @@ import ibis.selectors as s
 import plotly.express as px  # <1>
 
 ibis.options.interactive = True  # <2>
+ibis.options.repr.interactive.max_rows = 5  # <2>
 
 con = ibis.connect("duckdb://synthetic.ddb")  # <3>
 
@@ -90,7 +91,7 @@ c
 We have a random cube of data:
 
 ```{python}
-t.head()
+t
 ```
 
 But we need to make it [walk](https://en.wikipedia.org/wiki/Random_walk). We'll
@@ -109,7 +110,7 @@ walked = t.select(
     b=t["b"].sum().over(window),
     c=t["c"].sum().over(window),
 ).order_by("timestamp")
-walked.head()
+walked
 ```
 
 ## With column selectors
@@ -124,7 +125,7 @@ walked = t.select(
         ibis._.sum().over(window),  # <2>
     ),
 ).order_by("timestamp")
-walked.head()
+walked
 ```
 
 1. Alternatively, you can use `s.of_type(float)` to select all float columns.
@@ -163,7 +164,7 @@ data (e.g. the number of shares being bid on).
 
 Let's demonstrate this concept by pretending we have an application where users
 can review a location they're at. The user's name, comment, and location are
-stored alongside their review at a given timestamp.
+stored for their review at a given timestamp.
 
 [Faker](https://github.com/joke2k/faker) is a commonly used Python library for
 generating fake data. We'll use it to generate fake names, comments, and
@@ -250,7 +251,7 @@ else:
 
     faked = con.create_table("faked", faked)
 
-faked.head()
+faked
 ```
 
 And now we have a "realistic" dataset of fake reviews matching our desired
