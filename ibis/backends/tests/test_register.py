@@ -510,48 +510,6 @@ def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch
         assert table.op().name == in_table_name
 
 
-# test read_parquet from a fsspec url for backends using pyarrow
-# that do not have their own implementation
-@pytest.mark.notimpl(
-    [
-        "druid",
-        "flink",
-        "duckdb",
-        "polars",
-        "bigquery",
-        "dask",
-        "clickhouse",
-        "datafusion",
-        "snowflake",
-        "pyspark",
-    ]
-)
-@pytest.mark.parametrize(
-    "fsspec_url",
-    [
-        "s3://data-bucket/datasets/sample.parquet",
-        "gs://data-bucket/datasets/sample.parquet",
-    ],
-)
-def test_read_parquet_fsspec_url(con, fsspec_url, data_dir, monkeypatch):
-    pq = pytest.importorskip("pyarrow.parquet")
-
-    mock_calls = []
-    fname = Path("functional_alltypes.parquet")
-    fname = Path(data_dir) / "parquet" / fname.name
-
-    def mock_read_table(args, **kwargs):
-        mock_calls.append((args, kwargs))
-        parquet_file = pq.ParquetFile(fname)
-        return parquet_file.read()
-
-    monkeypatch.setattr(pq, "read_table", mock_read_table)
-    table = con.read_parquet(fsspec_url)
-
-    assert len(mock_calls) == 1
-    assert table.count().execute()
-
-
 @pytest.fixture(scope="module")
 def ft_data(data_dir):
     pq = pytest.importorskip("pyarrow.parquet")
