@@ -115,7 +115,6 @@ def test_struct_column(alltypes, df):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave", "polars"])
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 def test_collect_into_struct(alltypes):
     from ibis import _
 

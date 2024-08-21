@@ -572,23 +572,7 @@ def test_reduction_ops(
     reason="risingwave requires an `order_by` for these aggregations",
 )
 @pytest.mark.parametrize("method", ["first", "last"])
-@pytest.mark.parametrize(
-    "filtered",
-    [
-        param(
-            False,
-            marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
-                    strict=False,
-                )
-            ],
-        ),
-        True,
-    ],
-)
+@pytest.mark.parametrize("filtered", [False, True])
 @pytest.mark.parametrize(
     "include_null",
     [
@@ -662,23 +646,7 @@ def test_first_last(backend, alltypes, method, filtered, include_null):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("method", ["first", "last"])
-@pytest.mark.parametrize(
-    "filtered",
-    [
-        param(
-            False,
-            marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
-                    strict=False,
-                )
-            ],
-        ),
-        True,
-    ],
-)
+@pytest.mark.parametrize("filtered", [False, True])
 @pytest.mark.parametrize(
     "include_null",
     [
@@ -965,11 +933,6 @@ def test_quantile(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
-                ),
-                pytest.mark.xfail_version(
-                    datafusion=["datafusion==38.0.1"],
-                    reason="datafusion FILTER syntax seems broken",
-                    strict=False,  # passes with no filter condition
                 ),
             ],
         ),
@@ -1369,22 +1332,7 @@ def test_group_concat_ordered(alltypes, df, filtered):
     ["clickhouse", "dask", "pandas", "pyspark", "flink"],
     raises=com.UnsupportedOperationError,
 )
-@pytest.mark.parametrize(
-    "filtered",
-    [
-        param(
-            True,
-            marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
-                )
-            ],
-        ),
-        False,
-    ],
-)
+@pytest.mark.parametrize("filtered", [True, False])
 def test_collect_ordered(alltypes, df, filtered):
     ibis_cond = (_.id % 13 == 0) if filtered else None
     pd_cond = (df.id % 13 == 0) if filtered else True
@@ -1407,22 +1355,7 @@ def test_collect_ordered(alltypes, df, filtered):
 @pytest.mark.notimpl(
     ["dask"], raises=AttributeError, reason="Dask doesn't implement tolist()"
 )
-@pytest.mark.parametrize(
-    "filtered",
-    [
-        param(
-            True,
-            marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
-                )
-            ],
-        ),
-        False,
-    ],
-)
+@pytest.mark.parametrize("filtered", [True, False])
 @pytest.mark.parametrize(
     "include_null",
     [
