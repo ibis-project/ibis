@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from urllib.parse import urlencode
+
 import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -8,6 +10,14 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import udf
+from ibis.backends.mssql.tests.conftest import (
+    IBIS_TEST_MSSQL_DB,
+    MSSQL_HOST,
+    MSSQL_PASS,
+    MSSQL_PORT,
+    MSSQL_PYODBC_DRIVER,
+    MSSQL_USER,
+)
 
 RAW_DB_TYPES = [
     # Exact numbers
@@ -204,3 +214,17 @@ def test_create_temp_table_from_obj(con):
     assert persisted_from_temp.to_pyarrow().equals(t2.to_pyarrow())
 
     con.drop_table("fuhreal")
+
+
+def test_from_url():
+    user = MSSQL_USER
+    password = MSSQL_PASS
+    host = MSSQL_HOST
+    port = MSSQL_PORT
+    database = IBIS_TEST_MSSQL_DB
+    driver = MSSQL_PYODBC_DRIVER
+    new_con = ibis.connect(
+        f"mssql://{user}:{password}@{host}:{port}/{database}?{urlencode(dict(driver=driver))}"
+    )
+    result = new_con.sql("SELECT 1 AS [a]").to_pandas().a.iat[0]
+    assert result == 1

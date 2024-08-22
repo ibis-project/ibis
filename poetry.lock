@@ -1356,20 +1356,21 @@ test = ["pandas[test]", "pre-commit", "pytest", "pytest-cov", "pytest-rerunfailu
 
 [[package]]
 name = "datafusion"
-version = "39.0.0"
+version = "40.1.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-39.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:6b6450f41a443c1b30d4f66a4b105e71e489e8e6b8be601798fcb52a6452a44f"},
-    {file = "datafusion-39.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5f6a8c3a69c924e0bfbc8ac1b2cfead1ad941892d9f1f40218c2c47902acf1a8"},
-    {file = "datafusion-39.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:20eb69600e0a18f46b8e89d8ffab3631df4ddd147f449547d3ff5c4c34bce913"},
-    {file = "datafusion-39.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:6a132186805c1c56c2bd63379cdc95ba98b88b9bbdac212655ee2e4bb5e15283"},
-    {file = "datafusion-39.0.0.tar.gz", hash = "sha256:53f65e0e9804b0343a0bd6470c6e924a7ba4a1d6e47c1055215c35dd7c35e128"},
+    {file = "datafusion-40.1.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:983b5b89a3aaaf2789f0423564cc24dbe5eb3f4f0a7daa8e87b35ce4d2920d6b"},
+    {file = "datafusion-40.1.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be44d24971e73d324a3f41503bb091f48d171d50d1d2415b469ca5e3953b5a0e"},
+    {file = "datafusion-40.1.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fd8c3689e9d195a9603a00e399b995a6343587d0763358f2eee65b85d5f56a37"},
+    {file = "datafusion-40.1.0-cp38-abi3-win_amd64.whl", hash = "sha256:2960871ce31ee489ef3b210e77c4048278e9ee873517eff9f46ca52c82eb166d"},
+    {file = "datafusion-40.1.0.tar.gz", hash = "sha256:7c7cfd2bcf491adcf6580f0ff5882ca9fc658dbdab30802ad46889e417965cc6"},
 ]
 
 [package.dependencies]
 pyarrow = ">=11.0.0"
+typing-extensions = {version = "*", markers = "python_version < \"3.13\""}
 
 [[package]]
 name = "db-dtypes"
@@ -6882,13 +6883,13 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "25.14.0"
+version = "25.15.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.14.0-py3-none-any.whl", hash = "sha256:37ceb08e7527659cc3a08bad1010a84953183a5f7edd1bb3ab5969586875bce2"},
-    {file = "sqlglot-25.14.0.tar.gz", hash = "sha256:202c49fb1e3957364ec0dad3a0d48af29972047c34b31e7b000a518f609c0063"},
+    {file = "sqlglot-25.15.0-py3-none-any.whl", hash = "sha256:86bb8c4214cc39e93f51776a50fe74fae3b1a61c21710a05e7913aa4b30ec1d7"},
+    {file = "sqlglot-25.15.0.tar.gz", hash = "sha256:b6bb428a3c0845021a02becf343efe5ad97a3f2d0f1a0472b2b9877188cdf646"},
 ]
 
 [package.extras]
@@ -7890,4 +7891,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "fdd252ff8cf242c40a5048cc5df9d8f946d0707058c140788ebd8295e19d99ae"
+content-hash = "9b9daab1d5b33cf034142e77e7e1a734ae9d60f2b4d5c8723337656a254cc36f"

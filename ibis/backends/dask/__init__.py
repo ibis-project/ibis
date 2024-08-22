@@ -48,16 +48,14 @@ class Backend(BasePandasBackend, NoUrl):
         >>> ibis.dask.connect(data)
 
         """
-        if dictionary is None:
-            dictionary = {}
+        super().do_connect(dictionary)
 
-        for k, v in dictionary.items():
+        for k, v in self.dictionary.items():
             if not isinstance(v, (dd.DataFrame, pd.DataFrame)):
                 raise TypeError(
                     f"Expected an instance of 'dask.dataframe.DataFrame' for {k!r},"
                     f" got an instance of '{type(v).__name__}' instead."
                 )
-        super().do_connect(dictionary)
 
     def disconnect(self) -> None:
         pass

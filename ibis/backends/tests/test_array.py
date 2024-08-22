@@ -303,11 +303,6 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
-)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -331,11 +326,6 @@ def test_unnest_idempotent(backend):
 
 
 @builtin_array
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
-)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()

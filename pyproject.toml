@@ -41,7 +41,7 @@ atpublic = ">=2.3,<6"
 parsy = ">=2,<3"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
-sqlglot = ">=23.4,<25.15"
+sqlglot = ">=23.4,<25.16"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 numpy = { version = ">=1.23.2,<3", optional = true }
@@ -59,7 +59,7 @@ dask = { version = ">=2022.9.1,<2024.3.0", optional = true, extras = [
   "array",
   "dataframe",
 ] }
-datafusion = { version = ">=0.6,<40", optional = true }
+datafusion = { version = ">=0.6,<41", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.8.1,<2", optional = true }
@@ -385,6 +385,8 @@ filterwarnings = [
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
+  # dask and pandas backend deprecation
+  'ignore:The (dask|pandas) backend is slated for removal in 10\.0:DeprecationWarning',
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
