@@ -8,6 +8,7 @@ import struct
 from contextlib import closing
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
 
 import pyodbc
 import sqlglot as sg
@@ -21,12 +22,13 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -73,7 +75,7 @@ def datetimeoffset_to_datetime(value):
 # Databases: sys.schemas
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     name = "mssql"
     compiler = sc.mssql.compiler
     supports_create_or_replace = False
@@ -168,6 +170,40 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         with closing(self.con.cursor()) as cur:
             cur.execute("SET DATEFIRST 1")
+
+    def _from_url(self, url: ParseResult, **kwargs):
+        database, *_ = url.path[1:].split("/", 1)
+        kwargs.update(
+            {
+                "user": url.username,
+                "password": unquote_plus(url.password or ""),
+                "host": url.hostname,
+                "database": database or "",
+                "port": url.port or None,
+            }
+        )
+
+        self._convert_kwargs(kwargs)
+
+        if "host" in kwargs and not kwargs["host"]:
+            del kwargs["host"]
+
+        if "user" in kwargs and not kwargs["user"]:
+            del kwargs["user"]
+
+        if "password" in kwargs and kwargs["password"] is None:
+            del kwargs["password"]
+
+        if "port" in kwargs and kwargs["port"] is None:
+            del kwargs["port"]
+
+        if "database" in kwargs and not kwargs["database"]:
+            del kwargs["database"]
+
+        if "driver" in kwargs and not kwargs["driver"]:
+            del kwargs["driver"]
+
+        return self.connect(**kwargs)
 
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
