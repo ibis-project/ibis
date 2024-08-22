@@ -8,7 +8,8 @@ categories:
     - community
 ---
 
-TLDR; we are deprecating the `pandas` backend and will be removing it in version 10.0
+**TL; DR**: we are deprecating the `pandas` backend and will be removing it in version 10.0.
+
 There is no feature gap between the `pandas` backend and our default DuckDB
 backend, and DuckDB is _much_ more performant.  `pandas` DataFrames will still
 be available as _format_ for getting data from Ibis, we just won't support using
@@ -55,7 +56,7 @@ directly.
 And to provide this suboptimal experience, we have a few thousand lines of code
 that are only used in the `pandas` backend.
 
-### NaN vs NULL
+### `NaN` vs `NULL`
 
 The choice was made a long time ago to accept using `NaN` as the marker for
 missing values in `pandas`.  This is because NumPy has a notion of `NaN`, but a
@@ -68,7 +69,7 @@ missing value, and NaN is Not a Number.
 Those are fundamentally different ideas and it is an ongoing headache for Ibis
 to try to pretend that they aren't.
 
-### Datatypes
+### Data types
 
 The new Arrow-backed types in `pandas` are a great improvement and we'll leave
 it at that.
@@ -88,7 +89,7 @@ getting things going.
 
 ## Feature parity
 
-This is the real reason to drop the `pandas` backend -- it is redundant.  The
+This is the one of the strongest reasons to drop the `pandas` backend -- it is redundant.  The
 DuckDB backend can seamlessly query pandas DataFrames, supports several flavors
 of UDF, and can read and write parquet, CSV, JSON, and other formats.
 
