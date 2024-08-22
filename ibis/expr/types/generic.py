@@ -2399,6 +2399,7 @@ class NullColumn(Column, NullValue):
 
 
 @public
+@deferrable
 def null(type: dt.DataType | str | None = None) -> Value:
     """Create a NULL scalar.
 
