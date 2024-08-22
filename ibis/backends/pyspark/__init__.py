@@ -184,7 +184,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # Databricks Serverless compute only supports limited properties
         # and any attempt to set unsupported properties will result in an error.
         # https://docs.databricks.com/en/spark/conf.html
-        with contextlib.suppress(Exception):
+        from pyspark.errors.exceptions.connect import SparkConnectGrpcException
+        # from pyspark.errors.exceptions.base import PySparkException
+        with contextlib.suppress(SparkConnectGrpcException):
             self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
         for key, value in kwargs.items():
