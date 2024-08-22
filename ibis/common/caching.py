@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import functools
 import sys
-from collections import namedtuple
-from typing import TYPE_CHECKING, Any
-from weakref import finalize, ref
+import weakref
+from typing import TYPE_CHECKING, NamedTuple
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, MutableMapping
+
+    import ibis.expr.operations as ops
+    from ibis.backends import BaseBackend
 
 
 def memoize(func: Callable) -> Callable:
@@ -27,30 +29,29 @@ def memoize(func: Callable) -> Callable:
     return wrapper
 
 
-CacheEntry = namedtuple("CacheEntry", ["name", "ref", "finalizer"])
+class CacheEntry(NamedTuple):
+    name: str
+    ref: weakref.ReferenceType[ops.DatabaseTable]
+    finalizer: weakref.finalize
 
 
-class RefCountedCache:
-    """A cache with implicitly reference-counted values.
+class QueryCache:
+    """A cache for executed Ibis expressions.
 
+    Typically implemented by storing computed expressions as temporary tables
+    in the backend.
+
+    Notes
+    -----
     We could implement `MutableMapping`, but the `__setitem__` implementation
     doesn't make sense and the `len` and `__iter__` methods aren't used.
 
     We can implement that interface if and when we need to.
     """
 
-    def __init__(
-        self,
-        *,
-        populate: Callable[[str, Any], None],
-        lookup: Callable[[str], Any],
-        finalize: Callable[[Any], None],
-    ) -> None:
-        self.populate = populate
-        self.lookup = lookup
-        self.finalize = finalize
-
-        self.cache: dict[Any, CacheEntry] = dict()
+    def __init__(self, backend: BaseBackend) -> None:
+        self.backend = backend
+        self.cache: MutableMapping[ops.Relation, CacheEntry] = {}
 
     def get(self, key, default=None):
         if (entry := self.cache.get(key)) is not None:
@@ -58,7 +59,7 @@ class RefCountedCache:
             return op if op is not None else default
         return default
 
-    def __getitem__(self, key):
+    def __getitem__(self, key: ops.Relation) -> ops.DatabaseTable:
         op = self.cache[key].ref()
         if op is None:
             raise KeyError(key)
@@ -70,25 +71,29 @@ class RefCountedCache:
 
         key = input.op()
         name = gen_name("cache")
-        self.populate(name, input)
-        cached = self.lookup(name)
-        finalizer = finalize(cached, self._release, key)
 
-        self.cache[key] = CacheEntry(name, ref(cached), finalizer)
+        self.backend._load_into_cache(name, input)
+
+        cached = self.backend.table(name).op()
+        finalizer = weakref.finalize(cached, self._release, key)
+
+        self.cache[key] = CacheEntry(name, weakref.ref(cached), finalizer)
 
         return cached
 
     def release(self, name: str) -> None:
+        """Release a cached table by `name`."""
         # Could be sped up with an inverse dictionary
         for key, entry in self.cache.items():
             if entry.name == name:
                 self._release(key)
                 return
 
-    def _release(self, key) -> None:
+    def _release(self, key: ops.Relation) -> None:
+        """Release a cached table by `key` relation."""
         entry = self.cache.pop(key)
         try:
-            self.finalize(entry.name)
+            self.backend._clean_up_cached_table(entry.name)
         except Exception:
             # suppress exceptions during interpreter shutdown
             if not sys.is_finalizing():
