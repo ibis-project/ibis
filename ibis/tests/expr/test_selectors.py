@@ -517,3 +517,15 @@ def test_window_function_group_by_order_by(penguins):
             order_by=[penguins.sex, penguins.year],
         )
     )
+
+
+def test_methods(penguins):
+    selector = s.across(s.all(), ibis.null(_.type()).name("foo_" + _.get_name()))
+    bound = selector.expand(penguins)
+    assert [col.get_name() for col in bound] == [
+        f"foo_{col}" for col in penguins.columns
+    ]
+
+    selector = s.across(s.all(), ibis.null(_.type()))
+    bound = selector.expand(penguins)
+    assert [col.get_name() for col in bound] == penguins.columns
