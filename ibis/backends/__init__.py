@@ -41,10 +41,9 @@ class TablesAccessor(collections.abc.Mapping):
     >>> con = ibis.sqlite.connect("example.db")
     >>> people = con.tables["people"]  # access via index
     >>> people = con.tables.people  # access via attribute
-
     """
 
-    def __init__(self, backend: BaseBackend):
+    def __init__(self, backend: BaseBackend) -> None:
         self._backend = backend
 
     def __getitem__(self, name) -> ir.Table:
@@ -1005,7 +1004,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         """
 
-    @functools.cached_property
+    @property
     def tables(self):
         """An accessor for tables in the database.
 
