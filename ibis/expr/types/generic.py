@@ -2427,6 +2427,7 @@ def null(type: dt.DataType | str | None = None) -> Value:
 
 
 @public
+@deferrable
 def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     """Create a scalar expression from a Python value.
 
@@ -2480,6 +2481,23 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     Traceback (most recent call last):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
+
+    Literals can also be used in a deferred context.
+
+    Here's an example of constructing a table of a column's type repeated for
+    every row:
+
+    >>> from ibis import _, selectors as s
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.select(s.across(s.all(), ibis.literal(_.type(), type=str).name(_.get_name()))).head(1)
+    ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string │ string         │ string        │ string            │ … │
+    ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ string  │ string │ float64        │ float64       │ int64             │ … │
+    └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
     """
     if isinstance(value, Expr):
         node = value.op()
