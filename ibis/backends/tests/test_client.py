@@ -36,7 +36,6 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
-    TrinoUserError,
 )
 from ibis.util import gen_name
 
@@ -523,9 +522,6 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notyet(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
-@pytest.mark.notyet(
-    ["trino"], raises=TrinoUserError, reason="requires a non-memory connector"
-)
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 def test_insert_overwrite_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_2
@@ -566,11 +562,6 @@ def test_insert_no_overwrite_from_expr(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
 @pytest.mark.notyet(
-    ["trino"],
-    raises=TrinoUserError,
-    reason="requires a non-memory connector for truncation",
-)
-@pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
@@ -590,9 +581,6 @@ def test_insert_overwrite_from_expr(
     )
 
 
-@pytest.mark.notyet(
-    ["trino"], reason="memory connector doesn't allow writing to tables"
-)
 @pytest.mark.notimpl(
     ["polars", "pandas", "dask"], reason="`insert` method not implemented"
 )
@@ -1725,4 +1713,40 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
     # Clean up
     con.drop_table(table, database=dbname)
+    con.drop_database(dbname)
+
+
+@pytest.mark.notyet(["druid"], reason="can't create tables")
+@pytest.mark.notyet(
+    ["flink"], reason="can't create non-temporary tables from in-memory data"
+)
+def test_cross_database_join(con_create_database, monkeypatch):
+    con = con_create_database
+
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    left = ibis.memtable({"a": [1], "b": [2]})
+    right = ibis.memtable({"a": [1], "c": [3]})
+
+    # Create an extra database
+    con.create_database(dbname := gen_name("dummy_db"))
+
+    # Insert left into current_database
+    left = con.create_table(left_table := gen_name("left"), obj=left)
+
+    # Insert right into new database
+    right = con.create_table(
+        right_table := gen_name("right"), obj=right, database=dbname
+    )
+
+    expr = left.join(right, "a")
+    assert expr.columns == ["a", "b", "c"]
+
+    result = expr.to_pyarrow()
+    expected = pa.Table.from_pydict({"a": [1], "b": [2], "c": [3]})
+
+    assert result.equals(expected)
+
+    con.drop_table(left_table)
+    con.drop_table(right_table, database=dbname)
     con.drop_database(dbname)

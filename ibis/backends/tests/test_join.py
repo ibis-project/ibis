@@ -51,12 +51,7 @@ def check_eq(left, right, how, **kwargs):
         "left",
         param(
             "right",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
-                sqlite_right_or_full_mark,
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",
@@ -67,9 +62,6 @@ def check_eq(left, right, how, **kwargs):
                 pytest.mark.notimpl(["mysql"]),
                 sqlite_right_or_full_mark,
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
             ],
         ),
     ],

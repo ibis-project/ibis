@@ -708,6 +708,7 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
+    ops.ApproxCountDistinct: "approx_n_unique",
     ops.Count: "count",
     ops.CountDistinct: "n_unique",
     ops.Max: "max",
@@ -1113,9 +1114,24 @@ def comparison(op, **kw):
 @translate.register(ops.Between)
 def between(op, **kw):
     op_arg = op.arg
+    arg_dtype = op_arg.dtype
+
     arg = translate(op_arg, **kw)
-    lower = translate(op.lower_bound, **kw)
-    upper = translate(op.upper_bound, **kw)
+
+    dtype = PolarsType.from_ibis(arg_dtype)
+
+    lower_bound = op.lower_bound
+    lower = translate(lower_bound, **kw)
+
+    if lower_bound.dtype != arg_dtype:
+        lower = lower.cast(dtype)
+
+    upper_bound = op.upper_bound
+    upper = translate(upper_bound, **kw)
+
+    if upper_bound.dtype != arg_dtype:
+        upper = upper.cast(dtype)
+
     return arg.is_between(lower, upper, closed="both")
 
 

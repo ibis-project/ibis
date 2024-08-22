@@ -1,7 +1,7 @@
 ---
 title: "Testing 20 databases on every commit"
 author: Phillip Cloud
-date: "2024-8-14"
+date: "2024-08-14"
 execute:
   echo: true
 format:
@@ -18,7 +18,7 @@ format:
 - 0 DBs  ✅
 - 1 DB   😇
 - 2 DBs  😬
-- 5+ DBs 😱
+- 3+ DBs 😱
 :::
 
 ::: {.fragment}
@@ -240,7 +240,7 @@ _CI must complete "quickly"_
 
 # How does this stack up?
 
-## Terminology
+## Terminology {auto-animate=true}
 
 ::: {.fragment}
 Job
@@ -268,7 +268,7 @@ my_other_job:
 ```
 :::
 
-## Job metrics
+## Job metrics {auto-animate=true}
 
 ![](https://storage.googleapis.com/posit-conf-2024/jobs.svg){fig-align="center"}
 
@@ -278,7 +278,7 @@ _We've added 3 or 4 new backends since the switch_
 :::
 :::
 
-## Workflow metrics
+## Workflow metrics {auto-animate=true}
 
 ![Queue time and workflow duration](https://storage.googleapis.com/posit-conf-2024/workflows.svg){fig-align="center"}
 
@@ -304,3 +304,9 @@ _We've added 3 or 4 new backends since the switch_
 - Spend time on dev ex
 
 # Questions?
+
+![](../../logo.svg){fig-align="center"}
+
+::: {.r-fit-text}
+<https://ibis-project.org>
+:::

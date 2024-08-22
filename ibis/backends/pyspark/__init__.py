@@ -25,6 +25,7 @@ from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
+from ibis.backends.sql.compilers.base import AlterTable
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
@@ -669,10 +670,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         old = sg.table(old_name, quoted=True)
         new = sg.table(new_name, quoted=True)
-        query = sge.AlterTable(
-            this=old,
-            exists=False,
-            actions=[sge.RenameTable(this=new, exists=True)],
+        query = AlterTable(
+            this=old, exists=False, actions=[sge.RenameTable(this=new, exists=True)]
         )
         with self._safe_raw_sql(query):
             pass

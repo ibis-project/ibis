@@ -105,6 +105,13 @@ class CreateTable(ImpalaBase, CreateDDL):
     def _location(self):
         return f"LOCATION '{self.path}'" if self.path else None
 
+    def _tbl_properties(self):
+        return (
+            self.format_tblproperties(self.tbl_properties)
+            if self.tbl_properties
+            else None
+        )
+
     def _storage(self):
         # By the time we're here, we have a valid format
         return f"STORED AS {self.format}"
@@ -152,6 +159,7 @@ class CreateTableWithSchema(CreateTable):
             yield self._storage()
 
         yield self._location()
+        yield self._tbl_properties()
 
 
 class AlterTable(ImpalaBase, DDL):
@@ -258,6 +266,7 @@ class CTAS(CreateTable):
         can_exist=False,
         path=None,
         partition=None,
+        tbl_properties=None,
     ):
         super().__init__(
             table_name,
@@ -267,6 +276,7 @@ class CTAS(CreateTable):
             can_exist=can_exist,
             path=path,
             partition=partition,
+            tbl_properties=tbl_properties,
         )
         self.select = select
 
@@ -275,6 +285,7 @@ class CTAS(CreateTable):
         yield self._partitioned_by()
         yield self._storage()
         yield self._location()
+        yield self._tbl_properties()
         yield "AS"
         yield self.select
 

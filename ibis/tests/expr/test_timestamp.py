@@ -169,8 +169,13 @@ def test_timestamp_field_access_on_time_failure(field, alltypes):
 
 
 def test_integer_timestamp_fails():
-    with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.to_timestamp"):
+    with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.as_timestamp"):
         ibis.timestamp(42)
+
+
+def test_to_timestamp_deprecation():
+    with pytest.warns(FutureWarning, match="v10.0"):
+        ibis.literal(42).to_timestamp()
 
 
 @pytest.mark.parametrize(

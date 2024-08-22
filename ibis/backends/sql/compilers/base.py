@@ -33,6 +33,16 @@ from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 
+try:
+    from sqlglot.expressions import Alter
+except ImportError:
+    from sqlglot.expressions import AlterTable
+else:
+
+    def AlterTable(*args, kind="TABLE", **kwargs):
+        return Alter(*args, kind=kind, **kwargs)
+
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
@@ -1043,19 +1053,6 @@ class SQLGlotCompiler(abc.ABC):
         return self.agg.max(arg, where=where)
 
     ### Stats
-
-    def visit_Quantile(self, op, *, arg, quantile, where):
-        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
-        funcname = f"percentile_{suffix}"
-        expr = sge.WithinGroup(
-            this=self.f[funcname](quantile),
-            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
-        )
-        if where is not None:
-            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
-
-    visit_MultiQuantile = visit_Quantile
 
     def visit_VarianceStandardDevCovariance(self, op, *, how, where, **kw):
         hows = {"sample": "samp", "pop": "pop"}

@@ -169,8 +169,10 @@ class SqlglotType(TypeMapper):
 
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions)
+        elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
+            dtype = known_typ(nullable=cls.default_nullable)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = dt.unknown
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -1055,7 +1057,12 @@ class ClickHouseType(SqlglotType):
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
         typ = super().from_ibis(dtype)
+
+        if typ.this == typecode.NULLABLE:
+            return typ
+
         # nested types cannot be nullable in clickhouse
+        typ.args["nullable"] = False
         if dtype.nullable and not (
             dtype.is_map() or dtype.is_array() or dtype.is_struct()
         ):

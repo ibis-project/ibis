@@ -67,7 +67,7 @@ jobs:
 
       - name: Install Algolia API Dependencies
         run: |
-          python -m pip install --upgrade algoliasearch
+          python -m pip install --upgrade 'algoliasearch<4'
 
       - name: Create and Upload Base Index
         run: |

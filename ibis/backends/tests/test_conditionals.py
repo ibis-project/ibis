@@ -90,11 +90,6 @@ def test_value_cases_scalar(con, inp, exp):
         assert result == exp
 
 
-@pytest.mark.notimpl(
-    "exasol",
-    reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to ints",
-    raises=AssertionError,
-)
 def test_value_cases_column(batting):
     np = pytest.importorskip("numpy")
 
@@ -124,7 +119,7 @@ def test_ibis_cases_scalar():
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "exasol"],
+    ["sqlite"],
     reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to 5",
     raises=TypeError,
 )

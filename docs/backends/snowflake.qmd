@@ -79,7 +79,8 @@ con = ibis.snowflake.connect(
     user="user",
     password="password",
     account="safpqpq-sq55555",
-    database="IBIS_TESTING/IBIS_TESTING",
+    database="my_database",
+    schema="my_schema",
 )
 ```
 
@@ -119,7 +120,8 @@ APIs. All values of `authenticator` are supported.
 con = ibis.snowflake.connect(
     user="user",
     account="safpqpq-sq55555",
-    database="my_database/my_schema",
+    database="my_database",
+    schema="my_schema",
     warehouse="my_warehouse",
     authenticator="externalbrowser",
 )
@@ -129,8 +131,38 @@ con = ibis.snowflake.connect(
 
 ```python
 con = ibis.connect(
-    f"snowflake://{user}@{account}/{database}?warehouse={warehouse}",
+    f"snowflake://{user}@{account}/{database}/{schema}?warehouse={warehouse}",
     authenticator="externalbrowser",
+)
+```
+
+### Authenticating with Key Pair Authentication
+
+Ibis supports connecting to Snowflake warehouses using private keys.
+
+You can use it in the explicit-parameters-style or in the URL-style connection
+APIs.
+
+#### Explicit
+
+```python
+con = ibis.snowflake.connect(
+    user="user",
+    account="safpqpq-sq55555",
+    database="my_database",
+    schema="my_schema",
+    warehouse="my_warehouse",
+    # extracted private key from .p8 file
+    private_key=os.getenv(SNOWFLAKE_PKEY),
+)
+```
+
+#### URL
+
+```python
+con = ibis.connect(
+    f"snowflake://{user}@{account}/{database}/{schema}?warehouse={warehouse}",
+    private_key=os.getenv(SNOWFLAKE_PKEY),
 )
 ```
 

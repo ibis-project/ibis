@@ -50,7 +50,6 @@ def test_01(store_returns, date_dim, store, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.notimpl(["datafusion"], reason="internal error")
 def test_02(web_sales, catalog_sales, date_dim):
     wscs = web_sales.select(
         sold_date_sk=_.ws_sold_date_sk, sales_price=_.ws_ext_sales_price
@@ -1353,6 +1352,7 @@ def test_26(catalog_sales, customer_demographics, date_dim, item, promotion):
 
 
 @tpc_test("ds")
+@pytest.mark.notyet(["datafusion"], reason="Failed to plan")
 def test_27(store_sales, customer_demographics, date_dim, store, item):
     results = (
         store_sales.join(customer_demographics, [("ss_cdemo_sk", "cd_demo_sk")])
@@ -2116,7 +2116,6 @@ def test_42(date_dim, store_sales, item):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Internal error")
 def test_43(date_dim, store_sales, store):
     return (
         date_dim.filter(_.d_year == 2000)
@@ -2984,7 +2983,6 @@ def test_58(store_sales, item, date_dim, catalog_sales, web_sales):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Internal error")
 def test_59(store_sales, date_dim, store):
     days = [(cal.day_abbr[i].lower(), cal.day_name[i]) for i in range(-1, 6)]
 

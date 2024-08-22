@@ -28,7 +28,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:11.4.3
+    image: mariadb:11.5.2
     ports:
       - 3306:3306
     networks:
@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.8.3
+    image: bitnami/minio:2024.8.17
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:449
+    image: trinodb/trino:454
     ports:
       - 8080:8080
     networks:

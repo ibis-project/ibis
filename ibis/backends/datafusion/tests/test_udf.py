@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pandas.testing as tm
 import pytest
-from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
@@ -69,10 +68,6 @@ def test_builtin_agg_udf(con):
     assert result == con.tables.batting.G.execute().median()
 
 
-@pytest.mark.xfail(
-    condition=vparse(datafusion.__version__) >= vparse("38.0.1"),
-    reason="internal error about MEDIAN(G) naming",
-)
 def test_builtin_agg_udf_filtered(con):
     @udf.agg.builtin
     def median(a: float, where: bool = True) -> float:
