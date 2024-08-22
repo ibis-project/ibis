@@ -1,7 +1,7 @@
 ---
 title: "Using IbisML and DuckDB for a Kaggle competition: credit risk model stability"
 author: "Jiting Xu"
-date: "2024-08-21"
+date: "2024-08-22"
 categories:
     - blog
     - duckdb
@@ -567,7 +567,7 @@ We will perform the following transformation before feeding the data to models:
 ::: {.callout-note}
 IbisML provides a set of transformations. You can find the
 [roadmap](https://github.com/ibis-project/ibis-ml/issues/32).
-The [IbisML website](https://ibis-project.github.io/ibis-ml/) also includes tutorials and API documentation..
+The [IbisML website](https://ibis-project.github.io/ibis-ml/) also includes tutorials and API documentation.
 :::
 
 ### Impute features
@@ -674,7 +674,7 @@ phase. Here are two approaches:
 
 * Use IbisML as a independent data preprocessing component and hand off the data to downstream modeling
 frameworks with various output formats:
-     - Pandas Dataframe
+     - pandas Dataframe
      - NumPy Array
      - Polars Dataframe
      - Dask Dataframe
@@ -916,7 +916,7 @@ your workflow. Additionally, IbisML supports a variety of data output formats su
 compatibility with different machine learning frameworks.
 
 Another key advantage of IbisML is its flexibility in performing data preprocessing across multiple backends, including
-DuckDB, Polars, Spark, BigQuery, and other Ibis-supported platforms. This enables you to preprocess your training data
+DuckDB, Polars, Spark, BigQuery, and other Ibis backends. This enables you to preprocess your training data
 using the backend that best suits your needs, whether for large or small datasets, on local machines or compute backends,
 and in both development and production environments. Stay tuned for a future post where we will explore this capability in
 more detail.
