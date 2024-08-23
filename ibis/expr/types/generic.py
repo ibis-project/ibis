@@ -71,7 +71,7 @@ class Value(Expr):
         # TODO(kszucs): shouldn't do simplification here, but rather later
         # when simplifying the whole operation tree
         # the expression's name is idendical to the new one
-        if self.has_name() and self.get_name() == name:
+        if self.get_name() == name:
             return self
 
         if isinstance(self.op(), ops.Alias):
@@ -2399,6 +2399,7 @@ class NullColumn(Column, NullValue):
 
 
 @public
+@deferrable
 def null(type: dt.DataType | str | None = None) -> Value:
     """Create a NULL scalar.
 
