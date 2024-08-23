@@ -472,7 +472,8 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
         "clickhouse",
         "datafusion",
         "snowflake",
-    ]
+    ],
+    reason="backend implements its own read_parquet",
 )
 @pytest.mark.notyet(["flink"])
 @pytest.mark.notimpl(
@@ -483,7 +484,7 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
 )
 def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
     pytest.importorskip("pyarrow.parquet")
-    import fsspec
+    fsspec = pytest.importorskip("fsspec")
 
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name
