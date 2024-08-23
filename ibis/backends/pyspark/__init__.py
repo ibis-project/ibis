@@ -187,10 +187,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # https://docs.databricks.com/en/spark/conf.html
         try:
             from pyspark.errors.exceptions.connect import SparkConnectGrpcException
+        except ImportError:
+            # Use a dummy class for when spark connect is not available
+            class SparkConnectGrpcException(Exception):
+                pass
 
+        with contextlib.suppress(SparkConnectGrpcException):
             self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
-        except (ImportError, SparkConnectGrpcException):
-            pass
 
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
