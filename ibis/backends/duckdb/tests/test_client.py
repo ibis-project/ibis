@@ -266,11 +266,13 @@ def test_connect_duckdb(url, tmp_path):
 @pytest.mark.parametrize(
     "out_method, extension", [("to_csv", "csv"), ("to_parquet", "parquet")]
 )
-def test_connect_local_file(out_method, extension, test_employee_data_1, tmp_path):
-    getattr(test_employee_data_1, out_method)(tmp_path / f"out.{extension}")
+def test_connect_local_file(out_method, extension, tmp_path):
+    df = pd.DataFrame({"a": [1, 2, 3]})
+    path = tmp_path / f"out.{extension}"
+    getattr(df, out_method)(path)
     with pytest.warns(FutureWarning, match="v9.1"):
         # ibis.connect uses con.register
-        con = ibis.connect(tmp_path / f"out.{extension}")
+        con = ibis.connect(path)
     t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
@@ -375,3 +377,29 @@ def test_multiple_tables_with_the_same_name(tmp_path):
     t3 = con.table("t", database="w.main")
 
     assert t3.schema() == ibis.schema({"y": "array<float64>"})
+
+
+@pytest.mark.parametrize(
+    "input",
+    [
+        {"columns": {"lat": "float64", "lon": "float64", "geom": "geometry"}},
+        {"types": {"geom": "geometry"}},
+    ],
+)
+@pytest.mark.parametrize("all_varchar", [True, False])
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+    raises=duckdb.IOException,
+)
+@pytest.mark.xdist_group(name="duckdb-extensions")
+def test_read_csv_with_types(tmp_path, input, all_varchar):
+    con = ibis.duckdb.connect()
+    data = b"""\
+lat,lon,geom
+1.0,2.0,POINT (1 2)
+2.0,3.0,POINT (2 3)"""
+    path = tmp_path / "data.csv"
+    path.write_bytes(data)
+    t = con.read_csv(path, all_varchar=all_varchar, **input)
+    assert t.schema()["geom"].is_geospatial()

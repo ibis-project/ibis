@@ -6,9 +6,6 @@ from collections import Counter
 from datetime import datetime
 from functools import partial
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import pytz
 import toolz
@@ -34,6 +31,10 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 pytestmark = [
     pytest.mark.never(
@@ -302,12 +303,6 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
-)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -317,12 +312,13 @@ def test_unnest_idempotent(backend):
         )
         .group_by("scalar_column")
         .aggregate(x=lambda t: t.x.collect())
+        .mutate(x=lambda t: t.x.sort())
         .order_by("scalar_column")
     )
     result = expr.execute().reset_index(drop=True)
     expected = (
         df[["scalar_column", "x"]]
-        .assign(x=df.x.map(lambda arr: [i for i in arr if not pd.isna(i)]))
+        .assign(x=df.x.map(lambda arr: sorted(i for i in arr if not pd.isna(i))))
         .sort_values("scalar_column")
         .reset_index(drop=True)
     )
@@ -330,12 +326,6 @@ def test_unnest_idempotent(backend):
 
 
 @builtin_array
-@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="Input field name ARRAY_AGG(t1.x) does not match with the projection expression",
-)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -719,20 +709,33 @@ def test_array_unique(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notimpl(
-    ["flink", "polars"],
-    raises=com.OperationNotDefinedError,
+@pytest.mark.parametrize(
+    "data",
+    (
+        param(
+            [[3, 2], [], [42, 42], []],
+            marks=[
+                pytest.mark.notyet(
+                    ["flink"],
+                    raises=Py4JJavaError,
+                    reason="flink cannot handle empty arrays",
+                ),
+                pytest.mark.notyet(
+                    ["risingwave"],
+                    raises=AssertionError,
+                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
+                ),
+            ],
+            id="empty",
+        ),
+        param([[3, 2], [42, 42]], id="nonempty"),
+    ),
 )
-@pytest.mark.notyet(
-    ["risingwave"],
-    raises=AssertionError,
-    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
-)
-def test_array_sort(con):
-    t = ibis.memtable({"a": [[3, 2], [], [42, 42], []], "id": range(4)})
+def test_array_sort(con, data):
+    t = ibis.memtable({"a": data, "id": range(len(data))})
     expr = t.mutate(a=t.a.sort()).order_by("id")
     result = con.execute(expr)
-    expected = pd.Series([[2, 3], [], [42, 42], []], dtype="object")
+    expected = pd.Series(list(map(sorted, data)), dtype="object")
 
     assert frozenset(map(tuple, result["a"].values)) == frozenset(
         map(tuple, expected.values)

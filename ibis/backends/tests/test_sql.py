@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 import pytest
 from pytest import param
 
@@ -205,3 +207,34 @@ def test_many_subqueries(backend_name, snapshot):
     t3 = query(t2, group_cols=["street"])
 
     snapshot.assert_match(str(ibis.to_sql(t3, dialect=backend_name)), "out.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(
+    ["dask", "pandas", "polars"], raises=ValueError, reason="not a SQL backend"
+)
+def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
+    t = ibis.table({"x": "int64"}, name="t")
+    expr = t.mutate(y=t.x.sum().over(ibis.window())).filter(
+        _.y <= 37, _.x.mean().over().notnull()
+    )
+    result = ibis.to_sql(expr, dialect=backend_name)
+
+    sc = ibis.backends.sql.compilers
+    compiler = getattr(sc, backend_name).compiler
+
+    assert (not compiler.supports_qualify) or re.search(
+        r"\bQUALIFY\b", result, flags=re.MULTILINE | re.IGNORECASE
+    )
+    snapshot.assert_match(result, "out.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(
+    ["dask", "pandas", "polars"], raises=ValueError, reason="not a SQL backend"
+)
+def test_rewrite_context(snapshot, backend_name):
+    table = ibis.memtable({"test": [1, 2, 3, 4, 5]}, name="test")
+    expr = table.select(new_col=ibis.ntile(2).over(order_by=ibis.random())).limit(10)
+    result = ibis.to_sql(expr, dialect=backend_name)
+    snapshot.assert_match(result, "out.sql")

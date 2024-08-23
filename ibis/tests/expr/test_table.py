@@ -1,11 +1,8 @@
 from __future__ import annotations
 
-import datetime
 import pickle
 import re
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -1028,34 +1025,30 @@ def test_asof_join_with_by():
 @pytest.mark.parametrize(
     ("ibis_interval", "timedelta_interval"),
     [
-        [ibis.interval(days=2), pd.Timedelta("2 days")],
-        [ibis.interval(days=2), datetime.timedelta(days=2)],
-        [ibis.interval(hours=5), pd.Timedelta("5 hours")],
-        [ibis.interval(hours=5), datetime.timedelta(hours=5)],
-        [ibis.interval(minutes=7), pd.Timedelta("7 minutes")],
-        [ibis.interval(minutes=7), datetime.timedelta(minutes=7)],
-        [ibis.interval(seconds=9), pd.Timedelta("9 seconds")],
-        [ibis.interval(seconds=9), datetime.timedelta(seconds=9)],
-        [ibis.interval(milliseconds=11), pd.Timedelta("11 milliseconds")],
-        [ibis.interval(milliseconds=11), datetime.timedelta(milliseconds=11)],
-        [ibis.interval(microseconds=15), pd.Timedelta("15 microseconds")],
-        [ibis.interval(microseconds=15), datetime.timedelta(microseconds=15)],
-        [ibis.interval(nanoseconds=17), pd.Timedelta("17 nanoseconds")],
+        (ibis.interval(days=2), "2 days"),
+        (ibis.interval(hours=5), "5 hours"),
+        (ibis.interval(minutes=7), "7 minutes"),
+        (ibis.interval(seconds=9), "9 seconds"),
+        (ibis.interval(milliseconds=11), "11 milliseconds"),
+        (ibis.interval(microseconds=15), "15 microseconds"),
+        (ibis.interval(nanoseconds=17), "17 nanoseconds"),
     ],
 )
 def test_asof_join_with_tolerance(ibis_interval, timedelta_interval):
+    pd = pytest.importorskip("pandas")
+
     left = ibis.table([("time", "timestamp"), ("key", "int32"), ("value", "double")])
     right = ibis.table([("time", "timestamp"), ("key", "int32"), ("value2", "double")])
 
-    for interval in [ibis_interval, timedelta_interval]:
+    for interval in [ibis_interval, pd.Timedelta(timedelta_interval)] + [
+        pd.Timedelta(timedelta_interval).to_pytimedelta()
+    ] * ("nanoseconds" not in timedelta_interval):
         joined = api.asof_join(left, right, "time", tolerance=interval)
 
         asof = left.asof_join(right, "time")
         filt = asof.filter(
-            [
-                asof.time <= asof.time_right + interval,
-                asof.time >= asof.time_right - interval,
-            ]
+            asof.time <= asof.time_right + interval,
+            asof.time >= asof.time_right - interval,
         )
         join = left.left_join(filt, [left.time == filt.time])
         expected = join.select(
@@ -1902,6 +1895,7 @@ def test_python_table_ambiguous():
 
 
 def test_memtable_filter():
+    pytest.importorskip("pandas")
     # Mostly just a smoketest, this used to error on construction
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
@@ -1917,14 +1911,6 @@ def test_default_backend_with_unbound_table():
         match="Expression contains unbound tables",
     ):
         assert expr.execute()
-
-
-def test_numpy_ufuncs_dont_cast_tables():
-    t = ibis.table(dict.fromkeys("abcd", "int"))
-    for arg in [np.int64(1), np.array([1, 2, 3])]:
-        for left, right in [(t, arg), (arg, t)]:
-            with pytest.raises(TypeError):
-                left + right
 
 
 def test_array_string_compare():

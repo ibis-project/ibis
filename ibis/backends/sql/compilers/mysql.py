@@ -67,18 +67,13 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.Covariance,
-        ops.First,
-        ops.Last,
         ops.Levenshtein,
         ops.Median,
         ops.Mode,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RegexReplace,
         ops.RegexSplit,
         ops.RowID,
@@ -122,23 +117,15 @@ class MySQLCompiler(SQLGlotCompiler):
             # MariaDB does not support casting to JSON because it's an alias
             # for TEXT (except when casting of course!)
             return arg
-        elif from_.is_integer() and to.is_interval():
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit=to.unit), arg=arg, unit=to.unit
-            )
         elif from_.is_integer() and to.is_timestamp():
             return self.f.from_unixtime(arg)
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_TimestampDiff(self, op, *, left, right):
-        return self.f.timestampdiff(
-            sge.Var(this="SECOND"), right, left, dialect=self.dialect
-        )
+        return self.f.timestampdiff(self.v.SECOND, right, left, dialect=self.dialect)
 
     def visit_DateDiff(self, op, *, left, right):
-        return self.f.timestampdiff(
-            sge.Var(this="DAY"), right, left, dialect=self.dialect
-        )
+        return self.f.timestampdiff(self.v.DAY, right, left, dialect=self.dialect)
 
     def visit_ApproxCountDistinct(self, op, *, arg, where):
         if where is not None:
@@ -320,16 +307,16 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_DateTimeDelta(self, op, *, left, right, part):
         return self.f.timestampdiff(
-            sge.Var(this=part.this), right, left, dialect=self.dialect
+            self.v[part.this], right, left, dialect=self.dialect
         )
 
     visit_TimeDelta = visit_DateDelta = visit_DateTimeDelta
 
     def visit_ExtractMillisecond(self, op, *, arg):
-        return self.f.floor(self.f.extract(sge.Var(this="microsecond"), arg) / 1_000)
+        return self.f.floor(self.f.extract(self.v.microsecond, arg) / 1_000)
 
     def visit_ExtractMicrosecond(self, op, *, arg):
-        return self.f.floor(self.f.extract(sge.Var(this="microsecond"), arg))
+        return self.f.floor(self.f.extract(self.v.microsecond, arg))
 
     def visit_Strip(self, op, *, arg):
         return self.visit_LRStrip(op, arg=arg, position="BOTH")
@@ -340,14 +327,9 @@ class MySQLCompiler(SQLGlotCompiler):
     def visit_RStrip(self, op, *, arg):
         return self.visit_LRStrip(op, arg=arg, position="TRAILING")
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(this=arg, unit=sge.Var(this=op.resolution.upper()))
-
     def visit_TimestampAdd(self, op, *, left, right):
         if op.right.dtype.unit.short == "ms":
-            right = sge.Interval(
-                this=right.this * 1_000, unit=sge.Var(this="MICROSECOND")
-            )
+            right = sge.Interval(this=right.this * 1_000, unit=self.v.MICROSECOND)
         return self.f.date_add(left, right, dialect=self.dialect)
 
     def visit_UnwrapJSONString(self, op, *, arg):

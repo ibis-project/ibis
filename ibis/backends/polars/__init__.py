@@ -449,17 +449,12 @@ class Backend(BaseBackend, NoUrl):
 
         return translate(node, ctx=self._context)
 
-    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        import sqlglot as sg
+    def _get_sql_string_view_schema(
+        self, *, name: str, table: ir.Table, query: str
+    ) -> sch.Schema:
+        from ibis.backends.sql.compilers.postgres import compiler
 
-        cte = sg.parse_one(str(ibis.to_sql(table, dialect="postgres")), read="postgres")
-        parsed = sg.parse_one(query, read=self.dialect)
-        parsed.args["with"] = cte.args.pop("with", [])
-        parsed = parsed.with_(
-            sg.to_identifier(name, quoted=True), as_=cte, dialect=self.dialect
-        )
-
-        sql = parsed.sql(self.dialect)
+        sql = compiler.add_query_to_expr(name=name, table=table, query=query)
         return self._get_schema_using_query(sql)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:

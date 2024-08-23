@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from functools import lru_cache
 from typing import TYPE_CHECKING, Any
 
@@ -51,6 +52,10 @@ class BasePandasBackend(BaseBackend, NoUrl):
         <ibis.backends.pandas.Backend at 0x...>
 
         """
+        warnings.warn(
+            f"The {self.name} backend is slated for removal in 10.0.",
+            DeprecationWarning,
+        )
         self.dictionary = dictionary or {}
         self.schemas: MutableMapping[str, sch.Schema] = {}
 
@@ -245,24 +250,6 @@ class BasePandasBackend(BaseBackend, NoUrl):
 
     def _convert_object(self, obj: Any) -> Any:
         return _convert_object(obj, self)
-        if isinstance(obj, pd.DataFrame):
-            return obj
-        elif isinstance(obj, ir.Table):
-            op = obj.op()
-            if isinstance(op, ops.InMemoryTable):
-                return op.data.to_frame()
-            else:
-                raise com.BackendConversionError(
-                    f"Unable to convert {obj.__class__} object "
-                    f"to backend type: {self.__class__.backend_table_type}"
-                )
-        elif isinstance(obj, pa.Table):
-            return obj.to_pandas()
-        else:
-            raise com.BackendConversionError(
-                f"Unable to convert {obj.__class__} object "
-                f"to backend type: {self.__class__.backend_table_type}"
-            )
 
     @classmethod
     @lru_cache

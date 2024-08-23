@@ -449,33 +449,41 @@ def test_signature_inheritance():
 
     assert IntBinop.__signature__ == Signature(
         [
-            Parameter("left", annotation=Argument(is_int)),
-            Parameter("right", annotation=Argument(is_int)),
+            Parameter.from_argument("left", annotation=Argument(is_int)),
+            Parameter.from_argument("right", annotation=Argument(is_int)),
         ]
     )
 
     assert FloatAddRhs.__signature__ == Signature(
         [
-            Parameter("left", annotation=Argument(is_int)),
-            Parameter("right", annotation=Argument(is_float)),
+            Parameter.from_argument("left", annotation=Argument(is_int)),
+            Parameter.from_argument("right", annotation=Argument(is_float)),
         ]
     )
 
     assert FloatAddClip.__signature__ == Signature(
         [
-            Parameter("left", annotation=Argument(is_float)),
-            Parameter("right", annotation=Argument(is_float)),
-            Parameter("clip_lower", annotation=optional(is_int, default=0)),
-            Parameter("clip_upper", annotation=optional(is_int, default=10)),
+            Parameter.from_argument("left", annotation=Argument(is_float)),
+            Parameter.from_argument("right", annotation=Argument(is_float)),
+            Parameter.from_argument(
+                "clip_lower", annotation=optional(is_int, default=0)
+            ),
+            Parameter.from_argument(
+                "clip_upper", annotation=optional(is_int, default=10)
+            ),
         ]
     )
 
     assert IntAddClip.__signature__ == Signature(
         [
-            Parameter("left", annotation=Argument(is_int)),
-            Parameter("right", annotation=Argument(is_int)),
-            Parameter("clip_lower", annotation=optional(is_int, default=0)),
-            Parameter("clip_upper", annotation=optional(is_int, default=10)),
+            Parameter.from_argument("left", annotation=Argument(is_int)),
+            Parameter.from_argument("right", annotation=Argument(is_int)),
+            Parameter.from_argument(
+                "clip_lower", annotation=optional(is_int, default=0)
+            ),
+            Parameter.from_argument(
+                "clip_upper", annotation=optional(is_int, default=10)
+            ),
         ]
     )
 

@@ -22,7 +22,6 @@ from ibis.common.selectors import Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
-from ibis.expr.types.pretty import to_rich
 from ibis.expr.types.temporal import TimestampColumn
 from ibis.util import deprecated
 
@@ -529,6 +528,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …        │ … │
         └─────────┴──────────┴───┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_columns=max_columns,
@@ -1237,13 +1238,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         >>> expr = t.distinct(on=["species", "island", "year", "bill_length_mm"], keep=None)
         >>> expr.count()
-        ┌───────────────┐
-        │ np.int64(273) │
-        └───────────────┘
+        ┌─────┐
+        │ 273 │
+        └─────┘
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
 
         You can pass [`selectors`](./selectors.qmd) to `on`
 
@@ -2607,13 +2608,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ bar    │
         └────────┘
         >>> t.nunique()
-        ┌─────────────┐
-        │ np.int64(2) │
-        └─────────────┘
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> t.nunique(t.a != "foo")
-        ┌─────────────┐
-        │ np.int64(1) │
-        └─────────────┘
+        ┌───┐
+        │ 1 │
+        └───┘
         """
         if where is not None:
             (where,) = bind(self, where)
@@ -2648,13 +2649,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ baz    │
         └────────┘
         >>> t.count()
-        ┌─────────────┐
-        │ np.int64(3) │
-        └─────────────┘
+        ┌───┐
+        │ 3 │
+        └───┘
         >>> t.count(t.a != "foo")
-        ┌─────────────┐
-        │ np.int64(2) │
-        └─────────────┘
+        ┌───┐
+        │ 2 │
+        └───┘
         >>> type(t.count())
         <class 'ibis.expr.types.numeric.IntegerScalar'>
         """
@@ -2708,17 +2709,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> t.drop_null(["bill_length_mm", "body_mass_g"]).count()
-        ┌───────────────┐
-        │ np.int64(342) │
-        └───────────────┘
+        ┌─────┐
+        │ 342 │
+        └─────┘
         >>> t.drop_null(how="all").count()  # no rows where all columns are null
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         if subset is not None:
             subset = self.bind(subset)
@@ -3352,9 +3353,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         >>> agg = t.drop("year").agg(s.across(s.numeric(), _.mean()))
         >>> expr = t.cross_join(agg)
         >>> expr
@@ -3389,9 +3390,9 @@ class Table(Expr, _FixedTextJupyterMixin):
          'flipper_length_mm_right',
          'body_mass_g_right']
         >>> expr.count()
-        ┌───────────────┐
-        │ np.int64(344) │
-        └───────────────┘
+        ┌─────┐
+        │ 344 │
+        └─────┘
         """
         from ibis.expr.types.joins import Join
 
@@ -3552,7 +3553,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             name = util.gen_name("sql_query")
             expr = self
 
-        schema = backend._get_sql_string_view_schema(name, expr, query)
+        schema = backend._get_sql_string_view_schema(name=name, table=expr, query=query)
         node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
         return node.to_expr()
 
@@ -3759,7 +3760,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ ABW     │ SP.URB.TOTL │ 2004   │ 42317.0 │
         └─────────┴─────────────┴────────┴─────────┘
 
-        `pivot_longer` has some preprocessing capabiltiies like stripping a prefix and applying
+        `pivot_longer` has some preprocessing capabilities like stripping a prefix and applying
         a function to column names
 
         >>> billboard = ibis.examples.billboard.fetch()
@@ -4343,8 +4344,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     … │        … │        … │        … │
         └───────┴──────────┴──────────┴──────────┘
         """
-        import pandas as pd
-
         import ibis.selectors as s
         from ibis.expr.rewrites import _, p, x
 
@@ -4366,23 +4365,25 @@ class Table(Expr, _FixedTextJupyterMixin):
         if names is None:
             # no names provided, compute them from the data
             names = self.select(names_from).distinct().execute()
+            columns = names.columns.tolist()
+            names = list(names.itertuples(index=False))
         else:
             if not (columns := [col.get_name() for col in names_from.expand(self)]):
                 raise com.IbisInputError(
                     f"No matching names columns in `names_from`: {orig_names_from}"
                 )
-            names = pd.DataFrame(list(map(util.promote_list, names)), columns=columns)
+            names = list(map(tuple, map(util.promote_list, names)))
 
         if names_sort:
-            names = names.sort_values(by=names.columns.tolist())
+            names.sort()
 
         values_cols = values_from.expand(self)
         more_than_one_value = len(values_cols) > 1
         aggs = {}
 
-        names_cols_exprs = [self[col] for col in names.columns]
+        names_cols_exprs = [self[col] for col in columns]
 
-        for keys in names.itertuples(index=False):
+        for keys in names:
             where = ibis.and_(*map(operator.eq, names_cols_exprs, keys))
 
             for values_col in values_cols:

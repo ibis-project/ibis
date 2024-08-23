@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import sqlite3
 
-import numpy as np
-import pandas as pd
 import pytest
 from packaging.version import parse as vparse
 from pytest import param
@@ -12,6 +10,9 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 from ibis.backends.tests.errors import PyDruidProgrammingError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 sqlite_right_or_full_mark = pytest.mark.notyet(
     ["sqlite"],
@@ -50,12 +51,7 @@ def check_eq(left, right, how, **kwargs):
         "left",
         param(
             "right",
-            marks=[
-                pytest.mark.notimpl(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
-                sqlite_right_or_full_mark,
-            ],
+            marks=[sqlite_right_or_full_mark],
         ),
         param(
             "outer",
@@ -66,9 +62,6 @@ def check_eq(left, right, how, **kwargs):
                 pytest.mark.notimpl(["mysql"]),
                 sqlite_right_or_full_mark,
                 pytest.mark.xfail_version(datafusion=["datafusion<31"]),
-                pytest.mark.notimpl(
-                    ["exasol"], raises=AssertionError, reasons="results don't match"
-                ),
             ],
         ),
     ],

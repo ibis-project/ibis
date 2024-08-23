@@ -270,13 +270,16 @@ class Filter(Simple):
     predicates: VarTuple[Value[dt.Boolean]]
 
     def __init__(self, parent, predicates):
-        from ibis.expr.rewrites import ReductionLike
+        from ibis.expr.rewrites import ReductionLike, p
 
         for pred in predicates:
-            if pred.find(ReductionLike, filter=Value):
+            # bare reductions that are not window functions are not allowed
+            if pred.find(ReductionLike, filter=Value) and not pred.find(
+                p.WindowFunction, filter=Value
+            ):
                 raise IntegrityError(
                     f"Cannot add {pred!r} to filter, it is a reduction which "
-                    "must be converted to a scalar subquery first"
+                    "must be converted to a scalar subquery or window function first"
                 )
             if pred.relations and parent not in pred.relations:
                 raise IntegrityError(

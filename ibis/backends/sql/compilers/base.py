@@ -33,6 +33,16 @@ from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
 
+try:
+    from sqlglot.expressions import Alter
+except ImportError:
+    from sqlglot.expressions import AlterTable
+else:
+
+    def AlterTable(*args, kind="TABLE", **kwargs):
+        return Alter(*args, kind=kind, **kwargs)
+
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 
@@ -267,6 +277,9 @@ class SQLGlotCompiler(abc.ABC):
     copy_func_args: bool = False
     """Whether to copy function arguments when generating SQL."""
 
+    supports_qualify: bool = False
+    """Whether the backend supports the QUALIFY clause."""
+
     NAN: ClassVar[sge.Expression] = sge.Cast(
         this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
     )
@@ -313,7 +326,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.ApproxCountDistinct: "approx_distinct",
         ops.ArgMax: "max_by",
         ops.ArgMin: "min_by",
-        ops.ArrayCollect: "array_agg",
         ops.ArrayContains: "array_contains",
         ops.ArrayFlatten: "flatten",
         ops.ArrayLength: "array_size",
@@ -331,7 +343,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.Degrees: "degrees",
         ops.DenseRank: "dense_rank",
         ops.Exp: "exp",
-        ops.First: "first",
         FirstValue: "first_value",
         ops.GroupConcat: "group_concat",
         ops.IfElse: "if",
@@ -339,7 +350,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.IsNan: "isnan",
         ops.JSONGetItem: "json_extract",
         ops.LPad: "lpad",
-        ops.Last: "last",
         LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
@@ -659,6 +669,11 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
+
+        if from_.is_integer() and to.is_interval():
+            return self._make_interval(arg, to.unit)
+
         return self.cast(arg, to)
 
     def visit_ScalarSubquery(self, op, *, rel):
@@ -941,10 +956,11 @@ class SQLGlotCompiler(abc.ABC):
             ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
         )
 
+    def _make_interval(self, arg, unit):
+        return sge.Interval(this=arg, unit=self.v[unit.singular])
+
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(
-            this=sge.convert(arg), unit=sge.Var(this=unit.singular.upper())
-        )
+        return self._make_interval(arg, unit)
 
     ### String Instruments
     def visit_Strip(self, op, *, arg):
@@ -1037,19 +1053,6 @@ class SQLGlotCompiler(abc.ABC):
         return self.agg.max(arg, where=where)
 
     ### Stats
-
-    def visit_Quantile(self, op, *, arg, quantile, where):
-        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
-        funcname = f"percentile_{suffix}"
-        expr = sge.WithinGroup(
-            this=self.f[funcname](quantile),
-            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
-        )
-        if where is not None:
-            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
-
-    visit_MultiQuantile = visit_Quantile
 
     def visit_VarianceStandardDevCovariance(self, op, *, how, where, **kw):
         hows = {"sample": "samp", "pop": "pop"}
@@ -1252,15 +1255,21 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys):
             return parent
 
         result = parent
 
         if selections:
-            if op.is_star_selection():
+            # if there are `qualify` predicates then sqlglot adds a hidden
+            # column to implement the functionality if the dialect doesn't
+            # support it
+            #
+            # using STAR in that case would lead to an extra column, so in that
+            # case we have to spell out the columns
+            if op.is_star_selection() and (not qualified or self.supports_qualify):
                 fields = [STAR]
             else:
                 fields = self._cleanup_names(selections)
@@ -1268,6 +1277,9 @@ class SQLGlotCompiler(abc.ABC):
 
         if predicates:
             result = result.where(*predicates, copy=False)
+
+        if qualified:
+            result = result.qualify(*qualified, copy=False)
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
@@ -1597,6 +1609,31 @@ class SQLGlotCompiler(abc.ABC):
             for column in op.schema.names
         )
         return sg.select(*columns_to_keep).from_(parent)
+
+    def add_query_to_expr(self, *, name: str, table: ir.Table, query: str) -> str:
+        dialect = self.dialect
+
+        compiled_ibis_expr = self.to_sqlglot(table)
+
+        # pull existing CTEs from the compiled Ibis expression and combine them
+        # with the new query
+        parsed = reduce(
+            lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
+            compiled_ibis_expr.ctes,
+            sg.parse_one(query, read=dialect),
+        )
+
+        # remove all ctes from the compiled expression, since they're now in
+        # our larger expression
+        compiled_ibis_expr.args.pop("with", None)
+
+        # add the new str query as a CTE
+        parsed = parsed.with_(
+            sg.to_identifier(name, quoted=self.quoted), as_=compiled_ibis_expr
+        )
+
+        # generate the SQL string
+        return parsed.sql(dialect)
 
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to

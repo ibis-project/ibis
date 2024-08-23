@@ -14,7 +14,6 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 
@@ -24,11 +23,6 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     dialect = DataFusion
     type_mapper = DataFusionType
-
-    rewrites = (
-        exclude_nulls_from_array_collect,
-        *SQLGlotCompiler.rewrites,
-    )
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
@@ -46,8 +40,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.Greatest,
         ops.IntervalFromInteger,
         ops.Least,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RowID,
         ops.Strftime,
         ops.TimeDelta,
@@ -331,6 +323,12 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
     def visit_Covariance(self, op, *, left, right, how, where):
         x = op.left
         if x.dtype.is_boolean():
@@ -425,14 +423,16 @@ class DataFusionCompiler(SQLGlotCompiler):
             sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
         )
 
-    def visit_First(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first_value(arg, where=where, order_by=order_by)
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Aggregate(self, op, *, parent, groups, metrics):

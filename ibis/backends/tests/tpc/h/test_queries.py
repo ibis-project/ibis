@@ -498,11 +498,6 @@ def test_15(lineitem, supplier):
     return q.order_by([q.s_suppkey])
 
 
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="IN subqueries not supported in DataFusion",
-)
 @tpc_test("h")
 def test_16(partsupp, part, supplier):
     """Parts/Supplier Relationship Query (Q16)
@@ -690,11 +685,6 @@ def test_20(supplier, nation, partsupp, part, lineitem):
 
 
 @pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="EXISTS subqueries not supported in DataFusion",
-)
-@pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
     reason="correlated subqueries don't exist in clickhouse",
@@ -745,11 +735,6 @@ def test_21(supplier, lineitem, orders, nation):
     return q.limit(100)
 
 
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="EXISTS subqueries not supported in DataFusion",
-)
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,

@@ -71,9 +71,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayFlatten,
-        ops.ArraySort,
         ops.ArrayStringJoin,
         ops.Correlation,
         ops.CountDistinctStar,
@@ -85,9 +83,7 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.IsNan,
         ops.Levenshtein,
         ops.Median,
-        ops.MultiQuantile,
         ops.NthValue,
-        ops.Quantile,
         ops.ReductionVectorizedUDF,
         ops.RegexSplit,
         ops.RowID,
@@ -103,10 +99,9 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ArrayLength: "cardinality",
         ops.ArrayPosition: "array_position",
         ops.ArrayRemove: "array_remove",
+        ops.ArraySort: "array_sort",
         ops.ArrayUnion: "array_union",
         ops.ExtractDayOfYear: "dayofyear",
-        ops.First: "first_value",
-        ops.Last: "last_value",
         ops.MapKeys: "map_keys",
         ops.MapValues: "map_values",
         ops.Power: "power",
@@ -307,6 +302,20 @@ class FlinkCompiler(SQLGlotCompiler):
             )
 
         return self.f.array_slice(*args)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the flink backend"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the flink backend"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Not(self, op, *, arg):
         return sg.not_(self.cast(arg, dt.boolean))
@@ -563,6 +572,22 @@ class FlinkCompiler(SQLGlotCompiler):
 
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+        # the only way to get filtering *and* respecting nulls is to use
+        # `FILTER` syntax, but it's broken in various ways for other aggregates
+        out = self.f.array_agg(arg)
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        if where is not None:
+            out = sge.Filter(this=out, expression=sge.Where(this=where))
+        return out
 
 
 compiler = FlinkCompiler()

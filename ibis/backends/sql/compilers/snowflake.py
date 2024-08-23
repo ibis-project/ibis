@@ -45,6 +45,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     dialect = Snowflake
     type_mapper = SnowflakeType
     no_limit_value = NULL
+    supports_qualify = True
 
     agg = AggGen(supports_order_by=True)
 
@@ -64,8 +65,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.MultiQuantile,
-        ops.IntervalFromInteger,
         ops.IntervalAdd,
+        ops.IntervalSubtract,
+        ops.IntervalMultiply,
+        ops.IntervalFloorDivide,
         ops.TimestampDiff,
     )
 
@@ -265,7 +268,7 @@ $$""",
             return self.if_(self.f.is_object(arg), arg, NULL)
         elif to.is_array():
             return self.if_(self.f.is_array(arg), arg, NULL)
-        return self.cast(arg, to)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_ToJSONMap(self, op, *, arg):
         return self.if_(self.f.is_object(arg), arg, NULL)
@@ -364,14 +367,14 @@ $$""",
     def visit_TimestampDelta(self, op, *, part, left, right):
         return self.f.timestampdiff(part, right, left, dialect=self.dialect)
 
-    def visit_TimestampDateAdd(self, op, *, left, right):
-        if not isinstance(op.right, ops.Literal):
-            raise com.OperationNotDefinedError(
-                f"right side of {type(op).__name__} operation must be an interval literal"
-            )
-        return sg.exp.Add(this=left, expression=right)
+    def visit_TimestampAdd(self, op, *, left, right):
+        return self.f.timestampadd(right.unit, right.this, left, dialect=self.dialect)
 
-    visit_DateAdd = visit_TimestampAdd = visit_TimestampDateAdd
+    def visit_TimestampSub(self, op, *, left, right):
+        return self.f.timestampadd(right.unit, -right.this, left, dialect=self.dialect)
+
+    visit_DateAdd = visit_TimestampAdd
+    visit_DateSub = visit_TimestampSub
 
     def visit_IntegerRange(self, op, *, start, stop, step):
         return self.if_(
@@ -455,7 +458,12 @@ $$""",
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def _array_collect(self, *, arg, where, order_by):
+    def _array_collect(self, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the snowflake backend"
+            )
+
         if where is not None:
             arg = self.if_(where, arg, NULL)
 
@@ -466,15 +474,21 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by):
-        return self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        return self._array_collect(
+            arg=arg, where=where, order_by=order_by, include_null=include_null
+        )
 
-    def visit_First(self, op, *, arg, where, order_by):
-        out = self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        out = self._array_collect(
+            arg=arg, where=where, order_by=order_by, include_null=include_null
+        )
         return self.f.get(out, 0)
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        out = self._array_collect(arg=arg, where=where, order_by=order_by)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        out = self._array_collect(
+            arg=arg, where=where, order_by=order_by, include_null=include_null
+        )
         return self.f.get(out, self.f.array_size(out) - 1)
 
     def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
@@ -557,6 +571,12 @@ $$""",
     def visit_ExtractFragment(self, op, *, arg):
         return self.f.nullif(
             self.f.as_varchar(self.f.get(self.f.parse_url(arg, 1), "fragment")), ""
+        )
+
+    def visit_ExtractUserInfo(self, op, *, arg):
+        host = self.f.get(self.f.parse_url(arg), "host")
+        return self.if_(
+            host.like(sge.convert("%@%")), self.f.split_part(host, "@", 1), NULL
         )
 
     def visit_Unnest(self, op, *, arg):

@@ -8,8 +8,6 @@ from collections.abc import Mapping
 from functools import partial, reduce, singledispatch
 from math import isnan
 
-import numpy as np
-import pandas as pd
 import polars as pl
 
 import ibis.common.exceptions as com
@@ -710,6 +708,7 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
+    ops.ApproxCountDistinct: "approx_n_unique",
     ops.Count: "count",
     ops.CountDistinct: "n_unique",
     ops.Max: "max",
@@ -741,8 +740,7 @@ for cls in _reductions:
 def execute_first_last(op, **kw):
     arg = translate(op.arg, **kw)
 
-    # polars doesn't ignore nulls by default for these methods
-    predicate = arg.is_not_null()
+    predicate = True if getattr(op, "include_null", False) else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 
@@ -834,7 +832,7 @@ def count_star(op, **kw):
 
 @translate.register(ops.TimestampNow)
 def timestamp_now(op, **_):
-    return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
+    return pl.lit(datetime.datetime.now())
 
 
 @translate.register(ops.DateNow)
@@ -958,6 +956,12 @@ def timestamp_diff(op, **kw):
     return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
+@translate.register(ops.ArraySort)
+def array_sort(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.list.sort()
+
+
 @translate.register(ops.ArrayLength)
 def array_length(op, **kw):
     arg = translate(op.arg, **kw)
@@ -991,7 +995,7 @@ def array_column(op, **kw):
 def array_collect(op, in_group_by=False, **kw):
     arg = translate(op.arg, **kw)
 
-    predicate = arg.is_not_null()
+    predicate = True if op.include_null else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 
@@ -1110,9 +1114,24 @@ def comparison(op, **kw):
 @translate.register(ops.Between)
 def between(op, **kw):
     op_arg = op.arg
+    arg_dtype = op_arg.dtype
+
     arg = translate(op_arg, **kw)
-    lower = translate(op.lower_bound, **kw)
-    upper = translate(op.upper_bound, **kw)
+
+    dtype = PolarsType.from_ibis(arg_dtype)
+
+    lower_bound = op.lower_bound
+    lower = translate(lower_bound, **kw)
+
+    if lower_bound.dtype != arg_dtype:
+        lower = lower.cast(dtype)
+
+    upper_bound = op.upper_bound
+    upper = translate(upper_bound, **kw)
+
+    if upper_bound.dtype != arg_dtype:
+        upper = upper.cast(dtype)
+
     return arg.is_between(lower, upper, closed="both")
 
 
@@ -1175,12 +1194,12 @@ def elementwise_udf(op, **kw):
 
 @translate.register(ops.E)
 def execute_e(op, **_):
-    return pl.lit(np.e)
+    return pl.lit(math.e)
 
 
 @translate.register(ops.Pi)
 def execute_pi(op, **_):
-    return pl.lit(np.pi)
+    return pl.lit(math.pi)
 
 
 @translate.register(ops.Time)

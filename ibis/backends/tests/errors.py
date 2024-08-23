@@ -133,8 +133,9 @@ except ImportError:
 
 try:
     from oracledb.exceptions import DatabaseError as OracleDatabaseError
+    from oracledb.exceptions import InterfaceError as OracleInterfaceError
 except ImportError:
-    OracleDatabaseError = None
+    OracleDatabaseError = OracleInterfaceError = None
 
 try:
     from pyodbc import DataError as PyODBCDataError

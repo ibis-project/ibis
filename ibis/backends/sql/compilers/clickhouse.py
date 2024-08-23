@@ -42,6 +42,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     agg = ClickhouseAggGen()
 
+    supports_qualify = True
+
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.CumeDist,
@@ -61,7 +63,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Arbitrary: "any",
         ops.ArgMax: "argMax",
         ops.ArgMin: "argMin",
-        ops.ArrayCollect: "groupArray",
         ops.ArrayContains: "has",
         ops.ArrayFlatten: "arrayFlatten",
         ops.ArrayIntersect: "arrayIntersect",
@@ -91,13 +92,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ExtractWeekOfYear: "toISOWeek",
         ops.ExtractYear: "toYear",
         ops.ExtractIsoYear: "toISOYear",
-        ops.First: "any",
         ops.IntegerRange: "range",
         ops.IsInf: "isInfinite",
         ops.IsNan: "isNaN",
         ops.IsNull: "isNull",
         ops.LStrip: "trimLeft",
-        ops.Last: "anyLast",
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.MapKeys: "mapKeys",
@@ -373,24 +372,23 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.toDateTime(arg)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
-        converters = {
-            "Y": "toStartOfYear",
-            "Q": "toStartOfQuarter",
-            "M": "toStartOfMonth",
-            "W": "toMonday",
-            "D": "toDate",
-            "h": "toStartOfHour",
-            "m": "toStartOfMinute",
-            "s": "toDateTime",
-        }
+        if (short := unit.short) == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
 
-        unit = unit.short
-        if (converter := converters.get(unit)) is None:
-            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        if short in ("s", "ms", "us", "ns"):
+            arg = self.f.toDateTime64(arg, op.arg.dtype.scale or 0)
+        return self.f[func](arg)
 
-        return self.f[converter](arg)
+    visit_TimeTruncate = visit_TimestampTruncate
 
-    visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
+    def visit_DateTruncate(self, op, *, arg, unit):
+        if unit.short == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
+        return self.f[func](arg)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         if offset is not None:
@@ -603,6 +601,27 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.groupArray(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.any(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.anyLast(arg, where=where, order_by=order_by)
 
     def visit_CountDistinctStar(
         self, op: ops.CountDistinctStar, *, where, **_: Any

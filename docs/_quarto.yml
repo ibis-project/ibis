@@ -168,6 +168,7 @@ website:
         - section: UDFs
           contents:
             - reference/scalar-udfs.qmd
+            - reference/aggregate-udfs.qmd
 
         - section: Connection APIs
           contents:

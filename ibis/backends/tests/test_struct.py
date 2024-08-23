@@ -3,9 +3,6 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Mapping
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -20,6 +17,10 @@ from ibis.backends.tests.errors import (
     PySparkAnalysisException,
 )
 from ibis.common.exceptions import IbisError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
@@ -114,10 +115,6 @@ def test_struct_column(alltypes, df):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave", "polars"])
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
-@pytest.mark.notyet(
-    ["flink"], reason="flink doesn't support creating struct columns from collect"
-)
 def test_collect_into_struct(alltypes):
     from ibis import _
 

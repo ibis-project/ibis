@@ -471,6 +471,7 @@ class Backend(SQLBackend):
         format="parquet",
         location=None,
         partition=None,
+        tbl_properties: Mapping[str, Any] | None = None,
         like_parquet=None,
     ) -> ir.Table:
         """Create a new table using an Ibis table expression or in-memory data.
@@ -501,6 +502,8 @@ class Backend(SQLBackend):
         partition
             Must pass a schema to use this. Cannot partition from an
             expression.
+        tbl_properties
+            Table properties to set on table creation.
         like_parquet
             Can specify instead of a schema
 
@@ -534,6 +537,7 @@ class Backend(SQLBackend):
                     format=format,
                     external=True if location is not None else external,
                     partition=partition,
+                    tbl_properties=tbl_properties,
                     path=location,
                 )
             )
@@ -549,6 +553,7 @@ class Backend(SQLBackend):
                     external=external,
                     path=location,
                     partition=partition,
+                    tbl_properties=tbl_properties,
                 )
             )
         return self.table(name, database=database or self.current_database)

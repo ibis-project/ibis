@@ -204,6 +204,42 @@ class DaskExecutor(PandasExecutor, DaskUtils):
         return agg
 
     @classmethod
+    def visit(cls, op: ops.First, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def first(df):
+            def inner(arg):
+                if not include_null:
+                    arg = arg.dropna()
+                return arg.iat[0] if len(arg) else None
+
+            return df.reduction(inner) if isinstance(df, dd.Series) else inner(df)
+
+        return cls.agg(first, arg, where)
+
+    @classmethod
+    def visit(cls, op: ops.Last, arg, where, order_by, include_null):
+        if order_by:
+            raise UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
+
+        def last(df):
+            def inner(arg):
+                if not include_null:
+                    arg = arg.dropna()
+                return arg.iat[-1] if len(arg) else None
+
+            return df.reduction(inner) if isinstance(df, dd.Series) else inner(df)
+
+        return cls.agg(last, arg, where)
+
+    @classmethod
     def visit(cls, op: ops.Correlation, left, right, where, how):
         if how == "pop":
             raise UnsupportedOperationError(

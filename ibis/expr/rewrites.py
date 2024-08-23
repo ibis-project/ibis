@@ -223,7 +223,7 @@ def lower_stringslice(_, **kwargs):
 
 
 @replace(p.Analytic)
-def project_wrap_analytic(_, rel):
+def wrap_analytic(_, **__):
     # Wrap analytic functions in a window function
     return ops.WindowFunction(_)
 
@@ -250,7 +250,7 @@ def rewrite_project_input(value, relation):
     # or scalar subqueries depending on whether they are originating from the
     # relation
     return value.replace(
-        project_wrap_analytic | project_wrap_reduction,
+        wrap_analytic | project_wrap_reduction,
         filter=p.Value & ~p.WindowFunction,
         context={"rel": relation},
     )
@@ -272,7 +272,9 @@ def filter_wrap_reduction(_):
 
 
 def rewrite_filter_input(value):
-    return value.replace(filter_wrap_reduction, filter=p.Value & ~p.WindowFunction)
+    return value.replace(
+        wrap_analytic | filter_wrap_reduction, filter=p.Value & ~p.WindowFunction
+    )
 
 
 @replace(p.Analytic | p.Reduction)

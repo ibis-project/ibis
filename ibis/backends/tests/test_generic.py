@@ -6,9 +6,6 @@ import decimal
 from collections import Counter
 from operator import invert, methodcaller, neg
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 import toolz
 from pytest import param
@@ -37,6 +34,10 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -344,37 +345,29 @@ def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(
-    [
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "duckdb",
-        "impala",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "snowflake",
-        "polars",
-        "mssql",
-        "trino",
-        "druid",
-        "oracle",
-        "exasol",
-        "pandas",
-        "pyspark",
-        "dask",
-    ]
+@pytest.mark.notyet(
+    ["exasol"],
+    raises=ExaQueryError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by exasol",
 )
-@pytest.mark.never(
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="requires enabling window functions",
+)
+@pytest.mark.notimpl(["polars", "dask", "pandas"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["oracle"],
+    raises=OracleDatabaseError,
+    reason="sqlglot `eliminate_qualify` transform produces underscores in aliases, which is not allowed by oracle",
+)
+@pytest.mark.notyet(
     ["flink"],
     reason="Flink engine does not support generic window clause with no order by",
 )
 # TODO(kszucs): this is not supported at the expression level
 def test_filter_with_window_op(backend, alltypes, sorted_df):
-    sorted_alltypes = alltypes.order_by("id")
-    table = sorted_alltypes
+    table = alltypes
     window = ibis.window(group_by=table.id)
     table = table.filter(lambda t: t["id"].mean().over(window) > 3).order_by("id")
     result = table.execute()
@@ -644,7 +637,7 @@ def test_order_by_nulls(con, op, nulls_first, expected):
 
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.never(
-    ["exasol", "mysql"],
+    ["mysql"],
     raises=AssertionError,
     reason="someone decided a long time ago that 'A' = 'a' is true in these systems",
 )
@@ -789,10 +782,7 @@ def test_table_info_large(con):
     reason="quantile and mode is not supported",
 )
 @pytest.mark.notimpl(
-    [
-        "exasol",
-        "druid",
-    ],
+    ["druid"],
     raises=com.OperationNotDefinedError,
     reason="Mode and StandardDev is not supported",
 )
@@ -836,10 +826,10 @@ def test_table_info_large(con):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
+                        "exasol",
                         "impala",
+                        "pyspark",
+                        "risingwave",
                     ],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
@@ -918,10 +908,10 @@ def test_table_info_large(con):
                 pytest.mark.notimpl(
                     [
                         "clickhouse",
-                        "pyspark",
-                        "clickhouse",
-                        "risingwave",
+                        "exasol",
                         "impala",
+                        "pyspark",
+                        "risingwave",
                     ],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
@@ -965,10 +955,7 @@ def test_table_describe(alltypes, selector, expected_columns):
     reason="quantile is not supported",
 )
 @pytest.mark.notimpl(
-    [
-        "exasol",
-        "druid",
-    ],
+    ["druid"],
     raises=com.OperationNotDefinedError,
     reason="StandardDev is not supported",
 )
@@ -1033,13 +1020,12 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             _.string_col.notin(_.string_col),
             lambda df: ~df.string_col.isin(df.string_col),
             id="notin_col",
-            marks=[pytest.mark.notimpl(["datafusion"])],
         ),
         param(
             (_.bigint_col + 1).notin(_.string_col.length() + 1),
             lambda df: ~(df.bigint_col.add(1)).isin(df.string_col.str.len().add(1)),
             id="notin_expr",
-            marks=[pytest.mark.notimpl(["datafusion", "druid"])],
+            marks=[pytest.mark.notimpl(["druid"])],
         ),
     ],
 )
@@ -1434,9 +1420,6 @@ def test_pivot_longer(backend):
     assert len(res.execute()) == len(expected)
 
 
-@pytest.mark.xfail_version(
-    datafusion=["datafusion>=38.0.1"], reason="internal error about MEDIAN(G) naming"
-)
 def test_pivot_wider(backend):
     diamonds = backend.diamonds
     expr = (
@@ -1496,10 +1479,6 @@ def test_pivot_wider(backend):
     ["risingwave"],
     raises=com.UnsupportedOperationError,
     reason="first/last requires an order_by",
-)
-@pytest.mark.notyet(
-    ["datafusion"],
-    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
 )
 def test_distinct_on_keep(backend, on, keep):
     from ibis import _
@@ -1561,10 +1540,6 @@ def test_distinct_on_keep(backend, on, keep):
     ["risingwave"],
     raises=com.UnsupportedOperationError,
     reason="first/last requires an order_by",
-)
-@pytest.mark.notyet(
-    ["datafusion"],
-    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
 )
 def test_distinct_on_keep_is_none(backend, on):
     from ibis import _

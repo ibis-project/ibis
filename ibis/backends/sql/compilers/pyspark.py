@@ -240,11 +240,27 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_LastValue(self, op, *, arg):
         return sge.IgnoreNulls(this=self.f.last(arg))
 
-    def visit_First(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(this=self.agg.first(arg, where=where, order_by=order_by))
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.first(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(this=self.agg.last(arg, where=where, order_by=order_by))
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.last(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
     def visit_Arbitrary(self, op, *, arg, where):
         # For Spark>=3.4 we could use any_value here
@@ -266,6 +282,13 @@ class PySparkCompiler(SQLGlotCompiler):
         collected = self.f.collect_list(arg)
         collected = self.if_(self.f.size(collected).eq(0), NULL, collected)
         return self.f.array_join(collected, sep)
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.percentile(arg, quantile)
+
+    visit_MultiQuantile = visit_Quantile
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
@@ -396,6 +419,13 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.concat_ws(sep, arg)
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the pyspark backend"
+            )
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:

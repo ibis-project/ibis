@@ -112,14 +112,14 @@ class BigQueryCompiler(SQLGlotCompiler):
         *SQLGlotCompiler.rewrites,
     )
 
+    supports_qualify = True
+
     UNSUPPORTED_OPS = (
         ops.DateDiff,
         ops.ExtractAuthority,
         ops.ExtractUserInfo,
         ops.FindInSet,
         ops.Median,
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.RegexSplit,
         ops.RowID,
         ops.TimestampDiff,
@@ -440,10 +440,16 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by):
-        return sge.IgnoreNulls(
-            this=self.agg.array_agg(arg, where=where, order_by=order_by)
-        )
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by bigquery"
+            )
+        out = self.agg.array_agg(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
@@ -576,8 +582,6 @@ class BigQueryCompiler(SQLGlotCompiler):
                     f"BigQuery does not allow extracting date part `{from_.unit}` from intervals"
                 )
             return self.f.extract(self.v[to.resolution.upper()], arg)
-        elif from_.is_integer() and to.is_interval():
-            return sge.Interval(this=arg, unit=self.v[to.unit.singular])
         elif from_.is_floating() and to.is_integer():
             return self.cast(self.f.trunc(arg), dt.int64)
         return super().visit_Cast(op, arg=arg, to=to)
@@ -689,26 +693,40 @@ class BigQueryCompiler(SQLGlotCompiler):
             self.f.generate_timestamp_array, start, stop, step, op.step.dtype
         )
 
-    def visit_First(self, op, *, arg, where, order_by):
+    def visit_First(self, op, *, arg, where, order_by, include_null):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported "
+                    "by bigquery"
+                )
 
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
 
-        array = self.f.array_agg(
-            sge.Limit(this=sge.IgnoreNulls(this=arg), expression=sge.convert(1)),
-        )
+        if not include_null:
+            arg = sge.IgnoreNulls(this=arg)
+
+        array = self.f.array_agg(sge.Limit(this=arg, expression=sge.convert(1)))
         return array[self.f.safe_offset(0)]
 
-    def visit_Last(self, op, *, arg, where, order_by):
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
         if where is not None:
             arg = self.if_(where, arg, NULL)
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported "
+                    "by bigquery"
+                )
 
         if order_by:
             arg = sge.Order(this=arg, expressions=order_by)
 
-        array = self.f.array_reverse(self.f.array_agg(sge.IgnoreNulls(this=arg)))
+        if not include_null:
+            arg = sge.IgnoreNulls(this=arg)
+
+        array = self.f.array_reverse(self.f.array_agg(arg))
         return array[self.f.safe_offset(0)]
 
     def visit_ArrayFilter(self, op, *, arg, body, param):

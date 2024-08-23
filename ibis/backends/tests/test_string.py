@@ -4,8 +4,6 @@ import contextlib
 from functools import reduce
 from operator import add
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -19,6 +17,9 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 
 @pytest.mark.parametrize(
@@ -729,7 +730,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             "user:pass",
             marks=[
                 pytest.mark.notyet(
-                    ["bigquery", "clickhouse", "snowflake", "trino"],
+                    ["bigquery", "clickhouse", "trino"],
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )

@@ -3,8 +3,6 @@ from __future__ import annotations
 from functools import partial
 from operator import methodcaller
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -13,7 +11,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
-    ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
@@ -24,6 +21,9 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
 )
 from ibis.legacy.udf.vectorized import analytic, reduction
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 pytestmark = [
     pytest.mark.notimpl(
@@ -1099,11 +1099,6 @@ def test_first_last(backend):
     ["mssql"], raises=PyODBCProgrammingError, reason="not support by the backend"
 )
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="bug in Flink")
-@pytest.mark.notyet(
-    ["exasol"],
-    raises=ExaQueryError,
-    reason="database can't handle UTC timestamps in DataFrames",
-)
 @pytest.mark.notyet(
     ["risingwave"],
     raises=PsycoPg2InternalError,

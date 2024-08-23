@@ -176,9 +176,9 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
 
     """
     if isinstance(obj, Pattern):
-        ctx = context or {}
 
         def fn(node, _, **kwargs):
+            ctx = context or {}
             # need to first reconstruct the node from the possible rewritten
             # children, so we can match on the new node containing the rewritten
             # child arguments, this way we can propagate the rewritten nodes

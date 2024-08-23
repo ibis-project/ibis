@@ -22,7 +22,6 @@ from ibis.backends.sql.compilers.base import (
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
-    exclude_nulls_from_array_collect,
     exclude_unsupported_window_frame_from_ops,
 )
 from ibis.util import gen_name
@@ -37,7 +36,6 @@ class TrinoCompiler(SQLGlotCompiler):
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
-        exclude_nulls_from_array_collect,
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )
@@ -48,8 +46,6 @@ class TrinoCompiler(SQLGlotCompiler):
     NEG_INF = -POS_INF
 
     UNSUPPORTED_OPS = (
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.Median,
         ops.RowID,
         ops.TimestampBucket,
@@ -177,6 +173,12 @@ class TrinoCompiler(SQLGlotCompiler):
             self.f.coalesce(self.f.contains(arg, other), FALSE),
             NULL,
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_JSONGetItem(self, op, *, arg, index):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
@@ -323,9 +325,7 @@ class TrinoCompiler(SQLGlotCompiler):
         elif dtype.is_time():
             return self.cast(value.isoformat(), dtype)
         elif dtype.is_interval():
-            return sge.Interval(
-                this=sge.convert(str(value)), unit=self.v[dtype.resolution.upper()]
-            )
+            return self._make_interval(sge.convert(str(value)), dtype.unit)
         elif dtype.is_binary():
             return self.f.from_hex(value.hex())
         else:
@@ -369,16 +369,18 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
-    def visit_First(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), 1
         )
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.f.element_at(
             self.agg.array_agg(arg, where=where, order_by=order_by), -1
         )
@@ -436,15 +438,26 @@ class TrinoCompiler(SQLGlotCompiler):
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        unit = op.unit.short
-        if unit in ("Y", "Q", "M", "W"):
+    def _make_interval(self, arg, unit):
+        short = unit.short
+        if short in ("Q", "W"):
             raise com.UnsupportedOperationError(f"Interval unit {unit!r} not supported")
-        return self.f.parse_duration(
-            self.f.concat(
-                self.cast(arg, dt.String(nullable=op.arg.dtype.nullable)), unit.lower()
+
+        if isinstance(arg, sge.Literal):
+            # force strings in interval literals because trino requires it
+            arg.args["is_string"] = True
+            return super()._make_interval(arg, unit)
+
+        elif short in ("Y", "M"):
+            return arg * super()._make_interval(sge.convert("1"), unit)
+        elif short in ("D", "h", "m", "s", "ms", "us"):
+            return self.f.parse_duration(
+                self.f.concat(self.cast(arg, dt.string), short.lower())
             )
-        )
+        else:
+            raise com.UnsupportedOperationError(
+                f"Interval unit {unit.name!r} not supported"
+            )
 
     def visit_Range(self, op, *, start, stop, step):
         def zero_value(dtype):
@@ -486,13 +499,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit=to.unit),
-                arg=arg,
-                unit=to.unit,
-            )
-        elif from_.is_integer() and to.is_timestamp():
+        if from_.is_integer() and to.is_timestamp():
             return self.f.from_unixtime(arg, to.timezone or "UTC")
         return super().visit_Cast(op, arg=arg, to=to)
 

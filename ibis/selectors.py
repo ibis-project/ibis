@@ -61,6 +61,7 @@ from public import public
 
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
+import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
@@ -403,7 +404,10 @@ class Across(Selector):
                 else:
                     name = names.format(col=orig_col.get_name(), fn=func_name)
 
-                expanded.append(col.name(name))
+                if not isinstance(col.op(), ops.Alias):
+                    col = col.name(name)
+
+                expanded.append(col)
 
         return expanded
 

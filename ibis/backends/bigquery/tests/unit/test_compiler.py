@@ -111,7 +111,7 @@ def test_hashbytes(case, how, dtype, snapshot):
     ),
 )
 def test_integer_to_timestamp(case, unit, snapshot):
-    expr = ibis.literal(case, type=dt.int64).to_timestamp(unit=unit).name("tmp")
+    expr = ibis.literal(case, type=dt.int64).as_timestamp(unit=unit).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -424,12 +424,12 @@ def test_identical_to(alltypes, snapshot):
 
 
 def test_to_timestamp_no_timezone(alltypes, snapshot):
-    expr = alltypes.date_string_col.to_timestamp("%F")
+    expr = alltypes.date_string_col.as_timestamp("%F")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_to_timestamp_timezone(alltypes, snapshot):
-    expr = (alltypes.date_string_col + " America/New_York").to_timestamp("%F %Z")
+    expr = (alltypes.date_string_col + " America/New_York").as_timestamp("%F %Z")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 

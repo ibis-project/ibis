@@ -17,7 +17,6 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -42,8 +41,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
-
-    rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
@@ -229,6 +226,19 @@ class PostgresCompiler(SQLGlotCompiler):
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
 
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        expr = sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        if where is not None:
+            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
+        return expr
+
+    visit_MultiQuantile = visit_Quantile
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -357,6 +367,26 @@ class PostgresCompiler(SQLGlotCompiler):
                 sg.select(self.f.explode(left)), sg.select(self.f.explode(right))
             )
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.first(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Log2(self, op, *, arg):
         return self.cast(
@@ -615,7 +645,7 @@ class PostgresCompiler(SQLGlotCompiler):
         slice_expr = sge.Slice(this=start + 1, expression=stop)
         return sge.paren(arg, copy=False)[slice_expr]
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
+    def _make_interval(self, arg, unit):
         plural = unit.plural
         if plural == "minutes":
             plural = "mins"
@@ -649,11 +679,6 @@ class PostgresCompiler(SQLGlotCompiler):
             if (timezone := to.timezone) is not None:
                 arg = self.f.timezone(timezone, arg)
             return arg
-        elif from_.is_integer() and to.is_interval():
-            unit = to.unit
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit), arg=arg, unit=unit
-            )
         elif from_.is_string() and to.is_binary():
             # Postgres and Python use the words "decode" and "encode" in
             # opposite ways, sweet!
@@ -661,7 +686,7 @@ class PostgresCompiler(SQLGlotCompiler):
         elif from_.is_binary() and to.is_string():
             return self.f.encode(arg, "escape")
 
-        return self.cast(arg, op.to)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     visit_TryCast = visit_Cast
 

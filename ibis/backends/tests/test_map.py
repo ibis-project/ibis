@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -11,6 +8,9 @@ import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 pa = pytest.importorskip("pyarrow")
 
 pytestmark = [

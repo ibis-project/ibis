@@ -81,6 +81,7 @@ class First(Filterable, Reduction):
 
     arg: Column[dt.Any]
     order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -91,6 +92,7 @@ class Last(Filterable, Reduction):
 
     arg: Column[dt.Any]
     order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -368,6 +370,7 @@ class ArrayCollect(Filterable, Reduction):
 
     arg: Column
     order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     @attribute
     def dtype(self):

@@ -26,20 +26,15 @@ class ImpalaCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayPosition,
         ops.Array,
         ops.Covariance,
         ops.DateDelta,
         ops.ExtractDayOfYear,
-        ops.First,
-        ops.Last,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
-        ops.MultiQuantile,
         ops.NthValue,
-        ops.Quantile,
         ops.RegexSplit,
         ops.RowID,
         ops.StringSplit,
@@ -194,9 +189,7 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return sge.Interval(this=sge.convert(arg), unit=to.unit.singular.upper())
-        elif from_.is_temporal() and to.is_integer():
+        if from_.is_temporal() and to.is_integer():
             return 1_000_000 * self.f.unix_timestamp(arg)
         return super().visit_Cast(op, arg=arg, to=to)
 

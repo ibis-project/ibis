@@ -4,6 +4,8 @@ import pytest
 
 import ibis
 
+pytest.importorskip("black")
+
 catalog = {
     "employee": {"first_name": "string", "last_name": "string", "id": "int64"},
     "call": {

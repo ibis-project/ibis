@@ -5,6 +5,7 @@ import math
 from copy import deepcopy
 
 import sqlglot.expressions as sge
+import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
@@ -75,6 +76,7 @@ class Exasol(Postgres):
         TRANSFORMS = Postgres.Generator.TRANSFORMS.copy() | {
             sge.Interval: _interval,
             sge.GroupConcat: _group_concat,
+            sge.ApproxDistinct: rename_func("approximate_count_distinct"),
         }
         TYPE_MAPPING = Postgres.Generator.TYPE_MAPPING.copy() | {
             sge.DataType.Type.TIMESTAMPTZ: "TIMESTAMP WITH LOCAL TIME ZONE",
@@ -210,6 +212,8 @@ class Flink(Hive):
             sge.VariancePop: rename_func("var_pop"),
             sge.ArrayConcat: rename_func("array_concat"),
             sge.ArraySize: rename_func("cardinality"),
+            sge.ArrayAgg: rename_func("array_agg"),
+            sge.ArraySort: rename_func("array_sort"),
             sge.Length: rename_func("char_length"),
             sge.TryCast: lambda self,
             e: f"TRY_CAST({e.this.sql(self.dialect)} AS {e.to.sql(self.dialect)})",
@@ -218,6 +222,16 @@ class Flink(Hive):
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
         }
+
+        # Flink is like Hive except where it might actually be convenient
+        #
+        # UNNEST works like the SQL standard, and not like Hive, so we have to
+        # override sqlglot here and convince it that flink is not like Hive
+        # when it comes to unnesting
+        TRANSFORMS.pop(sge.Unnest, None)
+
+        def unnest_sql(self, expression: sge.Unnest) -> str:
+            return sgn.Generator.unnest_sql(self, expression)
 
         def struct_sql(self, expression: sge.Struct) -> str:
             from sqlglot.optimizer.annotate_types import annotate_types
@@ -357,7 +371,13 @@ Oracle.Generator.TRANSFORMS |= {
     sge.Stddev: rename_func("stddev_pop"),
     sge.ApproxDistinct: rename_func("approx_count_distinct"),
     sge.Create: _create_sql,
-    sge.Select: transforms.preprocess([transforms.eliminate_semi_and_anti_joins]),
+    sge.Select: transforms.preprocess(
+        [
+            transforms.eliminate_semi_and_anti_joins,
+            transforms.eliminate_distinct_on,
+            transforms.eliminate_qualify,
+        ]
+    ),
     sge.GroupConcat: rename_func("listagg"),
 }
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -10,6 +8,9 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends.conftest import is_older_than
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 pytestmark = pytest.mark.notimpl(["druid", "oracle", "risingwave"])
 
@@ -538,7 +539,7 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
 
 
 @pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
-@pytest.mark.parametrize("method", ["destructure", "unpack"])
+@pytest.mark.parametrize("method", ["destructure", "lift", "unpack"])
 def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
     with pytest.warns(FutureWarning, match="v9.0"):
 
@@ -557,6 +558,8 @@ def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
 
     if method == "destructure":
         expr = udf_alltypes.mutate(struct.destructure())
+    elif method == "lift":
+        expr = udf_alltypes.mutate(struct=struct).struct.lift()
     elif method == "unpack":
         expr = udf_alltypes.mutate(struct=struct).unpack("struct")
     else:

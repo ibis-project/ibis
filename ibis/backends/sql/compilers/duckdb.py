@@ -14,7 +14,6 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -43,10 +42,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
-    rewrites = (
-        exclude_nulls_from_array_collect,
-        *SQLGlotCompiler.rewrites,
-    )
+    supports_qualify = True
 
     LOWERED_OPS = {
         ops.Sample: None,
@@ -153,6 +149,12 @@ class DuckDBCompiler(SQLGlotCompiler):
                 self.f.array(),
             ),
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.list_extract(arg, index + self.cast(index >= 0, op.index.dtype))
@@ -510,14 +512,16 @@ class DuckDBCompiler(SQLGlotCompiler):
             arg, pattern, replacement, "g", dialect=self.dialect
         )
 
-    def visit_First(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first(arg, where=where, order_by=order_by)
 
-    def visit_Last(self, op, *, arg, where, order_by):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Quantile(self, op, *, arg, quantile, where):

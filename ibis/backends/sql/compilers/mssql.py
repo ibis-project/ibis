@@ -75,7 +75,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayDistinct,
         ops.ArrayFlatten,
@@ -87,26 +86,20 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.BitXor,
         ops.Covariance,
         ops.CountDistinctStar,
-        ops.DateAdd,
         ops.DateDiff,
-        ops.DateSub,
         ops.EndsWith,
-        ops.First,
         ops.IntervalAdd,
-        ops.IntervalFromInteger,
-        ops.IntervalMultiply,
         ops.IntervalSubtract,
+        ops.IntervalMultiply,
+        ops.IntervalFloorDivide,
         ops.IsInf,
         ops.IsNan,
-        ops.Last,
         ops.LPad,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
         ops.Mode,
-        ops.MultiQuantile,
         ops.NthValue,
-        ops.Quantile,
         ops.RegexExtract,
         ops.RegexReplace,
         ops.RegexSearch,
@@ -118,9 +111,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.StructColumn,
-        ops.TimestampAdd,
         ops.TimestampDiff,
-        ops.TimestampSub,
         ops.Unnest,
     )
 
@@ -480,9 +471,9 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys):
             return parent
 
         result = parent
@@ -495,10 +486,26 @@ class MSSQLCompiler(SQLGlotCompiler):
         if predicates:
             result = result.where(*predicates, copy=True)
 
+        if qualified:
+            result = result.qualify(*qualified, copy=True)
+
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
 
         return result
+
+    def visit_TimestampAdd(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    def visit_TimestampSub(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, -self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    visit_DateAdd = visit_TimestampAdd
+    visit_DateSub = visit_TimestampSub
 
 
 compiler = MSSQLCompiler()
