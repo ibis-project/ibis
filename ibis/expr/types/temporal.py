@@ -508,7 +508,7 @@ class DateValue(Value, _DateComponentMixin):
         │ 2020-01-01 │ 18262 │
         └────────────┴───────┘
         """
-        return ops.EpochDays(self).to_expr()
+        return self.delta(ibis.date(1970, 1, 1), "day")
 
 
 @public

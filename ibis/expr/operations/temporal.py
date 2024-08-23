@@ -466,13 +466,4 @@ class TimestampDelta(TemporalDelta):
     right: Value[dt.Timestamp]
 
 
-@public
-class EpochDays(Value):
-    """Return the number of days since the UNIX epoch."""
-
-    arg: Value[dt.Date]
-    dtype = dt.int64
-    shape = rlz.shape_like("arg")
-
-
 public(ExtractTimestampField=ExtractTemporalField)
