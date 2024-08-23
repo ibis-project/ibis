@@ -6883,18 +6883,18 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "25.15.0"
+version = "25.16.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.15.0-py3-none-any.whl", hash = "sha256:86bb8c4214cc39e93f51776a50fe74fae3b1a61c21710a05e7913aa4b30ec1d7"},
-    {file = "sqlglot-25.15.0.tar.gz", hash = "sha256:b6bb428a3c0845021a02becf343efe5ad97a3f2d0f1a0472b2b9877188cdf646"},
+    {file = "sqlglot-25.16.0-py3-none-any.whl", hash = "sha256:508575d2b6db7edd1cdc83a147a2bdc4cea38a4b68ec1c6314065798dd830b13"},
+    {file = "sqlglot-25.16.0.tar.gz", hash = "sha256:41c32c900629e7a28dd1b0411f82d84da77732bc69b21e2308bd2b00fa04cc3a"},
 ]
 
 [package.extras]
-dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "ruff (==0.4.3)", "types-python-dateutil", "typing-extensions"]
-rs = ["sqlglotrs (==0.2.8)"]
+dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "pytz", "ruff (==0.4.3)", "types-python-dateutil", "types-pytz", "typing-extensions"]
+rs = ["sqlglotrs (==0.2.9)"]
 
 [[package]]
 name = "stack-data"
@@ -7891,4 +7891,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9b9daab1d5b33cf034142e77e7e1a734ae9d60f2b4d5c8723337656a254cc36f"
+content-hash = "bc5da5a4e0a7840fd31c6bff7f515596cfbf73090520021402121f6f6aece563"

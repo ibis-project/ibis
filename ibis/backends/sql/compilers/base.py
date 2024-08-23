@@ -534,7 +534,9 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def cast(self, arg, to: dt.DataType) -> sge.Cast:
-        return sg.cast(sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False)
+        return sge.Cast(
+            this=sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False
+        )
 
     def _prepare_params(self, params):
         result = {}
