@@ -570,9 +570,7 @@ DIAMONDS_COLUMN_TYPES = {
     "in_table_name",
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
-@pytest.mark.notyet(
-    ["flink"]
-)
+@pytest.mark.notyet(["flink"])
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
