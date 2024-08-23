@@ -259,6 +259,11 @@ class TrinoCompiler(SQLGlotCompiler):
 
     visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
 
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        return self.f.from_iso8601_date(
+            self.f.format("%04d-%02d-%02d", year, month, day)
+        )
+
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.cast(
             self.f.format("%02d:%02d:%02d", hours, minutes, seconds), dt.time

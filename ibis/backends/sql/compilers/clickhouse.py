@@ -404,6 +404,17 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         return self.f.toStartOfInterval(arg, interval)
 
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        return self.f.toDate(
+            self.f.concat(
+                self.f.toString(year),
+                "-",
+                self.f.leftPad(self.f.toString(month), 2, "0"),
+                "-",
+                self.f.leftPad(self.f.toString(day), 2, "0"),
+            )
+        )
+
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds, **_
     ):

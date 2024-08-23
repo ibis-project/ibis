@@ -130,6 +130,10 @@ class OracleCompiler(SQLGlotCompiler):
                 return self.f.to_timestamp(
                     value.isoformat(), 'YYYY-MM-DD"T"HH24:MI:SS.FF6'
                 )
+        elif dtype.is_date():
+            return self.f.to_date(
+                f"{value.year:04d}-{value.month:02d}-{value.day:02d}", "FXYYYY-MM-DD"
+            )
         elif dtype.is_uuid():
             return sge.convert(str(value))
         elif dtype.is_interval():

@@ -4,7 +4,6 @@ import contextlib
 import math
 from copy import deepcopy
 
-import sqlglot as sg
 import sqlglot.expressions as sge
 import sqlglot.generator as sgn
 from sqlglot import transforms
@@ -28,32 +27,6 @@ ClickHouse.Generator.TRANSFORMS |= {
     sge.ArraySort: rename_func("arraySort"),
     sge.LogicalAnd: rename_func("min"),
     sge.LogicalOr: rename_func("max"),
-    sge.DateFromParts: lambda self, e: sg.func(
-        "toDate",
-        sg.func(
-            "concat",
-            sg.func(
-                "leftPad",
-                sg.func("toString", e.args["year"]),
-                sge.convert(4),
-                sge.convert("0"),
-            ),
-            sge.convert("-"),
-            sg.func(
-                "leftPad",
-                sg.func("toString", e.args["month"]),
-                sge.convert(2),
-                sge.convert("0"),
-            ),
-            sge.convert("-"),
-            sg.func(
-                "leftPad",
-                sg.func("toString", e.args["day"]),
-                sge.convert(2),
-                sge.convert("0"),
-            ),
-        ),
-    ).sql(self.dialect),
 }
 
 
@@ -69,7 +42,6 @@ class DataFusion(Postgres):
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
             sge.ArraySize: rename_func("array_length"),
-            sge.DateFromParts: rename_func("make_date"),
         }
 
 
@@ -249,41 +221,6 @@ class Flink(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.DayOfMonth: rename_func("dayofmonth"),
             sge.Interval: _interval_with_precision,
-            sge.DateFromParts: lambda self, e: sge.Cast(
-                this=sg.func(
-                    "concat",
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["year"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(4),
-                        sge.convert("0"),
-                    ),
-                    sge.convert("-"),
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["month"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(2),
-                        sge.convert("0"),
-                    ),
-                    sge.convert("-"),
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["day"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(2),
-                        sge.convert("0"),
-                    ),
-                ),
-                to=sge.DataType(this=sge.DataType.Type.DATE),
-            ).sql(self.dialect),
         }
 
         # Flink is like Hive except where it might actually be convenient
@@ -369,41 +306,6 @@ class Impala(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.Interval: lambda self, e: _interval(self, e, quote_arg=False),
             sge.CurrentDate: rename_func("current_date"),
-            sge.DateFromParts: lambda self, e: sge.Cast(
-                this=sg.func(
-                    "concat",
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["year"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(4),
-                        sge.convert("0"),
-                    ),
-                    sge.convert("-"),
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["month"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(2),
-                        sge.convert("0"),
-                    ),
-                    sge.convert("-"),
-                    sg.func(
-                        "lpad",
-                        sge.Cast(
-                            this=e.args["day"],
-                            to=sge.DataType(this=sge.DataType.Type.VARCHAR),
-                        ),
-                        sge.convert(2),
-                        sge.convert("0"),
-                    ),
-                ),
-                to=sge.DataType(this=sge.DataType.Type.DATE),
-            ).sql(self.dialect),
         }
 
 
@@ -433,16 +335,6 @@ MySQL.Generator.TRANSFORMS |= {
     sge.RegexpLike: (
         lambda _, e: f"({e.this.sql('mysql')} RLIKE {e.expression.sql('mysql')})"
     ),
-    sge.DateFromParts: lambda self, e: sg.func(
-        "str_to_date",
-        sg.func(
-            "concat",
-            sg.func("lpad", e.args["year"], sge.convert(4), sge.convert("0")),
-            sg.func("lpad", e.args["month"], sge.convert(2), sge.convert("0")),
-            sg.func("lpad", e.args["day"], sge.convert(2), sge.convert("0")),
-        ),
-        sge.convert("%Y%m%d"),
-    ).sql(self.dialect),
 }
 
 
@@ -487,16 +379,6 @@ Oracle.Generator.TRANSFORMS |= {
         ]
     ),
     sge.GroupConcat: rename_func("listagg"),
-    sge.DateFromParts: lambda self, e: sg.func(
-        "to_date",
-        sg.func(
-            "concat",
-            sg.func("lpad", e.args["year"], sge.convert(4), sge.convert("0")),
-            sg.func("lpad", e.args["month"], sge.convert(2), sge.convert("0")),
-            sg.func("lpad", e.args["day"], sge.convert(2), sge.convert("0")),
-        ),
-        sge.convert("FXYYYYMMDD"),
-    ).sql(self.dialect),
 }
 
 # TODO: can delete this after bumping sqlglot version > 20.9.0
@@ -562,9 +444,6 @@ Snowflake.Generator.TRANSFORMS |= {
 }
 
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
-SQLite.Generator.TRANSFORMS |= {
-    sge.DateFromParts: rename_func("_ibis_date_from_parts"),
-}
 
 
 # TODO(cpcloud): remove this hack once
@@ -581,14 +460,4 @@ Trino.Generator.TRANSFORMS |= {
     sge.FirstValue: rename_func("first_value"),
     sge.Join: transforms.preprocess([make_cross_joins_explicit]),
     sge.LastValue: rename_func("last_value"),
-    sge.DateFromParts: lambda self, e: sg.func(
-        "from_iso8601_date",
-        sg.func(
-            "format",
-            sge.convert("%04d-%02d-%02d"),
-            e.args["year"],
-            e.args["month"],
-            e.args["day"],
-        ),
-    ).sql(self.dialect),
 }
