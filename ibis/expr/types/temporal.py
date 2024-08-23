@@ -479,19 +479,18 @@ class DateValue(Value, _DateComponentMixin):
 
         Examples
         --------
-        >>> from datetime import date
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> d = date(2020, 1, 1)
-        >>> ibis.date(d)
+        >>> date = ibis.date(2020, 1, 1)
+        >>> date
         ┌────────────┐
         │ 2020-01-01 │
         └────────────┘
-        >>> ibis.date(d).epoch_days()
+        >>> date.epoch_days()
         ┌───────┐
         │ 18262 │
         └───────┘
-        >>> t = ibis.memtable({"date_col": [d]})
+        >>> t = date.name("date_col").as_table()
         >>> t
         ┏━━━━━━━━━━━━┓
         ┃ date_col   ┃
