@@ -406,11 +406,7 @@ keys = pytest.mark.parametrize(
             [ibis.date(1, 2, 3), ibis.date(4, 5, 6)],
             marks=[
                 pytest.mark.notyet(
-                    "clickhouse",
-                    reason="only supports str,int,bool,timestamp keys",
-                    # contains works but everything fails from what looks like
-                    # a bug in clickhouse
-                    strict=False,
+                    "clickhouse", reason="only supports str,int,bool,timestamp keys"
                 ),
                 pytest.mark.notimpl(
                     ["pandas", "dask"], reason="DateFromYMD isn't implemented"
