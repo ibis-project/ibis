@@ -425,3 +425,20 @@ def test_alias_column_ref(con):
     assert result.user_id.notnull().all()
     assert result.account_id.notnull().all()
     assert result.id_md5.notnull().all()
+
+
+@pytest.mark.parametrize("method_name", ["to_pandas", "to_pyarrow"])
+def test_query_cache(con, method_name):
+    t = con.table("functional_alltypes")
+    expr = t.count()
+
+    method = getattr(expr, method_name)
+
+    expected = method()
+    result = method(settings={"use_query_cache": True})
+
+    # test a bogus setting
+    with pytest.raises(ClickHouseDatabaseError):
+        method(settings={"ooze_query_cash": True})
+
+    assert result == expected
