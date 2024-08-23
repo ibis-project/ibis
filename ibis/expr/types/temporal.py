@@ -487,7 +487,7 @@ class DateValue(Value, _DateComponentMixin):
         ┌────────────┐
         │ 2020-01-01 │
         └────────────┘
-        >>> ibis.date(d).epoch()
+        >>> ibis.date(d).epoch_days()
         ┌───────┐
         │ 18262 │
         └───────┘
@@ -500,7 +500,7 @@ class DateValue(Value, _DateComponentMixin):
         ├────────────┤
         │ 2020-01-01 │
         └────────────┘
-        >>> t.mutate(epoch=t.date_col.epoch())
+        >>> t.mutate(epoch=t.date_col.epoch_days())
         ┏━━━━━━━━━━━━┳━━━━━━━┓
         ┃ date_col   ┃ epoch ┃
         ┡━━━━━━━━━━━━╇━━━━━━━┩
