@@ -471,7 +471,7 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         return self._value_to_interval(arg, unit)
 
-    def visit_UnixDate(self, op, *, arg):
+    def visit_EpochDays(self, op, *, arg):
         return arg - self.f.date_from_parts(1970, 1, 1)
 
 

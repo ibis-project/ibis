@@ -474,7 +474,7 @@ class DateValue(Value, _DateComponentMixin):
         """
         return ops.DateDelta(left=self, right=other, part=part).to_expr()
 
-    def epoch(self) -> ir.IntegerValue:
+    def epoch_days(self) -> ir.IntegerValue:
         """Return the number of days since the UNIX epoch date.
 
         Examples
@@ -509,7 +509,7 @@ class DateValue(Value, _DateComponentMixin):
         │ 2020-01-01 │ 18262 │
         └────────────┴───────┘
         """
-        return ops.UnixDate(self).to_expr()
+        return ops.EpochDays(self).to_expr()
 
 
 @public

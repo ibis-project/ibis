@@ -1637,7 +1637,7 @@ class SQLGlotCompiler(abc.ABC):
         # generate the SQL string
         return parsed.sql(dialect)
 
-    def visit_UnixDate(self, op, *, arg):
+    def visit_EpochDays(self, op, *, arg):
         epoch = self.f.date_from_parts(1970, 1, 1)
         return self.f.datediff(arg, epoch, self.v.DAY)
 

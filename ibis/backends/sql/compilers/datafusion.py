@@ -48,7 +48,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.TypeOf,
         ops.StringToDate,
         ops.StringToTimestamp,
-        ops.UnixDate,
+        ops.EpochDays,
     )
 
     SIMPLE_OPS = {

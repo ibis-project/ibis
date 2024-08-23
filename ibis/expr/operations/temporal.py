@@ -467,7 +467,7 @@ class TimestampDelta(TemporalDelta):
 
 
 @public
-class UnixDate(Value):
+class EpochDays(Value):
     """Return the number of days since the UNIX epoch."""
 
     arg: Value[dt.Date]

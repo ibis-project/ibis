@@ -2299,7 +2299,7 @@ def test_date_scalar(con, value, func):
 )
 def test_simple_unix_date_offset(con):
     d = ibis.date("2023-04-07")
-    expr = d.epoch()
+    expr = d.epoch_days()
     result = con.execute(expr)
     delta = datetime.date(2023, 4, 7) - datetime.date(1970, 1, 1)
     assert result == delta.days

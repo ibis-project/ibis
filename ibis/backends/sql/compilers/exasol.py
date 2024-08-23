@@ -74,7 +74,7 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.TimestampDiff,
         ops.TimestampSub,
         ops.TypeOf,
-        ops.UnixDate,
+        ops.EpochDays,
         ops.Unnest,
     )
 

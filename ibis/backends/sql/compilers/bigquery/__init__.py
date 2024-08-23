@@ -190,7 +190,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.Time: "time",
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
-        ops.UnixDate: "unix_date",
+        ops.EpochDays: "unix_date",
         ops.ExtractHost: "net.host",
     }
 
