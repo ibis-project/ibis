@@ -488,14 +488,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "flink",
-        "impala",
-        "mssql",
-        "mysql",
         "pandas",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
     ]
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
@@ -578,13 +571,13 @@ DIAMONDS_COLUMN_TYPES = {
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    ["flink"]
 )
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
-        if con.name == "pyspark":
-            # pyspark doesn't respect CWD
+        if con.name in ("pyspark", "sqlite"):
+            # pyspark and sqlite doesn't respect CWD
             fname = str(Path(fname).absolute())
         table = con.read_csv(fname, table_name=in_table_name)
 
