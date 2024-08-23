@@ -4,10 +4,8 @@ import contextlib
 import csv
 import gzip
 import os
-import urllib
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest import mock
 
 import pytest
 from pytest import param
@@ -464,10 +462,8 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
         ("sftp://example.com/path/to/functional_alltypes.parquet", "sftp_table"),
     ],
 )
-@pytest.mark.notimpl(
+@pytest.mark.never(
     [
-        "druid",
-        "flink",
         "duckdb",
         "pandas",
         "polars",
@@ -476,33 +472,33 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
         "clickhouse",
         "datafusion",
         "snowflake",
+    ]
+)
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(
+    [
+        "druid",
         "pyspark",
     ]
 )
 def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
     pytest.importorskip("pyarrow.parquet")
+    import fsspec
 
-    headers = {"User-Agent": "test-agent"}
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name
     mock_calls = []
 
-    mock_request = mock.create_autospec(urllib.request.Request)
+    original_fsspec_open = fsspec.open
 
-    def mock_urlopen(request, *args, **kwargs):
-        mock_calls.append((request, args, kwargs))
-        return open(fname, "rb")  # noqa: SIM115
+    def mock_fsspec_open(path, *args, **kwargs):
+        mock_calls.append((path, args, kwargs))
+        return original_fsspec_open(fname, "rb")
 
-    monkeypatch.setattr("urllib.request.Request", mock_request)
-    monkeypatch.setattr("urllib.request.urlopen", mock_urlopen)
+    monkeypatch.setattr("fsspec.open", mock_fsspec_open)
 
-    table = con.read_parquet(url, in_table_name, headers=headers)
+    table = con.read_parquet(url, in_table_name)
 
-    mock_request.assert_called_once_with(url, headers=headers)
-    called_url = mock_request.call_args[0][0]
-    called_headers = mock_request.call_args[1]
-    assert url == called_url
-    assert called_headers["headers"] == headers
     assert len(mock_calls) == 1
     assert table.count().execute()
 

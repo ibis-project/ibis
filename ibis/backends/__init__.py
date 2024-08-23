@@ -1220,10 +1220,71 @@ class BaseBackend(abc.ABC, _FileIOHandler):
             See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.read_table.html
             for more information.
 
+            When reading data from cloud storage (such as Amazon S3 or Google Cloud Storage),
+            credentials can be provided via the `filesystem` argument by creating an appropriate
+            filesystem object (e.g., `pyarrow.fs.S3FileSystem`).
+
+            For URLs with credentials, `fsspec` is used to handle authentication and file access.
+            Pass the credentials using the `credentials` keyword argument. `fsspec` will use these
+            credentials to manage access to the remote files.
+
         Returns
         -------
         ir.Table
             The just-registered table
+
+        Examples
+        --------
+        Connect to a SQLite database:
+
+        >>> con = ibis.sqlite.connect()
+
+        Read a single parquet file:
+
+        >>> table = con.read_parquet("path/to/file.parquet")
+
+        Read all parquet files in a directory:
+
+        >>> table = con.read_parquet("path/to/parquet_directory/")
+
+        Read parquet files with a glob pattern
+
+        >>> table = con.read_parquet("path/to/parquet_directory/data_*.parquet")
+
+        Read from Amazon S3
+
+        >>> table = con.read_parquet("s3://bucket-name/path/to/file.parquet")
+
+        Read from Google Cloud Storage
+
+        >>> table = con.read_parquet("gs://bucket-name/path/to/file.parquet")
+
+        Read from HTTPS URL
+
+        >>> table = con.read_parquet("https://example.com/data/file.parquet")
+
+        Read with a custom table name
+
+        >>> table = con.read_parquet("s3://bucket/data.parquet", table_name="my_table")
+
+        Read with additional pyarrow options
+
+        >>> table = con.read_parquet("gs://bucket/data.parquet", columns=["col1", "col2"])
+
+        Read from Amazon S3 with secret info
+
+        >>> from pyarrow import fs
+        >>> s3_fs = fs.S3FileSystem(
+        ...     access_key="YOUR_ACCESS_KEY", secret_key="YOUR_SECRET_KEY", region="YOUR_AWS_REGION"
+        ... )
+        >>> table = con.read_parquet("s3://bucket/data.parquet", filesystem=s3_fs)
+
+        Read from HTTPS URL with authentication tokens
+
+        >>> table = con.read_parquet(
+        ...     "https://example.com/data/file.parquet",
+        ...     credentials={"headers": {"Authorization": "Bearer YOUR_TOKEN"}},
+        ... )
 
         """
 
@@ -1233,15 +1294,16 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         return self.table(table_name)
 
     def _get_pyarrow_table_from_path(self, path: str | Path, **kwargs) -> pa.Table:
-        pq = util.import_object("pyarrow.parquet")
+        import pyarrow.parquet as pq
 
         path = str(path)
         # handle url
         if util.is_url(path):
-            headers = kwargs.pop("headers", {})
-            req_info = urllib.request.Request(path, headers=headers)  # noqa: S310
-            with urllib.request.urlopen(req_info) as req:  # noqa: S310
-                with BytesIO(req.read()) as reader:
+            import fsspec
+
+            credentials = kwargs.pop("credentials", {})
+            with fsspec.open(path, **credentials) as f:
+                with BytesIO(f.read()) as reader:
                     return pq.read_table(reader)
 
         # handle fsspec compatible url
