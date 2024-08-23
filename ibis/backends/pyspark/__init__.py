@@ -181,7 +181,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
-        self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
+
+        # Databricks Serverless compute only supports limited properties
+        # and any attempt to set unsupported properties will result in an error.
+        # https://docs.databricks.com/en/spark/conf.html
+        try:
+            from pyspark.errors.exceptions.connect import SparkConnectGrpcException
+        except ImportError:
+            # Use a dummy class for when spark connect is not available
+            class SparkConnectGrpcException(Exception):
+                pass
+
+        with contextlib.suppress(SparkConnectGrpcException):
+            self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
