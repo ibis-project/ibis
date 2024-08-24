@@ -674,7 +674,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             schema = obj.schema()
 
         this = sge.Schema(
-            this=sg.table(name, db=database),
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
             expressions=[
                 sge.ColumnDef(
                     this=sg.to_identifier(name, quoted=self.compiler.quoted),
