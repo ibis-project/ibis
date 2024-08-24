@@ -564,7 +564,7 @@ GO"""
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -605,6 +605,8 @@ GO"""
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if temp and overwrite:
             raise ValueError(

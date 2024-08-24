@@ -923,7 +923,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -972,6 +972,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if isinstance(obj, ir.Table) and schema is not None:
             if not schema.equals(obj.schema()):

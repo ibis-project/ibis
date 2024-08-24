@@ -596,7 +596,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -625,6 +625,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 

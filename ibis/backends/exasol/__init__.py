@@ -314,7 +314,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         overwrite: bool = False,
         temp: bool = False,
@@ -342,6 +342,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if temp:
             raise com.UnsupportedOperationError(

@@ -765,7 +765,7 @@ $$ {defn["source"]} $$"""
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -797,6 +797,8 @@ $$ {defn["source"]} $$"""
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         quoted = self.compiler.quoted
 

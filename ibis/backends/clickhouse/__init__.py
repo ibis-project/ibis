@@ -611,7 +611,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -666,12 +666,11 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if obj is None and schema is None:
             raise com.IbisError("The `schema` or `obj` parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if obj is not None and not isinstance(obj, ir.Expr):
             obj = ibis.memtable(obj, schema=schema)
-
-        if schema is None:
-            schema = obj.schema()
 
         this = sge.Schema(
             this=sg.table(name, db=database),
@@ -680,7 +679,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                     this=sg.to_identifier(name, quoted=self.compiler.quoted),
                     kind=self.compiler.type_mapper.from_ibis(typ),
                 )
-                for name, typ in schema.items()
+                for name, typ in (schema or obj.schema()).items()
             ],
         )
         properties = [

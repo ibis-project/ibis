@@ -41,6 +41,8 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
+    from ibis.expr.schema import SchemaLike
+
 
 _UDF_INPUT_TYPE_MAPPING = {
     InputType.PYARROW: duckdb.functional.ARROW,
@@ -103,7 +105,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -147,6 +149,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 
