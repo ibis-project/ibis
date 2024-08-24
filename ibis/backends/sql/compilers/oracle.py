@@ -475,5 +475,11 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         return self._value_to_interval(arg, unit)
 
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        year = self.f.lpad(year, 4, "0")
+        month = self.f.lpad(month, 2, "0")
+        day = self.f.lpad(day, 2, "0")
+        return self.f.to_date(self.f.concat(year, month, day), "FXYYYYMMDD")
+
 
 compiler = OracleCompiler()
