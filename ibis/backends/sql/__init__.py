@@ -257,9 +257,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def _load_into_cache(self, name, expr):
         self.create_table(name, expr, schema=expr.schema(), temp=True)
 
-    def _clean_up_cached_table(self, name):
-        self.drop_table(name, force=True)
-
     def execute(
         self,
         expr: ir.Expr,

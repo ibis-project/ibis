@@ -84,9 +84,6 @@ class MockBackend(BaseBackend):
     def _load_into_cache(self, *_):
         raise NotImplementedError(self.name)
 
-    def _clean_up_cached_table(self, _):
-        raise NotImplementedError(self.name)
-
     def _get_schema_using_query(self, query):
         return self.sql_query_schemas[query]
 

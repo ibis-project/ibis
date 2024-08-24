@@ -148,10 +148,6 @@ class Backend(BaseBackend, NoUrl):
         self._tables[name] = obj
         self._context.register(name, obj)
 
-    def _remove_table(self, name: str) -> None:
-        del self._tables[name]
-        self._context.unregister(name)
-
     def sql(
         self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
     ) -> ir.Table:
@@ -407,6 +403,7 @@ class Backend(BaseBackend, NoUrl):
     def drop_table(self, name: str, *, force: bool = False) -> None:
         if name in self._tables:
             del self._tables[name]
+            self._context.unregister(name)
         elif not force:
             raise com.IbisError(f"Table {name!r} does not exist")
 
@@ -557,9 +554,6 @@ class Backend(BaseBackend, NoUrl):
 
     def _load_into_cache(self, name, expr):
         self.create_table(name, self.compile(expr).cache())
-
-    def _clean_up_cached_table(self, name):
-        self._remove_table(name)
 
 
 @lazy_singledispatch

@@ -544,7 +544,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                         insert_stmt, list(data.iloc[start:end].itertuples(index=False))
                     )
 
-        atexit.register(self._clean_up_tmp_table, name)
+        atexit.register(self._clean_up_cached_table, name)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")
@@ -635,7 +635,23 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         df = OraclePandasData.convert_table(df, schema)
         return df
 
-    def _clean_up_tmp_table(self, name: str) -> None:
+    def _clean_up_cached_table(self, name: str) -> None:
+        """Clean up a temporary table named `name`.
+
+        Parameters
+        ----------
+        name
+            The name of the temporary table to clean up.
+
+        Notes
+        -----
+        This method is named this way instead of, e.g., `_clean_up_tmp_table`,
+        in order to avoid aliasing a method.
+        """
+        name = sg.to_identifier(name, quoted=self.compiler.quoted)
+        truncate_sql = f"TRUNCATE TABLE {name.sql(self.dialect)}"
+        drop_sql = sge.Drop(kind="TABLE", this=name).sql(self.dialect)
+
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
@@ -644,9 +660,6 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             # ignore DatabaseError exceptions because the table may not exist
             # because it's already been deleted
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'TRUNCATE TABLE "{name}"')
+                bind.execute(truncate_sql)
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'DROP TABLE "{name}"')
-
-    def _clean_up_cached_table(self, name):
-        self._clean_up_tmp_table(name)
+                bind.execute(drop_sql)

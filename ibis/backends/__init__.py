@@ -1267,7 +1267,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         raise NotImplementedError(self.name)
 
     def _clean_up_cached_table(self, name):
-        raise NotImplementedError(self.name)
+        self.drop_table(name, force=True)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed
