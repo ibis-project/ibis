@@ -362,7 +362,7 @@ class Backend(BaseBackend, NoUrl):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,

@@ -14,6 +14,7 @@ import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
+import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends.postgres import Backend as PostgresBackend
@@ -130,7 +131,7 @@ class Backend(PostgresBackend):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

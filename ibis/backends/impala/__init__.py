@@ -463,7 +463,7 @@ class Backend(SQLBackend):
         | pl.LazyFrame
         | None = None,
         *,
-        schema=None,
+        schema: sch.SchemaLike | None = None,
         database=None,
         temp: bool | None = None,
         overwrite: bool = False,

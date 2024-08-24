@@ -374,7 +374,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,

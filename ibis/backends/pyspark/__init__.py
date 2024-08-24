@@ -547,7 +547,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
         ) = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
