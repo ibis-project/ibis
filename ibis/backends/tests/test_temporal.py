@@ -1474,8 +1474,7 @@ DATE_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "exasol", "risingwave", "druid"],
-    raises=com.OperationNotDefinedError,
+    ["pandas", "dask", "exasol", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-00936 missing expression"
@@ -1709,8 +1708,7 @@ def test_interval_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "exasol", "risingwave", "druid"],
-    raises=com.OperationNotDefinedError,
+    ["pandas", "dask", "exasol", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
     ["oracle"], raises=OracleDatabaseError, reason="ORA-00936: missing expression"
