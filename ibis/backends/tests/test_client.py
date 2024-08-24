@@ -1758,9 +1758,6 @@ def test_cross_database_join(con_create_database, monkeypatch):
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
-@pytest.mark.notimpl(
-    ["flink"], reason="Temp tables are implemented as views, which don't support insert"
-)
 @pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
 @pytest.mark.notimpl(
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
