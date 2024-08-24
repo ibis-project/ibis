@@ -423,25 +423,20 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         compiler = self.compiler
         quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
-        # If they don't match, assume auto-generated column names and use positional
-        # ordering.
+        # If source is a subset of target, use source columns for insert list
+        # Otherwise, assume auto-generated column names and use positional ordering.
         source_cols = source.columns
-        columns = (
-            target_cols
-            if set(target_cols := self.get_schema(target).names).difference(source_cols)
-            else source_cols
-        )
+        target_cols = self.get_schema(target).names
+
+        columns = source_cols if set(source_cols).issubset(target_cols) else target_cols
 
         query = sge.insert(
             expression=self.compile(source),
             into=sg.table(target, db=db, catalog=catalog, quoted=quoted),
-            columns=[
-                sg.to_identifier(col, quoted=quoted)
-                for col in columns
-                if col in source_cols
-            ],
+            columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
             dialect=compiler.dialect,
         )
+
         return query
 
     def _build_insert_template(
