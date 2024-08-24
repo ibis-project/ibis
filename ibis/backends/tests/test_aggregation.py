@@ -876,23 +876,7 @@ def test_quantile(
     assert pytest.approx(result) == expected
 
 
-@pytest.mark.parametrize(
-    "filtered",
-    [
-        False,
-        param(
-            True,
-            marks=[
-                pytest.mark.notyet(
-                    ["datafusion"],
-                    raises=Exception,
-                    reason="datafusion 38.0.1 has a bug in FILTER handling that causes this test to fail",
-                    strict=False,
-                )
-            ],
-        ),
-    ],
-)
+@pytest.mark.parametrize("filtered", [False, True])
 @pytest.mark.parametrize(
     "multi",
     [
