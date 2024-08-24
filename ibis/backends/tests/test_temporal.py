@@ -1967,8 +1967,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
 
 
 @pytest.mark.notimpl(
-    ["dask", "datafusion", "druid", "impala", "pandas"],
-    raises=com.OperationNotDefinedError,
+    ["dask", "datafusion", "druid", "pandas"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.parametrize(
     ("start", "end", "unit", "expected"),
@@ -1991,7 +1990,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["exasol", "polars", "sqlite", "oracle"],
+                    ["exasol", "polars", "sqlite", "oracle", "impala"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
@@ -2015,7 +2014,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
                 ),
                 pytest.mark.notimpl(
-                    ["exasol", "polars", "sqlite", "oracle"],
+                    ["exasol", "polars", "sqlite", "oracle", "impala"],
                     raises=com.OperationNotDefinedError,
                 ),
             ],
