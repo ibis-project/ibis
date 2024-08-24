@@ -1997,7 +1997,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(
-                    ["exasol", "polars"], raises=com.OperationNotDefinedError
+                    ["exasol", "polars", "sqlite"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
@@ -2020,13 +2020,12 @@ def test_timestamp_precision_output(con, ts, scale, unit):
                     reason="timestampdiff rounds after subtraction and mysql doesn't have a date_trunc function",
                 ),
                 pytest.mark.notimpl(
-                    ["exasol", "polars"], raises=com.OperationNotDefinedError
+                    ["exasol", "polars", "sqlite"], raises=com.OperationNotDefinedError
                 ),
             ],
         ),
     ],
 )
-@pytest.mark.notimpl(["sqlite"], raises=com.OperationNotDefinedError)
 def test_delta(con, start, end, unit, expected):
     expr = end.delta(start, unit)
     assert con.execute(expr) == expected
