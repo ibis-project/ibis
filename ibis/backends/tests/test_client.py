@@ -34,6 +34,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
+    Py4JJavaError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -1757,6 +1758,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
 @pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
 @pytest.mark.notimpl(
