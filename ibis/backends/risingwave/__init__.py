@@ -177,6 +177,8 @@ class Backend(PostgresBackend):
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if connector_properties is not None and (
             encode_format is None or data_format is None

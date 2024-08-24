@@ -85,16 +85,11 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     "sch",
     [
         None,
-        ibis.schema(
-            dict(
-                first_name="string",
-                last_name="string",
-                department_name="string",
-                salary="float64",
-            )
-        ),
+        dict(first_name="string", salary="float64"),
+        dict(first_name="string", salary="float64").items(),
+        ibis.schema(dict(first_name="string", salary="float64")),
     ],
-    ids=["no_schema", "schema"],
+    ids=["no_schema", "dict_schema", "tuples", "schema"],
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
@@ -102,14 +97,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
 def test_create_table(backend, con, temp_table, func, sch):
-    df = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
+    df = pd.DataFrame({"first_name": ["A", "B", "C"], "salary": [100.0, 200.0, 300.0]})
 
     con.create_table(temp_table, func(df), schema=sch)
     result = (

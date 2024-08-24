@@ -210,6 +210,8 @@ class BasePandasBackend(BaseBackend, NoUrl):
             )
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if obj is not None:
             df = self._convert_object(obj)

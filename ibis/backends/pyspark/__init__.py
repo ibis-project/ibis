@@ -608,6 +608,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 df = self._session.sql(query)
                 df.write.saveAsTable(name, format=format, mode=mode)
         elif schema is not None:
+            schema = ibis.schema(schema)
             schema = PySparkSchema.from_ibis(schema)
             with self._active_catalog_database(catalog, db):
                 self._session.catalog.createTable(name, schema=schema, format=format)
