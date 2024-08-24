@@ -8,6 +8,7 @@ import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
+from ibis import _
 from ibis.common.collections import frozendict
 from ibis.expr.operations import Literal
 from ibis.tests.util import assert_pickle_roundtrip
@@ -166,3 +167,11 @@ def test_timestamp_literal_without_tz():
 def test_integer_as_decimal():
     lit = ibis.literal(12, type="decimal")
     assert lit.op().value == decimal.Decimal(12)
+
+
+def test_deferred(table):
+    expr = _.g.get_name()
+    dtype = _.g.type()
+    deferred = ibis.literal(expr, type=dtype)
+    result = deferred.resolve(table)
+    assert result.op().value == "g"
