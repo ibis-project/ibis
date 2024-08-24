@@ -1764,13 +1764,13 @@ def test_cross_database_join(con_create_database, monkeypatch):
 )
 def test_insert_into_table_missing_columns(con):
     table_name = gen_name("table")
-    ct_sql = f"CREATE TABLE {table_name} (a INT DEFAULT 1, b VARCHAR(10));"
+    ct_sql = f'CREATE TABLE "{table_name}" ("a" INT DEFAULT 1, "b" INT);'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")
     con.raw_sql(sg_expr.sql(dialect=con.dialect))
-    con.insert(table_name, [{"b": "hello"}])
+    con.insert(table_name, [{"b": 1}])
 
     result = con.table(table_name).to_pyarrow().to_pydict()
-    expected_result = {"a": [1], "b": ["hello"]}
+    expected_result = {"a": [1], "b": [1]}
 
     assert result == expected_result
 
