@@ -693,3 +693,12 @@ def test_approx_quantiles(alltypes, quantiles, snapshot):
     query = alltypes.double_col.approx_quantile(quantiles).name("qs")
     result = ibis.to_sql(query, dialect="bigquery")
     snapshot.assert_match(result, "out.sql")
+
+
+def test_unreasonably_long_name():
+    expr = ibis.literal("hello, world!").name("a" * 301)
+    with pytest.raises(
+        com.IbisError,
+        match="BigQuery does not allow column names longer than 300 characters",
+    ):
+        ibis.to_sql(expr, dialect="bigquery")
