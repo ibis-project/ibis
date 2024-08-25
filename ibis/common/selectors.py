@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
 from ibis.common.grounds import Concrete
