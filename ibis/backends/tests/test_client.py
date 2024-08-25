@@ -1764,16 +1764,13 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notimpl(
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
 )
-def test_insert_into_table_missing_columns(con):
-    table_name = gen_name("table")
-    ct_sql = f'CREATE TABLE "{table_name}" ("a" INT DEFAULT 1, "b" INT);'
+def test_insert_into_table_missing_columns(con, temp_table):
+    ct_sql = f'CREATE TABLE "{temp_table}" ("a" INT DEFAULT 1, "b" INT)'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")
     con.raw_sql(sg_expr.sql(dialect=con.dialect))
-    con.insert(table_name, [{"b": 1}])
+    con.insert(temp_table, [{"b": 1}])
 
-    result = con.table(table_name).to_pyarrow().to_pydict()
+    result = con.table(temp_table).to_pyarrow().to_pydict()
     expected_result = {"a": [1], "b": [1]}
 
     assert result == expected_result
-
-    con.drop_table(table_name)
