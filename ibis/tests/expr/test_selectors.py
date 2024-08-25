@@ -529,3 +529,15 @@ def test_methods(penguins):
     selector = s.across(s.all(), ibis.null(_.type()))
     bound = selector.expand(penguins)
     assert [col.get_name() for col in bound] == penguins.columns
+
+
+def test_none_selector(penguins):
+    assert s.none().expand(penguins) == []
+    assert s.none().expand_names(penguins) == frozenset()
+
+    assert (s.none() | s.c("year")).expand_names(penguins) == frozenset(("year",))
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(s.none())
+
+    assert penguins.select(s.none() | s.c("year")).equals(penguins.select("year"))

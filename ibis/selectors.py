@@ -713,6 +713,20 @@ def all() -> Selector:
     return AllColumns()
 
 
+class NoColumns(Singleton, Selector):
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        return []
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        return frozenset()
+
+
+@public
+def none() -> Selector:
+    """Return no columns."""
+    return NoColumns()
+
+
 def _to_selector(
     obj: str | Selector | ir.Column | Sequence[str | Selector | ir.Column],
 ) -> Selector:
