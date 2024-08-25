@@ -532,12 +532,15 @@ def test_methods(penguins):
 
 
 def test_none_selector(penguins):
-    assert s.none().expand(penguins) == []
-    assert s.none().expand_names(penguins) == frozenset()
+    assert not s.none().expand(penguins)
+    assert not s.none().expand_names(penguins)
 
-    assert (s.none() | s.c("year")).expand_names(penguins) == frozenset(("year",))
+    assert list((s.none() | s.c("year")).expand_names(penguins)) == ["year"]
 
     with pytest.raises(exc.IbisError):
         penguins.select(s.none())
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(s.none() & s.c("year"))
 
     assert penguins.select(s.none() | s.c("year")).equals(penguins.select("year"))
