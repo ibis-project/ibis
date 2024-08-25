@@ -50,12 +50,14 @@ Using a composition of selectors this is much less tiresome:
 
 from __future__ import annotations
 
-import functools
+import abc
+import builtins
 import inspect
 import operator
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Optional, Union
+from functools import reduce
+from typing import Optional, Union, final
 
 from public import public
 
@@ -66,54 +68,21 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Resolver
-from ibis.common.exceptions import IbisError
-from ibis.common.grounds import Singleton
-from ibis.common.selectors import Selector
+from ibis.common.grounds import Concrete, Singleton
+from ibis.common.selectors import All, Any, Selector
+from ibis.common.typing import VarTuple  # noqa: TCH001
 
 
-class Predicate(Selector):
+class Where(Selector):
     predicate: Callable[[ir.Value], bool]
 
-    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        """Evaluate `self.predicate` on every column of `table`.
-
-        Parameters
-        ----------
-        table
-            An ibis table expression
-
-        """
-        return [col for column in table.columns if self.predicate(col := table[column])]
-
-    def __and__(self, other: Selector) -> Predicate:
-        """Compute the conjunction of two `Selector`s.
-
-        Parameters
-        ----------
-        other
-            Another selector
-
-        """
-        return self.__class__(lambda col: self.predicate(col) and other.predicate(col))
-
-    def __or__(self, other: Selector) -> Predicate:
-        """Compute the disjunction of two `Selector`s.
-
-        Parameters
-        ----------
-        other
-            Another selector
-
-        """
-        return self.__class__(lambda col: self.predicate(col) or other.predicate(col))
-
-    def __invert__(self) -> Predicate:
-        """Compute the logical negation of two `Selector`s."""
-        return self.__class__(lambda col: not self.predicate(col))
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        predicate = self.predicate
+        return frozenset(col for col in table.columns if predicate(table[col]))
 
 
 @public
-def where(predicate: Callable[[ir.Value], bool]) -> Predicate:
+def where(predicate: Callable[[ir.Value], bool]) -> Selector:
     """Select columns that satisfy `predicate`.
 
     Use this selector when one of the other selectors does not meet your needs.
@@ -133,11 +102,11 @@ def where(predicate: Callable[[ir.Value], bool]) -> Predicate:
     ['a']
 
     """
-    return Predicate(predicate=predicate)
+    return Where(predicate)
 
 
 @public
-def numeric() -> Predicate:
+def numeric() -> Selector:
     """Return numeric columns.
 
     Examples
@@ -160,7 +129,7 @@ def numeric() -> Predicate:
 
 
 @public
-def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
+def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
     """Select columns of type `dtype`.
 
     Parameters
@@ -230,8 +199,16 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Predicate:
     return where(predicate)
 
 
+class StartsWith(Selector):
+    prefixes: str | VarTuple[str]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        prefixes = self.prefixes
+        return frozenset(col for col in table.columns if col.startswith(prefixes))
+
+
 @public
-def startswith(prefixes: str | tuple[str, ...]) -> Predicate:
+def startswith(prefixes: str | tuple[str, ...]) -> Selector:
     """Select columns whose name starts with one of `prefixes`.
 
     Parameters
@@ -253,11 +230,19 @@ def startswith(prefixes: str | tuple[str, ...]) -> Predicate:
     [`endswith`](#ibis.selectors.endswith)
 
     """
-    return where(lambda col: col.get_name().startswith(prefixes))
+    return StartsWith(prefixes)
+
+
+class EndsWith(Selector):
+    suffixes: str | VarTuple[str]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        suffixes = self.suffixes
+        return frozenset(col for col in table.columns if col.endswith(suffixes))
 
 
 @public
-def endswith(suffixes: str | tuple[str, ...]) -> Predicate:
+def endswith(suffixes: str | tuple[str, ...]) -> Selector:
     """Select columns whose name ends with one of `suffixes`.
 
     Parameters
@@ -270,13 +255,26 @@ def endswith(suffixes: str | tuple[str, ...]) -> Predicate:
     [`startswith`](#ibis.selectors.startswith)
 
     """
-    return where(lambda col: col.get_name().endswith(suffixes))
+    return EndsWith(suffixes)
+
+
+class Contains(Selector):
+    needles: VarTuple[str]
+    how: Callable[[Iterable[bool]], bool]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        needles = self.needles
+        how = self.how
+        return frozenset(
+            col for col in table.columns if how(map(col.__contains__, needles))
+        )
 
 
 @public
 def contains(
-    needles: str | tuple[str, ...], how: Callable[[Iterable[bool]], bool] = any
-) -> Predicate:
+    needles: str | tuple[str, ...],
+    how: Callable[[Iterable[bool]], bool] = builtins.any,
+) -> Selector:
     """Return columns whose name contains `needles`.
 
     Parameters
@@ -311,12 +309,14 @@ def contains(
     [`matches`](#ibis.selectors.matches)
 
     """
+    return Contains(tuple(util.promote_list(needles)), how=how)
 
-    def predicate(col: ir.Value) -> bool:
-        name = col.get_name()
-        return how(needle in name for needle in util.promote_list(needles))
 
-    return where(predicate)
+class Matches(Selector):
+    regex: re.Pattern
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        return frozenset(filter(self.regex.search, table.columns))
 
 
 @public
@@ -342,43 +342,61 @@ def matches(regex: str | re.Pattern) -> Selector:
     [`contains`](#ibis.selectors.contains)
 
     """
-    pattern = re.compile(regex)
-    return where(lambda col: pattern.search(col.get_name()) is not None)
+    return Matches(re.compile(regex))
 
 
 @public
-def any_of(*predicates: str | Predicate) -> Predicate:
+def any_of(*predicates: str | Selector) -> Selector:
     """Include columns satisfying any of `predicates`."""
-    return functools.reduce(operator.or_, map(_to_selector, predicates))
+    return Any(tuple(map(_to_selector, predicates)))
 
 
 @public
-def all_of(*predicates: str | Predicate) -> Predicate:
+def all_of(*predicates: str | Selector) -> Selector:
     """Include columns satisfying all of `predicates`."""
-    return functools.reduce(operator.and_, map(_to_selector, predicates))
+    return All(tuple(map(_to_selector, predicates)))
+
+
+class Cols(Selector):
+    names: frozenset[str]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        names = self.names
+        columns = table.columns
+        if extra_cols := sorted(names.difference(columns)):
+            raise exc.IbisInputError(
+                f"Columns {extra_cols} are not present in {columns}"
+            )
+        return names
 
 
 @public
-def c(*names: str | ir.Column) -> Predicate:
+def c(*names: str | ir.Column) -> Selector:
     """Select specific column names."""
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
-
-    @functools.cache
-    def check_delta(schema):
-        if extra_cols := names - schema._name_locs.keys():
-            raise exc.IbisInputError(
-                f"Columns {extra_cols} are not present in {schema.names}"
-            )
-
-    def func(col: ir.Value) -> bool:
-        op = col.op()
-        check_delta(op.rel.schema)
-        return op.name in names
-
-    return where(func)
+    return Cols(names)
 
 
-class Across(Selector):
+class RootSelector(Selector):
+    """Class for selectors that can only be used as the root of a selector tree.
+
+    Child classes **must** implement `expand` and should not implement
+    `expand_names`, because `expand_names` is what allows selectors to compose
+    via set operations.
+    """
+
+    @abc.abstractmethod
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        """Expand the selector into a sequence of value expressions."""
+
+    @final
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        raise NotImplementedError(
+            f"The `{self.__class__.__name__}` selector cannot be composed with other selectors"
+        )
+
+
+class Across(RootSelector):
     selector: Selector
     funcs: Union[
         Resolver,
@@ -399,10 +417,12 @@ class Across(Selector):
                 else:
                     col = func(orig_col)
 
+                orig_name = orig_col.get_name()
+
                 if callable(names):
-                    name = names(orig_col.get_name(), func_name)
+                    name = names(orig_name, func_name)
                 else:
-                    name = names.format(col=orig_col.get_name(), fn=func_name)
+                    name = names.format(col=orig_name, fn=func_name)
 
                 if not isinstance(col.op(), ops.Alias):
                     col = col.name(name)
@@ -475,19 +495,20 @@ def across(
     return Across(selector=selector, funcs=funcs, names=names)
 
 
-class IfAnyAll(Selector):
+class IfAnyAll(RootSelector):
     selector: Selector
     predicate: Union[Resolver, Callable[[ir.Value], ir.BooleanValue]]
     summarizer: Callable[[ir.BooleanValue, ir.BooleanValue], ir.BooleanValue]
 
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         func = self.predicate
-        if isinstance(func, Resolver):
-            elems = (func.resolve({"_": col}) for col in self.selector.expand(table))
-        else:
-            elems = (func(col) for col in self.selector.expand(table))
 
-        return [functools.reduce(self.summarizer, elems)]
+        if isinstance(func, Resolver):
+            fn = lambda col, func=func: func.resolve({"_": col})
+        else:
+            fn = func
+
+        return [reduce(self.summarizer, map(fn, self.selector.expand(table)))]
 
 
 @public
@@ -586,66 +607,99 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
 
 
+class Slice(Concrete):
+    """Hashable and smaller-scoped slice object versus the builtin one."""
+
+    start: int | str | None = None
+    stop: int | str | None = None
+    step: int | None = None
+
+
+class ColumnSlice(Selector):
+    key: str | int | Slice | VarTuple[int | str]
+
+    @staticmethod
+    def slice_key_to_int(
+        value: int | str | None, name_locs: Mapping[str, int], offset: int
+    ) -> int:
+        if value is None or isinstance(value, int):
+            return value
+        else:
+            assert isinstance(value, str), f"expected `str` got {type(value)}"
+            return name_locs[value] + offset
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        name_locs = table.schema()._name_locs
+        key = self.key
+
+        if isinstance(key, str):
+            iterable = (key,)
+        elif isinstance(key, int):
+            iterable = (table.columns[key],)
+        elif isinstance(key, Slice):
+            start = self.slice_key_to_int(key.start, name_locs, offset=0)
+            stop = self.slice_key_to_int(key.stop, name_locs, offset=1)
+            step = key.step
+            iterable = table.columns[start:stop:step]
+        else:
+            iterable = (
+                table.columns[el if isinstance(el, int) else name_locs[el]]
+                for el in key
+            )
+        return frozenset(iterable)
+
+
 class Sliceable(Singleton):
-    def __getitem__(self, key: str | int | slice | Iterable[int | str]) -> Predicate:
-        def pred(col: ir.Value) -> bool:
-            try:
-                (table,) = col.op().relations
-            except ValueError:
-                raise IbisError("Column should depend on exactly one table")
-
-            schema = table.schema
-            idxs = schema._name_locs
-            num_names = len(schema)
-            colname = col.get_name()
-            colidx = idxs[colname]
-
-            if isinstance(key, str):
-                return key == colname
-            elif isinstance(key, int):
-                return key % num_names == colidx
-            elif util.is_iterable(key):
-                return any(
-                    (isinstance(el, int) and el % num_names == colidx)
-                    or (isinstance(el, str) and el == colname)
-                    for el in key
-                )
-            else:
-                start = key.start or 0
-                stop = key.stop or num_names
-                step = key.step or 1
-
-                if isinstance(start, str):
-                    start = idxs[start]
-
-                if isinstance(stop, str):
-                    stop = idxs[stop] + 1
-
-                return colidx in range(start, stop, step)
-
-        return where(pred)
+    def __getitem__(self, key: str | int | slice | Iterable[int | str]):
+        if isinstance(key, slice):
+            key = Slice(key.start, key.stop, key.step)
+        return ColumnSlice(key)
 
 
 r = Sliceable()
 """Ranges of columns."""
 
 
+class First(Singleton, Selector):
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        return [table[0]]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        return frozenset((table.columns[0],))
+
+
 @public
-def first() -> Predicate:
+def first() -> Selector:
     """Return the first column of a table."""
-    return r[0]
+    return First()
+
+
+class Last(Singleton, Selector):
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        return [table[-1]]
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        return frozenset((table.columns[-1],))
 
 
 @public
-def last() -> Predicate:
+def last() -> Selector:
     """Return the last column of a table."""
-    return r[-1]
+    return Last()
+
+
+class AllColumns(Singleton, Selector):
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        return list(map(table.__getitem__, table.columns))
+
+    def expand_names(self, table: ir.Table) -> frozenset[str]:
+        return frozenset(table.columns)
 
 
 @public
-def all() -> Predicate:
+def all() -> Selector:
     """Return every column from a table."""
-    return r[:]
+    return AllColumns()
 
 
 def _to_selector(
