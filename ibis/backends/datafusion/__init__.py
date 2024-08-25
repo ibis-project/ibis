@@ -241,7 +241,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
     @property
     def current_database(self) -> str:
-        return NotImplementedError()
+        raise NotImplementedError()
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         code = (
