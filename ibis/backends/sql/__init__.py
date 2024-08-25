@@ -425,10 +425,13 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         # Compare the columns between the target table and the object to be inserted
         # If source is a subset of target, use source columns for insert list
         # Otherwise, assume auto-generated column names and use positional ordering.
-        source_cols = source.columns
-        target_cols = self.get_schema(target).names
+        target_cols = self.get_schema(target).keys()
 
-        columns = source_cols if set(source_cols).issubset(target_cols) else target_cols
+        columns = (
+            source_cols
+            if (source_cols := source.schema().keys()) <= target_cols
+            else target_cols
+        )
 
         query = sge.insert(
             expression=self.compile(source),
