@@ -13,9 +13,8 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Selector(Concrete):
-    """A column selector."""
-
+class Expandable(Concrete):
+    @abc.abstractmethod
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         """Expand `table` into value expressions that match the selector.
 
@@ -30,12 +29,18 @@ class Selector(Concrete):
             A sequence of value expressions that match the selector
 
         """
-        names = self.expand_names(table)
-        return list(map(table.__getitem__, filter(names.__contains__, table.columns)))
 
     @abc.abstractmethod
     def expand_names(self, table: ir.Table) -> frozenset[str]:
         """Compute the set of column names that match the selector."""
+
+
+class Selector(Expandable):
+    """A column selector."""
+
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        names = self.expand_names(table)
+        return list(map(table.__getitem__, filter(names.__contains__, table.columns)))
 
     def __and__(self, other: Selector) -> Selector:
         """Compute the logical conjunction of two `Selector`s.

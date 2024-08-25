@@ -50,14 +50,13 @@ Using a composition of selectors this is much less tiresome:
 
 from __future__ import annotations
 
-import abc
 import builtins
 import inspect
 import operator
 import re
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Optional, Union, final
+from typing import Optional, Union
 
 from public import public
 
@@ -69,7 +68,7 @@ from ibis import util
 from ibis.common.collections import frozendict  # noqa: TCH001
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.grounds import Concrete, Singleton
-from ibis.common.selectors import All, Any, Selector
+from ibis.common.selectors import All, Any, Expandable, Selector
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
 
@@ -388,26 +387,16 @@ def c(*names: str | ir.Column) -> Selector:
     return Cols(names)
 
 
-class RootSelector(Selector):
-    """Class for selectors that can only be used as the root of a selector tree.
+class SelectorHelper(Expandable):
+    """Class for expandable objects that aren't technically selectors."""
 
-    Child classes **must** implement `expand` and should not implement
-    `expand_names`, because `expand_names` is what allows selectors to compose
-    via set operations.
-    """
-
-    @abc.abstractmethod
-    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
-        """Expand the selector into a sequence of value expressions."""
-
-    @final
     def expand_names(self, table: ir.Table) -> frozenset[str]:
         raise NotImplementedError(
             f"The `{self.__class__.__name__}` selector cannot be composed with other selectors"
         )
 
 
-class Across(RootSelector):
+class Across(SelectorHelper):
     selector: Selector
     funcs: Union[
         Resolver,
@@ -501,12 +490,11 @@ def across(
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
     funcs = dict(func if isinstance(func, Mapping) else {None: func})
-    if not isinstance(selector, Selector):
-        selector = c(*util.promote_list(selector))
+    selector = _to_selector(selector)
     return Across(selector=selector, funcs=funcs, names=names)
 
 
-class IfAnyAll(RootSelector):
+class IfAnyAll(SelectorHelper):
     selector: Selector
     predicate: Union[Resolver, Callable[[ir.Value], ir.BooleanValue]]
     summarizer: Callable[[ir.BooleanValue, ir.BooleanValue], ir.BooleanValue]
@@ -733,6 +721,10 @@ def _to_selector(
     """Convert an object to a `Selector`."""
     if isinstance(obj, Selector):
         return obj
+    elif isinstance(obj, Expandable):
+        raise exc.IbisInputError(
+            f"Cannot compose {obj.__class__.__name__} with other selectors"
+        )
     elif isinstance(obj, ir.Column):
         return c(obj.get_name())
     elif isinstance(obj, str):
