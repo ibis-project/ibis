@@ -1765,7 +1765,11 @@ def test_cross_database_join(con_create_database, monkeypatch):
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
 )
 def test_insert_into_table_missing_columns(con, temp_table):
-    ct_sql = f'CREATE TABLE "{temp_table}" ("a" INT DEFAULT 1, "b" INT)'
+    ident = sg.table(
+        temp_table, db=con.current_database, catalog=con.current_catalog, quoted=True
+    )
+    raw_ident = ident.sql("duckdb")
+    ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")
     con.raw_sql(sg_expr.sql(dialect=con.dialect))
     con.insert(temp_table, [{"b": 1}])
