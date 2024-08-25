@@ -160,10 +160,6 @@ class Unary(Value):
     def shape(self) -> ds.DataShape:
         return self.arg.shape
 
-    @attribute
-    def relations(self):
-        return self.arg.relations
-
 
 @public
 class Binary(Value):
@@ -175,10 +171,6 @@ class Binary(Value):
     @attribute
     def shape(self) -> ds.DataShape:
         return max(self.left.shape, self.right.shape)
-
-    @attribute
-    def relations(self):
-        return self.left.relations | self.right.relations
 
 
 @public

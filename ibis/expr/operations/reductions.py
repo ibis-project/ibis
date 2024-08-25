@@ -45,10 +45,6 @@ class CountStar(Filterable, Reduction):
 
     dtype = dt.int64
 
-    @attribute
-    def relations(self):
-        return frozenset({self.arg})
-
 
 @public
 class CountDistinctStar(Filterable, Reduction):
@@ -57,10 +53,6 @@ class CountDistinctStar(Filterable, Reduction):
     arg: Relation
 
     dtype = dt.int64
-
-    @attribute
-    def relations(self):
-        return frozenset({self.arg})
 
 
 @public
