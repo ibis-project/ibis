@@ -544,3 +544,19 @@ def test_none_selector(penguins):
         penguins.select(s.none() & s.c("year"))
 
     assert penguins.select(s.none() | s.c("year")).equals(penguins.select("year"))
+
+
+def test_invalid_composition():
+    left = s.across(s.all(), _ + 1)
+    right = s.none()
+    with pytest.raises(TypeError):
+        left & right
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.any_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.all_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.across(left, _ + 1)

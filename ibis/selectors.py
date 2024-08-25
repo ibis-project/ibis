@@ -721,13 +721,13 @@ def _to_selector(
     """Convert an object to a `Selector`."""
     if isinstance(obj, Selector):
         return obj
-    elif isinstance(obj, Expandable):
-        raise exc.IbisInputError(
-            f"Cannot compose {obj.__class__.__name__} with other selectors"
-        )
     elif isinstance(obj, ir.Column):
         return c(obj.get_name())
     elif isinstance(obj, str):
         return c(obj)
+    elif isinstance(obj, Expandable):
+        raise exc.IbisInputError(
+            f"Cannot compose {obj.__class__.__name__} with other selectors"
+        )
     else:
         return any_of(*obj)
