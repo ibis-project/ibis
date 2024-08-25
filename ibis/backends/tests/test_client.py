@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot as sg
 import toolz
 from packaging.version import parse as vparse
 from pytest import mark, param
@@ -33,6 +34,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
+    Py4JJavaError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -1738,3 +1740,44 @@ def test_cross_database_join(con_create_database, monkeypatch):
     con.drop_table(left_table)
     con.drop_table(right_table, database=dbname)
     con.drop_database(dbname)
+
+
+@pytest.mark.notimpl(
+    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
+)
+@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
+@pytest.mark.notimpl(
+    ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+)
+def test_insert_into_table_missing_columns(con, temp_table):
+    try:
+        db = getattr(con, "current_database", None)
+    except NotImplementedError:
+        db = None
+
+    # UGH
+    if con.name == "oracle":
+        db = None
+
+    try:
+        catalog = getattr(con, "current_catalog", None)
+    except NotImplementedError:
+        catalog = None
+
+    raw_ident = ".".join(
+        sg.to_identifier(i, quoted=True).sql("duckdb")
+        for i in filter(None, (catalog, db, temp_table))
+    )
+
+    ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
+    sg_expr = sg.parse_one(ct_sql, read="duckdb")
+    con.raw_sql(sg_expr.sql(dialect=con.dialect))
+    con.insert(temp_table, [{"b": 1}])
+
+    result = con.table(temp_table).to_pyarrow().to_pydict()
+    expected_result = {"a": [1], "b": [1]}
+
+    assert result == expected_result

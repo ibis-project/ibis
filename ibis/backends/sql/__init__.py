@@ -423,14 +423,13 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         compiler = self.compiler
         quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
-        # If they don't match, assume auto-generated column names and use positional
-        # ordering.
-        source_cols = source.columns
+        # If source is a subset of target, use source columns for insert list
+        # Otherwise, assume auto-generated column names and use positional ordering.
+        target_cols = self.get_schema(target).keys()
+
         columns = (
             source_cols
-            if not set(target_cols := self.get_schema(target).names).difference(
-                source_cols
-            )
+            if (source_cols := source.schema().keys()) <= target_cols
             else target_cols
         )
 
