@@ -895,31 +895,17 @@ def test_table_info_large(con):
         ),
         param(
             s.of_type("string"),
-            [
-                "name",
-                "pos",
-                "type",
-                "count",
-                "nulls",
-                "unique",
-                "mode",
-            ],
+            ["name", "pos", "type", "count", "nulls", "unique", "mode"],
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "exasol",
-                        "impala",
-                        "pyspark",
-                        "risingwave",
-                    ],
+                    ["clickhouse", "exasol", "impala", "pyspark", "risingwave"],
                     raises=com.OperationNotDefinedError,
                     reason="mode is not supported",
                 ),
                 pytest.mark.notimpl(
                     ["oracle"],
-                    raises=com.OperationNotDefinedError,
-                    reason="Mode is not supported and ORA-02000: missing AS keyword",
+                    raises=OracleDatabaseError,
+                    reason="ORA-02000: missing AS keyword",
                 ),
                 pytest.mark.notimpl(
                     ["dask"],
