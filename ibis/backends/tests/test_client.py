@@ -1754,8 +1754,8 @@ def test_cross_database_join(con_create_database, monkeypatch):
     con.drop_database(dbname)
 
 
-@pytest.mark.notyet(
-    ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
+@pytest.mark.notimpl(
+    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
 )
 @pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
