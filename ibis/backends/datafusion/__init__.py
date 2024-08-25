@@ -235,14 +235,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         self._log(query)
         return self.con.sql(query)
 
-    @property
-    def current_catalog(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def current_database(self) -> str:
-        raise NotImplementedError()
-
     def list_catalogs(self, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
