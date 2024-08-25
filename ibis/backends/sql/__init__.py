@@ -439,7 +439,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             columns=[sg.to_identifier(col, quoted=quoted) for col in columns],
             dialect=compiler.dialect,
         )
-
         return query
 
     def _build_insert_template(
