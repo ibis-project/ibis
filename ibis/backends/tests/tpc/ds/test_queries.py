@@ -3208,3 +3208,22 @@ def test_63(item, store_sales, date_dim, store):
         .order_by(_.i_manager_id, _.avg_monthly_sales, _.sum_sales)
         .limit(100)
     )
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_82(item, inventory, date_dim, store_sales):
+    return (
+        inventory.join(item, [("inv_item_sk", "i_item_sk")])
+        .join(date_dim, [("inv_date_sk", "d_date_sk")])
+        .join(store_sales, [("i_item_sk", "ss_item_sk")])
+        .filter(
+            _.i_current_price.between(62, 62 + 30),
+            _.d_date.between(date("2000-05-25"), date("2000-07-24")),
+            _.i_manufact_id.isin([129, 270, 821, 423]),
+            _.inv_quantity_on_hand.between(100, 500),
+        )
+        .select(_.i_item_id, _.i_item_desc, _.i_current_price)
+        .distinct()
+        .order_by(_.i_item_id)
+        .limit(100)
+    )
