@@ -924,7 +924,25 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     @staticmethod
     def _gen_valid_name(name: str) -> str:
-        return "_".join(map(str.strip, _NAME_REGEX.findall(name))) or "tmp"
+        candidate = "_".join(map(str.strip, _NAME_REGEX.findall(name))) or "tmp"
+        # column names cannot be longer than 300 characters
+        #
+        # https://cloud.google.com/bigquery/docs/schemas#column_names
+        #
+        # it's easy to rename columns, so raise an exception telling the user
+        # to do so
+        #
+        # we could potentially relax this and support arbitrary-length columns
+        # by compressing the information using hashing, but there's no reason
+        # to solve that problem until someone encounters this error and cannot
+        # rename their columns
+        limit = 300
+        if len(candidate) > limit:
+            raise com.IbisError(
+                f"BigQuery does not allow column names longer than {limit:d} characters. "
+                "Please rename your columns to have fewer characters."
+            )
+        return candidate
 
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
