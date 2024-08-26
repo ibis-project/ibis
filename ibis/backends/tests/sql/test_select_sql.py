@@ -254,6 +254,67 @@ def test_projection_filter_fuse(projection_fuse_filter, snapshot):
     snapshot.assert_match(to_sql(expr3), "out.sql")
 
 
+@pytest.mark.parametrize(
+    "transform",
+    [
+        # Fused
+        param(
+            lambda t: t.distinct(),
+            id="distinct",
+        ),
+        param(
+            lambda t: t.select("a", "b").distinct(),
+            id="select-distinct",
+        ),
+        param(
+            lambda t: t.distinct().select("a", "b").distinct(),
+            id="distinct-select-distinct",
+        ),
+        param(
+            lambda t: t.distinct().filter(_.a > 10),
+            id="distinct-filter",
+        ),
+        param(
+            lambda t: t.distinct().filter(_.a > 10).order_by("a"),
+            id="distinct-filter-order_by",
+        ),
+        param(
+            lambda t: t.order_by("a").distinct(),
+            id="order_by-distinct",
+        ),
+        param(
+            lambda t: t.select("a", d=(_.b % 2)).distinct(),
+            id="non-trivial-select-distinct",
+        ),
+        # Not Fused
+        param(
+            lambda t: t.distinct().select("a", "b"),
+            id="distinct-select",
+        ),
+        param(
+            lambda t: t.distinct().select("a", d=(_.b % 2)),
+            id="distinct-non-trivial-select",
+        ),
+        param(
+            lambda t: t.distinct().select("a", d=(_.b % 2)).distinct(),
+            id="distinct-non-trivial-select-distinct",
+        ),
+        param(
+            lambda t: t.order_by("a").drop("a").distinct(),
+            id="order_by-drop-distinct",
+        ),
+        param(
+            lambda t: t.order_by("a").distinct().drop("a"),
+            id="order_by-distinct-drop",
+        ),
+    ],
+)
+def test_fuse_distinct(snapshot, transform):
+    t = ibis.table({"a": "int", "b": "int", "c": "int", "d": "int"}, name="test")
+    expr = transform(t.select("a", "b", "c").filter(t.c > 10))
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
 def test_bug_project_multiple_times(customer, nation, region, snapshot):
     # GH: 108
     joined = customer.inner_join(

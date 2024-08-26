@@ -266,7 +266,10 @@ class SQLGlotCompiler(abc.ABC):
         one_to_zero_index,
         add_one_to_nth_value_input,
     )
-    """A sequence of rewrites to apply to the expression tree before compilation."""
+    """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
+
+    post_rewrites: tuple[type[pats.Replace], ...] = ()
+    """A sequence of rewrites to apply to the expression tree after SQL-specific transforms."""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -606,6 +609,7 @@ class SQLGlotCompiler(abc.ABC):
             op,
             params=params,
             rewrites=self.rewrites,
+            post_rewrites=self.post_rewrites,
             fuse_selects=options.sql.fuse_selects,
         )
 
@@ -1257,9 +1261,11 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not (selections or predicates or qualified or sort_keys):
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
@@ -1285,6 +1291,9 @@ class SQLGlotCompiler(abc.ABC):
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
+
+        if distinct:
+            result = result.distinct()
 
         return result
 
@@ -1469,11 +1478,6 @@ class SQLGlotCompiler(abc.ABC):
         if alias is not None:
             return result.subquery(alias, copy=False)
         return result
-
-    def visit_Distinct(self, op, *, parent):
-        return (
-            sg.select(STAR, copy=False).distinct(copy=False).from_(parent, copy=False)
-        )
 
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
