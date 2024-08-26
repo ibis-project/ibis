@@ -1,6 +1,6 @@
 SELECT c_last_name,
        c_first_name,
-       SUBSTRING(s_city,1,30),
+       SUBSTRING(s_city,1,30) AS s_city_substr,
        ss_ticket_number,
        amt,
        profit
