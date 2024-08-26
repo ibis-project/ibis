@@ -65,10 +65,11 @@ try:
     from polars.exceptions import InvalidOperationError as PolarsInvalidOperationError
     from polars.exceptions import PanicException as PolarsPanicException
     from polars.exceptions import SchemaError as PolarsSchemaError
+    from polars.exceptions import SQLInterfaceError as PolarsSQLInterfaceError
 except ImportError:
     PolarsComputeError = PolarsPanicException = PolarsInvalidOperationError = (
         PolarsSchemaError
-    ) = PolarsColumnNotFoundError = None
+    ) = PolarsColumnNotFoundError = PolarsSQLInterfaceError = None
 
 try:
     from pyarrow import ArrowInvalid, ArrowNotImplementedError
