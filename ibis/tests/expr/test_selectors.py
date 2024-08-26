@@ -537,7 +537,7 @@ def test_methods(penguins):
 
     selector = s.across(s.all(), ibis.null(_.type()))
     bound = selector.expand(penguins)
-    assert [col.get_name() for col in bound] == penguins.columns
+    assert [col.get_name() for col in bound] == list(penguins.columns)
 
 
 @pytest.mark.parametrize("sel", [s.none(), s.cols(), []])
