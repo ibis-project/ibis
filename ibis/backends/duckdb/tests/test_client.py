@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import gc
 import os
 import subprocess
 import sys
@@ -403,3 +404,23 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
+
+
+def test_tables_accessor_no_reference_cycle():
+    """Test that a single reference to a connection has the desired lifetime semantics."""
+    con = ibis.duckdb.connect()
+
+    before = len(gc.get_referrers(con))
+    tables = con.tables
+    after = len(gc.get_referrers(con))
+
+    assert after == before
+
+    # valid call, and there are no tables in the database
+    assert not list(tables)
+
+    del con
+
+    # no longer valid because the backend has been manually decref'd
+    with pytest.raises(ReferenceError):
+        list(tables)

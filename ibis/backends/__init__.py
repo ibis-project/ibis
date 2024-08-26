@@ -7,6 +7,7 @@ import importlib.metadata
 import keyword
 import re
 import urllib.parse
+import weakref
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -33,6 +34,12 @@ __all__ = ("BaseBackend", "connect")
 
 class TablesAccessor(collections.abc.Mapping):
     """A mapping-like object for accessing tables off a backend.
+
+    ::: {.callout-note}
+    ## The `tables` accessor is tied to the lifetime of the backend.
+
+    If the backend goes out of scope, the `tables` accessor is no longer valid.
+    :::
 
     Tables may be accessed by name using either index or attribute access:
 
@@ -804,12 +811,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
-        # expression cache
-        self._query_cache = RefCountedCache(
-            populate=self._load_into_cache,
-            lookup=lambda name: self.table(name).op(),
-            finalize=self._clean_up_cached_table,
-        )
+        self._query_cache = RefCountedCache(weakref.proxy(self))
 
     @property
     @abc.abstractmethod
@@ -1017,7 +1019,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         >>> people = con.tables.people  # access via attribute
 
         """
-        return TablesAccessor(self)
+        return TablesAccessor(weakref.proxy(self))
 
     @property
     @abc.abstractmethod

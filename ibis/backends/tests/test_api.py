@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import gc
+
 import pytest
 from pytest import param
 
@@ -113,6 +115,16 @@ def test_tables_accessor_repr(con):
     name = "functional_alltypes"
     result = repr(con.tables)
     assert f"- {name}" in result
+
+
+def test_tables_accessor_no_reference_cycle(con):
+    before = len(gc.get_referrers(con))
+    _ = con.tables
+    after = len(gc.get_referrers(con))
+
+    # assert that creating a `tables` accessor object doesn't increase the
+    # number of strong references
+    assert after == before
 
 
 @pytest.mark.parametrize(

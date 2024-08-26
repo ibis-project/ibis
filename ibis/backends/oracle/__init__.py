@@ -623,19 +623,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
 
         from ibis.backends.oracle.converter import OraclePandasData
 
-        try:
-            df = pd.DataFrame.from_records(
-                cursor, columns=schema.names, coerce_float=True
-            )
-        except Exception:
-            # clean up the cursor if we fail to create the DataFrame
-            #
-            # in the sqlite case failing to close the cursor results in
-            # artificially locked tables
-            cursor.close()
-            raise
-        df = OraclePandasData.convert_table(df, schema)
-        return df
+        df = pd.DataFrame.from_records(cursor, columns=schema.names, coerce_float=True)
+        return OraclePandasData.convert_table(df, schema)
 
     def _clean_up_tmp_table(self, name: str) -> None:
         with self.begin() as bind:
