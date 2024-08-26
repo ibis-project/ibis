@@ -426,7 +426,7 @@ markers = [
 [tool.ruff]
 line-length = 88
 respect-gitignore = true
-exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py"]
+exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py", "out_tpch.py"]
 target-version = "py310"
 
 [tool.ruff.lint]

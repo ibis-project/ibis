@@ -15,6 +15,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis.backends.sql.datatypes import SqlglotType
 from ibis.util import experimental
 
 
@@ -95,6 +96,43 @@ def convert_scan(scan, catalog):
     return table
 
 
+def qualify_projections(projections, groups):
+    # The sqlglot planner will (sometimes) alias projections to the aggregate
+    # that precedes it.
+    #
+    # - Sort: lineitem (132849388268768)
+    #   Context:
+    #     Key:
+    #       - "l_returnflag"
+    #       - "l_linestatus"
+    #   Projections:
+    #     - lineitem._g0 AS "l_returnflag"
+    #     - lineitem._g1 AS "l_linestatus"
+    #     <snip>
+    #   Dependencies:
+    #   - Aggregate: lineitem (132849388268864)
+    #     Context:
+    #       Aggregations:
+    #         <snip>
+    #       Group:
+    #         - "lineitem"."l_returnflag"  <-- this is _g0
+    #         - "lineitem"."l_linestatus"  <-- this is _g1
+    #         <snip>
+    #
+    #  These aliases are stored in a dictionary in the aggregate `groups`, so if
+    #  those are pulled out beforehand then we can use them to replace the
+    #  aliases in the projections.
+
+    def transformer(node):
+        if isinstance(node, sge.Alias) and (name := node.this.name).startswith("_g"):
+            return groups[name]
+        return node
+
+    projects = [project.transform(transformer) for project in projections]
+
+    return projects
+
+
 @convert.register(sgp.Sort)
 def convert_sort(sort, catalog):
     catalog = catalog.overlay(sort)
@@ -102,12 +140,24 @@ def convert_sort(sort, catalog):
     table = catalog[sort.name]
 
     if sort.key:
-        keys = [convert(key, catalog=catalog) for key in sort.key]
+        keys = [convert(key, catalog=None) for key in sort.key]
         table = table.order_by(keys)
 
     if sort.projections:
-        projs = [convert(proj, catalog=catalog) for proj in sort.projections]
+        groups = {}
+        # group definitions that may be used in projections are defined
+        # in the aggregate in dependencies...
+        for dep in sort.dependencies:
+            if (group := getattr(dep, "group", None)) is not None:
+                groups |= group
+        projs = [
+            convert(proj, catalog=catalog)
+            for proj in qualify_projections(sort.projections, groups)
+        ]
         table = table.select(projs)
+
+    if isinstance(sort.limit, int):
+        table = table.limit(sort.limit)
 
     return table
 
@@ -130,8 +180,8 @@ def convert_join(join, catalog):
         right_table = catalog[right_name]
         join_kind = _join_types[desc["side"]]
 
+        predicate = None
         if desc["join_key"]:
-            predicate = None
             for left_key, right_key in zip(desc["source_key"], desc["join_key"]):
                 left_key = convert(left_key, catalog=catalog)
                 right_key = convert(right_key, catalog=catalog)
@@ -139,9 +189,13 @@ def convert_join(join, catalog):
                     predicate = left_key == right_key
                 else:
                     predicate &= left_key == right_key
-        else:
+
+        if "condition" in desc.keys():
             condition = desc["condition"]
-            predicate = convert(condition, catalog=catalog)
+            if predicate is None:
+                predicate = convert(condition, catalog=catalog)
+            else:
+                predicate &= convert(condition, catalog=catalog)
 
         left_table = left_table.join(right_table, predicates=predicate, how=join_kind)
 
@@ -154,9 +208,37 @@ def convert_join(join, catalog):
     return left_table
 
 
+def replace_operands(agg):
+    # The sqlglot planner will pull out computed operands into a separate
+    # section and alias them #
+    # e.g.
+    # Context:
+    #   Aggregations:
+    #     - SUM("_a_0") AS "sum_disc_price"
+    #   Operands:
+    #     - "lineitem"."l_extendedprice" * (1 - "lineitem"."l_discount") AS _a_0
+    #
+    # For the purposes of decompiling, we want these to be inline, so here we
+    # replace those new aliases with the parsed sqlglot expression
+    operands = {operand.alias: operand.this for operand in agg.operands}
+
+    def transformer(node):
+        if isinstance(node, sge.Column) and node.name in operands.keys():
+            return operands[node.name]
+        return node
+
+    aggs = [item.transform(transformer) for item in agg.aggregations]
+
+    agg.aggregations = aggs
+
+    return agg
+
+
 @convert.register(sgp.Aggregate)
 def convert_aggregate(agg, catalog):
     catalog = catalog.overlay(agg)
+
+    agg = replace_operands(agg)
 
     table = catalog[agg.source]
     if agg.aggregations:
@@ -203,9 +285,14 @@ def convert_column(column, catalog):
 
 @convert.register(sge.Ordered)
 def convert_ordered(ordered, catalog):
-    this = convert(ordered.this, catalog=catalog)
-    desc = ordered.args["desc"]  # not exposed as an attribute
-    return ibis.desc(this) if desc else ibis.asc(this)
+    this = ibis._[ordered.this.name]
+    desc = ordered.args.get("desc", False)  # not exposed as an attribute
+    nulls_first = ordered.args.get("nulls_first", False)
+    return (
+        ibis.desc(this, nulls_first=nulls_first)
+        if desc
+        else ibis.asc(this, nulls_first=nulls_first)
+    )
 
 
 _unary_operations = {
@@ -258,7 +345,6 @@ _reduction_methods = {
     sge.Quantile: "quantile",
     sge.Sum: "sum",
     sge.Avg: "mean",
-    sge.Count: "count",
 }
 
 
@@ -274,6 +360,24 @@ def convert_in(in_, catalog):
     this = convert(in_.this, catalog=catalog)
     candidates = [convert(expression, catalog) for expression in in_.expressions]
     return this.isin(candidates)
+
+
+@convert.register(sge.Cast)
+def cast(cast, catalog):
+    this = convert(cast.this, catalog)
+    to = convert(cast.to, catalog)
+
+    return this.cast(to)
+
+
+@convert.register(sge.DataType)
+def datatype(datatype, catalog):
+    return SqlglotType().to_ibis(datatype)
+
+
+@convert.register(sge.Count)
+def count(count, catalog):
+    return ibis._.count()
 
 
 @public
