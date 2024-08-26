@@ -531,19 +531,22 @@ def test_methods(penguins):
     assert [col.get_name() for col in bound] == penguins.columns
 
 
-def test_none_selector(penguins):
-    assert not s.none().expand(penguins)
-    assert not s.none().expand_names(penguins)
+@pytest.mark.parametrize("sel", [s.none(), s.c(), []])
+def test_none_selector(penguins, sel):
+    sel = s._to_selector(sel)
 
-    assert list((s.none() | s.c("year")).expand_names(penguins)) == ["year"]
+    assert not sel.expand(penguins)
+    assert not sel.expand_names(penguins)
+
+    assert list((sel | s.c("year")).expand_names(penguins)) == ["year"]
 
     with pytest.raises(exc.IbisError):
-        penguins.select(s.none())
+        penguins.select(sel)
 
     with pytest.raises(exc.IbisError):
-        penguins.select(s.none() & s.c("year"))
+        penguins.select(sel & s.c("year"))
 
-    assert penguins.select(s.none() | s.c("year")).equals(penguins.select("year"))
+    assert penguins.select(sel | s.c("year")).equals(penguins.select("year"))
 
 
 def test_invalid_composition():

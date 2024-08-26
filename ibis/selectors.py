@@ -720,5 +720,7 @@ def _to_selector(
         raise exc.IbisInputError(
             f"Cannot compose {obj.__class__.__name__} with other selectors"
         )
+    elif not obj:
+        return none()
     else:
         return any_of(*obj)
