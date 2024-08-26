@@ -590,7 +590,7 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     with pushd(data_dir / "csv"):
         if con.name in (
             "pyspark",
-            #"sqlite",
+            "sqlite",
             "mysql",
             "postgres",
             "risingwave",
