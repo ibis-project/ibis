@@ -83,12 +83,11 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or_agg",
         ops.BitXor: "bit_xor_agg",
         ops.BitwiseAnd: "bitand",
-        ops.Hash: "hash",
+        ops.Hash: "ora_hash",
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
         ops.Strip: "trim",
-        ops.Hash: "ora_hash",
     }
 
     @staticmethod
