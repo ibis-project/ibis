@@ -395,7 +395,8 @@ def test_csv_reregister_schema(con, tmp_path):
         "dask",
         "datafusion",
         "druid",
-        "exasol" "flink",
+        "exasol",
+        "flink",
         "impala",
         "mysql",
         "mssql",
@@ -589,7 +590,7 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     with pushd(data_dir / "csv"):
         if con.name in (
             "pyspark",
-            "sqlite",
+            #"sqlite",
             "mysql",
             "postgres",
             "risingwave",
@@ -597,7 +598,8 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
             "mssql",
             "trino",
         ):
-            # backend doesn't respect CWD
+            # pyspark backend doesn't respect CWD
+            # backends using pyarrow implementation need absolute path
             fname = str(Path(fname).absolute())
         table = con.read_csv(fname, table_name=in_table_name)
 
