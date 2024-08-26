@@ -993,6 +993,13 @@ def test_selectors(benchmark, cols):
     benchmark(sel.expand, t)
 
 
+@pytest.mark.parametrize("ncols", [10_000, 100_000, 1_000_000])
+def test_dot_columns(benchmark, ncols):
+    t = ibis.table(name="t", schema={f"col{i}": "int" for i in range(ncols)})
+    result = benchmark(lambda t: t.columns, t)
+    assert len(result) == ncols
+
+
 def test_dedup_schema_failure_mode(benchmark):
     def dedup_schema(pairs):
         with contextlib.suppress(exc.IntegrityError):
