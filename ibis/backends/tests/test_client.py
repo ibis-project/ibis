@@ -1753,24 +1753,13 @@ def test_cross_database_join(con_create_database, monkeypatch):
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
 )
 def test_insert_into_table_missing_columns(con, temp_table):
-    try:
-        db = getattr(con, "current_database", None)
-    except NotImplementedError:
-        db = None
+    db = getattr(con, "current_database", None)
 
-    # UGH
-    if con.name == "oracle":
-        db = None
-
-    try:
-        catalog = getattr(con, "current_catalog", None)
-    except NotImplementedError:
-        catalog = None
-
-    raw_ident = ".".join(
-        sg.to_identifier(i, quoted=True).sql("duckdb")
-        for i in filter(None, (catalog, db, temp_table))
-    )
+    raw_ident = sg.table(
+        temp_table,
+        db=db if db is None else sg.to_identifier(db, quoted=True),
+        quoted=True,
+    ).sql("duckdb")
 
     ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
     sg_expr = sg.parse_one(ct_sql, read="duckdb")

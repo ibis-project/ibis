@@ -614,11 +614,6 @@ class CanListCatalog(abc.ABC):
 
         """
 
-    @property
-    @abc.abstractmethod
-    def current_catalog(self) -> str:
-        """The current catalog in use."""
-
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
@@ -704,11 +699,6 @@ class CanListDatabase(abc.ABC):
             the `like` pattern if provided.
 
         """
-
-    @property
-    @abc.abstractmethod
-    def current_database(self) -> str:
-        """The current database in use."""
 
 
 class CanCreateDatabase(CanListDatabase):

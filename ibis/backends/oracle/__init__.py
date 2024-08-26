@@ -192,8 +192,16 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         return self
 
     @property
-    def current_database(self) -> str:
+    def current_catalog(self) -> str:
         with self._safe_raw_sql(sg.select(STAR).from_("global_name")) as cur:
+            [(catalog,)] = cur.fetchall()
+        return catalog
+
+    @property
+    def current_database(self) -> str:
+        # databases correspond to users, other than that there's
+        # no notion of a database inside a catalog for oracle
+        with self._safe_raw_sql(sg.select("user").from_("dual")) as cur:
             [(database,)] = cur.fetchall()
         return database
 
