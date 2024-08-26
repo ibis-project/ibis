@@ -3395,6 +3395,98 @@ def test_73(store_sales, date_dim, store, household_demographics, customer):
     return expr
 
 
+@tpc_test("ds")
+def test_74(customer, store_sales, date_dim, web_sales):
+    import ibis
+
+    renames = {
+        "customer_id": "c_customer_id",
+        "customer_first_name": "c_first_name",
+        "customer_last_name": "c_last_name",
+        "year_": "d_year",
+    }
+
+    year_total = (
+        customer.join(store_sales, _.c_customer_sk == store_sales.ss_customer_sk)
+        .join(
+            date_dim,
+            [
+                _.ss_sold_date_sk == date_dim.d_date_sk,
+                date_dim.d_year.isin([2001, 2002]),
+            ],
+        )
+        .mutate(sale_type=ibis.literal("s"))
+        .group_by(_.c_customer_id, _.c_first_name, _.c_last_name, _.d_year)
+        .agg(year_total=_.ss_net_paid.sum(), sale_type=_.sale_type.first())
+        .rename(renames)
+    )
+
+    union = (
+        customer.join(web_sales, _.c_customer_sk == web_sales.ws_bill_customer_sk)
+        .join(
+            date_dim,
+            [
+                _.ws_sold_date_sk == date_dim.d_date_sk,
+                date_dim.d_year.isin([2001, 2002]),
+            ],
+        )
+        .mutate(sale_type=ibis.literal("w"))
+        .group_by(_.c_customer_id, _.c_first_name, _.c_last_name, _.d_year)
+        .agg(year_total=_.ws_net_paid.sum(), sale_type=_.sale_type.first())
+        .rename(renames)
+    )
+
+    year_total = year_total.union(union)
+
+    ts_firstyear = year_total
+    ts_secyear = year_total.view()
+    tw_firstyear = year_total.view()
+    tw_secyear = year_total.view()
+
+    ts_years = (
+        ts_firstyear.filter(_.sale_type == "s", _.year_ == 2001, _.year_total > 0)
+        .join(
+            ts_secyear,
+            [
+                _.customer_id == ts_secyear.customer_id,
+                ts_secyear.sale_type == "s",
+                ts_secyear.year_ == 2002,
+                ts_secyear.year_total > 0,
+            ],
+        )
+        .mutate(ts_year_ratio=ts_secyear.year_total / ts_firstyear.year_total)
+    )
+
+    tw_years = (
+        tw_firstyear.filter(_.sale_type == "w", _.year_ == 2001, _.year_total > 0)
+        .join(
+            tw_secyear,
+            [
+                _.customer_id == tw_secyear.customer_id,
+                tw_secyear.sale_type == "w",
+                tw_secyear.year_ == 2002,
+                tw_secyear.year_total > 0,
+            ],
+        )
+        .mutate(tw_year_ratio=tw_secyear.year_total / tw_firstyear.year_total)
+    )
+
+    expr = (
+        ts_years.join(
+            tw_years,
+            [
+                _.customer_id == tw_years.customer_id,
+                tw_years.tw_year_ratio > _.ts_year_ratio,
+            ],
+        )
+        .select("customer_id", "customer_first_name", "customer_last_name")
+        .order_by(_.customer_id.asc(nulls_first=True))
+        .limit(100)
+    )
+
+    return expr
+
+
 @tpc_test("ds", result_is_empty=True)
 def test_82(item, inventory, date_dim, store_sales):
     return (
