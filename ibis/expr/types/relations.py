@@ -674,8 +674,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
 
+        columns = self.columns
         args = [
-            self.columns[arg] if isinstance(arg, int) else arg
+            columns[arg] if isinstance(arg, int) else arg
             for arg in util.promote_list(what)
         ]
         if util.all_of(args, str):
@@ -765,8 +766,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.columns
 
     @property
-    def columns(self) -> list[str]:
-        """The list of column names in this table.
+    def columns(self) -> tuple[str, ...]:
+        """Return a [](`tuple`) of column names in this table.
 
         Examples
         --------
@@ -774,16 +775,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.columns
-        ['species',
+        ('species',
          'island',
          'bill_length_mm',
          'bill_depth_mm',
          'flipper_length_mm',
          'body_mass_g',
          'sex',
-         'year']
+         'year')
         """
-        return list(self.schema().names)
+        return self._arg.schema.names
 
     def schema(self) -> sch.Schema:
         """Return the [Schema](./schemas.qmd#ibis.expr.schema.Schema) for this table.
