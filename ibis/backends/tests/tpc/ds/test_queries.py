@@ -3230,6 +3230,42 @@ def test_82(item, inventory, date_dim, store_sales):
 
 
 @tpc_test("ds")
+def test_84(
+    customer,
+    customer_address,
+    customer_demographics,
+    household_demographics,
+    income_band,
+    store_returns,
+):
+    return (
+        customer.join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .join(customer_demographics, [("c_current_cdemo_sk", "cd_demo_sk")])
+        .join(household_demographics, [("c_current_hdemo_sk", "hd_demo_sk")])
+        .join(income_band, [("hd_income_band_sk", "ib_income_band_sk")])
+        .join(store_returns, [("cd_demo_sk", "sr_cdemo_sk")])
+        .filter(
+            _.ca_city == "Edgewood",
+            _.c_current_addr_sk == _.ca_address_sk,
+            _.ib_lower_bound >= 38128,
+            _.ib_upper_bound <= 38128 + 50000,
+            _.ib_income_band_sk == _.hd_income_band_sk,
+            _.cd_demo_sk == _.c_current_cdemo_sk,
+            _.hd_demo_sk == _.c_current_hdemo_sk,
+            _.sr_cdemo_sk == _.cd_demo_sk,
+        )
+        .select(
+            customer_id=customer.c_customer_id,
+            customername=coalesce(customer.c_last_name, "")
+            .concat(", ")
+            .concat(coalesce(customer.c_first_name, "")),
+        )
+        .order_by(_.customer_id.asc(nulls_first=True))
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 def test_96(store_sales, household_demographics, time_dim, store):
     return (
         store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
