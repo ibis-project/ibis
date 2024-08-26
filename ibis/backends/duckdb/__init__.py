@@ -191,10 +191,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         else:
             temp_name = name
 
-        initial_table = sge.Table(
-            this=sg.to_identifier(temp_name, quoted=self.compiler.quoted),
-            catalog=catalog,
-            db=database,
+        initial_table = sg.table(
+            temp_name, catalog=catalog, db=database, quoted=self.compiler.quoted
         )
         target = sge.Schema(this=initial_table, expressions=column_defs)
 
@@ -205,10 +203,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         )
 
         # This is the same table as initial_table unless overwrite == True
-        final_table = sge.Table(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            catalog=catalog,
-            db=database,
+        final_table = sg.table(
+            name, catalog=catalog, db=database, quoted=self.compiler.quoted
         )
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:

@@ -327,6 +327,20 @@ def test_connect_named_in_memory_db():
 
 
 @pytest.mark.parametrize(
+    "database_file",
+    [
+        "with spaces.ddb",
+        "space catalog.duckdb.db",
+    ],
+)
+def test_create_table_quoting(database_file, tmp_path):
+    conn = ibis.duckdb.connect(tmp_path / database_file)
+    t = conn.create_table("t", {"a": [0, 1, 2]})
+    result = set(conn.execute(t.a))
+    assert result == {0, 1, 2}
+
+
+@pytest.mark.parametrize(
     ("url", "method_name"),
     [
         ("hf://datasets/datasets-examples/doc-formats-csv-1/data.csv", "read_csv"),
