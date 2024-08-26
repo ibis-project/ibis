@@ -3641,7 +3641,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         current_backend = self._find_backend(use_default=True)
-        return current_backend._cached(self)
+        return current_backend._cached_table(self)
 
     def pivot_longer(
         self,
@@ -4900,7 +4900,7 @@ class CachedTable(Table):
     def release(self):
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
-        return current_backend._release_cached(self)
+        return current_backend._finalize_cached_table(self.op().name)
 
 
 public(Table=Table, CachedTable=CachedTable)

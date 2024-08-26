@@ -552,10 +552,10 @@ class Backend(BaseBackend, NoUrl):
         table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         return table.to_reader(chunk_size)
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, self.compile(expr).cache())
+    def _create_cached_table(self, name, expr):
+        return self.create_table(name, self.compile(expr).cache())
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self.drop_table(name, force=True)
 
 

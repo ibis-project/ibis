@@ -156,10 +156,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__session_dataset: bq.DatasetReference | None = None
-        self._query_cache.lookup = lambda name: self.table(
-            name,
-            database=(self._session_dataset.project, self._session_dataset.dataset_id),
-        ).op()
 
     @property
     def _session_dataset(self):
@@ -1137,10 +1133,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         self.raw_sql(stmt.sql(self.name))
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self.drop_table(
             name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
