@@ -3331,6 +3331,71 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
 
 
 @tpc_test("ds", result_is_empty=True)
+def test_73(store_sales, date_dim, store, household_demographics, customer):
+    import ibis
+
+    hd = household_demographics
+    expr = (
+        (
+            store_sales.join(
+                date_dim,
+                [
+                    _.ss_sold_date_sk == date_dim.d_date_sk,
+                    date_dim.d_dom.between(1, 2),
+                    date_dim.d_year.isin([1999, 2000, 2001]),
+                ],
+            )
+            .join(
+                store,
+                [
+                    _.ss_store_sk == store.s_store_sk,
+                    store.s_county.isin(
+                        [
+                            "Orange County",
+                            "Bronx County",
+                            "Franklin Parish",
+                            "Williamson County",
+                        ]
+                    ),
+                ],
+            )
+            .join(
+                hd,
+                [
+                    _.ss_hdemo_sk == hd.hd_demo_sk,
+                    hd.hd_buy_potential.isin(["Unknown", ">10000"]),
+                    hd.hd_vehicle_count > 0,
+                    ibis.case()
+                    .when(
+                        hd.hd_vehicle_count > 0,
+                        hd.hd_dep_count * 1.000 / hd.hd_vehicle_count,
+                    )
+                    .else_(ibis.null())
+                    .end()
+                    > 1,
+                ],
+            )
+            .group_by(_.ss_ticket_number, _.ss_customer_sk)
+            .agg(cnt=_.count())
+        )
+        .join(
+            customer, [_.ss_customer_sk == customer.c_customer_sk, _.cnt.between(1, 5)]
+        )
+        .order_by(_.cnt.desc(), _.c_last_name.asc())
+        .select(
+            "c_last_name",
+            "c_first_name",
+            "c_salutation",
+            "c_preferred_cust_flag",
+            "ss_ticket_number",
+            "cnt",
+        )
+    )
+
+    return expr
+
+
+@tpc_test("ds", result_is_empty=True)
 def test_82(item, inventory, date_dim, store_sales):
     return (
         inventory.join(item, [("inv_item_sk", "i_item_sk")])
