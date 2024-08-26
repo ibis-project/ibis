@@ -3227,3 +3227,24 @@ def test_82(item, inventory, date_dim, store_sales):
         .order_by(_.i_item_id)
         .limit(100)
     )
+
+
+@tpc_test("ds")
+def test_96(store_sales, household_demographics, time_dim, store):
+    return (
+        store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+        .join(time_dim, [("ss_sold_time_sk", "t_time_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .filter(
+            (store_sales.ss_sold_time_sk == time_dim.t_time_sk)
+            & (store_sales.ss_hdemo_sk == household_demographics.hd_demo_sk)
+            & (store_sales.ss_store_sk == store.s_store_sk)
+            & (time_dim.t_hour == 20)
+            & (time_dim.t_minute >= 30)
+            & (household_demographics.hd_dep_count == 7)
+            & (store.s_store_name == "ese")
+        )
+        .agg(count=_.count())
+        .order_by(_["count"])
+        .limit(100)
+    )
