@@ -264,7 +264,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in cls._get_operations()
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         del self.dictionary[name]
 
     def to_pyarrow(
@@ -328,8 +328,8 @@ class Backend(BasePandasBackend):
 
         return PandasExecutor.execute(query.op(), backend=self, params=params)
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr.execute())
+    def _create_cached_table(self, name, expr):
+        return self.create_table(name, expr.execute())
 
 
 @lazy_singledispatch

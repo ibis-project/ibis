@@ -704,7 +704,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
         return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 
-    def _load_into_cache(self, name, expr):
+    def _create_cached_table(self, name, expr):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
@@ -712,8 +712,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
+        return self.table(name)
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached

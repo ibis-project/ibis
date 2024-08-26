@@ -50,7 +50,7 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
         backend.assert_frame_equal(
             non_cached_table.to_pandas(), cached_table.to_pandas()
         )
-    assert non_cached_table.op() not in con._query_cache.cache
+    assert non_cached_table.op() not in con._cache_op_to_entry
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
@@ -89,15 +89,15 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     # cached tables are identical and reusing the same op
     assert cached_table.op() is nested_cached_table.op()
     # table is cached
-    assert op in con._query_cache.cache
+    assert op in con._cache_op_to_entry
 
     # deleting the first reference, leaves table in cache
     del nested_cached_table
-    assert op in con._query_cache.cache
+    assert op in con._cache_op_to_entry
 
     # deleting the last reference, releases table from cache
     del cached_table
-    assert op not in con._query_cache.cache
+    assert op not in con._cache_op_to_entry
 
     # assert that table has been dropped
     assert name not in con.list_tables()
@@ -143,7 +143,7 @@ def test_persist_expression_release(con, alltypes):
     cached_table = non_cached_table.cache()
     cached_table.release()
 
-    assert non_cached_table.op() not in con._query_cache.cache
+    assert non_cached_table.op() not in con._cache_op_to_entry
 
     # a second release does not hurt
     cached_table.release()
