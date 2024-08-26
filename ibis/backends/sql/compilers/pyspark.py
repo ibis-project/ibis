@@ -15,7 +15,12 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
-from ibis.backends.sql.rewrites import FirstValue, LastValue, p
+from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
+    p,
+    split_select_distinct_with_order_by,
+)
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
@@ -51,6 +56,7 @@ class PySparkCompiler(SQLGlotCompiler):
     dialect = PySpark
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.RowID,

@@ -24,6 +24,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
+    split_select_distinct_with_order_by,
 )
 from ibis.common.deferred import var
 
@@ -69,6 +70,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         rewrite_rows_range_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     copy_func_args = True
 
     UNSUPPORTED_OPS = (
@@ -479,9 +481,11 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
-    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not (selections or predicates or qualified or sort_keys):
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
@@ -499,6 +503,9 @@ class MSSQLCompiler(SQLGlotCompiler):
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
+
+        if distinct:
+            result = result.distinct()
 
         return result
 

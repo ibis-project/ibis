@@ -17,6 +17,7 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -41,6 +42,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 

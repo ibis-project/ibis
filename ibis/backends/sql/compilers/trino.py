@@ -23,6 +23,7 @@ from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    split_select_distinct_with_order_by,
 )
 from ibis.util import gen_name
 
@@ -39,6 +40,7 @@ class TrinoCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     quoted = True
 
     NAN = sg.func("nan")

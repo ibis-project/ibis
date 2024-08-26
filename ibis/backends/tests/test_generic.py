@@ -4,6 +4,7 @@ import contextlib
 import datetime
 import decimal
 from collections import Counter
+from itertools import permutations
 from operator import invert, methodcaller, neg
 
 import pytest
@@ -1393,6 +1394,64 @@ def test_pivot_wider(backend):
         diamonds[["cut"]].distinct().cut.execute()
     )
     assert len(df) == diamonds.color.nunique().execute()
+
+
+def test_select_distinct_order_by(backend, alltypes, df):
+    res = alltypes.select("int_col").distinct().order_by("int_col").to_pandas()
+    sol = df[["int_col"]].drop_duplicates().sort_values("int_col")
+    backend.assert_frame_equal(res, sol)
+
+
+def test_select_distinct_order_by_alias(backend, con):
+    df = pd.DataFrame({"x": [1, 2, 3, 3], "y": [10, 9, 8, 8]})
+    expr = ibis.memtable(df).select(y="x", x="y").distinct().order_by("x", "y")
+    sol = (
+        df.drop_duplicates()
+        .rename(columns={"x": "y", "y": "x"})
+        .sort_values(["x", "y"])
+    )
+    res = con.to_pandas(expr)
+    backend.assert_frame_equal(res, sol)
+
+
+def test_select_distinct_order_by_expr(backend, alltypes, df):
+    res = alltypes.select("int_col").distinct().order_by(-_.int_col).to_pandas()
+    sol = df[["int_col"]].drop_duplicates().sort_values("int_col", ascending=False)
+    backend.assert_frame_equal(res, sol)
+
+
+@pytest.mark.notimpl(
+    ["polars", "pandas", "dask"],
+    reason="We don't fuse these ops yet for non-SQL backends",
+    strict=False,
+)
+@pytest.mark.parametrize(
+    "ops",
+    [
+        param(ops, id="-".join(ops))
+        for ops in permutations(("select", "distinct", "filter", "order_by"))
+        if ops.index("select") < ops.index("distinct")
+    ],
+)
+def test_select_distinct_filter_order_by_commute(backend, alltypes, df, ops):
+    """For simple versions of these ops, the order in which they're called
+    doesn't matter, they're all handled in a commutative way."""
+    expr = alltypes.select("int_col", "float_col", b=alltypes.id % 33)
+    for op in ops:
+        if op == "select":
+            expr = expr.select("int_col", "b")
+        elif op == "distinct":
+            expr = expr.distinct()
+        elif op == "filter":
+            expr = expr.filter(expr.int_col > 5)
+        elif op == "order_by":
+            expr = expr.order_by(-expr.int_col, expr.b)
+
+    sol = df.assign(b=df.id % 33)[["int_col", "b"]]
+    sol = sol[sol.int_col > 5].drop_duplicates()
+    sol = sol.set_index([-sol.int_col, sol.b]).sort_index().reset_index(drop=True)
+    res = expr.to_pandas()
+    backend.assert_frame_equal(res, sol)
 
 
 @pytest.mark.parametrize(
