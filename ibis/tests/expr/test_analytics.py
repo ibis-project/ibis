@@ -116,10 +116,10 @@ def test_topk_function_late_bind(airlines):
 def test_topk_name(airlines):
     expr1 = airlines.dest.topk(5, name="mycol")
     expr2 = airlines.dest.topk(5, by=_.count().name("mycol"))
-    assert expr1.columns == ["dest", "mycol"]
+    assert expr1.columns == ("dest", "mycol")
     assert_equal(expr1, expr2)
 
     expr3 = airlines.dest.topk(5, by=_.arrdelay.mean(), name="mycol")
     expr4 = airlines.dest.topk(5, by=_.arrdelay.mean().name("mycol"))
-    assert expr3.columns == ["dest", "mycol"]
+    assert expr3.columns == ("dest", "mycol")
     assert_equal(expr3, expr4)

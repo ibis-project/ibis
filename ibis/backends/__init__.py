@@ -221,7 +221,7 @@ class _FileIOHandler:
             table = pa.Table.from_batches(reader, schema=arrow_schema)
 
         return expr.__pyarrow_result__(
-            table.rename_columns(table_expr.columns).cast(arrow_schema)
+            table.rename_columns(list(table_expr.columns)).cast(arrow_schema)
         )
 
     @util.experimental
