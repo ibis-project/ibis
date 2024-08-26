@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.backends.tests.tpc.conftest import tpc_test
+from ibis.common.exceptions import OperationNotDefinedError
 
 
 @pytest.mark.notyet(
@@ -3209,6 +3210,87 @@ def test_63(item, store_sales, date_dim, store):
         .order_by(_.i_manager_id, _.avg_monthly_sales, _.sum_sales)
         .limit(100)
     )
+
+
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="Syntax error",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=OperationNotDefinedError,
+    reason="No DateDelta op defined",
+)
+@tpc_test("ds")
+def test_72(
+    catalog_sales,
+    inventory,
+    warehouse,
+    item,
+    customer_demographics,
+    household_demographics,
+    date_dim,
+    promotion,
+    catalog_returns,
+):
+    import ibis
+
+    d1 = date_dim
+    d2 = date_dim.view()
+    d3 = date_dim.view()
+    expr = (
+        catalog_sales.inner_join(inventory, _.cs_item_sk == inventory.inv_item_sk)
+        .join(warehouse, _.inv_warehouse_sk == warehouse.w_warehouse_sk)
+        .join(item, _.cs_item_sk == item.i_item_sk)
+        .join(
+            customer_demographics,
+            _.cs_bill_cdemo_sk == customer_demographics.cd_demo_sk,
+        )
+        .join(
+            household_demographics,
+            _.cs_bill_hdemo_sk == household_demographics.hd_demo_sk,
+        )
+        .join(d1, _.cs_sold_date_sk == d1.d_date_sk)
+        .join(
+            d2,
+            [_.inv_date_sk == d2.d_date_sk, _.d_week_seq == d2.d_week_seq],
+        )
+        .join(
+            d3,
+            [
+                _.cs_ship_date_sk == d3.d_date_sk,
+                d3.d_date.epoch_days() > (_.d_date.epoch_days() + 5),
+            ],
+        )
+        .left_join(promotion, _.cs_promo_sk == promotion.p_promo_sk)
+        .left_join(
+            catalog_returns,
+            (_.cs_item_sk == catalog_returns.cr_item_sk)
+            & (_.cs_order_number == catalog_returns.cr_order_number),
+        )
+        .filter(
+            _.inv_quantity_on_hand < _.cs_quantity,
+            _.hd_buy_potential == ">10000",
+            d1.d_year == 1999,
+            _.cd_marital_status == "D",
+        )
+        .group_by(_.i_item_desc, _.w_warehouse_name, d1.d_week_seq)
+        .agg(
+            no_promo=(ibis.case().when(_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
+            promo=(ibis.case().when(~_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
+            total_cnt=_.count(),
+        )
+        .order_by(
+            _.total_cnt.desc(nulls_first=True),
+            _.i_item_desc.asc(nulls_first=True),
+            _.w_warehouse_name.asc(nulls_first=True),
+            d1.d_week_seq.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
+
+    return expr
 
 
 @tpc_test("ds")
