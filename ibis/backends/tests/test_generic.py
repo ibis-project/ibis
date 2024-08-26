@@ -722,8 +722,8 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
 def test_table_info(alltypes):
     expr = alltypes.info()
     df = expr.execute()
-    assert alltypes.columns == list(df.name)
-    assert expr.columns == [
+    assert alltypes.columns == tuple(df.name)
+    assert expr.columns == (
         "name",
         "type",
         "nullable",
@@ -731,8 +731,8 @@ def test_table_info(alltypes):
         "non_nulls",
         "null_frac",
         "pos",
-    ]
-    assert expr.columns == list(df.columns)
+    )
+    assert expr.columns == tuple(df.columns)
 
 
 @pytest.mark.notyet(

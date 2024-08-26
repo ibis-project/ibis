@@ -1687,7 +1687,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
     )
 
     expr = left.join(right, "a")
-    assert expr.columns == ["a", "b", "c"]
+    assert expr.columns == ("a", "b", "c")
 
     result = expr.to_pyarrow()
     expected = pa.Table.from_pydict({"a": [1], "b": [2], "c": [3]})

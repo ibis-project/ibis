@@ -874,18 +874,18 @@ def test_group_by_column_select_api(table):
 def test_value_counts(table):
     expr1 = table.g.value_counts()
     expr2 = table[["g"]].group_by("g").aggregate(g_count=_.count())
-    assert expr1.columns == ["g", "g_count"]
+    assert expr1.columns == ("g", "g_count")
     assert_equal(expr1, expr2)
 
     expr3 = table.g.value_counts(name="freq")
     expr4 = table[["g"]].group_by("g").aggregate(freq=_.count())
-    assert expr3.columns == ["g", "freq"]
+    assert expr3.columns == ("g", "freq")
     assert_equal(expr3, expr4)
 
 
 def test_value_counts_on_window_function(table):
     expr = (table.a - table.a.mean()).name("x").value_counts(name="count")
-    assert expr.columns == ["x", "count"]
+    assert expr.columns == ("x", "count")
 
 
 def test_value_counts_unnamed_expr(con):
