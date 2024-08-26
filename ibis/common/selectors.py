@@ -3,6 +3,7 @@ from __future__ import annotations
 import abc
 from typing import TYPE_CHECKING
 
+from ibis.common.bases import Abstract
 from ibis.common.grounds import Concrete
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
@@ -12,7 +13,9 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Expandable(Concrete):
+class Expandable(Abstract):
+    __slots__ = ()
+
     @abc.abstractmethod
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         """Expand `table` into value expressions that match the selector.
@@ -29,13 +32,13 @@ class Expandable(Concrete):
 
         """
 
+
+class Selector(Concrete, Expandable):
+    """A column selector."""
+
     @abc.abstractmethod
     def expand_names(self, table: ir.Table) -> frozenset[str]:
         """Compute the set of column names that match the selector."""
-
-
-class Selector(Expandable):
-    """A column selector."""
 
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         names = self.expand_names(table)
@@ -49,6 +52,8 @@ class Selector(Expandable):
         other
             Another selector
         """
+        if not isinstance(other, Selector):
+            return NotImplemented
         return And(self, other)
 
     def __or__(self, other: Selector) -> Selector:
@@ -59,6 +64,8 @@ class Selector(Expandable):
         other
             Another selector
         """
+        if not isinstance(other, Selector):
+            return NotImplemented
         return Or(self, other)
 
     def __invert__(self) -> Selector:

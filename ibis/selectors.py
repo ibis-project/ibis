@@ -387,16 +387,7 @@ def c(*names: str | ir.Column) -> Selector:
     return Cols(names)
 
 
-class SelectorHelper(Expandable):
-    """Class for expandable objects that aren't technically selectors."""
-
-    def expand_names(self, table: ir.Table) -> frozenset[str]:
-        raise NotImplementedError(
-            f"The `{self.__class__.__name__}` selector cannot be composed with other selectors"
-        )
-
-
-class Across(SelectorHelper):
+class Across(Concrete, Expandable):
     selector: Selector
     funcs: Union[
         Resolver,
@@ -494,7 +485,7 @@ def across(
     return Across(selector=selector, funcs=funcs, names=names)
 
 
-class IfAnyAll(SelectorHelper):
+class IfAnyAll(Concrete, Expandable):
     selector: Selector
     predicate: Union[Resolver, Callable[[ir.Value], ir.BooleanValue]]
     summarizer: Callable[[ir.BooleanValue, ir.BooleanValue], ir.BooleanValue]
