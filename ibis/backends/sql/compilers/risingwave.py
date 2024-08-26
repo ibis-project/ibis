@@ -19,7 +19,6 @@ class RisingWaveCompiler(PostgresCompiler):
 
     UNSUPPORTED_OPS = (
         ops.Arbitrary,
-        ops.DateFromYMD,
         ops.Mode,
         ops.RandomUUID,
         ops.MultiQuantile,

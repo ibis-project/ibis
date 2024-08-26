@@ -63,7 +63,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.Bucket,
         ops.TimestampBucket,
         ops.TimeDelta,
-        ops.DateDelta,
         ops.TimestampDelta,
         ops.TimestampFromYMDHMS,
         ops.TimeFromHMS,
@@ -473,6 +472,23 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         return self._value_to_interval(arg, unit)
+
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        year = self.f.lpad(year, 4, "0")
+        month = self.f.lpad(month, 2, "0")
+        day = self.f.lpad(day, 2, "0")
+        return self.f.to_date(self.f.concat(year, month, day), "FXYYYYMMDD")
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return left - right
 
 
 compiler = OracleCompiler()

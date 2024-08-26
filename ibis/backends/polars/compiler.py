@@ -1442,3 +1442,12 @@ def execute_group_concat(op, **kw):
         arg = arg.sort_by(keys, descending=descending)
 
     return pl.when(arg.count() > 0).then(arg.str.join(sep)).otherwise(None)
+
+
+@translate.register(ops.DateDelta)
+def execute_date_delta(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    delta = left - right
+    method_name = f"total_{_literal_value(op.part)}s"
+    return getattr(delta.dt, method_name)()
