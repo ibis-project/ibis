@@ -196,7 +196,7 @@ def test_parted_column(con, kind):
     table_name = f"{kind}_column_parted"
     t = con.table(table_name)
     expected_column = f"my_{kind}_parted_col"
-    assert t.columns == [expected_column, "string_col", "int_col"]
+    assert t.columns == (expected_column, "string_col", "int_col")
 
 
 def test_cross_project_query(public):

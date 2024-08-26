@@ -16,7 +16,7 @@ pd = pytest.importorskip("pandas")
 
 @pytest.fixture
 def union_subsets(alltypes, df):
-    cols_a, cols_b, cols_c = (alltypes.columns.copy() for _ in range(3))
+    cols_a, cols_b, cols_c = (list(alltypes.columns) for _ in range(3))
 
     random.seed(89)
     random.shuffle(cols_a)

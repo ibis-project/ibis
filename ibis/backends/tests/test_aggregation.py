@@ -1615,7 +1615,7 @@ def test_group_concat_over_window(backend, con):
 
 def test_value_counts_on_expr(backend, alltypes, df):
     expr = alltypes.bigint_col.add(1).value_counts()
-    columns = expr.columns
+    columns = list(expr.columns)
     expr = expr.order_by(columns)
     result = expr.execute().sort_values(columns).reset_index(drop=True)
     expected = df.bigint_col.add(1).value_counts().reset_index()

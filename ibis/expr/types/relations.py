@@ -413,7 +413,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Columns not present in the input schema will be passed through unchanged
 
         >>> t.columns
-        ['species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year']
+        ('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year')
         >>> expr = t.cast({"body_mass_g": "float64", "bill_length_mm": "int"})
         >>> expr.select(*cols).head()
         ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
@@ -3263,7 +3263,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> expr.columns
-        ['species',
+        ('species',
          'island',
          'bill_length_mm',
          'bill_depth_mm',
@@ -3274,7 +3274,7 @@ class Table(Expr, _FixedTextJupyterMixin):
          'bill_length_mm_right',
          'bill_depth_mm_right',
          'flipper_length_mm_right',
-         'body_mass_g_right']
+         'body_mass_g_right')
         >>> expr.count()
         ┌─────┐
         │ 344 │

@@ -73,10 +73,11 @@ def test_mutating_join(backend, batting, awards_players, how):
     result_order = ["playerID", "yearID", "lgID", "stint"]
 
     expr = left.join(right, predicate, how=how)
+    cols = list(left.columns)
     if how == "inner":
         result = (
             expr.execute()
-            .fillna(np.nan)[left.columns]
+            .fillna(np.nan)[cols]
             .sort_values(result_order)
             .reset_index(drop=True)
         )
@@ -86,23 +87,16 @@ def test_mutating_join(backend, batting, awards_players, how):
             .fillna(np.nan)
             .assign(
                 playerID=lambda df: df.playerID.where(
-                    df.playerID.notnull(),
-                    df.playerID_right,
+                    df.playerID.notnull(), df.playerID_right
                 )
             )
-            .drop(["playerID_right"], axis=1)[left.columns]
+            .drop(["playerID_right"], axis=1)[cols]
             .sort_values(result_order)
             .reset_index(drop=True)
         )
 
     expected = (
-        check_eq(
-            left_df,
-            right_df,
-            how=how,
-            on=predicate,
-            suffixes=("_x", "_y"),
-        )[left.columns]
+        check_eq(left_df, right_df, how=how, on=predicate, suffixes=("_x", "_y"))[cols]
         .sort_values(result_order)
         .reset_index(drop=True)
     )
@@ -123,20 +117,17 @@ def test_filtering_join(backend, batting, awards_players, how):
     result_order = ["playerID", "yearID", "lgID", "stint"]
 
     expr = left.join(right, predicate, how=how)
+    cols = list(left.columns)
     result = (
         expr.execute()
         .fillna(np.nan)
-        .sort_values(result_order)[left.columns]
+        .sort_values(result_order)[cols]
         .reset_index(drop=True)
     )
 
     expected = check_eq(
-        left_df,
-        right_df,
-        how=how,
-        on=predicate,
-        suffixes=("", "_y"),
-    ).sort_values(result_order)[list(left.columns)]
+        left_df, right_df, how=how, on=predicate, suffixes=("", "_y")
+    ).sort_values(result_order)[cols]
 
     backend.assert_frame_equal(result, expected, check_like=True)
 
