@@ -62,7 +62,7 @@ def test_empty_schema():
 def test_columns(con):
     t = con.table("alltypes")
     result = t.columns
-    expected = ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k"]
+    expected = ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k")
     assert result == expected
 
 
@@ -773,7 +773,7 @@ def test_filter_on_literal_string_is_column(table):
 def test_filter_on_literal_then_aggregate(table):
     # Mostly just a smoketest, this used to error on construction
     expr = table.filter(ibis.literal(True)).agg(lambda t: t.a.sum().name("total"))
-    assert expr.columns == ["total"]
+    assert expr.columns == ("total",)
 
 
 def test_group_by_having_api(table):
@@ -966,12 +966,7 @@ def test_asof_join():
     right = ibis.table([("time", "int32"), ("value2", "double")])
     joined = api.asof_join(left, right, "time")
 
-    assert joined.columns == [
-        "time",
-        "value",
-        "time_right",
-        "value2",
-    ]
+    assert joined.columns == ("time", "value", "time_right", "value2")
     pred = joined.op().rest[0].predicates[0]
     assert pred.left.name == pred.right.name == "time"
 
@@ -1124,10 +1119,10 @@ def test_self_join_no_view_convenience(table):
     # column names to join on rather than referentially-valid expressions
 
     result = table.join(table, [("g", "g")])
-    expected_cols = list(table.columns)
+    expected_cols = table.columns
     # TODO(kszucs): the inner join convenience to don't duplicate the
     # equivalent columns from the right table is not implemented yet
-    expected_cols.extend(f"{c}_right" for c in table.columns if c != "g")
+    expected_cols += tuple(f"{c}_right" for c in table.columns if c != "g")
     assert result.columns == expected_cols
 
 
@@ -1228,34 +1223,34 @@ def test_inner_join_overlapping_column_names():
     joined = t1.join(t2, "foo")
     expected = t1.join(t2, t1.foo == t2.foo)
     assert_equal(joined, expected)
-    assert joined.columns == ["foo", "bar", "value1", "bar_right", "value2"]
+    assert joined.columns == ("foo", "bar", "value1", "bar_right", "value2")
 
     joined = t1.join(t2, ["foo", "bar"])
     expected = t1.join(t2, [t1.foo == t2.foo, t1.bar == t2.bar])
     assert_equal(joined, expected)
-    assert joined.columns == ["foo", "bar", "value1", "value2"]
+    assert joined.columns == ("foo", "bar", "value1", "value2")
 
     # Equality predicates don't have same name, need to rename
     joined = t1.join(t2, t1.foo == t2.bar)
-    assert joined.columns == [
+    assert joined.columns == (
         "foo",
         "bar",
         "value1",
         "foo_right",
         "bar_right",
         "value2",
-    ]
+    )
 
     # Not all predicates are equality, still need to rename
     joined = t1.join(t2, ["foo", t1.value1 < t2.value2])
-    assert joined.columns == [
+    assert joined.columns == (
         "foo",
         "bar",
         "value1",
         "foo_right",
         "bar_right",
         "value2",
-    ]
+    )
 
 
 @pytest.mark.parametrize(
@@ -1646,7 +1641,7 @@ def test_pickle_asof_join():
 def test_group_by_key_function():
     t = ibis.table([("a", "timestamp"), ("b", "string"), ("c", "double")])
     expr = t.group_by(new_key=lambda t: t.b.length()).aggregate(foo=t.c.mean())
-    assert expr.columns == ["new_key", "foo"]
+    assert expr.columns == ("new_key", "foo")
 
 
 def test_unbound_table_name():
@@ -1742,14 +1737,14 @@ def test_merge_as_of_allows_overlapping_columns():
     signal_two = signal_two.rename(voltage="value", signal_two="field")
 
     merged = signal_one.asof_join(signal_two, "timestamp_received")
-    assert merged.columns == [
+    assert merged.columns == (
         "current",
         "timestamp_received",
         "signal_one",
         "voltage",
         "timestamp_received_right",
         "signal_two",
-    ]
+    )
 
 
 def test_select_from_unambiguous_join_with_strings():
@@ -1758,7 +1753,7 @@ def test_select_from_unambiguous_join_with_strings():
     s = ibis.table([("b", "int64"), ("c", "string")])
     joined = t.left_join(s, [t.b == s.c])
     expr = joined.select(t, "c")
-    assert expr.columns == ["a", "b", "c"]
+    assert expr.columns == ("a", "b", "c")
 
 
 def test_filter_applied_to_join():
@@ -1770,7 +1765,7 @@ def test_filter_applied_to_join():
         gdp,
         predicates=[countries["iso_alpha3"] == gdp["country_code"]],
     ).filter(gdp["year"] == 2017)
-    assert expr.columns == ["iso_alpha3", "country_code", "year"]
+    assert expr.columns == ("iso_alpha3", "country_code", "year")
 
 
 @pytest.mark.parametrize("how", ["inner", "left", "outer", "right"])
@@ -1780,16 +1775,16 @@ def test_join_lname_rname(how):
     method = getattr(left, f"{how}_join")
 
     expr = method(right)
-    assert expr.columns == ["id", "first_name", "id_right", "last_name"]
+    assert expr.columns == ("id", "first_name", "id_right", "last_name")
 
     expr = method(right, rname="right_{name}")
-    assert expr.columns == ["id", "first_name", "right_id", "last_name"]
+    assert expr.columns == ("id", "first_name", "right_id", "last_name")
 
     expr = method(right, lname="left_{name}", rname="")
-    assert expr.columns == ["left_id", "first_name", "id", "last_name"]
+    assert expr.columns == ("left_id", "first_name", "id", "last_name")
 
     expr = method(right, rname="right_{name}", lname="left_{name}")
-    assert expr.columns == ["left_id", "first_name", "right_id", "last_name"]
+    assert expr.columns == ("left_id", "first_name", "right_id", "last_name")
 
 
 def test_join_lname_rname_still_collide():
@@ -1850,7 +1845,7 @@ def test_memtable_filter():
     # Mostly just a smoketest, this used to error on construction
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.filter(t.x > 1)
-    assert expr.columns == ["x", "y"]
+    assert expr.columns == ("x", "y")
 
 
 def test_default_backend_with_unbound_table():
