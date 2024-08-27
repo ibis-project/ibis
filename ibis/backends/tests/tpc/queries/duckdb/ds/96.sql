@@ -1,4 +1,4 @@
-SELECT count(*)
+SELECT count(*) cnt
 FROM store_sales ,
      household_demographics,
      time_dim,
