@@ -839,7 +839,7 @@ class CacheHandler:
                     raise
 
     def _create_cached_table(self, name: str, expr: ir.Table) -> ir.Table:
-        return self.create_table(name, expr, temp=True)
+        return self.create_table(name, expr, schema=expr.schema(), temp=True)
 
     def _drop_cached_table(self, name: str) -> None:
         self.drop_table(name, force=True)

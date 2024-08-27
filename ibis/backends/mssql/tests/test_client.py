@@ -216,6 +216,19 @@ def test_create_temp_table_from_obj(con):
     con.drop_table("fuhreal")
 
 
+@pytest.mark.parametrize("explicit_schema", [False, True])
+def test_create_temp_table_from_expression(con, explicit_schema, temp_table):
+    t = ibis.memtable(
+        {"x": [1, 2, 3], "y": ["a", "b", "c"]}, schema={"x": "int64", "y": "str"}
+    )
+    t2 = con.create_table(
+        temp_table, t, temp=True, schema=t.schema() if explicit_schema else None
+    )
+    res = con.to_pandas(t.order_by("y"))
+    sol = con.to_pandas(t2.order_by("y"))
+    assert res.equals(sol)
+
+
 def test_from_url():
     user = MSSQL_USER
     password = MSSQL_PASS
