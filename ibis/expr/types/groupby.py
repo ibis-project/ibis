@@ -16,16 +16,18 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING
 
 from public import public
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
+from ibis.common.deferred import Deferred  # noqa: TCH001
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Length  # noqa: TCH001
+from ibis.common.selectors import Expandable
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import rewrite_window_input
 
@@ -38,9 +40,18 @@ class GroupedTable(Concrete):
     """An intermediate table expression to hold grouping information."""
 
     table: ops.Relation
-    groupings: Annotated[VarTuple[ops.Value], Length(at_least=1)]
+    # groupings is allowed to be empty when there are some form of grouping
+    # sets provided
+    #
+    # groupings are *strictly* the things the user has explicitly requested to
+    # group by that are not part of a grouping set
+    groupings: VarTuple[ops.Value]
     orderings: VarTuple[ops.SortKey] = ()
     havings: VarTuple[ops.Value[dt.Boolean]] = ()
+
+    grouping_sets: VarTuple[VarTuple[VarTuple[ir.Value]]] = ()
+    rollups: VarTuple[VarTuple[ir.Value]] = ()
+    cubes: VarTuple[VarTuple[ir.Value]] = ()
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
@@ -61,7 +72,12 @@ class GroupedTable(Concrete):
         """Compute aggregates over a group by."""
         metrics = self.table.to_expr().bind(*metrics, **kwds)
         return self.table.to_expr().aggregate(
-            metrics, by=self.groupings, having=self.havings
+            metrics,
+            by=self.groupings,
+            having=self.havings,
+            grouping_sets=self.grouping_sets,
+            rollups=self.rollups,
+            cubes=self.cubes,
         )
 
     agg = aggregate
@@ -195,6 +211,10 @@ class GroupedTable(Concrete):
         --------
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
+        if self.grouping_sets or self.rollups or self.cubes:
+            raise exc.UnsupportedOperationError(
+                "Grouping sets, rollups, and cubes are not supported in grouped `mutate` or `select`"
+            )
         table = self.table.to_expr()
         values = table.bind(*exprs, **kwexprs)
         window = ibis.window(group_by=self.groupings, order_by=self.orderings)
@@ -239,6 +259,7 @@ class GroupedTable(Concrete):
                 order_by=order_by,
             )
 
+        # TODO: reject grouping sets here
         return self.__class__(
             self.table,
             self.by,
@@ -256,7 +277,14 @@ class GroupedTable(Concrete):
             The aggregated table
         """
         table = self.table.to_expr()
-        return table.aggregate(table.count(), by=self.groupings, having=self.havings)
+        return table.aggregate(
+            table.count(),
+            by=self.groupings,
+            having=self.havings,
+            grouping_sets=self.grouping_sets,
+            rollups=self.rollups,
+            cubes=self.cubes,
+        )
 
     size = count
 
@@ -291,3 +319,55 @@ class GroupedArray:
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch("mean")
     sum = _group_agg_dispatch("sum")
+
+
+@public
+class GroupingSets(Concrete):
+    """Grouping sets."""
+
+    exprs: VarTuple[VarTuple[str | ir.Value | Deferred]]
+
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        # produce all unique expressions in the grouping set, rollup or cube
+        values = []
+        for expr in self.exprs:
+            values.append(tuple(table.bind(expr)))
+        return values
+
+
+class GroupingSetsShorthand(Concrete, Expandable):
+    """Grouping set shorthand constructs."""
+
+    exprs: VarTuple[str | ir.Value | Deferred]
+
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        # produce all unique expressions in the grouping set, rollup or cube
+        values = []
+        for expr in self.exprs:
+            values.extend(table.bind(expr))
+        return values
+
+
+@public
+class Rollup(GroupingSetsShorthand):
+    """Rollup."""
+
+
+@public
+class Cube(GroupingSetsShorthand):
+    """Cube."""
+
+
+@public
+def rollup(*dims):
+    return Rollup(dims)
+
+
+@public
+def cube(*dims):
+    return Cube(dims)
+
+
+@public
+def grouping_sets(*dims):
+    return GroupingSets(tuple(map(tuple, map(ibis.util.promote_list, dims))))

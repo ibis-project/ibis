@@ -1390,13 +1390,25 @@ class SQLGlotCompiler(abc.ABC):
     def _generate_groups(groups):
         return map(sge.convert, range(1, len(groups) + 1))
 
-    def visit_Aggregate(self, op, *, parent, groups, metrics):
+    def visit_Aggregate(
+        self, op, *, parent, keys, groups, metrics, grouping_sets, rollups, cubes
+    ):
         sel = sg.select(
-            *self._cleanup_names(groups), *self._cleanup_names(metrics), copy=False
+            *self._cleanup_names(keys), *self._cleanup_names(metrics), copy=False
         ).from_(parent, copy=False)
 
-        if groups:
-            sel = sel.group_by(*self._generate_groups(groups.values()), copy=False)
+        if groups or grouping_sets or rollups or cubes:
+            expressions = list(self._generate_groups(groups.values()))
+            group = sge.Group(
+                expressions=expressions,
+                grouping_sets=[
+                    sge.GroupingSets(expressions=grouping_set)
+                    for grouping_set in grouping_sets
+                ],
+                rollup=[sge.Rollup(expressions=rollup) for rollup in rollups],
+                cube=[sge.Cube(expressions=cube) for cube in cubes],
+            )
+            sel = sel.group_by(group, copy=False)
 
         return sel
 
@@ -1584,6 +1596,9 @@ class SQLGlotCompiler(abc.ABC):
         else:
             parent.args["sample"] = sample
         return sg.select(STAR).from_(parent)
+
+    def visit_GroupID(self, op, *, arg):
+        return self.f.grouping(*arg)
 
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to

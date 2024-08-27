@@ -6,7 +6,18 @@ from operator import ge, itemgetter, lt
 import pytest
 
 import ibis
-from ibis import _, coalesce, cumulative_window, date, ifelse, null, rank, union
+from ibis import (
+    _,
+    coalesce,
+    cumulative_window,
+    date,
+    group_id,
+    ifelse,
+    null,
+    rank,
+    rollup,
+    union,
+)
 from ibis import literal as lit
 from ibis import selectors as s
 from ibis.backends.tests.errors import ClickHouseDatabaseError, TrinoUserError
@@ -1227,9 +1238,18 @@ def test_21(inventory, warehouse, item, date_dim):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 def test_22(inventory, date_dim, item):
-    raise NotImplementedError()
+    return (
+        inventory.join(date_dim, [("inv_date_sk", "d_date_sk")])
+        .join(item, [("inv_item_sk", "i_item_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .group_by(rollup("i_product_name", "i_brand", "i_class", "i_category"))
+        .agg(qoh=_.inv_quantity_on_hand.mean())
+        .order_by(
+            _.qoh.asc(nulls_first=True), s.across(~s.c("qoh"), _.asc(nulls_first=True))
+        )
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
@@ -3560,10 +3580,34 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     )
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 @tpc_test("ds")
+@pytest.mark.notyet(
+    ["clickhouse"], reason="clickhouse returns the wrong result", raises=AssertionError
+)
 def test_67(store_sales, date_dim, store, item):
-    raise NotImplementedError()
+    return (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .group_by(
+            rollup(
+                "i_category",
+                "i_class",
+                "i_brand",
+                "i_product_name",
+                "d_year",
+                "d_qoy",
+                "d_moy",
+                "s_store_id",
+            )
+        )
+        .agg(sumsales=(_.ss_sales_price * _.ss_quantity).coalesce(0).sum())
+        .mutate(rk=1 + rank().over(group_by=_.i_category, order_by=_.sumsales.desc()))
+        .filter(_.rk <= 100)
+        .order_by(s.across(s.all(), _.asc(nulls_first=True)))
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
@@ -3692,14 +3736,53 @@ def test_69(
 @pytest.mark.notyet(
     ["trino"], raises=TrinoUserError, reason="grouping() is not allowed in order by"
 )
-@pytest.mark.notimpl(
-    ["duckdb", "clickhouse", "snowflake", "datafusion"],
-    raises=NotImplementedError,
-    reason="requires rollup",
-)
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="grouping not implemented")
 @tpc_test("ds")
 def test_70(store_sales, date_dim, store):
-    raise NotImplementedError()
+    return (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .filter(
+            _.d_month_seq.between(1200, 1200 + 11),
+            _.s_state.isin(
+                store_sales.join(store, [("ss_store_sk", "s_store_sk")])
+                .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+                .filter(_.d_month_seq.between(1200, 1200 + 11))
+                .group_by(_.s_state)
+                .agg(net_profit=_.ss_net_profit.sum())
+                .mutate(
+                    ranking=rank().over(
+                        group_by=_.s_state, order_by=_.net_profit.desc()
+                    )
+                    + 1
+                )
+                .filter(_.ranking <= 5)
+                .s_state
+            ),
+        )
+        .group_by(rollup("s_state", "s_county"))
+        .agg(
+            total_sum=_.ss_net_profit.sum(),
+            lochierarchy=group_id(_.s_state) + group_id(_.s_county),
+            county_group_id=group_id(_.s_county),
+        )
+        .mutate(
+            rank_within_parent=rank().over(
+                group_by=(_.lochierarchy, ifelse(_.county_group_id, _.s_state, null())),
+                order_by=_.total_sum.desc(),
+            )
+            + 1
+        )
+        .select(
+            _.total_sum, _.s_state, _.s_county, _.lochierarchy, _.rank_within_parent
+        )
+        .order_by(
+            _.lochierarchy.desc(),
+            ifelse(_.lochierarchy == 0, _.s_state, null()),
+            _.rank_within_parent,
+        )
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
@@ -4193,8 +4276,12 @@ def test_76(
     return expr
 
 
-@pytest.mark.xfail(raises=AttributeError, reason="requires rollup")
-@tpc_test("ds", result_is_empty=True)
+@tpc_test("ds")
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="type inference is incorrect inside datafusion",
+)
 def test_77(
     store_sales,
     date_dim,
@@ -4287,7 +4374,7 @@ def test_77(
         channel=ibis.literal("store channel"),
         id=_.s_store_sk,
         sales=_.sales,
-        returns=_.returns_.coalesce(0),
+        returns_=_.returns_.coalesce(0),
         profit=(_.profit - _.profit_loss.coalesce(0)),
     )
 
@@ -4295,7 +4382,7 @@ def test_77(
         channel=ibis.literal("catalog channel"),
         id=_.cs_call_center_sk,
         sales=_.sales,
-        returns=_.returns_,
+        returns_=_.returns_,
         profit=(_.profit - _.profit_loss),
     )
 
@@ -4303,13 +4390,13 @@ def test_77(
         channel=ibis.literal("web channel"),
         id=_.wp_web_page_sk,
         sales=_.sales,
-        returns=_.returns_.coalesce(0),
+        returns_=_.returns_.coalesce(0),
         profit=(_.profit - _.profit_loss.coalesce(0)),
     )
 
     expr = (
         x1.union(x2, x3)
-        .group_by(ibis.rollup("channel", "id"))
+        .group_by(rollup("channel", "id"))
         .agg(
             sales=_.sales.sum(),
             returns_=_.returns_.sum(),
@@ -4764,12 +4851,41 @@ def test_85(
     reason="doesn't support grouping function in order_by",
 )
 @pytest.mark.notimpl(
-    ["snowflake", "duckdb", "datafusion", "clickhouse"],
-    raises=NotImplementedError,
-    reason="requires rollup",
+    ["datafusion"], raises=Exception, reason="grouping function not implemented"
 )
 def test_86(web_sales, date_dim, item):
-    raise NotImplementedError()
+    return (
+        web_sales.join(
+            date_dim.filter(_.d_month_seq.between(1200, 1200 + 11)),
+            [("ws_sold_date_sk", "d_date_sk")],
+        )
+        .join(item, [("ws_item_sk", "i_item_sk")])
+        .group_by(rollup("i_category", "i_class"))
+        .agg(
+            total_sum=_.ws_net_paid.sum(),
+            lochierarchy=group_id(_.i_category) + group_id(_.i_class),
+            class_grouping=group_id(_.i_class),
+        )
+        .mutate(
+            rank_within_parent=rank().over(
+                group_by=(
+                    _.lochierarchy,
+                    ifelse(_.class_grouping == 0, _.i_category, null()),
+                ),
+                order_by=_.total_sum.desc(),
+            )
+            + 1
+        )
+        .select(
+            _.total_sum, _.i_category, _.i_class, _.lochierarchy, _.rank_within_parent
+        )
+        .order_by(
+            _.lochierarchy.desc(nulls_first=True),
+            ifelse(_.lochierarchy == 0, _.i_category, null()).asc(nulls_first=True),
+            _.rank_within_parent.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
