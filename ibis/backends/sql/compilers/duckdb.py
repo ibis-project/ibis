@@ -168,12 +168,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         arg_length = self.f.len(arg)

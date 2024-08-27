@@ -108,17 +108,16 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
-        if op.seed is not None:
+        if seed is not None:
             raise com.UnsupportedOperationError(
                 "`Table.sample` with a random seed is unsupported"
             )
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":

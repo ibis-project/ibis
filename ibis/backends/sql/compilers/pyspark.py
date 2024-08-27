@@ -334,11 +334,8 @@ class PySparkCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(
                 "PySpark backend does not support sampling with seed."
             )
-        sample = sge.TableSample(
-            this=parent,
-            percent=sge.convert(fraction * 100.0),
-        )
-        return sg.select(STAR).from_(sample)
+        sample = sge.TableSample(percent=sge.convert(fraction * 100.0))
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:
