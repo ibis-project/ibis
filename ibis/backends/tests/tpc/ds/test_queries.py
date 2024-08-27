@@ -3234,8 +3234,6 @@ def test_72(
     promotion,
     catalog_returns,
 ):
-    import ibis
-
     d1 = date_dim
     d2 = date_dim.view()
     d3 = date_dim.view()
