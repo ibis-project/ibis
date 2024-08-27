@@ -15,6 +15,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.backends.tests.tpc.conftest import tpc_test
+from ibis.common.exceptions import OperationNotDefinedError
 
 
 @pytest.mark.notyet(
@@ -3209,6 +3210,235 @@ def test_63(item, store_sales, date_dim, store):
         .order_by(_.i_manager_id, _.avg_monthly_sales, _.sum_sales)
         .limit(100)
     )
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=OperationNotDefinedError,
+    reason="No DateDelta op defined",
+)
+@tpc_test("ds")
+def test_72(
+    catalog_sales,
+    inventory,
+    warehouse,
+    item,
+    customer_demographics,
+    household_demographics,
+    date_dim,
+    promotion,
+    catalog_returns,
+):
+    d1 = date_dim
+    d2 = date_dim.view()
+    d3 = date_dim.view()
+    expr = (
+        catalog_sales.inner_join(inventory, _.cs_item_sk == inventory.inv_item_sk)
+        .join(warehouse, _.inv_warehouse_sk == warehouse.w_warehouse_sk)
+        .join(item, _.cs_item_sk == item.i_item_sk)
+        .join(
+            customer_demographics,
+            _.cs_bill_cdemo_sk == customer_demographics.cd_demo_sk,
+        )
+        .join(
+            household_demographics,
+            _.cs_bill_hdemo_sk == household_demographics.hd_demo_sk,
+        )
+        .join(d1, _.cs_sold_date_sk == d1.d_date_sk)
+        .join(
+            d2,
+            [_.inv_date_sk == d2.d_date_sk, _.d_week_seq == d2.d_week_seq],
+        )
+        .join(
+            d3,
+            [
+                _.cs_ship_date_sk == d3.d_date_sk,
+                d3.d_date.epoch_days() > (_.d_date.epoch_days() + 5),
+            ],
+        )
+        .left_join(promotion, _.cs_promo_sk == promotion.p_promo_sk)
+        .left_join(
+            catalog_returns,
+            (_.cs_item_sk == catalog_returns.cr_item_sk)
+            & (_.cs_order_number == catalog_returns.cr_order_number),
+        )
+        .filter(
+            _.inv_quantity_on_hand < _.cs_quantity,
+            _.hd_buy_potential == ">10000",
+            d1.d_year == 1999,
+            _.cd_marital_status == "D",
+        )
+        .group_by(_.i_item_desc, _.w_warehouse_name, d1.d_week_seq)
+        .agg(
+            no_promo=(ibis.case().when(_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
+            promo=(ibis.case().when(~_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
+            total_cnt=_.count(),
+        )
+        .order_by(
+            _.total_cnt.desc(nulls_first=True),
+            _.i_item_desc.asc(nulls_first=True),
+            _.w_warehouse_name.asc(nulls_first=True),
+            d1.d_week_seq.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
+
+    return expr
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_73(store_sales, date_dim, store, household_demographics, customer):
+    import ibis
+
+    hd = household_demographics
+    expr = (
+        (
+            store_sales.join(
+                date_dim,
+                [
+                    _.ss_sold_date_sk == date_dim.d_date_sk,
+                    date_dim.d_dom.between(1, 2),
+                    date_dim.d_year.isin([1999, 2000, 2001]),
+                ],
+            )
+            .join(
+                store,
+                [
+                    _.ss_store_sk == store.s_store_sk,
+                    store.s_county.isin(
+                        [
+                            "Orange County",
+                            "Bronx County",
+                            "Franklin Parish",
+                            "Williamson County",
+                        ]
+                    ),
+                ],
+            )
+            .join(
+                hd,
+                [
+                    _.ss_hdemo_sk == hd.hd_demo_sk,
+                    hd.hd_buy_potential.isin(["Unknown", ">10000"]),
+                    hd.hd_vehicle_count > 0,
+                    ibis.case()
+                    .when(
+                        hd.hd_vehicle_count > 0,
+                        hd.hd_dep_count * 1.000 / hd.hd_vehicle_count,
+                    )
+                    .else_(ibis.null())
+                    .end()
+                    > 1,
+                ],
+            )
+            .group_by(_.ss_ticket_number, _.ss_customer_sk)
+            .agg(cnt=_.count())
+        )
+        .join(
+            customer, [_.ss_customer_sk == customer.c_customer_sk, _.cnt.between(1, 5)]
+        )
+        .order_by(_.cnt.desc(), _.c_last_name.asc())
+        .select(
+            "c_last_name",
+            "c_first_name",
+            "c_salutation",
+            "c_preferred_cust_flag",
+            "ss_ticket_number",
+            "cnt",
+        )
+    )
+
+    return expr
+
+
+@tpc_test("ds")
+def test_74(customer, store_sales, date_dim, web_sales):
+    renames = {
+        "customer_id": "c_customer_id",
+        "customer_first_name": "c_first_name",
+        "customer_last_name": "c_last_name",
+        "year_": "d_year",
+    }
+
+    year_total = (
+        customer.join(store_sales, _.c_customer_sk == store_sales.ss_customer_sk)
+        .join(
+            date_dim,
+            [
+                _.ss_sold_date_sk == date_dim.d_date_sk,
+                date_dim.d_year.isin([2001, 2002]),
+            ],
+        )
+        .mutate(sale_type=ibis.literal("s"))
+        .group_by(_.c_customer_id, _.c_first_name, _.c_last_name, _.d_year)
+        .agg(year_total=_.ss_net_paid.sum(), sale_type=_.sale_type.first())
+        .rename(renames)
+    )
+
+    union = (
+        customer.join(web_sales, _.c_customer_sk == web_sales.ws_bill_customer_sk)
+        .join(
+            date_dim,
+            [
+                _.ws_sold_date_sk == date_dim.d_date_sk,
+                date_dim.d_year.isin([2001, 2002]),
+            ],
+        )
+        .mutate(sale_type=ibis.literal("w"))
+        .group_by(_.c_customer_id, _.c_first_name, _.c_last_name, _.d_year)
+        .agg(year_total=_.ws_net_paid.sum(), sale_type=_.sale_type.first())
+        .rename(renames)
+    )
+
+    year_total = year_total.union(union)
+
+    ts_firstyear = year_total
+    ts_secyear = year_total.view()
+    tw_firstyear = year_total.view()
+    tw_secyear = year_total.view()
+
+    ts_years = (
+        ts_firstyear.filter(_.sale_type == "s", _.year_ == 2001, _.year_total > 0)
+        .join(
+            ts_secyear,
+            [
+                _.customer_id == ts_secyear.customer_id,
+                ts_secyear.sale_type == "s",
+                ts_secyear.year_ == 2002,
+                ts_secyear.year_total > 0,
+            ],
+        )
+        .mutate(ts_year_ratio=ts_secyear.year_total / ts_firstyear.year_total)
+    )
+
+    tw_years = (
+        tw_firstyear.filter(_.sale_type == "w", _.year_ == 2001, _.year_total > 0)
+        .join(
+            tw_secyear,
+            [
+                _.customer_id == tw_secyear.customer_id,
+                tw_secyear.sale_type == "w",
+                tw_secyear.year_ == 2002,
+                tw_secyear.year_total > 0,
+            ],
+        )
+        .mutate(tw_year_ratio=tw_secyear.year_total / tw_firstyear.year_total)
+    )
+
+    expr = (
+        ts_years.join(
+            tw_years,
+            [
+                _.customer_id == tw_years.customer_id,
+                tw_years.tw_year_ratio > _.ts_year_ratio,
+            ],
+        )
+        .select("customer_id", "customer_first_name", "customer_last_name")
+        .order_by(_.customer_id.asc(nulls_first=True))
+        .limit(100)
+    )
+
+    return expr
 
 
 @tpc_test("ds")
