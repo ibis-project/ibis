@@ -692,15 +692,18 @@ GO"""
                 new = raw_this.sql(self.dialect)
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
+        if temp:
+            # If a temporary table, amend the output name/catalog/db accordingly
+            name = "##" + name
+            catalog = "tempdb"
+            db = "dbo"
+
         if schema is None:
             # Clean up temporary memtable if we've created one
             # for in-memory reads
             if temp_memtable_view is not None:
                 self.drop_table(temp_memtable_view)
-            return self.table(
-                "##" * temp + name,
-                database=("tempdb" * temp or catalog, "dbo" * temp or db),
-            )
+            return self.table(name, database=(catalog, db))
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
