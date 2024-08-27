@@ -3353,8 +3353,6 @@ def test_73(store_sales, date_dim, store, household_demographics, customer):
 
 @tpc_test("ds")
 def test_74(customer, store_sales, date_dim, web_sales):
-    import ibis
-
     renames = {
         "customer_id": "c_customer_id",
         "customer_first_name": "c_first_name",
