@@ -4075,6 +4075,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     … │       … │     … │      … │     … │       … │     … │     … │ … │
         └───────┴─────────┴───────┴────────┴───────┴─────────┴───────┴───────┴───┘
 
+        You can do simple transpose-like operations using `pivot_wider`
+
+        >>> t = ibis.memtable(dict(outcome=["yes", "no"], counted=[3, 4]))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ outcome ┃ counted ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ string  │ int64   │
+        ├─────────┼─────────┤
+        │ yes     │       3 │
+        │ no      │       4 │
+        └─────────┴─────────┘
+        >>> t.pivot_wider(names_from="outcome", values_from="counted", names_sort=True)
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ no    ┃ yes   ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     4 │     3 │
+        └───────┴───────┘
+
         Fill missing pivoted values using `values_fill`
 
         >>> fish_encounters.pivot_wider(
@@ -4411,7 +4432,13 @@ class Table(Expr, _FixedTextJupyterMixin):
                 key = names_sep.join(filter(None, key_components))
                 aggs[key] = arg if values_fill is None else arg.coalesce(values_fill)
 
-        return self.group_by(id_cols).aggregate(**aggs)
+        grouping_keys = id_cols.expand(self)
+
+        # no id columns, so do an ungrouped aggregation
+        if not grouping_keys:
+            return self.aggregate(**aggs)
+
+        return self.group_by(*grouping_keys).aggregate(**aggs)
 
     def relocate(
         self,
