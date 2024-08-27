@@ -3325,6 +3325,39 @@ def test_96(store_sales, household_demographics, time_dim, store):
 
 
 @tpc_test("ds")
+def test_97(store_sales, date_dim, catalog_sales):
+    ssci = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .select(customer_sk=_.ss_customer_sk, item_sk=_.ss_item_sk)
+        .distinct()
+    )
+
+    csci = (
+        catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .select(customer_sk=_.cs_bill_customer_sk, item_sk=_.cs_item_sk)
+        .distinct()
+    )
+
+    return (
+        ssci.outer_join(csci, ["customer_sk", "item_sk"])
+        .agg(
+            store_only=ifelse(
+                ssci.customer_sk.notnull() & csci.customer_sk.isnull(), 1, 0
+            ).sum(),
+            catalog_only=ifelse(
+                ssci.customer_sk.isnull() & csci.customer_sk.notnull(), 1, 0
+            ).sum(),
+            store_and_catalog=ifelse(
+                ssci.customer_sk.notnull() & csci.customer_sk.notnull(), 1, 0
+            ).sum(),
+        )
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 def test_98(store_sales, item, date_dim):
     return (
         store_sales.join(item, [("ss_item_sk", "i_item_sk")])
