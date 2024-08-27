@@ -3322,3 +3322,58 @@ def test_96(store_sales, household_demographics, time_dim, store):
         .order_by(_["cnt"])
         .limit(100)
     )
+
+
+@tpc_test("ds")
+def test_99(catalog_sales, warehouse, ship_mode, call_center, date_dim):
+    sq1 = warehouse.mutate(w_substr=_.w_warehouse_name[:20])
+    return (
+        catalog_sales.join(sq1, [("cs_warehouse_sk", "w_warehouse_sk")])
+        .join(ship_mode, [("cs_ship_mode_sk", "sm_ship_mode_sk")])
+        .join(call_center, [("cs_call_center_sk", "cc_call_center_sk")])
+        .join(date_dim, [("cs_ship_date_sk", "d_date_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .group_by(
+            _.w_substr,
+            _.sm_type,
+            _.cc_name.lower().name("cc_name_lower"),
+        )
+        .agg(
+            ifelse((_.cs_ship_date_sk - _.cs_sold_date_sk <= 30), 1, 0)
+            .sum()
+            .name("30 days"),
+            ifelse(
+                (_.cs_ship_date_sk - _.cs_sold_date_sk > 30)
+                & (_.cs_ship_date_sk - _.cs_sold_date_sk <= 60),
+                1,
+                0,
+            )
+            .sum()
+            .name("31-60 days"),
+            ifelse(
+                (_.cs_ship_date_sk - _.cs_sold_date_sk > 60)
+                & (_.cs_ship_date_sk - _.cs_sold_date_sk <= 90),
+                1,
+                0,
+            )
+            .sum()
+            .name("61-90 days"),
+            ifelse(
+                (_.cs_ship_date_sk - _.cs_sold_date_sk > 90)
+                & (_.cs_ship_date_sk - _.cs_sold_date_sk <= 120),
+                1,
+                0,
+            )
+            .sum()
+            .name("91-120 days"),
+            ifelse((_.cs_ship_date_sk - _.cs_sold_date_sk > 120), 1, 0)
+            .sum()
+            .name(">120 days"),
+        )
+        .order_by(
+            _.w_substr.asc(nulls_first=True),
+            _.sm_type.asc(nulls_first=True),
+            _.cc_name_lower.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
