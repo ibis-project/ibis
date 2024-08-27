@@ -3213,6 +3213,14 @@ def test_63(item, store_sales, date_dim, store):
 
 
 @tpc_test("ds")
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason=(
+        "Exception: Aggregate function sum(jan_sales) AS jan_sales is "
+        "found inside another aggregate function in query. "
+        "(ILLEGAL_AGGREGATION)"
+    ),
+)
 def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     def agg_sales_net_by_month(sales, ns, sales_expr, net_expr):
         return (
