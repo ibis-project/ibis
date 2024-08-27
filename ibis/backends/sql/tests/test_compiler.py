@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import sqlglot as sg
+
 import ibis
 from ibis import _
+from ibis.backends.sql.dialects import Trino
 
 
 def test_window_with_row_number_compiles():
@@ -16,3 +19,10 @@ def test_window_with_row_number_compiles():
         .filter(~_.is_test)
     )
     assert ibis.to_sql(expr)
+
+
+def test_transpile_join():
+    (result,) = sg.transpile(
+        "SELECT * FROM t1 JOIN t2 ON x = y", read="duckdb", write=Trino
+    )
+    assert "CROSS JOIN" not in result
