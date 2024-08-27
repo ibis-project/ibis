@@ -71,7 +71,7 @@ WITH "t5" AS (
     ) AS "t4"
   ) AS t4
   GROUP BY
-    "t4"."field_of_study"
+    1
 )
 SELECT
   *

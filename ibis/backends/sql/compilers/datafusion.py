@@ -470,12 +470,12 @@ class DataFusionCompiler(SQLGlotCompiler):
             arg, where=where, order_by=[sge.Ordered(this=key, desc=True)]
         )
 
-    def visit_Aggregate(self, op, *, parent, groups, metrics):
+    def _compile_agg_select(self, op, *, parent, keys, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""
         quoted = self.quoted
         metrics = tuple(self._cleanup_names(metrics))
 
-        if groups:
+        if keys:
             # datafusion doesn't support count distinct aggregations alongside
             # computed grouping keys so create a projection of the key and all
             # existing columns first, followed by the usual group by
@@ -490,11 +490,11 @@ class DataFusionCompiler(SQLGlotCompiler):
                     ),
                     # can't use set subtraction here since the schema keys'
                     # order matters and set subtraction doesn't preserve order
-                    (k for k in op.parent.schema.keys() if k not in groups),
+                    (k for k in op.parent.schema.keys() if k not in keys),
                 )
             )
             table = (
-                sg.select(*cols, *self._cleanup_names(groups))
+                sg.select(*cols, *self._cleanup_names(keys))
                 .from_(parent)
                 .subquery(parent.alias)
             )
@@ -503,19 +503,14 @@ class DataFusionCompiler(SQLGlotCompiler):
             # quoted=True is required here for correctness
             by_names_quoted = tuple(
                 sg.column(key, table=getattr(value, "table", None), quoted=quoted)
-                for key, value in groups.items()
+                for key, value in keys.items()
             )
             selections = by_names_quoted + metrics
         else:
             selections = metrics or (STAR,)
             table = parent
 
-        sel = sg.select(*selections).from_(table)
-
-        if groups:
-            sel = sel.group_by(*by_names_quoted)
-
-        return sel
+        return sg.select(*selections).from_(table)
 
     def visit_StructColumn(self, op, *, names, values):
         args = []

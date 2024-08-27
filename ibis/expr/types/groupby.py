@@ -16,18 +16,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Annotated
+from typing import TYPE_CHECKING, Union
 
 from public import public
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import Length
+from ibis.common.deferred import Deferred, deferrable
+from ibis.common.grounds import Annotable, Concrete
+from ibis.common.selectors import Expandable
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.rewrites import rewrite_window_input
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -38,9 +41,18 @@ class GroupedTable(Concrete):
     """An intermediate table expression to hold grouping information."""
 
     table: ops.Relation
-    groupings: Annotated[VarTuple[ops.Value], Length(at_least=1)]
+    # groupings is allowed to be empty when there are some form of grouping
+    # sets provided
+    #
+    # groupings are *strictly* the things the user has explicitly requested to
+    # group by that are not part of a grouping set
+    groupings: VarTuple[ops.Value]
     orderings: VarTuple[ops.SortKey] = ()
     havings: VarTuple[ops.Value[dt.Boolean]] = ()
+
+    grouping_sets: VarTuple[VarTuple[VarTuple[ir.Value]]] = ()
+    rollups: VarTuple[VarTuple[ir.Value]] = ()
+    cubes: VarTuple[VarTuple[ir.Value]] = ()
 
     def __getitem__(self, args):
         # Shortcut for projection with window functions
@@ -61,7 +73,12 @@ class GroupedTable(Concrete):
         """Compute aggregates over a group by."""
         metrics = self.table.to_expr().bind(*metrics, **kwds)
         return self.table.to_expr().aggregate(
-            metrics, by=self.groupings, having=self.havings
+            metrics,
+            by=self.groupings,
+            having=self.havings,
+            grouping_sets=self.grouping_sets,
+            rollups=self.rollups,
+            cubes=self.cubes,
         )
 
     agg = aggregate
@@ -218,6 +235,10 @@ class GroupedTable(Concrete):
         --------
         [`GroupedTable.mutate`](#ibis.expr.types.groupby.GroupedTable.mutate)
         """
+        if self.grouping_sets or self.rollups or self.cubes:
+            raise exc.UnsupportedOperationError(
+                "Grouping sets, rollups, and cubes are not supported in grouped `mutate` or `select`"
+            )
         table = self.table.to_expr()
         values = table.bind(*exprs, **kwexprs)
         window = ibis.window(group_by=self.groupings, order_by=self.orderings)
@@ -262,6 +283,7 @@ class GroupedTable(Concrete):
                 order_by=order_by,
             )
 
+        # TODO: reject grouping sets here
         return self.__class__(
             self.table,
             self.by,
@@ -279,7 +301,14 @@ class GroupedTable(Concrete):
             The aggregated table
         """
         table = self.table.to_expr()
-        return table.aggregate(table.count(), by=self.groupings, having=self.havings)
+        return table.aggregate(
+            table.count(),
+            by=self.groupings,
+            having=self.havings,
+            grouping_sets=self.grouping_sets,
+            rollups=self.rollups,
+            cubes=self.cubes,
+        )
 
     size = count
 
@@ -314,3 +343,342 @@ class GroupedArray:
 class GroupedNumbers(GroupedArray):
     mean = _group_agg_dispatch("mean")
     sum = _group_agg_dispatch("sum")
+
+
+class GroupingSets(Annotable, Expandable):
+    exprs: VarTuple[VarTuple[Union[str, ir.Value, Deferred]]]
+
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        # produce all unique expressions in the grouping set, rollup or cube
+        values = []
+        for expr in self.exprs:
+            values.append(tuple(table.bind(expr)))
+        return values
+
+
+class GroupingSetsShorthand(Annotable, Expandable):
+    exprs: VarTuple[Union[str, ir.Value, Deferred]]
+
+    def expand(self, table: ir.Table) -> Sequence[ir.Value]:
+        # produce all unique expressions in the grouping set, rollup or cube
+        values = []
+        for expr in self.exprs:
+            values.extend(table.bind(expr))
+        return values
+
+
+class Rollup(GroupingSetsShorthand):
+    pass
+
+
+class Cube(GroupingSetsShorthand):
+    pass
+
+
+@public
+@experimental
+def rollup(*dims):
+    """Construct a rollup.
+
+    Rollups are a shorthand for grouping sets that are sequentially more coarse
+    grained aggregations.
+
+    Conceptually, a rollup is a union of a grouping sets, where each grouping
+    set is a superset of the previous one.
+
+    Here's some SQL showing `ROLLUP` equivalence to standard issue `GROUP BY`:
+
+    ```sql
+    -- 1. grouping set is a, b
+    SELECT a, b, count(*) n
+    FROM t
+    GROUP BY a, b
+
+    UNION ALL
+
+    --- 2. grouping set is a (rolled up from a, b)
+    SELECT a, NULL, count(*) n
+    FROM t
+    GROUP BY a
+
+    UNION ALL
+
+    -- 3. no grouping set, i.e., all rows (rolled up from a)
+    SELECT NULL, NULL, count(*) n
+    FROM t
+    ```
+
+    See Also
+    --------
+    cube
+    grouping_sets
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.head()
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ int64             │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+    │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+    │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+    │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+    │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    >>> (
+    ...     t.group_by(ibis.rollup(_.island, _.sex))
+    ...     .agg(mean_bill_length=_.bill_length_mm.mean())
+    ...     .order_by(
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ island    ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ string    │ string │ float64          │
+    ├───────────┼────────┼──────────────────┤
+    │ NULL      │ NULL   │        43.921930 │
+    │ Biscoe    │ NULL   │        45.625000 │
+    │ Biscoe    │ NULL   │        45.257485 │
+    │ Biscoe    │ female │        43.307500 │
+    │ Biscoe    │ male   │        47.119277 │
+    │ Dream     │ NULL   │        44.167742 │
+    │ Dream     │ NULL   │        37.500000 │
+    │ Dream     │ female │        42.296721 │
+    │ Dream     │ male   │        46.116129 │
+    │ Torgersen │ NULL   │        38.950980 │
+    │ …         │ …      │                … │
+    └───────────┴────────┴──────────────────┘
+    """
+    return Rollup(dims)
+
+
+@public
+@experimental
+def cube(*dims):
+    """Construct a cube.
+
+    ::: {.callout-note}
+    ## Cubes can be very expensive to compute.
+    :::
+
+    Cubes are a shorthand for grouping sets that contain all possible ways
+    to aggregate a set of grouping keys.
+
+    Conceptually, a cube is a union of a grouping sets, where each grouping
+    set is a member of the set of all sets of grouping keys (the power set).
+
+    See Also
+    --------
+    rollup
+    grouping_sets
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.head()
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ int64             │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+    │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+    │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+    │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+    │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    >>> (
+    ...     t.group_by(ibis.cube("island", "sex"))
+    ...     .agg(mean_bill_length=_.bill_length_mm.mean())
+    ...     .order_by(
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ island ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ string │ string │ float64          │
+    ├────────┼────────┼──────────────────┤
+    │ NULL   │ NULL   │        43.921930 │
+    │ NULL   │ NULL   │        41.300000 │
+    │ NULL   │ female │        42.096970 │
+    │ NULL   │ male   │        45.854762 │
+    │ Biscoe │ NULL   │        45.625000 │
+    │ Biscoe │ NULL   │        45.257485 │
+    │ Biscoe │ female │        43.307500 │
+    │ Biscoe │ male   │        47.119277 │
+    │ Dream  │ NULL   │        44.167742 │
+    │ Dream  │ NULL   │        37.500000 │
+    │ …      │ …      │                … │
+    └────────┴────────┴──────────────────┘
+    """
+    return Cube(dims)
+
+
+@public
+@experimental
+def grouping_sets(*dims):
+    """Construct a grouping set.
+
+    See Also
+    --------
+    rollup
+    cube
+
+    >>> import ibis
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.head()
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ int64             │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+    │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+    │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+    │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+    │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    >>> (
+    ...     t.group_by(ibis.grouping_sets((), _.island, (_.island, _.sex)))
+    ...     .agg(mean_bill_length=_.bill_length_mm.mean())
+    ...     .order_by(
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ island    ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ string    │ string │ float64          │
+    ├───────────┼────────┼──────────────────┤
+    │ NULL      │ NULL   │        43.921930 │
+    │ Biscoe    │ NULL   │        45.625000 │
+    │ Biscoe    │ NULL   │        45.257485 │
+    │ Biscoe    │ female │        43.307500 │
+    │ Biscoe    │ male   │        47.119277 │
+    │ Dream     │ NULL   │        44.167742 │
+    │ Dream     │ NULL   │        37.500000 │
+    │ Dream     │ female │        42.296721 │
+    │ Dream     │ male   │        46.116129 │
+    │ Torgersen │ NULL   │        38.950980 │
+    │ …         │ …      │                … │
+    └───────────┴────────┴──────────────────┘
+
+    The previous example is equivalent to using a rollup:
+
+    >>> (
+    ...     t.group_by(ibis.rollup(_.island, _.sex))
+    ...     .agg(mean_bill_length=_.bill_length_mm.mean())
+    ...     .order_by(
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ island    ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ string    │ string │ float64          │
+    ├───────────┼────────┼──────────────────┤
+    │ NULL      │ NULL   │        43.921930 │
+    │ Biscoe    │ NULL   │        45.625000 │
+    │ Biscoe    │ NULL   │        45.257485 │
+    │ Biscoe    │ female │        43.307500 │
+    │ Biscoe    │ male   │        47.119277 │
+    │ Dream     │ NULL   │        44.167742 │
+    │ Dream     │ NULL   │        37.500000 │
+    │ Dream     │ female │        42.296721 │
+    │ Dream     │ male   │        46.116129 │
+    │ Torgersen │ NULL   │        38.950980 │
+    │ …         │ …      │                … │
+    └───────────┴────────┴──────────────────┘
+    """
+    return GroupingSets(tuple(map(tuple, map(ibis.util.promote_list, dims))))
+
+
+@experimental
+@deferrable
+def group_id(first, *rest) -> ir.IntegerScalar:
+    """Return the grouping ID for a set of columns.
+
+    Input columns must be part of the group by clause.
+
+    ::: {.callout-note}
+    ## This function can only be called in a group by context.
+    :::
+
+    Returns
+    -------
+    IntegerScalar
+        An integer whose bits represent whether the `i`th
+        group is present in the current row's aggregated value.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.head()
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ int64             │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+    │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+    │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+    │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+    │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    >>> (
+    ...     t.group_by(ibis.rollup(_.island, _.sex))
+    ...     .agg(
+    ...         group_id=ibis.group_id(_.island, _.sex),
+    ...         mean_bill_length=_.bill_length_mm.mean(),
+    ...     )
+    ...     .relocate(_.group_id)
+    ...     .order_by(
+    ...         _.group_id.desc(),
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ group_id ┃ island    ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ int64    │ string    │ string │ float64          │
+    ├──────────┼───────────┼────────┼──────────────────┤
+    │        3 │ NULL      │ NULL   │        43.921930 │
+    │        1 │ Biscoe    │ NULL   │        45.257485 │
+    │        1 │ Dream     │ NULL   │        44.167742 │
+    │        1 │ Torgersen │ NULL   │        38.950980 │
+    │        0 │ Biscoe    │ NULL   │        45.625000 │
+    │        0 │ Biscoe    │ female │        43.307500 │
+    │        0 │ Biscoe    │ male   │        47.119277 │
+    │        0 │ Dream     │ NULL   │        37.500000 │
+    │        0 │ Dream     │ female │        42.296721 │
+    │        0 │ Dream     │ male   │        46.116129 │
+    │        … │ …         │ …      │                … │
+    └──────────┴───────────┴────────┴──────────────────┘
+    """
+    return ops.GroupID((first, *rest)).to_expr()
