@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import string
+
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -489,6 +491,12 @@ class OracleCompiler(SQLGlotCompiler):
                 f"Only 'day' part is supported for date delta in the {self.dialect} backend"
             )
         return left - right
+
+    def visit_RStrip(self, op, *, arg):
+        return self.f.anon.rtrim(arg, string.whitespace)
+
+    def visit_LStrip(self, op, *, arg):
+        return self.f.anon.ltrim(arg, string.whitespace)
 
 
 compiler = OracleCompiler()
