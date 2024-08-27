@@ -58,11 +58,7 @@ def check_eq(left, right, how, **kwargs):
             # TODO: mysql will likely never support full outer join
             # syntax, but we might be able to work around that using
             # LEFT JOIN UNION RIGHT JOIN
-            marks=[
-                pytest.mark.notimpl(["mysql"]),
-                sqlite_right_or_full_mark,
-                pytest.mark.xfail_version(datafusion=["datafusion<31"]),
-            ],
+            marks=[pytest.mark.notimpl(["mysql"]), sqlite_right_or_full_mark],
         ),
     ],
 )

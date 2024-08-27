@@ -634,7 +634,6 @@ def test_simple_ungrouped_unbound_following_window(
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
-@pytest.mark.xfail_version(datafusion=["datafusion==35"])
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
     t = alltypes[alltypes.double_col < 50].order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.null())

@@ -638,7 +638,6 @@ def test_string(backend, alltypes, df, result_func, expected_func):
                         "Polars does not support columnar argument Subtract(StringLength(date_string_col), 1)"
                     ),
                 ),
-                pytest.mark.xfail_version(datafusion=["datafusion==35"]),
             ],
         ),
         param(

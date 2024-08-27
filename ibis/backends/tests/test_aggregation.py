@@ -126,20 +126,14 @@ argidx_not_grouped_marks = [
 ]
 
 
-def make_argidx_params(marks, grouped=False):
+def make_argidx_params(marks):
     marks = [pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)]
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
             lambda s: s.timestamp_col.iloc[s.id.argmin()],
             id="argmin",
-            marks=marks
-            + [
-                pytest.mark.xfail_version(
-                    polars=["polars>=0.19.12,<1"], raises=BaseException
-                )
-            ]
-            * grouped,
+            marks=marks,
         ),
         param(
             lambda t: t.double_col.argmax(t.id),
@@ -167,7 +161,7 @@ def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
 
 @pytest.mark.parametrize(
     ("result_fn", "expected_fn"),
-    aggregate_test_params + make_argidx_params(argidx_not_grouped_marks, grouped=True),
+    aggregate_test_params + make_argidx_params(argidx_not_grouped_marks),
 )
 def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     grouping_key_col = "bigint_col"
@@ -1596,9 +1590,6 @@ def test_agg_sort(alltypes):
         query.order_by(alltypes.year)
 
 
-@pytest.mark.xfail_version(
-    polars=["polars==0.14.31"], reason="projection of scalars is broken"
-)
 def test_filter(backend, alltypes, df):
     expr = (
         alltypes[_.string_col == "1"]
