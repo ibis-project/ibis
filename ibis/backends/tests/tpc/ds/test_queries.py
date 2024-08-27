@@ -3213,11 +3213,6 @@ def test_63(item, store_sales, date_dim, store):
 
 
 @pytest.mark.notyet(
-    ["trino"],
-    raises=TrinoUserError,
-    reason="Syntax error",
-)
-@pytest.mark.notyet(
     ["datafusion"],
     raises=OperationNotDefinedError,
     reason="No DateDelta op defined",
