@@ -3293,43 +3293,6 @@ def test_72(
     return expr
 
 
-@tpc_test("ds")
-def test_79(store_sales, date_dim, store, household_demographics, customer):
-    return (
-        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
-        .join(store, [("ss_store_sk", "s_store_sk")])
-        .join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
-        .filter(
-            (_.hd_dep_count == 6) | (_.hd_vehicle_count > 2),
-            _.d_dow == 1,
-            _.d_year.between(1999, 1999 + 2),
-            _.s_number_employees.between(200, 295),
-        )
-        .group_by("ss_ticket_number", "ss_customer_sk", "ss_addr_sk", "s_city")
-        .agg(
-            amt=_.ss_coupon_amt.sum(),
-            profit=_.ss_net_profit.sum(),
-        )
-        .join(customer, [("ss_customer_sk", "c_customer_sk")])
-        .select(
-            "c_last_name",
-            "c_first_name",
-            _.s_city[:30].name("s_city_substr"),
-            "ss_ticket_number",
-            "amt",
-            "profit",
-        )
-        .order_by(
-            ibis.asc("c_last_name", nulls_first=True),
-            ibis.asc("c_first_name", nulls_first=True),
-            ibis.asc("s_city_substr", nulls_first=True),
-            ibis.asc("profit", nulls_first=True),
-            "ss_ticket_number",
-        )
-        .limit(100)
-    )
-
-
 @tpc_test("ds", result_is_empty=True)
 def test_73(store_sales, date_dim, store, household_demographics, customer):
     import ibis
@@ -3485,6 +3448,43 @@ def test_74(customer, store_sales, date_dim, web_sales):
     )
 
     return expr
+
+
+@tpc_test("ds")
+def test_79(store_sales, date_dim, store, household_demographics, customer):
+    return (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+        .filter(
+            (_.hd_dep_count == 6) | (_.hd_vehicle_count > 2),
+            _.d_dow == 1,
+            _.d_year.between(1999, 1999 + 2),
+            _.s_number_employees.between(200, 295),
+        )
+        .group_by("ss_ticket_number", "ss_customer_sk", "ss_addr_sk", "s_city")
+        .agg(
+            amt=_.ss_coupon_amt.sum(),
+            profit=_.ss_net_profit.sum(),
+        )
+        .join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .select(
+            "c_last_name",
+            "c_first_name",
+            _.s_city[:30].name("s_city_substr"),
+            "ss_ticket_number",
+            "amt",
+            "profit",
+        )
+        .order_by(
+            ibis.asc("c_last_name", nulls_first=True),
+            ibis.asc("c_first_name", nulls_first=True),
+            ibis.asc("s_city_substr", nulls_first=True),
+            ibis.asc("profit", nulls_first=True),
+            "ss_ticket_number",
+        )
+        .limit(100)
+    )
 
 
 @tpc_test("ds", result_is_empty=True)
