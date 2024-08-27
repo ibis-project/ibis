@@ -18,7 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
-from ibis.common.selectors import Selector
+from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
@@ -108,7 +108,7 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield value.resolve(table)
     elif isinstance(value, Resolver):
         yield value.resolve({"_": table})
-    elif isinstance(value, Selector):
+    elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):
         # rebind, otherwise the callable is required to return an expression
