@@ -3325,6 +3325,34 @@ def test_96(store_sales, household_demographics, time_dim, store):
 
 
 @tpc_test("ds")
+def test_98(store_sales, item, date_dim):
+    return (
+        store_sales.join(item, [("ss_item_sk", "i_item_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .filter(
+            _.i_category.isin(["Sports", "Books", "Home"]),
+            _.d_date.between(date("1999-02-22"), date("1999-03-24")),
+        )
+        .group_by(
+            _.i_item_id, _.i_item_desc, _.i_category, _.i_class, _.i_current_price
+        )
+        .agg(itemrevenue=_.ss_ext_sales_price.sum())
+        .mutate(
+            revenueratio=_.itemrevenue
+            * 100.0000
+            / _.itemrevenue.sum().over(group_by=_.i_class)
+        )
+        .order_by(
+            _.i_category.asc(nulls_first=True),
+            _.i_class.asc(nulls_first=True),
+            _.i_item_id.asc(nulls_first=True),
+            _.i_item_desc.asc(nulls_first=True),
+            _.revenueratio.asc(nulls_first=True),
+        )
+    )
+
+
+@tpc_test("ds")
 def test_99(catalog_sales, warehouse, ship_mode, call_center, date_dim):
     sq1 = warehouse.mutate(w_substr=_.w_warehouse_name[:20])
     return (
