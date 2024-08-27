@@ -3212,6 +3212,108 @@ def test_63(item, store_sales, date_dim, store):
     )
 
 
+@tpc_test("ds")
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason=(
+        "Exception: Aggregate function sum(jan_sales) AS jan_sales is "
+        "found inside another aggregate function in query. "
+        "(ILLEGAL_AGGREGATION)"
+    ),
+)
+def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
+    def agg_sales_net_by_month(sales, ns, sales_expr, net_expr):
+        return (
+            sales.join(
+                warehouse, sales[f"{ns}_warehouse_sk"] == warehouse.w_warehouse_sk
+            )
+            .join(date_dim, sales[f"{ns}_sold_date_sk"] == date_dim.d_date_sk)
+            .join(time_dim, sales[f"{ns}_sold_time_sk"] == time_dim.t_time_sk)
+            .join(ship_mode, sales[f"{ns}_ship_mode_sk"] == ship_mode.sm_ship_mode_sk)[
+                (_.d_year == 2001)
+                & (_.t_time.between(30838, 30838 + 28800))
+                & (_.sm_carrier.isin(["DHL", "BARIAN"]))
+            ]
+            .group_by(
+                "w_warehouse_name",
+                "w_warehouse_sq_ft",
+                "w_city",
+                "w_county",
+                "w_state",
+                "w_country",
+                "d_year",
+            )
+            .agg(
+                **{
+                    f"{cal.month_abbr[i].lower()}_sales": sales_expr.sum(
+                        where=_.d_moy == i
+                    ).fill_null(0)
+                    for i in range(1, 13)
+                },
+                **{
+                    f"{cal.month_abbr[i].lower()}_net": net_expr.sum(
+                        where=_.d_moy == i
+                    ).fill_null(0)
+                    for i in range(1, 13)
+                },
+            )
+            .mutate(ship_carriers=lit("DHL,BARIAN"))
+            .rename(year_="d_year")
+        )
+
+    return (
+        agg_sales_net_by_month(
+            web_sales,
+            "ws",
+            _.ws_ext_sales_price * _.ws_quantity,
+            _.ws_net_paid * _.ws_quantity,
+        )
+        .union(
+            agg_sales_net_by_month(
+                catalog_sales,
+                "cs",
+                _.cs_sales_price * _.cs_quantity,
+                _.cs_net_paid_inc_tax * _.cs_quantity,
+            )
+        )
+        .group_by(
+            [
+                "w_warehouse_name",
+                "w_warehouse_sq_ft",
+                "w_city",
+                "w_county",
+                "w_state",
+                "w_country",
+                "ship_carriers",
+                "year_",
+            ]
+        )
+        .agg(
+            **{
+                f"{cal.month_abbr[i].lower()}_sales": getattr(
+                    _, f"{cal.month_abbr[i].lower()}_sales"
+                ).sum()
+                for i in range(1, 13)
+            },
+            **{
+                f"{cal.month_abbr[i].lower()}_sales_per_sq_foot": (
+                    getattr(_, f"{cal.month_abbr[i].lower()}_sales")
+                    / _.w_warehouse_sq_ft
+                ).sum()
+                for i in range(1, 13)
+            },
+            **{
+                f"{cal.month_abbr[i].lower()}_net": getattr(
+                    _, f"{cal.month_abbr[i].lower()}_net"
+                ).sum()
+                for i in range(1, 13)
+            },
+        )
+        .order_by(_.w_warehouse_name.asc(nulls_first=True))
+        .limit(100)
+    )
+
+
 @pytest.mark.notyet(
     ["datafusion"],
     raises=OperationNotDefinedError,
