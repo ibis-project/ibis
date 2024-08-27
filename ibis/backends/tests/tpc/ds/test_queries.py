@@ -3314,6 +3314,180 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     )
 
 
+def test_68(
+    store_sales, date_dim, store, household_demographics, customer_address, customer
+):
+    return (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+        .join(customer_address, [("ss_addr_sk", "ca_address_sk")])
+        .filter(
+            _.d_dom.between(1, 2),
+            (_.hd_dep_count == 4) | (_.hd_vehicle_count == 3),
+            _.d_year.isin((1999, 1999 + 1, 1999 + 2)),
+            _.s_city.isin(("Fairview", "Midway")),
+        )
+        .group_by(
+            _.ss_ticket_number, _.ss_customer_sk, _.ss_addr_sk, bought_city=_.ca_city
+        )
+        .agg(
+            extended_price=_.ss_ext_sales_price.sum(),
+            list_price=_.ss_ext_list_price.sum(),
+            extended_tax=_.ss_ext_tax.sum(),
+        )
+        .drop("ss_addr_sk")
+        .join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .join(
+            customer_address,
+            [
+                ("c_current_addr_sk", "ca_address_sk"),
+                _.bought_city != customer_address.ca_city,
+            ],
+        )
+        .select(
+            _.c_last_name,
+            _.c_first_name,
+            _.ca_city,
+            _.bought_city,
+            _.ss_ticket_number,
+            _.extended_price,
+            _.extended_tax,
+            _.list_price,
+        )
+        .order_by(
+            _.c_last_name.asc(nulls_first=True),
+            _.ss_ticket_number.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
+
+
+@pytest.mark.notyet(
+    ["datafusion"], reason="Ambiguous reference to unqualified field __always_true"
+)
+@tpc_test("ds")
+def test_69(
+    customer,
+    customer_address,
+    customer_demographics,
+    store_sales,
+    date_dim,
+    web_sales,
+    catalog_sales,
+):
+    return (
+        customer.join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .join(customer_demographics, [("c_current_cdemo_sk", "cd_demo_sk")])
+        .filter(
+            _.ca_state.isin(("KY", "GA", "NM")),
+            lambda t: (
+                store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+                .filter(
+                    _.ss_customer_sk == t.c_customer_sk,
+                    _.d_year == 2001,
+                    _.d_moy.between(4, 4 + 2),
+                )
+                .count()
+                .as_scalar()
+                > 0
+            ),
+            lambda t: (
+                web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+                .filter(
+                    _.ws_bill_customer_sk == t.c_customer_sk,
+                    _.d_year == 2001,
+                    _.d_moy.between(4, 4 + 2),
+                )
+                .count()
+                .as_scalar()
+                == 0
+            ),
+            lambda t: (
+                catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+                .filter(
+                    _.cs_ship_customer_sk == t.c_customer_sk,
+                    _.d_year == 2001,
+                    _.d_moy.between(4, 4 + 2),
+                )
+                .count()
+                .as_scalar()
+                == 0
+            ),
+        )
+        .group_by(
+            _.cd_gender,
+            _.cd_marital_status,
+            _.cd_education_status,
+            _.cd_purchase_estimate,
+            _.cd_credit_rating,
+        )
+        .agg(cnt1=_.count(), cnt2=_.count(), cnt3=_.count())
+        .relocate("cnt1", after="cd_education_status")
+        .relocate("cnt2", after="cd_purchase_estimate")
+        .relocate("cnt3", after="cd_credit_rating")
+        .order_by(s.startswith("cd_"))
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+def test_70(store_sales, date_dim, store):
+    raise NotImplementedError()
+
+
+@tpc_test("ds")
+def test_71(item, web_sales, date_dim, catalog_sales, store_sales, time_dim):
+    return (
+        item.join(
+            web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+            .filter(_.d_moy == 11, _.d_year == 1999)
+            .select(
+                ext_price=_.ws_ext_sales_price,
+                sold_date_sk=_.ws_sold_date_sk,
+                sold_item_sk=_.ws_item_sk,
+                time_sk=_.ws_sold_time_sk,
+            )
+            .union(
+                catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+                .filter(_.d_moy == 11, _.d_year == 1999)
+                .select(
+                    ext_price=_.cs_ext_sales_price,
+                    sold_date_sk=_.cs_sold_date_sk,
+                    sold_item_sk=_.cs_item_sk,
+                    time_sk=_.cs_sold_time_sk,
+                )
+            )
+            .union(
+                store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+                .filter(_.d_moy == 11, _.d_year == 1999)
+                .select(
+                    ext_price=_.ss_ext_sales_price,
+                    sold_date_sk=_.ss_sold_date_sk,
+                    sold_item_sk=_.ss_item_sk,
+                    time_sk=_.ss_sold_time_sk,
+                )
+            ),
+            [("i_item_sk", "sold_item_sk")],
+        )
+        .join(time_dim, [("time_sk", "t_time_sk")])
+        .filter(
+            _.i_manager_id == 1,
+            (_.t_meal_time == "breakfast") | (_.t_meal_time == "dinner"),
+        )
+        .group_by(_.i_brand, _.i_brand_id, _.t_hour, _.t_minute)
+        .agg(ext_price=_.ext_price.sum())
+        .rename(lambda c: c.removeprefix("i_"))
+        .relocate("brand_id", before="brand")
+        .order_by(
+            _.ext_price.desc(nulls_first=True),
+            _.brand_id.asc(nulls_first=True),
+            _.t_hour.asc(nulls_first=True),
+        )
+    )
+
+
 @pytest.mark.notyet(
     ["datafusion"],
     raises=OperationNotDefinedError,
