@@ -188,18 +188,24 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.f.countIf(where)
         return sge.Count(this=STAR)
 
-    def visit_Quantile(self, op, *, arg, quantile, where):
-        if where is None:
-            return self.agg.quantile(arg, quantile, where=where)
-
-        func = "quantile" + "s" * isinstance(op, ops.MultiQuantile)
+    def _visit_quantile(self, func, arg, quantile, where):
         return sge.ParameterizedAgg(
-            this=f"{func}If",
+            this=f"{func}If" if where is not None else func,
             expressions=util.promote_list(quantile),
-            params=[arg, where],
+            params=[arg, where] if where is not None else [arg],
         )
 
-    visit_MultiQuantile = visit_Quantile
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantile", arg, quantile, where)
+
+    def visit_MultiQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantiles", arg, quantile, where)
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantileTDigest", arg, quantile, where)
+
+    def visit_ApproxMultiQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantilesTDigest", arg, quantile, where)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "pop":

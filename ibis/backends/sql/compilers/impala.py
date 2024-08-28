@@ -29,7 +29,6 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.ArrayPosition,
         ops.Array,
         ops.Covariance,
-        ops.DateDelta,
         ops.ExtractDayOfYear,
         ops.Levenshtein,
         ops.Map,
@@ -313,6 +312,17 @@ class ImpalaCompiler(SQLGlotCompiler):
         if not dtype.is_float32():
             return self.cast(sign, dtype)
         return sign
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return self.f.datediff(left, right)
 
 
 compiler = ImpalaCompiler()

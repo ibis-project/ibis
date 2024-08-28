@@ -2453,3 +2453,51 @@ def test_union_generates_predictable_aliases(con):
     expr = ibis.union(sub1, sub2)
     df = con.execute(expr)
     assert len(df) == 2
+
+
+@pytest.mark.parametrize("id_cols", [s.none(), [], s.c()])
+def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    data = pd.DataFrame(
+        {
+            "id": range(10),
+            "actual": [0, 1, 1, 0, 0, 1, 0, 0, 0, 1],
+            "prediction": [1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+        }
+    )
+    t = ibis.memtable(data)
+    expr = t.mutate(
+        outcome=(
+            ibis.case()
+            .when((_["actual"] == 0) & (_["prediction"] == 0), "TN")
+            .when((_["actual"] == 0) & (_["prediction"] == 1), "FP")
+            .when((_["actual"] == 1) & (_["prediction"] == 0), "FN")
+            .when((_["actual"] == 1) & (_["prediction"] == 1), "TP")
+            .end()
+        )
+    )
+    expr = expr.pivot_wider(
+        id_cols=id_cols,
+        names_from="outcome",
+        values_from="outcome",
+        values_agg=_.count(),
+        names_sort=True,
+    )
+    result = expr.to_pandas()
+    expected = pd.DataFrame({"FN": [3], "FP": [2], "TN": [4], "TP": [1]})
+    backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["mysql", "risingwave", "impala", "mssql", "druid", "exasol", "oracle", "flink"],
+    raises=com.OperationNotDefinedError,
+    reason="backend doesn't support Arbitrary agg",
+)
+def test_simple_pivot_wider(con, backend, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    data = pd.DataFrame({"outcome": ["yes", "no"], "counted": [3, 4]})
+    t = ibis.memtable(data)
+    expr = t.pivot_wider(names_from="outcome", values_from="counted", names_sort=True)
+    result = expr.to_pandas()
+    expected = pd.DataFrame({"no": [4], "yes": [3]})
+    backend.assert_frame_equal(result, expected)

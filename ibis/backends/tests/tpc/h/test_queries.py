@@ -772,3 +772,17 @@ def test_22(customer, orders):
     outerq = gq.aggregate(numcust=custsale.count(), totacctbal=custsale.c_acctbal.sum())
 
     return outerq.order_by(outerq.cntrycode)
+
+
+def test_all_queries_are_written():
+    variables = globals()
+    numbers = range(1, 23)
+    query_numbers = set(numbers)
+
+    # remove query numbers that are implemented
+    for query_number in numbers:
+        if f"test_{query_number:02d}" in variables:
+            query_numbers.remove(query_number)
+
+    remaining_queries = sorted(query_numbers)
+    assert not remaining_queries

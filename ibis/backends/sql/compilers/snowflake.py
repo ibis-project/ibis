@@ -608,6 +608,12 @@ $$""",
         quantile = self.f.percentile_cont(quantile)
         return sge.WithinGroup(this=quantile, expression=order_by)
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        return self.f.approx_percentile(arg, quantile)
+
     def visit_CountStar(self, op, *, arg, where):
         if where is None:
             return super().visit_CountStar(op, arg=arg, where=where)

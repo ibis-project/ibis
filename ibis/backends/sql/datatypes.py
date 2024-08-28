@@ -20,6 +20,7 @@ _from_sqlglot_types = {
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
+    typecode.DATETIME: dt.Timestamp,
     typecode.DATE32: dt.Date,
     typecode.DOUBLE: dt.Float64,
     typecode.ENUM: dt.String,

@@ -219,6 +219,14 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.WithinGroup(
+            this=self.f.approx_percentile_cont(quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg, nulls_first=True)]),
+        )
+
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.datepart(self.v.weekday, arg) - 1
 

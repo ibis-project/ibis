@@ -51,6 +51,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.ApproxQuantile: "approx_percentile_cont",
         ops.ApproxMedian: "approx_median",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",

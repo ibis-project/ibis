@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot as sg
 import toolz
 from packaging.version import parse as vparse
 from pytest import mark, param
@@ -33,6 +34,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
+    Py4JJavaError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -85,16 +87,11 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     "sch",
     [
         None,
-        ibis.schema(
-            dict(
-                first_name="string",
-                last_name="string",
-                department_name="string",
-                salary="float64",
-            )
-        ),
+        dict(first_name="string", salary="float64"),
+        dict(first_name="string", salary="float64").items(),
+        ibis.schema(dict(first_name="string", salary="float64")),
     ],
-    ids=["no_schema", "schema"],
+    ids=["no_schema", "dict_schema", "tuples", "schema"],
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
@@ -102,14 +99,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
 def test_create_table(backend, con, temp_table, func, sch):
-    df = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
+    df = pd.DataFrame({"first_name": ["A", "B", "C"], "salary": [100.0, 200.0, 300.0]})
 
     con.create_table(temp_table, func(df), schema=sch)
     result = (
@@ -1750,3 +1740,33 @@ def test_cross_database_join(con_create_database, monkeypatch):
     con.drop_table(left_table)
     con.drop_table(right_table, database=dbname)
     con.drop_database(dbname)
+
+
+@pytest.mark.notimpl(
+    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
+)
+@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
+@pytest.mark.notimpl(
+    ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+)
+def test_insert_into_table_missing_columns(con, temp_table):
+    db = getattr(con, "current_database", None)
+
+    raw_ident = sg.table(
+        temp_table,
+        db=db if db is None else sg.to_identifier(db, quoted=True),
+        quoted=True,
+    ).sql("duckdb")
+
+    ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
+    sg_expr = sg.parse_one(ct_sql, read="duckdb")
+    con.raw_sql(sg_expr.sql(dialect=con.dialect))
+    con.insert(temp_table, [{"b": 1}])
+
+    result = con.table(temp_table).to_pyarrow().to_pydict()
+    expected_result = {"a": [1], "b": [1]}
+
+    assert result == expected_result

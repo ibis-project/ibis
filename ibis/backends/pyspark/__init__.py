@@ -181,7 +181,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
-        self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
+
+        # Databricks Serverless compute only supports limited properties
+        # and any attempt to set unsupported properties will result in an error.
+        # https://docs.databricks.com/en/spark/conf.html
+        try:
+            from pyspark.errors.exceptions.connect import SparkConnectGrpcException
+        except ImportError:
+            # Use a dummy class for when spark connect is not available
+            class SparkConnectGrpcException(Exception):
+                pass
+
+        with contextlib.suppress(SparkConnectGrpcException):
+            self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
@@ -535,7 +547,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
         ) = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
@@ -596,6 +608,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 df = self._session.sql(query)
                 df.write.saveAsTable(name, format=format, mode=mode)
         elif schema is not None:
+            schema = ibis.schema(schema)
             schema = PySparkSchema.from_ibis(schema)
             with self._active_catalog_database(catalog, db):
                 self._session.catalog.createTable(name, schema=schema, format=format)
@@ -691,7 +704,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
         return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 
-    def _load_into_cache(self, name, expr):
+    def _create_cached_table(self, name, expr):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
@@ -699,8 +712,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
+        return self.table(name)
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached

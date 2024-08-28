@@ -26,7 +26,11 @@ def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     funcargs = pyfuncitem.funcargs
     testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
-    result = testfunction(**testargs, backend=funcargs["backend"])
+
+    if (backend := funcargs.get("backend")) is not None:
+        testargs["backend"] = backend
+
+    result = testfunction(**testargs)
     assert (
         result is None
     ), "test function should not return anything, did you mean to use assert?"
@@ -59,7 +63,7 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
         # func_only=True doesn't include the fixture setup time in the duration
         # of the test run, which is important since backends can take a hugely
         # variable amount of time to load all the TPC-$WHATEVER tables.
-        @pytest.mark.timeout(60, func_only=True)
+        @pytest.mark.timeout(90, func_only=True)
         @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
         @getattr(pytest.mark, name)
@@ -105,42 +109,55 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
             assert result_expr._find_backend(use_default=False) is backend.connection
             result = backend.connection.to_pandas(result_expr)
 
+            expected = expected_expr.to_pandas()
+
             assert (result_is_empty and result.empty) or (
                 not result_is_empty and not result.empty
             )
 
-            expected = expected_expr.to_pandas()
-
+            # First check that the column names match up
             assert len(expected.columns) == len(result.columns)
             assert all(
                 r.lower() in e.lower() for r, e in zip(result.columns, expected.columns)
             )
 
+            # Then set the expected columns so we can coerce the datatypes
+            # of the pandas dataframe correctly
             expected.columns = result.columns
 
             expected = PandasData.convert_table(expected, result_expr.schema())
 
-            assert (result_is_empty and expected.empty) or (
-                not result_is_empty and not expected.empty
+            # Then run the value comparisons
+            compare_tpc_results(
+                result,
+                expected,
+                abs_tol=backend.tpc_absolute_tolerance,
+                result_is_empty=result_is_empty,
             )
-
-            assert len(expected) == len(result)
-            assert result.columns.tolist() == expected.columns.tolist()
-            for column in result.columns:
-                left = result.loc[:, column]
-                right = expected.loc[:, column]
-                assert (
-                    pytest.approx(
-                        left.values.tolist(),
-                        nan_ok=True,
-                        abs=backend.tpc_absolute_tolerance,
-                    )
-                    == right.values.tolist()
-                )
 
         return wrapper
 
     return inner
+
+
+def compare_tpc_results(result, expected, result_is_empty=False, abs_tol=0.001):
+    assert (result_is_empty and expected.empty) or (
+        not result_is_empty and not expected.empty
+    )
+
+    assert len(expected) == len(result)
+    assert result.columns.tolist() == expected.columns.tolist()
+    for column in result.columns:
+        left = result.loc[:, column]
+        right = expected.loc[:, column]
+        assert (
+            pytest.approx(
+                left.values.tolist(),
+                nan_ok=True,
+                abs=abs_tol,
+            )
+            == right.values.tolist()
+        )
 
 
 def add_date(datestr: str, dy: int = 0, dm: int = 0, dd: int = 0) -> ir.DateScalar:

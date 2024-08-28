@@ -235,14 +235,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         self._log(query)
         return self.con.sql(query)
 
-    @property
-    def current_catalog(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def current_database(self) -> str:
-        return NotImplementedError()
-
     def list_catalogs(self, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
@@ -596,7 +588,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -625,6 +617,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 

@@ -677,3 +677,28 @@ def test_time_from_hms_with_micros(snapshot):
     literal = ibis.literal(datetime.time(12, 34, 56))
     result = ibis.to_sql(literal, dialect="bigquery")
     snapshot.assert_match(result, "no_micros.sql")
+
+
+@pytest.mark.parametrize(
+    "quantiles",
+    [
+        param(0.5, id="scalar"),
+        param(1 / 3, id="tricky-scalar"),
+        param([0.25, 0.5, 0.75], id="array"),
+        param([0.5, 0.25, 0.75], id="shuffled-array"),
+        param([0, 0.25, 0.5, 0.75, 1], id="complete-array"),
+    ],
+)
+def test_approx_quantiles(alltypes, quantiles, snapshot):
+    query = alltypes.double_col.approx_quantile(quantiles).name("qs")
+    result = ibis.to_sql(query, dialect="bigquery")
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_unreasonably_long_name():
+    expr = ibis.literal("hello, world!").name("a" * 301)
+    with pytest.raises(
+        com.IbisError,
+        match="BigQuery does not allow column names longer than 300 characters",
+    ):
+        ibis.to_sql(expr, dialect="bigquery")

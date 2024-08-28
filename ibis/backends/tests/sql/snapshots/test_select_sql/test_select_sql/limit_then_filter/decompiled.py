@@ -7,4 +7,4 @@ star1 = ibis.table(
 )
 limit = star1.limit(10)
 
-result = limit.filter(limit.f > 0)
+result = limit.filter((limit.f > 0))

@@ -532,6 +532,13 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_MultiQuantile(self, op, *, arg, quantile, where):
         return self.visit_Quantile(op, arg=arg, quantile=quantile, where=where)
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        return self.agg.approx_quantile(arg, quantile, where=where)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
+
     def visit_HexDigest(self, op, *, arg, how):
         if how in ("md5", "sha256"):
             return getattr(self.f, how)(arg)

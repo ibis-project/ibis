@@ -564,7 +564,7 @@ GO"""
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -605,6 +605,8 @@ GO"""
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if temp and overwrite:
             raise ValueError(
@@ -690,15 +692,18 @@ GO"""
                 new = raw_this.sql(self.dialect)
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
+        if temp:
+            # If a temporary table, amend the output name/catalog/db accordingly
+            name = "##" + name
+            catalog = "tempdb"
+            db = "dbo"
+
         if schema is None:
             # Clean up temporary memtable if we've created one
             # for in-memory reads
             if temp_memtable_view is not None:
                 self.drop_table(temp_memtable_view)
-            return self.table(
-                "##" * temp + name,
-                database=("tempdb" * temp or catalog, "dbo" * temp or db),
-            )
+            return self.table(name, database=(catalog, db))
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(

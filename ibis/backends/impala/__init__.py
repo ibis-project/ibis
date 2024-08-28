@@ -463,7 +463,7 @@ class Backend(SQLBackend):
         | pl.LazyFrame
         | None = None,
         *,
-        schema=None,
+        schema: sch.SchemaLike | None = None,
         database=None,
         temp: bool | None = None,
         overwrite: bool = False,
@@ -510,6 +510,8 @@ class Backend(SQLBackend):
         """
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if temp is not None:
             raise NotImplementedError(
@@ -547,7 +549,7 @@ class Backend(SQLBackend):
             self._safe_exec_sql(
                 CreateTableWithSchema(
                     name,
-                    schema if schema is not None else obj.schema(),
+                    schema or obj.schema(),
                     database=database or self.current_database,
                     format=format,
                     external=external,

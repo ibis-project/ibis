@@ -41,6 +41,8 @@ if TYPE_CHECKING:
     import torch
     from fsspec import AbstractFileSystem
 
+    from ibis.expr.schema import SchemaLike
+
 
 _UDF_INPUT_TYPE_MAPPING = {
     InputType.PYARROW: duckdb.functional.ARROW,
@@ -103,7 +105,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -147,6 +149,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 
@@ -187,10 +191,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         else:
             temp_name = name
 
-        initial_table = sge.Table(
-            this=sg.to_identifier(temp_name, quoted=self.compiler.quoted),
-            catalog=catalog,
-            db=database,
+        initial_table = sg.table(
+            temp_name, catalog=catalog, db=database, quoted=self.compiler.quoted
         )
         target = sge.Schema(this=initial_table, expressions=column_defs)
 
@@ -201,10 +203,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         )
 
         # This is the same table as initial_table unless overwrite == True
-        final_table = sge.Table(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            catalog=catalog,
-            db=database,
+        final_table = sg.table(
+            name, catalog=catalog, db=database, quoted=self.compiler.quoted
         )
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
@@ -894,7 +894,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         # explicitly.
 
     @util.deprecated(
-        instead="Pass in-memory data to `create_table` instead.",
+        instead="Pass in-memory data to `memtable` instead.",
         as_of="9.1",
         removed_in="10.0",
     )

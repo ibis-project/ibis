@@ -290,6 +290,15 @@ class PySparkCompiler(SQLGlotCompiler):
 
     visit_MultiQuantile = visit_Quantile
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.approx_percentile(arg, quantile)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
             left = self.cast(left, dt.Int32(nullable=left_type.nullable))

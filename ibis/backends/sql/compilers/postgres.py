@@ -238,6 +238,8 @@ class PostgresCompiler(SQLGlotCompiler):
         return expr
 
     visit_MultiQuantile = visit_Quantile
+    visit_ApproxQuantile = visit_Quantile
+    visit_ApproxMultiQuantile = visit_Quantile
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":

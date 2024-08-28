@@ -18,7 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
-from ibis.common.selectors import Selector
+from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
@@ -108,7 +108,7 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield value.resolve(table)
     elif isinstance(value, Resolver):
         yield value.resolve({"_": table})
-    elif isinstance(value, Selector):
+    elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):
         # rebind, otherwise the callable is required to return an expression
@@ -3641,7 +3641,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         current_backend = self._find_backend(use_default=True)
-        return current_backend._cached(self)
+        return current_backend._cached_table(self)
 
     def pivot_longer(
         self,
@@ -4075,6 +4075,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     … │       … │     … │      … │     … │       … │     … │     … │ … │
         └───────┴─────────┴───────┴────────┴───────┴─────────┴───────┴───────┴───┘
 
+        You can do simple transpose-like operations using `pivot_wider`
+
+        >>> t = ibis.memtable(dict(outcome=["yes", "no"], counted=[3, 4]))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ outcome ┃ counted ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ string  │ int64   │
+        ├─────────┼─────────┤
+        │ yes     │       3 │
+        │ no      │       4 │
+        └─────────┴─────────┘
+        >>> t.pivot_wider(names_from="outcome", values_from="counted", names_sort=True)
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ no    ┃ yes   ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     4 │     3 │
+        └───────┴───────┘
+
         Fill missing pivoted values using `values_fill`
 
         >>> fish_encounters.pivot_wider(
@@ -4411,7 +4432,13 @@ class Table(Expr, _FixedTextJupyterMixin):
                 key = names_sep.join(filter(None, key_components))
                 aggs[key] = arg if values_fill is None else arg.coalesce(values_fill)
 
-        return self.group_by(id_cols).aggregate(**aggs)
+        grouping_keys = id_cols.expand(self)
+
+        # no id columns, so do an ungrouped aggregation
+        if not grouping_keys:
+            return self.aggregate(**aggs)
+
+        return self.group_by(*grouping_keys).aggregate(**aggs)
 
     def relocate(
         self,
@@ -4873,7 +4900,7 @@ class CachedTable(Table):
     def release(self):
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
-        return current_backend._release_cached(self)
+        return current_backend._finalize_cached_table(self.op().name)
 
 
 public(Table=Table, CachedTable=CachedTable)

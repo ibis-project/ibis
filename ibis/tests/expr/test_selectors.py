@@ -517,3 +517,49 @@ def test_window_function_group_by_order_by(penguins):
             order_by=[penguins.sex, penguins.year],
         )
     )
+
+
+def test_methods(penguins):
+    selector = s.across(s.all(), ibis.null(_.type()).name("foo_" + _.get_name()))
+    bound = selector.expand(penguins)
+    assert [col.get_name() for col in bound] == [
+        f"foo_{col}" for col in penguins.columns
+    ]
+
+    selector = s.across(s.all(), ibis.null(_.type()))
+    bound = selector.expand(penguins)
+    assert [col.get_name() for col in bound] == penguins.columns
+
+
+@pytest.mark.parametrize("sel", [s.none(), s.c(), []])
+def test_none_selector(penguins, sel):
+    sel = s._to_selector(sel)
+
+    assert not sel.expand(penguins)
+    assert not sel.expand_names(penguins)
+
+    assert list((sel | s.c("year")).expand_names(penguins)) == ["year"]
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(sel)
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(sel & s.c("year"))
+
+    assert penguins.select(sel | s.c("year")).equals(penguins.select("year"))
+
+
+def test_invalid_composition():
+    left = s.across(s.all(), _ + 1)
+    right = s.none()
+    with pytest.raises(TypeError):
+        left & right
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.any_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.all_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.across(left, _ + 1)

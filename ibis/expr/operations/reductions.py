@@ -211,10 +211,22 @@ class Median(QuantileBase):
 
 
 @public
+class ApproxMedian(Median):
+    """Compute the approximate median of a column."""
+
+
+@public
 class Quantile(QuantileBase):
     """Compute the quantile of a column."""
 
     quantile: Value[dt.Numeric]
+
+
+@public
+class ApproxQuantile(Quantile):
+    """Compute the approximate quantile of a column."""
+
+    arg: Column[dt.Numeric]
 
 
 @public
@@ -230,6 +242,13 @@ class MultiQuantile(Filterable, Reduction):
         if dtype.is_numeric():
             dtype = dt.higher_precedence(dtype, dt.float64)
         return dt.Array(dtype)
+
+
+@public
+class ApproxMultiQuantile(MultiQuantile):
+    """Compute multiple approximate quantiles of a column."""
+
+    arg: Column[dt.Numeric]
 
 
 class VarianceBase(Filterable, Reduction):
@@ -326,25 +345,6 @@ class ArgMin(Filterable, Reduction):
 
 
 @public
-class ApproxCountDistinct(Filterable, Reduction):
-    """Approximate number of unique values."""
-
-    arg: Column
-
-    # Impala 2.0 and higher returns a DOUBLE
-    dtype = dt.int64
-
-
-@public
-class ApproxMedian(Filterable, Reduction):
-    """Compute the approximate median of a set of comparable values."""
-
-    arg: Column
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class GroupConcat(Filterable, Reduction):
     """Concatenate strings in a group with a given separator character."""
 
@@ -362,6 +362,11 @@ class CountDistinct(Filterable, Reduction):
     arg: Column
 
     dtype = dt.int64
+
+
+@public
+class ApproxCountDistinct(CountDistinct):
+    """Approximate number of unique values."""
 
 
 @public

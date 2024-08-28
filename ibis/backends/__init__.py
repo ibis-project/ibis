@@ -7,9 +7,11 @@ import glob
 import importlib.metadata
 import keyword
 import re
+import sys
 import urllib.parse
+import weakref
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
 import ibis
 import ibis.common.exceptions as exc
@@ -17,7 +19,6 @@ import ibis.config
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.caching import RefCountedCache
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
@@ -42,10 +43,9 @@ class TablesAccessor(collections.abc.Mapping):
     >>> con = ibis.sqlite.connect("example.db")
     >>> people = con.tables["people"]  # access via index
     >>> people = con.tables.people  # access via attribute
-
     """
 
-    def __init__(self, backend: BaseBackend):
+    def __init__(self, backend: BaseBackend) -> None:
         self._backend = backend
 
     def __getitem__(self, name) -> ir.Table:
@@ -616,11 +616,6 @@ class CanListCatalog(abc.ABC):
 
         """
 
-    @property
-    @abc.abstractmethod
-    def current_catalog(self) -> str:
-        """The current catalog in use."""
-
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
@@ -707,11 +702,6 @@ class CanListDatabase(abc.ABC):
 
         """
 
-    @property
-    @abc.abstractmethod
-    def current_database(self) -> str:
-        """The current database in use."""
-
 
 class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
@@ -789,7 +779,74 @@ class CanCreateSchema(CanListSchema):
         self.drop_database(name=name, catalog=database, force=force)
 
 
-class BaseBackend(abc.ABC, _FileIOHandler):
+class CacheEntry(NamedTuple):
+    orig_op: ops.Relation
+    cached_op_ref: weakref.ref[ops.Relation]
+    finalizer: weakref.finalize
+
+
+class CacheHandler:
+    """A mixin for handling `.cache()`/`CachedTable` operations."""
+
+    def __init__(self):
+        self._cache_name_to_entry = {}
+        self._cache_op_to_entry = {}
+
+    def _cached_table(self, table: ir.Table) -> ir.CachedTable:
+        """Convert a Table to a CachedTable.
+
+        Parameters
+        ----------
+        table
+            Table expression to cache
+
+        Returns
+        -------
+        Table
+            Cached table
+        """
+        entry = self._cache_op_to_entry.get(table.op())
+        if entry is None or (cached_op := entry.cached_op_ref()) is None:
+            cached_op = self._create_cached_table(util.gen_name("cached"), table).op()
+            entry = CacheEntry(
+                table.op(),
+                weakref.ref(cached_op),
+                weakref.finalize(
+                    cached_op, self._finalize_cached_table, cached_op.name
+                ),
+            )
+            self._cache_op_to_entry[table.op()] = entry
+            self._cache_name_to_entry[cached_op.name] = entry
+        return ir.CachedTable(cached_op)
+
+    def _finalize_cached_table(self, name: str) -> None:
+        """Release a cached table given its name.
+
+        This is a no-op if the cached table is already released.
+
+        Parameters
+        ----------
+        name
+            The name of the cached table.
+        """
+        if (entry := self._cache_name_to_entry.pop(name, None)) is not None:
+            self._cache_op_to_entry.pop(entry.orig_op)
+            entry.finalizer.detach()
+            try:
+                self._drop_cached_table(name)
+            except Exception:
+                # suppress exceptions during interpreter shutdown
+                if not sys.is_finalizing():
+                    raise
+
+    def _create_cached_table(self, name: str, expr: ir.Table) -> ir.Table:
+        return self.create_table(name, expr, schema=expr.schema(), temp=True)
+
+    def _drop_cached_table(self, name: str) -> None:
+        self.drop_table(name, force=True)
+
+
+class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     """Base backend class.
 
     All Ibis backends must subclass this class and implement all the
@@ -806,12 +863,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         self._con_args: tuple[Any] = args
         self._con_kwargs: dict[str, Any] = kwargs
         self._can_reconnect: bool = True
-        # expression cache
-        self._query_cache = RefCountedCache(
-            populate=self._load_into_cache,
-            lookup=lambda name: self.table(name).op(),
-            finalize=self._clean_up_cached_table,
-        )
+        super().__init__()
 
     @property
     @abc.abstractmethod
@@ -1006,7 +1058,7 @@ class BaseBackend(abc.ABC, _FileIOHandler):
 
         """
 
-    @functools.cached_property
+    @property
     def tables(self):
         """An accessor for tables in the database.
 
@@ -1333,44 +1385,6 @@ class BaseBackend(abc.ABC, _FileIOHandler):
         table_name = table_name or util.gen_name("read_csv")
         self.create_table(table_name, pyarrow_table)
         return self.table(table_name)
-
-    def _cached(self, expr: ir.Table):
-        """Cache the provided expression.
-
-        All subsequent operations on the returned expression will be performed on the cached data.
-
-        Parameters
-        ----------
-        expr
-            Table expression to cache
-
-        Returns
-        -------
-        Expr
-            Cached table
-
-        """
-        op = expr.op()
-        if (result := self._query_cache.get(op)) is None:
-            result = self._query_cache.store(expr)
-        return ir.CachedTable(result)
-
-    def _release_cached(self, expr: ir.CachedTable) -> None:
-        """Releases the provided cached expression.
-
-        Parameters
-        ----------
-        expr
-            Cached expression to release
-
-        """
-        self._query_cache.release(expr.op().name)
-
-    def _load_into_cache(self, name, expr):
-        raise NotImplementedError(self.name)
-
-    def _clean_up_cached_table(self, name):
-        raise NotImplementedError(self.name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed
