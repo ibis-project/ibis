@@ -62,7 +62,7 @@ def test_catalog_consistency(backend, con):
         assert current_catalog in catalogs
 
 
-def test_list_all_tables_and_views(con):
+def test_con_tables(con):
     tables = con.tables
 
     # only table that is guaranteed to be in all backends

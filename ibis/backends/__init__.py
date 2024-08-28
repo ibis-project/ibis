@@ -67,6 +67,7 @@ class TablesAccessor(collections.abc.Mapping):
             "list_temp_tables",
             "list_views",
             "list_temp_views",
+            "list_foreign_tables",
         ]
         tables = []
         for method_name in list_methods:
@@ -245,6 +246,23 @@ class DDLAccessor:
 
         self._raise_if_not_implemented("_list_temp_views")
         return self._backend._list_temp_views(like=like, database=database)
+
+    def list_foreign_tables(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        """Return the list of foreign table names via the backend's implementation.
+
+        Parameters
+        ----------
+        like
+            A pattern to use for listing tables.
+        database
+            Database to list foreign tables from. Default behavior is to show tables in
+            the current database.
+        """
+
+        self._raise_if_not_implemented("_list_foreign_tables")
+        return self._backend._list_foreign_tables(like=like, database=database)
 
 
 class _FileIOHandler:

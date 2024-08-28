@@ -66,14 +66,14 @@ def test_simple_aggregate_execute(alltypes):
 
 
 def test_list_tables(con):
-    assert len(con.list_tables(like="functional")) == 1
-    assert {"astronauts", "batting", "diamonds"} <= set(con.list_tables())
+    assert len(con.tables(like="functional")) == 1
+    assert {"astronauts", "batting", "diamonds"} <= set(con.tables)
 
     _ = con.create_table("tempy", schema=ibis.schema(dict(id="int")), temp=True)
 
-    assert "tempy" in con.list_tables()
+    assert "tempy" in con.tables
     # temp tables only show up when database='public' (or default)
-    assert "tempy" not in con.list_tables(database="tiger")
+    assert "tempy" not in con.tables(database="tiger")
 
 
 def test_compile_toplevel(assert_sql):
@@ -196,7 +196,7 @@ def test_unknown_column_type(con, col):
 
 def test_insert_with_cte(con):
     X = con.create_table("X", schema=ibis.schema(dict(id="int")), temp=True)
-    assert "X" in con.list_tables()
+    assert "X" in con.tables
     expr = X.join(X.mutate(a=X["id"] + 1), ["id"])
     Y = con.create_table("Y", expr, temp=True)
     assert Y.execute().empty
@@ -432,3 +432,27 @@ def enum_table(con):
 def test_enum_table(con, enum_table):
     t = con.table(enum_table)
     assert t.mood.type() == dt.unknown
+
+
+def test_list_foreign_table(con):
+    sql = """CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
+            CREATE SERVER foreign_server
+            FOREIGN DATA WRAPPER postgres_fdw;
+
+            CREATE USER MAPPING FOR CURRENT_USER
+            SERVER foreign_server;
+
+            CREATE FOREIGN TABLE my_foreign_table (
+                id INTEGER,
+                name VARCHAR
+            )
+            SERVER foreign_server;
+        """
+
+    con.raw_sql(sql)
+    foreign_tables = con.ddl.list_foreign_tables()
+
+    assert isinstance(foreign_tables, list)
+    assert "my_foreign_table" in foreign_tables
+    assert "my_foreign_table" not in con.ddl.list_tables()
