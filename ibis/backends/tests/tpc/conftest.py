@@ -26,7 +26,11 @@ def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     funcargs = pyfuncitem.funcargs
     testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
-    result = testfunction(**testargs, backend=funcargs["backend"])
+
+    if (backend := funcargs.get("backend")) is not None:
+        testargs["backend"] = backend
+
+    result = testfunction(**testargs)
     assert (
         result is None
     ), "test function should not return anything, did you mean to use assert?"

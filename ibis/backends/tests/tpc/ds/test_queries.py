@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar as cal
 from operator import itemgetter
+from pathlib import Path
 
 import pytest
 
@@ -3991,3 +3992,25 @@ def test_99(catalog_sales, warehouse, ship_mode, call_center, date_dim):
         )
         .limit(100)
     )
+
+
+@pytest.mark.xfail(raises=AssertionError, reason="not all queries are implemented yet")
+def test_all_queries_are_written():
+    variables = globals()
+    numbers = range(1, 100)
+    query_numbers = set(numbers)
+
+    # remove query numbers that are implemented
+    for query_number in numbers:
+        if f"test_{query_number:02d}" in variables:
+            query_numbers.remove(query_number)
+
+    file_size = (
+        lambda qn: Path(__file__)
+        .parents[1]
+        .joinpath("queries", "duckdb", "ds", f"{qn:d}.sql")
+        .stat()
+        .st_size
+    )
+    remaining_queries = sorted(query_numbers, key=file_size)
+    assert remaining_queries == []
