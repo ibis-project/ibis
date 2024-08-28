@@ -3672,11 +3672,11 @@ def test_93(store_sales, store_returns, reason):
             _.ss_item_sk,
             _.ss_ticket_number,
             _.ss_customer_sk,
-            ifelse(
+            act_sales=ifelse(
                 _.sr_return_quantity.notnull(),
                 (_.ss_quantity - _.sr_return_quantity) * _.ss_sales_price,
                 (_.ss_quantity * _.ss_sales_price),
-            ).name("act_sales"),
+            ),
         )
     )
 
