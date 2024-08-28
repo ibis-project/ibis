@@ -3441,6 +3441,10 @@ def test_74(customer, store_sales, date_dim, web_sales):
     return expr
 
 
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="Invalid argument error: RowConverter column schema mismatch, expected Int32 got Int64",
+)
 @tpc_test("ds")
 def test_75(
     catalog_sales,
