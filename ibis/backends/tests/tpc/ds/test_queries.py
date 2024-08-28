@@ -3732,6 +3732,78 @@ def test_74(customer, store_sales, date_dim, web_sales):
 
 
 @tpc_test("ds")
+def test_76(
+    store_sales,
+    item,
+    date_dim,
+    web_sales,
+    catalog_sales,
+):
+    def _sales(
+        sales, customer_sk, sold_date, item_sk, channel, col_name, ext_sales_price
+    ):
+        return (
+            sales.join(item, [customer_sk.isnull(), item_sk == item.i_item_sk])
+            .join(date_dim, sold_date == date_dim.d_date_sk)
+            .select(
+                _.d_year,
+                _.d_qoy,
+                _.i_category,
+                ext_sales_price=ext_sales_price,
+                channel=ibis.literal(channel),
+                col_name=ibis.literal(col_name),
+            )
+            .relocate("channel", "col_name")
+        )
+
+    store = _sales(
+        store_sales,
+        _.ss_store_sk,
+        _.ss_sold_date_sk,
+        _.ss_item_sk,
+        "store",
+        "ss_store_sk",
+        _.ss_ext_sales_price,
+    )
+
+    web = _sales(
+        web_sales,
+        _.ws_ship_customer_sk,
+        _.ws_sold_date_sk,
+        _.ws_item_sk,
+        "web",
+        "ws_ship_customer_sk",
+        _.ws_ext_sales_price,
+    )
+
+    catalog = _sales(
+        catalog_sales,
+        _.cs_ship_addr_sk,
+        _.cs_sold_date_sk,
+        _.cs_item_sk,
+        "catalog",
+        "cs_ship_addr_sk",
+        _.cs_ext_sales_price,
+    )
+
+    foo = store.union(web, catalog)
+
+    expr = (
+        foo.group_by(_.channel, _.col_name, _.d_year, _.d_qoy, _.i_category)
+        .agg(sales_cnt=_.count(), sales_amt=_.ext_sales_price.sum())
+        .order_by(
+            _.channel.asc(nulls_first=True),
+            _.col_name.asc(nulls_first=True),
+            _.d_year.asc(nulls_first=True),
+            _.d_qoy.asc(nulls_first=True),
+            _.i_category.asc(nulls_first=True),
+        )
+    ).limit(100)
+
+    return expr
+
+
+@tpc_test("ds")
 def test_79(store_sales, date_dim, store, household_demographics, customer):
     return (
         store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
