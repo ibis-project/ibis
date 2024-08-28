@@ -3560,8 +3560,8 @@ def test_72(
         )
         .group_by(_.i_item_desc, _.w_warehouse_name, d1.d_week_seq)
         .agg(
-            no_promo=(ibis.case().when(_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
-            promo=(ibis.case().when(~_.p_promo_sk.isnull(), 1).else_(0).end()).sum(),
+            no_promo=ifelse(_.p_promo_sk.isnull(), 1, 0).sum(),
+            promo=ifelse(~_.p_promo_sk.isnull(), 1, 0).sum(),
             total_cnt=_.count(),
         )
         .order_by(
