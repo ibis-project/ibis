@@ -3314,6 +3314,7 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     )
 
 
+@tpc_test("ds")
 def test_68(
     store_sales, date_dim, store, household_demographics, customer_address, customer
 ):
