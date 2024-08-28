@@ -3803,7 +3803,7 @@ def test_76(
     return expr
 
 
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@pytest.mark.xfail(raises=AttributeError, reason="requires rollup")
 @tpc_test("ds", result_is_empty=True)
 def test_77(
     store_sales,
@@ -3814,8 +3814,125 @@ def test_77(
     catalog_returns,
     web_sales,
     web_page,
+    web_returns,
 ):
-    raise NotImplementedError()
+    date_range = (ibis.date(2000, 8, 23), ibis.date(2000, 9, 22))
+    ss = (
+        store_sales.join(
+            date_dim,
+            [
+                ("ss_sold_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .join(store, _.ss_store_sk == store.s_store_sk)
+        .group_by(_.s_store_sk)
+        .agg(sales=_.ss_ext_sales_price.sum(), profit=_.ss_net_profit.sum())
+    )
+
+    sr = (
+        store_returns.join(
+            date_dim,
+            [
+                ("sr_returned_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .join(store, _.sr_store_sk == store.s_store_sk)
+        .group_by(_.s_store_sk)
+        .agg(returns_=_.sr_return_amt.sum(), profit_loss=_.sr_net_loss.sum())
+    )
+
+    cs = (
+        catalog_sales.join(
+            date_dim,
+            [
+                ("cs_sold_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .group_by(_.cs_call_center_sk)
+        .agg(sales=_.cs_ext_sales_price.sum(), profit=_.cs_net_profit.sum())
+    )
+
+    cr = (
+        catalog_returns.join(
+            date_dim,
+            [
+                ("cr_returned_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .group_by(_.cr_call_center_sk)
+        .agg(returns_=_.cr_return_amount.sum(), profit_loss=_.cr_net_loss.sum())
+    )
+
+    ws = (
+        web_sales.join(
+            date_dim,
+            [
+                ("ws_sold_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .join(web_page, _.ws_web_page_sk == web_page.wp_web_page_sk)
+        .group_by(_.wp_web_page_sk)
+        .agg(sales=_.ws_ext_sales_price.sum(), profit=_.ws_net_profit.sum())
+    )
+
+    wr = (
+        web_returns.join(
+            date_dim,
+            [
+                ("wr_returned_date_sk", "d_date_sk"),
+                date_dim.d_date.between(*date_range),
+            ],
+        )
+        .join(web_page, _.wr_web_page_sk == web_page.wp_web_page_sk)
+        .group_by(_.wp_web_page_sk)
+        .agg(returns_=_.wr_return_amt.sum(), profit_loss=_.wr_net_loss.sum())
+    )
+
+    x1 = ss.left_join(sr, "s_store_sk").select(
+        channel=ibis.literal("store channel"),
+        id=_.s_store_sk,
+        sales=_.sales,
+        returns=_.returns_.coalesce(0),
+        profit=(_.profit - _.profit_loss.coalesce(0)),
+    )
+
+    x2 = cs.cross_join(cr).select(
+        channel=ibis.literal("catalog channel"),
+        id=_.cs_call_center_sk,
+        sales=_.sales,
+        returns=_.returns_,
+        profit=(_.profit - _.profit_loss),
+    )
+
+    x3 = ws.left_join(wr, "wp_web_page_sk").select(
+        channel=ibis.literal("web channel"),
+        id=_.wp_web_page_sk,
+        sales=_.sales,
+        returns=_.returns_.coalesce(0),
+        profit=(_.profit - _.profit_loss.coalesce(0)),
+    )
+
+    expr = (
+        x1.union(x2, x3)
+        .group_by(ibis.rollup("channel", "id"))
+        .agg(
+            sales=_.sales.sum(),
+            returns_=_.returns_.sum(),
+            profit=_.profit.sum(),
+        )
+        .order_by(
+            _.channel.asc(nulls_first=True),
+            _.id.asc(nulls_first=True),
+            _.returns_.desc(),
+        )
+    ).limit(100)
+
+    return expr
 
 
 @tpc_test("ds")
