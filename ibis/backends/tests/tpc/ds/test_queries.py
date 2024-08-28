@@ -3656,6 +3656,40 @@ def test_96(store_sales, household_demographics, time_dim, store):
     )
 
 
+@tpc_test("ds", result_is_empty=True)
+def test_93(store_sales, store_returns, reason):
+    t = (
+        store_sales.left_join(
+            store_returns,
+            [
+                ("ss_item_sk", "sr_item_sk"),
+                ("ss_ticket_number", "sr_ticket_number"),
+            ],
+        )
+        .join(reason, [("sr_reason_sk", "r_reason_sk")])
+        .filter(_.r_reason_desc == "reason 28")
+        .select(
+            _.ss_item_sk,
+            _.ss_ticket_number,
+            _.ss_customer_sk,
+            ifelse(
+                _.sr_return_quantity.notnull(),
+                (_.ss_quantity - _.sr_return_quantity) * _.ss_sales_price,
+                (_.ss_quantity * _.ss_sales_price),
+            ).name("act_sales"),
+        )
+    )
+
+    return (
+        t.group_by(_.ss_customer_sk)
+        .agg(sumsales=_.act_sales.sum())
+        .order_by(
+            _.sumsales.asc(nulls_first=True), _.ss_customer_sk.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
 @tpc_test("ds")
 def test_97(store_sales, date_dim, catalog_sales):
     ssci = (
