@@ -3803,6 +3803,21 @@ def test_76(
     return expr
 
 
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@tpc_test("ds", result_is_empty=True)
+def test_77(
+    store_sales,
+    date_dim,
+    store,
+    store_returns,
+    catalog_sales,
+    catalog_returns,
+    web_sales,
+    web_page,
+):
+    raise NotImplementedError()
+
+
 @tpc_test("ds")
 def test_79(store_sales, date_dim, store, household_demographics, customer):
     return (
