@@ -3819,6 +3819,152 @@ def test_77(
 
 
 @tpc_test("ds")
+def test_78(
+    web_sales,
+    web_returns,
+    date_dim,
+    catalog_sales,
+    catalog_returns,
+    store_sales,
+    store_returns,
+):
+    ws = (
+        web_sales.left_join(
+            web_returns,
+            [("ws_order_number", "wr_order_number"), ("ws_item_sk", "wr_item_sk")],
+        )
+        .join(
+            date_dim,
+            [("ws_sold_date_sk", "d_date_sk"), web_returns.wr_order_number.isnull()],
+        )
+        .group_by(_.d_year, _.ws_item_sk, _.ws_bill_customer_sk)
+        .agg(
+            ws_qty=_.ws_quantity.sum(),
+            ws_wc=_.ws_wholesale_cost.sum(),
+            ws_sp=_.ws_sales_price.sum(),
+        )
+        .relocate(
+            ws_sold_year=_.d_year,
+            ws_item_sk=_.ws_item_sk,
+            ws_customer_sk=_.ws_bill_customer_sk,
+        )
+    )
+
+    cs = (
+        catalog_sales.left_join(
+            catalog_returns,
+            [("cs_order_number", "cr_order_number"), ("cs_item_sk", "cr_item_sk")],
+        )
+        .join(
+            date_dim,
+            [
+                ("cs_sold_date_sk", "d_date_sk"),
+                catalog_returns.cr_order_number.isnull(),
+            ],
+        )
+        .group_by(_.d_year, _.cs_item_sk, _.cs_bill_customer_sk)
+        .agg(
+            cs_qty=_.cs_quantity.sum(),
+            cs_wc=_.cs_wholesale_cost.sum(),
+            cs_sp=_.cs_sales_price.sum(),
+        )
+        .relocate(
+            cs_sold_year=_.d_year,
+            cs_item_sk=_.cs_item_sk,
+            cs_customer_sk=_.cs_bill_customer_sk,
+        )
+    )
+
+    ss = (
+        store_sales.left_join(
+            store_returns,
+            [("ss_ticket_number", "sr_ticket_number"), ("ss_item_sk", "sr_item_sk")],
+        )
+        .join(
+            date_dim,
+            [
+                ("ss_sold_date_sk", "d_date_sk"),
+                store_returns.sr_ticket_number.isnull(),
+            ],
+        )
+        .group_by(_.d_year, _.ss_item_sk, _.ss_customer_sk)
+        .agg(
+            ss_qty=_.ss_quantity.sum(),
+            ss_wc=_.ss_wholesale_cost.sum(),
+            ss_sp=_.ss_sales_price.sum(),
+        )
+        .relocate(
+            ss_sold_year=_.d_year,
+            ss_item_sk=_.ss_item_sk,
+            ss_customer_sk=_.ss_customer_sk,
+        )
+    )
+
+    expr = ss.left_join(
+        ws,
+        [
+            ("ss_sold_year", "ws_sold_year"),
+            ("ss_item_sk", "ws_item_sk"),
+            ("ss_customer_sk", "ws_customer_sk"),
+        ],
+    )
+
+    expr = expr.left_join(
+        cs,
+        [
+            ("ss_sold_year", "cs_sold_year"),
+            ("ss_item_sk", "cs_item_sk"),
+            ("ss_customer_sk", "cs_customer_sk"),
+        ],
+    )
+
+    expr = (
+        expr.filter(
+            _.ss_sold_year == 2000,
+            (_.ws_qty.coalesce(0) > 0) | (_.cs_qty.coalesce(0) > 0),
+        )
+        .mutate(
+            ratio=(
+                (_.ss_qty * 1.00) / (_.ws_qty.coalesce(0) + _.cs_qty.coalesce(0))
+            ).round(2),
+            store_qty=_.ss_qty,
+            store_wholesale_cost=_.ss_wc,
+            store_sales_price=_.ss_sp,
+            other_chan_qty=_.ws_qty.coalesce(0) + _.cs_qty.coalesce(0),
+            other_chan_wholesale_cost=_.ws_wc.coalesce(0) + _.cs_wc.coalesce(0),
+            other_chan_sales_price=_.ws_sp.coalesce(0) + _.cs_sp.coalesce(0),
+        )
+        .order_by(
+            _.ss_sold_year,
+            _.ss_item_sk,
+            _.ss_customer_sk,
+            _.ss_qty.desc(),
+            _.ss_wc.desc(),
+            _.ss_sp.desc(),
+            _.other_chan_qty,
+            _.other_chan_wholesale_cost,
+            _.other_chan_sales_price,
+            _.ratio,
+        )
+        .select(
+            "ss_sold_year",
+            "ss_item_sk",
+            "ss_customer_sk",
+            "ratio",
+            "store_qty",
+            "store_wholesale_cost",
+            "store_sales_price",
+            "other_chan_qty",
+            "other_chan_wholesale_cost",
+            "other_chan_sales_price",
+        )
+        .limit(100)
+    )
+
+    return expr
+
+
+@tpc_test("ds")
 def test_79(store_sales, date_dim, store, household_demographics, customer):
     return (
         store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
