@@ -3530,7 +3530,7 @@ def test_75(
     )
 
     all_sales = (
-        _catalog_sales.union(_store_sales, _web_sales)
+        _catalog_sales.union(_store_sales, _web_sales, distinct=True)
         .group_by(
             _.d_year, _.i_brand_id, _.i_class_id, _.i_category_id, _.i_manufact_id
         )
