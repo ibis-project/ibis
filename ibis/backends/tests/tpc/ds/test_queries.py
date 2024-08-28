@@ -4079,6 +4079,11 @@ def test_93(store_sales, store_returns, reason):
     raises=ClickHouseDatabaseError,
     reason="correlated subqueries don't exist in clickhouse",
 )
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="Correlated column is not allowed in predicate",
+)
 @tpc_test("ds")
 def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
     return (
