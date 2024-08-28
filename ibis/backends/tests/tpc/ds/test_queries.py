@@ -3367,6 +3367,11 @@ def test_68(
 @pytest.mark.notyet(
     ["datafusion"], reason="Ambiguous reference to unqualified field __always_true"
 )
+@pytest.mark.notyet(
+    ["clickhouse"],
+    reason="parent scope only supported for constants and CTE",
+    raises=ClickHouseDatabaseError,
+)
 @tpc_test("ds")
 def test_69(
     customer,
@@ -3432,8 +3437,15 @@ def test_69(
     )
 
 
+@pytest.mark.notyet(
+    ["trino"], raises=TrinoUserError, reason="grouping() is not allowed in order by"
+)
+@pytest.mark.notimpl(
+    ["duckdb", "clickhouse", "snowflake", "datafusion"],
+    raises=NotImplementedError,
+    reason="requires rollup",
+)
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 def test_70(store_sales, date_dim, store):
     raise NotImplementedError()
 
