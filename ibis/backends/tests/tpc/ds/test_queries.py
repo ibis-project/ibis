@@ -3483,7 +3483,8 @@ def test_75(
                 _.i_category_id,
                 _.i_manufact_id,
                 sales_cnt=sale_quant - rtn_quant.coalesce(0),
-                sales_amt=sale_price - rtn_amt.coalesce(0.0),
+                sales_amt=sale_price
+                - rtn_amt.coalesce(ibis.literal(0.0, type="decimal(7,2)")),
             )
         )
 
