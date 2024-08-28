@@ -4006,7 +4006,7 @@ def test_89(item, store_sales, date_dim, store):
             _.s_store_name,
             s.r[:9] & ~s.c("s_store_name"),
         )
-    )
+    ).limit(100)
 
 
 @pytest.mark.notyet(
