@@ -20,7 +20,6 @@ from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ClickHouseDatabaseError,
-    DuckDBBinderException,
     DuckDBInvalidInputException,
     ExaQueryError,
     GoogleBadRequest,
@@ -978,12 +977,6 @@ no_mixed_timestamp_comparisons = [
         raises=TypeError,
         reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
     ),
-    pytest.mark.xfail_version(
-        duckdb=["duckdb>=0.10,<0.10.2"],
-        raises=DuckDBBinderException,
-        # perhaps we should consider disallowing this in ibis as well
-        reason="DuckDB doesn't allow comparing timestamp with and without timezones starting at version 0.10",
-    ),
 ]
 
 
@@ -1674,8 +1667,8 @@ INTERVAL_BACKEND_TYPES = {
     reason="BigQuery returns DateOffset arrays",
     raises=AssertionError,
 )
-@pytest.mark.xfail_version(
-    datafusion=["datafusion"],
+@pytest.mark.notyet(
+    ["datafusion"],
     raises=Exception,
     reason='This feature is not implemented: Can\'t create a scalar from array of type "Duration(Second)"',
 )
