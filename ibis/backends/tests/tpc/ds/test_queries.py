@@ -3963,6 +3963,54 @@ def test_84(
 
 
 @tpc_test("ds")
+def test_89(item, store_sales, date_dim, store):
+    return (
+        item.join(store_sales, [("i_item_sk", "ss_item_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .filter(
+            _.d_year == 1999,
+            (
+                _.i_category.isin(("Books", "Electronics", "Sports"))
+                & _.i_class.isin(("computers", "stereo", "football"))
+            )
+            | (
+                _.i_category.isin(("Men", "Jewelry", "Women"))
+                & _.i_class.isin(("shirts", "birdal", "dresses"))
+            ),
+        )
+        .group_by(
+            _.i_category,
+            _.i_class,
+            _.i_brand,
+            _.s_store_name,
+            _.s_company_name,
+            _.d_moy,
+        )
+        .agg(sum_sales=_.ss_sales_price.sum())
+        .mutate(
+            avg_monthly_sales=_.sum_sales.mean().over(
+                group_by=(_.i_category, _.i_brand, _.s_store_name, _.s_company_name)
+            )
+        )
+        .filter(
+            ifelse(
+                _.avg_monthly_sales != 0,
+                (_.sum_sales - _.avg_monthly_sales).abs() / _.avg_monthly_sales,
+                null(),
+            )
+            > 0.1
+        )
+        .order_by(
+            _.sum_sales - _.avg_monthly_sales,
+            _.s_store_name,
+            s.r[:9] & ~s.c("s_store_name"),
+        )
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 def test_96(store_sales, household_demographics, time_dim, store):
     return (
         store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
