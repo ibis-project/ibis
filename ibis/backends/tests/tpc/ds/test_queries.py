@@ -4010,27 +4010,6 @@ def test_89(item, store_sales, date_dim, store):
     )
 
 
-@tpc_test("ds")
-def test_96(store_sales, household_demographics, time_dim, store):
-    return (
-        store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
-        .join(time_dim, [("ss_sold_time_sk", "t_time_sk")])
-        .join(store, [("ss_store_sk", "s_store_sk")])
-        .filter(
-            (store_sales.ss_sold_time_sk == time_dim.t_time_sk)
-            & (store_sales.ss_hdemo_sk == household_demographics.hd_demo_sk)
-            & (store_sales.ss_store_sk == store.s_store_sk)
-            & (time_dim.t_hour == 20)
-            & (time_dim.t_minute >= 30)
-            & (household_demographics.hd_dep_count == 7)
-            & (store.s_store_name == "ese")
-        )
-        .agg(cnt=_.count())
-        .order_by(_["cnt"])
-        .limit(100)
-    )
-
-
 @tpc_test("ds", result_is_empty=True)
 def test_93(store_sales, store_returns, reason):
     t = (
@@ -4061,6 +4040,27 @@ def test_93(store_sales, store_returns, reason):
         .order_by(
             _.sumsales.asc(nulls_first=True), _.ss_customer_sk.asc(nulls_first=True)
         )
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_96(store_sales, household_demographics, time_dim, store):
+    return (
+        store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+        .join(time_dim, [("ss_sold_time_sk", "t_time_sk")])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .filter(
+            (store_sales.ss_sold_time_sk == time_dim.t_time_sk)
+            & (store_sales.ss_hdemo_sk == household_demographics.hd_demo_sk)
+            & (store_sales.ss_store_sk == store.s_store_sk)
+            & (time_dim.t_hour == 20)
+            & (time_dim.t_minute >= 30)
+            & (household_demographics.hd_dep_count == 7)
+            & (store.s_store_name == "ese")
+        )
+        .agg(cnt=_.count())
+        .order_by(_["cnt"])
         .limit(100)
     )
 
