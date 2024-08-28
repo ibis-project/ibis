@@ -4006,6 +4006,36 @@ def test_89(item, store_sales, date_dim, store):
             _.s_store_name,
             s.r[:9] & ~s.c("s_store_name"),
         )
+    )
+
+
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
+@tpc_test("ds")
+def test_92(web_sales, item, date_dim):
+    return (
+        web_sales.join(item, [("ws_item_sk", "i_item_sk")])
+        .join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .filter(
+            _.i_manufact_id == 350,
+            _.d_date.between(date("2000-01-07"), date("2000-04-26")),
+            lambda t: t.ws_ext_discount_amt
+            > (
+                web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+                .filter(
+                    t.i_item_sk == _.ws_item_sk,
+                    _.d_date.between(date("2000-01-07"), date("2000-04-26")),
+                )
+                .ws_ext_discount_amt.mean()
+                .as_scalar()
+                * 1.3
+            ),
+        )
+        .select(_.ws_ext_discount_amt.sum().name("Excess Discount Amount"))
+        .order_by(_[0])
         .limit(100)
     )
 
@@ -4040,6 +4070,45 @@ def test_93(store_sales, store_returns, reason):
         .order_by(
             _.sumsales.asc(nulls_first=True), _.ss_customer_sk.asc(nulls_first=True)
         )
+        .limit(100)
+    )
+
+
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
+@tpc_test("ds")
+def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
+    return (
+        web_sales.join(date_dim, [("ws_ship_date_sk", "d_date_sk")])
+        .join(customer_address, [("ws_ship_addr_sk", "ca_address_sk")])
+        .join(web_site, [("ws_web_site_sk", "web_site_sk")])
+        .filter(
+            _.ca_state == "IL",
+            _.web_company_name == "pri",
+            _.d_date.between(date("1999-02-01"), date("1999-04-02")),
+            lambda ws1: (
+                web_sales.filter(
+                    ws1.ws_order_number == _.ws_order_number,
+                    ws1.ws_warehouse_sk != _.ws_warehouse_sk,
+                ).count()
+                > 0
+            ).as_scalar(),
+            lambda ws1: (
+                web_returns.filter(ws1.ws_order_number == _.wr_order_number).count()
+                == 0
+            ).as_scalar(),
+        )
+        .agg(
+            [
+                _.ws_order_number.nunique().name("order count"),
+                _.ws_ext_ship_cost.sum().name("total shipping cost"),
+                _.ws_net_profit.sum().name("total net profit"),
+            ],
+        )
+        .order_by(_[0])
         .limit(100)
     )
 
