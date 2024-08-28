@@ -321,12 +321,12 @@ def test_re_read_in_memory_overwrite(con):
     df_pandas_1 = pd.DataFrame({"a": ["a"], "b": [1], "d": ["hi"]})
     df_pandas_2 = pd.DataFrame({"a": [1], "c": [1.4]})
 
-    with pytest.warns(FutureWarning, match="create_table"):
+    with pytest.warns(FutureWarning, match="memtable"):
         table = con.read_in_memory(df_pandas_1, table_name="df")
     assert len(table.columns) == 3
     assert table.schema() == ibis.schema([("a", "str"), ("b", "int"), ("d", "str")])
 
-    with pytest.warns(FutureWarning, match="create_table"):
+    with pytest.warns(FutureWarning, match="memtable"):
         table = con.read_in_memory(df_pandas_2, table_name="df")
     assert len(table.columns) == 2
     assert table.schema() == ibis.schema([("a", "int"), ("c", "float")])
@@ -417,7 +417,7 @@ def test_s3_403_fallback(con, httpserver, monkeypatch):
 
 def test_register_numpy_str(con):
     data = pd.DataFrame({"a": [np.str_("xyz"), None]})
-    with pytest.warns(FutureWarning, match="create_table"):
+    with pytest.warns(FutureWarning, match="memtable"):
         result = con.read_in_memory(data)
     tm.assert_frame_equal(result.execute(), data)
 
@@ -431,7 +431,7 @@ def test_register_recordbatchreader_warns(con):
     )
     reader = table.to_reader()
     sol = table.to_pandas()
-    with pytest.warns(FutureWarning, match="create_table"):
+    with pytest.warns(FutureWarning, match="memtable"):
         t = con.read_in_memory(reader)
 
     # First execute is fine
@@ -444,7 +444,7 @@ def test_register_recordbatchreader_warns(con):
 
     # Re-registering over the name with a new reader is fine
     reader = table.to_reader()
-    with pytest.warns(FutureWarning, match="create_table"):
+    with pytest.warns(FutureWarning, match="memtable"):
         t = con.read_in_memory(reader, table_name=t.get_name())
     res = t.execute()
     tm.assert_frame_equal(res, sol)

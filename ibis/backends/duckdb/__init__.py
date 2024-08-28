@@ -894,7 +894,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         # explicitly.
 
     @util.deprecated(
-        instead="Pass in-memory data to `create_table` instead.",
+        instead="Pass in-memory data to `memtable` instead.",
         as_of="9.1",
         removed_in="10.0",
     )
