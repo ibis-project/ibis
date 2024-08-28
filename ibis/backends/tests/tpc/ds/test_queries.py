@@ -3731,6 +3731,145 @@ def test_74(customer, store_sales, date_dim, web_sales):
     return expr
 
 
+@pytest.mark.notyet(
+    ["datafusion"],
+    reason="Invalid argument error: RowConverter column schema mismatch, expected Int32 got Int64",
+)
+@tpc_test("ds")
+def test_75(
+    catalog_sales,
+    item,
+    date_dim,
+    catalog_returns,
+    store_sales,
+    store_returns,
+    web_sales,
+    web_returns,
+):
+    def _sales(
+        sales,
+        item_sk,
+        sold_date_sk,
+        sales_number,
+        sale_quant,
+        sale_price,
+        returns,
+        rtn_order_number,
+        rtn_item_sk,
+        rtn_quant,
+        rtn_amt,
+    ):
+        return (
+            sales.join(item, item_sk == item.i_item_sk)
+            .join(date_dim, sold_date_sk == date_dim.d_date_sk)
+            .left_join(
+                returns,
+                [
+                    sales_number == rtn_order_number,
+                    item_sk == rtn_item_sk,
+                ],
+            )
+            .filter(_.i_category == "Books")
+            .select(
+                _.d_year,
+                _.i_brand_id,
+                _.i_class_id,
+                _.i_category_id,
+                _.i_manufact_id,
+                sales_cnt=sale_quant - rtn_quant.coalesce(0),
+                sales_amt=sale_price
+                - rtn_amt.coalesce(ibis.literal(0.0, type="decimal(7,2)")),
+            )
+        )
+
+    _catalog_sales = _sales(
+        catalog_sales,
+        _.cs_item_sk,
+        _.cs_sold_date_sk,
+        _.cs_order_number,
+        _.cs_quantity,
+        _.cs_ext_sales_price,
+        catalog_returns,
+        catalog_returns.cr_order_number,
+        catalog_returns.cr_item_sk,
+        catalog_returns.cr_return_quantity,
+        catalog_returns.cr_return_amount,
+    )
+
+    _store_sales = _sales(
+        store_sales,
+        _.ss_item_sk,
+        _.ss_sold_date_sk,
+        _.ss_ticket_number,
+        _.ss_quantity,
+        _.ss_ext_sales_price,
+        store_returns,
+        store_returns.sr_ticket_number,
+        store_returns.sr_item_sk,
+        store_returns.sr_return_quantity,
+        store_returns.sr_return_amt,
+    )
+
+    _web_sales = _sales(
+        web_sales,
+        _.ws_item_sk,
+        _.ws_sold_date_sk,
+        _.ws_order_number,
+        _.ws_quantity,
+        _.ws_ext_sales_price,
+        web_returns,
+        web_returns.wr_order_number,
+        web_returns.wr_item_sk,
+        web_returns.wr_return_quantity,
+        web_returns.wr_return_amt,
+    )
+
+    all_sales = (
+        _catalog_sales.union(_store_sales, _web_sales, distinct=True)
+        .group_by(
+            _.d_year, _.i_brand_id, _.i_class_id, _.i_category_id, _.i_manufact_id
+        )
+        .agg(sales_cnt=_.sales_cnt.sum(), sales_amt=_.sales_amt.sum())
+    )
+
+    curr_yr = all_sales
+    prev_yr = all_sales.view()
+
+    expr = (
+        curr_yr.join(
+            prev_yr,
+            [
+                "i_brand_id",
+                "i_class_id",
+                "i_category_id",
+                "i_manufact_id",
+                curr_yr.d_year == 2002,
+                prev_yr.d_year == 2001,
+                _.sales_cnt.cast("decimal(17,2)")
+                / prev_yr.sales_cnt.cast("decimal(17,2)")
+                < 0.9,
+            ],
+        )
+        .select(
+            _.i_brand_id,
+            _.i_class_id,
+            _.i_category_id,
+            _.i_manufact_id,
+            prev_yr_cnt=prev_yr.sales_cnt,
+            curr_yr_cnt=curr_yr.sales_cnt,
+            sales_cnt_diff=curr_yr.sales_cnt - prev_yr.sales_cnt,
+            sales_amt_diff=curr_yr.sales_amt - prev_yr.sales_amt,
+            prev_year=prev_yr.d_year,
+            year_=curr_yr.d_year,
+        )
+        .relocate("prev_year", "year_")
+        .order_by(_.sales_cnt_diff, _.sales_amt_diff)
+        .limit(100)
+    )
+
+    return expr
+
+
 @tpc_test("ds")
 def test_79(store_sales, date_dim, store, household_demographics, customer):
     return (
