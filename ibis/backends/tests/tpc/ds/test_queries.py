@@ -3506,6 +3506,7 @@ def test_71(item, web_sales, date_dim, catalog_sales, store_sales, time_dim):
     raises=OperationNotDefinedError,
     reason="No DateDelta op defined",
 )
+@pytest.mark.timeout(120)  # apparently trino needs extra time sometimes
 @tpc_test("ds")
 def test_72(
     catalog_sales,
