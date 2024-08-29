@@ -4313,7 +4313,16 @@ def test_84(
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="doesn't support grouping function in order_by",
+)
+@pytest.mark.notimpl(
+    ["snowflake", "duckdb", "datafusion", "clickhouse"],
+    raises=NotImplementedError,
+    reason="requires rollup",
+)
 def test_86(web_sales, date_dim, item):
     raise NotImplementedError()
 
