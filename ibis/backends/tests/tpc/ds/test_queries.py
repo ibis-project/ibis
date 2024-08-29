@@ -4400,6 +4400,47 @@ def test_90(web_sales, household_demographics, time_dim, web_page):
     )
 
 
+@tpc_test("ds", result_is_empty=True)
+def test_91(
+    call_center,
+    catalog_returns,
+    date_dim,
+    customer,
+    customer_address,
+    customer_demographics,
+    household_demographics,
+):
+    return (
+        call_center.join(catalog_returns, [("cc_call_center_sk", "cr_call_center_sk")])
+        .join(date_dim, [("cr_returned_date_sk", "d_date_sk")])
+        .join(customer, [("cr_returning_customer_sk", "c_customer_sk")])
+        .join(customer_demographics, [("c_current_cdemo_sk", "cd_demo_sk")])
+        .join(household_demographics, [("c_current_hdemo_sk", "hd_demo_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            _.d_year == 1998,
+            _.d_moy == 11,
+            ((_.cd_marital_status == "M") & (_.cd_education_status == "Unknown"))
+            | (
+                (_.cd_marital_status == "M")
+                & (_.cd_education_status == "Advanced Degree")
+            ),
+            _.hd_buy_potential.like("Unknown%"),
+            _.ca_gmt_offset == -7,
+        )
+        .group_by(
+            Call_Center=_.cc_call_center_id,
+            Call_Center_Name=_.cc_name,
+            Manager=_.cc_manager,
+            ms=_.cd_marital_status,
+            es=_.cd_education_status,
+        )
+        .agg(Returns_Loss=_.cr_net_loss.sum())
+        .drop("ms", "es")
+        .order_by(_.Returns_Loss.desc())
+    )
+
+
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
