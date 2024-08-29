@@ -3213,6 +3213,37 @@ def test_63(item, store_sales, date_dim, store):
     )
 
 
+@tpc_test("ds", result_is_empty=True)
+def test_65(store, item, store_sales, date_dim):
+    sa = (
+        store_sales.join(
+            date_dim.filter(_.d_month_seq.between(1176, 1176 + 11)),
+            [("ss_sold_date_sk", "d_date_sk")],
+        )
+        .group_by(_.ss_store_sk, _.ss_item_sk)
+        .agg(revenue=_.ss_sales_price.sum())
+    )
+    sb = sa.group_by(_.ss_store_sk).agg(ave=_.revenue.mean())
+    sc = sa.view()
+    return (
+        sb.join(sc, ["ss_store_sk", sc.revenue <= 0.1 * sb.ave])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .select(
+            _.s_store_name,
+            _.i_item_desc,
+            sc.revenue,
+            _.i_current_price,
+            _.i_wholesale_cost,
+            _.i_brand,
+        )
+        .order_by(
+            _.s_store_name.asc(nulls_first=True), _.i_item_desc.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
 @tpc_test("ds")
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -4313,6 +4344,21 @@ def test_84(
 
 
 @tpc_test("ds")
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="doesn't support grouping function in order_by",
+)
+@pytest.mark.notimpl(
+    ["snowflake", "duckdb", "datafusion", "clickhouse"],
+    raises=NotImplementedError,
+    reason="requires rollup",
+)
+def test_86(web_sales, date_dim, item):
+    raise NotImplementedError()
+
+
+@tpc_test("ds")
 def test_89(item, store_sales, date_dim, store):
     return (
         item.join(store_sales, [("i_item_sk", "ss_item_sk")])
@@ -4357,6 +4403,82 @@ def test_89(item, store_sales, date_dim, store):
             s.r[:9] & ~s.c("s_store_name"),
         )
     ).limit(100)
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=ArrowNotImplementedError,
+    reason="Unsupported cast from double to null using function cast_null",
+)
+@tpc_test("ds")
+def test_90(web_sales, household_demographics, time_dim, web_page):
+    def am_pm(*, hour: int, name: str):
+        return (
+            web_sales.join(
+                household_demographics,
+                [("ws_ship_hdemo_sk", "hd_demo_sk")],
+            )
+            .join(time_dim, [("ws_sold_time_sk", "t_time_sk")])
+            .join(web_page, [("ws_web_page_sk", "wp_web_page_sk")])
+            .filter(
+                _.t_hour.between(hour, hour + 1),
+                _.hd_dep_count == 6,
+                _.wp_char_count.between(5000, 5200),
+            )
+            .agg(_.count().name(name))
+        )
+
+    return (
+        am_pm(hour=8, name="amc")
+        .cross_join(am_pm(hour=19, name="pmc"))
+        .select(
+            am_pm_ratio=_.amc.cast("decimal(15, 4)")
+            / _.pmc.cast("decimal(15, 4)").nullif(0),
+        )
+        .order_by(_.am_pm_ratio)
+        .limit(100)
+    )
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_91(
+    call_center,
+    catalog_returns,
+    date_dim,
+    customer,
+    customer_address,
+    customer_demographics,
+    household_demographics,
+):
+    return (
+        call_center.join(catalog_returns, [("cc_call_center_sk", "cr_call_center_sk")])
+        .join(date_dim, [("cr_returned_date_sk", "d_date_sk")])
+        .join(customer, [("cr_returning_customer_sk", "c_customer_sk")])
+        .join(customer_demographics, [("c_current_cdemo_sk", "cd_demo_sk")])
+        .join(household_demographics, [("c_current_hdemo_sk", "hd_demo_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            _.d_year == 1998,
+            _.d_moy == 11,
+            ((_.cd_marital_status == "M") & (_.cd_education_status == "Unknown"))
+            | (
+                (_.cd_marital_status == "M")
+                & (_.cd_education_status == "Advanced Degree")
+            ),
+            _.hd_buy_potential.like("Unknown%"),
+            _.ca_gmt_offset == -7,
+        )
+        .group_by(
+            Call_Center=_.cc_call_center_id,
+            Call_Center_Name=_.cc_name,
+            Manager=_.cc_manager,
+            ms=_.cd_marital_status,
+            es=_.cd_education_status,
+        )
+        .agg(Returns_Loss=_.cr_net_loss.sum())
+        .drop("ms", "es")
+        .order_by(_.Returns_Loss.desc())
+    )
 
 
 @pytest.mark.notyet(
@@ -4462,6 +4584,40 @@ def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
                 _.ws_ext_ship_cost.sum().name("total shipping cost"),
                 _.ws_net_profit.sum().name("total net profit"),
             ],
+        )
+        .order_by(_[0])
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_95(web_sales, date_dim, customer_address, web_site, web_returns):
+    ws1 = web_sales.view()
+    ws2 = web_sales.view()
+    ws_wh = ws1.join(
+        ws2, ["ws_order_number", ws1.ws_warehouse_sk != ws2.ws_warehouse_sk]
+    ).select(ws1.ws_order_number, wh1=ws1.ws_warehouse_sk, wh2=ws2.ws_warehouse_sk)
+    return (
+        web_sales.join(date_dim, [("ws_ship_date_sk", "d_date_sk")])
+        .join(customer_address, [("ws_ship_addr_sk", "ca_address_sk")])
+        .join(web_site, [("ws_web_site_sk", "web_site_sk")])
+        .filter(
+            _.d_date.between(date("1999-02-01"), date("1999-04-02")),
+            _.ca_state == "IL",
+            _.web_company_name == "pri",
+            _.ws_order_number.isin(ws_wh.ws_order_number),
+            _.ws_order_number.isin(
+                web_returns.join(
+                    ws_wh, [("wr_order_number", "ws_order_number")]
+                ).wr_order_number
+            ),
+        )
+        .agg(
+            [
+                _.ws_order_number.nunique().name("order count"),
+                _.ws_ext_ship_cost.sum().name("total shipping cost"),
+                _.ws_net_profit.sum().name("total net profit"),
+            ]
         )
         .order_by(_[0])
         .limit(100)
