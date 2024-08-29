@@ -3215,6 +3215,7 @@ def test_63(item, store_sales, date_dim, store):
         "This query times out on DuckDB _only_ when run via pytest. "
         "No, we have no idea why this happens."
     ),
+    strict=False,
 )
 def test_64(
     catalog_sales,
