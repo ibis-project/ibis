@@ -4313,6 +4313,12 @@ def test_84(
 
 
 @tpc_test("ds")
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+def test_86(web_sales, date_dim, item):
+    raise NotImplementedError()
+
+
+@tpc_test("ds")
 def test_89(item, store_sales, date_dim, store):
     return (
         item.join(store_sales, [("i_item_sk", "ss_item_sk")])
@@ -4357,6 +4363,41 @@ def test_89(item, store_sales, date_dim, store):
             s.r[:9] & ~s.c("s_store_name"),
         )
     ).limit(100)
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=ArrowNotImplementedError,
+    reason="Unsupported cast from double to null using function cast_null",
+)
+@tpc_test("ds")
+def test_90(web_sales, household_demographics, time_dim, web_page):
+    def am_pm(*, hour: int, name: str):
+        return (
+            web_sales.join(
+                household_demographics,
+                [("ws_ship_hdemo_sk", "hd_demo_sk")],
+            )
+            .join(time_dim, [("ws_sold_time_sk", "t_time_sk")])
+            .join(web_page, [("ws_web_page_sk", "wp_web_page_sk")])
+            .filter(
+                _.t_hour.between(hour, hour + 1),
+                _.hd_dep_count == 6,
+                _.wp_char_count.between(5000, 5200),
+            )
+            .agg(_.count().name(name))
+        )
+
+    return (
+        am_pm(hour=8, name="amc")
+        .cross_join(am_pm(hour=19, name="pmc"))
+        .select(
+            am_pm_ratio=_.amc.cast("decimal(15, 4)")
+            / _.pmc.cast("decimal(15, 4)").nullif(0),
+        )
+        .order_by(_.am_pm_ratio)
+        .limit(100)
+    )
 
 
 @pytest.mark.notyet(
