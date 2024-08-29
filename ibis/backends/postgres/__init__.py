@@ -231,28 +231,25 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", getpass.getuser())
         >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD")
         >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
-        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con = ibis.postgres.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        PostgreSQLTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : boolean
-            tinyint_col : int16
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(6)
+          year            int32
+          month           int32
         """
         import psycopg2
         import psycopg2.extras
