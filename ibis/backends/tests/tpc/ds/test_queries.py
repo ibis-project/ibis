@@ -4359,6 +4359,36 @@ def test_86(web_sales, date_dim, item):
 
 
 @tpc_test("ds")
+def test_87(store_sales, date_dim, customer, catalog_sales, web_sales):
+    def cust(sales, sold_date_sk, customer_sk):
+        return (
+            sales.join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .join(customer, [(customer_sk, "c_customer_sk")])
+            .filter(_.d_month_seq.between(1200, 1200 + 11))
+            .select(_.c_last_name, _.c_first_name, _.d_date)
+            .distinct()
+        )
+
+    return ibis.difference(
+        cust(
+            store_sales,
+            sold_date_sk="ss_sold_date_sk",
+            customer_sk="ss_customer_sk",
+        ),
+        cust(
+            catalog_sales,
+            sold_date_sk="cs_sold_date_sk",
+            customer_sk="cs_bill_customer_sk",
+        ),
+        cust(
+            web_sales,
+            sold_date_sk="ws_sold_date_sk",
+            customer_sk="ws_bill_customer_sk",
+        ),
+    ).agg(num_cool=_.count())
+
+
+@tpc_test("ds")
 def test_89(item, store_sales, date_dim, store):
     return (
         item.join(store_sales, [("i_item_sk", "ss_item_sk")])
