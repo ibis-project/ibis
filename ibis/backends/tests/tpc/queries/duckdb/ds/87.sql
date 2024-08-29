@@ -1,4 +1,4 @@
-SELECT count(*)
+SELECT count(*) num_cool
 FROM ((SELECT DISTINCT c_last_name,
                          c_first_name,
                          d_date
