@@ -3213,6 +3213,37 @@ def test_63(item, store_sales, date_dim, store):
     )
 
 
+@tpc_test("ds", result_is_empty=True)
+def test_65(store, item, store_sales, date_dim):
+    sa = (
+        store_sales.join(
+            date_dim.filter(_.d_month_seq.between(1176, 1176 + 11)),
+            [("ss_sold_date_sk", "d_date_sk")],
+        )
+        .group_by(_.ss_store_sk, _.ss_item_sk)
+        .agg(revenue=_.ss_sales_price.sum())
+    )
+    sb = sa.group_by(_.ss_store_sk).agg(ave=_.revenue.mean())
+    sc = sa.view()
+    return (
+        sb.join(sc, ["ss_store_sk", sc.revenue <= 0.1 * sb.ave])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .select(
+            _.s_store_name,
+            _.i_item_desc,
+            sc.revenue,
+            _.i_current_price,
+            _.i_wholesale_cost,
+            _.i_brand,
+        )
+        .order_by(
+            _.s_store_name.asc(nulls_first=True), _.i_item_desc.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
 @tpc_test("ds")
 @pytest.mark.notyet(
     ["clickhouse"],
