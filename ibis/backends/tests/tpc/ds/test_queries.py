@@ -1912,11 +1912,6 @@ def test_37(item, inventory, date_dim, catalog_sales):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=AssertionError,
-    reason="clickhouse returns an incorrect result for this query",
-)
 def test_38(store_sales, catalog_sales, web_sales, date_dim, customer):
     dates = date_dim.filter(_.d_month_seq.between(1200, 1200 + 11))
     columns = "c_last_name", "c_first_name", "d_date"
