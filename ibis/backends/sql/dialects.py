@@ -9,7 +9,6 @@ import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
-    ClickHouse,
     Hive,
     MySQL,
     Oracle,
@@ -19,15 +18,27 @@ from sqlglot.dialects import (
     SQLite,
     Trino,
 )
+from sqlglot.dialects import ClickHouse as _ClickHouse
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.helper import find_new_name, seq_get
 
-ClickHouse.Generator.TRANSFORMS |= {
-    sge.ArraySize: rename_func("length"),
-    sge.ArraySort: rename_func("arraySort"),
-    sge.LogicalAnd: rename_func("min"),
-    sge.LogicalOr: rename_func("max"),
-}
+
+class ClickHouse(_ClickHouse):
+    class Generator(_ClickHouse.Generator):
+        _ClickHouse.Generator.TRANSFORMS |= {
+            sge.ArraySize: rename_func("length"),
+            sge.ArraySort: rename_func("arraySort"),
+            sge.LogicalAnd: rename_func("min"),
+            sge.LogicalOr: rename_func("max"),
+        }
+
+        def except_op(self, expression: sge.Except) -> str:
+            return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+
+        def intersect_op(self, expression: sge.Intersect) -> str:
+            return (
+                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+            )
 
 
 class DataFusion(Postgres):
