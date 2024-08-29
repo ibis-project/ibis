@@ -1637,6 +1637,16 @@ class SQLGlotCompiler(abc.ABC):
         # generate the SQL string
         return parsed.sql(dialect)
 
+    def _make_sample_backwards_compatible(self, *, sample, parent):
+        # sample was changed to be owned by the table being sampled in 25.17.0
+        #
+        # this is a small workaround for backwards compatibility
+        if "this" in sample.__class__.arg_types:
+            sample.args["this"] = parent
+        else:
+            parent.args["sample"] = sample
+        return sg.select(STAR).from_(parent)
+
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to
 # autogenerate the base class implementations as well.

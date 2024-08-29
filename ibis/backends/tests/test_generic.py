@@ -2196,6 +2196,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         ),
     ],
 )
+@pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
 def test_sample(backend, method):
     t = backend.functional_alltypes.filter(_.int_col >= 2)
 

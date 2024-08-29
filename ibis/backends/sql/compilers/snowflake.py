@@ -761,12 +761,11 @@ $$""",
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArrayMap(self, op, *, arg, param, body):
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
