@@ -4591,6 +4591,40 @@ def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
 
 
 @tpc_test("ds")
+def test_95(web_sales, date_dim, customer_address, web_site, web_returns):
+    ws1 = web_sales.view()
+    ws2 = web_sales.view()
+    ws_wh = ws1.join(
+        ws2, ["ws_order_number", ws1.ws_warehouse_sk != ws2.ws_warehouse_sk]
+    ).select(ws1.ws_order_number, wh1=ws1.ws_warehouse_sk, wh2=ws2.ws_warehouse_sk)
+    return (
+        web_sales.join(date_dim, [("ws_ship_date_sk", "d_date_sk")])
+        .join(customer_address, [("ws_ship_addr_sk", "ca_address_sk")])
+        .join(web_site, [("ws_web_site_sk", "web_site_sk")])
+        .filter(
+            _.d_date.between(date("1999-02-01"), date("1999-04-02")),
+            _.ca_state == "IL",
+            _.web_company_name == "pri",
+            _.ws_order_number.isin(ws_wh.ws_order_number),
+            _.ws_order_number.isin(
+                web_returns.join(
+                    ws_wh, [("wr_order_number", "ws_order_number")]
+                ).wr_order_number
+            ),
+        )
+        .agg(
+            [
+                _.ws_order_number.nunique().name("order count"),
+                _.ws_ext_ship_cost.sum().name("total shipping cost"),
+                _.ws_net_profit.sum().name("total net profit"),
+            ]
+        )
+        .order_by(_[0])
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 def test_96(store_sales, household_demographics, time_dim, store):
     return (
         store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
