@@ -4353,7 +4353,7 @@ def test_85(
     date_dim,
     reason,
 ):
-    cd1 = customer_demographics.view()
+    cd1 = customer_demographics
     cd2 = customer_demographics.view()
     return (
         web_sales.join(
@@ -4366,8 +4366,8 @@ def test_85(
         .join(customer_address, [("wr_refunded_addr_sk", "ca_address_sk")])
         .join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
         .join(reason, [("wr_reason_sk", "r_reason_sk")])
-        .filter(_.d_year == 2000)
         .filter(
+            _.d_year == 2000,
             (
                 (cd1.cd_marital_status == "M")
                 & (cd1.cd_marital_status == cd2.cd_marital_status)
@@ -4388,33 +4388,32 @@ def test_85(
                 & (cd1.cd_education_status == "2 yr Degree")
                 & (cd1.cd_education_status == cd2.cd_education_status)
                 & _.ws_sales_price.between(150.00, 200.00)
-            )
-        )
-        .filter(
+            ),
             (
                 (_.ca_country == "United States")
-                & (_.ca_state.isin(["IN", "OH", "NJ"]))
-                & (_.ws_net_profit.between(100, 200))
+                & _.ca_state.isin(["IN", "OH", "NJ"])
+                & _.ws_net_profit.between(100, 200)
             )
             | (
                 (_.ca_country == "United States")
-                & (_.ca_state.isin(["WI", "CT", "KY"]))
-                & (_.ws_net_profit.between(150, 300))
+                & _.ca_state.isin(["WI", "CT", "KY"])
+                & _.ws_net_profit.between(150, 300)
             )
             | (
                 (_.ca_country == "United States")
-                & (_.ca_state.isin(["LA", "IA", "AR"]))
+                & _.ca_state.isin(["LA", "IA", "AR"])
                 & _.ws_net_profit.between(50, 250)
-            )
+            ),
         )
-        .mutate(r_reason_desc=_.r_reason_desc[:20])
         .group_by(_.r_reason_desc)
         .agg(
             avg1=_.ws_quantity.mean(),
             avg2=_.wr_refunded_cash.mean(),
-            wr_fee=_.wr_fee.mean(),
+            avg3=_.wr_fee.mean(),
         )
-        .order_by(_.r_reason_desc, _.avg1, _.avg2, _.wr_fee)
+        .select(s.startswith("avg"), short_reason_desc=_.r_reason_desc[:20])
+        .relocate(_.short_reason_desc)
+        .order_by(s.all())
         .limit(100)
     )
 
