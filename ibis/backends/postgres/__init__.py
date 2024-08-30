@@ -226,8 +226,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         >>> import getpass
         >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
-        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", getpass.getuser())
-        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD")
+        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", "postgres")
+        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD", "postgres")
         >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
         >>> con = ibis.postgres.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
