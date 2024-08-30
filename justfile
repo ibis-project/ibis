@@ -95,7 +95,7 @@ test +backends:
 # run doctests
 doctest *args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
 
     if [ -n "${CI}" ]; then
         runner=(poetry run pytest)
