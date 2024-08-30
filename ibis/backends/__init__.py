@@ -50,12 +50,11 @@ class TablesAccessor(collections.abc.Mapping):
         self, method_name: str, database=None, like=None
     ) -> list[str]:
         """Executes method if it exists and it doesn't raise a NotImplementedError, else returns an empty list."""
-        method = getattr(self._backend.ddl, method_name)
-        if callable(method):
-            try:
-                return method(database=database, like=like)
-            except NotImplementedError:
-                pass
+        try:
+            method = getattr(self._backend.ddl, method_name)
+            return method(database=database, like=like)
+        except NotImplementedError:
+            pass
         return []
 
     def _gather_tables(self, database=None, like=None) -> list[str]:
@@ -129,11 +128,13 @@ class DDLAccessor:
         self._backend = backend
 
     def _raise_if_not_implemented(self, method_name: str):
-        method = getattr(self._backend, method_name)
-        if not callable(method):
-            raise NotImplementedError(
-                f"The method {method_name} is not implemented for the {self._backend.name} backend"
-            )
+        try:
+            getattr(self._backend, method_name)
+        except AttributeError as e:
+            if f"has no attribute '{method_name}'" in str(e):
+                raise NotImplementedError(
+                    f"The method {method_name} is not implemented for the {self._backend.name} backend"
+                )
 
     def list_tables(
         self, like: str | None = None, database: tuple[str, str] | str | None = None
