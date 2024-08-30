@@ -4303,6 +4303,58 @@ def test_82(item, inventory, date_dim, store_sales):
 
 
 @tpc_test("ds")
+def test_83(store_returns, item, date_dim, catalog_returns, web_returns):
+    def items(returns, *, prefix):
+        dates = tuple(map(date, ("2000-06-30", "2000-09-27", "2000-11-17")))
+        return (
+            returns.join(item, [(f"{prefix}_item_sk", "i_item_sk")])
+            .join(
+                date_dim.filter(
+                    _.d_date.isin(
+                        date_dim.filter(
+                            _.d_week_seq.isin(
+                                date_dim.filter(_.d_date.isin(dates)).d_week_seq
+                            )
+                        ).d_date
+                    )
+                ),
+                [(f"{prefix}_returned_date_sk", "d_date_sk")],
+            )
+            .group_by(item_id=_.i_item_id)
+            .agg(_[f"{prefix}_return_quantity"].sum().name(f"{prefix}_item_qty"))
+        )
+
+    sr_items = items(store_returns, prefix="sr")
+    return (
+        sr_items.join(items(catalog_returns, prefix="cr"), "item_id")
+        .join(items(web_returns, prefix="wr"), "item_id")
+        .select(
+            sr_items.item_id,
+            sr_item_qty=_.sr_item_qty,
+            sr_dev=(_.sr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            cr_item_qty=_.cr_item_qty,
+            cr_dev=(_.cr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            wr_item_qty=_.wr_item_qty,
+            wr_dev=(_.wr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            average=(_.sr_item_qty + _.cr_item_qty + _.wr_item_qty) / 3.0,
+        )
+        .order_by(
+            sr_items.item_id.asc(nulls_first=True), _.sr_item_qty.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 def test_84(
     customer,
     customer_address,
