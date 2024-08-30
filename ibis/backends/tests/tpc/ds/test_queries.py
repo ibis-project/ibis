@@ -4344,6 +4344,82 @@ def test_84(
 
 
 @tpc_test("ds")
+def test_85(
+    web_sales,
+    web_returns,
+    web_page,
+    customer_demographics,
+    customer_address,
+    date_dim,
+    reason,
+):
+    cd1 = customer_demographics.view()
+    cd2 = customer_demographics.view()
+    return (
+        web_sales.join(
+            web_returns,
+            [("ws_item_sk", "wr_item_sk"), ("ws_order_number", "wr_order_number")],
+        )
+        .join(web_page, [("ws_web_page_sk", "wp_web_page_sk")])
+        .join(cd1, [("wr_refunded_cdemo_sk", "cd_demo_sk")])
+        .join(cd2, [("wr_returning_cdemo_sk", "cd_demo_sk")])
+        .join(customer_address, [("wr_refunded_addr_sk", "ca_address_sk")])
+        .join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .join(reason, [("wr_reason_sk", "r_reason_sk")])
+        .filter(_.d_year == 2000)
+        .filter(
+            (
+                (cd1.cd_marital_status == "M")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "Advanced Degree")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & (_.ws_sales_price.between(100.00, 150.00))
+            )
+            | (
+                (cd1.cd_marital_status == "S")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "College")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & (_.ws_sales_price.between(50.00, 100.00))
+            )
+            | (
+                (cd1.cd_marital_status == "W")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "2 yr Degree")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & _.ws_sales_price.between(150.00, 200.00)
+            )
+        )
+        .filter(
+            (
+                (_.ca_country == "United States")
+                & (_.ca_state.isin(["IN", "OH", "NJ"]))
+                & (_.ws_net_profit.between(100, 200))
+            )
+            | (
+                (_.ca_country == "United States")
+                & (_.ca_state.isin(["WI", "CT", "KY"]))
+                & (_.ws_net_profit.between(150, 300))
+            )
+            | (
+                (_.ca_country == "United States")
+                & (_.ca_state.isin(["LA", "IA", "AR"]))
+                & _.ws_net_profit.between(50, 250)
+            )
+        )
+        .mutate(r_reason_desc=_.r_reason_desc[:20])
+        .group_by(_.r_reason_desc)
+        .agg(
+            avg1=_.ws_quantity.mean(),
+            avg2=_.wr_refunded_cash.mean(),
+            wr_fee=_.wr_fee.mean(),
+        )
+        .order_by(_.r_reason_desc, _.avg1, _.avg2, _.wr_fee)
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
 @pytest.mark.notyet(
     ["trino"],
     raises=TrinoUserError,
