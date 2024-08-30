@@ -157,7 +157,10 @@ def test_list_tables(ddl_con):
 
     assert table_name not in ddl_con.ddl.list_views()
     assert table_name not in ddl_con.ddl.list_temp_tables()
-    assert table_name not in ddl_con.ddl.list_temp_views()
+    try:
+        assert table_name not in ddl_con.ddl.list_temp_views()
+    except NotImplementedError:  # not all backends have list_temp_views
+        return
 
 
 def test_list_views(ddl_con, temp_view):
@@ -171,7 +174,10 @@ def test_list_views(ddl_con, temp_view):
     assert temp_view in views
     assert temp_view not in ddl_con.ddl.list_tables()
     assert temp_view not in ddl_con.ddl.list_temp_tables()
-    assert temp_view not in ddl_con.ddl.list_temp_views()
+    try:
+        assert temp_view not in ddl_con.ddl.list_temp_views()
+    except NotImplementedError:  # not all backends have list_temp_views
+        return
 
 
 def test_list_temp_tables(ddl_con):
@@ -183,10 +189,14 @@ def test_list_temp_tables(ddl_con):
     assert isinstance(temp_tables, list)
     assert temp_table_name in temp_tables
     assert temp_table_name not in ddl_con.ddl.list_views()
-    assert temp_table_name not in ddl_con.ddl.list_temp_views()
     assert temp_table_name not in ddl_con.ddl.list_tables()
+    try:
+        assert temp_table_name not in ddl_con.ddl.list_temp_views()
+    except NotImplementedError:  # not all backends have list_temp_views
+        return
 
 
+@pytest.mark.never("mysql", reason="mysql does not support temporary views")
 def test_list_temp_views(ddl_con):
     # TODO: replace raw_sql with create_temp
 

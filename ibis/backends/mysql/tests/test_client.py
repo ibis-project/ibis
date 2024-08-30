@@ -234,13 +234,13 @@ def test_list_tables_schema_warning_refactor(con):
         "event",
         "func",
     }
-    assert con.list_tables()
+    assert con.tables
 
     with pytest.warns(FutureWarning):
         assert mysql_tables.issubset(con.list_tables(schema="mysql"))
 
-    assert mysql_tables.issubset(con.list_tables(database="mysql"))
-    assert mysql_tables.issubset(con.list_tables(database=("mysql",)))
+    assert mysql_tables.issubset(con.ddl.list_tables(database="mysql"))
+    assert mysql_tables.issubset(con.ddl.list_tables(database=("mysql",)))
 
 
 def test_invalid_port():

@@ -24,7 +24,8 @@ from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, TRUE, C
+from ibis.backends.sql.compilers.base import STAR, C
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -289,79 +290,95 @@ class Backend(SQLBackend, CanCreateDatabase):
             con.commit()
             return cursor
 
+    def _list_query_constructor(self, col: str, where_predicates: list) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col)
+            .from_(sg.table("tables", db="information_schema"))
+            .where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+    ) -> list[str]:
+        """Generic method to list objects like tables or views."""
+
+        table_loc = self._warn_and_create_table_loc(database)
+
+        ## having an issue as it seem mysql doesn't have a self.current_catalog
+        ## not clear to me why, my guess is it doesn't support catalogs but unclear
+        # catalog = table_loc.catalog or self.current_catalog
+        database = table_loc.db or self.current_database
+
+        col = "table_name"
+        where_predicates = [
+            # C.table_catalog.eq(sge.convert(catalog)),
+            C.table_schema.eq(sge.convert(database)),
+            C.table_type.eq(object_type),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates)
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "BASE TABLE")
+
+    def _list_temp_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary tables."""
+
+        return self._list_objects(like, database, "TEMPORARY")
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "VIEW")
+
     # TODO: disable positional arguments
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
         schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the tables and views in the database."""
+        table_loc = self._warn_and_create_table_loc(database, schema)
 
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
+        database = self.current_database
+        if table_loc is not None:
+            database = table_loc.db or database
 
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
-
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        schema
-            [deprecated] The schema to perform the list against.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database (`self.current_database`).
-        """
-        if schema is not None:
-            self._warn_schema()
-
-        if schema is not None and database is not None:
-            raise ValueError(
-                "Using both the `schema` and `database` kwargs is not supported. "
-                "`schema` is deprecated and will be removed in Ibis 10.0"
-                "\nUse the `database` kwarg with one of the following patterns:"
-                '\ndatabase="database"'
-                '\ndatabase=("catalog", "database")'
-                '\ndatabase="catalog.database"',
-            )
-        elif schema is not None:
-            table_loc = schema
-        elif database is not None:
-            table_loc = database
-        else:
-            table_loc = self.current_database
-
-        table_loc = self._to_sqlglot_table(table_loc)
-
-        conditions = [TRUE]
-
-        if (sg_cat := table_loc.args["catalog"]) is not None:
-            sg_cat.args["quoted"] = False
-        if (sg_db := table_loc.args["db"]) is not None:
-            sg_db.args["quoted"] = False
-        if table_loc.catalog or table_loc.db:
-            conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
-
-        col = "table_name"
-        sql = (
-            sg.select(col)
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(*conditions)
-            .sql(self.name)
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_temp_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
         )
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
-
-        return self._filter_with_like(map(itemgetter(0), out), like)
+        return tables_and_views
 
     def execute(
         self, expr: ir.Expr, limit: str | None = "default", **kwargs: Any
@@ -480,7 +497,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             )
 
         # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
+        if (name := op.name) not in self.tables:
             quoted = self.compiler.quoted
             column_defs = [
                 sg.exp.ColumnDef(
