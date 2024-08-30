@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import calendar as cal
-from operator import itemgetter
+from operator import ge, itemgetter, lt
 from pathlib import Path
 
 import pytest
@@ -4562,6 +4562,41 @@ def test_87(store_sales, date_dim, customer, catalog_sales, web_sales):
             customer_sk="ws_bill_customer_sk",
         ),
     ).agg(num_cool=_.count())
+
+
+@tpc_test("ds")
+def test_88(store_sales, household_demographics, time_dim, store):
+    def s(hour, fn, minute):
+        if fn is ge:
+            name = f"h{hour:d}_{minute:d}_to_{hour + 1:d}"
+        else:
+            name = f"h{hour:d}_to_{hour:d}_{minute:d}"
+
+        return (
+            store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+            .join(time_dim, [("ss_sold_time_sk", "t_time_sk")])
+            .join(store, [("ss_store_sk", "s_store_sk")])
+            .filter(
+                _.t_hour == hour,
+                fn(_.t_minute, minute),
+                ((_.hd_dep_count == 4) & (_.hd_vehicle_count <= 4 + 2))
+                | ((_.hd_dep_count == 2) & (_.hd_vehicle_count <= 2 + 2))
+                | ((_.hd_dep_count == 0) & (_.hd_vehicle_count <= 0 + 2)),
+                _.s_store_name == "ese",
+            )
+            .agg(_.count().name(name))
+        )
+
+    return (
+        s(8, ge, 30)
+        .cross_join(s(9, lt, 30))
+        .cross_join(s(9, ge, 30))
+        .cross_join(s(10, lt, 30))
+        .cross_join(s(10, ge, 30))
+        .cross_join(s(11, lt, 30))
+        .cross_join(s(11, ge, 30))
+        .cross_join(s(12, lt, 30))
+    )
 
 
 @tpc_test("ds")
