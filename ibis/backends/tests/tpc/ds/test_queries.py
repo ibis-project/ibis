@@ -3341,6 +3341,12 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     )
 
 
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@tpc_test("ds")
+def test_67(store_sales, date_dim, store, item):
+    raise NotImplementedError()
+
+
 @tpc_test("ds")
 def test_68(
     store_sales, date_dim, store, household_demographics, customer_address, customer
@@ -4279,6 +4285,54 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
             ibis.asc("profit", nulls_first=True),
             "ss_ticket_number",
         )
+        .limit(100)
+    )
+
+
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
+@tpc_test("ds")
+def test_81(catalog_returns, date_dim, customer_address, customer):
+    customer_total_return = (
+        catalog_returns.join(date_dim, [("cr_returned_date_sk", "d_date_sk")])
+        .join(customer_address, [("cr_returning_addr_sk", "ca_address_sk")])
+        .filter(_.d_year == 2000)
+        .group_by(ctr_customer_sk=_.cr_returning_customer_sk, ctr_state=_.ca_state)
+        .agg(ctr_total_return=_.cr_return_amt_inc_tax.sum())
+    )
+    ctr2 = customer_total_return.view()
+    return (
+        customer_total_return.join(customer, [("ctr_customer_sk", "c_customer_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            lambda ctr1: ctr1.ctr_total_return
+            > (
+                ctr2.filter(ctr1.ctr_state == _.ctr_state).ctr_total_return.mean() * 1.2
+            ).as_scalar(),
+            _.ca_state == "GA",
+        )
+        .select(
+            _.c_customer_id,
+            _.c_salutation,
+            _.c_first_name,
+            _.c_last_name,
+            _.ca_street_number,
+            _.ca_street_name,
+            _.ca_street_type,
+            _.ca_suite_number,
+            _.ca_city,
+            _.ca_county,
+            _.ca_state,
+            _.ca_zip,
+            _.ca_country,
+            _.ca_gmt_offset,
+            _.ca_location_type,
+            _.ctr_total_return,
+        )
+        .order_by(s.all())
         .limit(100)
     )
 
