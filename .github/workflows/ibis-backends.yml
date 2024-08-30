@@ -502,7 +502,7 @@ jobs:
           IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
 
       - name: "run backend doctests: ${{ matrix.backend.name }}"
-        run: just backend-doctests ${{ matrix.backend.name }} "poetry run"
+        run: just backend-doctests ${{ matrix.backend.name }}
         env:
           FLINK_REMOTE_CLUSTER_ADDR: localhost
           FLINK_REMOTE_CLUSTER_PORT: "8081"
