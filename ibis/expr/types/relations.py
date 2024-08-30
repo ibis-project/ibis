@@ -4900,7 +4900,8 @@ class CachedTable(Table):
     def release(self):
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
-        return current_backend._finalize_cached_table(self.op().name)
+        if isinstance(op := self.op(), ops.PhysicalTable):
+            current_backend._finalize_cached_table(op.name)
 
 
 public(Table=Table, CachedTable=CachedTable)

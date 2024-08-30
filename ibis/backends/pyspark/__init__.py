@@ -721,6 +721,25 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         t.unpersist()
         assert not t.is_cached
 
+    def _should_cache_physical_table(self, op: ops.PhysicalTable) -> bool:
+        if isinstance(op, (ops.DatabaseTable, ops.UnboundTable)):
+            # Cache temp views since they're used for `read_csv`/`read_parquet`
+            # and may point to remote data, don't cache anything else.
+            sql = (
+                f"SHOW VIEWS IN {op.namespace.database}"
+                if op.namespace.database
+                else "SHOW VIEWS"
+            )
+            with self._active_catalog(op.namespace.catalog):
+                for view in self._session.sql(sql).collect():
+                    if view.viewName == op.name:
+                        # already cached tables are also exposed as temp views,
+                        # check the view isn't backed by the cache
+                        return (
+                            view.isTemporary and op.name not in self._cached_dataframes
+                        )
+        return False
+
     def read_delta(
         self,
         path: str | Path,

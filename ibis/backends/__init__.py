@@ -805,17 +805,22 @@ class CacheHandler:
             Cached table
         """
         entry = self._cache_op_to_entry.get(table.op())
-        if entry is None or (cached_op := entry.cached_op_ref()) is None:
-            cached_op = self._create_cached_table(util.gen_name("cached"), table).op()
-            entry = CacheEntry(
-                table.op(),
-                weakref.ref(cached_op),
-                weakref.finalize(
-                    cached_op, self._finalize_cached_table, cached_op.name
-                ),
-            )
-            self._cache_op_to_entry[table.op()] = entry
-            self._cache_name_to_entry[cached_op.name] = entry
+        if entry is not None and (cached_op := entry.cached_op_ref()) is not None:
+            # Entry was already cached
+            return ir.CachedTable(cached_op)
+
+        if not self._should_cache_table_expr(table):
+            # Expression isn't worth caching, no-op
+            return ir.CachedTable(table.op())
+
+        cached_op = self._create_cached_table(util.gen_name("cached"), table).op()
+        entry = CacheEntry(
+            table.op(),
+            weakref.ref(cached_op),
+            weakref.finalize(cached_op, self._finalize_cached_table, cached_op.name),
+        )
+        self._cache_op_to_entry[table.op()] = entry
+        self._cache_name_to_entry[cached_op.name] = entry
         return ir.CachedTable(cached_op)
 
     def _finalize_cached_table(self, name: str) -> None:
@@ -837,6 +842,31 @@ class CacheHandler:
                 # suppress exceptions during interpreter shutdown
                 if not sys.is_finalizing():
                     raise
+
+    def _should_cache_table_expr(self, expr: ir.Table) -> bool:
+        """Checks if a given table expression is worth caching."""
+        op = expr.op()
+
+        # Don't cache if an expression is a column subselection of a physical table.
+        while isinstance(op, (ops.Project, ops.DropColumns)):
+            if isinstance(op, ops.Project) and not all(
+                isinstance(v, ops.Field) for v in op.values.values()
+            ):
+                return True
+            op = op.parent
+
+        return not isinstance(
+            op, ops.PhysicalTable
+        ) or self._should_cache_physical_table(op)
+
+    def _should_cache_physical_table(self, op: ops.PhysicalTable) -> bool:
+        """Check whether a PhysicalTable node is worth caching.
+
+        By default we don't cache any PhysicalTable ops. Some backends need
+        to override this method to allow for caching of tables backed by
+        potentially expensive IO (e.g. a TEMP VIEW backed by data on S3).
+        """
+        return False
 
     def _create_cached_table(self, name: str, expr: ir.Table) -> ir.Table:
         return self.create_table(name, expr, schema=expr.schema(), temp=True)
