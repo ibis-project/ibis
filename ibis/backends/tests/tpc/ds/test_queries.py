@@ -4359,6 +4359,31 @@ def test_86(web_sales, date_dim, item):
 
 
 @tpc_test("ds")
+def test_87(store_sales, date_dim, customer, catalog_sales, web_sales):
+    store = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .filter(_.d_month_seq.between(1200, 1200 + 11))
+        .select(_.c_last_name, _.c_first_name, _.d_date)
+        .distinct()
+    )
+
+    catalog = (
+        catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+        .join(customer, [("cs_bill_customer_sk", "c_customer_sk")])
+        .select(_.c_last_name, _.c_first_name, _.d_date)
+    )
+
+    web = (
+        web_sales.join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .join(customer, [("ws_bill_customer_sk", "c_customer_sk")])
+        .select(_.c_last_name, _.c_first_name, _.d_date)
+    )
+
+    return store.difference(catalog.union(web)).agg(_.count().name("cnt"))
+
+
+@tpc_test("ds")
 def test_89(item, store_sales, date_dim, store):
     return (
         item.join(store_sales, [("i_item_sk", "ss_item_sk")])
