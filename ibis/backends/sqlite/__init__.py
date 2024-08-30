@@ -79,8 +79,15 @@ class Backend(SQLBackend, UrlFromPath):
         Examples
         --------
         >>> import ibis
-        >>> ibis.sqlite.connect("path/to/my/sqlite.db")
-
+        >>> con = ibis.sqlite.connect()
+        >>> t = con.create_table("my_table", schema=ibis.schema(dict(x="int64")))
+        >>> con.insert("my_table", obj=[(1,), (2,), (3,)])
+        >>> t
+        DatabaseTable: my_table
+          x int64
+        >>> t.head(1).execute()
+           x
+        0  1
         """
         _init_sqlite3()
 
@@ -417,11 +424,11 @@ class Backend(SQLBackend, UrlFromPath):
 
         Examples
         --------
-        >>> con1 = ibis.sqlite.connect("original.db")
-        >>> con2 = ibis.sqlite.connect("new.db")
-        >>> con1.attach("new", "new.db")
+        >>> con1 = ibis.sqlite.connect("/tmp/original.db")
+        >>> con2 = ibis.sqlite.connect("/tmp/new.db")
+        >>> con1.attach("new", "/tmp/new.db")
         >>> con1.list_tables(database="new")
-
+        []
         """
         with self.begin() as cur:
             cur.execute(f"ATTACH DATABASE {str(path)!r} AS {_quote(name)}")
