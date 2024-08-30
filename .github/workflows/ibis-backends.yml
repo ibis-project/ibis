@@ -485,6 +485,20 @@ jobs:
         if: matrix.backend.name == 'sqlite'
         run: poetry run python -c 'import sqlite3; print(sqlite3.sqlite_version)'
 
+      - name: "run backend doctests: ${{ matrix.backend.name }}"
+        run: |
+          files=()
+          for file in ibis/backends/${{ matrix.backend.name }}/*.py; do
+            if grep -Pv '.*test.+\.py' <<< "${file}"; then
+              files+=("${file}")
+            fi
+          done
+          poetry run pytest --doctest-modules "${files[@]}"
+        env:
+          FLINK_REMOTE_CLUSTER_ADDR: localhost
+          FLINK_REMOTE_CLUSTER_PORT: "8081"
+          IBIS_EXAMPLES_DATA: ${{ runner.temp }}/examples-${{ matrix.backend.name }}-${{ matrix.os }}-${{ steps.install_python.outputs.python-version }}
+
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
