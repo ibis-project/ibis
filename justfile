@@ -99,8 +99,14 @@ doctest *args:
         runner=(python -m)
     fi
 
+    if [ -n "${CI}" ]; then
+        runner=(poetry run pytest)
+    else
+        runner=(pytest)
+    fi
+
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-    "${runner[@]}" pytest --doctest-modules {{ args }} $(
+    "${runner[@]}" --doctest-modules {{ args }} $(
       find \
         ibis \
         -wholename '*.py' \
