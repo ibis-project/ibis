@@ -225,7 +225,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         Examples
         --------
         >>> import os
-        >>> import getpass
         >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
         >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", "postgres")
