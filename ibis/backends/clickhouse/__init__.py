@@ -144,7 +144,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> client = ibis.clickhouse.connect()
         >>> client
         <ibis.backends.clickhouse.Backend object at 0x...>
-
         """
         if settings is None:
             settings = {}
