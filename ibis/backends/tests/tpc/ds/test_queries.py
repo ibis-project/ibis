@@ -4289,6 +4289,11 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
     )
 
 
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
 @tpc_test("ds")
 def test_81(catalog_returns, date_dim, customer_address, customer):
     customer_total_return = (
