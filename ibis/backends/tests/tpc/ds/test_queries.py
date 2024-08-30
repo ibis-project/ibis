@@ -4292,7 +4292,7 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
 @tpc_test("ds")
 @pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 def test_80(
-    stores_sales,
+    store_sales,
     store_returns,
     store,
     catalog_sales,
