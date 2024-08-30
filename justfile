@@ -59,6 +59,17 @@ check *args:
 ci-check *args:
     poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
 
+# run backend doctests
+backend-doctests backend runner="python -m":
+    #!/usr/bin/env bash
+    files=()
+    for file in ibis/backends/{{ backend }}/*.py; do
+      if grep -qPv '.*test.+\.py' <<< "${file}"; then
+        files+=("${file}")
+      fi
+    done
+    {{ runner }} pytest --doctest-modules "${files[@]}"
+
 # lint code
 lint:
     ruff format -q . --check
