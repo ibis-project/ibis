@@ -95,9 +95,25 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         Examples
         --------
         >>> import ibis
-        >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
-        >>> ibis.datafusion.connect(config)
-
+        >>> config = {
+        ...     "astronauts": "ci/ibis-testing-data/parquet/astronauts.parquet",
+        ...     "diamonds": "ci/ibis-testing-data/csv/diamonds.csv",
+        ... }
+        >>> con = ibis.datafusion.connect(config)
+        >>> con.list_tables()
+        ['astronauts', 'diamonds']
+        >>> con.table("diamonds")
+        DatabaseTable: diamonds
+          carat   float64
+          cut     string
+          color   string
+          clarity string
+          depth   float64
+          table   float64
+          price   int64
+          x       float64
+          y       float64
+          z       float64
         """
         if isinstance(config, SessionContext):
             (self.con, config) = (config, None)
@@ -123,7 +139,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             config = {}
 
         for name, path in config.items():
-            self.register(path, table_name=name)
+            self._register(path, table_name=name)
 
     @util.experimental
     @classmethod
@@ -302,8 +318,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             sg.select("table_name")
             .from_("information_schema.tables")
             .where(sg.column("table_schema").eq(sge.convert(database)))
+            .order_by("table_name")
         )
-        return self.raw_sql(query).to_pydict()["table_name"]
+        return self._filter_with_like(
+            self.raw_sql(query).to_pydict()["table_name"], like
+        )
 
     def get_schema(
         self,
@@ -330,6 +349,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
     )
     def register(
+        self,
+        source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
+        return self._register(source, table_name, **kwargs)
+
+    def _register(
         self,
         source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
         table_name: str | None = None,
