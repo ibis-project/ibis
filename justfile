@@ -98,12 +98,6 @@ doctest *args:
     set -eo pipefail
 
     if [ -n "${CI}" ]; then
-        runner=(poetry run)
-    else
-        runner=(python -m)
-    fi
-
-    if [ -n "${CI}" ]; then
         runner=(poetry run pytest)
     else
         runner=(pytest)
