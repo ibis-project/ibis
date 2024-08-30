@@ -4289,6 +4289,25 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
     )
 
 
+@tpc_test("ds")
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+def test_80(
+    stores_sales,
+    store_returns,
+    store,
+    catalog_sales,
+    catalog_returns,
+    catalog_page,
+    web_sales,
+    web_returns,
+    web_site,
+    date_dim,
+    item,
+    promotion,
+):
+    raise NotImplementedError()
+
+
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
