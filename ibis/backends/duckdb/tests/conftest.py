@@ -120,7 +120,7 @@ class TestConf(BackendTest):
             # duckdb automatically infers the sf= as a hive partition so we
             # need to disable it
             con.con.execute(
-                f"CREATE OR REPLACE VIEW {schema}.{table_name} AS "
+                f"CREATE TABLE IF NOT EXISTS {schema}.{table_name} AS "
                 f"FROM read_parquet({str(path)!r}, hive_partitioning=false)"
             )
 

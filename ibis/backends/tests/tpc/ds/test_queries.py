@@ -3209,14 +3209,6 @@ def test_63(item, store_sales, date_dim, store):
 
 
 @tpc_test("ds", result_is_empty=True)
-@pytest.mark.notyet(
-    ["duckdb"],
-    reason=(
-        "This query times out on DuckDB _only_ when run via pytest. "
-        "No, we have no idea why this happens."
-    ),
-    strict=False,
-)
 def test_64(
     catalog_sales,
     catalog_returns,
