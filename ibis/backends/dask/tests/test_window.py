@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from operator import methodcaller
 
 import dask.dataframe as dd
@@ -500,27 +499,3 @@ def test_window_on_and_by_key_as_window_input(t, df):
         t[control].count().over(row_window).execute(),
         check_names=False,
     )
-
-
-@pytest.fixture
-def events(npartitions) -> dd.DataFrame:
-    df = pd.DataFrame(
-        {
-            "event_id": [1] * 4 + [2] * 6 + [3] * 2,
-            "measured_on": map(
-                pd.Timestamp,
-                map(
-                    date,
-                    [2021] * 12,
-                    [6] * 4 + [5] * 6 + [7] * 2,
-                    range(1, 13),
-                ),
-            ),
-            "measurement": np.nan,
-        }
-    )
-    df.at[1, "measurement"] = 5.0
-    df.at[4, "measurement"] = 42.0
-    df.at[5, "measurement"] = 42.0
-    df.at[7, "measurement"] = 11.0
-    return dd.from_pandas(df, npartitions=npartitions)

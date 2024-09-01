@@ -167,16 +167,6 @@ def test_drop_view(con, created_view):
 
 
 @pytest.fixture
-def table(con, temp_database):
-    table_name = f"table_{util.guid()}"
-    schema = ibis.schema([("foo", "string"), ("bar", "int64")])
-    yield con.create_table(
-        table_name, database=temp_database, schema=schema, format="parquet"
-    )
-    con.drop_table(table_name, database=temp_database)
-
-
-@pytest.fixture
 def keyword_t(con):
     yield "distinct"
     con.drop_table("distinct")

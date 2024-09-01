@@ -5579,6 +5579,20 @@ pytest = ">=4.6"
 testing = ["fields", "hunter", "process-tests", "pytest-xdist", "virtualenv"]
 
 [[package]]
+name = "pytest-deadfixtures"
+version = "2.2.1"
+description = "A simple plugin to list unused fixtures in pytest"
+optional = false
+python-versions = "*"
+files = [
+    {file = "pytest-deadfixtures-2.2.1.tar.gz", hash = "sha256:ca15938a4e8330993ccec9c6c847383d88b3cd574729530647dc6b492daa9c1e"},
+    {file = "pytest_deadfixtures-2.2.1-py2.py3-none-any.whl", hash = "sha256:db71533f2d9456227084e00a1231e732973e299ccb7c37ab92e95032ab6c083e"},
+]
+
+[package.dependencies]
+pytest = ">=3.0.0"
+
+[[package]]
 name = "pytest-httpserver"
 version = "1.1.0"
 description = "pytest-httpserver is a httpserver for pytest"
@@ -7900,4 +7914,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "97dd493f5b047332a8e7fd1256a5087ab29f74696ecda622fd29ea8a104768b6"
+content-hash = "c103f9c7c8fd8aff126e59c9629926c3a1c2c91ea1946147b07b5fe363e4d18f"

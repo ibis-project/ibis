@@ -175,11 +175,6 @@ def functional_alltypes_schema():
 
 
 @pytest.fixture
-def batting_schema():
-    return TEST_TABLES["batting"]
-
-
-@pytest.fixture
 def csv_source_configs():
     def generate_csv_configs(csv_file):
         return {

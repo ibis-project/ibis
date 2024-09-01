@@ -80,8 +80,3 @@ def alltypes(con):
 @pytest.fixture(scope="module")
 def df(alltypes):
     return alltypes.execute()
-
-
-@pytest.fixture(scope="module")
-def intervals(con):
-    return con.table("intervals")

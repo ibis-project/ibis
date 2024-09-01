@@ -92,11 +92,6 @@ def t2(con):
 
 
 @pytest.fixture(scope="module")
-def where_uncorrelated_subquery(foo, bar):
-    return foo[foo.job.isin(bar.job)]
-
-
-@pytest.fixture(scope="module")
 def not_exists(foo_t, bar_t):
     return foo_t[-(foo_t.key1 == bar_t.key1).any()]
 

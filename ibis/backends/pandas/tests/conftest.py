@@ -278,11 +278,6 @@ def time_right(client):
 
 
 @pytest.fixture(scope="module")
-def time_table(client):
-    return client.table("time_df3")
-
-
-@pytest.fixture(scope="module")
 def time_keyed_left(client):
     return client.table("time_keyed_df1")
 

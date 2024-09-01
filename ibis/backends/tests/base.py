@@ -12,7 +12,7 @@ import pytest
 from filelock import FileLock
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator
 
     import ibis.expr.types as ir
 
@@ -306,9 +306,6 @@ class BackendTest(abc.ABC):
     @property
     def api(self):
         return self.connection
-
-    def make_context(self, params: Mapping[ir.Value, Any] | None = None):
-        return self.api.compiler.make_context(params=params)
 
     def _tpc_table(self, name: str, benchmark: Literal["h", "ds"]):
         if not getattr(self, f"supports_tpc{benchmark}"):

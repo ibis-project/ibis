@@ -15,7 +15,6 @@ from packaging.requirements import Requirement
 from packaging.version import parse as vparse
 
 import ibis
-import ibis.common.exceptions as com
 from ibis import util
 from ibis.backends import (
     CanCreateCatalog,
@@ -487,12 +486,6 @@ def udf_backend(request, data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(scope="session")
-def udf_con(udf_backend):
-    """Instance of Client, already connected to the db (if applies)."""
-    return udf_backend.connection
-
-
-@pytest.fixture(scope="session")
 def alltypes(backend):
     return backend.functional_alltypes
 
@@ -508,11 +501,6 @@ def struct(backend):
 
 
 @pytest.fixture(scope="session")
-def sorted_alltypes(alltypes):
-    return alltypes.order_by("id")
-
-
-@pytest.fixture(scope="session")
 def udf_alltypes(udf_backend):
     return udf_backend.functional_alltypes
 
@@ -525,11 +513,6 @@ def batting(backend):
 @pytest.fixture(scope="session")
 def awards_players(backend):
     return backend.awards_players
-
-
-@pytest.fixture
-def analytic_alltypes(alltypes):
-    return alltypes
 
 
 @pytest.fixture(scope="session")
@@ -560,13 +543,6 @@ def batting_df(batting):
 @pytest.fixture(scope="session")
 def awards_players_df(awards_players):
     return awards_players.execute(limit=None)
-
-
-@pytest.fixture(scope="session")
-def geo_df(geo):
-    if geo is not None:
-        return geo.execute(limit=None)
-    return None
 
 
 @pytest.fixture
@@ -621,30 +597,6 @@ def temp_view(ddl_con):
     yield name
     with contextlib.suppress(NotImplementedError):
         ddl_con.drop_view(name, force=True)
-
-
-@pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend):
-    """Create a temporary database and yield its name. Drops the created
-    database upon completion.
-
-    Parameters
-    ----------
-    ddl_con : ibis.backends.Client
-
-    Yields
-    ------
-    str
-    """
-    name = util.gen_name("database")
-    try:
-        ddl_con.create_database(name)
-    except AttributeError:
-        pytest.skip(f"{ddl_backend.name()} doesn't have a `create_database` method.")
-    yield name
-
-    with contextlib.suppress(com.UnsupportedOperationError):
-        ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

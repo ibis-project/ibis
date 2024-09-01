@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import getpass
 
 import pytest
@@ -291,23 +290,6 @@ def test_dot_sql_limit(con):
     assert len(result.columns) == 1
     assert result.columns[0].lower() == "ts"
     assert result.iat[0, 0] == "abc"
-
-
-@pytest.fixture(scope="module")
-def mem_t(con):
-    if con.name == "druid":
-        pytest.xfail("druid does not support create_table")
-
-    name = ibis.util.gen_name(con.name)
-
-    # flink only supports memtables if `temp` is True, seems like we should
-    # address that for users
-    con.create_table(
-        name, ibis.memtable({"a": list("def")}), temp=con.name == "flink" or None
-    )
-    yield name
-    with contextlib.suppress(NotImplementedError):
-        con.drop_table(name, force=True)
 
 
 @dot_sql_never
