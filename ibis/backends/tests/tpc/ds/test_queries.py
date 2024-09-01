@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import calendar as cal
 from operator import ge, itemgetter, lt
-from pathlib import Path
 
 import pytest
 
@@ -3209,6 +3208,169 @@ def test_63(item, store_sales, date_dim, store):
 
 
 @tpc_test("ds", result_is_empty=True)
+def test_64(
+    catalog_sales,
+    catalog_returns,
+    store_sales,
+    store_returns,
+    date_dim,
+    store,
+    customer,
+    customer_demographics,
+    promotion,
+    household_demographics,
+    customer_address,
+    income_band,
+    item,
+):
+    cs_ui = (
+        catalog_sales.join(
+            catalog_returns,
+            [
+                _.cs_item_sk == catalog_returns.cr_item_sk,
+                _.cs_order_number == catalog_returns.cr_order_number,
+            ],
+        )
+        .group_by(_.cs_item_sk)
+        .having(
+            _.cs_ext_list_price.sum()
+            > (
+                2
+                * (_.cr_refunded_cash + _.cr_reversed_charge + _.cr_store_credit).sum()
+            )
+        )
+        .agg(
+            sale=_.cs_ext_list_price.sum(),
+            refund=(
+                _.cr_refunded_cash + _.cr_reversed_charge + _.cr_store_credit
+            ).sum(),
+        )
+    )
+
+    d1 = date_dim.mutate(syear=_.d_year)
+    d2 = date_dim.view().mutate(fsyear=_.d_year)
+    d3 = date_dim.view().mutate(s2year=_.d_year)
+
+    cd1 = customer_demographics
+    cd2 = customer_demographics.view()
+
+    hd1 = household_demographics
+    hd2 = household_demographics.view()
+
+    ad1 = customer_address
+    ad2 = customer_address.view()
+
+    ib1 = income_band
+    ib2 = income_band.view()
+
+    cross_sales = (
+        store_sales.join(
+            store_returns,
+            [("ss_item_sk", "sr_item_sk"), ("ss_ticket_number", "sr_ticket_number")],
+        )
+        .join(cs_ui, _.ss_item_sk == cs_ui.cs_item_sk)
+        .join(customer, _.ss_customer_sk == customer.c_customer_sk)
+        .join(d1, _.ss_sold_date_sk == d1.d_date_sk)
+        .join(d2, _.c_first_sales_date_sk == d2.d_date_sk)
+        .join(d3, _.c_first_shipto_date_sk == d3.d_date_sk)
+        .join(store, _.ss_store_sk == store.s_store_sk)
+        .join(cd1, _.ss_cdemo_sk == cd1.cd_demo_sk)
+        .join(
+            cd2,
+            [
+                _.c_current_cdemo_sk == cd2.cd_demo_sk,
+                _.cd_marital_status != cd2.cd_marital_status,
+            ],
+        )
+        .join(promotion, _.ss_promo_sk == promotion.p_promo_sk)
+        .join(hd1, _.ss_hdemo_sk == hd1.hd_demo_sk)
+        .join(hd2, _.c_current_hdemo_sk == hd2.hd_demo_sk)
+        .join(ad1, _.ss_addr_sk == ad1.ca_address_sk)
+        .join(ad2, _.c_current_addr_sk == ad2.ca_address_sk)
+        .join(ib1, hd1.hd_income_band_sk == ib1.ib_income_band_sk)
+        .join(ib2, hd2.hd_income_band_sk == ib2.ib_income_band_sk)
+        .join(
+            item,
+            [
+                _.ss_item_sk == item.i_item_sk,
+                item.i_color.isin(
+                    ["purple", "burlywood", "indian", "spring", "floral", "medium"]
+                ),
+                item.i_current_price.between(64, 74),
+                item.i_current_price.between(65, 79),
+            ],
+        )
+        .group_by(
+            product_name=_.i_product_name,
+            item_sk=_.i_item_sk,
+            store_zip=_.s_zip,
+            store_name=_.s_store_name,
+            b_street_number=ad1.ca_street_number,
+            b_street_name=ad1.ca_street_name,
+            b_city=ad1.ca_city,
+            b_zip=ad1.ca_zip,
+            c_street_number=ad2.ca_street_number,
+            c_street_name=ad2.ca_street_name,
+            c_city=ad2.ca_city,
+            c_zip=ad2.ca_zip,
+            syear=_.syear,
+            fsyear=_.fsyear,
+            s2year=_.s2year,
+        )
+        .agg(
+            cnt=_.count(),
+            s1=_.ss_wholesale_cost.sum(),
+            s2=_.ss_list_price.sum(),
+            s3=_.ss_coupon_amt.sum(),
+        )
+    )
+
+    cs1 = cross_sales
+    cs2 = cross_sales.view()
+
+    expr = (
+        cs1.join(
+            cs2,
+            [
+                ("item_sk", "item_sk"),
+                _.syear == 1999,
+                cs2.syear == 2000,
+                cs2.cnt <= _.cnt,
+                _.store_name == cs2.store_name,
+                _.store_zip == cs2.store_zip,
+            ],
+        )
+        .order_by(cs1.product_name, cs1.store_name, cs2.cnt, cs1.s1, cs2.s2)
+        .select(
+            _.product_name,
+            _.store_name,
+            _.store_zip,
+            _.b_street_number,
+            _.b_street_name,
+            _.b_city,
+            _.b_zip,
+            _.c_street_number,
+            _.c_street_name,
+            _.c_city,
+            _.c_zip,
+            cs2.syear,
+            cs2.cnt,
+            cs1syear=cs1.syear,
+            cs1cnt=cs1.cnt,
+            s11=cs1.s1,
+            s21=cs1.s2,
+            s31=cs1.s3,
+            s12=cs2.s1,
+            s22=cs2.s2,
+            s32=cs2.s3,
+        )
+        .relocate(cs2.syear, cs2.cnt, after="s32")
+    )
+
+    return expr
+
+
+@tpc_test("ds", result_is_empty=True)
 def test_65(store, item, store_sales, date_dim):
     sa = (
         store_sales.join(
@@ -5021,7 +5183,6 @@ def test_99(catalog_sales, warehouse, ship_mode, call_center, date_dim):
     )
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="not all queries are implemented yet")
 def test_all_queries_are_written():
     variables = globals()
     numbers = range(1, 100)
@@ -5032,12 +5193,5 @@ def test_all_queries_are_written():
         if f"test_{query_number:02d}" in variables:
             query_numbers.remove(query_number)
 
-    file_size = (
-        lambda qn: Path(__file__)
-        .parents[1]
-        .joinpath("queries", "duckdb", "ds", f"{qn:d}.sql")
-        .stat()
-        .st_size
-    )
-    remaining_queries = sorted(query_numbers, key=file_size)
+    remaining_queries = sorted(query_numbers)
     assert remaining_queries == []

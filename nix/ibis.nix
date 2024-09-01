@@ -51,7 +51,7 @@ poetry2nix.mkPoetryApplication {
 
       runHook preCheck
 
-      pytest -m 'not tpcds and (${markers})' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup
+      pytest -m 'not tpcds and (${markers})'
 
       runHook postCheck
     '';
