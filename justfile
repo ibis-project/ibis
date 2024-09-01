@@ -77,29 +77,27 @@ test +backends:
 
     pytest "${pytest_args[@]}"
 
-_doctest runner *args:
+# run doctests
+doctest *args:
     #!/usr/bin/env bash
-    set -euo pipefail
+    set -eo pipefail
+
+    if [ -n "${CI}" ]; then
+        runner=(poetry run)
+    else
+        runner=(python -m)
+    fi
 
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-    {{ runner }} pytest --doctest-modules {{ args }} $(
+    "${runner[@]}" pytest --doctest-modules {{ args }} $(
       find \
         ibis \
         -wholename '*.py' \
         -and -not -wholename '*test*.py' \
         -and -not -wholename '*__init__*' \
         -and -not -wholename '*gen_*.py' \
-        -and -not -wholename '*ibis/expr/selectors.py' \
         -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
     )
-
-# run doctests
-doctest *args:
-    just _doctest "python -m" {{ args }}
-
-# run doctests using poetry
-ci-doctest *args:
-    just _doctest "poetry run" {{ args }}
 
 # download testing data
 download-data owner="ibis-project" repo="testing-data" rev="master":
