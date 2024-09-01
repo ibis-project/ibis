@@ -171,6 +171,9 @@ jobs:
       - name: run doctests
         run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
 
+      - name: check for dead fixtures
+        run: poetry run pytest --dead-fixtures -m 'not flink'
+
       - name: upload code coverage
         if: success()
         continue-on-error: true
