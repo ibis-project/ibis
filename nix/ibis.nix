@@ -51,7 +51,7 @@ poetry2nix.mkPoetryApplication {
 
       runHook preCheck
 
-      pytest -m 'not tpcds and (${markers})' --randomly-dont-reorganize -x
+      pytest -m 'not tpcds and (${markers})'
 
       runHook postCheck
     '';
