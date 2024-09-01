@@ -167,39 +167,6 @@ def con(tmp_path_factory, data_dir, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope="module")
-def alltypes(con):
-    return con.tableds.functional_alltypes
-
-
-@pytest.fixture(scope="module")
-def geotable(con):
-    return con.table("geo")
-
-
-@pytest.fixture(scope="module")
-def df(alltypes):
-    return alltypes.execute()
-
-
-@pytest.fixture(scope="module")
-def gdf(geotable):
-    return geotable.execute()
-
-
-@pytest.fixture(scope="module")
-def intervals(con):
-    return con.table("intervals")
-
-
-@pytest.fixture
-def translate():
-    from ibis.backends.trino import Backend
-
-    context = Backend.compiler.make_context()
-    return lambda expr: (Backend.compiler.translator_class(expr, context).get_result())
-
-
 def generate_tpc_tables(suite_name, *, data_dir):
     import pyarrow.parquet as pq
 

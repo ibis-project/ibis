@@ -192,13 +192,6 @@ def test_attr_name_conflict(temp_parquet_table, temp_parquet_table2):
     assert left.join(right, ["id", "files"]) is not None
 
 
-@pytest.fixture
-def con2(env):
-    return ibis.impala.connect(
-        host=env.impala_host, port=env.impala_port, auth_mechanism=env.auth_mechanism
-    )
-
-
 def test_day_of_week(con):
     date_var = ibis.literal(datetime.date(2017, 1, 1), type=dt.date)
     expr_index = date_var.day_of_week.index()

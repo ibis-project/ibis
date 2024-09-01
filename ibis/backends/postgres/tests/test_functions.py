@@ -960,31 +960,6 @@ def test_array_concat_mixed_types(array_types):
 
 
 @pytest.fixture
-def t(con, temp_table):
-    with con.begin() as c:
-        c.execute(f"CREATE TABLE {temp_table} (id SERIAL PRIMARY KEY, name TEXT)")
-    return con.table(temp_table)
-
-
-@pytest.fixture
-def s(con, t, temp_table2):
-    temp_table = t.op().name
-    assert temp_table != temp_table2
-
-    with con.begin() as c:
-        c.execute(
-            f"""
-            CREATE TABLE {temp_table2} (
-              id SERIAL PRIMARY KEY,
-              left_t_id INTEGER REFERENCES {temp_table},
-              cost DOUBLE PRECISION
-            )
-            """
-        )
-    return con.table(temp_table2)
-
-
-@pytest.fixture
 def trunc(con, temp_table):
     quoted = temp_table
     with con.begin() as c:
