@@ -2,6 +2,7 @@
 title: "Better PyPI stats with Python"
 author: "Cody Peterson"
 date: "2024-09-03"
+image: thumbnail.png
 categories:
     - clickhouse
     - shiny
