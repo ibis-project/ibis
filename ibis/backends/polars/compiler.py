@@ -59,19 +59,13 @@ def table(op, **_):
 
 @translate.register(ops.DummyTable)
 def dummy_table(op, **kw):
-    selections = [translate(arg, **kw) for name, arg in op.values.items()]
+    selections = [translate(arg, **kw).alias(name) for name, arg in op.values.items()]
     return pl.DataFrame().lazy().select(selections)
 
 
 @translate.register(ops.InMemoryTable)
 def in_memory_table(op, **_):
     return op.data.to_polars(op.schema).lazy()
-
-
-@translate.register(ops.Alias)
-def alias(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.alias(op.name)
 
 
 def _make_duration(value, dtype):

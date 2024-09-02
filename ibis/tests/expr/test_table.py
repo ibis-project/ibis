@@ -2192,3 +2192,10 @@ def test_table_fillna_depr_warn():
     t = ibis.table(schema={"a": "int", "b": "str"})
     with pytest.warns(FutureWarning, match="v9.1"):
         t.fillna({"b": "missing"})
+
+
+def test_dummy_table_disallows_aliases():
+    values = {"one": ops.Alias(ops.Literal(1, dtype=dt.int64), name="two")}
+
+    with pytest.raises(ValidationError):
+        ops.DummyTable(values)

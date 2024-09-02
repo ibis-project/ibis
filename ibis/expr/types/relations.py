@@ -118,6 +118,14 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield literal(value)
 
 
+def unwrap_alias(node: ops.Value) -> ops.Value:
+    """Unwrap an alias node."""
+    if isinstance(node, ops.Alias):
+        return node.arg
+    else:
+        return node
+
+
 def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
     """Unwrap aliases into a mapping of {name: expression}."""
     result = {}
@@ -127,10 +135,7 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
             raise com.IbisInputError(
                 f"Duplicate column name {node.name!r} in result set"
             )
-        if isinstance(node, ops.Alias):
-            result[node.name] = node.arg
-        else:
-            result[node.name] = node
+        result[node.name] = unwrap_alias(node)
     return result
 
 

@@ -1342,10 +1342,13 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        parents = self.op().relations
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable({self.get_name(): self}).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().aggregate(self)
@@ -1521,11 +1524,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> expr.equals(expected)
         True
         """
-        parents = self.op().relations
-        values = {self.get_name(): self}
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().select(self)

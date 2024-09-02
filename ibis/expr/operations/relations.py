@@ -456,7 +456,7 @@ class SQLStringView(Relation):
 class DummyTable(Relation):
     """A table constructed from literal values."""
 
-    values: FrozenOrderedDict[str, Value]
+    values: FrozenOrderedDict[str, Annotated[Value, ~InstanceOf(Alias)]]
 
     @attribute
     def schema(self):
