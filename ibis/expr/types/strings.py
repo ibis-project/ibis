@@ -867,7 +867,7 @@ class StringValue(Value):
         return cls(strings, sep=self).to_expr()
 
     def startswith(self, start: str | StringValue) -> ir.BooleanValue:
-        """Determine whether `self` starts with `end`.
+        """Determine whether `self` starts with `start`.
 
         Parameters
         ----------
