@@ -715,7 +715,7 @@ def test_order_by_two_cols_nulls(con, op1, nf1, nf2, op2, expected):
         getattr(t["col2"], op2)(nulls_first=nf2),
     )
 
-    if (con.name in ("pandas", "dask")) and (nf1 != nf2):
+    if con.name in ("pandas", "dask") and nf1 != nf2:
         with pytest.raises(
             ValueError,
             match=f"{con.name} does not support specifying null ordering for individual column",
@@ -769,23 +769,11 @@ def test_table_info_large(con):
 
 
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "bigquery",
-        "impala",
-        "mysql",
-        "mssql",
-        "trino",
-        "flink",
-    ],
+    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink"],
     raises=com.OperationNotDefinedError,
     reason="quantile and mode is not supported",
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=com.OperationNotDefinedError,
-    reason="Mode and StandardDev is not supported",
-)
+@pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
@@ -927,33 +915,18 @@ def test_table_describe(alltypes, selector, expected_columns):
 
 
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "bigquery",
-        "impala",
-        "mysql",
-        "mssql",
-        "trino",
-        "flink",
-        "sqlite",
-    ],
+    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink", "sqlite"],
     raises=com.OperationNotDefinedError,
     reason="quantile is not supported",
 )
-@pytest.mark.notimpl(
-    ["druid"],
-    raises=com.OperationNotDefinedError,
-    reason="StandardDev is not supported",
-)
+@pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Druid only supports trivial unions",
 )
 @pytest.mark.notyet(
-    ["oracle"],
-    raises=OracleDatabaseError,
-    reason="Mode is not supported and ORA-02000: missing AS keyword",
+    ["oracle"], raises=OracleDatabaseError, reason="ORA-02000: missing AS keyword"
 )
 def test_table_describe_large(con):
     num_cols = 129
