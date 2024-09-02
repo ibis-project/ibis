@@ -1057,13 +1057,14 @@ def flatten_data():
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
-    t = ibis.memtable({column: data["data"]}, schema={column: data["type"]})
-    expr = t[column].flatten()
-    result = backend.connection.execute(expr)
-    backend.assert_series_equal(
-        result.sort_values().reset_index(drop=True),
-        expected.sort_values().reset_index(drop=True),
-        check_names=False,
+    ids = range(len(data["data"]))
+    t = ibis.memtable(
+        {column: data["data"], "id": ids}, schema={column: data["type"], "id": "int64"}
+    )
+    expr = t.select("id", flat=t[column].flatten()).order_by("id")
+    result = backend.connection.to_pandas(expr)
+    tm.assert_frame_equal(
+        result, expected.rename("flat").to_frame().assign(id=ids)[["id", "flat"]]
     )
 
 
