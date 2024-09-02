@@ -1045,11 +1045,6 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=TypeError,
-                    reason="comparison of nested arrays doesn't work in pandas testing module",
-                ),
             ],
         ),
     ],

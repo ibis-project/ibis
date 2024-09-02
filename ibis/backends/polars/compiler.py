@@ -1008,7 +1008,14 @@ def array_collect(op, in_group_by=False, **kw):
 
 @translate.register(ops.ArrayFlatten)
 def array_flatten(op, **kw):
-    return pl.concat_list(translate(op.arg, **kw))
+    result = translate(op.arg, **kw)
+    return (
+        pl.when(result.is_null())
+        .then(None)
+        .when(result.list.len() == 0)
+        .then([])
+        .otherwise(result.flatten())
+    )
 
 
 _date_methods = {
