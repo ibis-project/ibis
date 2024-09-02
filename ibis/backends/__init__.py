@@ -17,6 +17,7 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.caching import RefCountedCache
+from ibis.formats.pyarrow import PyArrowSchema
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
@@ -212,8 +213,20 @@ class _FileIOHandler:
         self._run_pre_execute_hooks(expr)
 
         table_expr = expr.as_table()
-        schema = table_expr.schema()
-        arrow_schema = schema.to_pyarrow()
+        original_schema = table_expr.schema()
+
+        # Convert the original schema back and forth to check biyectivity
+        # of types mappings pyarrow <-> ibis.
+        pa_compatible_schema = PyArrowSchema.to_ibis(
+            PyArrowSchema.from_ibis(original_schema)
+        )
+        if original_schema != pa_compatible_schema:
+            # If the original schema is not compatible with PyArrow, we cast
+            # server side to match the types that PyArrow expects in Ibis.
+            table_expr = table_expr.cast(pa_compatible_schema)
+
+        arrow_schema = pa_compatible_schema.to_pyarrow()
+
         with self.to_pyarrow_batches(
             table_expr, params=params, limit=limit, **kwargs
         ) as reader:
@@ -258,6 +271,13 @@ class _FileIOHandler:
         import polars as pl
 
         table = self.to_pyarrow(expr.as_table(), params=params, limit=limit, **kwargs)
+        pa_compatible_schema = PyArrowSchema.to_ibis(
+            PyArrowSchema.from_ibis(expr.schema())
+        )
+
+        if expr.schema() != pa_compatible_schema:
+            expr = expr.cast(pa_compatible_schema)
+
         return expr.__polars_result__(pl.from_arrow(table))
 
     @util.experimental
