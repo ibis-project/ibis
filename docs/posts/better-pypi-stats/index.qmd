@@ -341,8 +341,8 @@ group_bar(t, group_by="installer")
 
 ## Shiny for Python application
 
-We can modify the above code to create an interactive dashboard using Shiny for
-Python:
+We can create an interactive Shiny with Python application using the code above
+to serve as a dashboard for better PyPI stats:
 
 ::: {.callout-tip}
 See [the GitHub repository](https://github.com/ibis-project/better-pypi-stats)
