@@ -1796,7 +1796,9 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     raises=pd.errors.OutOfBoundsDatetime,
 )
 @pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
-@pytest.mark.notyet(["polars"], raises=PolarsInvalidOperationError)
+@pytest.mark.notyet(
+    ["polars"], raises=AssertionError, reason="produces an incorrect result"
+)
 def test_big_timestamp(con):
     # TODO: test with a timezone
     ts = "2419-10-11 10:10:25"
