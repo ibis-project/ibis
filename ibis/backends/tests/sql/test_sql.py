@@ -90,6 +90,60 @@ def test_comparisons(functional_alltypes, opname, snapshot):
 
 
 @pytest.mark.parametrize(
+    "opname, dtype, associative",
+    [
+        param(*v, id=f"{v[0]}-{v[1]}")
+        for v in [
+            # Numeric
+            ("add", "int8", True),
+            ("mul", "int8", True),
+            ("sub", "int8", False),
+            ("truediv", "int8", False),
+            ("mod", "int8", False),
+            ("pow", "int8", False),
+            ("and_", "int8", True),
+            ("or_", "int8", True),
+            ("xor", "int8", True),
+            ("lshift", "int8", False),
+            ("rshift", "int8", False),
+            # Logical
+            ("and_", "bool", True),
+            ("or_", "bool", True),
+            ("xor", "bool", True),
+            # Date
+            ("add", "date,interval('D')", True),
+            ("sub", "date,interval('D')", False),
+            # Time
+            ("add", "time,interval", True),
+            ("sub", "time,interval", False),
+            # Timestamp
+            ("add", "timestamp,interval", True),
+            ("sub", "timestamp,interval", False),
+            # Interval
+            ("add", "interval", True),
+            ("sub", "interval", False),
+            ("mul", "interval,int8", True),
+        ]
+    ],
+)
+def test_binop_parens(snapshot, opname, dtype, associative):
+    op = getattr(operator, opname)
+    dtypes = [ibis.dtype(d) for d in dtype.split(",")]
+    while len(dtypes) < 3:
+        dtypes.append(dtypes[-1])  # repeat last dtype
+
+    t = ibis.table(dict(zip("abc", dtypes)), name="t")
+
+    expr1 = op(op(t.a, t.b), t.c).name("x")
+    expr2 = op(t.a, op(t.b, t.c)).name("x")
+    sql1 = to_sql(expr1)
+    sql2 = to_sql(expr2)
+    assert sql1 != sql2
+    combined = f"{sql1} --- op(op(a, b), c);\n{sql2} --- op(a, op(b, c));\n"
+    snapshot.assert_match(combined, "out.sql")
+
+
+@pytest.mark.parametrize(
     "expr_fn",
     [
         param(lambda d: (d > 0) & (d < 5), id="and"),
