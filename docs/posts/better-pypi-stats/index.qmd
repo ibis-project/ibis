@@ -1,0 +1,358 @@
+---
+title: "Better PyPI stats with Python"
+author: "Cody Peterson"
+date: "2024-09-03"
+image: thumbnail.png
+categories:
+    - clickhouse
+    - shiny
+---
+
+***Ibis + ClickHouse + Shiny for Python = better PyPI stats.***
+
+## Overview
+
+[PyPI Stats](https://pypistats.org/about) is a great resource for Python package
+download statistics from PyPI. However, it only contains 180 days of data and
+lacks more detailed analysis we might be interested in. In this post, we'll
+build a dynamic Python application for better PyPI stats using
+[ClickHouse](https://github.com/clickhouse/clickhouse) as our data platform,
+[Ibis](https://github.com/ibis-project/ibis) as our Python data interface, and
+[Shiny for Python](https://github.com/posit-dev/py-shiny) as our dashboarding
+tool.
+
+::: {.callout-note title="What about ClickPy?"}
+[ClickPy](https://github.com/ClickHouse/clickpy) is an existing open source and
+reproducible project built on the same data with ClickHouse. The primary
+difference is that ClickPy uses SQL and JavaScript whereas this project is in
+Python. We also focus on different visualizations and metrics.
+:::
+
+## Prerequisites
+
+Install the required dependencies:
+
+```bash
+pip install 'ibis-framework[clickhouse]' plotly
+```
+
+Then run imports and setup:
+
+```{python}
+import ibis
+import plotly.express as px
+import clickhouse_connect
+
+px.defaults.template = "plotly_dark"
+ibis.options.interactive = True
+```
+
+## Connecting to ClickHouse
+
+You can connect to the public ClickHouse playground's PyPI database:
+
+```{python}
+host = "clickpy-clickhouse.clickhouse.com"
+port = 443
+user = "play"
+database = "pypi"
+
+con = ibis.clickhouse.connect(
+    host=host,
+    port=port,
+    user=user,
+    database=database,
+)
+con.list_tables()
+```
+
+## Top packages by downloads
+
+Let's start by looking at the most downloaded packages:
+
+```{python}
+overall_t = con.table("pypi_downloads")
+
+top_k = 10_000
+overall_t = (
+    overall_t.order_by(ibis.desc("count"))
+    .limit(top_k)
+    .mutate(rank=1 + ibis.row_number().over(order_by=ibis.desc("count")))
+    .rename({"downloads": "count"})
+    .relocate("rank")
+    .order_by("rank")
+)
+overall_t
+```
+
+## Analyzing downloads for a package
+
+Let's choose a package to analyze:
+
+```{python}
+project = "clickhouse-connect"
+```
+
+And see where it ranks in the top downloads:
+
+```{python}
+overall_t.filter(overall_t["project"] == project)
+```
+
+Let's look at downloads per day by various categories for this package:
+
+```{python}
+downloads_t = con.table(
+    "pypi_downloads_per_day_by_version_by_installer_by_type_by_country"
+).filter(ibis._["project"] == project)
+downloads_t
+```
+
+We might be interested in the day-of-week seasonality of downloads:
+
+```{python}
+def day_of_week_bar(t):
+    t = t.mutate(day_of_week=t["date"].day_of_week.full_name())
+    t = t.group_by("day_of_week").agg(downloads=ibis._["count"].sum())
+    c = px.bar(
+        t,
+        x="day_of_week",
+        y="downloads",
+        category_orders={
+            "day_of_week": [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+            ]
+        },
+    )
+    return c
+
+
+day_of_week_bar(downloads_t)
+```
+
+Or the rolling 28-day downloads metric:
+
+```{python}
+def rolling_downloads(t, days=28):
+    t = t.mutate(
+        timestamp=t["date"].cast("timestamp"),
+    )
+    t = t.group_by("timestamp").agg(downloads=ibis._["count"].sum())
+    t = t.select(
+        "timestamp",
+        rolling_downloads=ibis._["downloads"]
+        .sum()
+        .over(
+            ibis.window(
+                order_by="timestamp",
+                preceding=days,
+                following=0,
+            )
+        ),
+    ).order_by("timestamp")
+
+    c = px.line(
+        t,
+        x="timestamp",
+        y="rolling_downloads",
+    )
+
+    return c
+
+
+rolling_downloads(downloads_t)
+```
+
+Or rolling 28-days downloads by version with a few options for how to group
+versions:
+
+```{python}
+def rolling_downloads_by_version(t, days=28, version_style="major.minor"):
+    t = t.mutate(
+        timestamp=t["date"].cast("timestamp"),
+    )
+
+    match version_style:
+        case "major":
+            t = t.mutate(version=t["version"].split(".")[0])
+        case "major.minor":
+            t = t.mutate(
+                version=t["version"].split(".")[0] + "." + t["version"].split(".")[1]
+            )
+        case _:
+            pass
+
+    t = t.group_by("timestamp", "version").agg(downloads=ibis._["count"].sum())
+
+    t = t.select(
+        "timestamp",
+        "version",
+        rolling_downloads=ibis._["downloads"]
+        .sum()
+        .over(
+            ibis.window(
+                order_by="timestamp",
+                group_by="version",
+                preceding=28,
+                following=0,
+            )
+        ),
+    ).order_by("timestamp")
+
+    c = px.line(
+        t,
+        x="timestamp",
+        y="rolling_downloads",
+        color="version",
+        category_orders={
+            "version": reversed(
+                sorted(
+                    t.distinct(on="version")["version"].to_pyarrow().to_pylist(),
+                    key=lambda x: tuple(int(y) for y in x.split(".") if y.isdigit()),
+                )
+            )
+        },
+    )
+    return c
+
+
+rolling_downloads_by_version(downloads_t)
+```
+
+Or a bar chart of downloads grouped by a category:
+
+```{python}
+def group_bar(t, group_by="installer", log_y=True):
+    t = t.mutate(timestamp=t["date"].cast("timestamp"))
+    t = t.group_by(group_by).agg(downloads=ibis._["count"].sum())
+    t = t.order_by(ibis.desc("downloads"))
+
+    c = px.bar(
+        t,
+        x=group_by,
+        y="downloads",
+        log_y=log_y,
+    )
+    return c
+
+
+group_bar(downloads_t)
+```
+
+::: {.callout-tip title="More examples" collapse="true"}
+
+Since we're just writing Python, we've already organized code into functions for
+reuse. We can rerun our above analytics on a different package by changing the
+`project` variable and adjusting our table accordingly. We'll demonstrate this
+with a few more packages below.
+
+Notice you could also pass in Ibis tables from different backends, not just
+ClickHouse, to these functions!
+
+::: {.panel-tabset}
+
+## PyArrow
+
+```{python}
+package = "pyarrow"
+
+t = con.table(
+    "pypi_downloads_per_day_by_version_by_installer_by_type_by_country"
+).filter(ibis._["project"] == package)
+```
+
+```{python}
+day_of_week_bar(t)
+```
+
+```{python}
+rolling_downloads(t)
+```
+
+```{python}
+rolling_downloads_by_version(t, version_style="major")
+```
+
+```{python}
+group_bar(t, group_by="installer")
+```
+
+## chDB
+
+```{python}
+package = "chdb"
+
+t = con.table(
+    "pypi_downloads_per_day_by_version_by_installer_by_type_by_country"
+).filter(ibis._["project"] == package)
+```
+
+```{python}
+day_of_week_bar(t)
+```
+
+```{python}
+rolling_downloads(t)
+```
+
+```{python}
+rolling_downloads_by_version(t, version_style="major.minor")
+```
+
+```{python}
+group_bar(t, group_by="installer")
+```
+
+## Ibis
+
+```{python}
+package = "ibis-framework"
+
+t = con.table(
+    "pypi_downloads_per_day_by_version_by_installer_by_type_by_country"
+).filter(ibis._["project"] == package)
+```
+
+```{python}
+day_of_week_bar(t)
+```
+
+```{python}
+rolling_downloads(t)
+```
+
+```{python}
+rolling_downloads_by_version(t, version_style="major")
+```
+
+```{python}
+group_bar(t, group_by="installer")
+```
+
+:::
+
+:::
+
+## Shiny for Python application
+
+We can create an interactive Shiny with Python application using the code above
+to serve as a dashboard for better PyPI stats:
+
+::: {.callout-tip}
+See [the GitHub repository](https://github.com/ibis-project/better-pypi-stats)
+for the most up-to-date code.
+:::
+
+{{< video https://youtu.be/jkdWaL8CbK4 >}}
+
+## Reproducing and contributing
+
+The code is [available on
+GitHub](https://github.com/ibis-project/better-pypi-stats). Feel free to open an
+issue or pull request if you have any suggested improvements.
