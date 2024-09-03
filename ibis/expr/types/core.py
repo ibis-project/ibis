@@ -46,9 +46,13 @@ else:
         """JupyterMixin adds a spurious newline to text, this fixes the issue."""
 
         def _repr_mimebundle_(self, *args, **kwargs):
-            bundle = super()._repr_mimebundle_(*args, **kwargs)
-            bundle["text/plain"] = bundle["text/plain"].rstrip()
-            return bundle
+            try:
+                bundle = super()._repr_mimebundle_(*args, **kwargs)
+            except Exception:  # noqa: BLE001
+                return None
+            else:
+                bundle["text/plain"] = bundle["text/plain"].rstrip()
+                return bundle
 
 
 def _capture_rich_renderable(renderable: RenderableType) -> str:
@@ -110,23 +114,6 @@ class Expr(Immutable, Coercible):
                 self._noninteractive_repr(),
             ]
             return Text("\n".join(lines))
-        except Exception as e:
-            # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
-            # allow calling several display functions and choosing to display
-            # the "best" result based on some priority.
-            # This behavior, though, means that exceptions that bubble up inside of the interactive repr
-            # are silently caught.
-            #
-            # We can't stop the exception from being swallowed, but we can force
-            # the display of that exception as we do here.
-            #
-            # A _very_ annoying caveat is that this exception is _not_ being
-            # ` raise`d, it is only being printed to the console.  This means
-            # that you cannot "catch" it.
-            #
-            # This restriction is only present in IPython, not in other REPLs.
-            console.print_exception()
-            raise e
         return console.render(rich_object, options=options)
 
     def __init__(self, arg: ops.Node) -> None:
