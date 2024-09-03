@@ -1396,11 +1396,12 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         if len(value) == 1:
             kwargs[name] = value[0]
 
+    # Merge explicit kwargs with query string, explicit kwargs
+    # taking precedence
+    kwargs.update(orig_kwargs)
+
     if scheme == "file":
         path = parsed.netloc + parsed.path
-        # Merge explicit kwargs with query string, explicit kwargs
-        # taking precedence
-        kwargs.update(orig_kwargs)
         if path.endswith(".duckdb"):
             return ibis.duckdb.connect(path, **kwargs)
         elif path.endswith((".sqlite", ".db")):
