@@ -57,7 +57,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
-        ops.Mode,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,
@@ -89,6 +88,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
         ops.Strip: "trim",
+        ops.Mode: "stats_mode",
     }
 
     @staticmethod
