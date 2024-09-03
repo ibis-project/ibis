@@ -499,5 +499,8 @@ class DataFusionCompiler(SQLGlotCompiler):
             op, arg=arg, sep=sep, where=where, order_by=order_by
         )
 
+    def visit_ArrayFlatten(self, op, *, arg):
+        return self.if_(arg.is_(NULL), NULL, self.f.flatten(arg))
+
 
 compiler = DataFusionCompiler()

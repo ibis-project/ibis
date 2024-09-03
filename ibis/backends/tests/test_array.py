@@ -1033,7 +1033,6 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
         param(
@@ -1051,7 +1050,6 @@ def flatten_data():
                     raises=TypeError,
                     reason="comparison of nested arrays doesn't work in pandas testing module",
                 ),
-                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
     ],
