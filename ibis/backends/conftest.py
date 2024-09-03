@@ -312,6 +312,14 @@ def pytest_runtest_call(item):
     if not backend:
         # Check item path to see if test is in backend-specific folder
         backend = set(_get_backend_names()).intersection(item.path.parts)
+    if not backend:
+        # Check if this is one of the uninstantiated backend class fixture
+        # used for signature checking
+        backend = [
+            backend.name
+            for key, backend in item.funcargs.items()
+            if key.endswith("backend_cls")
+        ]
 
     if not backend:
         return
@@ -403,19 +411,6 @@ def backend_cls(request) -> BaseBackend:
 
     This is used for signature checking and nothing should be executed."""
 
-    cls = _get_backend_cls(request.param)
-    return cls
-
-
-@pytest.fixture(
-    params=_get_backends_to_test(discard=("dask", "pandas", "polars")),
-    scope="session",
-)
-def backend_sql_cls(request, data_dir, tmp_path_factory, worker_id):
-    """Return the uninstantiated backend class, unconnected.
-
-    SQL backends only.
-    This is used for signature checking and nothing should be executed."""
     cls = _get_backend_cls(request.param)
     return cls
 
