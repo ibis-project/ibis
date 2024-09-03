@@ -101,6 +101,21 @@ t2
 ```
 
 ```{python}
+#| echo: false
+import IPython
+import rich
+import rich.traceback as rtb
+rtb.install(
+    suppress=[IPython, rich],
+    width=84,
+    word_wrap=True,
+    max_frames=1,
+    code_width=84,
+)
+del IPython, rich, rtb
+```
+
+```{python}
 #| error: true
 t1.bill_depth_mm + t2.population
 ```
