@@ -519,15 +519,12 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ):
+        from ibis.formats.pyarrow import PyArrowData
+
         df = self._to_dataframe(
             expr, params=params, limit=limit, streaming=streaming, **kwargs
         )
-        table = df.to_arrow()
-        if isinstance(expr, (ir.Table, ir.Value)):
-            schema = expr.as_table().schema().to_pyarrow()
-            return table.rename_columns(schema.names).cast(schema)
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        return PyArrowData.convert_table(df.to_arrow(), expr.as_table().schema())
 
     def to_pyarrow(
         self,

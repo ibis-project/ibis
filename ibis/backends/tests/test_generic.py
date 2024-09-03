@@ -2502,3 +2502,11 @@ def test_simple_pivot_wider(con, backend, monkeypatch):
     result = expr.to_pandas()
     expected = pd.DataFrame({"no": [4], "yes": [3]})
     backend.assert_frame_equal(result, expected)
+
+
+def test_named_literal(con, backend):
+    lit = ibis.literal(1, type="int64").name("one")
+    expr = lit.as_table()
+    result = con.to_pandas(expr)
+    expected = pd.DataFrame({"one": [1]})
+    backend.assert_frame_equal(result, expected)

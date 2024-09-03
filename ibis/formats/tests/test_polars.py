@@ -162,7 +162,7 @@ def test_convert_column():
 
 
 def test_convert_table():
-    df = pl.DataFrame({"x": ["1", "2"], "y": ["a", "b"]})
+    df = pl.DataFrame({"x": ["1", "2"], "z": ["a", "b"]})
     schema = ibis.schema({"x": "int64", "z": "string"})
     df = PolarsData.convert_table(df, schema)
     sol = pl.DataFrame(

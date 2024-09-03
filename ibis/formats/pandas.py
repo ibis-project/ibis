@@ -114,14 +114,11 @@ class PandasData(DataMapper):
                 "schema column count does not match input data column count"
             )
 
-        columns = []
-        for (_, series), dtype in zip(df.items(), schema.types):
-            columns.append(cls.convert_column(series, dtype))
-        df = cls.concat(columns, axis=1)
-
-        # return data with the schema's columns which may be different than the
-        # input columns
-        df.columns = schema.names
+        columns = {
+            name: cls.convert_column(series, dtype)
+            for (name, dtype), (_, series) in zip(schema.items(), df.items())
+        }
+        df = pd.DataFrame(columns)
 
         if geospatial_supported:
             from geopandas import GeoDataFrame
@@ -154,7 +151,7 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_scalar(cls, obj, dtype):
-        df = PandasData.convert_table(obj, sch.Schema({obj.columns[0]: dtype}))
+        df = PandasData.convert_table(obj, sch.Schema({str(obj.columns[0]): dtype}))
         return df.iat[0, 0]
 
     @classmethod

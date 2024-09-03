@@ -166,9 +166,6 @@ class PolarsData(DataMapper):
     def convert_table(cls, df: pl.DataFrame, schema: Schema) -> pl.DataFrame:
         pl_schema = PolarsSchema.from_ibis(schema)
 
-        if tuple(df.columns) != tuple(schema.names):
-            df = df.rename(dict(zip(df.columns, schema.names)))
-
         if df.schema == pl_schema:
             return df
         return df.cast(pl_schema)
