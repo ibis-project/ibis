@@ -7,7 +7,7 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -317,7 +317,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 FutureWarning,
             )
 
-        if isinstance(auth, str):
+        if (
+            isinstance(auth, str)
+            and (scheme := urlparse(host).scheme)
+            and scheme != "http"
+        ):
             auth = BasicAuthentication(user, auth)
 
         self.con = trino.dbapi.connect(
