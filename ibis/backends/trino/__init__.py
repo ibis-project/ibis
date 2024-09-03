@@ -7,11 +7,12 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
 import trino
+from trino.auth import BasicAuthentication
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -309,10 +310,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 raise ValueError(
                     "Cannot specify both `auth` and `password` when connecting to Trino"
                 )
+            else:
+                auth = password
             warnings.warn(
                 "The `password` parameter is deprecated and will be removed in 10.0; use `auth` instead",
                 FutureWarning,
             )
+
+        if (
+            isinstance(auth, str)
+            and (scheme := urlparse(host).scheme)
+            and scheme != "http"
+        ):
+            auth = BasicAuthentication(user, auth)
+
         self.con = trino.dbapi.connect(
             user=user,
             host=host,
@@ -321,7 +332,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             schema=schema,
             source=source or "ibis",
             timezone=timezone,
-            auth=auth or password,
+            auth=auth,
             **kwargs,
         )
 
