@@ -7,6 +7,7 @@ import functools
 import inspect
 import itertools
 import math
+import operator
 import os
 import random
 import string
@@ -868,6 +869,23 @@ def test_large_union_compile(benchmark, many_tables):
 
     expr = ibis.union(*many_tables)
     assert benchmark(ibis.to_sql, expr, dialect="duckdb") is not None
+
+
+@pytest.mark.parametrize("cols", [128, 256])
+@pytest.mark.parametrize("op", ["construct", "compile"])
+def test_large_add(benchmark, cols, op):
+    t = ibis.table(name="t", schema={f"x{i}": "int" for i in range(cols)})
+
+    def construct():
+        return functools.reduce(operator.add, (t[c] for c in t.columns))
+
+    def compile(expr):
+        return ibis.to_sql(expr, dialect="duckdb")
+
+    if op == "construct":
+        benchmark(construct)
+    else:
+        benchmark(compile, construct())
 
 
 @pytest.fixture(scope="session")
