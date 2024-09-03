@@ -921,11 +921,6 @@ def test_ungrouped_unbounded_window(
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
 )
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="Feature is not yet implemented: window frame in `RANGE` mode is not supported yet",
-)
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #

@@ -679,9 +679,6 @@ def test_array_remove(con, input, expected):
     raises=(AssertionError, GoogleBadRequest),
     reason="bigquery doesn't support null elements in arrays",
 )
-@pytest.mark.notimpl(
-    ["risingwave"], raises=AssertionError, reason="TODO(Kexiang): seems a bug"
-)
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="empty arrays not supported"
 )
@@ -719,11 +716,6 @@ def test_array_unique(con, input, expected):
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="flink cannot handle empty arrays",
-                ),
-                pytest.mark.notyet(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
                 ),
             ],
             id="empty",
