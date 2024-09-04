@@ -718,7 +718,14 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -726,10 +733,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
         parent_alias = parent.alias_or_name
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         selcols = []
 

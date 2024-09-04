@@ -688,7 +688,14 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -700,9 +707,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         selcols = []
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         if offset is not None:
             if overlaps_with_parent:

@@ -689,9 +689,6 @@ class SQLGlotCompiler(abc.ABC):
     def visit_ScalarSubquery(self, op, *, rel):
         return rel.this.subquery(copy=False)
 
-    def visit_Alias(self, op, *, arg, name):
-        return arg
-
     def visit_Literal(self, op, *, value, dtype):
         """Compile a literal value.
 

@@ -609,15 +609,21 @@ class DuckDBCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         selcols = []
 
@@ -627,7 +633,9 @@ class DuckDBCompiler(SQLGlotCompiler):
             # TODO: clean this up once WITH ORDINALITY is supported in DuckDB
             # no need for struct_extract once that's upstream
             column = self.f.list_zip(column, self.f.range(self.f.len(column)))
-            extract = self.f.struct_extract(column_alias, 1).as_(opname, quoted=quoted)
+            extract = self.f.struct_extract(column_alias, 1).as_(
+                column_name, quoted=quoted
+            )
 
             if overlaps_with_parent:
                 replace = sge.Column(this=sge.Star(replace=[extract]), table=table)

@@ -143,6 +143,12 @@ def test_binop_parens(snapshot, opname, dtype, associative):
     snapshot.assert_match(combined, "out.sql")
 
 
+def test_binop_with_alias_still_parenthesized(snapshot):
+    t = ibis.table({"a": "int", "b": "int", "c": "int"}, name="t")
+    sql = to_sql(((t.a + t.b).name("d") * t.c).name("x"))
+    snapshot.assert_match(sql, "out.sql")
+
+
 @pytest.mark.parametrize(
     "expr_fn",
     [

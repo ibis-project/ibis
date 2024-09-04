@@ -4890,7 +4890,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         (column,) = self.bind(column)
         return ops.TableUnnest(
-            parent=self, column=column, offset=offset, keep_empty=keep_empty
+            parent=self,
+            column=column,
+            column_name=column.get_name(),
+            offset=offset,
+            keep_empty=keep_empty,
         ).to_expr()
 
 
