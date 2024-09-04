@@ -4866,7 +4866,7 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@pytest.mark.notyet(["datafusion"], reason="broken referencing inside datafusion")
 def test_80(
     store_sales,
     store_returns,
@@ -4881,7 +4881,122 @@ def test_80(
     item,
     promotion,
 ):
-    raise NotImplementedError()
+    def sr(
+        *,
+        sales,
+        returns,
+        dimension,
+        sales_item_sk,
+        returns_item_sk,
+        sales_order_number,
+        returns_order_number,
+        sales_sold_date_sk,
+        dimension_sk,
+        sales_dimension_sk,
+        sales_promo_sk,
+        grouping_key,
+        ext_sales_price,
+        return_amt,
+        net_profit,
+        net_loss,
+    ):
+        return (
+            sales.left_join(
+                returns,
+                [
+                    (sales_item_sk, returns_item_sk),
+                    (sales_order_number, returns_order_number),
+                ],
+            )
+            .join(date_dim, [(sales_sold_date_sk, "d_date_sk")])
+            .join(dimension, [(sales_dimension_sk, dimension_sk)])
+            .join(item, [(sales_item_sk, "i_item_sk")])
+            .join(promotion, [(sales_promo_sk, "p_promo_sk")])
+            .filter(
+                _.d_date.between(date("2000-08-23"), date("2000-09-22")),
+                _.i_current_price > 50,
+                _.p_channel_tv == "N",
+            )
+            .group_by(grouping_key)
+            .agg(
+                sales=ext_sales_price.sum(),
+                returns_=return_amt.coalesce(0).sum(),
+                profit=(net_profit - net_loss.coalesce(0)).sum(),
+            )
+        )
+
+    ssr = sr(
+        sales=store_sales,
+        returns=store_returns,
+        dimension=store,
+        sales_item_sk=_.ss_item_sk,
+        returns_item_sk=_.sr_item_sk,
+        sales_order_number=_.ss_ticket_number,
+        returns_order_number=_.sr_ticket_number,
+        sales_sold_date_sk=_.ss_sold_date_sk,
+        dimension_sk=_.s_store_sk,
+        sales_dimension_sk=_.ss_store_sk,
+        sales_promo_sk=_.ss_promo_sk,
+        grouping_key=_.s_store_id.name("store_id"),
+        ext_sales_price=_.ss_ext_sales_price,
+        return_amt=_.sr_return_amt,
+        net_profit=_.ss_net_profit,
+        net_loss=_.sr_net_loss,
+    )
+    csr = sr(
+        sales=catalog_sales,
+        returns=catalog_returns,
+        dimension=catalog_page,
+        sales_item_sk=_.cs_item_sk,
+        returns_item_sk=_.cr_item_sk,
+        sales_order_number=_.cs_order_number,
+        returns_order_number=_.cr_order_number,
+        sales_sold_date_sk=_.cs_sold_date_sk,
+        dimension_sk=_.cp_catalog_page_sk,
+        sales_dimension_sk=_.cs_catalog_page_sk,
+        sales_promo_sk=_.cs_promo_sk,
+        grouping_key=_.cp_catalog_page_id.name("catalog_page_id"),
+        ext_sales_price=_.cs_ext_sales_price,
+        return_amt=_.cr_return_amount,
+        net_profit=_.cs_net_profit,
+        net_loss=_.cr_net_loss,
+    )
+    wsr = sr(
+        sales=web_sales,
+        returns=web_returns,
+        dimension=web_site,
+        sales_item_sk=_.ws_item_sk,
+        returns_item_sk=_.wr_item_sk,
+        sales_order_number=_.ws_order_number,
+        returns_order_number=_.wr_order_number,
+        sales_sold_date_sk=_.ws_sold_date_sk,
+        dimension_sk=_.web_site_sk,
+        sales_dimension_sk=_.ws_web_site_sk,
+        sales_promo_sk=_.ws_promo_sk,
+        grouping_key=_.web_site_id,
+        ext_sales_price=_.ws_ext_sales_price,
+        return_amt=_.wr_return_amt,
+        net_profit=_.ws_net_profit,
+        net_loss=_.wr_net_loss,
+    )
+
+    return (
+        ssr.mutate(channel=lit("store channel"), id="store" + _.store_id)
+        .drop("store_id")
+        .union(
+            csr.mutate(
+                channel=lit("catalog channel"), id="catalog_page" + _.catalog_page_id
+            ).drop("catalog_page_id"),
+            wsr.mutate(channel=lit("web channel"), id="web_site" + _.web_site_id).drop(
+                "web_site_id"
+            ),
+        )
+        .group_by(rollup("channel", "id"))
+        .agg(sales=_.sales.sum(), returns_=_.returns_.sum(), profit=_.profit.sum())
+        .mutate(s.across(s.c("channel", "id"), _.nullif("")))
+        .order_by(_.channel.asc(nulls_first=True), _.id.asc(nulls_first=True))
+        .limit(100)
+    )
 
 
 @pytest.mark.notyet(
