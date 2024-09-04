@@ -147,7 +147,6 @@ def test_unbind(alltypes, expr_fn):
     assert "Unbound" in repr(expr.unbind())
 
 
-## works on duckdb only for now
 def test_list_tables(ddl_con):
     # should check only physical tables
     table_name = "functional_alltypes"

@@ -19,13 +19,13 @@ def test_attach_file(tmp_path):
 
     client = ibis.sqlite.connect()
 
-    assert not client.list_tables()
+    assert not client.tables()
 
     client.attach("baz", Path(dbpath))
     client.attach("bar", dbpath)
 
-    foo_tables = client.list_tables(database="baz")
-    bar_tables = client.list_tables(database="bar")
+    foo_tables = client.ddl.list_tables(database="baz")
+    bar_tables = client.ddl.list_tables(database="bar")
 
     assert foo_tables == ["test"]
     assert foo_tables == bar_tables

@@ -21,6 +21,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C, F
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -152,45 +153,109 @@ class Backend(SQLBackend, UrlFromPath):
 
         return sorted(self._filter_with_like(results, like))
 
+    def _list_query_constructor(self, col: str, where_predicates: list) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col).from_(F.pragma_table_list()).where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+        is_temp: bool = False,
+    ) -> list[str]:
+        """Generic method to list objects like tables or views."""
+
+        table_loc = self._warn_and_create_table_loc(database)
+
+        # sqlite doesn't support catalogs as far as I can tell
+        # all temp tables are in the "temp" sqlite schema
+        database = table_loc.db or ("temp" if is_temp else self.current_database)
+        # needs to check what db I get if main or nothing when db none
+
+        col = "name"
+        where_predicates = [
+            C.schema.eq(sge.convert(database)),
+            C.type.eq(object_type),
+            ~(
+                C.name.isin(
+                    sge.convert("sqlite_schema"),
+                    sge.convert("sqlite_master"),
+                    sge.convert("sqlite_temp_schema"),
+                    sge.convert("sqlite_temp_master"),
+                )
+            ),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates)
+        with self._safe_raw_sql(sql) as cur:
+            results = [r[0] for r in cur.fetchall()]
+
+        return sorted(self._filter_with_like(results, like))
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "table")
+
+    def _list_temp_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary tables."""
+
+        return self._list_objects(like, database, "table", is_temp=True)
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "view")
+
+    def _list_temp_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary views."""
+
+        return self._list_objects(like, database, "view", is_temp=True)
+
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
         database: str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List tables and views."""
 
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
-        if database is None:
-            database = "main"
+        table_loc = self._warn_and_create_table_loc(database)
 
-        sql = (
-            sg.select("name")
-            .from_(F.pragma_table_list())
-            .where(
-                C.schema.eq(sge.convert(database)),
-                C.type.isin(sge.convert("table"), sge.convert("view")),
-                ~(
-                    C.name.isin(
-                        sge.convert("sqlite_schema"),
-                        sge.convert("sqlite_master"),
-                        sge.convert("sqlite_temp_schema"),
-                        sge.convert("sqlite_temp_master"),
-                    )
-                ),
-            )
-            .sql(self.name)
+        database = self.current_database
+        if table_loc is not None:
+            database = table_loc.db or database
+
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_temp_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
+            | set(self._list_temp_views(like=like, database=database))
         )
-        with self._safe_raw_sql(sql) as cur:
-            results = [r[0] for r in cur.fetchall()]
 
-        return sorted(self._filter_with_like(results, like))
+        return tables_and_views
 
     def _parse_type(self, typ: str, nullable: bool) -> dt.DataType:
         typ = typ.lower()
@@ -351,7 +416,7 @@ class Backend(SQLBackend, UrlFromPath):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # only register if we haven't already done so
-        if op.name not in self.list_tables(database="temp"):
+        if op.name not in self.tables(database="temp"):
             table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
             create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
             df = op.data.to_frame()
