@@ -1380,11 +1380,48 @@ def test_17(store_sales, store_returns, catalog_sales, date_dim, store, item):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 def test_18(
     catalog_sales, customer_demographics, customer, customer_address, date_dim, item
 ):
-    raise NotImplementedError()
+    cd1 = customer_demographics
+    return (
+        catalog_sales.join(date_dim, [("cs_sold_date_sk", "d_date_sk")])
+        .join(item, [("cs_item_sk", "i_item_sk")])
+        .join(cd1, [("cs_bill_cdemo_sk", "cd_demo_sk")])
+        .join(customer, [("cs_bill_customer_sk", "c_customer_sk")])
+        .join(
+            customer_demographics[["cd_demo_sk"]],
+            [("c_current_cdemo_sk", "cd_demo_sk")],
+        )
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            cd1.cd_gender == "F",
+            cd1.cd_education_status == "Unknown",
+            _.c_birth_month.isin((1, 6, 8, 9, 12, 2)),
+            _.d_year == 1998,
+            _.ca_state.isin(("MS", "IN", "ND", "OK", "NM", "VA", "MS")),
+        )
+        .group_by(rollup("i_item_id", "ca_country", "ca_state", "ca_county"))
+        .agg(
+            # TODO: could use s.c here but it would be in the order of the
+            # source table, not the user's requested order in s.c, we should
+            # fix that
+            agg1=_.cs_quantity.cast("decimal(12, 2)").mean(),
+            agg2=_.cs_list_price.cast("decimal(12, 2)").mean(),
+            agg3=_.cs_coupon_amt.cast("decimal(12, 2)").mean(),
+            agg4=_.cs_sales_price.cast("decimal(12, 2)").mean(),
+            agg5=_.cs_net_profit.cast("decimal(12, 2)").mean(),
+            agg6=_.c_birth_year.cast("decimal(12, 2)").mean(),
+            agg7=_.cd_dep_count.cast("decimal(12, 2)").mean(),
+        )
+        .order_by(
+            _.ca_country.asc(nulls_first=True),
+            _.ca_state.asc(nulls_first=True),
+            _.ca_county.asc(nulls_first=True),
+            _.i_item_id.asc(nulls_first=True),
+        )
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
