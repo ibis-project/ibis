@@ -1265,7 +1265,7 @@ def string_temp_table(backend, con):
             id="lstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "pyspark", "mssql"],
+                    ["clickhouse", "impala", "pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1282,7 +1282,7 @@ def string_temp_table(backend, con):
             id="rstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "pyspark", "mssql"],
+                    ["clickhouse", "impala", "pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1299,7 +1299,7 @@ def string_temp_table(backend, con):
             id="strip",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala", "mssql"],
+                    ["impala"],
                     raises=AssertionError,
                     reason="""
                     not stripping anything but space
