@@ -119,7 +119,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notyet(
@@ -145,7 +145,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
@@ -157,7 +157,7 @@ def test_create_table(backend, con, temp_table, func, sch):
         ),
     ],
 )
-@pytest.mark.notimpl(["druid", "impala"])
+@pytest.mark.notimpl(["druid"])
 def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
     df = pd.DataFrame(
         {
