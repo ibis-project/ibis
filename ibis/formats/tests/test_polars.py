@@ -100,8 +100,9 @@ def test_decimal():
     )
 
 
-def test_categorical():
+def test_enum_categorical():
     assert PolarsType.to_ibis(pl.Categorical()) == dt.string
+    assert PolarsType.to_ibis(pl.Enum(["a", "b"])) == dt.string
 
 
 def test_interval_unsupported_unit():
