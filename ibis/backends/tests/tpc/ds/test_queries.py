@@ -1131,9 +1131,119 @@ def test_13(
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
 def test_14(item, store_sales, date_dim, catalog_sales, web_sales):
-    raise NotImplementedError()
+    def make_cross_items(sales, *, sold_date_sk, item_sk):
+        return (
+            sales.join(item, [(item_sk, "i_item_sk")])
+            .join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .filter(_.d_year == 1999 + 2)
+            .select(
+                brand_id=_.i_brand_id,
+                class_id=_.i_class_id,
+                category_id=_.i_category_id,
+            )
+        )
+
+    def make_avg_sales(sales, *, sold_date_sk, quantity, list_price):
+        return (
+            sales.join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .filter(_.d_year.between(1999, 1999 + 2))
+            .select(quantity=quantity, list_price=list_price)
+        )
+
+    def item_sales(sales, *, item_sk, sold_date_sk, channel, quantity, list_price):
+        return (
+            sales.join(item, [(item_sk, "i_item_sk")])
+            .join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .filter(
+                item_sk.isin(cross_items.ss_item_sk),
+                _.d_year == 1999 + 2,
+                _.d_moy == 11,
+            )
+            .group_by(
+                channel=channel,
+                i_brand_id=_.i_brand_id,
+                i_class_id=_.i_class_id,
+                i_category_id=_.i_category_id,
+            )
+            .having((quantity * list_price).sum() > avg_sales.average_sales.as_scalar())
+            .agg(sales=(quantity * list_price).sum(), number_sales=_.count())
+        )
+
+    cross_items = item.join(
+        make_cross_items(
+            store_sales, sold_date_sk=_.ss_sold_date_sk, item_sk=_.ss_item_sk
+        ).intersect(
+            make_cross_items(
+                catalog_sales, sold_date_sk=_.cs_sold_date_sk, item_sk=_.cs_item_sk
+            ),
+            make_cross_items(
+                web_sales, sold_date_sk=_.ws_sold_date_sk, item_sk=_.ws_item_sk
+            ),
+        ),
+        [
+            ("i_brand_id", "brand_id"),
+            ("i_class_id", "class_id"),
+            ("i_category_id", "category_id"),
+        ],
+    ).select(ss_item_sk=_.i_item_sk)
+
+    avg_sales = (
+        make_avg_sales(
+            store_sales,
+            sold_date_sk=_.ss_sold_date_sk,
+            quantity=_.ss_quantity,
+            list_price=_.ss_list_price,
+        )
+        .union(
+            make_avg_sales(
+                catalog_sales,
+                sold_date_sk=_.cs_sold_date_sk,
+                quantity=_.cs_quantity,
+                list_price=_.cs_list_price,
+            ),
+            make_avg_sales(
+                web_sales,
+                sold_date_sk=_.ws_sold_date_sk,
+                quantity=_.ws_quantity,
+                list_price=_.ws_list_price,
+            ),
+        )
+        .agg(average_sales=(_.quantity * _.list_price).mean())
+    )
+
+    return (
+        item_sales(
+            store_sales,
+            item_sk=_.ss_item_sk,
+            sold_date_sk=_.ss_sold_date_sk,
+            channel=lit("store"),
+            quantity=_.ss_quantity,
+            list_price=_.ss_list_price,
+        )
+        .union(
+            item_sales(
+                catalog_sales,
+                item_sk=_.cs_item_sk,
+                sold_date_sk=_.cs_sold_date_sk,
+                channel=lit("catalog"),
+                quantity=_.cs_quantity,
+                list_price=_.cs_list_price,
+            ),
+            item_sales(
+                web_sales,
+                item_sk=_.ws_item_sk,
+                sold_date_sk=_.ws_sold_date_sk,
+                channel=lit("web"),
+                quantity=_.ws_quantity,
+                list_price=_.ws_list_price,
+            ),
+        )
+        .group_by(rollup("channel", "i_brand_id", "i_class_id", "i_category_id"))
+        .agg(sum_sales=_.sales.sum(), sum_number_sales=_.number_sales.sum())
+        .order_by(s.across(~s.endswith("_sales"), _.asc(nulls_first=True)))
+        .limit(100)
+    )
 
 
 @tpc_test("ds")
