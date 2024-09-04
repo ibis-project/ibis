@@ -1237,9 +1237,71 @@ def test_22(inventory, date_dim, item):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
-def test_23(inventory, date_dim, item):
-    raise NotImplementedError()
+def test_23(store_sales, date_dim, item, customer, catalog_sales, web_sales):
+    frequent_ss_items = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(
+            item.mutate(itemdesc=_.i_item_desc[:30]),
+            [("ss_item_sk", "i_item_sk")],
+        )
+        .filter(_.d_year.isin((2000, 2000 + 1, 2000 + 2, 2000 + 3)))
+        .group_by(_.itemdesc, item_sk=_.i_item_sk, solddate=_.d_date)
+        .having(_.count() > 4)
+        .agg(cnt=_.count())
+    )
+    max_store_sales = (
+        store_sales.join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .filter(_.d_year.isin((2000, 2000 + 1, 2000 + 2, 2000 + 3)))
+        .group_by(_.c_customer_sk)
+        .agg(csales=(_.ss_quantity * _.ss_sales_price).sum())
+        .agg(tpcds_cmax=_.csales.max())
+    )
+    best_ss_customer = (
+        store_sales.join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .cross_join(max_store_sales)
+        .group_by(_.c_customer_sk)
+        .having(
+            (_.ss_quantity * _.ss_sales_price).sum() > (50 / 100.0) * _.tpcds_cmax.max()
+        )
+        .agg(ssales=(_.ss_quantity * _.ss_sales_price).sum())
+    )
+
+    def total_sales(
+        sales, *, bill_customer_sk, sold_date_sk, item_sk, quantity, list_price
+    ):
+        return (
+            sales.join(customer, [(bill_customer_sk, "c_customer_sk")])
+            .join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .join(frequent_ss_items, [(item_sk, "item_sk")])
+            .join(best_ss_customer, [(bill_customer_sk, "c_customer_sk")])
+            .filter(_.d_year == 2000, _.d_moy == 2)
+            .group_by(_.c_last_name, _.c_first_name)
+            .agg(sales=(quantity * list_price).sum())
+        )
+
+    return (
+        total_sales(
+            catalog_sales,
+            bill_customer_sk=_.cs_bill_customer_sk,
+            sold_date_sk=_.cs_sold_date_sk,
+            item_sk=_.cs_item_sk,
+            quantity=_.cs_quantity,
+            list_price=_.cs_list_price,
+        )
+        .union(
+            total_sales(
+                web_sales,
+                bill_customer_sk=_.ws_bill_customer_sk,
+                sold_date_sk=_.ws_sold_date_sk,
+                item_sk=_.ws_item_sk,
+                quantity=_.ws_quantity,
+                list_price=_.ws_list_price,
+            )
+        )
+        .order_by(s.across(s.all(), _.asc(nulls_first=True)))
+        .limit(100)
+    )
 
 
 @tpc_test("ds", result_is_empty=True)
