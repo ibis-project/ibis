@@ -1382,16 +1382,14 @@ def test_histogram(con, alltypes):
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
-    assert vc.tolist() == vc_np.tolist()
-    assert (
-        con.execute(
-            ibis.memtable({"value": range(100)})
-            .select(bin=_.value.histogram(10))
-            .value_counts()
-            .bin_count.nunique()
-        )
-        == 1
+    expr = (
+        ibis.memtable({"value": range(100)})
+        .select(bin=_.value.histogram(10))
+        .value_counts()
+        .bin_count.nunique()
     )
+    assert vc.tolist() == vc_np.tolist()
+    assert con.execute(expr) == 1
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])
