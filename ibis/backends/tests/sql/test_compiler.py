@@ -196,7 +196,7 @@ def test_subquery_where_location(snapshot):
         ],
         name="alltypes",
     )
-    param = ibis.param("timestamp").name("my_param")
+    param = ibis.param("timestamp")
     expr = (
         t[["float_col", "timestamp_col", "int_col", "string_col"]][
             lambda t: t.timestamp_col < param

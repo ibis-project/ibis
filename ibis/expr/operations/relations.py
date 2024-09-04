@@ -498,6 +498,7 @@ class TableUnnest(Relation):
 
     parent: Relation
     column: Value[dt.Array]
+    column_name: str
     offset: typing.Union[str, None]
     keep_empty: bool
 
@@ -507,15 +508,11 @@ class TableUnnest(Relation):
 
     @attribute
     def schema(self):
-        column = self.column
-        offset = self.offset
-
         base = self.parent.schema.fields.copy()
+        base[self.column_name] = self.column.dtype.value_type
 
-        base[column.name] = column.dtype.value_type
-
-        if offset is not None:
-            base[offset] = dt.int64
+        if self.offset is not None:
+            base[self.offset] = dt.int64
 
         return Schema(base)
 

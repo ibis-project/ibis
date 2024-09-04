@@ -165,7 +165,7 @@ def fill_null_to_select(_, **kwargs):
     for name in _.parent.schema.names:
         col = ops.Field(_.parent, name)
         if (value := mapping.get(name)) is not None:
-            col = ops.Alias(ops.Coalesce((col, value)), name)
+            col = ops.Coalesce((col, value))
         selections[name] = col
 
     return Select(_.parent, selections=selections)
@@ -204,6 +204,12 @@ def first_to_firstvalue(_, **kwargs):
         )
     klass = FirstValue if isinstance(_.func, ops.First) else LastValue
     return _.copy(func=klass(_.func.arg))
+
+
+@replace(p.Alias)
+def remove_aliases(_, **kwargs):
+    """Remove all remaining aliases, they're not needed for remaining compilation."""
+    return _.arg
 
 
 def complexity(node):
@@ -372,6 +378,7 @@ def sqlize(
     context = {"params": params}
     result = node.replace(
         replace_parameter
+        | remove_aliases
         | project_to_select
         | filter_to_select
         | sort_to_select
