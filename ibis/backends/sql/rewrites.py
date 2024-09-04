@@ -370,7 +370,7 @@ def sqlize(
 
     # lower the expression graph to a SQL-like relational algebra
     context = {"params": params}
-    sqlized = node.replace(
+    result = node.replace(
         replace_parameter
         | project_to_select
         | filter_to_select
@@ -385,24 +385,23 @@ def sqlize(
 
     # squash subsequent Select nodes into one
     if fuse_selects:
-        simplified = sqlized.replace(merge_select_select)
-    else:
-        simplified = sqlized
+        result = result.replace(merge_select_select)
 
     if post_rewrites:
-        simplified = simplified.replace(reduce(operator.or_, post_rewrites))
+        result = result.replace(reduce(operator.or_, post_rewrites))
 
     # extract common table expressions while wrapping them in a CTE node
-    ctes = extract_ctes(simplified)
+    ctes = extract_ctes(result)
 
-    def wrap(node, _, **kwargs):
-        new = node.__recreate__(kwargs)
-        return CTE(new) if node in ctes else new
+    if ctes:
 
-    result = simplified.replace(wrap)
-    ctes = [cte.parent for cte in result.find(CTE, ordered=True)]
+        def apply_ctes(node, kwargs):
+            new = node.__recreate__(kwargs) if kwargs else node
+            return CTE(new) if node in ctes else new
 
-    return result, ctes
+        result = result.replace(apply_ctes)
+        return result, [cte.parent for cte in result.find(CTE, ordered=True)]
+    return result, []
 
 
 # supplemental rewrites selectively used on a per-backend basis
