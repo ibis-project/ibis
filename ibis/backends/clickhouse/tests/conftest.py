@@ -87,12 +87,6 @@ class TestConf(ServiceBackendTest):
         # without this setting TPC-DS 19 and 24 will fail
         settings.setdefault("allow_experimental_join_condition", 1)
 
-        # this will cause clickhouse to fail if a cross join cannot be
-        # rewritten to an inner join there are tons of cross joins that are
-        # actually inner joins in the tpc test suite so we set this to ensure
-        # that clickhouse's performance isn't awful
-        settings.setdefault("cross_to_inner_join_rewrite", 2)
-
         return ibis.clickhouse.connect(
             host=CLICKHOUSE_HOST,
             port=CLICKHOUSE_PORT,
