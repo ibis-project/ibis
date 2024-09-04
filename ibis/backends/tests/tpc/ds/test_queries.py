@@ -223,7 +223,7 @@ def test_04(customer, store_sales, catalog_sales, web_sales, date_dim):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@pytest.mark.notyet(["datafusion"], raises=Exception, reason="Ambiguous reference")
 def test_05(
     store_sales,
     store_returns,
@@ -236,7 +236,130 @@ def test_05(
     web_site,
     date_dim,
 ):
-    raise NotImplementedError()
+    ssr = (
+        store_sales.select(
+            store_sk=_.ss_store_sk,
+            date_sk=_.ss_sold_date_sk,
+            sales_price=_.ss_ext_sales_price,
+            profit=_.ss_net_profit,
+            return_amt=lit(0, type="decimal(7, 2)"),
+            net_loss=lit(0, type="decimal(7, 2)"),
+        )
+        .union(
+            store_returns.select(
+                store_sk=_.sr_store_sk,
+                date_sk=_.sr_returned_date_sk,
+                sales_price=lit(0, type="decimal(7, 2)"),
+                profit=lit(0, type="decimal(7, 2)"),
+                return_amt=_.sr_return_amt,
+                net_loss=_.sr_net_loss,
+            )
+        )
+        .join(date_dim, [("date_sk", "d_date_sk")])
+        .join(store, [("store_sk", "s_store_sk")])
+        .filter(_.d_date.between(date("2000-08-23"), date("2000-09-06")))
+        .group_by(_.s_store_id)
+        .agg(
+            sales=_.sales_price.sum(),
+            profit=_.profit.sum(),
+            returns_=_.return_amt.sum(),
+            profit_loss=_.net_loss.sum(),
+        )
+    )
+    csr = (
+        catalog_sales.select(
+            page_sk=_.cs_catalog_page_sk,
+            date_sk=_.cs_sold_date_sk,
+            sales_price=_.cs_ext_sales_price,
+            profit=_.cs_net_profit,
+            return_amt=lit(0, type="decimal(7, 2)"),
+            net_loss=lit(0, type="decimal(7, 2)"),
+        )
+        .union(
+            catalog_returns.select(
+                page_sk=_.cr_catalog_page_sk,
+                date_sk=_.cr_returned_date_sk,
+                sales_price=lit(0, type="decimal(7, 2)"),
+                profit=lit(0, type="decimal(7, 2)"),
+                return_amt=_.cr_return_amount,
+                net_loss=_.cr_net_loss,
+            )
+        )
+        .join(date_dim, [("date_sk", "d_date_sk")])
+        .join(catalog_page, [("page_sk", "cp_catalog_page_sk")])
+        .filter(_.d_date.between(date("2000-08-23"), date("2000-09-06")))
+        .group_by(_.cp_catalog_page_id)
+        .agg(
+            sales=_.sales_price.sum(),
+            profit=_.profit.sum(),
+            returns_=_.return_amt.sum(),
+            profit_loss=_.net_loss.sum(),
+        )
+    )
+    wsr = (
+        web_sales.select(
+            wsr_web_site_sk=_.ws_web_site_sk,
+            date_sk=_.ws_sold_date_sk,
+            sales_price=_.ws_ext_sales_price,
+            profit=_.ws_net_profit,
+            return_amt=lit(0, type="decimal(7, 2)"),
+            net_loss=lit(0, type="decimal(7, 2)"),
+        )
+        .union(
+            web_returns.left_join(
+                web_sales,
+                [("wr_item_sk", "ws_item_sk"), ("wr_order_number", "ws_order_number")],
+            ).select(
+                wsr_web_site_sk=_.ws_web_site_sk,
+                date_sk=_.wr_returned_date_sk,
+                sales_price=lit(0, type="decimal(7, 2)"),
+                profit=lit(0, type="decimal(7, 2)"),
+                return_amt=_.wr_return_amt,
+                net_loss=_.wr_net_loss,
+            )
+        )
+        .join(date_dim, [("date_sk", "d_date_sk")])
+        .join(web_site, [("wsr_web_site_sk", "web_site_sk")])
+        .filter(_.d_date.between(date("2000-08-23"), date("2000-09-06")))
+        .group_by(_.web_site_id)
+        .agg(
+            sales=_.sales_price.sum(),
+            profit=_.profit.sum(),
+            returns_=_.return_amt.sum(),
+            profit_loss=_.net_loss.sum(),
+        )
+    )
+
+    return (
+        ssr.select(
+            _.sales,
+            _.returns_,
+            channel=lit("store channel"),
+            id="store" + _.s_store_id,
+            profit=_.profit - _.profit_loss,
+        )
+        .union(
+            csr.select(
+                _.sales,
+                _.returns_,
+                channel=lit("catalog channel"),
+                id="catalog_page" + _.cp_catalog_page_id,
+                profit=_.profit - _.profit_loss,
+            ),
+            wsr.select(
+                _.sales,
+                _.returns_,
+                channel=lit("web channel"),
+                id="web_site" + _.web_site_id,
+                profit=_.profit - _.profit_loss,
+            ),
+        )
+        .group_by(rollup("channel", "id"))
+        .agg(sales=_.sales.sum(), returns_=_.returns_.sum(), profit=_.profit.sum())
+        .mutate(s.across(s.of_type("string"), _.nullif("")))
+        .order_by(_.channel.asc(nulls_first=True), _.id.asc(nulls_first=True))
+        .limit(100)
+    )
 
 
 @pytest.mark.notyet(
@@ -4276,12 +4399,12 @@ def test_76(
     return expr
 
 
-@tpc_test("ds")
 @pytest.mark.notyet(
     ["datafusion"],
     raises=Exception,
     reason="type inference is incorrect inside datafusion",
 )
+@tpc_test("ds")
 def test_77(
     store_sales,
     date_dim,
