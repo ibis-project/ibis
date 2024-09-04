@@ -513,7 +513,7 @@ class Backend(SQLBackend):
         if schema is not None:
             schema = ibis.schema(schema)
 
-        if temp is not None:
+        if temp:
             raise NotImplementedError(
                 "Impala backend does not yet support temporary tables"
             )
