@@ -1297,17 +1297,6 @@ def string_temp_table(backend, con):
             lambda t: t.string_col.strip(),
             lambda t: t.str.strip(),
             id="strip",
-            marks=[
-                pytest.mark.notimpl(
-                    ["flink"],
-                    raises=AssertionError,
-                    reason="""
-                    Flink TRIM doesn't respect strip characters
-                    but rstrip and lstrip work.
-                    There's `BTRIM` but maybe only in dev?
-                    """,
-                ),
-            ],
         ),
         param(
             lambda t: t.string_col.upper(),
