@@ -342,7 +342,7 @@ def test_embedded_cte(alltypes, ftname_raw):
     ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
 )
 def test_unnamed_columns(con):
-    sql = "SELECT 'a', 1 AS col42"
+    sql = "SELECT 'a', 1 AS \"col42\""
     sgexpr = sg.parse_one(sql, read="duckdb")
     expr = con.sql(sgexpr.sql(con.dialect))
 
