@@ -1402,7 +1402,12 @@ class SQLGlotCompiler(abc.ABC):
             group = sge.Group(
                 expressions=expressions,
                 grouping_sets=[
-                    sge.GroupingSets(expressions=grouping_set)
+                    sge.GroupingSets(
+                        expressions=[
+                            sge.Tuple(expressions=expressions)
+                            for expressions in grouping_set
+                        ]
+                    )
                     for grouping_set in grouping_sets
                 ],
                 rollup=[sge.Rollup(expressions=rollup) for rollup in rollups],

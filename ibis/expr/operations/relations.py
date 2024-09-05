@@ -313,7 +313,7 @@ class Aggregate(Relation):
     groups: FrozenOrderedDict[str, Unaliased[Value]]
     """Grouping keys. Equivalent to `keys` when no grouping sets, rollups, or cubes are present."""
 
-    grouping_sets: VarTuple[VarTuple[Value]] = ()
+    grouping_sets: VarTuple[VarTuple[VarTuple[Value]]] = ()
     rollups: VarTuple[VarTuple[Value]] = ()
     cubes: VarTuple[VarTuple[Value]] = ()
 

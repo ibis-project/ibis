@@ -27,7 +27,7 @@ from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
 from ibis.expr.types.groupby import Cube, GroupingSets, Rollup
 from ibis.expr.types.temporal import TimestampColumn
-from ibis.util import deprecated
+from ibis.util import deprecated, flatten_iterable
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -886,7 +886,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 elif isinstance(b, Cube):
                     cubes.append(b.expand(self))
                 elif isinstance(b, GroupingSets):
-                    grouping_sets.extend(b.expand(self))
+                    grouping_sets.append(b.expand(self))
                 else:
                     groups.extend(self.bind(b))
 
@@ -895,6 +895,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         by = tuple(v for v in by if v is not None)
         groups, grouping_sets, rollups, cubes = partition_groups(*by, **key_exprs)
+        if not (groups or grouping_sets or rollups or cubes):
+            raise com.IbisInputError("No grouping keys provided")
         return GroupedTable(
             self,
             groupings=groups,
@@ -1052,7 +1054,9 @@ class Table(Expr, _FixedTextJupyterMixin):
                     groups.items(),
                     (
                         (g.op().name, g.op())
-                        for g in chain(*grouping_sets, *rollups, *cubes)
+                        for g in flatten_iterable(
+                            chain(*grouping_sets, *rollups, *cubes)
+                        )
                     ),
                 ),
             )
