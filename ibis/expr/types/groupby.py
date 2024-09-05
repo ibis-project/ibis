@@ -589,5 +589,69 @@ def grouping_sets(*dims):
 
 @experimental
 @deferrable
-def group_id(first, *rest):
+def group_id(first, *rest) -> ir.IntegerScalar:
+    """Return the grouping ID for a set of columns.
+
+    Input columns must be part of the group by clause.
+
+    ::: {.callout-note}
+    ## This function can only be called in a group by context.
+    :::
+
+    Returns
+    -------
+    IntegerScalar
+        An integer whose bits represent whether the `i`th
+        group is present in the current row's aggregated value.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> from ibis import _
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.head()
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ int64             │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+    │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+    │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+    │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+    │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+    >>> (
+    ...     t.group_by(ibis.rollup(_.island, _.sex))
+    ...     .agg(
+    ...         group_id=ibis.group_id(_.island, _.sex),
+    ...         mean_bill_length=_.bill_length_mm.mean(),
+    ...     )
+    ...     .relocate(_.group_id)
+    ...     .order_by(
+    ...         _.group_id.desc(),
+    ...         _.island.asc(nulls_first=True),
+    ...         _.sex.asc(nulls_first=True),
+    ...         _.mean_bill_length.desc(),
+    ...     )
+    ... )
+    ┏━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+    ┃ group_id ┃ island    ┃ sex    ┃ mean_bill_length ┃
+    ┡━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+    │ int64    │ string    │ string │ float64          │
+    ├──────────┼───────────┼────────┼──────────────────┤
+    │        3 │ NULL      │ NULL   │        43.921930 │
+    │        1 │ Biscoe    │ NULL   │        45.257485 │
+    │        1 │ Dream     │ NULL   │        44.167742 │
+    │        1 │ Torgersen │ NULL   │        38.950980 │
+    │        0 │ Biscoe    │ NULL   │        45.625000 │
+    │        0 │ Biscoe    │ female │        43.307500 │
+    │        0 │ Biscoe    │ male   │        47.119277 │
+    │        0 │ Dream     │ NULL   │        37.500000 │
+    │        0 │ Dream     │ female │        42.296721 │
+    │        0 │ Dream     │ male   │        46.116129 │
+    │        … │ …         │ …      │                … │
+    └──────────┴───────────┴────────┴──────────────────┘
+    """
     return ops.GroupID((first, *rest)).to_expr()
