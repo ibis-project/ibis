@@ -457,9 +457,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 
-    def visit_Aggregate(
-        self, op, *, parent, keys, groups, metrics, grouping_sets, rollups, cubes
-    ):
+    def _compile_agg_select(self, op, *, parent, keys, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""
         quoted = self.quoted
         metrics = tuple(self._cleanup_names(metrics))
@@ -499,22 +497,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             selections = metrics or (STAR,)
             table = parent
 
-        sel = sg.select(*selections).from_(table)
-
-        if groups or grouping_sets or rollups or cubes:
-            expressions = list(self._generate_groups(groups.values()))
-            group = sge.Group(
-                expressions=expressions,
-                grouping_sets=[
-                    sge.GroupingSets(expressions=grouping_set)
-                    for grouping_set in grouping_sets
-                ],
-                rollup=[sge.Rollup(expressions=rollup) for rollup in rollups],
-                cube=[sge.Cube(expressions=cube) for cube in cubes],
-            )
-            sel = sel.group_by(group, copy=False)
-
-        return sel
+        return sg.select(*selections).from_(table)
 
     def visit_StructColumn(self, op, *, names, values):
         args = []

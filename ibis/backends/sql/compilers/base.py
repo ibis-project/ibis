@@ -1390,30 +1390,42 @@ class SQLGlotCompiler(abc.ABC):
     def _generate_groups(groups):
         return map(sge.convert, range(1, len(groups) + 1))
 
-    def visit_Aggregate(
-        self, op, *, parent, keys, groups, metrics, grouping_sets, rollups, cubes
-    ):
-        sel = sg.select(
+    def _compile_agg_select(self, op, *, parent, keys, metrics):
+        return sg.select(
             *self._cleanup_names(keys), *self._cleanup_names(metrics), copy=False
         ).from_(parent, copy=False)
 
+    def _compile_group_by(self, sel, *, groups, grouping_sets, rollups, cubes):
+        expressions = list(self._generate_groups(groups.values()))
+        group = sge.Group(
+            expressions=expressions,
+            grouping_sets=[
+                sge.GroupingSets(
+                    expressions=[
+                        sge.Tuple(expressions=expressions)
+                        for expressions in grouping_set
+                    ]
+                )
+                for grouping_set in grouping_sets
+            ],
+            rollup=[sge.Rollup(expressions=rollup) for rollup in rollups],
+            cube=[sge.Cube(expressions=cube) for cube in cubes],
+        )
+        return sel.group_by(group, copy=False)
+
+    def visit_Aggregate(
+        self, op, *, parent, keys, groups, metrics, grouping_sets, rollups, cubes
+    ):
+        sel = self._compile_agg_select(op, parent=parent, keys=keys, metrics=metrics)
+
         if groups or grouping_sets or rollups or cubes:
-            expressions = list(self._generate_groups(groups.values()))
-            group = sge.Group(
-                expressions=expressions,
-                grouping_sets=[
-                    sge.GroupingSets(
-                        expressions=[
-                            sge.Tuple(expressions=expressions)
-                            for expressions in grouping_set
-                        ]
-                    )
-                    for grouping_set in grouping_sets
-                ],
-                rollup=[sge.Rollup(expressions=rollup) for rollup in rollups],
-                cube=[sge.Cube(expressions=cube) for cube in cubes],
+            sel = self._compile_group_by(
+                sel,
+                groups=groups,
+                grouping_sets=grouping_sets,
+                rollups=rollups,
+                cubes=cubes,
             )
-            sel = sel.group_by(group, copy=False)
 
         return sel
 
