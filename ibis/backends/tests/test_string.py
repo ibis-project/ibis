@@ -1264,10 +1264,10 @@ def string_temp_table(backend, con):
             lambda t: t.str.lstrip(),
             id="lstrip",
             marks=[
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["pyspark"],
                     raises=AssertionError,
-                    reason="doesn't strip newline or tabs",
+                    reason="Spark SQL LTRIM doesn't accept characters to trim",
                 ),
                 pytest.mark.notimpl(
                     ["bigquery", "snowflake"],
@@ -1281,10 +1281,10 @@ def string_temp_table(backend, con):
             lambda t: t.str.rstrip(),
             id="rstrip",
             marks=[
-                pytest.mark.notimpl(
+                pytest.mark.notyet(
                     ["pyspark"],
                     raises=AssertionError,
-                    reason="doesn't strip newline or tabs",
+                    reason="Spark SQL RTRIM doesn't accept characters to trim",
                 ),
                 pytest.mark.notimpl(
                     ["bigquery", "snowflake"],
