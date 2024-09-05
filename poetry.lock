@@ -6932,18 +6932,18 @@ sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
 name = "sqlglot"
-version = "25.18.0"
+version = "25.19.0"
 description = "An easily customizable SQL parser and transpiler"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "sqlglot-25.18.0-py3-none-any.whl", hash = "sha256:d315874d88a81c48604cf4a9cd8a56e8bd3009aa294c233755ac176a9aceb153"},
-    {file = "sqlglot-25.18.0.tar.gz", hash = "sha256:f79b02b378038e991633911de43eb6e44eba99510fa7144bba7e7532e3d4e00d"},
+    {file = "sqlglot-25.19.0-py3-none-any.whl", hash = "sha256:07f3f7c90b909cc324e2f659e6d551adf52293afd317141db8a4a7cfe01468a2"},
+    {file = "sqlglot-25.19.0.tar.gz", hash = "sha256:1cf4c4bf5a52a0e943fb182df9f6ae386470806b5ec5d57f59a07d4a6c639322"},
 ]
 
 [package.extras]
 dev = ["duckdb (>=0.6)", "maturin (>=1.4,<2.0)", "mypy", "pandas", "pandas-stubs", "pdoc", "pre-commit", "python-dateutil", "pytz", "ruff (==0.4.3)", "types-python-dateutil", "types-pytz", "typing-extensions"]
-rs = ["sqlglotrs (==0.2.9)"]
+rs = ["sqlglotrs (==0.2.10)"]
 
 [[package]]
 name = "stack-data"
@@ -7941,4 +7941,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c103f9c7c8fd8aff126e59c9629926c3a1c2c91ea1946147b07b5fe363e4d18f"
+content-hash = "dd445339d72c8e5fa9e03acc17a7ece1210abde87a8abdf82b25ca218f638139"

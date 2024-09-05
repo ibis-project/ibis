@@ -222,9 +222,7 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return self.cast(
-            sge.paren(self.f.day_of_week(arg) + 6, copy=False) % 7, op.dtype
-        )
+        return self.cast(sge.paren(self.f.anon.dow(arg) + 6, copy=False) % 7, op.dtype)
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.date_format(arg, "%W")
