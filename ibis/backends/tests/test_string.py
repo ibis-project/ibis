@@ -1309,14 +1309,6 @@ def string_temp_table(backend, con):
                     """,
                 ),
                 pytest.mark.notimpl(
-                    ["oracle"],
-                    raises=AssertionError,
-                    reason="""
-                    Oracle `trim` doesn't accept characters to trim
-                    (unlike oracle `rtrim` and `ltrim`)
-                    """,
-                ),
-                pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
                     reason="""
