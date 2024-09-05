@@ -1265,7 +1265,7 @@ def string_temp_table(backend, con):
             id="lstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "pyspark"],
+                    ["impala", "pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1282,7 +1282,7 @@ def string_temp_table(backend, con):
             id="rstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["clickhouse", "impala", "pyspark"],
+                    ["impala", "pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1323,13 +1323,6 @@ def string_temp_table(backend, con):
                     Flink TRIM doesn't respect strip characters
                     but rstrip and lstrip work.
                     There's `BTRIM` but maybe only in dev?
-                    """,
-                ),
-                pytest.mark.notimpl(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="""
-                    Clickhouse supports this, but something in our compiler is dropping it
                     """,
                 ),
             ],
