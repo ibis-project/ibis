@@ -41,7 +41,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
-from ibis.expr.types.groupby import cube, grouping_sets, rollup
+from ibis.expr.types.groupby import cube, group_id, grouping_sets, rollup
 from ibis.util import experimental
 
 if TYPE_CHECKING:
@@ -2471,8 +2471,3 @@ def least(*args: Any) -> ir.Value:
     └───┘
     """
     return ops.Least(args).to_expr()
-
-
-@deferrable
-def group_id(first, *rest):
-    return ops.GroupID((first, *rest)).to_expr()

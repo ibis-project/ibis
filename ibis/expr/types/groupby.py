@@ -25,7 +25,7 @@ import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
-from ibis.common.deferred import Deferred  # noqa: TCH001
+from ibis.common.deferred import Deferred, deferrable
 from ibis.common.grounds import Concrete
 from ibis.common.selectors import Expandable
 from ibis.common.typing import VarTuple  # noqa: TCH001
@@ -371,3 +371,8 @@ def cube(*dims):
 @public
 def grouping_sets(*dims):
     return GroupingSets(tuple(map(tuple, map(ibis.util.promote_list, dims))))
+
+
+@deferrable
+def group_id(first, *rest):
+    return ops.GroupID((first, *rest)).to_expr()
