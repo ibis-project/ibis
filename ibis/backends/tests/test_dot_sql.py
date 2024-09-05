@@ -13,7 +13,11 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
-from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
+from ibis.backends.tests.errors import (
+    ExaQueryError,
+    GoogleBadRequest,
+    OracleDatabaseError,
+)
 
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
@@ -330,3 +334,26 @@ def test_embedded_cte(alltypes, ftname_raw):
     expr = alltypes.sql(sql, dialect="duckdb")
     result = expr.head(1).execute()
     assert len(result) == 1
+
+
+@dot_sql_never
+@pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
+@pytest.mark.never(
+    ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
+)
+def test_unnamed_columns(con):
+    sql = "SELECT 'a', 1 AS col42"
+    sgexpr = sg.parse_one(sql, read="duckdb")
+    expr = con.sql(sgexpr.sql(con.dialect))
+
+    schema = expr.schema()
+    names = schema.names
+    types = schema.types
+
+    assert len(names) == 2
+
+    assert names[0]
+    assert names[1] == "col42"
+
+    assert types[0].is_string()
+    assert types[1].is_integer()

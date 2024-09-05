@@ -241,3 +241,27 @@ def test_from_url():
     )
     result = new_con.sql("SELECT 1 AS [a]").to_pandas().a.iat[0]
     assert result == 1
+
+
+def test_dot_sql_with_unnamed_columns(con):
+    expr = con.sql(
+        "SELECT CAST('2024-01-01 00:00:00' AS DATETIMEOFFSET), 'a' + 'b', 1 AS [col42]"
+    )
+
+    schema = expr.schema()
+    names = schema.names
+
+    assert len(names) == 3
+
+    assert names[0].startswith("ibis_col")
+    assert names[1].startswith("ibis_col")
+    assert names[2] == "col42"
+
+    assert schema.types == (
+        dt.Timestamp(timezone="UTC", scale=7),
+        dt.String(nullable=False),
+        dt.Int32(nullable=False),
+    )
+
+    df = expr.execute()
+    assert len(df) == 1

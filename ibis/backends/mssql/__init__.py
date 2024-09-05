@@ -307,6 +307,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             elif newtyp.is_timestamp():
                 newtyp = newtyp.copy(scale=scale)
 
+            if name is None:
+                name = util.gen_name("col")
+
             schema[name] = newtyp
 
         return sch.Schema(schema)
