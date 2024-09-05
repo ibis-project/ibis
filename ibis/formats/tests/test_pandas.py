@@ -433,3 +433,10 @@ def test_convert_dataframe_with_timezone():
     desired_schema = ibis.schema(dict(time='timestamp("EST")'))
     result = PandasData.convert_table(df.copy(), desired_schema)
     tm.assert_frame_equal(expected, result)
+
+
+def test_schema_doesnt_match_input_columns():
+    df = pd.DataFrame({"x": [1], "y": [2]})
+    schema = sch.Schema({"a": "int64", "b": "int64"})
+    with pytest.raises(ValueError, match="schema names don't match"):
+        PandasData.convert_table(df, schema)
