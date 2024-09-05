@@ -354,7 +354,7 @@ def test_05(
                 profit=_.profit - _.profit_loss,
             ),
         )
-        .group_by(rollup("channel", "id"))
+        .group_by(rollup(_.channel, _.id))
         .agg(sales=_.sales.sum(), returns_=_.returns_.sum(), profit=_.profit.sum())
         .mutate(s.across(s.of_type("string"), _.nullif("")))
         .order_by(_.channel.asc(nulls_first=True), _.id.asc(nulls_first=True))
@@ -1239,7 +1239,7 @@ def test_14(item, store_sales, date_dim, catalog_sales, web_sales):
                 list_price=_.ws_list_price,
             ),
         )
-        .group_by(rollup("channel", "i_brand_id", "i_class_id", "i_category_id"))
+        .group_by(rollup(_.channel, _.i_brand_id, _.i_class_id, _.i_category_id))
         .agg(sum_sales=_.sales.sum(), sum_number_sales=_.number_sales.sum())
         .order_by(s.across(~s.endswith("_sales"), _.asc(nulls_first=True)))
         .limit(100)
@@ -1401,7 +1401,7 @@ def test_18(
             _.d_year == 1998,
             _.ca_state.isin(("MS", "IN", "ND", "OK", "NM", "VA", "MS")),
         )
-        .group_by(rollup("i_item_id", "ca_country", "ca_state", "ca_county"))
+        .group_by(rollup(_.i_item_id, _.ca_country, _.ca_state, _.ca_county))
         .agg(
             # TODO: could use s.c here but it would be in the order of the
             # source table, not the user's requested order in s.c, we should
@@ -1513,7 +1513,7 @@ def test_22(inventory, date_dim, item):
         inventory.join(date_dim, [("inv_date_sk", "d_date_sk")])
         .join(item, [("inv_item_sk", "i_item_sk")])
         .filter(_.d_month_seq.between(1200, 1200 + 11))
-        .group_by(rollup("i_product_name", "i_brand", "i_class", "i_category"))
+        .group_by(rollup(_.i_product_name, _.i_brand, _.i_class, _.i_category))
         .agg(qoh=_.inv_quantity_on_hand.mean())
         .order_by(
             _.qoh.asc(nulls_first=True), s.across(~s.c("qoh"), _.asc(nulls_first=True))
@@ -3862,14 +3862,14 @@ def test_67(store_sales, date_dim, store, item):
         .filter(_.d_month_seq.between(1200, 1200 + 11))
         .group_by(
             rollup(
-                "i_category",
-                "i_class",
-                "i_brand",
-                "i_product_name",
-                "d_year",
-                "d_qoy",
-                "d_moy",
-                "s_store_id",
+                _.i_category,
+                _.i_class,
+                _.i_brand,
+                _.i_product_name,
+                _.d_year,
+                _.d_qoy,
+                _.d_moy,
+                _.s_store_id,
             )
         )
         .agg(sumsales=(_.ss_sales_price * _.ss_quantity).coalesce(0).sum())
@@ -4030,7 +4030,7 @@ def test_70(store_sales, date_dim, store):
                 .s_state
             ),
         )
-        .group_by(rollup("s_state", "s_county"))
+        .group_by(rollup(_.s_state, _.s_county))
         .agg(
             total_sum=_.ss_net_profit.sum(),
             lochierarchy=group_id(_.s_state) + group_id(_.s_county),
@@ -4666,7 +4666,7 @@ def test_77(
 
     expr = (
         x1.union(x2, x3)
-        .group_by(rollup("channel", "id"))
+        .group_by(rollup(_.channel, _.id))
         .agg(
             sales=_.sales.sum(),
             returns_=_.returns_.sum(),
@@ -4991,7 +4991,7 @@ def test_80(
                 "web_site_id"
             ),
         )
-        .group_by(rollup("channel", "id"))
+        .group_by(rollup(_.channel, _.id))
         .agg(sales=_.sales.sum(), returns_=_.returns_.sum(), profit=_.profit.sum())
         .mutate(s.across(s.c("channel", "id"), _.nullif("")))
         .order_by(_.channel.asc(nulls_first=True), _.id.asc(nulls_first=True))
@@ -5245,7 +5245,7 @@ def test_86(web_sales, date_dim, item):
             [("ws_sold_date_sk", "d_date_sk")],
         )
         .join(item, [("ws_item_sk", "i_item_sk")])
-        .group_by(rollup("i_category", "i_class"))
+        .group_by(rollup(_.i_category, _.i_class))
         .agg(
             total_sum=_.ws_net_paid.sum(),
             lochierarchy=group_id(_.i_category) + group_id(_.i_class),

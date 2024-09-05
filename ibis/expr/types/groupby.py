@@ -26,7 +26,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.deferred import Deferred, deferrable
-from ibis.common.grounds import Concrete
+from ibis.common.grounds import Annotable, Concrete
 from ibis.common.selectors import Expandable
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.rewrites import rewrite_window_input
@@ -322,7 +322,7 @@ class GroupedNumbers(GroupedArray):
 
 
 @public
-class GroupingSets(Concrete):
+class GroupingSets(Annotable, Expandable):
     """Grouping sets."""
 
     exprs: VarTuple[VarTuple[str | ir.Value | Deferred]]
@@ -335,7 +335,7 @@ class GroupingSets(Concrete):
         return values
 
 
-class GroupingSetsShorthand(Concrete, Expandable):
+class GroupingSetsShorthand(Annotable, Expandable):
     """Grouping set shorthand constructs."""
 
     exprs: VarTuple[str | ir.Value | Deferred]
