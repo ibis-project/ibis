@@ -109,14 +109,11 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_table(cls, df, schema):
-        if len(schema) != len(df.columns):
-            raise ValueError(
-                "schema column count does not match input data column count"
-            )
+        if schema.names != tuple(df.columns):
+            raise ValueError("schema names don't match input data columns")
 
         columns = {
-            name: cls.convert_column(series, dtype)
-            for (name, dtype), (_, series) in zip(schema.items(), df.items())
+            name: cls.convert_column(df[name], dtype) for name, dtype in schema.items()
         }
         df = pd.DataFrame(columns)
 

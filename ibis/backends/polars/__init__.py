@@ -466,12 +466,19 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ) -> pl.DataFrame:
-        lf = self.compile(expr, params=params, **kwargs)
+        table_expr = expr.as_table()
+        lf = self.compile(table_expr, params=params, **kwargs)
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
             lf = lf.limit(limit)
-        return lf.collect(streaming=streaming)
+        df = lf.collect(streaming=streaming)
+        # XXX: Polars sometimes returns data with the incorrect column names.
+        # For now we catch this case and rename them here if needed.
+        expected_cols = tuple(table_expr.columns)
+        if tuple(df.columns) != expected_cols:
+            df = df.rename(dict(zip(df.columns, expected_cols)))
+        return df
 
     def execute(
         self,

@@ -266,7 +266,7 @@ class Backend(SQLBackend):
     def _fetch_from_cursor(self, cursor, schema):
         from ibis.formats.pandas import PandasData
 
-        results = fetchall(cursor)
+        results = fetchall(cursor, schema.names)
         return PandasData.convert_table(results, schema)
 
     @contextlib.contextmanager
@@ -1260,9 +1260,10 @@ class Backend(SQLBackend):
                     cur.execute(insert_stmt, row)
 
 
-def fetchall(cur):
+def fetchall(cur, names=None):
     batches = cur.fetchcolumnar()
-    names = list(map(operator.itemgetter(0), cur.description))
+    if names is None:
+        names = list(map(operator.itemgetter(0), cur.description))
     df = _column_batches_to_dataframe(names, batches)
     return df
 
