@@ -60,10 +60,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.DayOfWeekName: "dayname",
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
-        ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.RStrip: "rtrim",
-        ops.Strip: "trim",
         ops.TypeOf: "typeof",
     }
 
@@ -323,6 +320,12 @@ class ImpalaCompiler(SQLGlotCompiler):
                 f"Only 'day' part is supported for date delta in the {self.dialect} backend"
             )
         return self.f.datediff(left, right)
+
+    def visit_Strip(self, op, *, arg):
+        # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
+        # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
 
 compiler = ImpalaCompiler()

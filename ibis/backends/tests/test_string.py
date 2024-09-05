@@ -1265,7 +1265,7 @@ def string_temp_table(backend, con):
             id="lstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala", "pyspark"],
+                    ["pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1282,7 +1282,7 @@ def string_temp_table(backend, con):
             id="rstrip",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala", "pyspark"],
+                    ["pyspark"],
                     raises=AssertionError,
                     reason="doesn't strip newline or tabs",
                 ),
@@ -1298,16 +1298,6 @@ def string_temp_table(backend, con):
             lambda t: t.str.strip(),
             id="strip",
             marks=[
-                pytest.mark.notimpl(
-                    ["impala"],
-                    raises=AssertionError,
-                    reason="""
-                    not stripping anything but space
-                    can use
-                    TRIM(TRAILING '\t\n\r ' FROM string_col)
-                    TRIM(LEADING '\t\n\r ' FROM string_col)
-                    """,
-                ),
                 pytest.mark.notimpl(
                     ["flink"],
                     raises=AssertionError,
