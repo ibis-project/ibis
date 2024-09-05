@@ -330,3 +330,22 @@ def test_embedded_cte(alltypes, ftname_raw):
     expr = alltypes.sql(sql, dialect="duckdb")
     result = expr.head(1).execute()
     assert len(result) == 1
+
+
+@dot_sql_never
+def test_unnamed_columns(con):
+    sql = "SELECT 'a' || 'b', 1 AS col42"
+    sgexpr = sg.parse_one(sql, read="duckdb")
+    expr = con.sql(sgexpr.sql(con.dialect))
+
+    schema = expr.schema()
+    names = schema.names
+    types = schema.types
+
+    assert len(names) == 2
+
+    assert names[0]
+    assert names[1] == "col42"
+
+    assert types[0].is_string()
+    assert types[1].is_integer()
