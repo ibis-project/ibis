@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
+from string import whitespace
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -96,7 +97,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.IsInf: "isInfinite",
         ops.IsNan: "isNaN",
         ops.IsNull: "isNull",
-        ops.LStrip: "trimLeft",
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.MapKeys: "mapKeys",
@@ -106,7 +106,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Median: "quantileExactExclusive",
         ops.NotNull: "isNotNull",
         ops.NullIf: "nullIf",
-        ops.RStrip: "trimRight",
         ops.RegexReplace: "replaceRegexpAll",
         ops.RowNumber: "row_number",
         ops.StartsWith: "startsWith",
@@ -114,7 +113,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Strftime: "formatDateTime",
         ops.StringLength: "length",
         ops.StringReplace: "replaceAll",
-        ops.Strip: "trimBoth",
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
@@ -476,6 +474,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_StringContains(self, op, haystack, needle):
         return self.f.position(haystack, needle) > 0
+
+    def visit_Strip(self, op, *, arg):
+        return sge.Trim(
+            this=arg, position="BOTH", expression=sge.Literal.string(whitespace)
+        )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         weekdays = len(calendar.day_name)
