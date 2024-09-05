@@ -353,7 +353,8 @@ def test_unnamed_columns(con):
     assert len(names) == 2
 
     assert names[0]
-    assert names[1] == "col42"
+    # Snowflake shouts everything
+    assert names[1].lower() == "col42"
 
     assert types[0].is_string()
     assert types[1].is_integer()
