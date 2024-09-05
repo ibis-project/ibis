@@ -443,6 +443,10 @@ def rollup(*dims):
 def cube(*dims):
     """Construct a cube.
 
+    ::: {.callout-note}
+    ## Cubes can be very expensive to compute.
+    :::
+
     Cubes are a shorthand for grouping sets that contain all possible ways
     to aggregate a set of grouping keys.
 
