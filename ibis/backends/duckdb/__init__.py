@@ -1499,8 +1499,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             Mapping of scalar parameter expressions to value.
         **kwargs
             DuckDB Parquet writer arguments. See
-            https://duckdb.org/docs/data/parquet#writing-to-parquet-files for
-            details
+            https://duckdb.org/docs/data/parquet/overview.html#writing-to-parquet-files
+            for details.
 
         Examples
         --------
