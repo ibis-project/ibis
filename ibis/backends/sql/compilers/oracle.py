@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import string
-
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
@@ -87,7 +85,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
-        ops.Strip: "trim",
         ops.Mode: "stats_mode",
     }
 
@@ -492,11 +489,11 @@ class OracleCompiler(SQLGlotCompiler):
             )
         return left - right
 
-    def visit_RStrip(self, op, *, arg):
-        return self.f.anon.rtrim(arg, string.whitespace)
-
-    def visit_LStrip(self, op, *, arg):
-        return self.f.anon.ltrim(arg, string.whitespace)
+    def visit_Strip(self, op, *, arg):
+        # Oracle's `TRIM` only accepts a single character to trim off, unlike
+        # Oracle's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
 
 compiler = OracleCompiler()
