@@ -334,7 +334,7 @@ def test_embedded_cte(alltypes, ftname_raw):
 
 @dot_sql_never
 def test_unnamed_columns(con):
-    sql = "SELECT 'a' || 'b', 1 AS col42"
+    sql = "SELECT 'a', 1 AS col42"
     sgexpr = sg.parse_one(sql, read="duckdb")
     expr = con.sql(sgexpr.sql(con.dialect))
 
