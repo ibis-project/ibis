@@ -181,6 +181,10 @@ website:
             - reference/Repr.qmd
             - reference/SQL.qmd
 
+        - section: Cursed Knowledge
+          contents:
+            - reference/cursed_knowledge.qmd
+
 format:
   html:
     theme:
