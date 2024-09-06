@@ -89,7 +89,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Covariance,
         ops.CountDistinctStar,
         ops.DateDiff,
-        ops.EndsWith,
         ops.IntervalAdd,
         ops.IntervalSubtract,
         ops.IntervalMultiply,
@@ -108,7 +107,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.RegexSplit,
         ops.RowID,
         ops.RPad,
-        ops.StartsWith,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
@@ -521,6 +519,12 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
+
+    def visit_StartsWith(self, op, *, arg, start):
+        return arg.like(self.f.concat(start, "%"))
+
+    def visit_EndsWith(self, op, *, arg, end):
+        return arg.like(self.f.concat("%", end))
 
 
 compiler = MSSQLCompiler()

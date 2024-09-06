@@ -513,9 +513,6 @@ def uses_java_re(t):
             ),
             lambda t: t.int_col == 1,
             id="startswith",
-            marks=[
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t: t.int_col.cases([(1, "abcd"), (2, "ABCD")], "dabc").endswith(
@@ -523,25 +520,16 @@ def uses_java_re(t):
             ),
             lambda t: t.int_col == 1,
             id="endswith",
-            marks=[
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t: t.date_string_col.startswith("2010-01"),
             lambda t: t.date_string_col.str.startswith("2010-01"),
             id="startswith-simple",
-            marks=[
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t: t.date_string_col.endswith("/10"),
             lambda t: t.date_string_col.str.endswith("/10"),
             id="endswith-simple",
-            marks=[
-                pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t: t.string_col.strip(),
