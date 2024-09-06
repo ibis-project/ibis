@@ -417,3 +417,12 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
+
+
+def test_memtable_doesnt_leak(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    name = "memtable_doesnt_leak"
+    assert name not in con.list_tables()
+    df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
+    assert name not in con.list_tables()
+    assert len(df) == 3
