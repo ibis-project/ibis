@@ -20,7 +20,8 @@ def name_to_path(data_dir):
 def test_none_config():
     config = None
     conn = ibis.datafusion.connect(config)
-    assert conn.list_tables() == []
+    assert conn.ddl.list_tables() == []
+    assert conn.ddl.list_views() == []
 
 
 def test_str_config(name_to_path):
@@ -28,7 +29,7 @@ def test_str_config(name_to_path):
     # if path.endswith((".parquet", ".csv", ".csv.gz")) connect triggers register
     with pytest.warns(FutureWarning, match="v9.1"):
         conn = ibis.datafusion.connect(config)
-    assert sorted(conn.list_tables()) == sorted(name_to_path)
+    assert sorted(conn.tables) == sorted(name_to_path)
 
 
 def test_path_config(name_to_path):
@@ -36,7 +37,7 @@ def test_path_config(name_to_path):
     # if path.endswith((".parquet", ".csv", ".csv.gz")) connect triggers register
     with pytest.warns(FutureWarning, match="v9.1"):
         conn = ibis.datafusion.connect(config)
-    assert sorted(conn.list_tables()) == sorted(name_to_path)
+    assert sorted(conn.tables) == sorted(name_to_path)
 
 
 def test_context_config(name_to_path):
@@ -44,4 +45,4 @@ def test_context_config(name_to_path):
     for name, path in name_to_path.items():
         ctx.register_parquet(name, str(path))
     conn = ibis.datafusion.connect(ctx)
-    assert sorted(conn.list_tables()) == sorted(name_to_path)
+    assert sorted(conn.tables) == sorted(name_to_path)

@@ -286,6 +286,57 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
             pass
 
+    def _list_query_constructor(self, col: str, where_predicates: list) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col)
+            .from_(sg.table("tables", db="information_schema"))
+            .where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+    ) -> list[str]:
+        """Generic method to list objects like tables or views."""
+
+        database = database or "public"
+
+        col = "table_name"
+        where_predicates = [
+            C.table_schema.eq(sge.convert(database)),
+            C.table_type.eq(object_type),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates)
+        out = self.raw_sql(sql).to_pydict()
+
+        return self._filter_with_like(out[col], like)
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "BASE TABLE")
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "VIEW")
+
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
@@ -306,12 +357,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             The list of the table names that match the pattern `like`.
         """
         database = database or "public"
-        query = (
-            sg.select("table_name")
-            .from_("information_schema.tables")
-            .where(sg.column("table_schema").eq(sge.convert(database)))
+
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
         )
-        return self.raw_sql(query).to_pydict()["table_name"]
+
+        return tables_and_views
 
     def get_schema(
         self,
