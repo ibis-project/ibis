@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.temporal_windows import WindowedTable
+    from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
 
@@ -198,19 +199,32 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.to_pyarrow().__arrow_c_stream__(requested_schema)
 
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Table:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_table(table, self.schema())
+        return data_mapper.convert_table(
+            table, self.schema() if schema is None else schema
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
-        return PandasData.convert_table(df, self.schema() if schema is None else schema)
+        return data_mapper.convert_table(
+            df, self.schema() if schema is None else schema
+        )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
         from ibis.formats.polars import PolarsData
