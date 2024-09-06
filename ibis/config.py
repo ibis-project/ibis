@@ -178,7 +178,7 @@ def _default_backend() -> Any:
         return backend
 
     try:
-        import duckdb as _  # noqa: F401
+        import duckdb
     except ImportError:
         raise com.IbisError(
             """\
@@ -203,7 +203,9 @@ For more information on available backends, visit https://ibis-project.org/insta
 
     import ibis
 
-    options.default_backend = con = ibis.duckdb.connect(":memory:")
+    options.default_backend = con = ibis.duckdb.from_connection(
+        duckdb.default_connection
+    )
     return con
 
 
