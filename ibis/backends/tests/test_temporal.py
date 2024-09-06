@@ -275,62 +275,22 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_unit", "pandas_unit"),
     [
-        param(
-            "Y",
-            "Y",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "Q",
-            "Q",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "M",
-            "M",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "D",
-            "D",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
+        param("Y", "Y", id="year"),
+        param("Q", "Q", id="quarter"),
+        param("M", "M", id="month"),
         param(
             "W",
             "W",
             marks=[
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
-                    ["polars", "flink"],
+                    ["flink"],
                     raises=AssertionError,
                     reason="implemented, but doesn't match other backends",
                 ),
             ],
         ),
+        param("D", "D"),
         param(
             "h",
             "h",
@@ -427,7 +387,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
         expected = dtns.floor(pandas_unit)
 
     result = expr.execute()
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected).astype(result.dtype)
 
     backend.assert_series_equal(result, expected)
 
