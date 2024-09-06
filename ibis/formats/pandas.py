@@ -383,6 +383,8 @@ class PandasData(DataMapper):
                 return value
             elif isinstance(value, UUID):
                 return value
+            elif isinstance(value, bytes):
+                return UUID(bytes=value)
             return UUID(value)
 
         return convert
