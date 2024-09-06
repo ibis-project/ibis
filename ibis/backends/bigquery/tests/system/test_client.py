@@ -421,12 +421,22 @@ def test_create_table_from_scratch_with_spaces(project_id, dataset_id):
         con.drop_table(name)
 
 
-def test_table_suffix():
+@pytest.mark.parametrize("ret_type", ["pandas", "pyarrow", "pyarrow_batches"])
+def test_table_suffix(ret_type):
     con = ibis.connect("bigquery://ibis-gbq")
     t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
     expr = t.filter(t._TABLE_SUFFIX == "1929", t.max != 9999.9).head(1)
-    result = expr.execute()
-    assert not result.empty
+    if ret_type == "pandas":
+        result = expr.to_pandas()
+        cols = list(result.columns)
+    elif ret_type == "pyarrow":
+        result = expr.to_pyarrow()
+        cols = result.column_names
+    elif ret_type == "pyarrow_batches":
+        result = pa.Table.from_batches(expr.to_pyarrow_batches())
+        cols = result.column_names
+    assert len(result)
+    assert "_TABLE_PREFIX" not in cols
 
 
 def test_parameters_in_url_connect(mocker):
