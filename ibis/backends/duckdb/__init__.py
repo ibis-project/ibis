@@ -7,6 +7,7 @@ import contextlib
 import os
 import urllib
 import warnings
+import weakref
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -1604,6 +1605,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         except (duckdb.CatalogException, duckdb.InvalidInputException):
             # only register if we haven't already done so
             self.con.register(name, op.data.to_pyarrow(op.schema))
+
+            # if we don't aggressively unregister tables duckdb will keep a
+            # reference to every memtable ever registered, even if there's no
+            # way for a user to access the operation anymore, resulting in a
+            # memory leak
+            weakref.finalize(op, self.con.unregister, name)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         con = self.con
