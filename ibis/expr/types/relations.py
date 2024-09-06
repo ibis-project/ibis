@@ -3277,11 +3277,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
         │ int64   │ string            │ int64         │ string            │
         ├─────────┼───────────────────┼───────────────┼───────────────────┤
-        │    1732 │ funny             │         60756 │ funny             │
-        │    1732 │ Highly quotable   │         60756 │ Highly quotable   │
-        │    1732 │ drugs             │        106782 │ drugs             │
-        │    5989 │ Leonardo DiCaprio │        106782 │ Leonardo DiCaprio │
-        │  139385 │ tom hardy         │         89774 │ Tom Hardy         │
+        │   60756 │ funny             │          1732 │ funny             │
+        │   60756 │ Highly quotable   │          1732 │ Highly quotable   │
+        │   89774 │ Tom Hardy         │        139385 │ tom hardy         │
+        │  106782 │ drugs             │          1732 │ drugs             │
+        │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         from ibis.expr.types.joins import Join

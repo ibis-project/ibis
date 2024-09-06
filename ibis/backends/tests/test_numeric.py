@@ -1290,14 +1290,13 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["duckdb", "sqlite"],
-    raises=AssertionError,
-    reason="returns NULL when dividing by zero",
+    ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
