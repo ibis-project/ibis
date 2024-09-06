@@ -73,7 +73,7 @@ impyla = { version = ">=0.17,<1", optional = true }
 oracledb = { version = ">=1.3.1,<3", optional = true }
 packaging = { version = ">=21.3,<25", optional = true }
 pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
-fsspec = { version = "<2024.6.2", optional = true }
+fsspec = { version = "<2024.9.1", optional = true }
 polars = { version = ">=1,<2", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
