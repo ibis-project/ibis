@@ -417,13 +417,11 @@ def uses_java_re(t):
             lambda t: t.string_col.lpad(10, "a"),
             lambda t: t.string_col.str.pad(10, fillchar="a", side="left"),
             id="lpad",
-            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t: t.string_col.rpad(10, "a"),
             lambda t: t.string_col.str.pad(10, fillchar="a", side="right"),
             id="rpad",
-            marks=pytest.mark.notimpl(["mssql"], raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t: t.string_col.find_in_set(["1"]),
@@ -1105,10 +1103,6 @@ def string_temp_table(backend, con):
             lambda t: t.str[:4].str.pad(4, side="right", fillchar="-"),
             id="rpad",
             marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.notyet(
                     ["flink", "oracle"],
                     raises=AssertionError,
@@ -1136,10 +1130,6 @@ def string_temp_table(backend, con):
             lambda t: t.str[:4].str.pad(4, side="left", fillchar="-"),
             id="lpad",
             marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                ),
                 pytest.mark.notyet(
                     ["flink", "oracle"],
                     raises=AssertionError,

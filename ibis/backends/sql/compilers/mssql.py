@@ -95,7 +95,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.IntervalFloorDivide,
         ops.IsInf,
         ops.IsNan,
-        ops.LPad,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
@@ -106,7 +105,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
-        ops.RPad,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
@@ -525,6 +523,18 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     def visit_EndsWith(self, op, *, arg, end):
         return arg.like(self.f.concat("%", end))
+
+    def visit_LPad(self, op, *, arg, length, pad=" "):
+        return self.f.left(
+            self.f.right(
+                self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
+                length + self.f.length(arg),
+            ),
+            length,
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad=" "):
+        return self.f.left(self.f.concat(arg, self.f.replicate(pad, length)), length)
 
 
 compiler = MSSQLCompiler()
