@@ -75,6 +75,10 @@ class Backend(BaseBackend, NoUrl):
         schema = sch.infer(self._tables[name])
         return ops.DatabaseTable(name, schema, self).to_expr()
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        if (name := op.name) not in self._tables:
+            self._add_table(name, op.data.to_polars(op.schema).lazy())
+
     @deprecated(
         as_of="9.1",
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
@@ -466,6 +470,7 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ) -> pl.DataFrame:
+        self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
         lf = self.compile(table_expr, params=params, **kwargs)
         if limit == "default":

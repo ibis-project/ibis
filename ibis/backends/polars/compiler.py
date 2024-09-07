@@ -9,11 +9,14 @@ from functools import partial, reduce, singledispatch
 from math import isnan
 
 import polars as pl
+import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.sql.compilers.base import STAR
+from ibis.backends.sql.dialects import Polars
 from ibis.expr.operations.udf import InputType
 from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
@@ -64,8 +67,9 @@ def dummy_table(op, **kw):
 
 
 @translate.register(ops.InMemoryTable)
-def in_memory_table(op, **_):
-    return op.data.to_polars(op.schema).lazy()
+def in_memory_table(op, *, ctx, **_):
+    sql = sg.select(STAR).from_(sg.to_identifier(op.name, quoted=True)).sql(Polars)
+    return ctx.execute(sql, eager=False)
 
 
 def _make_duration(value, dtype):
