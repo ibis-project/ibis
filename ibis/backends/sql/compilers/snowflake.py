@@ -424,13 +424,7 @@ $$""",
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         # https://docs.snowflake.com/en/sql-reference/functions/regexp_substr
-        return sge.RegexpExtract(
-            this=arg,
-            expression=pattern,
-            position=sge.convert(1),
-            group=index,
-            parameters=sge.convert("ce"),
-        )
+        return self.f.anon.regexp_substr(arg, pattern, 1, 1, "ce", index)
 
     def visit_ArrayZip(self, op, *, arg):
         return self.if_(

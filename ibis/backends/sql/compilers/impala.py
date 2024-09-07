@@ -295,6 +295,9 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement, dialect=self.dialect)
 
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        return self.f.anon.regexp_extract(arg, pattern, index)
+
     def visit_Round(self, op, *, arg, digits):
         rounded = self.f.round(*filter(None, (arg, digits)))
 
