@@ -99,38 +99,37 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted),
-                    expressions=schema.to_sqlglot(self.dialect),
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.dialect)
+        name = op.name
+        quoted = self.compiler.quoted
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.dialect)
 
-            df = op.data.to_frame()
-            # nan gets compiled into 'NaN'::float which throws errors in non-float columns
-            # In order to hold NaN values, pandas automatically converts integer columns
-            # to float columns if there are NaN values in them. Therefore, we need to convert
-            # them to their original dtypes (that support pd.NA) to figure out which columns
-            # are actually non-float, then fill the NaN values in those columns with None.
-            convert_df = df.convert_dtypes()
-            for col in convert_df.columns:
-                if not is_float_dtype(convert_df[col]):
-                    df[col] = df[col].replace(float("nan"), None)
+        df = op.data.to_frame()
+        # nan gets compiled into 'NaN'::float which throws errors in non-float columns
+        # In order to hold NaN values, pandas automatically converts integer columns
+        # to float columns if there are NaN values in them. Therefore, we need to convert
+        # them to their original dtypes (that support pd.NA) to figure out which columns
+        # are actually non-float, then fill the NaN values in those columns with None.
+        convert_df = df.convert_dtypes()
+        for col in convert_df.columns:
+            if not is_float_dtype(convert_df[col]):
+                df[col] = df[col].replace(float("nan"), None)
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
 
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
-                execute_batch(cur, sql, data, 128)
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
+            execute_batch(cur, sql, data, 128)
 
     @contextlib.contextmanager
     def begin(self):

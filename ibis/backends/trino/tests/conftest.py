@@ -11,7 +11,6 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
@@ -182,13 +181,7 @@ def generate_tpc_tables(suite_name, *, data_dir):
             exists=True,
             this=sge.Schema(
                 this=sg.table(name, db=suite_name, catalog="hive", quoted=True),
-                expressions=[
-                    sge.ColumnDef(
-                        this=sg.to_identifier(col, quoted=True),
-                        kind=TrinoType.from_ibis(dtype),
-                    )
-                    for col, dtype in schema.items()
-                ],
+                expressions=schema.to_sqlglot("trino"),
             ),
             properties=sge.Properties(
                 expressions=[

@@ -66,8 +66,6 @@ class Backend(SQLBackend):
     name = "impala"
     compiler = sc.impala.compiler
 
-    supports_in_memory_tables = True
-
     def _from_url(self, url: ParseResult, **kwargs: Any) -> Backend:
         """Connect to a backend using a URL `url`.
 
@@ -1221,6 +1219,10 @@ class Backend(SQLBackend):
 
         return "\n".join(["Query:", util.indent(query, 2), "", *results.iloc[:, 0]])
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        with contextlib.closing(self.con.cursor()) as cur:
+            return cur.table_exists(name)
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -1229,35 +1231,22 @@ class Backend(SQLBackend):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            type_mapper = self.compiler.type_mapper
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=type_mapper.from_ibis(typ),
-                    # we don't support `NOT NULL` constraints in trino because
-                    # because each trino connector differs in whether it
-                    # supports nullability constraints, and whether the
-                    # connector supports it isn't visible to ibis via a
-                    # metadata query
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-            ).sql(self.name, pretty=True)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        ).sql(self.name, pretty=True)
 
-            data = op.data.to_frame().itertuples(index=False)
-            insert_stmt = self._build_insert_template(name, schema=schema)
-            with self._safe_raw_sql(create_stmt) as cur:
-                for row in data:
-                    cur.execute(insert_stmt, row)
+        data = op.data.to_frame().itertuples(index=False)
+        insert_stmt = self._build_insert_template(name, schema=schema)
+        with self._safe_raw_sql(create_stmt) as cur:
+            for row in data:
+                cur.execute(insert_stmt, row)
 
 
 def fetchall(cur, names=None):

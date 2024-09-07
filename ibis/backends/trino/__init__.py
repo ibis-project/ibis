@@ -466,18 +466,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if schema is not None and obj is None:
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    # TODO(cpcloud): not null constraints are unreliable in
-                    # trino, so we ignore them
-                    # https://github.com/trinodb/trino/issues/2923
-                    constraints=None,
-                )
-                for name, typ in schema.items()
-            ]
-            target = sge.Schema(this=table_ref, expressions=column_defs)
+            target = sge.Schema(
+                this=table_ref, expressions=schema.to_sqlglot(self.dialect)
+            )
         else:
             target = table_ref
 
@@ -574,32 +565,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    # we don't support `NOT NULL` constraints in trino because
-                    # because each trino connector differs in whether it
-                    # supports nullability constraints, and whether the
-                    # connector supports it isn't visible to ibis via a
-                    # metadata query
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-            ).sql(self.name, pretty=True)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        ).sql(self.name)
 
-            data = op.data.to_frame().itertuples(index=False)
-            insert_stmt = self._build_insert_template(name, schema=schema)
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                for row in data:
-                    cur.execute(insert_stmt, row)
+        data = op.data.to_frame().itertuples(index=False)
+        insert_stmt = self._build_insert_template(name, schema=schema)
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            for row in data:
+                cur.execute(insert_stmt, row)

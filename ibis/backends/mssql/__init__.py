@@ -714,41 +714,24 @@ GO"""
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                # properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        )
 
-            df = op.data.to_frame()
-            data = df.itertuples(index=False)
+        df = op.data.to_frame()
+        data = df.itertuples(index=False)
 
-            insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
-            with self._safe_ddl(create_stmt) as cur:
-                if not df.empty:
-                    cur.executemany(insert_stmt, data)
+        insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
+        with self._safe_ddl(create_stmt) as cur:
+            if not df.empty:
+                cur.executemany(insert_stmt, data)
 
     def _cursor_batches(
         self,

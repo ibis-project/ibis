@@ -369,9 +369,6 @@ def test_rename_table(con, temp_table, temp_table_orig):
 
 @mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
-@mark.notyet(
-    ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
