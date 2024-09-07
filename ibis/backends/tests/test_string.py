@@ -1258,7 +1258,7 @@ def string_temp_table(backend, con):
                     reason="Spark SQL LTRIM doesn't accept characters to trim",
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "snowflake"],
+                    ["bigquery"],
                     raises=AssertionError,
                     reason="does a full `strip` instead",
                 ),
@@ -1275,7 +1275,7 @@ def string_temp_table(backend, con):
                     reason="Spark SQL RTRIM doesn't accept characters to trim",
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "snowflake"],
+                    ["bigquery"],
                     raises=AssertionError,
                     reason="does a full `strip` instead",
                 ),
