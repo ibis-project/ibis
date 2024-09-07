@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import re
 import warnings
+import weakref
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
@@ -419,11 +419,9 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         if temp:
             properties.append(sge.TemporaryProperty())
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -468,10 +466,6 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided
@@ -527,7 +521,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                     insert_stmt, list(data.iloc[start:end].itertuples(index=False))
                 )
 
-        atexit.register(self._clean_up_tmp_table, name)
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
+        weakref.finalize(op, self._clean_up_tmp_table, op.name)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")
@@ -608,6 +603,13 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         return OraclePandasData.convert_table(df, schema)
 
     def _clean_up_tmp_table(self, name: str) -> None:
+        dialect = self.dialect
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+
+        truncate = sge.TruncateTable(expressions=[ident]).sql(dialect)
+        drop = sge.Drop(kind="TABLE", this=ident).sql(dialect)
+
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
@@ -616,9 +618,9 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             # ignore DatabaseError exceptions because the table may not exist
             # because it's already been deleted
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'TRUNCATE TABLE "{name}"')
+                bind.execute(truncate)
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'DROP TABLE "{name}"')
+                bind.execute(drop)
 
-    def _drop_cached_table(self, name):
+    def _drop_cached_table(self, name: str) -> None:
         self._clean_up_tmp_table(name)

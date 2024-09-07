@@ -8,6 +8,7 @@ import json
 import os
 import tempfile
 import warnings
+import weakref
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -662,6 +663,19 @@ $$ {defn["source"]} $$"""
             pq.write_table(data, path, compression="zstd")
             self.read_parquet(path, table_name=name)
 
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
+        def drop_table(con, sql: str):
+            if not con.is_closed():
+                with con.cursor() as cur:
+                    cur.execute(sql)
+
+        drop_stmt = sg.exp.Drop(
+            kind="TABLE",
+            this=sg.table(op.name, quoted=self.compiler.quoted),
+            exists=True,
+        )
+        weakref.finalize(op, drop_table, self.con, drop_stmt.sql(self.dialect))
+
     def create_catalog(self, name: str, force: bool = False) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
@@ -821,11 +835,9 @@ $$ {defn["source"]} $$"""
         if comment is not None:
             properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -845,11 +857,6 @@ $$ {defn["source"]} $$"""
 
         with self._safe_raw_sql(create_stmt):
             pass
-
-        # Clean up temporary memtable if we've created one
-        # for in-memory reads
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 

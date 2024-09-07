@@ -663,8 +663,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         if not schema:
             schema = table.schema()
 
-        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -675,7 +677,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -683,7 +687,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:

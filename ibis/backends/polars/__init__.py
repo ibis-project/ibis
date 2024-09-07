@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import weakref
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
@@ -80,6 +81,9 @@ class Backend(BaseBackend, NoUrl):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self._add_table(op.name, op.data.to_polars(op.schema).lazy())
+
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable) -> None:
+        weakref.finalize(op, self.drop_table, op.name, force=True)
 
     @deprecated(
         as_of="9.1",

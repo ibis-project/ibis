@@ -160,12 +160,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             properties.append(sge.TemporaryProperty())
             catalog = "temp"
 
-        temp_memtable_view = None
-
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -233,9 +230,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
                             actions=[sge.RenameTable(this=final_table)],
                         ).sql(self.name)
                     )
-
-        if temp_memtable_view is not None:
-            self.con.unregister(temp_memtable_view)
 
         return self.table(name, database=(catalog, database))
 
@@ -1620,10 +1614,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self.con.register(op.name, op.data.to_pyarrow(op.schema))
 
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
         # if we don't aggressively unregister tables duckdb will keep a
         # reference to every memtable ever registered, even if there's no
         # way for a user to access the operation anymore, resulting in a
         # memory leak
+        #
+        # we can't use drop_table, because self.con.register creates a view, so
+        # use the corresponding unregister method
         weakref.finalize(op, self.con.unregister, op.name)
 
     def _register_udfs(self, expr: ir.Expr) -> None:

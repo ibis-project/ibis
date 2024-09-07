@@ -625,11 +625,9 @@ GO"""
             properties.append(sge.TemporaryProperty())
             catalog, db = None, None
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -647,11 +645,14 @@ GO"""
         if not schema:
             schema = table.schema()
 
-        table = sg.table(
-            "#" * temp + temp_name, catalog=catalog, db=db, quoted=self.compiler.quoted
-        )
+        quoted = self.compiler.quoted
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        target = sge.Schema(
+            this=sg.table(
+                "#" * temp + temp_name, catalog=catalog, db=db, quoted=quoted
+            ),
+            expressions=schema.to_sqlglot(self.dialect),
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -659,7 +660,7 @@ GO"""
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=catalog, db=db, quoted=self.compiler.quoted)
+        this = sg.table(name, catalog=catalog, db=db, quoted=quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
         with self._safe_ddl(create_stmt) as cur:
             if query is not None:
@@ -692,10 +693,6 @@ GO"""
             db = "dbo"
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=(catalog, db))
 
         # preserve the input schema if it was provided

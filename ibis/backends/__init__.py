@@ -1116,11 +1116,18 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         for memtable in expr.op().find(ops.InMemoryTable):
             if not self._in_memory_table_exists(memtable.name):
                 self._register_in_memory_table(memtable)
+                self._register_memtable_finalizer(memtable)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         if self.supports_in_memory_tables:
             raise NotImplementedError(
                 f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
+            )
+
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable) -> None:
+        if self.supports_in_memory_tables:
+            raise NotImplementedError(
+                f"{self.name} must implement `_register_memtable_finalizer` to support in-memory tables"
             )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
