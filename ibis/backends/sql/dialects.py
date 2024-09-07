@@ -205,6 +205,7 @@ def _explode_to_unnest():
 
 class Flink(Hive):
     UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
         UNNEST_WITH_ORDINALITY = False
