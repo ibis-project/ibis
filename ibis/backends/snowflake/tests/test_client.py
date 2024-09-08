@@ -312,17 +312,17 @@ def test_compile_does_not_make_requests(con, mocker):
     expr = astronauts.year_of_selection.value_counts()
     spy = mocker.spy(con.con, "cursor")
     assert expr.compile() is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     t = ibis.memtable({"a": [1, 2, 3]})
     assert con.compile(t) is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     assert ibis.to_sql(t, dialect="snowflake") is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     assert ibis.to_sql(expr) is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
 
 # this won't be hit in CI, but folks can test locally
