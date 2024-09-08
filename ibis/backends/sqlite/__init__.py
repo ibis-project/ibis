@@ -159,6 +159,9 @@ class Backend(SQLBackend, UrlFromPath):
     ) -> list[str]:
         """List the tables in the database.
 
+        If `database` is None, the current database is used, and temporary
+        tables are included in the result.
+
         Parameters
         ----------
         like
@@ -169,12 +172,15 @@ class Backend(SQLBackend, UrlFromPath):
         """
         if database is None:
             database = "main"
+            schemas = [database, "temp"]
+        else:
+            schemas = [database]
 
         sql = (
             sg.select("name")
             .from_(F.pragma_table_list())
             .where(
-                C.schema.eq(sge.convert(database)),
+                C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),
                 ~(
                     C.name.isin(
