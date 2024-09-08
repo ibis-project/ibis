@@ -187,7 +187,7 @@ class Backend(SQLBackend, UrlFromPath):
                     sge.convert("sqlite_temp_master"),
                 ),
             )
-            .sql(self.name)
+            .sql(self.dialect)
         )
         with self._safe_raw_sql(sql) as cur:
             results = [r[0] for r in cur.fetchall()]
