@@ -175,7 +175,7 @@ class Backend(SQLBackend, UrlFromPath):
             schemas = [database]
 
         sql = (
-            sg.select("name")
+            sg.select(C.name)
             .from_(F.pragma_table_list())
             .where(
                 C.schema.isin(*map(sge.convert, schemas)),
