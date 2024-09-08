@@ -180,13 +180,11 @@ class Backend(SQLBackend, UrlFromPath):
             .where(
                 C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),
-                ~(
-                    C.name.isin(
-                        sge.convert("sqlite_schema"),
-                        sge.convert("sqlite_master"),
-                        sge.convert("sqlite_temp_schema"),
-                        sge.convert("sqlite_temp_master"),
-                    )
+                ~C.name.isin(
+                    sge.convert("sqlite_schema"),
+                    sge.convert("sqlite_master"),
+                    sge.convert("sqlite_temp_schema"),
+                    sge.convert("sqlite_temp_master"),
                 ),
             )
             .sql(self.name)
