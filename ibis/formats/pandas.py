@@ -376,14 +376,12 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_UUID_element(cls, _):
-        from uuid import UUID
-
         def convert(value):
             if value is None:
                 return value
-            elif isinstance(value, UUID):
+            elif isinstance(value, str):
                 return value
-            return UUID(value)
+            return str(value)
 
         return convert
 
