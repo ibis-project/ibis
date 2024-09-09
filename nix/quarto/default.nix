@@ -37,13 +37,19 @@ stdenv.mkDerivation rec {
 
   nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [ makeWrapper ];
 
-  preFixup = ''
-    wrapProgram $out/bin/quarto \
-      --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
-      --prefix QUARTO_DENO : ${deno}/bin/deno \
-      --prefix QUARTO_R : ${rWrapper.override { packages = with rPackages; [ dplyr reticulate rmarkdown tidyr ]; }}/bin/R \
-      --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass
-  '';
+  preFixup =
+    let
+      rEnv = rWrapper.override {
+        packages = with rPackages; [ dplyr reticulate rmarkdown tidyr ];
+      };
+    in
+    ''
+      wrapProgram $out/bin/quarto \
+        --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
+        --prefix QUARTO_DENO : ${deno}/bin/deno \
+        --prefix QUARTO_R : ${rEnv}/bin/R \
+        --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass
+    '';
 
   installPhase = ''
     runHook preInstall
