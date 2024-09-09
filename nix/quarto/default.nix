@@ -73,7 +73,6 @@ stdenv.mkDerivation rec {
     homepage = "https://quarto.org/";
     changelog = "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
     license = licenses.gpl2Plus;
-    maintainers = with maintainers; [ mrtarantoga ];
     platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
     sourceProvenance = with sourceTypes; [ binaryNativeCode binaryBytecode ];
   };
