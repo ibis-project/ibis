@@ -524,7 +524,7 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_EndsWith(self, op, *, arg, end):
         return arg.like(self.f.concat("%", end))
 
-    def visit_LPad(self, op, *, arg, length, pad=" "):
+    def visit_LPad(self, op, *, arg, length, pad):
         return self.f.left(
             self.f.right(
                 self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
@@ -533,7 +533,7 @@ class MSSQLCompiler(SQLGlotCompiler):
             length,
         )
 
-    def visit_RPad(self, op, *, arg, length, pad=" "):
+    def visit_RPad(self, op, *, arg, length, pad):
         return self.f.left(self.f.concat(arg, self.f.replicate(pad, length)), length)
 
 
