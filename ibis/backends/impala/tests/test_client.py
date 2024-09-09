@@ -88,16 +88,18 @@ def test_adapt_scalar_array_results(con, alltypes):
 def test_interactive_repr_call_failure(con):
     t = con.table("lineitem").limit(100000)
 
-    t = t[t, t.l_receiptdate.cast("timestamp").name("date")]
+    t = t.select(t, t.l_receiptdate.cast("timestamp").name("date"))
 
     keys = [t.date.year().name("year"), "l_linestatus"]
     filt = t.l_linestatus.isin(["F"])
-    expr = t[filt].group_by(keys).aggregate(t.l_extendedprice.mean().name("avg_px"))
+    expr = (
+        t.filter(filt).group_by(keys).aggregate(t.l_extendedprice.mean().name("avg_px"))
+    )
 
     w2 = ibis.trailing_window(9, group_by=expr.l_linestatus, order_by=expr.year)
 
     metric = expr["avg_px"].mean().over(w2)
-    enriched = expr[expr, metric]
+    enriched = expr.select(expr, metric)
     with config.option_context("interactive", True):
         repr(enriched)
 

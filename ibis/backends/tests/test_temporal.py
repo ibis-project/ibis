@@ -1037,7 +1037,7 @@ def test_interval_add_cast_scalar(backend, alltypes):
 def test_interval_add_cast_column(backend, alltypes, df):
     timestamp_date = alltypes.timestamp_col.date()
     delta = alltypes.bigint_col.cast("interval('D')")
-    expr = alltypes["id", (timestamp_date + delta).name("tmp")]
+    expr = alltypes.select("id", (timestamp_date + delta).name("tmp"))
     result = expr.execute().sort_values("id").reset_index().tmp
     df = df.sort_values("id").reset_index(drop=True)
     expected = (
@@ -1702,7 +1702,7 @@ def test_interval_literal(con, backend):
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
-    tbl = alltypes[expr.name("timestamp_col")]
+    tbl = alltypes.select(expr.name("timestamp_col"))
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.date.astype(result.timestamp_col.dtype)
@@ -1719,7 +1719,7 @@ def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
     expr = ibis.timestamp(
         c.year(), c.month(), c.day(), c.hour(), c.minute(), c.second()
     )
-    tbl = alltypes[expr.name("timestamp_col")]
+    tbl = alltypes.select(expr.name("timestamp_col"))
     result = con.execute(tbl)
 
     golden = df.timestamp_col.dt.floor("s").astype(result.timestamp_col.dtype)

@@ -174,7 +174,7 @@ def test_isna(backend, alltypes, col, value, filt):
     table = alltypes.select(**{col: value})
     df = table.execute()
 
-    result = table[filt(table[col])].execute().reset_index(drop=True)
+    result = table.filter(filt(table[col])).execute().reset_index(drop=True)
     expected = df[df[col].isna()].reset_index(drop=True)
 
     backend.assert_frame_equal(result, expected)
@@ -255,7 +255,7 @@ def test_identical_to(backend, alltypes, sorted_df):
     dt = df[["tinyint_col", "double_col"]]
 
     ident = sorted_alltypes.tinyint_col.identical_to(sorted_alltypes.double_col)
-    expr = sorted_alltypes["id", ident.name("tmp")].order_by("id")
+    expr = sorted_alltypes.select("id", ident.name("tmp")).order_by("id")
     result = expr.execute().tmp
 
     expected = (dt.tinyint_col.isnull() & dt.double_col.isnull()) | (
@@ -280,9 +280,9 @@ def test_identical_to(backend, alltypes, sorted_df):
 @pytest.mark.notimpl(["druid"])
 def test_isin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
-    expr = sorted_alltypes[
+    expr = sorted_alltypes.select(
         "id", sorted_alltypes[column].isin(elements).name("tmp")
-    ].order_by("id")
+    ).order_by("id")
     result = expr.execute().tmp
 
     expected = sorted_df[column].isin(elements)
@@ -304,9 +304,9 @@ def test_isin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.notimpl(["druid"])
 def test_notin(backend, alltypes, sorted_df, column, elements):
     sorted_alltypes = alltypes.order_by("id")
-    expr = sorted_alltypes[
+    expr = sorted_alltypes.select(
         "id", sorted_alltypes[column].notin(elements).name("tmp")
-    ].order_by("id")
+    ).order_by("id")
     result = expr.execute().tmp
 
     expected = ~sorted_df[column].isin(elements)
@@ -339,7 +339,7 @@ def test_notin(backend, alltypes, sorted_df, column, elements):
 @pytest.mark.notimpl(["druid"])
 def test_filter(backend, alltypes, sorted_df, predicate_fn, expected_fn):
     sorted_alltypes = alltypes.order_by("id")
-    table = sorted_alltypes[predicate_fn(sorted_alltypes)].order_by("id")
+    table = sorted_alltypes.filter(predicate_fn(sorted_alltypes)).order_by("id")
     result = table.execute()
     expected = sorted_df[expected_fn(sorted_df)]
 
@@ -427,8 +427,8 @@ def test_select_filter_mutate(backend, alltypes, df):
     )
 
     # Actual test
-    t = t[t.columns]
-    t = t[~t["float_col"].isnan()]
+    t = t.select(t.columns)
+    t = t.filter(~t["float_col"].isnan())
     t = t.mutate(float_col=t["float_col"].cast("float64"))
     result = t.execute()
 
@@ -956,7 +956,7 @@ def test_table_describe_large(con):
     ],
 )
 def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
-    expr = alltypes[ibis_op]
+    expr = alltypes.filter(ibis_op)
     expected = df.loc[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute().sort_values(["id"]).reset_index(drop=True)
     backend.assert_frame_equal(result, expected)
@@ -990,7 +990,7 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
     ],
 )
 def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
-    expr = alltypes[ibis_op].order_by("id")
+    expr = alltypes.filter(ibis_op).order_by("id")
     expected = df[pandas_op(df)].sort_values(["id"]).reset_index(drop=True)
     result = expr.execute()
     backend.assert_frame_equal(result, expected)
@@ -1078,11 +1078,6 @@ def test_interactive(alltypes, monkeypatch):
     repr(expr)
 
 
-def test_correlated_subquery(alltypes):
-    expr = alltypes[_.double_col > _.view().double_col]
-    assert expr.compile() is not None
-
-
 @pytest.mark.notimpl(["polars", "pyspark"])
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -1090,8 +1085,8 @@ def test_correlated_subquery(alltypes):
     reason='DataFrame.iloc[:, 0] (column name="playerID") are different',
 )
 def test_uncorrelated_subquery(backend, batting, batting_df):
-    subset_batting = batting[batting.yearID <= 2000]
-    expr = batting[_.yearID == subset_batting.yearID.max()]["playerID", "yearID"]
+    subset_batting = batting.filter(batting.yearID <= 2000)
+    expr = batting.filter(_.yearID == subset_batting.yearID.max())["playerID", "yearID"]
     result = expr.execute()
 
     expected = batting_df[batting_df.yearID == 2000][["playerID", "yearID"]]
@@ -1124,10 +1119,10 @@ def test_int_scalar(alltypes):
 def test_exists(batting, awards_players, method_name):
     years = [1980, 1981]
     batting_years = [1871, *years]
-    batting = batting[batting.yearID.isin(batting_years)]
-    awards_players = awards_players[awards_players.yearID.isin(years)]
+    batting = batting.filter(batting.yearID.isin(batting_years))
+    awards_players = awards_players.filter(awards_players.yearID.isin(years))
     method = methodcaller(method_name)
-    expr = batting[method(batting.yearID == awards_players.yearID)]
+    expr = batting.filter(method(batting.yearID == awards_players.yearID))
     result = expr.execute()
     assert not result.empty
 

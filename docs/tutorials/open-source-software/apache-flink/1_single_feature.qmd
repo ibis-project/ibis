@@ -184,7 +184,7 @@ transaction count over the past five hours may be useful features. Let’s write
 out each of these using Ibis API:
 
 ```{python}
-user_trans_amt_last_360m_agg = source_table[
+user_trans_amt_last_360m_agg = source_table.select(
     source_table.user_id,
     # Calculate the average transaction amount over the past six hours
     source_table.amt.mean()
@@ -207,7 +207,7 @@ user_trans_amt_last_360m_agg = source_table[
     )
     .name("user_trans_count_last_360min"),
     source_table.trans_date_trans_time,
-]
+)
 ```
 
 `over()` creates an [over

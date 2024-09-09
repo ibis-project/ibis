@@ -3480,11 +3480,12 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
             )
             .join(date_dim, sales[f"{ns}_sold_date_sk"] == date_dim.d_date_sk)
             .join(time_dim, sales[f"{ns}_sold_time_sk"] == time_dim.t_time_sk)
-            .join(ship_mode, sales[f"{ns}_ship_mode_sk"] == ship_mode.sm_ship_mode_sk)[
-                (_.d_year == 2001)
-                & (_.t_time.between(30838, 30838 + 28800))
-                & (_.sm_carrier.isin(["DHL", "BARIAN"]))
-            ]
+            .join(ship_mode, sales[f"{ns}_ship_mode_sk"] == ship_mode.sm_ship_mode_sk)
+            .filter(
+                (_.d_year == 2001),
+                (_.t_time.between(30838, 30838 + 28800)),
+                (_.sm_carrier.isin(["DHL", "BARIAN"])),
+            )
             .group_by(
                 "w_warehouse_name",
                 "w_warehouse_sq_ft",

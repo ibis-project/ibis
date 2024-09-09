@@ -448,7 +448,7 @@ def test_not_exists(alltypes, df):
     t = alltypes
     t2 = t.view()
 
-    expr = t[~((t.string_col == t2.string_col).any())]
+    expr = t.filter(~((t.string_col == t2.string_col).any()))
     result = expr.execute()
 
     left, right = df, t2.execute()
@@ -615,7 +615,7 @@ def test_window_with_arithmetic(alltypes, df):
 
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
-    expr = t[t.double_col > t.double_col.mean()]
+    expr = t.filter(t.double_col > t.double_col.mean())
     result = expr.execute()
     expected = df[df.double_col > df.double_col.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result, expected)

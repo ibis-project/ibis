@@ -159,7 +159,7 @@ def test_builtin_agg_udf_filtered(con):
     expr = count_big(ft.id)
 
     expr = count_big(ft.id, where=ft.id == 1)
-    assert expr.execute() == ft[ft.id == 1].count().execute()
+    assert expr.execute() == ft.filter(ft.id == 1).count().execute()
 
 
 @pytest.mark.parametrize("string", ["a", " ", "a ", " a", ""])

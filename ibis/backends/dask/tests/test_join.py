@@ -30,9 +30,9 @@ join_type = pytest.mark.parametrize(
 
 @join_type
 def test_join(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)[
+    expr = left.join(right, left.key == right.key, how=how).select(
         left, right.other_value, right.key3
-    ]
+    )
     result = expr.compile()
     expected = dd.merge(df1, df2, how=how, on="key")
     tm.assert_frame_equal(
@@ -43,7 +43,7 @@ def test_join(how, left, right, df1, df2):
 
 @join_type
 def test_join_project_left_table(how, left, right, df1, df2):
-    expr = left.join(right, left.key == right.key, how=how)[left, right.key3]
+    expr = left.join(right, left.key == right.key, how=how).select(left, right.key3)
     result = expr.compile()
     expected = dd.merge(df1, df2, how=how, on="key")[list(left.columns) + ["key3"]]
     tm.assert_frame_equal(
@@ -81,7 +81,7 @@ def test_join_with_duplicate_non_key_columns(how, left, right, df1, df2):
 @join_type
 def test_join_with_post_expression_selection(how, left, right, df1, df2):
     join = left.join(right, left.key == right.key, how=how)
-    expr = join[left.key, left.value, right.other_value]
+    expr = join.select(left.key, left.value, right.other_value)
     result = expr.compile()
     expected = dd.merge(df1, df2, on="key", how=how)[["key", "value", "other_value"]]
     tm.assert_frame_equal(
@@ -96,8 +96,8 @@ def test_join_with_post_expression_filter(how, left):
     rhs = left[["key2", "value"]]
 
     joined = lhs.join(rhs, "key2", how=how)
-    projected = joined[lhs, rhs.value]
-    expr = projected[projected.value == 4]
+    projected = joined.select(lhs, rhs.value)
+    expr = projected.filter(projected.value == 4)
     result = expr.compile()
 
     df1 = lhs.compile()
@@ -118,12 +118,12 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
     rhs2 = left[["key2", "value"]].rename(value2="value")
 
     joined = lhs.join(rhs, "key2", how=how)
-    projected = joined[lhs, rhs.value]
-    filtered = projected[projected.value == 4]
+    projected = joined.select(lhs, rhs.value)
+    filtered = projected.filter(projected.value == 4)
 
     joined2 = filtered.join(rhs2, "key2")
-    projected2 = joined2[filtered.key, rhs2.value2]
-    expr = projected2[projected2.value2 == 3]
+    projected2 = joined2.select(filtered.key, rhs2.value2)
+    expr = projected2.filter(projected2.value2 == 3)
 
     result = expr.compile()
 
@@ -145,7 +145,7 @@ def test_multi_join_with_post_expression_filter(how, left, df1):
 def test_join_with_non_trivial_key(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
     join = left.join(right, right.key.length() == left.key.length(), how=how)
-    expr = join[left.key, left.value, right.other_value]
+    expr = join.select(left.key, left.value, right.other_value)
     result = expr.compile()
 
     expected = (
@@ -168,8 +168,8 @@ def test_join_with_non_trivial_key(how, left, right, df1, df2):
 def test_join_with_non_trivial_key_project_table(how, left, right, df1, df2):
     # also test that the order of operands in the predicate doesn't matter
     join = left.join(right, right.key.length() == left.key.length(), how=how)
-    expr = join[left, right.other_value]
-    expr = expr[expr.key.length() == 1]
+    expr = join.select(left, right.other_value)
+    expr = expr.filter(expr.key.length() == 1)
     result = expr.compile()
 
     expected = (
@@ -194,7 +194,7 @@ def test_join_with_project_right_duplicate_column(client, how, left, df1, df3):
     # also test that the order of operands in the predicate doesn't matter
     right = client.table("df3")
     join = left.join(right, ["key"], how=how)
-    expr = join[left.key, right.key2, right.other_value]
+    expr = join.select(left.key, right.key2, right.other_value)
     result = expr.compile()
 
     expected = (
@@ -216,7 +216,9 @@ merge_asof_minversion = pytest.mark.skipif(
 
 @merge_asof_minversion
 def test_asof_join(time_left, time_right, time_df1, time_df2):
-    expr = time_left.asof_join(time_right, "time")[time_left, time_right.other_value]
+    expr = time_left.asof_join(time_right, "time").select(
+        time_left, time_right.other_value
+    )
     result = expr.compile()
     expected = dd.merge_asof(time_df1, time_df2, on="time")
     tm.assert_frame_equal(
@@ -229,9 +231,9 @@ def test_asof_join(time_left, time_right, time_df1, time_df2):
 def test_keyed_asof_join(
     time_keyed_left, time_keyed_right, time_keyed_df1, time_keyed_df2
 ):
-    expr = time_keyed_left.asof_join(time_keyed_right, "time", predicates="key")[
+    expr = time_keyed_left.asof_join(time_keyed_right, "time", predicates="key").select(
         time_keyed_left, time_keyed_right.other_value
-    ]
+    )
     result = expr.compile()
     expected = dd.merge_asof(time_keyed_df1, time_keyed_df2, on="time", by="key")
     tm.assert_frame_equal(

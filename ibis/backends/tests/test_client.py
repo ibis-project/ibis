@@ -218,7 +218,7 @@ def test_load_data(backend, con, temp_table, lamduh):
     [
         param(lambda t: t.string_col, [("string_col", dt.String)], id="column"),
         param(
-            lambda t: t[t.string_col, t.bigint_col],
+            lambda t: t.select(t.string_col, t.bigint_col),
             [("string_col", dt.String), ("bigint_col", dt.Int64)],
             id="table",
         ),

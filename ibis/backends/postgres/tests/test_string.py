@@ -15,6 +15,6 @@ import ibis
 @pytest.mark.usefixtures("con")
 def test_special_strings(alltypes, data, data_type):
     lit = ibis.literal(data, type=data_type).name("tmp")
-    expr = alltypes[[alltypes.id, lit]].head(1)
+    expr = alltypes.select(alltypes.id, lit).head(1)
     df = expr.execute()
     assert df["tmp"].iloc[0] == uuid.UUID(data)

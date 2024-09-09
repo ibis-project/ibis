@@ -22,7 +22,7 @@ def assert_sql_equal(expr, snapshot, out="out.sql"):
 
 def test_aggregate_in_projection(alltypes, snapshot):
     t = alltypes
-    proj = t[t, (t.f / t.f.sum()).name("normed_f")]
+    proj = t.select(t, (t.f / t.f.sum()).name("normed_f"))
     assert_sql_equal(proj, snapshot)
 
 
@@ -93,7 +93,7 @@ def test_nested_analytic_function(alltypes, snapshot):
 def test_rank_functions(alltypes, snapshot):
     t = alltypes
 
-    proj = t[t.g, t.f.rank().name("minr"), t.f.dense_rank().name("denser")]
+    proj = t.select(t.g, t.f.rank().name("minr"), t.f.dense_rank().name("denser"))
     assert_sql_equal(proj, snapshot)
 
 
@@ -113,7 +113,7 @@ def test_order_by_desc(alltypes, snapshot):
 
     w = window(order_by=ibis.desc(t.f))
 
-    proj = t[t.f, ibis.row_number().over(w).name("revrank")]
+    proj = t.select(t.f, ibis.row_number().over(w).name("revrank"))
     assert_sql_equal(proj, snapshot, "out1.sql")
 
     expr = t.group_by("g").order_by(ibis.desc(t.f))[t.d.lag().name("foo"), t.a.max()]
