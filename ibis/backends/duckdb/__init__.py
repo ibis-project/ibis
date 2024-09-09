@@ -593,6 +593,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self,
         source_list: str | list[str] | tuple[str],
         table_name: str | None = None,
+        columns: Mapping[str, str] | None = None,
         **kwargs,
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table.
@@ -607,6 +608,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             File or list of files
         table_name
             Optional table name
+        columns
+            Optional mapping from string column name to duckdb type string.
         **kwargs
             Additional keyword arguments passed to DuckDB's `read_json_auto` function
 
@@ -622,6 +625,21 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         options = [
             sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
         ]
+
+        if columns:
+            options.append(
+                sg.to_identifier("columns").eq(
+                    sge.Struct.from_arg_list(
+                        [
+                            sge.PropertyEQ(
+                                this=sg.to_identifier(key),
+                                expression=sge.convert(value),
+                            )
+                            for key, value in columns.items()
+                        ]
+                    )
+                )
+            )
 
         self._create_temp_view(
             table_name,
