@@ -153,11 +153,12 @@ class Backend(SQLBackend, UrlFromPath):
         return sorted(self._filter_with_like(results, like))
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
+        self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """List the tables in the database.
+
+        If `database` is None, the current database is used, and temporary
+        tables are included in the result.
 
         Parameters
         ----------
@@ -169,23 +170,24 @@ class Backend(SQLBackend, UrlFromPath):
         """
         if database is None:
             database = "main"
+            schemas = [database, "temp"]
+        else:
+            schemas = [database]
 
         sql = (
-            sg.select("name")
+            sg.select(C.name)
             .from_(F.pragma_table_list())
             .where(
-                C.schema.eq(sge.convert(database)),
+                C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),
-                ~(
-                    C.name.isin(
-                        sge.convert("sqlite_schema"),
-                        sge.convert("sqlite_master"),
-                        sge.convert("sqlite_temp_schema"),
-                        sge.convert("sqlite_temp_master"),
-                    )
+                ~C.name.isin(
+                    sge.convert("sqlite_schema"),
+                    sge.convert("sqlite_master"),
+                    sge.convert("sqlite_temp_schema"),
+                    sge.convert("sqlite_temp_master"),
                 ),
             )
-            .sql(self.name)
+            .sql(self.dialect)
         )
         with self._safe_raw_sql(sql) as cur:
             results = [r[0] for r in cur.fetchall()]
