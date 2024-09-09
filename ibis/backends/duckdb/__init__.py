@@ -611,7 +611,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         columns
             Optional mapping from string column name to duckdb type string.
         **kwargs
-            Additional keyword arguments passed to DuckDB's `read_json_auto` function
+            Additional keyword arguments passed to DuckDB's `read_json_auto` function.
+
+            See https://duckdb.org/docs/data/json/overview.html#json-loading
+            for parameters and more information about reading JSON.
 
         Returns
         -------
