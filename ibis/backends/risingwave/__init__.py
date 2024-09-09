@@ -214,10 +214,11 @@ class Backend(PostgresBackend):
         else:
             temp_name = name
 
+        if not schema:
+            schema = table.schema()
+
         table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(
-            this=table, expressions=(schema or table.schema()).to_sqlglot(self.dialect)
-        )
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         if connector_properties is None:
             create_stmt = sge.Create(
