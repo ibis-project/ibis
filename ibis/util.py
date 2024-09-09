@@ -702,3 +702,10 @@ def chunks(n: int, *, chunk_size: int) -> Iterator[tuple[int, int]]:
     [(0, 4), (4, 8), (8, 10)]
     """
     return ((start, min(start + chunk_size, n)) for start in range(0, n, chunk_size))
+
+
+def get_subclasses(obj):
+    """Recursively compute all subclasses of `op`."""
+    for child_class in obj.__subclasses__():
+        yield child_class
+        yield from get_subclasses(child_class)

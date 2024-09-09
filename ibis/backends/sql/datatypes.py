@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
+from ibis.util import get_subclasses
 
 typecode = sge.DataType.Type
 
@@ -1158,4 +1159,7 @@ class FlinkType(SqlglotType):
         )
 
 
-TYPE_MAPPERS = {mapper.dialect: mapper for mapper in SqlglotType.__subclasses__()}
+TYPE_MAPPERS = {
+    mapper.dialect: mapper
+    for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType}
+}

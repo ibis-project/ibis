@@ -32,6 +32,7 @@ from ibis.backends.sql.rewrites import (
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
+from ibis.util import get_subclasses
 
 try:
     from sqlglot.expressions import Alter
@@ -51,15 +52,7 @@ if TYPE_CHECKING:
     from ibis.backends.sql.datatypes import SqlglotType
 
 
-def get_leaf_classes(op):
-    for child_class in op.__subclasses__():
-        if not child_class.__subclasses__():
-            yield child_class
-        else:
-            yield from get_leaf_classes(child_class)
-
-
-ALL_OPERATIONS = frozenset(get_leaf_classes(ops.Node))
+ALL_OPERATIONS = frozenset(get_subclasses(ops.Node))
 
 
 class AggGen:
