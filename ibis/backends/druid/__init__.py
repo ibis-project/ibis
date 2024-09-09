@@ -33,7 +33,6 @@ class Backend(SQLBackend):
     name = "druid"
     compiler = sc.druid.compiler
     supports_create_or_replace = False
-    supports_in_memory_tables = True
 
     @property
     def version(self) -> str:

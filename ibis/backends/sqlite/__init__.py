@@ -339,20 +339,18 @@ class Backend(SQLBackend, UrlFromPath):
         return sge.Create(kind="TABLE", this=target)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        # only register if we haven't already done so
-        if op.name not in self.list_tables(database="temp"):
-            table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
-            create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
-            df = op.data.to_frame()
+        table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
+        create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
+        df = op.data.to_frame()
 
-            data = df.itertuples(index=False)
-            insert_stmt = self._build_insert_template(
-                op.name, schema=op.schema, catalog="temp", columns=True
-            )
+        data = df.itertuples(index=False)
+        insert_stmt = self._build_insert_template(
+            op.name, schema=op.schema, catalog="temp", columns=True
+        )
 
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                cur.executemany(insert_stmt, data)
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            cur.executemany(insert_stmt, data)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops

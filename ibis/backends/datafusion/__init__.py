@@ -70,7 +70,6 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
-    supports_in_memory_tables = True
     supports_arrays = True
     compiler = sc.datafusion.compiler
 
@@ -415,18 +414,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             f"please call one of {msg} directly"
         )
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        name = op.name
-
+    def _in_memory_table_exists(self, name: str) -> bool:
         db = self.con.catalog().database()
-
         try:
             db.table(name)
-        except Exception:  # noqa: BLE001 because datafusion doesn't have anything better
-            # self.con.register_table is broken, so we do this roundabout thing
-            # of constructing a datafusion DataFrame, which has a side effect
-            # of registering the table
-            self.con.from_arrow_table(op.data.to_pyarrow(op.schema), name)
+        except Exception:  # noqa: BLE001 because DataFusion has nothing better
+            return False
+        else:
+            return True
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # self.con.register_table is broken, so we do this roundabout thing
+        # of constructing a datafusion DataFrame, which has a side effect
+        # of registering the table
+        self.con.from_arrow_table(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any

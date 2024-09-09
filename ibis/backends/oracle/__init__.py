@@ -505,28 +505,27 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            create_stmt = sge.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted),
-                    expressions=schema.to_sqlglot(self.dialect),
-                ),
-                properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-            ).sql(self.name)
+        name = op.name
+        quoted = self.compiler.quoted
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        ).sql(self.name)
 
-            data = op.data.to_frame().replace(float("nan"), None)
-            insert_stmt = self._build_insert_template(
-                name, schema=schema, placeholder=":{i:d}"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                for start, end in util.chunks(len(data), chunk_size=128):
-                    cur.executemany(
-                        insert_stmt, list(data.iloc[start:end].itertuples(index=False))
-                    )
+        data = op.data.to_frame().replace(float("nan"), None)
+        insert_stmt = self._build_insert_template(
+            name, schema=schema, placeholder=":{i:d}"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            for start, end in util.chunks(len(data), chunk_size=128):
+                cur.executemany(
+                    insert_stmt, list(data.iloc[start:end].itertuples(index=False))
+                )
 
         atexit.register(self._clean_up_tmp_table, name)
 

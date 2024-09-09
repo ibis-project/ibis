@@ -253,36 +253,32 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
+        quoted = self.compiler.quoted
+        name = op.name
 
-            ident = sg.to_identifier(name, quoted=quoted)
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=ident, expressions=schema.to_sqlglot(self.dialect)
-                ),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
+        ident = sg.to_identifier(name, quoted=quoted)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(this=ident, expressions=schema.to_sqlglot(self.dialect)),
+        )
+        create_stmt_sql = create_stmt.sql(self.name)
 
-            df = op.data.to_frame()
-            data = df.itertuples(index=False, name=None)
+        df = op.data.to_frame()
+        data = df.itertuples(index=False, name=None)
 
-            def process_item(item: Any):
-                """Handle inserting timestamps with timezones."""
-                if isinstance(item, datetime.datetime):
-                    if item.tzinfo is not None:
-                        item = item.tz_convert("UTC").tz_localize(None)
-                    return item.isoformat(sep=" ", timespec="milliseconds")
-                return item
+        def process_item(item: Any):
+            """Handle inserting timestamps with timezones."""
+            if isinstance(item, datetime.datetime):
+                if item.tzinfo is not None:
+                    item = item.tz_convert("UTC").tz_localize(None)
+                return item.isoformat(sep=" ", timespec="milliseconds")
+            return item
 
-            rows = (tuple(map(process_item, row)) for row in data)
-            with self._safe_raw_sql(create_stmt_sql):
-                if not df.empty:
-                    self.con.ext.insert_multi(name, rows)
-
-            atexit.register(self._clean_up_tmp_table, ident)
+        rows = (tuple(map(process_item, row)) for row in data)
+        with self._safe_raw_sql(create_stmt_sql):
+            if not df.empty:
+                self.con.ext.insert_multi(name, rows)
+        atexit.register(self._clean_up_tmp_table, ident)
 
     def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
         with self._safe_raw_sql(

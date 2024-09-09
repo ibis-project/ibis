@@ -6,7 +6,6 @@ import glob
 import itertools
 import json
 import os
-import shutil
 import tempfile
 import warnings
 from operator import itemgetter
@@ -645,25 +644,23 @@ $$ {defn["source"]} $$"""
 
         return self._filter_with_like(tables + views, like=like)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        with self.con.cursor() as con:
+            result = con.execute(f"SHOW TABLES LIKE '{name}'").fetchone()
+        return bool(result)
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
-        raw_name = op.name
+        name = op.name
+        data = op.data.to_pyarrow(schema=op.schema)
 
-        with self.con.cursor() as con:
-            if not con.execute(f"SHOW TABLES LIKE '{raw_name}'").fetchone():
-                tmpdir = tempfile.TemporaryDirectory()
-                try:
-                    path = os.path.join(tmpdir.name, f"{raw_name}.parquet")
-                    # optimize for bandwidth so use zstd which typically compresses
-                    # better than the other options without much loss in speed
-                    pq.write_table(
-                        op.data.to_pyarrow(schema=op.schema), path, compression="zstd"
-                    )
-                    self.read_parquet(path, table_name=raw_name)
-                finally:
-                    with contextlib.suppress(Exception):
-                        shutil.rmtree(tmpdir.name)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
+            path = Path(tmpdir, f"{name}.parquet")
+            # optimize for bandwidth so use zstd which typically compresses
+            # better than the other options without much loss in speed
+            pq.write_table(data, path, compression="zstd")
+            self.read_parquet(path, table_name=name)
 
     def create_catalog(self, name: str, force: bool = False) -> None:
         current_catalog = self.current_catalog

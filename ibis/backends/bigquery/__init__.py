@@ -158,7 +158,6 @@ def _postprocess_arrow(
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
     compiler = sc.bigquery.compiler
-    supports_in_memory_tables = True
     supports_python_udfs = False
 
     def __init__(self, *args, **kwargs) -> None:
@@ -171,31 +170,38 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             self.__session_dataset = self._make_session()
         return self.__session_dataset
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        raw_name = op.name
+    def _in_memory_table_exists(self, name: str) -> bool:
+        table_ref = bq.TableReference(self._session_dataset, name)
 
-        session_dataset = self._session_dataset
-        project = session_dataset.project
-        dataset = session_dataset.dataset_id
-
-        table_ref = bq.TableReference(session_dataset, raw_name)
         try:
             self.client.get_table(table_ref)
         except google.api_core.exceptions.NotFound:
-            table_id = sg.table(
-                raw_name, db=dataset, catalog=project, quoted=False
-            ).sql(dialect=self.name)
-            bq_schema = BigQuerySchema.from_ibis(op.schema)
-            load_job = self.client.load_table_from_dataframe(
-                op.data.to_frame(),
-                table_id,
-                job_config=bq.LoadJobConfig(
-                    # fail if the table already exists and contains data
-                    write_disposition=bq.WriteDisposition.WRITE_EMPTY,
-                    schema=bq_schema,
-                ),
-            )
-            load_job.result()
+            return False
+        else:
+            return True
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        session_dataset = self._session_dataset
+
+        table_id = sg.table(
+            op.name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
+        ).sql(dialect=self.name)
+
+        bq_schema = BigQuerySchema.from_ibis(op.schema)
+
+        load_job = self.client.load_table_from_dataframe(
+            op.data.to_frame(),
+            table_id,
+            job_config=bq.LoadJobConfig(
+                # fail if the table already exists and contains data
+                write_disposition=bq.WriteDisposition.WRITE_EMPTY,
+                schema=bq_schema,
+            ),
+        )
+        load_job.result()
 
     def _read_file(
         self,

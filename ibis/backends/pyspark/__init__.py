@@ -414,7 +414,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
-        df.createOrReplaceTempView(op.name)
+        df.createTempView(op.name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:

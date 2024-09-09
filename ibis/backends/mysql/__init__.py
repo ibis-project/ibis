@@ -469,48 +469,32 @@ class Backend(SQLBackend, CanCreateDatabase):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.name)
 
-            df = op.data.to_frame()
-            # nan can not be used with MySQL
-            df = df.replace(float("nan"), None)
+        df = op.data.to_frame()
+        # nan can not be used with MySQL
+        df = df.replace(float("nan"), None)
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
 
-                if not df.empty:
-                    cur.executemany(sql, data)
+            if not df.empty:
+                cur.executemany(sql, data)
 
     @util.experimental
     def to_pyarrow_batches(

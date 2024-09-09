@@ -97,8 +97,8 @@ def test_repeated_memtable_registration(simple_con, mocker):
     for _ in range(n):
         tm.assert_frame_equal(simple_con.execute(t), expected)
 
-    # assert that we called _register_in_memory_table exactly n times
-    assert spy.call_count == n
+    # assert that we called _register_in_memory_table exactly once
+    spy.assert_called_once()
 
 
 def test_timestamp_tz_column(simple_con):

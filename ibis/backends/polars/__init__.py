@@ -75,9 +75,11 @@ class Backend(BaseBackend, NoUrl):
         schema = sch.infer(self._tables[name])
         return ops.DatabaseTable(name, schema, self).to_expr()
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        return name in self._tables
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        if (name := op.name) not in self._tables:
-            self._add_table(name, op.data.to_polars(op.schema).lazy())
+        self._add_table(op.name, op.data.to_polars(op.schema).lazy())
 
     @deprecated(
         as_of="9.1",
