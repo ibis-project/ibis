@@ -657,20 +657,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_ident = sg.table(name, db=database, quoted=quoted)
 
         if query is None:
-            column_defs = [
-                sge.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                    ),
-                )
-                for colname, typ in (schema or table.schema()).items()
-            ]
-
-            target = sge.Schema(this=table_ident, expressions=column_defs)
+            target = sge.Schema(
+                this=table_ident,
+                expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+            )
         else:
             target = table_ident
 

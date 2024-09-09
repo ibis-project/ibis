@@ -209,26 +209,16 @@ class Backend(PostgresBackend):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
+        if not schema:
+            schema = table.schema()
+
         table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         if connector_properties is None:
             create_stmt = sge.Create(
@@ -283,27 +273,12 @@ class Backend(PostgresBackend):
         # only register if we haven't already done so
         if (name := op.name) not in self.list_tables():
             quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
 
             create_stmt = sg.exp.Create(
                 kind="TABLE",
                 this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
+                    this=sg.to_identifier(name, quoted=quoted),
+                    expressions=schema.to_sqlglot(self.dialect),
                 ),
             )
             create_stmt_sql = create_stmt.sql(self.dialect)
@@ -442,21 +417,8 @@ class Backend(PostgresBackend):
         Table
             Table expression
         """
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in schema.items()
-        ]
-
         table = sg.table(name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         create_stmt = sge.Create(
             kind="SOURCE",

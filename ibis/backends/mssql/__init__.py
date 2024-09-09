@@ -639,29 +639,19 @@ GO"""
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
+        if not schema:
+            schema = table.schema()
+
         table = sg.table(
             "#" * temp + temp_name, catalog=catalog, db=db, quoted=self.compiler.quoted
         )
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         create_stmt = sge.Create(
             kind="TABLE",
