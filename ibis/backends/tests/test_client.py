@@ -1774,7 +1774,9 @@ def test_insert_into_table_missing_columns(con, temp_table):
 )
 @pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
 @pytest.mark.notyet(
-    ["clickhouse"], raises=AssertionError, reason="memtables are assembled every time"
+    ["clickhouse", "flink"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
 )
 def test_memtable_cleanup(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name="temp_memtable")
@@ -1803,7 +1805,9 @@ def test_memtable_cleanup(con):
 )
 @pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
 @pytest.mark.notyet(
-    ["clickhouse"], raises=AssertionError, reason="memtables are assembled every time"
+    ["clickhouse", "flink"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
 )
 def test_memtable_cleanup_by_overwriting_variable(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name="temp_memtable")
