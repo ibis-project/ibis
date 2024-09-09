@@ -119,7 +119,14 @@ def test_create_table(backend, con, temp_table, func, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
+                    [
+                        "pyspark",
+                        "trino",
+                        "exasol",
+                        "risingwave",
+                        "impala",
+                        "datafusion",
+                    ],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notyet(
@@ -145,7 +152,14 @@ def test_create_table(backend, con, temp_table, func, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
+                    [
+                        "pyspark",
+                        "trino",
+                        "exasol",
+                        "risingwave",
+                        "impala",
+                        "datafusion",
+                    ],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
@@ -307,6 +321,9 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     ["flink"],
     raises=com.IbisError,
     reason="`tbl_properties` is required when creating table with schema",
+)
+@pytest.mark.notimpl(
+    ["datafusion"], raises=NotImplementedError, reason="no temp table support via sql"
 )
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
@@ -1562,6 +1579,9 @@ def test_json_to_pyarrow(con):
     assert result == expected
 
 
+@pytest.mark.notimpl(
+    ["datafusion"], raises=NotImplementedError, reason="no temp table support via sql"
+)
 @pytest.mark.notyet(
     ["risingwave", "exasol"],
     raises=com.UnsupportedOperationError,

@@ -1061,7 +1061,14 @@ def string_temp_table(backend, con):
     )
 
     temp_table_name = gen_name("strings")
-    temp = backend.name() not in ["exasol", "impala", "pyspark", "risingwave", "trino"]
+    temp = backend.name() not in [
+        "exasol",
+        "impala",
+        "pyspark",
+        "risingwave",
+        "trino",
+        "datafusion",
+    ]
     if backend.name() == "druid":
         yield "I HATE DRUID"
     else:
