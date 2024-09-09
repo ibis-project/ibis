@@ -1376,6 +1376,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         For analytics use cases this is usually nothing to fret about. In some cases you
         may need to explicit release the cursor.
 
+        ::: {.callout-warning}
+        ## DuckDB returns 1024 size batches regardless of what value of `chunk_size` argument is passed.
+        :::
+
         Parameters
         ----------
         expr
@@ -1385,10 +1389,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         limit
             Limit the result to this number of rows
         chunk_size
-            ::: {.callout-warning}
-            ## DuckDB returns 1024 size batches regardless of what argument is passed.
-            :::
-
+            The number of rows to fetch per batch
         """
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
