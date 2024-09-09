@@ -6,7 +6,7 @@ import pytest
 
 import ibis
 import ibis.common.exceptions as com
-from ibis.common.deferred import _
+from koerce import _
 
 
 @pytest.mark.parametrize(

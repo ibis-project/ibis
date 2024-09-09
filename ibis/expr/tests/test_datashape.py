@@ -36,13 +36,13 @@ def test_tabular_shape():
     assert t.is_tabular()
 
 
-def test_shapes_are_singletons():
-    assert Scalar() is scalar
-    assert Scalar() is Scalar()
-    assert Columnar() is columnar
-    assert Columnar() is Columnar()
-    assert Tabular() is tabular
-    assert Tabular() is Tabular()
+def test_shapes_eq():
+    assert Scalar() == scalar
+    assert Scalar() == Scalar()
+    assert Columnar() == columnar
+    assert Columnar() == Columnar()
+    assert Tabular() == tabular
+    assert Tabular() == Tabular()
 
 
 def test_shape_comparison():

@@ -7,7 +7,7 @@ import pytest
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 
 def test_type_metadata(lineitem):

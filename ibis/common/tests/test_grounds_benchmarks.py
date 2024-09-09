@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import pytest
+from koerce import Annotable, attribute
 
-from ibis.common.annotations import attribute
 from ibis.common.collections import frozendict
-from ibis.common.grounds import Annotable, Concrete
+from ibis.common.grounds import Concrete
 
 pytestmark = pytest.mark.benchmark
 

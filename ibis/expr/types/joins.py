@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import functools
 from typing import TYPE_CHECKING, Any
+from koerce import Deferred
 
 from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.deferred import Deferred
-from ibis.common.egraph import DisjointSet
+from ibis.common.collections import DisjointSet
 from ibis.common.exceptions import (
     ExpressionError,
     IbisInputError,

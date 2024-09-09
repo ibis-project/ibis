@@ -4,12 +4,12 @@ from functools import partial
 from typing import Union
 
 import pytest
+from koerce import MatchError, NoMatch, Pattern
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.annotations import ValidationError
-from ibis.common.patterns import NoMatch, Pattern
+from ibis.common.grounds import ValidationError
 
 one = ops.Literal(1, dt.int8)
 
@@ -38,15 +38,20 @@ def test_literal_coercion_type_inference(value, dtype):
         (ops.Literal, False, ops.Literal(False, dt.boolean)),
         (ops.Literal[dt.Int8], 1, one),
         (ops.Literal[dt.Int16], 1, ops.Literal(1, dt.int16)),
-        (ops.Literal[dt.Int8], ops.Literal(1, dt.int16), NoMatch),
         (ops.Literal[dt.Integer], 1, ops.Literal(1, dt.int8)),
         (ops.Literal[dt.Floating], 1, ops.Literal(1, dt.float64)),
         (ops.Literal[dt.Float32], 1.0, ops.Literal(1.0, dt.float32)),
     ],
 )
 def test_coerced_to_literal(typehint, value, expected):
-    pat = Pattern.from_typehint(typehint)
-    assert pat.match(value, {}) == expected
+    pat = Pattern.from_typehint(typehint, allow_coercion=True)
+    assert pat.apply(value) == expected
+
+
+def test_coerced_to_literal_failing():
+    pat = Pattern.from_typehint(ops.Literal[dt.Int8], allow_coercion=True)
+    with pytest.raises(MatchError):
+        pat.apply(ops.Literal(1, dt.int16))
 
 
 @pytest.mark.parametrize(
@@ -56,7 +61,6 @@ def test_coerced_to_literal(typehint, value, expected):
         (ops.Value[dt.Int8], 1, one),
         (ops.Value[dt.Int8, ds.Any], 1, one),
         (ops.Value[dt.Int8, ds.Scalar], 1, one),
-        (ops.Value[dt.Int8, ds.Columnar], 1, NoMatch),
         # dt.Integer is not instantiable so it will be only used for checking
         # that the produced literal has any integer datatype
         (ops.Value[dt.Integer], 1, one),
@@ -76,7 +80,6 @@ def test_coerced_to_literal(typehint, value, expected):
             128,
             ops.Literal(128, dt.int16),
         ),
-        (ops.Value[dt.Int8], 128, NoMatch),
         # this is actually supported by creating an explicit dtype
         # in Value.__coerce__ based on the `T` keyword argument
         (ops.Value[dt.Int16, ds.Scalar], 1, ops.Literal(1, dt.int16)),
@@ -89,19 +92,29 @@ def test_coerced_to_literal(typehint, value, expected):
     ],
 )
 def test_coerced_to_value(typehint, value, expected):
-    pat = Pattern.from_typehint(typehint)
-    assert pat.match(value, {}) == expected
+    pat = Pattern.from_typehint(typehint, allow_coercion=True)
+    assert pat.apply(value) == expected
+
+
+def test_coerced_to_value_failing():
+    pat = Pattern.from_typehint(ops.Value[dt.Int8, ds.Columnar], allow_coercion=True)
+    with pytest.raises(MatchError):
+        pat.apply(1)
+
+    pat = Pattern.from_typehint(ops.Value[dt.Int8], allow_coercion=True)
+    with pytest.raises(MatchError):
+        pat.apply(128)
 
 
 def test_coerced_to_interval_value():
     pd = pytest.importorskip("pandas")
 
     expected = ops.Literal(1, dt.Interval("s"))
-    pat = Pattern.from_typehint(ops.Value[dt.Interval])
-    assert pat.match(pd.Timedelta("1s"), {}) == expected
+    pat = Pattern.from_typehint(ops.Value[dt.Interval], allow_coercion=True)
+    assert pat.apply(pd.Timedelta("1s")) == expected
 
     expected = ops.Literal(3661, dt.Interval("s"))
-    assert pat.match(pd.Timedelta("1h 1m 1s"), {}) == expected
+    assert pat.apply(pd.Timedelta("1h 1m 1s")) == expected
 
 
 @pytest.mark.parametrize(

@@ -8,8 +8,9 @@ from collections import deque
 from collections.abc import Callable, Iterable, Iterator, KeysView, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
 
-from ibis.common.bases import Hashable
-from ibis.common.patterns import NoMatch, Pattern
+from koerce import MatchError, Pattern
+
+from ibis.common.grounds import Concrete
 from ibis.common.typing import _ClassInfo
 from ibis.util import experimental, promote_list
 
@@ -187,7 +188,12 @@ def _coerce_finder(obj: FinderLike, context: Optional[dict] = None) -> Finder:
         ctx = context or {}
 
         def fn(node):
-            return obj.match(node, ctx) is not NoMatch
+            try:
+                obj.apply(node, ctx)
+            except MatchError:
+                return False
+            else:
+                return True
     elif isinstance(obj, (tuple, type)):
 
         def fn(node):
@@ -223,10 +229,11 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
             # children, so we can match on the new node containing the rewritten
             # child arguments, this way we can propagate the rewritten nodes
             # upward in the hierarchy
-            recreated = node.__recreate__(kwargs) if kwargs else node
-            if (result := obj.match(recreated, ctx)) is NoMatch:
+            recreated = node.__class__(**kwargs) if kwargs else node
+            try:
+                return obj.apply(recreated, ctx)
+            except MatchError:
                 return recreated
-            return result
 
     elif isinstance(obj, Mapping):
 
@@ -236,7 +243,7 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
             try:
                 return obj[node]
             except KeyError:
-                return node.__recreate__(kwargs) if kwargs else node
+                return node.__class__(**kwargs) if kwargs else node
     elif callable(obj):
         fn = obj
     else:
@@ -245,24 +252,7 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
     return fn
 
 
-class Node(Hashable):
-    __slots__ = ()
-
-    @classmethod
-    def __recreate__(cls, kwargs: Any) -> Self:
-        """Reconstruct the node from the given arguments."""
-        return cls(**kwargs)
-
-    @property
-    @abstractmethod
-    def __args__(self) -> tuple[Any, ...]:
-        """Sequence of arguments to traverse."""
-
-    @property
-    @abstractmethod
-    def __argnames__(self) -> tuple[str, ...]:
-        """Sequence of argument names."""
-
+class Node(Concrete):
     @property
     def __children__(self) -> tuple[Node, ...]:
         """Sequence of children nodes."""

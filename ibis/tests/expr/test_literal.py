@@ -5,6 +5,7 @@ import decimal
 import uuid
 
 import pytest
+from koerce import resolve
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -173,5 +174,5 @@ def test_deferred(table):
     expr = _.g.get_name()
     dtype = _.g.type()
     deferred = ibis.literal(expr, type=dtype)
-    result = deferred.resolve(table)
+    result = resolve(deferred, _=table)
     assert result.op().value == "g"

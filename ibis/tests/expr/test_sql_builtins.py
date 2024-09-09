@@ -14,13 +14,14 @@
 from __future__ import annotations
 
 import pytest
+from koerce import resolve
 
 import ibis
 import ibis.backends.sql.compilers as sc
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.common.annotations import SignatureValidationError
+from ibis.common.grounds import SignatureValidationError
 from ibis.tests.util import assert_equal
 
 
@@ -214,15 +215,13 @@ def test_floats(sql_table, function):
 
 def test_deferred(sql_table, function):
     expr = function(None, _.v3, 2)
-    res = expr.resolve(sql_table)
+    res = resolve(expr, _=sql_table)
     sol = function(None, sql_table.v3, 2)
     assert res.equals(sol)
 
 
 def test_no_arguments_errors(function):
-    with pytest.raises(
-        SignatureValidationError, match=".+ has failed due to the following errors:"
-    ):
+    with pytest.raises(SignatureValidationError, match="expected at least 1 elements"):
         function()
 
 
