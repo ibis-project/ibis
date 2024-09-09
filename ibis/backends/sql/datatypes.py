@@ -494,6 +494,7 @@ class RisingWaveType(PostgresType):
 
 
 class DataFusionType(PostgresType):
+    dialect = "datafusion"
     unknown_type_strings = {
         "utf8": dt.string,
         "float64": dt.float64,
