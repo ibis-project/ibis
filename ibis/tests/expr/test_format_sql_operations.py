@@ -31,7 +31,7 @@ def test_memoize_database_table(con, snapshot):
     table2 = con.table("test2")
 
     filter_pred = table["f"] > 0
-    table3 = table[filter_pred]
+    table3 = table.filter(filter_pred)
     join_pred = table3["g"] == table2["key"]
 
     joined = table2.inner_join(table3, [join_pred])
@@ -56,7 +56,7 @@ def test_memoize_insert_sort_key(con, snapshot):
         dest_avg=t.arrdelay.mean(), dev=t.arrdelay - t.arrdelay.mean()
     )
 
-    worst = expr[expr.dev.notnull()].order_by(ibis.desc("dev")).limit(10)
+    worst = expr.filter(expr.dev.notnull()).order_by(ibis.desc("dev")).limit(10)
 
     result = repr(worst)
     assert result.count("airlines") == 1

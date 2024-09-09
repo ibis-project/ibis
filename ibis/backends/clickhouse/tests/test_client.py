@@ -129,7 +129,7 @@ def test_sql_query_limits(alltypes):
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
+    expr = t.select((t.double_col * 2).name("double(fun)"))["double(fun)"].sum()
     expr.execute()
 
 

@@ -18,7 +18,7 @@ DATASET_ID = "testing"
 @pytest.fixture(scope="module")
 def alltypes(con):
     t = con.table("functional_alltypes")
-    expr = t[t.bigint_col.isin([10, 20])].limit(10)
+    expr = t.filter(t.bigint_col.isin([10, 20])).limit(10)
     return expr
 
 

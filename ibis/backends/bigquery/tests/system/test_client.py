@@ -186,7 +186,7 @@ def test_scalar_param_partition_time(parted_alltypes):
     assert "PARTITIONTIME" in parted_alltypes.columns
     assert "PARTITIONTIME" in parted_alltypes.schema()
     param = ibis.param("timestamp('UTC')")
-    expr = parted_alltypes[param > parted_alltypes.PARTITIONTIME]
+    expr = parted_alltypes.filter(param > parted_alltypes.PARTITIONTIME)
     df = expr.execute(params={param: "2017-01-01"})
     assert df.empty
 
@@ -201,7 +201,7 @@ def test_parted_column(con, kind):
 
 def test_cross_project_query(public):
     table = public.table("posts_questions")
-    expr = table[table.tags.contains("ibis")][["title", "tags"]]
+    expr = table.filter(table.tags.contains("ibis"))[["title", "tags"]]
     n = 5
     df = expr.limit(n).execute()
     assert len(df) == n
@@ -231,7 +231,7 @@ def test_multiple_project_queries_execute(con):
     trips = con.table("trips", database="nyc-tlc.yellow").limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
-    join = posts_questions.left_join(trips, predicate)[cols]
+    join = posts_questions.left_join(trips, predicate).select(cols)
     result = join.execute()
     assert list(result.columns) == ["title"]
     assert len(result) == 5

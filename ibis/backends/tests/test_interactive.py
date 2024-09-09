@@ -86,6 +86,6 @@ def test_interactive_non_compilable_repr_does_not_fail(table):
 
 def test_isin_rule_suppressed_exception_repr_not_fail(table):
     bool_clause = table["string_col"].notin(["1", "4", "7"])
-    expr = table[bool_clause]["string_col"].value_counts()
+    expr = table.filter(bool_clause)["string_col"].value_counts()
 
     repr(expr)

@@ -1596,7 +1596,7 @@ def test_agg_sort(alltypes):
 
 def test_filter(backend, alltypes, df):
     expr = (
-        alltypes[_.string_col == "1"]
+        alltypes.filter(_.string_col == "1")
         .mutate(x=L(1, "int64"))
         .group_by(_.x)
         .aggregate(sum=_.double_col.sum())

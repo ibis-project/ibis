@@ -28,7 +28,9 @@ def test_literal(client):
 
 
 def test_selection(t, df):
-    expr = t[((t.plain_strings == "a") | (t.plain_int64 == 3)) & (t.dup_strings == "d")]
+    expr = t.filter(
+        ((t.plain_strings == "a") | (t.plain_int64 == 3)) & (t.dup_strings == "d")
+    )
     result = expr.execute()
     expected = df[
         ((df.plain_strings == "a") | (df.plain_int64 == 3)) & (df.dup_strings == "d")
@@ -45,12 +47,10 @@ def test_mutate(t, df):
 
 def test_project_scope_does_not_override(t, df):
     col = t.plain_int64
-    expr = t[
-        [
-            col.name("new_col"),
-            col.sum().over(ibis.window(group_by="dup_strings")).name("grouped"),
-        ]
-    ]
+    expr = t.select(
+        col.name("new_col"),
+        col.sum().over(ibis.window(group_by="dup_strings")).name("grouped"),
+    )
     result = expr.execute()
     expected = pd.concat(
         [

@@ -175,11 +175,11 @@ def test_timestamp_extract_field(table, field, snapshot):
 
 def test_sql_extract(table, snapshot):
     # integration with SQL translation
-    expr = table[
+    expr = table.select(
         table.i.year().name("year"),
         table.i.month().name("month"),
         table.i.day().name("day"),
-    ]
+    )
 
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
@@ -252,8 +252,8 @@ def test_correlated_predicate_subquery(table, snapshot):
     t1 = t0.view()
 
     # both are valid constructions
-    expr1 = t0[t0.g == t1.g]
-    expr2 = t1[t0.g == t1.g]
+    expr1 = t0.filter(t0.g == t1.g)
+    expr2 = t1.filter(t0.g == t1.g)
 
     snapshot.assert_match(translate(expr1), "out1.sql")
     snapshot.assert_match(translate(expr2), "out2.sql")

@@ -172,7 +172,7 @@ def test_players(players, players_df):
 
 
 def test_batting_filter_mean(batting, batting_df):
-    expr = batting[batting.G > batting.G.mean()]
+    expr = batting.filter(batting.G > batting.G.mean())
     result = expr.execute()
     expected = batting_df[batting_df.G > batting_df.G.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result[expected.columns], expected)
@@ -361,7 +361,7 @@ def test_mutate_with_window_after_join(sort_kind):
     left, right = map(con.table, ("left", "right"))
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
+    proj = joined.select(left, right.value)
     expr = proj.group_by("ints").mutate(sum=proj.value.sum())
     result = expr.execute()
     expected = pd.DataFrame(
@@ -390,7 +390,7 @@ def test_mutate_scalar_with_window_after_join():
     left, right = map(con.table, ("left", "right"))
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
+    proj = joined.select(left, right.value)
     expr = proj.mutate(sum=proj.value.sum(), const=ibis.literal(1))
     result = expr.execute()
     expected = pd.DataFrame(
@@ -416,8 +416,8 @@ def test_project_scalar_after_join():
     left, right = map(con.table, ("left", "right"))
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
-    expr = proj[proj.value.sum().name("sum"), ibis.literal(1).name("const")]
+    proj = joined.select(left, right.value)
+    expr = proj.select(proj.value.sum().name("sum"), ibis.literal(1).name("const"))
     result = expr.execute()
     expected = pd.DataFrame(
         {

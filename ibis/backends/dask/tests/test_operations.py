@@ -32,7 +32,9 @@ def test_literal(client):
 
 
 def test_selection(t, df):
-    expr = t[((t.plain_strings == "a") | (t.plain_int64 == 3)) & (t.dup_strings == "d")]
+    expr = t.filter(
+        ((t.plain_strings == "a") | (t.plain_int64 == 3)) & (t.dup_strings == "d")
+    )
     result = expr.compile()
     expected = df[
         ((df.plain_strings == "a") | (df.plain_int64 == 3)) & (df.dup_strings == "d")
@@ -56,12 +58,10 @@ def test_mutate(t, df):
 @pytest.mark.xfail(reason="TODO - windowing - #2553")
 def test_project_scope_does_not_override(t, df):
     col = t.plain_int64
-    expr = t[
-        [
-            col.name("new_col"),
-            col.sum().over(ibis.window(group_by="dup_strings")).name("grouped"),
-        ]
-    ]
+    expr = t.select(
+        col.name("new_col"),
+        col.sum().over(ibis.window(group_by="dup_strings")).name("grouped"),
+    )
     result = expr.compile()
     expected = dd.concat(
         [
@@ -402,7 +402,7 @@ def test_nullif_inf(con):
 
 def test_group_concat(t, df):
     expr = (
-        t[t.dup_ints == 1]
+        t.filter(t.dup_ints == 1)
         .group_by(t.dup_strings)
         .aggregate(foo=t.dup_ints.group_concat(","))
     )
