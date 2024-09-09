@@ -7,11 +7,11 @@ from dataclasses import dataclass
 from typing import Annotated, NamedTuple
 
 import pytest
+from koerce import As, MatchError, Object, Pattern
 from pytest import param
 
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import ValidationError
-from ibis.common.patterns import As, Attrs, NoMatch, Pattern
+from ibis.common.grounds import ValidationError
 from ibis.common.temporal import TimestampUnit, TimeUnit
 from ibis.util import get_subclasses
 
@@ -432,25 +432,20 @@ def test_struct_equality():
     assert st3 != st2
 
 
-def test_singleton_null():
-    assert dt.null is dt.Null()
-
-
-def test_singleton_boolean():
+def test_booleqn_equality():
     assert dt.Boolean() == dt.boolean
-    assert dt.Boolean() is dt.boolean
-    assert dt.Boolean() is dt.Boolean()
-    assert dt.Boolean(nullable=True) is dt.boolean
-    assert dt.Boolean(nullable=False) is not dt.boolean
-    assert dt.Boolean(nullable=False) is dt.Boolean(nullable=False)
-    assert dt.Boolean(nullable=True) is dt.Boolean(nullable=True)
-    assert dt.Boolean(nullable=True) is not dt.Boolean(nullable=False)
+    assert dt.Boolean() == dt.Boolean()
+    assert dt.Boolean(nullable=True) == dt.boolean
+    assert dt.Boolean(nullable=False) != dt.boolean
+    assert dt.Boolean(nullable=False) == dt.Boolean(nullable=False)
+    assert dt.Boolean(nullable=True) == dt.Boolean(nullable=True)
+    assert dt.Boolean(nullable=True) != dt.Boolean(nullable=False)
 
 
-def test_singleton_primitive():
-    assert dt.Int64() is dt.int64
-    assert dt.Int64(nullable=False) is not dt.int64
-    assert dt.Int64(nullable=False) is dt.Int64(nullable=False)
+def test_primite_equality():
+    assert dt.Int64() == dt.int64
+    assert dt.Int64(nullable=False) != dt.int64
+    assert dt.Int64(nullable=False) == dt.Int64(nullable=False)
 
 
 def test_array_type_not_equals():
@@ -644,48 +639,59 @@ def test_set_is_an_alias_of_array():
 
 
 def test_type_coercion():
-    p = Pattern.from_typehint(dt.DataType)
-    assert p.match(dt.int8, {}) == dt.int8
-    assert p.match("int8", {}) == dt.int8
-    assert p.match(dt.string, {}) == dt.string
-    assert p.match("string", {}) == dt.string
-    assert p.match(3, {}) is NoMatch
+    p = Pattern.from_typehint(As[dt.DataType])
+    assert p.apply(dt.int8, {}) == dt.int8
+    assert p.apply("int8", {}) == dt.int8
+    assert p.apply(dt.string, {}) == dt.string
+    assert p.apply("string", {}) == dt.string
+    with pytest.raises(MatchError):
+        p.apply(3)
 
-    p = Pattern.from_typehint(dt.Primitive)
-    assert p.match(dt.int8, {}) == dt.int8
-    assert p.match("int8", {}) == dt.int8
-    assert p.match(dt.boolean, {}) == dt.boolean
-    assert p.match("boolean", {}) == dt.boolean
-    assert p.match(dt.Array(dt.int8), {}) is NoMatch
-    assert p.match("array<int8>", {}) is NoMatch
+    p = Pattern.from_typehint(As[dt.Primitive])
+    assert p.apply(dt.int8, {}) == dt.int8
+    assert p.apply("int8", {}) == dt.int8
+    assert p.apply(dt.boolean, {}) == dt.boolean
+    assert p.apply("boolean", {}) == dt.boolean
+    with pytest.raises(MatchError):
+        p.apply(dt.Array(dt.int8))
+    with pytest.raises(MatchError):
+        p.apply("array<int8>")
 
-    p = Pattern.from_typehint(dt.Integer)
-    assert p.match(dt.int8, {}) == dt.int8
-    assert p.match("int8", {}) == dt.int8
-    assert p.match(dt.uint8, {}) == dt.uint8
-    assert p.match("uint8", {}) == dt.uint8
-    assert p.match(dt.boolean, {}) is NoMatch
-    assert p.match("boolean", {}) is NoMatch
+    p = Pattern.from_typehint(As[dt.Integer])
+    assert p.apply(dt.int8, {}) == dt.int8
+    assert p.apply("int8", {}) == dt.int8
+    assert p.apply(dt.uint8, {}) == dt.uint8
+    assert p.apply("uint8", {}) == dt.uint8
+    with pytest.raises(MatchError):
+        p.apply(dt.boolean)
+    with pytest.raises(MatchError):
+        p.apply("boolean")
 
-    p = Pattern.from_typehint(dt.Array[dt.Integer])
-    assert p.match(dt.Array(dt.int8), {}) == dt.Array(dt.int8)
-    assert p.match("array<int8>", {}) == dt.Array(dt.int8)
-    assert p.match(dt.Array(dt.uint8), {}) == dt.Array(dt.uint8)
-    assert p.match("array<uint8>", {}) == dt.Array(dt.uint8)
-    assert p.match(dt.Array(dt.boolean), {}) is NoMatch
-    assert p.match("array<boolean>", {}) is NoMatch
+    p = Pattern.from_typehint(As[dt.Array[dt.Integer]])
+    assert p.apply(dt.Array(dt.int8), {}) == dt.Array(dt.int8)
+    assert p.apply("array<int8>", {}) == dt.Array(dt.int8)
+    assert p.apply(dt.Array(dt.uint8), {}) == dt.Array(dt.uint8)
+    assert p.apply("array<uint8>", {}) == dt.Array(dt.uint8)
+    with pytest.raises(MatchError):
+        p.apply(dt.Array(dt.boolean))
+    with pytest.raises(MatchError):
+        p.apply("array<boolean>")
 
-    p = Pattern.from_typehint(dt.Map[dt.String, dt.Integer])
-    assert p.match(dt.Map(dt.string, dt.int8), {}) == dt.Map(dt.string, dt.int8)
-    assert p.match("map<string, int8>", {}) == dt.Map(dt.string, dt.int8)
-    assert p.match(dt.Map(dt.string, dt.uint8), {}) == dt.Map(dt.string, dt.uint8)
-    assert p.match("map<string, uint8>", {}) == dt.Map(dt.string, dt.uint8)
-    assert p.match(dt.Map(dt.string, dt.boolean), {}) is NoMatch
-    assert p.match("map<string, boolean>", {}) is NoMatch
+    p = Pattern.from_typehint(As[dt.Map[dt.String, dt.Integer]])
+    assert p.apply(dt.Map(dt.string, dt.int8), {}) == dt.Map(dt.string, dt.int8)
+    assert p.apply("map<string, int8>", {}) == dt.Map(dt.string, dt.int8)
+    assert p.apply(dt.Map(dt.string, dt.uint8), {}) == dt.Map(dt.string, dt.uint8)
+    assert p.apply("map<string, uint8>", {}) == dt.Map(dt.string, dt.uint8)
+    with pytest.raises(MatchError):
+        p.apply(dt.Map(dt.string, dt.boolean))
+    with pytest.raises(MatchError):
+        p.apply("map<string, boolean>")
 
-    p = Pattern.from_typehint(Annotated[dt.Interval, Attrs(unit=As(TimeUnit))])
-    assert p.match(dt.Interval("s"), {}) == dt.Interval("s")
-    assert p.match(dt.Interval("ns"), {}) == dt.Interval("ns")
+    p = Pattern.from_typehint(
+        As[Annotated[dt.Interval, Object(dt.Interval, unit=As(TimeUnit))]]
+    )
+    assert p.apply(dt.Interval("s"), {}) == dt.Interval("s")
+    assert p.apply(dt.Interval("ns"), {}) == dt.Interval("ns")
 
 
 @pytest.mark.parametrize(

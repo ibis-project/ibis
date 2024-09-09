@@ -11,10 +11,10 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from koerce import Replace
 from public import public
 
 import ibis.common.exceptions as com
-import ibis.common.patterns as pats
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.rewrites import (
@@ -251,7 +251,7 @@ class SQLGlotCompiler(abc.ABC):
     agg = AggGen()
     """A generator for handling aggregate functions"""
 
-    rewrites: tuple[type[pats.Replace], ...] = (
+    rewrites: tuple[type[Replace], ...] = (
         empty_in_values_right_side,
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
@@ -259,7 +259,7 @@ class SQLGlotCompiler(abc.ABC):
     )
     """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
 
-    post_rewrites: tuple[type[pats.Replace], ...] = ()
+    post_rewrites: tuple[type[Replace], ...] = ()
     """A sequence of rewrites to apply to the expression tree after SQL-specific transforms."""
 
     no_limit_value: sge.Null | None = None
@@ -302,7 +302,7 @@ class SQLGlotCompiler(abc.ABC):
     UNSUPPORTED_OPS: tuple[type[ops.Node], ...] = ()
     """Tuple of operations the backend doesn't support."""
 
-    LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
+    LOWERED_OPS: dict[type[ops.Node], Replace | None] = {
         ops.Bucket: lower_bucket,
         ops.Capitalize: lower_capitalize,
         ops.Sample: lower_sample(supported_methods=()),

@@ -4,14 +4,13 @@ from typing import Any
 
 from public import public
 
-from ibis.common.grounds import Singleton
 
-
+# TODO(kszucs): it was a subclass of Singleton
 @public
-class DataShape(Singleton):
+class DataShape:
     ndim: int
-    SCALAR: Scalar
-    COLUMNAR: Columnar
+    SCALAR: Scalar = None
+    COLUMNAR: Columnar = None
 
     def is_scalar(self) -> bool:
         return self.ndim == 0
@@ -57,13 +56,9 @@ class Tabular(DataShape):
 
 
 # for backward compat
-DataShape.SCALAR = Scalar()
-DataShape.COLUMNAR = Columnar()
-DataShape.TABULAR = Tabular()
-
-scalar = Scalar()
-columnar = Columnar()
-tabular = Tabular()
+scalar = DataShape.SCALAR = Scalar()
+columnar = DataShape.COLUMNAR = Columnar()
+tabular = DataShape.TABULAR = Tabular()
 
 
 public(Any=DataShape)

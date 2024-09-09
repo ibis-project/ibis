@@ -3,12 +3,11 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING
 
+from koerce import Deferred, deferrable, resolve
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.annotations import EMPTY
-from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
@@ -389,17 +388,17 @@ class ArrayValue(Value):
         if isinstance(func, Deferred):
             name = "_"
             index = None
-            resolve = func.resolve
+            resolver_function = lambda **kwargs: resolve(func, **kwargs)
         elif callable(func):
             names = (
                 key
                 for key, value in inspect.signature(func).parameters.items()
                 # arg is already bound
-                if value.default is EMPTY
+                if value.default is inspect._empty
             )
             name = next(names)
             index = next(names, None)
-            resolve = func
+            resolver_function = func
         else:
             raise TypeError(
                 f"function must be a Deferred or Callable, got `{type(func).__name__}`"
@@ -415,7 +414,8 @@ class ArrayValue(Value):
             kwargs[index] = index_arg.to_expr()
             index = index_arg
 
-        body = resolve(**kwargs)
+        body = resolver_function(**kwargs)
+        
         return parameter, index, body
 
     def map(

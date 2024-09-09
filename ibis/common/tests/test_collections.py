@@ -7,6 +7,7 @@ import pytest
 from ibis.common.collections import (
     Collection,
     Container,
+    DisjointSet,
     FrozenDict,
     FrozenOrderedDict,
     Iterable,
@@ -14,7 +15,6 @@ from ibis.common.collections import (
     Mapping,
     MapSet,
     Reversible,
-    RewindableIterator,
     Sequence,
     Sized,
 )
@@ -465,32 +465,78 @@ def test_frozenordereddict():
     assert_pickle_roundtrip(d)
 
 
-def test_rewindable_iterator():
-    it = RewindableIterator(range(10))
-    assert next(it) == 0
-    assert next(it) == 1
-    with pytest.raises(ValueError, match="No checkpoint to rewind to"):
-        it.rewind()
+def test_disjoint_set():
+    ds = DisjointSet()
+    ds.add(1)
+    ds.add(2)
+    ds.add(3)
+    ds.add(4)
 
-    it.checkpoint()
-    assert next(it) == 2
-    assert next(it) == 3
-    it.rewind()
-    assert next(it) == 2
-    assert next(it) == 3
-    assert next(it) == 4
-    it.checkpoint()
-    assert next(it) == 5
-    assert next(it) == 6
-    it.rewind()
-    assert next(it) == 5
-    assert next(it) == 6
-    assert next(it) == 7
-    it.rewind()
-    assert next(it) == 5
-    assert next(it) == 6
-    assert next(it) == 7
-    assert next(it) == 8
-    assert next(it) == 9
-    with pytest.raises(StopIteration):
-        next(it)
+    ds1 = DisjointSet([1, 2, 3, 4])
+    assert ds == ds1
+    assert ds[1] == {1}
+    assert ds[2] == {2}
+    assert ds[3] == {3}
+    assert ds[4] == {4}
+
+    assert ds.union(1, 2) is True
+    assert ds[1] == {1, 2}
+    assert ds[2] == {1, 2}
+    assert ds.union(2, 3) is True
+    assert ds[1] == {1, 2, 3}
+    assert ds[2] == {1, 2, 3}
+    assert ds[3] == {1, 2, 3}
+    assert ds.union(1, 3) is False
+    assert ds[4] == {4}
+    assert ds != ds1
+    assert 1 in ds
+    assert 2 in ds
+    assert 5 not in ds
+
+    assert ds.find(1) == 1
+    assert ds.find(2) == 1
+    assert ds.find(3) == 1
+    assert ds.find(4) == 4
+
+    assert ds.connected(1, 2) is True
+    assert ds.connected(1, 3) is True
+    assert ds.connected(1, 4) is False
+
+    # test mapping api get
+    assert ds.get(1) == {1, 2, 3}
+    assert ds.get(4) == {4}
+    assert ds.get(5) is None
+    assert ds.get(5, 5) == 5
+    assert ds.get(5, default=5) == 5
+
+    # test mapping api keys
+    assert set(ds.keys()) == {1, 2, 3, 4}
+    assert set(ds) == {1, 2, 3, 4}
+
+    # test mapping api values
+    assert tuple(ds.values()) == ({1, 2, 3}, {1, 2, 3}, {1, 2, 3}, {4})
+
+    # test mapping api items
+    assert tuple(ds.items()) == (
+        (1, {1, 2, 3}),
+        (2, {1, 2, 3}),
+        (3, {1, 2, 3}),
+        (4, {4}),
+    )
+
+    # check that the disjoint set doesn't get corrupted by adding an existing element
+    ds.verify()
+    ds.add(1)
+    ds.verify()
+
+    with pytest.raises(RuntimeError, match="DisjointSet is corrupted"):
+        ds._parents[1] = 1
+        ds._classes[1] = {1}
+        ds.verify()
+
+    # test copying the disjoint set
+    ds2 = ds.copy()
+    assert ds == ds2
+    assert ds is not ds2
+    ds2.add(5)
+    assert ds != ds2

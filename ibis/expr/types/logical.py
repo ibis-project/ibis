@@ -317,7 +317,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         │ False │
         └───────┘
         """
-        from ibis.common.deferred import Call, Deferred, _
+        from koerce import Call, Deferred, _
 
         parents = self.op().relations
 

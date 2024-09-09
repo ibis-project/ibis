@@ -4,6 +4,7 @@ import datetime
 import operator
 
 import pytest
+from koerce import resolve
 from pytest import param
 
 import ibis
@@ -837,12 +838,12 @@ def test_date_expression():
     deferred = ibis.date(_.x, _.y, _.z)
     expr = ibis.date(t.x, t.y, t.z)
     assert isinstance(expr.op(), ops.DateFromYMD)
-    assert deferred.resolve(t).equals(expr)
+    assert resolve(deferred, _=t).equals(expr)
     assert repr(deferred) == "date(_.x, _.y, _.z)"
 
     deferred = ibis.date(_.s)
     expr = ibis.date(t.s)
-    assert deferred.resolve(t).equals(expr)
+    assert resolve(deferred, _=t).equals(expr)
     assert repr(deferred) == "date(_.s)"
 
 
@@ -861,12 +862,12 @@ def test_time_expression():
     deferred = ibis.time(_.x, _.y, _.z)
     expr = ibis.time(t.x, t.y, t.z)
     assert isinstance(expr.op(), ops.TimeFromHMS)
-    assert deferred.resolve(t).equals(expr)
+    assert resolve(deferred, _=t).equals(expr)
     assert repr(deferred) == "time(_.x, _.y, _.z)"
 
     deferred = ibis.time(_.s)
     expr = ibis.time(t.s)
-    assert deferred.resolve(t).equals(expr)
+    assert resolve(deferred, _=t).equals(expr)
     assert repr(deferred) == "time(_.s)"
 
 
@@ -893,13 +894,13 @@ def test_timestamp_expression():
     deferred = ibis.timestamp(_.a, _.b, _.c, _.d, _.e, _.f)
     expr = ibis.timestamp(t.a, t.b, t.c, t.d, t.e, t.f)
     assert isinstance(expr.op(), ops.TimestampFromYMDHMS)
-    assert deferred.resolve(t).equals(expr)
+    assert resolve(deferred, _=t).equals(expr)
     assert repr(deferred) == "timestamp(_.a, _.b, _.c, _.d, _.e, _.f)"
 
     t2 = ibis.table({"s": "string"})
     deferred = ibis.timestamp(_.s, timezone="UTC")
     expr = ibis.timestamp(t2.s, timezone="UTC")
-    assert deferred.resolve(t2).equals(expr)
+    assert resolve(deferred, _=t2).equals(expr)
     assert repr(deferred) == "timestamp(_.s, timezone='UTC')"
 
 

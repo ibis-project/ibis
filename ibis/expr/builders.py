@@ -3,25 +3,30 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
+from koerce import Annotable, Deferred, annotated, attribute, deferrable
+from koerce import Builder as Resolver
+
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.annotations import annotated, attribute
-from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
-from ibis.common.grounds import Concrete
-from ibis.common.selectors import Selector  # noqa: TC001
-from ibis.common.typing import VarTuple  # noqa: TC001
+from ibis.common.selectors import Selector  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TCH001
 
 if TYPE_CHECKING:
     from typing_extensions import Self
 
 
-class Builder(Concrete):
-    pass
+class Builder(Annotable, immutable=True):
+    def copy(self, **overrides) -> Self:
+        kwargs = dict(zip(self.__argnames__, self.__args__))
+        if unknown_args := overrides.keys() - kwargs.keys():
+            raise AttributeError(f"Unexpected arguments: {unknown_args}")
+        kwargs.update(overrides)
+        return self.__class__(**kwargs)
 
 
 @deferrable(repr="<case>")

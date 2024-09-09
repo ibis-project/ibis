@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import pytest
+from koerce import Deferred, resolve
 from pytest import param
 
 import ibis
 import ibis.expr.operations as ops
 from ibis import _
-from ibis.common.annotations import ValidationError
-from ibis.common.deferred import Deferred
 from ibis.common.exceptions import IbisTypeError
 
 
@@ -107,7 +106,7 @@ def test_reduction_methods(fn, operation, cond):
     if where is None:
         assert node.where is None
     elif isinstance(where, Deferred):
-        resolved = where.resolve(t).op()
+        resolved = resolve(where, _=t).op()
         assert node.where == resolved
     else:
         assert node.where == where.op()
@@ -171,9 +170,9 @@ def test_collect_distinct():
     t.a.collect(distinct=True, order_by=t.a.desc())
     (t.a + 1).collect(distinct=True, order_by=(t.a + 1).desc())
 
-    with pytest.raises(ValidationError, match="only order by the collected column"):
+    with pytest.raises(ValueError, match="only order by the collected column"):
         t.b.collect(distinct=True, order_by=t.a)
-    with pytest.raises(ValidationError, match="only order by the collected column"):
+    with pytest.raises(ValueError, match="only order by the collected column"):
         t.b.collect(
             distinct=True,
             order_by=(

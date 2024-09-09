@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import ValidationError, attribute
-from ibis.common.typing import VarTuple  # noqa: TC001
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.relations import Relation  # noqa: TC001
 from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
@@ -380,7 +380,7 @@ class ArrayCollect(Filterable, Reduction):
 
     def __init__(self, arg, order_by, distinct, **kwargs):
         if distinct and order_by and [arg] != [key.expr for key in order_by]:
-            raise ValidationError(
+            raise ValueError(
                 "`collect` with `order_by` and `distinct=True` and may only "
                 "order by the collected column"
             )

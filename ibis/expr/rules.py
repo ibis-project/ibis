@@ -3,14 +3,12 @@ from __future__ import annotations
 from itertools import product, starmap
 from typing import Optional
 
+from koerce import Annotable, attribute, pattern
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.annotations import attribute
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import CoercionError, NoMatch, Pattern
 from ibis.common.temporal import IntervalUnit
 
 
@@ -138,7 +136,7 @@ def arg_type_error_format(op: ops.Value) -> str:
         return f"{op.name}:{op.dtype}"
 
 
-class ValueOf(Concrete, Pattern):
+class ValueOf(Annotable, immutable=True):
     """Match a value of a specific type **instance**.
 
     This is different from the Value[T] annotations which construct
@@ -154,13 +152,10 @@ class ValueOf(Concrete, Pattern):
 
     dtype: Optional[dt.DataType] = None
 
-    def match(self, value, context):
-        try:
-            value = ops.Value.__coerce__(value, self.dtype)
-        except CoercionError:
-            return NoMatch
+    def __call__(self, value, **ctx):
+        value = ops.Value.__coerce__(value, self.dtype)
 
         if self.dtype and not value.dtype.castable(self.dtype):
-            return NoMatch
+            raise ValueError("Expected value implicitly castable to {self.dtype}")
 
         return value

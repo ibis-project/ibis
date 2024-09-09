@@ -11,6 +11,7 @@ import itertools
 import typing
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
 
+from koerce import argument, attribute, deferrable
 from public import public
 
 import ibis.common.exceptions as exc
@@ -19,9 +20,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.rules as rlz
 from ibis import util
-from ibis.common.annotations import Argument, attribute
 from ibis.common.collections import FrozenDict
-from ibis.common.deferred import deferrable
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, MutableMapping
@@ -120,7 +119,7 @@ class _UDF(abc.ABC):
             if (return_annotation := annotations.pop("return", None)) is None:
                 raise exc.MissingReturnAnnotationError(fn)
             fields = {
-                arg_name: Argument(
+                arg_name: argument(
                     pattern=rlz.ValueOf(annotations.get(arg_name)),
                     default=param.default,
                     typehint=annotations.get(arg_name, Any),
@@ -132,7 +131,7 @@ class _UDF(abc.ABC):
             arg_types, return_annotation = signature
             arg_names = list(inspect.signature(fn).parameters)
             fields = {
-                arg_name: Argument(pattern=rlz.ValueOf(typ), typehint=typ)
+                arg_name: argument(pattern=rlz.ValueOf(typ), typehint=typ)
                 for arg_name, typ in zip(arg_names, arg_types)
             }
 

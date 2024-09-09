@@ -4,7 +4,7 @@ import contextlib
 import datetime
 import numbers
 from decimal import Decimal
-from enum import Enum, EnumMeta
+from enum import Enum
 
 import dateutil.parser
 import dateutil.tz
@@ -12,16 +12,10 @@ import pytz
 from public import public
 
 from ibis import util
-from ibis.common.bases import AbstractMeta
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.common.patterns import Coercible, CoercionError
 
 
-class AbstractEnumMeta(EnumMeta, AbstractMeta):
-    pass
-
-
-class Unit(Coercible, Enum, metaclass=AbstractEnumMeta):
+class Unit(Enum):
     @classmethod
     def __coerce__(cls, value):
         if isinstance(value, cls):
@@ -35,7 +29,7 @@ class Unit(Coercible, Enum, metaclass=AbstractEnumMeta):
         if isinstance(value, Unit):
             value = value.value
         elif not isinstance(value, str):
-            raise CoercionError(f"Unable to coerce {value} to {cls.__name__}")
+            raise ValueError(f"Unable to construct {cls.__name__} from {value}")
 
         # first look for aliases
         value = cls.aliases().get(value, value)
@@ -52,7 +46,7 @@ class Unit(Coercible, Enum, metaclass=AbstractEnumMeta):
         try:
             return cls[value.upper()]
         except KeyError:
-            raise CoercionError(f"Unable to coerce {value} to {cls.__name__}")
+            raise ValueError(f"Unable to construct {cls.__name__} from {value}")
 
     @classmethod
     def aliases(cls):

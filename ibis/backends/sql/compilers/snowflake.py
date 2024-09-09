@@ -35,7 +35,7 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     x,
 )
-from ibis.common.patterns import replace
+from koerce import replace
 from ibis.expr.rewrites import p
 
 

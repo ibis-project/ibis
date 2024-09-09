@@ -11,6 +11,8 @@ import operator
 from collections import Counter
 from typing import TYPE_CHECKING, Any, overload
 
+from koerce import Annotable, Deferred, Var, deferrable
+
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -18,10 +20,8 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import selectors, util
 from ibis.backends import BaseBackend, connect
-from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import IbisInputError
-from ibis.common.grounds import Concrete
 from ibis.common.temporal import normalize_datetime, normalize_timezone
 from ibis.expr.decompile import decompile
 from ibis.expr.schema import Schema
@@ -145,7 +145,13 @@ e = ops.E().to_expr()
 pi = ops.Pi().to_expr()
 
 
-deferred = _
+class _Variable(Var):
+    def __repr__(self):
+        return self.name
+
+
+# reserved variable name for the value being matched
+deferred = _ = Deferred(_Variable("_"))
 """Deferred expression object.
 
 Use this object to refer to a previous table expression in a chain of
@@ -2231,7 +2237,7 @@ def difference(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir
     return table.difference(*rest, distinct=distinct) if rest else table
 
 
-class Watermark(Concrete):
+class Watermark(Annotable, immutable=True, hashable=True):
     time_col: str
     allowed_delay: ir.IntervalScalar
 

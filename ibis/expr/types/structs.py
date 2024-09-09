@@ -4,11 +4,11 @@ import collections
 from keyword import iskeyword
 from typing import TYPE_CHECKING
 
+from koerce import deferrable
 from public import public
 
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.deferred import deferrable
 from ibis.common.exceptions import IbisError
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 

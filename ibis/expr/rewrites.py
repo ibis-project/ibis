@@ -5,28 +5,28 @@ from __future__ import annotations
 from collections import defaultdict
 
 import toolz
+from koerce import Annotable, If, Item, _, namespace, replace, var
 
 import ibis.expr.operations as ops
-from ibis.common.collections import FrozenDict  # noqa: TC001
-from ibis.common.deferred import Item, _, deferred, var
+from ibis.common.collections import FrozenDict  # noqa: TCH001
 from ibis.common.exceptions import ExpressionError, IbisInputError
-from ibis.common.graph import Node as Traversable
+
+# from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import Check, pattern, replace
-from ibis.common.typing import VarTuple  # noqa: TC001
+
+# from ibis.common.patterns import Check, pattern, replace
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.util import Namespace, promote_list
 
-p = Namespace(pattern, module=ops)
-d = Namespace(deferred, module=ops)
-
+p, d = namespace(ops)
 
 x = var("x")
 y = var("y")
 name = var("name")
 
 
-class DerefMap(Concrete, Traversable):
+# class DerefMap(Concrete, Traversable):
+class DerefMap(Annotable, immutable=True, hashable=True):
     """Trace and replace fields from earlier relations in the hierarchy.
 
     In order to provide a nice user experience, we need to allow expressions
@@ -335,7 +335,7 @@ def rewrite_window_input(value, window):
 
 # TODO(kszucs): schema comparison should be updated to not distinguish between
 # different column order
-@replace(p.Project(y @ p.Relation) & Check(_.schema == y.schema))
+@replace(p.Project(y @ p.Relation) & If(_.schema == y.schema))
 def complete_reprojection(_, y):
     # TODO(kszucs): this could be moved to the pattern itself but not sure how
     # to express it, especially in a shorter way then the following check
@@ -347,25 +347,25 @@ def complete_reprojection(_, y):
 
 @replace(p.Project(y @ p.Project))
 def subsequent_projects(_, y):
-    rule = p.Field(y, name) >> Item(y.values, name)
+    rule = p.Field(y, +name) >> Item(y.values, name)
     values = {k: v.replace(rule, filter=ops.Value) for k, v in _.values.items()}
     return ops.Project(y.parent, values)
 
 
 @replace(p.Filter(y @ p.Filter))
 def subsequent_filters(_, y):
-    rule = p.Field(y, name) >> d.Field(y.parent, name)
+    rule = p.Field(y, +name) >> d.Field(y.parent, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
     return ops.Filter(y.parent, y.predicates + preds)
 
 
 @replace(p.Filter(y @ p.Project))
 def reorder_filter_project(_, y):
-    rule = p.Field(y, name) >> Item(y.values, name)
+    rule = p.Field(y, +name) >> Item(y.values, name)
     preds = tuple(v.replace(rule, filter=ops.Value) for v in _.predicates)
 
     inner = ops.Filter(y.parent, preds)
-    rule = p.Field(y.parent, name) >> d.Field(inner, name)
+    rule = p.Field(y.parent, +name) >> d.Field(inner, name)
     projs = {k: v.replace(rule, filter=ops.Value) for k, v in y.values.items()}
 
     return ops.Project(inner, projs)

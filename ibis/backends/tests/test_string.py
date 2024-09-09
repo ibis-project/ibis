@@ -17,7 +17,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PyODBCProgrammingError,
 )
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 from ibis.util import gen_name
 
 np = pytest.importorskip("numpy")

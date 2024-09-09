@@ -10,6 +10,7 @@ from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 import toolz
+from koerce import Builder, Deferred, resolve
 from public import public
 
 import ibis
@@ -18,7 +19,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
-from ibis.common.deferred import Deferred, Resolver
 from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
@@ -107,10 +107,8 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
     elif isinstance(value, Table):
         for name in value.columns:
             yield ops.Field(value, name).to_expr()
-    elif isinstance(value, Deferred):
-        yield value.resolve(table)
-    elif isinstance(value, Resolver):
-        yield value.resolve({"_": table})
+    elif isinstance(value, (Deferred, Builder)):
+        yield resolve(value, _=table)
     elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):
@@ -287,6 +285,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             A tuple of bound values
         """
         values = self._fast_bind(*args, **kwargs)
+
         # dereference the values to `self`
         dm = DerefMap.from_targets(self.op())
         result = []
@@ -1004,7 +1003,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ orange │       0.33 │     0.33 │
         └────────┴────────────┴──────────┘
         """
-        from ibis.common.patterns import Contains, In
+        from koerce import If, IsIn
+
         from ibis.expr.rewrites import p
 
         node = self.op()
@@ -1019,7 +1019,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         # the user doesn't need to specify the metrics used in the having clause
         # explicitly, we implicitly add them to the metrics list by looking for
         # any metrics depending on self which are not specified explicitly
-        pattern = p.Reduction(relations=Contains(node)) & ~In(set(metrics.values()))
+        pattern = p.Reduction(relations=If(lambda _: node in _)) & ~IsIn(
+            set(metrics.values())
+        )
         original_metrics = metrics.copy()
         for pred in having:
             for metric in pred.op().find_topmost(pattern):
@@ -3976,7 +3978,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         if values_transform is None:
             values_transform = toolz.identity
         elif isinstance(values_transform, Deferred):
-            values_transform = values_transform.resolve
+            values_transform = lambda t, what=values_transform: resolve(what, _=t)
 
         pieces = []
 
@@ -4406,7 +4408,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         if isinstance(values_agg, str):
             values_agg = operator.methodcaller(values_agg)
         elif isinstance(values_agg, Deferred):
-            values_agg = values_agg.resolve
+            values_agg = lambda t, what=values_agg: resolve(what, _=t)
 
         if names is None:
             # no names provided, compute them from the data
@@ -4440,7 +4442,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                 rules = (
                     # add in the where clause to filter the appropriate values
                     p.Reduction(where=None) >> _.copy(where=where)
-                    | p.Reduction(where=x) >> _.copy(where=where & x)
+                    # TODO(kszucs)
+                    # | p.Reduction(where=+x) >> _.copy(where=where & x)
                 )
                 arg = arg.op().replace(rules, filter=p.Value).to_expr()
 

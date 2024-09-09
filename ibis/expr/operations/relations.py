@@ -7,11 +7,11 @@ import typing
 from abc import abstractmethod
 from typing import Annotated, Any, Literal, Optional, TypeVar
 
+from koerce import Is, attribute
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import attribute
 from ibis.common.collections import (
     ConflictingValuesError,
     FrozenDict,
@@ -19,21 +19,20 @@ from ibis.common.collections import (
 )
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Between, InstanceOf
-from ibis.common.typing import Coercible, VarTuple
+from ibis.common.typing import VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
 from ibis.formats import TableProxy  # noqa: TC001
 
-T = TypeVar("T")
+T = TypeVar("T", covariant=True)
 
-Unaliased = Annotated[T, ~InstanceOf(Alias)]
-NonSortKey = Annotated[T, ~InstanceOf(SortKey)]
+Unaliased = Annotated[T, ~Is(Alias)]
+NonSortKey = Annotated[T, ~Is(SortKey)]
 
 
 @public
-class Relation(Node, Coercible):
+class Relation(Node):
     """Base class for relational operations."""
 
     @classmethod
@@ -460,7 +459,7 @@ class SQLStringView(Relation):
 class DummyTable(Relation):
     """A table constructed from literal values."""
 
-    values: FrozenOrderedDict[str, Annotated[Value, ~InstanceOf(Alias)]]
+    values: FrozenOrderedDict[str, Annotated[Value, ~Is(Alias)]]
 
     @attribute
     def schema(self):
@@ -486,7 +485,7 @@ class DropNull(Simple):
 class Sample(Simple):
     """Sample performs random sampling of records in a table."""
 
-    fraction: Annotated[float, Between(0, 1)]
+    fraction: float  # TODO(kszucs) Annotated[float, Between(0, 1)]
     method: typing.Literal["row", "block"]
     seed: typing.Union[int, None] = None
 

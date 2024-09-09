@@ -1678,7 +1678,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def _register_udf(self, udf_node: ops.ScalarUDF):
         type_mapper = self.compiler.type_mapper
         input_types = [
-            type_mapper.to_string(param.annotation.pattern.dtype)
+            # TODO(kszucs): the data type of the input parameters should be
+            # retrieved differently rather than relying on the validator
+            # in the signature
+            type_mapper.to_string(param.pattern.func.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
 

@@ -5,6 +5,7 @@ from functools import partial, reduce
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from koerce import replace
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -18,7 +19,6 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     rewrite_empty_order_by_window,
 )
-from ibis.common.patterns import replace
 from ibis.expr.rewrites import p
 
 

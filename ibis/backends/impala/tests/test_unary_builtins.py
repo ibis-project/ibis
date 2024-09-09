@@ -6,7 +6,7 @@ from pytest import param
 import ibis
 import ibis.expr.types as ir
 from ibis.backends.impala.tests.conftest import translate
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 
 @pytest.fixture(scope="module")

@@ -12,6 +12,7 @@ from operator import attrgetter, methodcaller
 import pytest
 import pytz
 import toolz
+from koerce import resolve
 from pytest import param
 
 import ibis
@@ -21,9 +22,9 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _, literal
-from ibis.common.annotations import ValidationError
 from ibis.common.collections import frozendict
 from ibis.common.exceptions import IbisTypeError
+from ibis.common.grounds import ValidationError
 from ibis.expr import api
 from ibis.tests.util import assert_equal
 
@@ -703,7 +704,7 @@ def test_binop_string_type_error(table, operation, left, right):
     a = table[left]
     b = table[right]
 
-    with pytest.raises((TypeError, ValidationError)):
+    with pytest.raises(ValidationError):
         operation(a, b)
 
 
@@ -1602,7 +1603,7 @@ def test_deferred_function_call(func, expected_type):
 )
 def test_deferred_nested_types(case):
     expr, sol = case()
-    assert expr.resolve(2).equals(sol)
+    assert resolve(expr, _=2).equals(sol)
 
 
 def test_numpy_ufuncs_dont_cast_columns():

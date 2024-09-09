@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from koerce import var
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -30,7 +31,6 @@ from ibis.backends.sql.rewrites import (
     replace,
     split_select_distinct_with_order_by,
 )
-from ibis.common.deferred import var
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
