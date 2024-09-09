@@ -1900,8 +1900,13 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.notyet(
-                    ["duckdb", "impala", "pyspark", "trino"],
+                    ["impala", "pyspark", "trino"],
                     reason="drivers appear to truncate nanos",
+                    raises=AssertionError,
+                ),
+                pytest.mark.xfail_version(
+                    duckdb=["duckdb<1.1"],
+                    reason="not implemented until 1.1",
                     raises=AssertionError,
                 ),
                 pytest.mark.notimpl(

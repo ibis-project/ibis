@@ -296,15 +296,17 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
 
     # Reingest and compare schema
     reingest = con.read_parquet(outparquet / "*" / "*")
-    reingest = reingest.cast({"yearID": "int64"})
 
     # avoid type comparison to appease duckdb: as of 0.8.0 it returns large_string
-    assert reingest.schema().names == awards_players.schema().names
+    assert reingest.schema().keys() == awards_players.schema().keys()
 
     reingest = reingest.order_by(["yearID", "playerID", "awardID", "lgID"])
     awards_players = awards_players.order_by(["yearID", "playerID", "awardID", "lgID"])
 
-    backend.assert_frame_equal(reingest.to_pandas(), awards_players.to_pandas())
+    # reorder columns to match the partitioning
+    backend.assert_frame_equal(
+        reingest.to_pandas(), awards_players[reingest.columns].to_pandas()
+    )
 
 
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])

@@ -466,6 +466,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
+            marks=pytest.mark.xfail_version(
+                duckdb=["duckdb>=1.1"],
+                raises=AssertionError,
+                reason="not exact, even at this tiny scale",
+                strict=False,
+            ),
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),

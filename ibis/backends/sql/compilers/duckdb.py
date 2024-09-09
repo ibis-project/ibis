@@ -51,7 +51,6 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
-        ops.ArrayPosition: "list_indexof",
         ops.ArrayMin: "list_min",
         ops.ArrayMax: "list_max",
         ops.ArrayAny: "list_bool_or",
@@ -148,6 +147,13 @@ class DuckDBCompiler(SQLGlotCompiler):
                 self.f.array(NULL),
                 self.f.array(),
             ),
+        )
+
+    def visit_ArrayPosition(self, op, *, arg, other):
+        return self.if_(
+            arg.is_(NULL) | other.is_(NULL),
+            NULL,
+            self.f.coalesce(self.f.list_indexof(arg, other), 0),
         )
 
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
@@ -352,7 +358,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[f"to_{unit.plural}"](arg)
 
     def visit_FindInSet(self, op, *, needle, values):
-        return self.f.list_indexof(self.f.array(*values), needle)
+        return self.if_(
+            needle.is_(NULL),
+            NULL,
+            self.f.coalesce(self.f.list_indexof(self.f.array(*values), needle), 0),
+        )
 
     def visit_CountDistinctStar(self, op, *, where, arg):
         # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)

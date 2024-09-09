@@ -1630,11 +1630,11 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
         ┌────┐
-        │ 94 │
+        │ 92 │
         └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
         ┌────┐
-        │ 55 │
+        │ 61 │
         └────┘
         """
         return ops.ApproxCountDistinct(

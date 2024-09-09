@@ -16,6 +16,7 @@ import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
+from packaging.version import parse as vparse
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -460,6 +461,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         # Default timezone, can't be set with `config`
         self.settings["timezone"] = "UTC"
+
+        # setting this to false disables magic variables-as-tables discovery,
+        # hopefully eliminating large classes of bugs
+        if vparse(self.version) > vparse("1"):
+            self.settings["python_enable_replacements"] = False
 
         self._record_batch_readers_consumed = {}
 
