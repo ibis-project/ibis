@@ -1,0 +1,1943 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.339">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Ibis – getting_started</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "keyboard-shortcut": [
+    null
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/backend.html">
+ <span class="dropdown-text">Backend</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../tutorials/getting_started.html">Tutorial: getting started</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../install.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Installation</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/getting_started.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Tutorial: getting started</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-dplyr-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: Ibis for dplyr users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-pandas-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: Ibis for pandas users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-sql-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: Ibis for SQL users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Data Platforms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false">
+ <span class="menu-text">Starburst Galaxy</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/data-platforms/starburst-galaxy/0_setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Requirements and setup</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/data-platforms/starburst-galaxy/1_basics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Basic operations</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#install-ibis" id="toc-install-ibis" class="nav-link active" data-scroll-target="#install-ibis">Install Ibis</a></li>
+  <li><a href="#create-a-database-file" id="toc-create-a-database-file" class="nav-link" data-scroll-target="#create-a-database-file">Create a database file</a></li>
+  <li><a href="#interactive-mode" id="toc-interactive-mode" class="nav-link" data-scroll-target="#interactive-mode">Interactive mode</a></li>
+  <li><a href="#common-operations" id="toc-common-operations" class="nav-link" data-scroll-target="#common-operations">Common operations</a>
+  <ul class="collapse">
+  <li><a href="#filter" id="toc-filter" class="nav-link" data-scroll-target="#filter">filter</a></li>
+  <li><a href="#select" id="toc-select" class="nav-link" data-scroll-target="#select">select</a></li>
+  <li><a href="#mutate" id="toc-mutate" class="nav-link" data-scroll-target="#mutate">mutate</a></li>
+  <li><a href="#selectors" id="toc-selectors" class="nav-link" data-scroll-target="#selectors">selectors</a></li>
+  <li><a href="#order_by" id="toc-order_by" class="nav-link" data-scroll-target="#order_by">order_by</a></li>
+  <li><a href="#aggregates" id="toc-aggregates" class="nav-link" data-scroll-target="#aggregates">aggregates</a></li>
+  <li><a href="#group_by" id="toc-group_by" class="nav-link" data-scroll-target="#group_by">group_by</a></li>
+  </ul></li>
+  <li><a href="#chaining-it-all-together" id="toc-chaining-it-all-together" class="nav-link" data-scroll-target="#chaining-it-all-together">Chaining it all together</a></li>
+  <li><a href="#learn-more" id="toc-learn-more" class="nav-link" data-scroll-target="#learn-more">Learn more</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/master/docs/tutorials/getting_started.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Tutorial: getting started</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+<p>This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.</p>
+<section id="install-ibis" class="level2">
+<h2 class="anchored" data-anchor-id="install-ibis">Install Ibis</h2>
+<p>We recommend starting with the default (DuckDB) backend for a performant, fully-featured local experience. You can install Ibis with <code>pip</code>, <code>conda</code>, <code>mamba</code>, or <code>pixi</code>.</p>
+<div class="tabset-margin-container"></div><div class="panel-tabset">
+<ul class="nav nav-tabs" role="tablist"><li class="nav-item" role="presentation"><a class="nav-link active" id="tabset-1-1-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-1" role="tab" aria-controls="tabset-1-1" aria-selected="true" aria-current="page">Using <code>pip</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-2-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-2" role="tab" aria-controls="tabset-1-2" aria-selected="false">Using <code>conda</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-3-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-3" role="tab" aria-controls="tabset-1-3" aria-selected="false">Using <code>mamba</code></a></li><li class="nav-item" role="presentation"><a class="nav-link" id="tabset-1-4-tab" data-bs-toggle="tab" data-bs-target="#tabset-1-4" role="tab" aria-controls="tabset-1-4" aria-selected="false">Using <code>pixi</code></a></li></ul>
+<div class="tab-content">
+<div id="tabset-1-1" class="tab-pane active" role="tabpanel" aria-labelledby="tabset-1-1-tab">
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="st">'ibis-framework[duckdb]'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that the <code>ibis-framework</code> package is <em>not</em> the same as the <code>ibis</code> package in PyPI. These two libraries cannot coexist in the same Python environment, as they are both imported with the <code>ibis</code> module name.</p>
+</div>
+</div>
+</div>
+<div id="tabset-1-2" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-2-tab">
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install <span class="at">-c</span> conda-forge ibis-duckdb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="tabset-1-3" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-3-tab">
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> install <span class="at">-c</span> conda-forge ibis-duckdb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="tabset-1-4" class="tab-pane" role="tabpanel" aria-labelledby="tabset-1-4-tab">
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pixi</span> add ibis-duckdb</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</div>
+</div>
+</section>
+<section id="create-a-database-file" class="level2">
+<h2 class="anchored" data-anchor-id="create-a-database-file">Create a database file</h2>
+<p>Ibis can work with several file types, but at its core it connects to existing databases and interacts with the data there. We’ll analyze the <em>Palmer penguins</em> <a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> dataset with <a href="https://duckdb.org">DuckDB</a> to get the hang of this.</p>
+<div id="27b39129" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="st">"duckdb://penguins.ddb"</span>)</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>con.create_table(</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"penguins"</span>, ibis.examples.penguins.fetch().to_pyarrow(), overwrite<span class="op">=</span><span class="va">True</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">DatabaseTable: penguins
+  species           string
+  island            string
+  bill_length_mm    float64
+  bill_depth_mm     float64
+  flipper_length_mm int64
+  body_mass_g       int64
+  sex               string
+  year              int64
+</pre>
+</div>
+</div>
+<p>You can now see the example dataset copied over to the database:</p>
+<div id="ca6a19eb" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="st">"duckdb://penguins.ddb"</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>con.list_tables()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre><code>['penguins']</code></pre>
+</div>
+</div>
+<p>There’s one table, called <code>penguins</code>. We can ask Ibis to give us an object that we can interact with.</p>
+<div id="04fb5166" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>penguins <span class="op">=</span> con.table(<span class="st">"penguins"</span>)</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>penguins</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">DatabaseTable: penguins
+  species           string
+  island            string
+  bill_length_mm    float64
+  bill_depth_mm     float64
+  flipper_length_mm int64
+  body_mass_g       int64
+  sex               string
+  year              int64
+</pre>
+</div>
+</div>
+<p>Ibis is lazily evaluated, so instead of seeing the data, we see the schema of the table, instead. To peek at the data, we can call <code>head</code> and then <code>to_pandas</code> to get the first few rows of the table as a pandas DataFrame.</p>
+<div id="abbef799" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>penguins.head().to_pandas()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">species</th>
+<th data-quarto-table-cell-role="th">island</th>
+<th data-quarto-table-cell-role="th">bill_length_mm</th>
+<th data-quarto-table-cell-role="th">bill_depth_mm</th>
+<th data-quarto-table-cell-role="th">flipper_length_mm</th>
+<th data-quarto-table-cell-role="th">body_mass_g</th>
+<th data-quarto-table-cell-role="th">sex</th>
+<th data-quarto-table-cell-role="th">year</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>Adelie</td>
+<td>Torgersen</td>
+<td>39.1</td>
+<td>18.7</td>
+<td>181.0</td>
+<td>3750.0</td>
+<td>male</td>
+<td>2007</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>Adelie</td>
+<td>Torgersen</td>
+<td>39.5</td>
+<td>17.4</td>
+<td>186.0</td>
+<td>3800.0</td>
+<td>female</td>
+<td>2007</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>Adelie</td>
+<td>Torgersen</td>
+<td>40.3</td>
+<td>18.0</td>
+<td>195.0</td>
+<td>3250.0</td>
+<td>female</td>
+<td>2007</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>Adelie</td>
+<td>Torgersen</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>None</td>
+<td>2007</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>Adelie</td>
+<td>Torgersen</td>
+<td>36.7</td>
+<td>19.3</td>
+<td>193.0</td>
+<td>3450.0</td>
+<td>female</td>
+<td>2007</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p><code>to_pandas</code> takes the existing lazy table expression and evaluates it. If we leave it off, you’ll see the Ibis representation of the table expression that <code>to_pandas</code> will evaluate (when you’re ready!).</p>
+<div id="5140f874" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>penguins.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">r0 := DatabaseTable: penguins
+  species           string
+  island            string
+  bill_length_mm    float64
+  bill_depth_mm     float64
+  flipper_length_mm int64
+  body_mass_g       int64
+  sex               string
+  year              int64
+
+Limit[r0, n=5]
+</pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Ibis returns results as a pandas DataFrame using <code>to_pandas</code>, but isn’t using pandas to perform any of the computation. The query is executed by the backend (DuckDB in this case). Only when <code>to_pandas</code> is called does Ibis then pull back the results and convert them into a DataFrame.</p>
+</div>
+</div>
+</section>
+<section id="interactive-mode" class="level2">
+<h2 class="anchored" data-anchor-id="interactive-mode">Interactive mode</h2>
+<p>For the rest of this intro, we’ll turn on interactive mode, which partially executes queries to give users a preview of the results. There is a small difference in the way the output is formatted, but otherwise this is the same as calling <code>to_pandas</code> on the table expression with a limit of 10 result rows returned.</p>
+<div id="e820bfc1" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>penguins.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="common-operations" class="level2">
+<h2 class="anchored" data-anchor-id="common-operations">Common operations</h2>
+<p>Ibis has a collection of useful table methods to manipulate and query the data in a table (or tables).</p>
+<section id="filter" class="level3">
+<h3 class="anchored" data-anchor-id="filter">filter</h3>
+<p><code>filter</code> allows you to select rows based on a condition or set of conditions.</p>
+<p>We can filter so we only have penguins of the species Adelie:</p>
+<div id="c1e0451c" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>penguins.<span class="bu">filter</span>(penguins.species <span class="op">==</span> <span class="st">"Adelie"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+<p>Or filter for Adelie penguins that reside on the island of Torgersen:</p>
+<div id="e63cdd4a" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>penguins.<span class="bu">filter</span>((penguins.island <span class="op">==</span> <span class="st">"Torgersen"</span>) <span class="op">&amp;</span> (penguins.species <span class="op">==</span> <span class="st">"Adelie"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+<p>You can use any boolean comparison in a filter (although if you try to do something like use <code>&lt;</code> on a string, Ibis will yell at you).</p>
+</section>
+<section id="select" class="level3">
+<h3 class="anchored" data-anchor-id="select">select</h3>
+<p>Your data analysis might not require all the columns present in a given table. <code>select</code> lets you pick out only those columns that you want to work with.</p>
+<p>To select a column you can use the name of the column as a string:</p>
+<div id="28203fb8" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>penguins.select(<span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"year"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴───────┘
+</pre>
+</div>
+</div>
+<p>Or you can use column objects directly (this can be convenient when paired with tab-completion):</p>
+<div id="37030744" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>penguins.select(penguins.species, penguins.island, penguins.year)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="10">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴───────┘
+</pre>
+</div>
+</div>
+<p>Or you can mix-and-match:</p>
+<div id="4d1378f9" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>penguins.select(<span class="st">"species"</span>, <span class="st">"island"</span>, penguins.year)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="11">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴───────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="mutate" class="level3">
+<h3 class="anchored" data-anchor-id="mutate">mutate</h3>
+<p><code>mutate</code> lets you add new columns to your table, derived from the values of existing columns.</p>
+<div id="d097baf0" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>penguins.mutate(bill_length_cm<span class="op">=</span>penguins.bill_length_mm <span class="op">/</span> <span class="dv">10</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="12">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃<span style="font-weight: bold"> bill_length_cm </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┼────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.91</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.95</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.03</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.67</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.93</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.89</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.92</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.41</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.20</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┘
+</pre>
+</div>
+</div>
+<p>Notice that the table is a little too wide to display all the columns now (depending on your screen-size). <code>bill_length</code> is now present in millimeters AND centimeters. Use a <code>select</code> to trim down the number of columns we’re looking at.</p>
+<div id="d344d2b6" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>penguins.mutate(bill_length_cm<span class="op">=</span>penguins.bill_length_mm <span class="op">/</span> <span class="dv">10</span>).select(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"species"</span>,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"island"</span>,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"bill_depth_mm"</span>,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"flipper_length_mm"</span>,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"body_mass_g"</span>,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"sex"</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"year"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"bill_length_cm"</span>,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃<span style="font-weight: bold"> bill_length_cm </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │
+├─────────┼───────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┼────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.91</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.95</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.03</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.67</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.93</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.89</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.92</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.41</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.20</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="selectors" class="level3">
+<h3 class="anchored" data-anchor-id="selectors">selectors</h3>
+<p>Typing out ALL of the column names <em>except</em> one is a little annoying. Instead of doing that again, we can use a <code>selector</code> to quickly select or deselect groups of columns.</p>
+<div id="78ac646b" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>penguins.mutate(bill_length_cm<span class="op">=</span>penguins.bill_length_mm <span class="op">/</span> <span class="dv">10</span>).select(</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    <span class="op">~</span>s.matches(<span class="st">"bill_length_mm"</span>)</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># match every column except `bill_length_mm`</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="14">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃<span style="font-weight: bold"> bill_length_cm </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │
+├─────────┼───────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┼────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.91</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.95</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.03</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.67</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.93</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.89</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.92</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.41</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.20</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┴────────────────┘
+</pre>
+</div>
+</div>
+<p>You can also use a <code>selector</code> alongside a column name.</p>
+<div id="c62ed324" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>penguins.select(<span class="st">"island"</span>, s.numeric())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3750</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">186</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3250</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │        <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3450</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3650</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">181</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3625</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">195</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3475</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">190</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4250</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴───────┘
+</pre>
+</div>
+</div>
+<p>You can read more about <a href="../posts/selectors"><code>selectors</code></a> in the docs!</p>
+</section>
+<section id="order_by" class="level3">
+<h3 class="anchored" data-anchor-id="order_by">order_by</h3>
+<p><code>order_by</code> arranges the values of one or more columns in ascending or descending order.</p>
+<p>By default, <code>ibis</code> sorts in ascending order:</p>
+<div id="34f96401" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>penguins.order_by(penguins.flipper_length_mm).select(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"flipper_length_mm"</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="16">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │
+├───────────┼───────────┼───────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">172</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">174</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">176</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">178</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">178</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">178</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">178</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">179</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">180</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">180</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└───────────┴───────────┴───────────────────┘
+</pre>
+</div>
+</div>
+<p>You can sort in descending order using the <code>desc</code> method of a column:</p>
+<div id="eafdec15" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>penguins.order_by(penguins.flipper_length_mm.desc()).select(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"flipper_length_mm"</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="17">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │
+├─────────┼────────┼───────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">231</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">229</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">229</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴────────┴───────────────────┘
+</pre>
+</div>
+</div>
+<p>Or you can use <code>ibis.desc</code></p>
+<div id="f50929a1" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>penguins.order_by(ibis.desc(<span class="st">"flipper_length_mm"</span>)).select(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    <span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"flipper_length_mm"</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="18">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>             │
+├─────────┼────────┼───────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">231</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">230</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">229</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">229</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴────────┴───────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="aggregates" class="level3">
+<h3 class="anchored" data-anchor-id="aggregates">aggregates</h3>
+<p>Ibis has several aggregate functions available to help summarize data.</p>
+<p><code>mean</code>, <code>max</code>, <code>min</code>, <code>count</code>, <code>sum</code> (the list goes on).</p>
+<p>To aggregate an entire column, call the corresponding method on that column.</p>
+<div id="63a2a951" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>penguins.flipper_length_mm.mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="19">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-cyan-fg ansi-bold">200.91520467836258</span></pre>
+</div>
+</div>
+</div>
+<p>You can compute multiple aggregates at once using the <code>aggregate</code> method:</p>
+<div id="ce2660fe" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>penguins.aggregate([penguins.flipper_length_mm.mean(), penguins.bill_depth_mm.<span class="bu">max</span>()])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="20">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> Mean(flipper_length_mm) </span>┃<span style="font-weight: bold"> Max(bill_depth_mm) </span>┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>            │
+├─────────────────────────┼────────────────────┤
+│              <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">200.915205</span> │               <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">21.5</span> │
+└─────────────────────────┴────────────────────┘
+</pre>
+</div>
+</div>
+<p>But <code>aggregate</code> <em>really</em> shines when it’s paired with <code>group_by</code>.</p>
+</section>
+<section id="group_by" class="level3">
+<h3 class="anchored" data-anchor-id="group_by">group_by</h3>
+<p><code>group_by</code> creates groupings of rows that have the same value for one or more columns.</p>
+<p>But it doesn’t do much on its own – you can pair it with <code>aggregate</code> to get a result.</p>
+<div id="dcf968c4" class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>penguins.group_by(<span class="st">"species"</span>).aggregate()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="21">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃
+┡━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │
+├───────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo   </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │
+└───────────┘
+</pre>
+</div>
+</div>
+<p>We grouped by the <code>species</code> column and handed it an “empty” aggregate command. The result of that is a column of the unique values in the <code>species</code> column.</p>
+<p>If we add a second column to the <code>group_by</code>, we’ll get each unique pairing of the values in those columns.</p>
+<div id="37bc5667" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>penguins.group_by([<span class="st">"species"</span>, <span class="st">"island"</span>]).aggregate()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="22">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃<span style="font-weight: bold"> island    </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │
+├───────────┼───────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │
+└───────────┴───────────┘
+</pre>
+</div>
+</div>
+<p>Now, if we add an aggregation function to that, we start to really open things up.</p>
+<div id="99cf131a" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>penguins.group_by([<span class="st">"species"</span>, <span class="st">"island"</span>]).aggregate(penguins.bill_length_mm.mean())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="23">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> Mean(bill_length_mm) </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>              │
+├───────────┼───────────┼──────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.950980</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.975000</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.501786</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">47.504878</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">48.833824</span> │
+└───────────┴───────────┴──────────────────────┘
+</pre>
+</div>
+</div>
+<p>By adding that <code>mean</code> to the <code>aggregate</code>, we now have a concise way to calculate aggregates over each of the distinct groups in the <code>group_by</code>. And we can calculate as many aggregates as we need.</p>
+<div id="13cd0f8b" class="cell" data-execution_count="24">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>penguins.group_by([<span class="st">"species"</span>, <span class="st">"island"</span>]).aggregate(</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    [penguins.bill_length_mm.mean(), penguins.flipper_length_mm.<span class="bu">max</span>()]</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="24">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species   </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> Mean(bill_length_mm) </span>┃<span style="font-weight: bold"> Max(flipper_length_mm) </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>              │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>                  │
+├───────────┼───────────┼──────────────────────┼────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.950980</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">210</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.975000</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">203</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie   </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.501786</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">208</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo   </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">47.504878</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">231</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Chinstrap</span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">48.833824</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">212</span> │
+└───────────┴───────────┴──────────────────────┴────────────────────────┘
+</pre>
+</div>
+</div>
+<p>If we need more specific groups, we can add to the <code>group_by</code>.</p>
+<div id="cf7dc5f6" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>penguins.group_by([<span class="st">"species"</span>, <span class="st">"island"</span>, <span class="st">"sex"</span>]).aggregate(</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    [penguins.bill_length_mm.mean(), penguins.flipper_length_mm.<span class="bu">max</span>()]</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="25">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> Mean(bill_length_mm) </span>┃<span style="font-weight: bold"> Max(flipper_length_mm) </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>              │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>                  │
+├─────────┼───────────┼────────┼──────────────────────┼────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.586957</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">210</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">37.554167</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">196</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">37.925000</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">193</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">37.359091</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">199</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.590909</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">203</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.911111</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">202</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.071429</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">208</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>   │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">37.500000</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">179</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">45.563793</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">222</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">49.473770</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">231</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │                    <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                      <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴───────────┴────────┴──────────────────────┴────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="chaining-it-all-together" class="level2">
+<h2 class="anchored" data-anchor-id="chaining-it-all-together">Chaining it all together</h2>
+<p>We’ve already chained some Ibis calls together. We used <code>mutate</code> to create a new column and then <code>select</code> to only view a subset of the new table. We were just chaining <code>group_by</code> with <code>aggregate</code>.</p>
+<p>There’s nothing stopping us from putting all of these concepts together to ask questions of the data.</p>
+<p>How about:</p>
+<ul>
+<li>What was the largest female penguin (by body mass) on each island in the year 2008?</li>
+</ul>
+<div id="0a316ff7" class="cell" data-execution_count="26">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>penguins.<span class="bu">filter</span>((penguins.sex <span class="op">==</span> <span class="st">"female"</span>) <span class="op">&amp;</span> (penguins.year <span class="op">==</span> <span class="dv">2008</span>)).group_by(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    [<span class="st">"island"</span>]</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>).aggregate(penguins.body_mass_g.<span class="bu">max</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="26">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> Max(body_mass_g) </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>            │
+├───────────┼──────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │             <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5200</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │             <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3800</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │             <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3900</span> │
+└───────────┴──────────────────┘
+</pre>
+</div>
+</div>
+<ul>
+<li>What about the largest male penguin (by body mass) on each island for each year of data collection?</li>
+</ul>
+<div id="4135f29e" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>penguins.<span class="bu">filter</span>(penguins.sex <span class="op">==</span> <span class="st">"male"</span>).group_by([<span class="st">"island"</span>, <span class="st">"year"</span>]).aggregate(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    penguins.body_mass_g.<span class="bu">max</span>().name(<span class="st">"max_body_mass"</span>)</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>).order_by([<span class="st">"year"</span>, <span class="st">"max_body_mass"</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="27">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> year  </span>┃<span style="font-weight: bold"> max_body_mass </span>┃
+┡━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>         │
+├───────────┼───────┼───────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4650</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4675</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6300</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4700</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4800</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6000</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4300</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4475</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6000</span> │
+└───────────┴───────┴───────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="learn-more" class="level2">
+<h2 class="anchored" data-anchor-id="learn-more">Learn more</h2>
+<p>That’s all for this quick-start guide. If you want to learn more, check out the <a href="https://github.com/ibis-project/ibis-examples">examples repository</a>.</p>
+
+
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><aside id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>Horst AM, Hill AP, Gorman KB (2020). palmerpenguins: Palmer Archipelago (Antarctica) penguin data. R package version 0.1.0. https://allisonhorst.github.io/palmerpenguins/. doi: 10.5281/zenodo.3960218.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</aside></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        for (let i = 0; i < 2; i++) {
+          container.appendChild(note.children[i].cloneNode(true));
+        }
+        return container.innerHTML
+      } else {
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        console.log("RESIZE");
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

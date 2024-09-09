@@ -1,0 +1,2712 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Phillip Cloud">
+<meta name="dcterms.date" content="2023-12-06">
+
+<title>Ibis - Ibis versus X: Performance across the ecosystem part 1</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script src="https://unpkg.com/@jupyter-widgets/html-manager@*/dist/embed-amd.js" crossorigin="anonymous"></script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta property="og:title" content="Ibis - Ibis versus X: Performance across the ecosystem part 1">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/posts/pydata-performance/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis - Ibis versus X: Performance across the ecosystem part 1">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/posts/pydata-performance/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/05_reference.html">
+ <span class="dropdown-text">Test Class Reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Ibis versus X: Performance across the ecosystem part 1</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">blog</div>
+                <div class="quarto-category">case study</div>
+                <div class="quarto-category">ecosystem</div>
+                <div class="quarto-category">performance</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Phillip Cloud </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 6, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#motivation" id="toc-motivation" class="nav-link active" data-scroll-target="#motivation">Motivation</a></li>
+  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a>
+  <ul class="collapse">
+  <li><a href="#soft-constraints" id="toc-soft-constraints" class="nav-link" data-scroll-target="#soft-constraints">Soft constraints</a></li>
+  <li><a href="#library-versions" id="toc-library-versions" class="nav-link" data-scroll-target="#library-versions">Library versions</a></li>
+  <li><a href="#data" id="toc-data" class="nav-link" data-scroll-target="#data">Data</a></li>
+  </ul></li>
+  <li><a href="#recapping-the-original-ibis-post" id="toc-recapping-the-original-ibis-post" class="nav-link" data-scroll-target="#recapping-the-original-ibis-post">Recapping the original Ibis post</a></li>
+  <li><a href="#pandas" id="toc-pandas" class="nav-link" data-scroll-target="#pandas">Pandas</a>
+  <ul class="collapse">
+  <li><a href="#rewriting-the-query-to-be-fair" id="toc-rewriting-the-query-to-be-fair" class="nav-link" data-scroll-target="#rewriting-the-query-to-be-fair">Rewriting the query to be fair</a></li>
+  <li><a href="#final-pandas-run-with-the-new-query" id="toc-final-pandas-run-with-the-new-query" class="nav-link" data-scroll-target="#final-pandas-run-with-the-new-query">Final pandas run with the new query</a></li>
+  </ul></li>
+  <li><a href="#dask" id="toc-dask" class="nav-link" data-scroll-target="#dask">Dask</a></li>
+  <li><a href="#takeaways" id="toc-takeaways" class="nav-link" data-scroll-target="#takeaways">Takeaways</a>
+  <ul class="collapse">
+  <li><a href="#numbers" id="toc-numbers" class="nav-link" data-scroll-target="#numbers">Numbers</a></li>
+  <li><a href="#pandas-is-untenable-for-this-workload" id="toc-pandas-is-untenable-for-this-workload" class="nav-link" data-scroll-target="#pandas-is-untenable-for-this-workload">Pandas is untenable for this workload</a></li>
+  <li><a href="#dask-finishes-in-a-similar-amount-of-time-as-ibis-duckdb-within-2x" id="toc-dask-finishes-in-a-similar-amount-of-time-as-ibis-duckdb-within-2x" class="nav-link" data-scroll-target="#dask-finishes-in-a-similar-amount-of-time-as-ibis-duckdb-within-2x">Dask finishes in a similar amount of time as Ibis + DuckDB (within 2x)</a></li>
+  </ul></li>
+  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps">Next steps</a>
+  <ul class="collapse">
+  <li><a href="#please-get-in-touch" id="toc-please-get-in-touch" class="nav-link" data-scroll-target="#please-get-in-touch">Please get in touch!</a></li>
+  <li><a href="#look-out-for-part-2" id="toc-look-out-for-part-2" class="nav-link" data-scroll-target="#look-out-for-part-2">Look out for part 2</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/posts/pydata-performance/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p><strong>TL; DR</strong>: Ibis has a lot of great backends. They’re all good at different things. For working with local data, it’s hard to beat DuckDB on feature set and performance.</p>
+<p>Buckle up, it’s going to be a long one.</p>
+<section id="motivation" class="level2">
+<h2 class="anchored" data-anchor-id="motivation">Motivation</h2>
+<p>Ibis maintainer <a href="https://github.com/gforsyth">Gil Forsyth</a> recently wrote a <a href="https://ibis-project.org/posts/querying-pypi-metadata-compiled-languages/">post on our blog</a> replicating <a href="https://sethmlarson.dev/security-developer-in-residence-weekly-report-18"><strong>another</strong> blog post</a> but using Ibis instead of raw SQL.</p>
+<p>I thought it would be interesting to see how other tools compare to this setup, so I decided I’d try to do the same workflow on the same machine using a few tools from across the ecosystem.</p>
+<p>I chose two incumbents–<a href="https://pandas.pydata.org/">pandas</a> and <a href="https://www.dask.org/">dask</a>–to see how they compare to Ibis + DuckDB on this workload. In part 2 of this series I will compare two newer engines–Polars and DataFusion–to Ibis + DuckDB.</p>
+<p>I’ve worked on both pandas and Dask in the past but it’s been such a long time since I’ve used these tools for data analysis that I consider myself rather naive about how to best use them today.</p>
+<p>Initially I was interested in API comparisons since usability is really where Ibis shines, but as I started to explore things, I was unable to complete my analysis in some cases due to running out of memory.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+This is not a forum to trash the work of others.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>I’m not interested in tearing down other tools.</p>
+<p>Ibis has backends for each of these tools and it’s in everyone’s best interest that all of the tools discussed here work to their full potential.</p>
+</div>
+</div>
+<p>I show each tool using its native API, in an attempt to compare ease-of-use out of the box and maximize each library’s ability to complete the workload.</p>
+<p>Let’s dig in.</p>
+</section>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>I ran all of the code in this blog post on a machine with these specs.</p>
+<p>All OS caches were cleared before running this document with</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> sudo sysctl <span class="at">-w</span> vm.drop_caches=3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Clearing operating system caches <strong>does not represent a realistic usage scenario</strong>
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It is a method for putting the tools here on more equal footing. When you’re in the thick of an analysis you’re not going to artificially limit any OS optimizations.</p>
+</div>
+</div>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Component</th>
+<th>Specification</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>CPU</td>
+<td>AMD EPYC 7B12 (64 threads)</td>
+</tr>
+<tr class="even">
+<td>RAM</td>
+<td>94 GiB</td>
+</tr>
+<tr class="odd">
+<td>Disk</td>
+<td>1.5 TiB SSD</td>
+</tr>
+<tr class="even">
+<td>OS</td>
+<td>NixOS (Linux 6.1.69)</td>
+</tr>
+</tbody>
+</table>
+<section id="soft-constraints" class="level3">
+<h3 class="anchored" data-anchor-id="soft-constraints">Soft constraints</h3>
+<p>I’ll introduce some soft UX constraints on the problem, that I think help convey the perspective of someone who wants to get started quickly with a data set:</p>
+<ol type="1">
+<li><strong>I don’t want to get another computer</strong> to run this workload.</li>
+<li><strong>I want to use the data as is</strong>, that is, without altering the files I already have.</li>
+<li><strong>I’d like to run this computation with the default configuration</strong>. Ideally configuration isn’t required to complete this workload out of the box.</li>
+</ol>
+</section>
+<section id="library-versions" class="level3">
+<h3 class="anchored" data-anchor-id="library-versions">Library versions</h3>
+<p>Here are the versions I used to run this experiment at the time of writing.</p>
+<table class="table">
+<thead>
+<tr class="header">
+<th style="text-align: left;">Dependency</th>
+<th style="text-align: left;">Version</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Python</td>
+<td style="text-align: left;">3.10.13 (main, Aug 24 2023, 12:59:26) [GCC 12.3.0]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dask</td>
+<td style="text-align: left;">2023.12.1</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">distributed</td>
+<td style="text-align: left;">2023.12.1</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">duckdb</td>
+<td style="text-align: left;">0.9.2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">ibis</td>
+<td style="text-align: left;"><a href="https://github.com/ibis-project/ibis/tree/1a5a42081"><code>1a5a42081</code></a></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">pandas</td>
+<td style="text-align: left;">2.1.4</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">pyarrow</td>
+<td style="text-align: left;">14.0.2</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="data" class="level3">
+<h3 class="anchored" data-anchor-id="data">Data</h3>
+<p>I used the files <a href="https://raw.githubusercontent.com/pypi-data/data/20135ed214be9d6bb9c316121e5ccdaf29c6b9b1/links/dataset.txt">here</a> in this link to run my experiment.</p>
+<p>Here’s a summary of the data set’s file sizes:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> du <span class="at">-h</span> /data/pypi-parquet/<span class="pp">*</span>.parquet</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre><code>1.8G    /data/pypi-parquet/index-12.parquet
+1.7G    /data/pypi-parquet/index-10.parquet
+1.9G    /data/pypi-parquet/index-2.parquet
+1.9G    /data/pypi-parquet/index-0.parquet
+1.8G    /data/pypi-parquet/index-5.parquet
+1.7G    /data/pypi-parquet/index-13.parquet
+1.7G    /data/pypi-parquet/index-9.parquet
+1.8G    /data/pypi-parquet/index-6.parquet
+1.7G    /data/pypi-parquet/index-7.parquet
+1.7G    /data/pypi-parquet/index-8.parquet
+800M    /data/pypi-parquet/index-14.parquet
+1.8G    /data/pypi-parquet/index-4.parquet
+1.8G    /data/pypi-parquet/index-11.parquet
+1.9G    /data/pypi-parquet/index-3.parquet
+1.9G    /data/pypi-parquet/index-1.parquet
+</code></pre>
+</section>
+</section>
+<section id="recapping-the-original-ibis-post" class="level2">
+<h2 class="anchored" data-anchor-id="recapping-the-original-ibis-post">Recapping the original Ibis post</h2>
+<p>Check out <a href="https://ibis-project.org/posts/querying-pypi-metadata-compiled-languages/">the original blog post</a> if you haven’t already!</p>
+<p>Here’s the Ibis + DuckDB code, along with a timed execution of the query:</p>
+<div class="sourceCode" id="annotated-cell-4"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-4-1"><a href="#annotated-cell-4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="annotated-cell-4-2"><a href="#annotated-cell-4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-3"><a href="#annotated-cell-4-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-4-4"><a href="#annotated-cell-4-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _, udf</span>
+<span id="annotated-cell-4-5"><a href="#annotated-cell-4-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-6"><a href="#annotated-cell-4-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-7"><a href="#annotated-cell-4-7" aria-hidden="true" tabindex="-1"></a><span class="at">@udf.scalar.builtin</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="1">1</button><span id="annotated-cell-4-8" class="code-annotation-target"><a href="#annotated-cell-4-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> flatten(x: <span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">str</span>]]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]:</span>
+<span id="annotated-cell-4-9"><a href="#annotated-cell-4-9" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="annotated-cell-4-10"><a href="#annotated-cell-4-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-11"><a href="#annotated-cell-4-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-4-12"><a href="#annotated-cell-4-12" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> (</span>
+<span id="annotated-cell-4-13"><a href="#annotated-cell-4-13" aria-hidden="true" tabindex="-1"></a>    ibis.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span>
+<span id="annotated-cell-4-14"><a href="#annotated-cell-4-14" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(</span>
+<span id="annotated-cell-4-15"><a href="#annotated-cell-4-15" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="annotated-cell-4-16"><a href="#annotated-cell-4-16" aria-hidden="true" tabindex="-1"></a>            _.path.re_search(</span>
+<span id="annotated-cell-4-17"><a href="#annotated-cell-4-17" aria-hidden="true" tabindex="-1"></a>                <span class="vs">r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="annotated-cell-4-18"><a href="#annotated-cell-4-18" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="annotated-cell-4-19"><a href="#annotated-cell-4-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.re_search(<span class="vs">r"(^|/)test(|s|ing)"</span>),</span>
+<span id="annotated-cell-4-20"><a href="#annotated-cell-4-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.contains(<span class="st">"/site-packages/"</span>),</span>
+<span id="annotated-cell-4-21"><a href="#annotated-cell-4-21" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="annotated-cell-4-22"><a href="#annotated-cell-4-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-4-23"><a href="#annotated-cell-4-23" aria-hidden="true" tabindex="-1"></a>    .group_by(</span>
+<span id="annotated-cell-4-24"><a href="#annotated-cell-4-24" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>_.uploaded_on.truncate(<span class="st">"M"</span>),</span>
+<span id="annotated-cell-4-25"><a href="#annotated-cell-4-25" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.path.re_extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">1</span>),</span>
+<span id="annotated-cell-4-26"><a href="#annotated-cell-4-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-4-27"><a href="#annotated-cell-4-27" aria-hidden="true" tabindex="-1"></a>    .aggregate(projects<span class="op">=</span>_.project_name.collect().unique())</span>
+<span id="annotated-cell-4-28"><a href="#annotated-cell-4-28" aria-hidden="true" tabindex="-1"></a>    .order_by(_.month.desc())</span>
+<span id="annotated-cell-4-29"><a href="#annotated-cell-4-29" aria-hidden="true" tabindex="-1"></a>    .mutate(</span>
+<span id="annotated-cell-4-30"><a href="#annotated-cell-4-30" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.ext.re_replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>)</span>
+<span id="annotated-cell-4-31"><a href="#annotated-cell-4-31" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>)</span>
+<span id="annotated-cell-4-32"><a href="#annotated-cell-4-32" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="annotated-cell-4-33"><a href="#annotated-cell-4-33" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="annotated-cell-4-34"><a href="#annotated-cell-4-34" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="annotated-cell-4-35"><a href="#annotated-cell-4-35" aria-hidden="true" tabindex="-1"></a>        .nullif(<span class="st">""</span>),</span>
+<span id="annotated-cell-4-36"><a href="#annotated-cell-4-36" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-4-37"><a href="#annotated-cell-4-37" aria-hidden="true" tabindex="-1"></a>    .group_by([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="annotated-cell-4-38"><a href="#annotated-cell-4-38" aria-hidden="true" tabindex="-1"></a>    .aggregate(project_count<span class="op">=</span>flatten(_.projects.collect()).unique().length())</span>
+<span id="annotated-cell-4-39"><a href="#annotated-cell-4-39" aria-hidden="true" tabindex="-1"></a>    .dropna(<span class="st">"ext"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-4" data-target-annotation="2">2</button><span id="annotated-cell-4-40" class="code-annotation-target"><a href="#annotated-cell-4-40" aria-hidden="true" tabindex="-1"></a>    .order_by([_.month.desc(), _.project_count.desc()])</span>
+<span id="annotated-cell-4-41"><a href="#annotated-cell-4-41" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-4" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="8" data-code-annotation="1">We’ve since implemented <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.flatten">a <code>flatten</code> method</a> on array expressions so it’s no longer necessary to define a UDF here. I’ll leave this code unchanged for this post. <strong>This has no effect on the performance of the query</strong>. In both cases the generated code contains a DuckDB-native call to <a href="https://duckdb.org/docs/sql/functions/nested.html">its <code>flatten</code> function</a>.</span>
+</dd>
+<dt data-target-cell="annotated-cell-4" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-4" data-code-lines="40" data-code-annotation="2">This is a small change from the original query that adds a final sort key to make the results deterministic.</span>
+</dd>
+</dl>
+<div id="f191f8db" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>time df <span class="op">=</span> expr.to_pandas()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"8f1bc232d95146dabe7f9c0ac503032e","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 19min 17s, sys: 1min 9s, total: 20min 26s
+Wall time: 27 s</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">month</th>
+<th data-quarto-table-cell-role="th">ext</th>
+<th data-quarto-table-cell-role="th">project_count</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>2023-11-01</td>
+<td>C/C++</td>
+<td>836</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>2023-11-01</td>
+<td>Rust</td>
+<td>190</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>2023-11-01</td>
+<td>Fortran</td>
+<td>48</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>2023-11-01</td>
+<td>Go</td>
+<td>33</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>2023-11-01</td>
+<td>Assembly</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">794</td>
+<td>2005-08-01</td>
+<td>C/C++</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">795</td>
+<td>2005-07-01</td>
+<td>C/C++</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">796</td>
+<td>2005-05-01</td>
+<td>C/C++</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">797</td>
+<td>2005-04-01</td>
+<td>C/C++</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">798</td>
+<td>2005-03-01</td>
+<td>C/C++</td>
+<td>1</td>
+</tr>
+</tbody>
+</table>
+
+<p>799 rows × 3 columns</p>
+</div>
+</div>
+</div>
+<p>Let’s show peak memory usage in GB as reported by the <a href="https://docs.python.org/3/library/resource.html#module-resource"><code>resource</code></a> module:</p>
+<div id="f5526688" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> resource</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>rss_kb <span class="op">=</span> resource.getrusage(resource.RUSAGE_SELF).ru_maxrss</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>rss_mb <span class="op">=</span> rss_kb <span class="op">/</span> <span class="fl">1e3</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>rss_gb <span class="op">=</span> rss_mb <span class="op">/</span> <span class="fl">1e3</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">round</span>(rss_gb, <span class="dv">1</span>), <span class="st">"GB"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>8.6 GB</code></pre>
+</div>
+</div>
+</section>
+<section id="pandas" class="level2">
+<h2 class="anchored" data-anchor-id="pandas">Pandas</h2>
+<p>Let’s try to replicate this workflow using pandas.</p>
+<p>I started with this code:</p>
+<div id="6b77a0b1" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>FileNotFoundError: [Errno 2] No such file or directory: '/data/pypi-parquet/*.parquet'</code></pre>
+</div>
+</div>
+<p>Looks like pandas doesn’t support globs. That’s fine, we can use the builtin <code>glob</code> module.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> glob</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_parquet(glob.glob(<span class="st">"/data/pypi-parquet/*.parquet"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This eventually triggers the <a href="https://lwn.net/Kernel/Index/#Memory_management-Out-of-memory_handling">Linux OOM killer</a> after some minutes, so I can’t run the code.</p>
+<p>Let’s try again with just a single file. I’ll pick the smallest file, to avoid any potential issues with memory and give pandas the best possible shot.</p>
+<div id="6f79211e" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>smallest_file <span class="op">=</span> <span class="bu">min</span>(glob.glob(<span class="st">"/data/pypi-parquet/*.parquet"</span>), key<span class="op">=</span>os.path.getsize)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The <a href="#data">smallest file</a> is 799 MiB on disk.</p>
+<div id="37341bb4" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>time df <span class="op">=</span> pd.read_parquet(smallest_file)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 25.6 s, sys: 12.6 s, total: 38.1 s
+Wall time: 26.6 s</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="11">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">project_name</th>
+<th data-quarto-table-cell-role="th">project_version</th>
+<th data-quarto-table-cell-role="th">project_release</th>
+<th data-quarto-table-cell-role="th">uploaded_on</th>
+<th data-quarto-table-cell-role="th">path</th>
+<th data-quarto-table-cell-role="th">archive_path</th>
+<th data-quarto-table-cell-role="th">size</th>
+<th data-quarto-table-cell-role="th">hash</th>
+<th data-quarto-table-cell-role="th">skip_reason</th>
+<th data-quarto-table-cell-role="th">lines</th>
+<th data-quarto-table-cell-role="th">repository</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>zyte-spider-templates</td>
+<td>0.1.0</td>
+<td>zyte_spider_templates-0.1.0-py3-none-any.whl</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>zyte_spider_templates/spiders/ecommerce.py</td>
+<td>5748</td>
+<td>b'\xe0\xa6\x9bd\xc0+\xe0\xf8$J2\xb3\xf8\x8c\x9...</td>
+<td></td>
+<td>160</td>
+<td>237</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>zyte-spider-templates</td>
+<td>0.1.0</td>
+<td>zyte_spider_templates-0.1.0-py3-none-any.whl</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>zyte_spider_templates/spiders/base.py</td>
+<td>4160</td>
+<td>b'\x1ck\xd46={\x7f`\xbe\xfaIg*&amp;\x977T\xdb\x8fJ'</td>
+<td></td>
+<td>122</td>
+<td>237</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>zyte-spider-templates</td>
+<td>0.1.0</td>
+<td>zyte_spider_templates-0.1.0-py3-none-any.whl</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>zyte_spider_templates/spiders/__init__.py</td>
+<td>0</td>
+<td>b'\xe6\x9d\xe2\x9b\xb2\xd1\xd6CK\x8b)\xaewZ\xd...</td>
+<td>empty</td>
+<td>0</td>
+<td>237</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>zyte-spider-templates</td>
+<td>0.1.0</td>
+<td>zyte_spider_templates-0.1.0-py3-none-any.whl</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>zyte_spider_templates/page_objects/product_nav...</td>
+<td>3528</td>
+<td>b'\xcd\xc9\xfc[\xda\xcf!\x94\x1b\x92\xffbJC\xf...</td>
+<td></td>
+<td>106</td>
+<td>237</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>zyte-spider-templates</td>
+<td>0.1.0</td>
+<td>zyte_spider_templates-0.1.0-py3-none-any.whl</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>zyte_spider_templates/page_objects/__init__.py</td>
+<td>75</td>
+<td>b'r\xb9\xc1\xcf2\xa7\xdc?\xd1\xa8\xfcc+`\xf3\x...</td>
+<td></td>
+<td>1</td>
+<td>237</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468828</td>
+<td>1AH22CS174</td>
+<td>1.81.11</td>
+<td>1AH22CS174-1.81.11.tar.gz</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>1AH22CS174-1.81.11/1AH22CS174.egg-info/top_lev...</td>
+<td>1</td>
+<td>b"\x8b\x13x\x91y\x1f\xe9i'\xadx\xe6K\n\xad{\xd...</td>
+<td></td>
+<td>1</td>
+<td>242</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35468829</td>
+<td>1AH22CS174</td>
+<td>1.81.11</td>
+<td>1AH22CS174-1.81.11.tar.gz</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>1AH22CS174-1.81.11/1AH22CS174.egg-info/require...</td>
+<td>16</td>
+<td>b"qG\xad\xc3:.'q\xde\xaa\xac\x91\x89\xf7S\xcb\...</td>
+<td></td>
+<td>2</td>
+<td>242</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468830</td>
+<td>1AH22CS174</td>
+<td>1.81.11</td>
+<td>1AH22CS174-1.81.11.tar.gz</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>1AH22CS174-1.81.11/1AH22CS174.egg-info/depende...</td>
+<td>1</td>
+<td>b"\x8b\x13x\x91y\x1f\xe9i'\xadx\xe6K\n\xad{\xd...</td>
+<td></td>
+<td>1</td>
+<td>242</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35468831</td>
+<td>1AH22CS174</td>
+<td>1.81.11</td>
+<td>1AH22CS174-1.81.11.tar.gz</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>1AH22CS174-1.81.11/1AH22CS174.egg-info/SOURCES...</td>
+<td>187</td>
+<td>b'\xa2O$4|X\x15,\xb0\x9a\x07\xe6\x81[\x15\x1f|...</td>
+<td></td>
+<td>7</td>
+<td>242</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468832</td>
+<td>1AH22CS174</td>
+<td>1.81.11</td>
+<td>1AH22CS174-1.81.11.tar.gz</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>1AH22CS174-1.81.11/1AH22CS174.egg-info/PKG-INFO</td>
+<td>509</td>
+<td>b'\xee\xbe\xbaoh*\xacA\xb0\x8a}\xb5\x00\xcbpz\...</td>
+<td></td>
+<td>16</td>
+<td>242</td>
+</tr>
+</tbody>
+</table>
+
+<p>35468833 rows × 11 columns</p>
+</div>
+</div>
+</div>
+<p>Loading the smallest file from the dataset is already pretty close to the time it took Ibis and DuckDB to execute the <em>entire query</em>.</p>
+<p>Let’s give pandas a leg up and tell it what columns to use to avoid reading in a bunch of data we’re not going to use.</p>
+<p>We can determine what these columns are by inspecting the Ibis code above.</p>
+<div id="68f02e7b" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>columns <span class="op">=</span> [<span class="st">"path"</span>, <span class="st">"uploaded_on"</span>, <span class="st">"project_name"</span>]</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="op">%</span>time df <span class="op">=</span> pd.read_parquet(smallest_file, columns<span class="op">=</span>columns)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 13.3 s, sys: 7.21 s, total: 20.5 s
+Wall time: 16.2 s</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">path</th>
+<th data-quarto-table-cell-role="th">uploaded_on</th>
+<th data-quarto-table-cell-role="th">project_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">0</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>zyte-spider-templates</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>zyte-spider-templates</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">2</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>zyte-spider-templates</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">3</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>zyte-spider-templates</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">4</td>
+<td>packages/zyte-spider-templates/zyte_spider_tem...</td>
+<td>2023-10-26 07:29:49.894</td>
+<td>zyte-spider-templates</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468828</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>1AH22CS174</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35468829</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>1AH22CS174</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468830</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>1AH22CS174</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35468831</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>1AH22CS174</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35468832</td>
+<td>packages/1AH22CS174/1AH22CS174-1.81.11.tar.gz/...</td>
+<td>2023-11-19 13:30:00.113</td>
+<td>1AH22CS174</td>
+</tr>
+</tbody>
+</table>
+
+<p>35468833 rows × 3 columns</p>
+</div>
+</div>
+</div>
+<p>Sweet, read times improved!</p>
+<p>Let’s peek at the memory usage of the DataFrame.</p>
+<div id="b366dbbb" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">round</span>(df.memory_usage(deep<span class="op">=</span><span class="va">True</span>).<span class="bu">sum</span>() <span class="op">/</span> (<span class="dv">1</span> <span class="op">&lt;&lt;</span> <span class="dv">30</span>), <span class="dv">1</span>), <span class="st">"GiB"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>8.7 GiB</code></pre>
+</div>
+</div>
+<p>I still have plenty of space to do my analysis, nice!</p>
+<p>First, filter the data:</p>
+<div id="a51a349b" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="annotated-cell-13"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-13-1"><a href="#annotated-cell-13-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="annotated-cell-13-2"><a href="#annotated-cell-13-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df[</span>
+<span id="annotated-cell-13-3"><a href="#annotated-cell-13-3" aria-hidden="true" tabindex="-1"></a>    (</span>
+<span id="annotated-cell-13-4"><a href="#annotated-cell-13-4" aria-hidden="true" tabindex="-1"></a>        df.path.<span class="bu">str</span>.contains(<span class="vs">r"\.(?:asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-13" data-target-annotation="1">1</button><span id="annotated-cell-13-5" class="code-annotation-target"><a href="#annotated-cell-13-5" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span> <span class="op">~</span>df.path.<span class="bu">str</span>.contains(<span class="vs">r"(?:^|/)test(?:|s|ing)|/site-packages/"</span>)</span>
+<span id="annotated-cell-13-6"><a href="#annotated-cell-13-6" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-13-7"><a href="#annotated-cell-13-7" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="annotated-cell-13-8"><a href="#annotated-cell-13-8" aria-hidden="true" tabindex="-1"></a>df</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-13" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-13" data-code-lines="5" data-code-annotation="1">I altered the original query here to avoid creating an unnecessary intermediate <code>Series</code> object.</span>
+</dd>
+</dl>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 2min 22s, sys: 288 ms, total: 2min 23s
+Wall time: 2min 23s</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">path</th>
+<th data-quarto-table-cell-role="th">uploaded_on</th>
+<th data-quarto-table-cell-role="th">project_name</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">1462</td>
+<td>packages/zipline-tej/zipline_tej-0.0.50-cp38-c...</td>
+<td>2023-10-27 02:23:07.153</td>
+<td>zipline-tej</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1470</td>
+<td>packages/zipline-tej/zipline_tej-0.0.50-cp38-c...</td>
+<td>2023-10-27 02:23:07.153</td>
+<td>zipline-tej</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">1477</td>
+<td>packages/zipline-tej/zipline_tej-0.0.50-cp38-c...</td>
+<td>2023-10-27 02:23:07.153</td>
+<td>zipline-tej</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">1481</td>
+<td>packages/zipline-tej/zipline_tej-0.0.50-cp38-c...</td>
+<td>2023-10-27 02:23:07.153</td>
+<td>zipline-tej</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">1485</td>
+<td>packages/zipline-tej/zipline_tej-0.0.50-cp38-c...</td>
+<td>2023-10-27 02:23:07.153</td>
+<td>zipline-tej</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">...</td>
+<td>...</td>
+<td>...</td>
+<td>...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35460320</td>
+<td>packages/atomicshop/atomicshop-2.5.12-py3-none...</td>
+<td>2023-11-19 14:29:22.109</td>
+<td>atomicshop</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35460515</td>
+<td>packages/atomicshop/atomicshop-2.5.11-py3-none...</td>
+<td>2023-11-19 11:58:09.589</td>
+<td>atomicshop</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35460710</td>
+<td>packages/atomicshop/atomicshop-2.5.10-py3-none...</td>
+<td>2023-11-19 11:48:16.980</td>
+<td>atomicshop</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">35463761</td>
+<td>packages/ai-flow-nightly/ai_flow_nightly-2023....</td>
+<td>2023-11-19 16:06:36.819</td>
+<td>ai-flow-nightly</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">35464036</td>
+<td>packages/ai-flow-nightly/ai_flow_nightly-2023....</td>
+<td>2023-11-19 16:06:33.327</td>
+<td>ai-flow-nightly</td>
+</tr>
+</tbody>
+</table>
+
+<p>7166291 rows × 3 columns</p>
+</div>
+</div>
+</div>
+<p>We’ve blown <strong>way</strong> past our Ibis + DuckDB latency budget.</p>
+<p>Let’s keep going!</p>
+<p>Next, group by and aggregate:</p>
+<div id="c9c153aa" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> (</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    df.groupby(</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>            df.uploaded_on.dt.floor(<span class="st">"M"</span>).rename(<span class="st">"month"</span>),</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>            df.path.<span class="bu">str</span>.extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">0</span>, expand<span class="op">=</span><span class="va">False</span>).rename(<span class="st">"ext"</span>),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>    .agg({<span class="st">"project_name"</span>: <span class="kw">lambda</span> s: <span class="bu">list</span>(<span class="bu">set</span>(s))})</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    .sort_index(level<span class="op">=</span><span class="st">"month"</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>ValueError: &lt;MonthEnd&gt; is a non-fixed frequency</code></pre>
+</div>
+</div>
+<p>Here we hit the first API issue going back to an <a href="https://github.com/pandas-dev/pandas/issues/15303">old pandas issue</a>: we can’t truncate a timestamp column to month frequency.</p>
+<p>Let’s try the solution recommended in that issue.</p>
+<div id="ddf7602a" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> (</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    df.groupby(</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>            df.uploaded_on.dt.to_period(<span class="st">"M"</span>).dt.to_timestamp().rename(<span class="st">"month"</span>),</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>            df.path.<span class="bu">str</span>.extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">0</span>, expand<span class="op">=</span><span class="va">False</span>).rename(<span class="st">"ext"</span>),</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    .agg({<span class="st">"project_name"</span>: <span class="kw">lambda</span> s: <span class="bu">list</span>(<span class="bu">set</span>(s))})</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>    .rename(columns<span class="op">=</span>{<span class="st">"project_name"</span>: <span class="st">"projects"</span>})</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>    .sort_index(level<span class="op">=</span><span class="st">"month"</span>, ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 8.48 s, sys: 189 ms, total: 8.67 s
+Wall time: 8.67 s</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="17">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">projects</th>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">month</th>
+<th data-quarto-table-cell-role="th">ext</th>
+<th data-quarto-table-cell-role="th"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td rowspan="14" data-quarto-table-cell-role="th" data-valign="top">2023-11-01</td>
+<td data-quarto-table-cell-role="th">rs</td>
+<td>[ast-grep-pyo3, dora-rs, qiskit-terra, kuzu, p...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">hpp</td>
+<td>[mqt.ddsim, kuzu, tensorflow-cpu-aws, pycuda, ...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">h</td>
+<td>[mqt.ddsim, cmeel-gmp, aesim.simba, nx-work-lo...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">go</td>
+<td>[jina, ai-flow-nightly, tdewolff-minify, aws-i...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">for</td>
+<td>[iricore]</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">f95</td>
+<td>[scikit-digital-health, dioptas, easychem, PyG...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">f90</td>
+<td>[Clawpack, dropkick, sisl, c4p, iricore, fmodp...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">f03</td>
+<td>[mkl-include]</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">f</td>
+<td>[Clawpack, gnssrefl, mqt.ddsim, scikit-build-c...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">cxx</td>
+<td>[mqt.ddsim, SimpleITK, ndicapi, cmeel-eigen, a...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">cpp</td>
+<td>[mqt.ddsim, petljapub, perun-toolsuite, epipol...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">cc</td>
+<td>[mqt.ddsim, stim, pytensor, tensorflow-cpu-aws...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">c</td>
+<td>[mqt.ddsim, aesim.simba, albopictus, odoo13-ad...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">asm</td>
+<td>[mqt.ddsim, pwntools, grpcio, cmeel-assimp, hr...</td>
+</tr>
+<tr class="odd">
+<td rowspan="11" data-quarto-table-cell-role="th" data-valign="top">2023-10-01</td>
+<td data-quarto-table-cell-role="th">rs</td>
+<td>[summa-embed, sqloxide, qiskit-terra, kuzu, st...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">hpp</td>
+<td>[pydjinni, kuzu, tensorflow-cpu-aws, greenlet,...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">h</td>
+<td>[greenlet, aesim.simba, confluent-kafka, Analy...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">go</td>
+<td>[odoo14-addon-dms, micro-editor, jina, ai-flow...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">f90</td>
+<td>[petsc, macauff, wiptools, pypestutils, petsc4...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">f</td>
+<td>[gnssrefl, LightSim2Grid, odoo14-addon-dms, od...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">cxx</td>
+<td>[petsc, cars, solarwinds-apm, chalc, wxPython-...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">cpp</td>
+<td>[python-ucto, akida, pydjinni, pylcs, ParmEd, ...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">cc</td>
+<td>[duckdb, codecov-cli, odoo14-addon-dms, habana...</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">c</td>
+<td>[odoo14-addon-dms, kuzu, tensorflow-cpu-aws, c...</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">asm</td>
+<td>[chipsec, apache-flink-libraries, fibers-ddtes...</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Sort the values, add a new column and do the final aggregation:</p>
+<div id="cf4ecf71" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">%%</span>time</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> (</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    df.reset_index()</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    .assign(</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span><span class="kw">lambda</span> t: t.ext.<span class="bu">str</span>.replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">""</span>, <span class="va">None</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>    .groupby([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    .agg({<span class="st">"projects"</span>: <span class="kw">lambda</span> s: <span class="bu">len</span>(<span class="bu">set</span>(<span class="bu">sum</span>(s, [])))})</span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>CPU times: user 5.36 ms, sys: 25 µs, total: 5.38 ms
+Wall time: 5.28 ms</code></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="18">
+<div>
+
+
+<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">projects</th>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">month</th>
+<th data-quarto-table-cell-role="th">ext</th>
+<th data-quarto-table-cell-role="th"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td rowspan="5" data-quarto-table-cell-role="th" data-valign="top">2023-10-01</td>
+<td data-quarto-table-cell-role="th">Assembly</td>
+<td>14</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">C/C++</td>
+<td>484</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Fortran</td>
+<td>23</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Go</td>
+<td>25</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Rust</td>
+<td>99</td>
+</tr>
+<tr class="even">
+<td rowspan="5" data-quarto-table-cell-role="th" data-valign="top">2023-11-01</td>
+<td data-quarto-table-cell-role="th">Assembly</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">C/C++</td>
+<td>836</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Fortran</td>
+<td>48</td>
+</tr>
+<tr class="odd">
+<td data-quarto-table-cell-role="th">Go</td>
+<td>33</td>
+</tr>
+<tr class="even">
+<td data-quarto-table-cell-role="th">Rust</td>
+<td>190</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Remember, all of the previous code is executing on <strong>a single file</strong> and still takes minutes to run.</p>
+<section id="conclusion" class="level4">
+<h4 class="anchored" data-anchor-id="conclusion">Conclusion</h4>
+<p>If I only have pandas at my disposal, I’m unsure of how I can avoid getting a bigger computer to run this query over the entire data set.</p>
+</section>
+<section id="rewriting-the-query-to-be-fair" class="level3">
+<h3 class="anchored" data-anchor-id="rewriting-the-query-to-be-fair">Rewriting the query to be fair</h3>
+<p>At this point I wondered whether this was a fair query to run with pandas.</p>
+<p>After all, the downsides of pandas’ use of object arrays to hold nested data structures like lists are well-known.</p>
+<p>The original query uses a lot of nested array types, which are very performant in DuckDB, but in this case <strong>we’re throwing away all of our arrays</strong> and we don’t need to use them.</p>
+<p>Additionally, I’m using lambda functions instead of taking advantage of pandas’ fast built-in methods like <code>count</code>, <code>nunique</code> and others.</p>
+<p>Let’s see if we can alter the original query to give pandas a leg up.</p>
+<section id="a-story-of-two-group-bys" class="level4">
+<h4 class="anchored" data-anchor-id="a-story-of-two-group-bys">A story of two <code>GROUP BY</code>s</h4>
+<p>Here’s the first Ibis expression:</p>
+<div class="sourceCode" id="annotated-cell-17"><pre class="sourceCode python code-annotation-code code-with-copy"><code class="sourceCode python"><span id="annotated-cell-17-1"><a href="#annotated-cell-17-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="annotated-cell-17-2"><a href="#annotated-cell-17-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-17-3"><a href="#annotated-cell-17-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-17-4"><a href="#annotated-cell-17-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _, udf</span>
+<span id="annotated-cell-17-5"><a href="#annotated-cell-17-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-17-6"><a href="#annotated-cell-17-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-17-7"><a href="#annotated-cell-17-7" aria-hidden="true" tabindex="-1"></a><span class="at">@udf.scalar.builtin</span></span>
+<span id="annotated-cell-17-8"><a href="#annotated-cell-17-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> flatten(x: <span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">str</span>]]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]:</span>
+<span id="annotated-cell-17-9"><a href="#annotated-cell-17-9" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="annotated-cell-17-10"><a href="#annotated-cell-17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-17-11"><a href="#annotated-cell-17-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-17-12"><a href="#annotated-cell-17-12" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> (</span>
+<span id="annotated-cell-17-13"><a href="#annotated-cell-17-13" aria-hidden="true" tabindex="-1"></a>    ibis.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span>
+<span id="annotated-cell-17-14"><a href="#annotated-cell-17-14" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(</span>
+<span id="annotated-cell-17-15"><a href="#annotated-cell-17-15" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="annotated-cell-17-16"><a href="#annotated-cell-17-16" aria-hidden="true" tabindex="-1"></a>            _.path.re_search(</span>
+<span id="annotated-cell-17-17"><a href="#annotated-cell-17-17" aria-hidden="true" tabindex="-1"></a>                <span class="vs">r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="annotated-cell-17-18"><a href="#annotated-cell-17-18" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="annotated-cell-17-19"><a href="#annotated-cell-17-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.re_search(<span class="vs">r"(^|/)test(|s|ing)"</span>),</span>
+<span id="annotated-cell-17-20"><a href="#annotated-cell-17-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.contains(<span class="st">"/site-packages/"</span>),</span>
+<span id="annotated-cell-17-21"><a href="#annotated-cell-17-21" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="annotated-cell-17-22"><a href="#annotated-cell-17-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-17-23"><a href="#annotated-cell-17-23" aria-hidden="true" tabindex="-1"></a>    .group_by(</span>
+<span id="annotated-cell-17-24"><a href="#annotated-cell-17-24" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>_.uploaded_on.truncate(<span class="st">"M"</span>),</span>
+<span id="annotated-cell-17-25"><a href="#annotated-cell-17-25" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.path.re_extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">1</span>),</span>
+<span id="annotated-cell-17-26"><a href="#annotated-cell-17-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-17-27"><a href="#annotated-cell-17-27" aria-hidden="true" tabindex="-1"></a>    .aggregate(projects<span class="op">=</span>_.project_name.collect().unique())</span>
+<span id="annotated-cell-17-28"><a href="#annotated-cell-17-28" aria-hidden="true" tabindex="-1"></a>    .order_by(_.month.desc())</span>
+<span id="annotated-cell-17-29"><a href="#annotated-cell-17-29" aria-hidden="true" tabindex="-1"></a>    .mutate(</span>
+<span id="annotated-cell-17-30"><a href="#annotated-cell-17-30" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.ext.re_replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>)</span>
+<span id="annotated-cell-17-31"><a href="#annotated-cell-17-31" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>)</span>
+<span id="annotated-cell-17-32"><a href="#annotated-cell-17-32" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="annotated-cell-17-33"><a href="#annotated-cell-17-33" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="annotated-cell-17-34"><a href="#annotated-cell-17-34" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="annotated-cell-17-35"><a href="#annotated-cell-17-35" aria-hidden="true" tabindex="-1"></a>        .nullif(<span class="st">""</span>),</span>
+<span id="annotated-cell-17-36"><a href="#annotated-cell-17-36" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-17-37"><a href="#annotated-cell-17-37" aria-hidden="true" tabindex="-1"></a>    .group_by([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="annotated-cell-17-38"><a href="#annotated-cell-17-38" aria-hidden="true" tabindex="-1"></a>    .aggregate(project_count<span class="op">=</span>flatten(_.projects.collect()).unique().length())</span>
+<span id="annotated-cell-17-39"><a href="#annotated-cell-17-39" aria-hidden="true" tabindex="-1"></a>    .dropna(<span class="st">"ext"</span>)</span>
+<span id="annotated-cell-17-40"><a href="#annotated-cell-17-40" aria-hidden="true" tabindex="-1"></a>    .order_by([_.month.desc(), _.project_count.desc()])</span>
+<span id="annotated-cell-17-41"><a href="#annotated-cell-17-41" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It looks like we can remove the double <code>group_by</code> by moving the second <code>mutate</code> expression directly into the first <code>group_by</code> call.</p>
+<p>Applying these changes:</p>
+<div class="sourceCode" id="annotated-cell-18"><pre class="sourceCode diff code-annotation-code code-with-copy"><code class="sourceCode diff"><span id="annotated-cell-18-1"><a href="#annotated-cell-18-1" aria-hidden="true" tabindex="-1"></a><span class="kw">--- step0.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="annotated-cell-18-2"><a href="#annotated-cell-18-2" aria-hidden="true" tabindex="-1"></a><span class="dt">+++ step1.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="annotated-cell-18-3"><a href="#annotated-cell-18-3" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -5,7 +5,7 @@</span></span>
+<span id="annotated-cell-18-4"><a href="#annotated-cell-18-4" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-18-5"><a href="#annotated-cell-18-5" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-18-6"><a href="#annotated-cell-18-6" aria-hidden="true" tabindex="-1"></a> @udf.scalar.builtin</span>
+<span id="annotated-cell-18-7"><a href="#annotated-cell-18-7" aria-hidden="true" tabindex="-1"></a><span class="st">-def flatten(x: list[list[str]]) -&gt; list[str]:</span></span>
+<span id="annotated-cell-18-8"><a href="#annotated-cell-18-8" aria-hidden="true" tabindex="-1"></a><span class="va">+def flatten(x: list[list[str]]) -&gt; list[str]:</span></span>
+<span id="annotated-cell-18-9"><a href="#annotated-cell-18-9" aria-hidden="true" tabindex="-1"></a>     ...</span>
+<span id="annotated-cell-18-10"><a href="#annotated-cell-18-10" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-18-11"><a href="#annotated-cell-18-11" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-18-12"><a href="#annotated-cell-18-12" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -22,20 +22,16 @@</span></span>
+<span id="annotated-cell-18-13"><a href="#annotated-cell-18-13" aria-hidden="true" tabindex="-1"></a>     )</span>
+<span id="annotated-cell-18-14"><a href="#annotated-cell-18-14" aria-hidden="true" tabindex="-1"></a>     .group_by(</span>
+<span id="annotated-cell-18-15"><a href="#annotated-cell-18-15" aria-hidden="true" tabindex="-1"></a>         month=_.uploaded_on.truncate("M"),</span>
+<span id="annotated-cell-18-16"><a href="#annotated-cell-18-16" aria-hidden="true" tabindex="-1"></a><span class="st">-        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1),</span></span>
+<span id="annotated-cell-18-17"><a href="#annotated-cell-18-17" aria-hidden="true" tabindex="-1"></a><span class="st">-    )</span></span>
+<span id="annotated-cell-18-18"><a href="#annotated-cell-18-18" aria-hidden="true" tabindex="-1"></a><span class="st">-    .aggregate(projects=_.project_name.collect().unique())</span></span>
+<span id="annotated-cell-18-19"><a href="#annotated-cell-18-19" aria-hidden="true" tabindex="-1"></a><span class="st">-    .order_by(_.month.desc())</span></span>
+<span id="annotated-cell-18-20"><a href="#annotated-cell-18-20" aria-hidden="true" tabindex="-1"></a><span class="st">-    .mutate(</span></span>
+<span id="annotated-cell-18-21"><a href="#annotated-cell-18-21" aria-hidden="true" tabindex="-1"></a><span class="st">-        ext=_.ext.re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")</span></span>
+<span id="annotated-cell-18-22"><a href="#annotated-cell-18-22" aria-hidden="true" tabindex="-1"></a><span class="va">+        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1)</span></span>
+<span id="annotated-cell-18-23"><a href="#annotated-cell-18-23" aria-hidden="true" tabindex="-1"></a><span class="va">+        .re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")</span></span>
+<span id="annotated-cell-18-24"><a href="#annotated-cell-18-24" aria-hidden="true" tabindex="-1"></a>         .re_replace("^f.*$", "Fortran")</span>
+<span id="annotated-cell-18-25"><a href="#annotated-cell-18-25" aria-hidden="true" tabindex="-1"></a>         .replace("rs", "Rust")</span>
+<span id="annotated-cell-18-26"><a href="#annotated-cell-18-26" aria-hidden="true" tabindex="-1"></a>         .replace("go", "Go")</span>
+<span id="annotated-cell-18-27"><a href="#annotated-cell-18-27" aria-hidden="true" tabindex="-1"></a>         .replace("asm", "Assembly")</span>
+<span id="annotated-cell-18-28"><a href="#annotated-cell-18-28" aria-hidden="true" tabindex="-1"></a>         .nullif(""),</span>
+<span id="annotated-cell-18-29"><a href="#annotated-cell-18-29" aria-hidden="true" tabindex="-1"></a>     )</span>
+<span id="annotated-cell-18-30"><a href="#annotated-cell-18-30" aria-hidden="true" tabindex="-1"></a><span class="va">+    .aggregate(projects=_.project_name.collect().unique())</span></span>
+<span id="annotated-cell-18-31"><a href="#annotated-cell-18-31" aria-hidden="true" tabindex="-1"></a><span class="va">+    .order_by(_.month.desc())</span></span>
+<span id="annotated-cell-18-32"><a href="#annotated-cell-18-32" aria-hidden="true" tabindex="-1"></a>     .group_by(["month", "ext"])</span>
+<span id="annotated-cell-18-33"><a href="#annotated-cell-18-33" aria-hidden="true" tabindex="-1"></a>     .aggregate(project_count=flatten(_.projects.collect()).unique().length())</span>
+<span id="annotated-cell-18-34"><a href="#annotated-cell-18-34" aria-hidden="true" tabindex="-1"></a><span class="st">-    .dropna("ext")</span></span>
+<span id="annotated-cell-18-35"><a href="#annotated-cell-18-35" aria-hidden="true" tabindex="-1"></a><span class="st">-    .order_by([_.month.desc(), _.project_count.desc()])</span></span>
+<span id="annotated-cell-18-36"><a href="#annotated-cell-18-36" aria-hidden="true" tabindex="-1"></a> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We get:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _, udf</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="at">@udf.scalar.builtin</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> flatten(x: <span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">str</span>]]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]:</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> (</span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a>    ibis.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(</span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a>            _.path.re_search(</span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a>                <span class="vs">r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.re_search(<span class="vs">r"(^|/)test(|s|ing)"</span>),</span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.contains(<span class="st">"/site-packages/"</span>),</span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a>    .group_by(</span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>_.uploaded_on.truncate(<span class="st">"M"</span>),</span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.path.re_extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">1</span>)</span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>)</span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>)</span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a>        .nullif(<span class="st">""</span>),</span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb25-33"><a href="#cb25-33" aria-hidden="true" tabindex="-1"></a>    .aggregate(projects<span class="op">=</span>_.project_name.collect().unique())</span>
+<span id="cb25-34"><a href="#cb25-34" aria-hidden="true" tabindex="-1"></a>    .order_by(_.month.desc())</span>
+<span id="cb25-35"><a href="#cb25-35" aria-hidden="true" tabindex="-1"></a>    .group_by([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="cb25-36"><a href="#cb25-36" aria-hidden="true" tabindex="-1"></a>    .aggregate(project_count<span class="op">=</span>flatten(_.projects.collect()).unique().length())</span>
+<span id="cb25-37"><a href="#cb25-37" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="dont-sort-unnecessarily" class="level4">
+<h4 class="anchored" data-anchor-id="dont-sort-unnecessarily">Don’t sort unnecessarily</h4>
+<p>Notice this <code>order_by</code> call just before a <code>group_by</code> call. Ordering before grouping is somewhat useless here; we should probably sort after we’ve reduced our data. Let’s stick the ordering at the end of the query.</p>
+<p>Applying these changes:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode diff code-with-copy"><code class="sourceCode diff"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">--- step1.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="dt">+++ step2.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -31,7 +31,7 @@</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>         .nullif(""),</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>     )</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>     .aggregate(projects=_.project_name.collect().unique())</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="st">-    .order_by(_.month.desc())</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>     .group_by(["month", "ext"])</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>     .aggregate(project_count=flatten(_.projects.collect()).unique().length())</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a><span class="va">+    .order_by(_.month.desc())</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We get:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _, udf</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a><span class="at">@udf.scalar.builtin</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> flatten(x: <span class="bu">list</span>[<span class="bu">list</span>[<span class="bu">str</span>]]) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">str</span>]:</span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>    ...</span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> (</span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>    ibis.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(</span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>            _.path.re_search(</span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>                <span class="vs">r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.re_search(<span class="vs">r"(^|/)test(|s|ing)"</span>),</span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.contains(<span class="st">"/site-packages/"</span>),</span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-23"><a href="#cb27-23" aria-hidden="true" tabindex="-1"></a>    .group_by(</span>
+<span id="cb27-24"><a href="#cb27-24" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>_.uploaded_on.truncate(<span class="st">"M"</span>),</span>
+<span id="cb27-25"><a href="#cb27-25" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.path.re_extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">1</span>)</span>
+<span id="cb27-26"><a href="#cb27-26" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>)</span>
+<span id="cb27-27"><a href="#cb27-27" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>)</span>
+<span id="cb27-28"><a href="#cb27-28" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="cb27-29"><a href="#cb27-29" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="cb27-30"><a href="#cb27-30" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="cb27-31"><a href="#cb27-31" aria-hidden="true" tabindex="-1"></a>        .nullif(<span class="st">""</span>),</span>
+<span id="cb27-32"><a href="#cb27-32" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb27-33"><a href="#cb27-33" aria-hidden="true" tabindex="-1"></a>    .aggregate(projects<span class="op">=</span>_.project_name.collect().unique())</span>
+<span id="cb27-34"><a href="#cb27-34" aria-hidden="true" tabindex="-1"></a>    .group_by([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="cb27-35"><a href="#cb27-35" aria-hidden="true" tabindex="-1"></a>    .aggregate(project_count<span class="op">=</span>flatten(_.projects.collect()).unique().length())</span>
+<span id="cb27-36"><a href="#cb27-36" aria-hidden="true" tabindex="-1"></a>    .order_by(_.month.desc())</span>
+<span id="cb27-37"><a href="#cb27-37" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="dont-repeat-yourself" class="level4">
+<h4 class="anchored" data-anchor-id="dont-repeat-yourself">Don’t repeat yourself</h4>
+<p>Notice that we are now:</p>
+<ul>
+<li>grouping</li>
+<li>aggregating</li>
+<li>grouping again by the <strong>same keys</strong></li>
+<li>aggregating</li>
+</ul>
+<p>This is less optimal than it could be. We are also flattening an array, computing its distinct values and then computing its length.</p>
+<p>We are computing the grouped number of distinct values, and we likely don’t need to collect values into an array to do that.</p>
+<p>Let’s try using a <code>COUNT(DISTINCT ...)</code> query instead, to avoid wasting cycles collecting arrays.</p>
+<p>We’ll remove the second group by and then call <code>nunique()</code> to get the final query.</p>
+<p>Applying these changes:</p>
+<div class="sourceCode" id="annotated-cell-22"><pre class="sourceCode diff code-annotation-code code-with-copy"><code class="sourceCode diff"><span id="annotated-cell-22-1"><a href="#annotated-cell-22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">--- step2.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="annotated-cell-22-2"><a href="#annotated-cell-22-2" aria-hidden="true" tabindex="-1"></a><span class="dt">+++ step3.py    2023-12-12 05:20:01.712513949 -0500</span></span>
+<span id="annotated-cell-22-3"><a href="#annotated-cell-22-3" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -1,13 +1,7 @@</span></span>
+<span id="annotated-cell-22-4"><a href="#annotated-cell-22-4" aria-hidden="true" tabindex="-1"></a> from __future__ import annotations</span>
+<span id="annotated-cell-22-5"><a href="#annotated-cell-22-5" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-22-6"><a href="#annotated-cell-22-6" aria-hidden="true" tabindex="-1"></a> import ibis</span>
+<span id="annotated-cell-22-7"><a href="#annotated-cell-22-7" aria-hidden="true" tabindex="-1"></a><span class="st">-from ibis import _, udf</span></span>
+<span id="annotated-cell-22-8"><a href="#annotated-cell-22-8" aria-hidden="true" tabindex="-1"></a><span class="st">-</span></span>
+<span id="annotated-cell-22-9"><a href="#annotated-cell-22-9" aria-hidden="true" tabindex="-1"></a><span class="st">-</span></span>
+<span id="annotated-cell-22-10"><a href="#annotated-cell-22-10" aria-hidden="true" tabindex="-1"></a><span class="st">-@udf.scalar.builtin</span></span>
+<span id="annotated-cell-22-11"><a href="#annotated-cell-22-11" aria-hidden="true" tabindex="-1"></a><span class="st">-def flatten(x: list[list[str]]) -&gt; list[str]:</span></span>
+<span id="annotated-cell-22-12"><a href="#annotated-cell-22-12" aria-hidden="true" tabindex="-1"></a><span class="st">-    ...</span></span>
+<span id="annotated-cell-22-13"><a href="#annotated-cell-22-13" aria-hidden="true" tabindex="-1"></a><span class="st">-</span></span>
+<span id="annotated-cell-22-14"><a href="#annotated-cell-22-14" aria-hidden="true" tabindex="-1"></a><span class="va">+from ibis import _</span></span>
+<span id="annotated-cell-22-15"><a href="#annotated-cell-22-15" aria-hidden="true" tabindex="-1"></a> </span>
+<span id="annotated-cell-22-16"><a href="#annotated-cell-22-16" aria-hidden="true" tabindex="-1"></a> expr = (</span>
+<span id="annotated-cell-22-17"><a href="#annotated-cell-22-17" aria-hidden="true" tabindex="-1"></a>     ibis.read_parquet("/data/pypi-parquet/*.parquet")</span>
+<span id="annotated-cell-22-18"><a href="#annotated-cell-22-18" aria-hidden="true" tabindex="-1"></a><span class="dt">@@ -30,8 +24,7 @@</span></span>
+<span id="annotated-cell-22-19"><a href="#annotated-cell-22-19" aria-hidden="true" tabindex="-1"></a>         .replace("asm", "Assembly")</span>
+<span id="annotated-cell-22-20"><a href="#annotated-cell-22-20" aria-hidden="true" tabindex="-1"></a>         .nullif(""),</span>
+<span id="annotated-cell-22-21"><a href="#annotated-cell-22-21" aria-hidden="true" tabindex="-1"></a>     )</span>
+<span id="annotated-cell-22-22"><a href="#annotated-cell-22-22" aria-hidden="true" tabindex="-1"></a><span class="st">-    .aggregate(projects=_.project_name.collect().unique())</span></span>
+<span id="annotated-cell-22-23"><a href="#annotated-cell-22-23" aria-hidden="true" tabindex="-1"></a><span class="st">-    .group_by(["month", "ext"])</span></span>
+<span id="annotated-cell-22-24"><a href="#annotated-cell-22-24" aria-hidden="true" tabindex="-1"></a><span class="st">-    .aggregate(project_count=flatten(_.projects.collect()).unique().length())</span></span>
+<span id="annotated-cell-22-25"><a href="#annotated-cell-22-25" aria-hidden="true" tabindex="-1"></a><span class="st">-    .order_by(_.month.desc())</span></span>
+<span id="annotated-cell-22-26"><a href="#annotated-cell-22-26" aria-hidden="true" tabindex="-1"></a><span class="va">+    .aggregate(project_count=_.project_name.nunique())</span></span>
+<span id="annotated-cell-22-27"><a href="#annotated-cell-22-27" aria-hidden="true" tabindex="-1"></a><span class="va">+    .dropna("ext")</span></span>
+<span id="annotated-cell-22-28"><a href="#annotated-cell-22-28" aria-hidden="true" tabindex="-1"></a><span class="va">+    .order_by([_.month.desc(), _.project_count.desc()])</span></span>
+<span id="annotated-cell-22-29"><a href="#annotated-cell-22-29" aria-hidden="true" tabindex="-1"></a> )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We get:</p>
+<div class="sourceCode" id="annotated-cell-23"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-23-1"><a href="#annotated-cell-23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="annotated-cell-23-2"><a href="#annotated-cell-23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-23-3"><a href="#annotated-cell-23-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="annotated-cell-23-4"><a href="#annotated-cell-23-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _</span>
+<span id="annotated-cell-23-5"><a href="#annotated-cell-23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-23-6"><a href="#annotated-cell-23-6" aria-hidden="true" tabindex="-1"></a>expr <span class="op">=</span> (</span>
+<span id="annotated-cell-23-7"><a href="#annotated-cell-23-7" aria-hidden="true" tabindex="-1"></a>    ibis.read_parquet(<span class="st">"/data/pypi-parquet/*.parquet"</span>)</span>
+<span id="annotated-cell-23-8"><a href="#annotated-cell-23-8" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(</span>
+<span id="annotated-cell-23-9"><a href="#annotated-cell-23-9" aria-hidden="true" tabindex="-1"></a>        [</span>
+<span id="annotated-cell-23-10"><a href="#annotated-cell-23-10" aria-hidden="true" tabindex="-1"></a>            _.path.re_search(</span>
+<span id="annotated-cell-23-11"><a href="#annotated-cell-23-11" aria-hidden="true" tabindex="-1"></a>                <span class="vs">r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="annotated-cell-23-12"><a href="#annotated-cell-23-12" aria-hidden="true" tabindex="-1"></a>            ),</span>
+<span id="annotated-cell-23-13"><a href="#annotated-cell-23-13" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.re_search(<span class="vs">r"(^|/)test(|s|ing)"</span>),</span>
+<span id="annotated-cell-23-14"><a href="#annotated-cell-23-14" aria-hidden="true" tabindex="-1"></a>            <span class="op">~</span>_.path.contains(<span class="st">"/site-packages/"</span>),</span>
+<span id="annotated-cell-23-15"><a href="#annotated-cell-23-15" aria-hidden="true" tabindex="-1"></a>        ]</span>
+<span id="annotated-cell-23-16"><a href="#annotated-cell-23-16" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-23-17"><a href="#annotated-cell-23-17" aria-hidden="true" tabindex="-1"></a>    .group_by(</span>
+<span id="annotated-cell-23-18"><a href="#annotated-cell-23-18" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>_.uploaded_on.truncate(<span class="st">"M"</span>),</span>
+<span id="annotated-cell-23-19"><a href="#annotated-cell-23-19" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>_.path.re_extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">1</span>)</span>
+<span id="annotated-cell-23-20"><a href="#annotated-cell-23-20" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>)</span>
+<span id="annotated-cell-23-21"><a href="#annotated-cell-23-21" aria-hidden="true" tabindex="-1"></a>        .re_replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>)</span>
+<span id="annotated-cell-23-22"><a href="#annotated-cell-23-22" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="annotated-cell-23-23"><a href="#annotated-cell-23-23" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="annotated-cell-23-24"><a href="#annotated-cell-23-24" aria-hidden="true" tabindex="-1"></a>        .replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>)</span>
+<span id="annotated-cell-23-25"><a href="#annotated-cell-23-25" aria-hidden="true" tabindex="-1"></a>        .nullif(<span class="st">""</span>),</span>
+<span id="annotated-cell-23-26"><a href="#annotated-cell-23-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="annotated-cell-23-27"><a href="#annotated-cell-23-27" aria-hidden="true" tabindex="-1"></a>    .aggregate(project_count<span class="op">=</span>_.project_name.nunique())</span>
+<span id="annotated-cell-23-28"><a href="#annotated-cell-23-28" aria-hidden="true" tabindex="-1"></a>    .dropna(<span class="st">"ext"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-23" data-target-annotation="1">1</button><span id="annotated-cell-23-29" class="code-annotation-target"><a href="#annotated-cell-23-29" aria-hidden="true" tabindex="-1"></a>    .order_by([_.month.desc(), _.project_count.desc()])</span>
+<span id="annotated-cell-23-30"><a href="#annotated-cell-23-30" aria-hidden="true" tabindex="-1"></a>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-23" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-23" data-code-lines="29" data-code-annotation="1">I added a second sort key (<code>project_count</code>) for deterministic output.</span>
+</dd>
+</dl>
+<p>Let’s run it to make sure the results are as expected:</p>
+<div id="04c5b749" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>duckdb_results <span class="op">=</span> <span class="op">%</span>timeit <span class="op">-</span>n1 <span class="op">-</span>r1 <span class="op">-</span>o expr.to_pandas()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<script type="application/vnd.jupyter.widget-view+json">
+{"model_id":"0ef50d9d4fa642b696882705605abfec","version_major":2,"version_minor":0,"quarto_mimetype":"application/vnd.jupyter.widget-view+json"}
+</script>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>29.9 s ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)</code></pre>
+</div>
+</div>
+<p>It looks like the new query might be a bit slower even though we’re ostensibly doing less computation. Since we’re still pretty close to the original duration, let’s keep going.</p>
+</section>
+</section>
+<section id="final-pandas-run-with-the-new-query" class="level3">
+<h3 class="anchored" data-anchor-id="final-pandas-run-with-the-new-query">Final pandas run with the new query</h3>
+<p>Rewriting the pandas code we get:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> glob</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> os</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> pd.read_parquet(</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="bu">min</span>(glob.glob(<span class="st">"/data/pypi-parquet/*.parquet"</span>), key<span class="op">=</span>os.path.getsize),</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    columns<span class="op">=</span>[<span class="st">"path"</span>, <span class="st">"uploaded_on"</span>, <span class="st">"project_name"</span>],</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> df[</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    df.path.<span class="bu">str</span>.contains(<span class="vs">r"\.(?:asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    <span class="op">&amp;</span> <span class="op">~</span>df.path.<span class="bu">str</span>.contains(<span class="vs">r"(?:(?:^|/)test(?:|s|ing)|/site-packages/)"</span>)</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>]</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(</span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>    df.assign(</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>        month<span class="op">=</span>df.uploaded_on.dt.to_period(<span class="st">"M"</span>).dt.to_timestamp(),</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>        ext<span class="op">=</span>df.path.<span class="bu">str</span>.extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">0</span>)</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>        .iloc[:, <span class="dv">0</span>]</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">str</span>.replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>),</span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    .groupby([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>    .project_name.nunique()</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>    .rename(<span class="st">"project_count"</span>)</span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>    .reset_index()</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>    .sort_values([<span class="st">"month"</span>, <span class="st">"project_count"</span>], ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Running it we get:</p>
+<div id="f2013996" class="cell" data-execution_count="30">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>pandas_results <span class="op">=</span> <span class="op">%</span>timeit <span class="op">-</span>n1 <span class="op">-</span>r1 <span class="op">-</span>o <span class="op">%</span>run pandas_impl.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       month       ext  project_count
+6 2023-11-01     C/C++            836
+9 2023-11-01      Rust            190
+7 2023-11-01   Fortran             48
+8 2023-11-01        Go             33
+5 2023-11-01  Assembly             10
+1 2023-10-01     C/C++            484
+4 2023-10-01      Rust             99
+3 2023-10-01        Go             25
+2 2023-10-01   Fortran             23
+0 2023-10-01  Assembly             14
+2min 58s ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)</code></pre>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Remember, this is the time it took pandas to run the query for a <strong>single</strong> file.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>DuckDB runs the query over the <strong>entire</strong> dataset about 4x faster than that!</p>
+</div>
+</div>
+<p>Let’s try a tool that nominally scales to our problem: <a href="https://dask.org">Dask</a>.</p>
+</section>
+</section>
+<section id="dask" class="level2">
+<h2 class="anchored" data-anchor-id="dask">Dask</h2>
+<p>One really nice component of Dask is <a href="https://docs.dask.org/en/stable/dataframe.html"><code>dask.dataframe</code></a>.</p>
+<p>Dask DataFrame implements a <a href="https://docs.dask.org/en/stable/dataframe.html#scope">good chunk of the pandas API</a> and can be a drop-in replacement for pandas.</p>
+<p>I am happy that this turned out to be the case here.</p>
+<p>My first attempt was somewhat naive and was effectively a one line change from <code>import pandas as pd</code> to <code>import dask.dataframe as pd</code>.</p>
+<p>This worked and the workload completed. However, after talking to Dask expert and Ibis contributor <a href="https://github.com/ncclementi">Naty Clementi</a> she suggested I try a few things:</p>
+<ul>
+<li>Use <a href="https://distributed.dask.org/en/stable/">the distributed scheduler</a>.</li>
+<li>Ensure that <a href="https://docs.dask.org/en/latest/configuration.html#dask"><code>pyarrow</code> string arrays are used</a> instead of NumPy object arrays. This required <strong>no changes</strong> to my Dask code because PyArrow strings have been the default since version 2023.7.1, hooray!</li>
+<li>Explore some of the options to <code>read_parquet</code>. It turned that without setting <code>split_row_groups=True</code> I ran out of memory.</li>
+</ul>
+<p>Let’s look at the Dask implementation:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> logging</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> dask.dataframe <span class="im">as</span> dd</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> dask.distributed <span class="im">import</span> Client</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="va">__name__</span> <span class="op">==</span> <span class="st">"__main__"</span>:</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    client <span class="op">=</span> Client(silence_logs<span class="op">=</span>logging.ERROR)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> dd.read_parquet(</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>        <span class="st">"/data/pypi-parquet/*.parquet"</span>,</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>        columns<span class="op">=</span>[<span class="st">"path"</span>, <span class="st">"uploaded_on"</span>, <span class="st">"project_name"</span>],</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>        split_row_groups<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df[</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>        df.path.<span class="bu">str</span>.contains(</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>            <span class="vs">r"\.(?:asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"</span></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span> <span class="op">~</span>df.path.<span class="bu">str</span>.contains(<span class="vs">r"(?:^|/)test(?:|s|ing)"</span>)</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>        <span class="op">&amp;</span> <span class="op">~</span>df.path.<span class="bu">str</span>.contains(<span class="st">"/site-packages/"</span>)</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a>        df.assign(</span>
+<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a>            month<span class="op">=</span>df.uploaded_on.dt.to_period(<span class="st">"M"</span>).dt.to_timestamp(),</span>
+<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a>            ext<span class="op">=</span>df.path.<span class="bu">str</span>.extract(<span class="vs">r"\.([a-z0-9]+)$"</span>, <span class="dv">0</span>, expand<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a>            .<span class="bu">str</span>.replace(<span class="vs">r"cxx|cpp|cc|c|hpp|h"</span>, <span class="st">"C/C++"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a>            .<span class="bu">str</span>.replace(<span class="st">"^f.*$"</span>, <span class="st">"Fortran"</span>, regex<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a>            .<span class="bu">str</span>.replace(<span class="st">"rs"</span>, <span class="st">"Rust"</span>)</span>
+<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a>            .<span class="bu">str</span>.replace(<span class="st">"go"</span>, <span class="st">"Go"</span>)</span>
+<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a>            .<span class="bu">str</span>.replace(<span class="st">"asm"</span>, <span class="st">"Assembly"</span>),</span>
+<span id="cb33-31"><a href="#cb33-31" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb33-32"><a href="#cb33-32" aria-hidden="true" tabindex="-1"></a>        .groupby([<span class="st">"month"</span>, <span class="st">"ext"</span>])</span>
+<span id="cb33-33"><a href="#cb33-33" aria-hidden="true" tabindex="-1"></a>        .project_name.nunique()</span>
+<span id="cb33-34"><a href="#cb33-34" aria-hidden="true" tabindex="-1"></a>        .rename(<span class="st">"project_count"</span>)</span>
+<span id="cb33-35"><a href="#cb33-35" aria-hidden="true" tabindex="-1"></a>        .compute()</span>
+<span id="cb33-36"><a href="#cb33-36" aria-hidden="true" tabindex="-1"></a>        .reset_index()</span>
+<span id="cb33-37"><a href="#cb33-37" aria-hidden="true" tabindex="-1"></a>        .sort_values([<span class="st">"month"</span>, <span class="st">"project_count"</span>], ascending<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb33-38"><a href="#cb33-38" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb33-39"><a href="#cb33-39" aria-hidden="true" tabindex="-1"></a>    client.shutdown()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Let’s run the code:</p>
+<div id="f5e7a22f" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>dask_results <span class="op">=</span> <span class="op">%</span>timeit <span class="op">-</span>n1 <span class="op">-</span>r1 <span class="op">-</span>o <span class="op">%</span>run dask_impl.py</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         month       ext  project_count
+794 2023-11-01     C/C++            836
+796 2023-11-01      Rust            190
+797 2023-11-01   Fortran             48
+795 2023-11-01        Go             33
+798 2023-11-01  Assembly             10
+..         ...       ...            ...
+2   2005-08-01     C/C++              7
+1   2005-07-01     C/C++              4
+83  2005-05-01     C/C++              1
+82  2005-04-01     C/C++              1
+0   2005-03-01     C/C++              1
+
+[799 rows x 3 columns]
+52.5 s ± 0 ns per loop (mean ± std. dev. of 1 run, 1 loop each)</code></pre>
+</div>
+</div>
+<p>That’s a great improvement over pandas: we finished the workload and our running time is pretty close to DuckDB.</p>
+</section>
+<section id="takeaways" class="level2">
+<h2 class="anchored" data-anchor-id="takeaways">Takeaways</h2>
+<p><strong>Ibis + DuckDB is the only system tested that handles this workload well out of the box</strong></p>
+<ul>
+<li>Pandas couldn’t handle the workload due to memory constraints.</li>
+<li>Dask required its <a href="https://docs.dask.org/en/stable/deploying.html#deploy-dask-clusters">recommended distributed scheduler</a> to achieve maximum performance and still used a lot of memory.</li>
+</ul>
+<p>Let’s recap the results with some numbers:</p>
+<section id="numbers" class="level3">
+<h3 class="anchored" data-anchor-id="numbers">Numbers</h3>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Toolset</th>
+<th style="text-align: right;">Data size</th>
+<th style="text-align: right;">Duration</th>
+<th style="text-align: right;">Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Ibis + DuckDB</td>
+<td style="text-align: right;">25,825 MiB</td>
+<td style="text-align: right;">30 seconds</td>
+<td style="text-align: right;">863 MiB/s</td>
+</tr>
+<tr class="even">
+<td>Dask + Distributed</td>
+<td style="text-align: right;">25,825 MiB</td>
+<td style="text-align: right;">53 seconds</td>
+<td style="text-align: right;">492 MiB/s</td>
+</tr>
+</tbody>
+</table>
+<p>With Ibis + DuckDB, I was able to write the query the way I wanted to without running out of memory, using the default configuration provided by Ibis.</p>
+<p>I was able run this computation around <strong>193x faster</strong> than you can expect with pandas using this hardware setup.</p>
+<p>In contrast, pandas ran out of memory <strong>on a single file</strong> without some hand holding and while Dask didn’t cause my program to run out of memory it still used quite a bit more than DuckDB.</p>
+</section>
+<section id="pandas-is-untenable-for-this-workload" class="level3">
+<h3 class="anchored" data-anchor-id="pandas-is-untenable-for-this-workload">Pandas is untenable for this workload</h3>
+<p>Pandas requires me to load everything into memory, and my machine doesn’t have enough memory to do that.</p>
+<p>Given that Ibis + DuckDB runs this workload on my machine it doesn’t seem worth the effort to write any additional code to make pandas scale to the whole dataset.</p>
+</section>
+<section id="dask-finishes-in-a-similar-amount-of-time-as-ibis-duckdb-within-2x" class="level3">
+<h3 class="anchored" data-anchor-id="dask-finishes-in-a-similar-amount-of-time-as-ibis-duckdb-within-2x">Dask finishes in a similar amount of time as Ibis + DuckDB (within 2x)</h3>
+<p>Out of the box I had quite a bit of difficulty figuring out how to maximize performance and not run out of memory.</p>
+<p>Please get in touch if you think my Dask code can be improved!</p>
+<p>I know the Dask community is hard at work building <a href="https://github.com/dask-contrib/dask-expr"><code>dask-expr</code></a> which might improve the performance of this workload when it lands.</p>
+</section>
+</section>
+<section id="next-steps" class="level2">
+<h2 class="anchored" data-anchor-id="next-steps">Next steps</h2>
+<section id="please-get-in-touch" class="level3">
+<h3 class="anchored" data-anchor-id="please-get-in-touch">Please get in touch!</h3>
+<p>If you have ideas about how to speed up my use of the tools I’ve discussed here please get in touch by opening a <a href="https://github.com/ibis-project/ibis/discussions">GitHub discussion</a>!</p>
+<p>We would love it if more backends handled this workload!</p>
+</section>
+<section id="look-out-for-part-2" class="level3">
+<h3 class="anchored" data-anchor-id="look-out-for-part-2">Look out for part 2</h3>
+<p>In part 2 of this series we’ll explore how Polars and DataFusion perform on this query. Stay tuned!</p>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script type="application/vnd.jupyter.widget-state+json">
+{"state":{"0ef50d9d4fa642b696882705605abfec":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"FloatProgressModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"FloatProgressModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"ProgressView","bar_style":"","description":"","description_allow_html":false,"layout":"IPY_MODEL_aa4b41f601d94fac84d83a92951a17d5","max":100,"min":0,"orientation":"horizontal","style":"IPY_MODEL_f4d82520ec214dd7bea8309127ed311f","tabbable":null,"tooltip":null,"value":100}},"8f1bc232d95146dabe7f9c0ac503032e":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"FloatProgressModel","state":{"_dom_classes":[],"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"FloatProgressModel","_view_count":null,"_view_module":"@jupyter-widgets/controls","_view_module_version":"2.0.0","_view_name":"ProgressView","bar_style":"","description":"","description_allow_html":false,"layout":"IPY_MODEL_d1c3bca2dd3a472bbdb237d39df613a4","max":100,"min":0,"orientation":"horizontal","style":"IPY_MODEL_fd4bce1a889841709e6d0772ec7e927a","tabbable":null,"tooltip":null,"value":100}},"aa4b41f601d94fac84d83a92951a17d5":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":"auto"}},"d1c3bca2dd3a472bbdb237d39df613a4":{"model_module":"@jupyter-widgets/base","model_module_version":"2.0.0","model_name":"LayoutModel","state":{"_model_module":"@jupyter-widgets/base","_model_module_version":"2.0.0","_model_name":"LayoutModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"LayoutView","align_content":null,"align_items":null,"align_self":null,"border_bottom":null,"border_left":null,"border_right":null,"border_top":null,"bottom":null,"display":null,"flex":null,"flex_flow":null,"grid_area":null,"grid_auto_columns":null,"grid_auto_flow":null,"grid_auto_rows":null,"grid_column":null,"grid_gap":null,"grid_row":null,"grid_template_areas":null,"grid_template_columns":null,"grid_template_rows":null,"height":null,"justify_content":null,"justify_items":null,"left":null,"margin":null,"max_height":null,"max_width":null,"min_height":null,"min_width":null,"object_fit":null,"object_position":null,"order":null,"overflow":null,"padding":null,"right":null,"top":null,"visibility":null,"width":"auto"}},"f4d82520ec214dd7bea8309127ed311f":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"ProgressStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"ProgressStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","bar_color":"black","description_width":""}},"fd4bce1a889841709e6d0772ec7e927a":{"model_module":"@jupyter-widgets/controls","model_module_version":"2.0.0","model_name":"ProgressStyleModel","state":{"_model_module":"@jupyter-widgets/controls","_model_module_version":"2.0.0","_model_name":"ProgressStyleModel","_view_count":null,"_view_module":"@jupyter-widgets/base","_view_module_version":"2.0.0","_view_name":"StyleView","bar_color":"black","description_width":""}}},"version_major":2,"version_minor":0}
+</script>
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://giscus.app/client.js" data-repo="ibis-project/ibis" data-repo-id="MDEwOlJlcG9zaXRvcnkzNDEzOTIzMA==" data-category="Q&amp;A" data-category-id="DIC_kwDOAgjsXs4CASeT" data-mapping="title" data-reactions-enabled="0" data-emit-metadata="0" data-input-position="top" data-theme="light" data-lang="en" crossorigin="anonymous" async="">
+</script>
+<input type="hidden" id="giscus-base-theme" value="light">
+<input type="hidden" id="giscus-alt-theme" value="dark">
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/posts/pydata-performance/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -1,0 +1,33 @@
+[
+  {
+    "listing": "/posts.html",
+    "items": [
+      "/posts/kedro-ibis/index.html",
+      "/posts/ibis-analytics/index.html",
+      "/posts/1brc/index.html",
+      "/posts/backend-agnostic-arrays/index.html",
+      "/posts/ibis-duckdb-geospatial-dev-guru/index.html",
+      "/posts/zulip/index.html",
+      "/posts/pydata-performance-part2/index.html",
+      "/posts/ibis-duckdb-geospatial/index.html",
+      "/posts/pydata-performance/index.html",
+      "/posts/dbt-ibis/index.html",
+      "/posts/querying-pypi-metadata-compiled-languages/index.html",
+      "/posts/bigquery-arrays/index.html",
+      "/posts/snowflake-io/index.html",
+      "/posts/v6.1.0-release/index.html",
+      "/posts/ibis-version-6.0.0-release/index.html",
+      "/posts/torch/index.html",
+      "/posts/campaign-finance/index.html",
+      "/posts/ibis-to-file/index.html",
+      "/posts/ibis-examples/index.html",
+      "/posts/selectors/index.html",
+      "/posts/ibis_substrait_to_duckdb/index.html",
+      "/posts/ci-analysis/index.html",
+      "/posts/ibis-version-4.0.0-release/index.html",
+      "/posts/ffill-and-bfill-using-ibis/index.html",
+      "/posts/Ibis-version-3.1.0-release/index.html",
+      "/posts/Ibis-version-3.0.0-release/index.html"
+    ]
+  }
+]

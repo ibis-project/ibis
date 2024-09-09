@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.339">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Ibis – selectors</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "keyboard-shortcut": [
+    null
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/backend.html">
+ <span class="dropdown-text">Backend</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/expression-tables.html">Expression API</a></li><li class="breadcrumb-item"><a href="../reference/selectors.html">Column selectors</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Expression API</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Table expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/selectors.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Column selectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-generic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generic expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-numeric.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Numeric and Boolean expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-strings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">String expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-temporal.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Temporal expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-collections.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Collection expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-geospatial.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Geospatial expressions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Type system</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/datatypes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data types</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/schemas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Schemas</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">UDFs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/scalar-udfs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scalar UDFs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Connection APIs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Top-level connection APIs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Configuration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/ContextAdjustment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ContextAdjustment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Interactive.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Interactive</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Options</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Repr.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Repr</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/SQL.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SQL</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#ibis.selectors.where" id="toc-ibis.selectors.where" class="nav-link active" data-scroll-target="#ibis.selectors.where">where</a>
+  <ul class="collapse">
+  <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters">Parameters</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.numeric" id="toc-ibis.selectors.numeric" class="nav-link" data-scroll-target="#ibis.selectors.numeric">numeric</a>
+  <ul class="collapse">
+  <li><a href="#examples-1" id="toc-examples-1" class="nav-link" data-scroll-target="#examples-1">Examples</a></li>
+  <li><a href="#see-also" id="toc-see-also" class="nav-link" data-scroll-target="#see-also">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.of_type" id="toc-ibis.selectors.of_type" class="nav-link" data-scroll-target="#ibis.selectors.of_type">of_type</a>
+  <ul class="collapse">
+  <li><a href="#parameters-1" id="toc-parameters-1" class="nav-link" data-scroll-target="#parameters-1">Parameters</a></li>
+  <li><a href="#examples-2" id="toc-examples-2" class="nav-link" data-scroll-target="#examples-2">Examples</a></li>
+  <li><a href="#see-also-1" id="toc-see-also-1" class="nav-link" data-scroll-target="#see-also-1">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.startswith" id="toc-ibis.selectors.startswith" class="nav-link" data-scroll-target="#ibis.selectors.startswith">startswith</a>
+  <ul class="collapse">
+  <li><a href="#parameters-2" id="toc-parameters-2" class="nav-link" data-scroll-target="#parameters-2">Parameters</a></li>
+  <li><a href="#examples-3" id="toc-examples-3" class="nav-link" data-scroll-target="#examples-3">Examples</a></li>
+  <li><a href="#see-also-2" id="toc-see-also-2" class="nav-link" data-scroll-target="#see-also-2">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.endswith" id="toc-ibis.selectors.endswith" class="nav-link" data-scroll-target="#ibis.selectors.endswith">endswith</a>
+  <ul class="collapse">
+  <li><a href="#parameters-3" id="toc-parameters-3" class="nav-link" data-scroll-target="#parameters-3">Parameters</a></li>
+  <li><a href="#see-also-3" id="toc-see-also-3" class="nav-link" data-scroll-target="#see-also-3">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.contains" id="toc-ibis.selectors.contains" class="nav-link" data-scroll-target="#ibis.selectors.contains">contains</a>
+  <ul class="collapse">
+  <li><a href="#parameters-4" id="toc-parameters-4" class="nav-link" data-scroll-target="#parameters-4">Parameters</a></li>
+  <li><a href="#examples-4" id="toc-examples-4" class="nav-link" data-scroll-target="#examples-4">Examples</a></li>
+  <li><a href="#see-also-4" id="toc-see-also-4" class="nav-link" data-scroll-target="#see-also-4">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.matches" id="toc-ibis.selectors.matches" class="nav-link" data-scroll-target="#ibis.selectors.matches">matches</a>
+  <ul class="collapse">
+  <li><a href="#parameters-5" id="toc-parameters-5" class="nav-link" data-scroll-target="#parameters-5">Parameters</a></li>
+  <li><a href="#examples-5" id="toc-examples-5" class="nav-link" data-scroll-target="#examples-5">Examples</a></li>
+  <li><a href="#see-also-5" id="toc-see-also-5" class="nav-link" data-scroll-target="#see-also-5">See Also</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.any_of" id="toc-ibis.selectors.any_of" class="nav-link" data-scroll-target="#ibis.selectors.any_of">any_of</a></li>
+  <li><a href="#ibis.selectors.all_of" id="toc-ibis.selectors.all_of" class="nav-link" data-scroll-target="#ibis.selectors.all_of">all_of</a></li>
+  <li><a href="#ibis.selectors.c" id="toc-ibis.selectors.c" class="nav-link" data-scroll-target="#ibis.selectors.c">c</a></li>
+  <li><a href="#ibis.selectors.across" id="toc-ibis.selectors.across" class="nav-link" data-scroll-target="#ibis.selectors.across">across</a>
+  <ul class="collapse">
+  <li><a href="#parameters-6" id="toc-parameters-6" class="nav-link" data-scroll-target="#parameters-6">Parameters</a></li>
+  <li><a href="#returns" id="toc-returns" class="nav-link" data-scroll-target="#returns">Returns</a></li>
+  <li><a href="#examples-6" id="toc-examples-6" class="nav-link" data-scroll-target="#examples-6">Examples</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.if_any" id="toc-ibis.selectors.if_any" class="nav-link" data-scroll-target="#ibis.selectors.if_any">if_any</a>
+  <ul class="collapse">
+  <li><a href="#parameters-7" id="toc-parameters-7" class="nav-link" data-scroll-target="#parameters-7">Parameters</a></li>
+  <li><a href="#examples-7" id="toc-examples-7" class="nav-link" data-scroll-target="#examples-7">Examples</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.if_all" id="toc-ibis.selectors.if_all" class="nav-link" data-scroll-target="#ibis.selectors.if_all">if_all</a>
+  <ul class="collapse">
+  <li><a href="#parameters-8" id="toc-parameters-8" class="nav-link" data-scroll-target="#parameters-8">Parameters</a></li>
+  <li><a href="#examples-8" id="toc-examples-8" class="nav-link" data-scroll-target="#examples-8">Examples</a></li>
+  </ul></li>
+  <li><a href="#ibis.selectors.r" id="toc-ibis.selectors.r" class="nav-link" data-scroll-target="#ibis.selectors.r">r</a></li>
+  <li><a href="#ibis.selectors.first" id="toc-ibis.selectors.first" class="nav-link" data-scroll-target="#ibis.selectors.first">first</a></li>
+  <li><a href="#ibis.selectors.last" id="toc-ibis.selectors.last" class="nav-link" data-scroll-target="#ibis.selectors.last">last</a></li>
+  <li><a href="#ibis.selectors.all" id="toc-ibis.selectors.all" class="nav-link" data-scroll-target="#ibis.selectors.all">all</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/master/docs/reference/selectors.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/expression-tables.html">Expression API</a></li><li class="breadcrumb-item"><a href="../reference/selectors.html">Column selectors</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Column selectors</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+<p>Choose Table columns based on dtype, regex, and other criteria</p>
+<section id="ibis.selectors.where" class="level1">
+<h1>where</h1>
+<p><code>where(predicate)</code></p>
+<p>Select columns that satisfy <code>predicate</code>.</p>
+<p>Use this selector when one of the other selectors does not meet your needs.</p>
+<section id="parameters" class="level2">
+<h2 class="anchored" data-anchor-id="parameters">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>predicate</code></td>
+<td><a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<code>ir</code>.<code>Value</code>], <a href="https://docs.python.org/3/library/functions.html#bool">bool</a>]</td>
+<td>A callable that accepts an ibis value expression and returns a <code>bool</code></td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples" class="level2">
+<h2 class="anchored" data-anchor-id="examples">Examples</h2>
+<div id="1ba1a05d" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(<span class="bu">dict</span>(a<span class="op">=</span><span class="st">"float32"</span>), name<span class="op">=</span><span class="st">"t"</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.where(<span class="kw">lambda</span> col: col.get_name() <span class="op">==</span> <span class="st">"a"</span>))</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="1">
+<pre><code>['a']</code></pre>
+</div>
+</div>
+</section>
+</section>
+<section id="ibis.selectors.numeric" class="level1">
+<h1>numeric</h1>
+<p><code>numeric()</code></p>
+<p>Return numeric columns.</p>
+<section id="examples-1" class="level2">
+<h2 class="anchored" data-anchor-id="examples-1">Examples</h2>
+<div id="e6905134" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(<span class="bu">dict</span>(a<span class="op">=</span><span class="st">"int"</span>, b<span class="op">=</span><span class="st">"string"</span>, c<span class="op">=</span><span class="st">"array&lt;string&gt;"</span>), name<span class="op">=</span><span class="st">"t"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="2">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">UnboundTable: t
+  a int64
+  b string
+  c array&lt;string&gt;
+</pre>
+</div>
+</div>
+<div id="4ade795a" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.numeric())  <span class="co"># `a` has integer type, so it's numeric</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre><code>['a']</code></pre>
+</div>
+</div>
+</section>
+<section id="see-also" class="level2">
+<h2 class="anchored" data-anchor-id="see-also">See Also</h2>
+<p><a href="#ibis.selectors.of_type"><code>of_type</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.of_type" class="level1">
+<h1>of_type</h1>
+<p><code>of_type(dtype)</code></p>
+<p>Select columns of type <code>dtype</code>.</p>
+<section id="parameters-1" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-1">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>dtype</code></td>
+<td><code>dt</code>.<code>DataType</code> | <a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/functions.html#type">type</a>[<code>dt</code>.<code>DataType</code>]</td>
+<td><code>DataType</code> instance, <code>str</code> or <code>DataType</code> class</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-2" class="level2">
+<h2 class="anchored" data-anchor-id="examples-2">Examples</h2>
+<p>Select according to a specific <code>DataType</code> instance</p>
+<div id="d4dbb5b6" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.expr.datatypes <span class="im">as</span> dt</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>...     <span class="bu">dict</span>(name<span class="op">=</span><span class="st">"string"</span>, siblings<span class="op">=</span><span class="st">"array&lt;string&gt;"</span>, parents<span class="op">=</span><span class="st">"array&lt;int64&gt;"</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>... )</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.of_type(dt.Array(dt.string)))</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>['siblings']</code></pre>
+</div>
+</div>
+<p>Strings are also accepted</p>
+<div id="37807e6b" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.of_type(<span class="st">"array&lt;string&gt;"</span>))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="5">
+<pre><code>['siblings']</code></pre>
+</div>
+</div>
+<p>Abstract/unparametrized types may also be specified by their string name (e.g.&nbsp;“integer” for any integer type), or by passing in a <code>DataType</code> class instead. The following options are equivalent.</p>
+<div id="1a9e1d62" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr1 <span class="op">=</span> t.select(s.of_type(<span class="st">"array"</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr2 <span class="op">=</span> t.select(s.of_type(dt.Array))</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr1.equals(expr2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="6">
+<pre><code>True</code></pre>
+</div>
+</div>
+<div id="4dcc0471" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr2.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="7">
+<pre><code>['siblings', 'parents']</code></pre>
+</div>
+</div>
+</section>
+<section id="see-also-1" class="level2">
+<h2 class="anchored" data-anchor-id="see-also-1">See Also</h2>
+<p><a href="#ibis.selectors.numeric"><code>numeric</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.startswith" class="level1">
+<h1>startswith</h1>
+<p><code>startswith(prefixes)</code></p>
+<p>Select columns whose name starts with one of <code>prefixes</code>.</p>
+<section id="parameters-2" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-2">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>prefixes</code></td>
+<td><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, …]</td>
+<td>Prefixes to compare column names against</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-3" class="level2">
+<h2 class="anchored" data-anchor-id="examples-3">Examples</h2>
+<div id="cb2e038d" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(<span class="bu">dict</span>(apples<span class="op">=</span><span class="st">"int"</span>, oranges<span class="op">=</span><span class="st">"float"</span>, bananas<span class="op">=</span><span class="st">"bool"</span>), name<span class="op">=</span><span class="st">"t"</span>)</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.startswith((<span class="st">"a"</span>, <span class="st">"b"</span>)))</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre><code>['apples', 'bananas']</code></pre>
+</div>
+</div>
+</section>
+<section id="see-also-2" class="level2">
+<h2 class="anchored" data-anchor-id="see-also-2">See Also</h2>
+<p><a href="#ibis.selectors.endswith"><code>endswith</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.endswith" class="level1">
+<h1>endswith</h1>
+<p><code>endswith(suffixes)</code></p>
+<p>Select columns whose name ends with one of <code>suffixes</code>.</p>
+<section id="parameters-3" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-3">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>suffixes</code></td>
+<td><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, …]</td>
+<td>Suffixes to compare column names against</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="see-also-3" class="level2">
+<h2 class="anchored" data-anchor-id="see-also-3">See Also</h2>
+<p><a href="#ibis.selectors.startswith"><code>startswith</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.contains" class="level1">
+<h1>contains</h1>
+<p><code>contains(needles, how=any)</code></p>
+<p>Return columns whose name contains <code>needles</code>.</p>
+<section id="parameters-4" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-4">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>needles</code></td>
+<td><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/stdtypes.html#tuple">tuple</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, …]</td>
+<td>One or more strings to search for in column names</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>how</code></td>
+<td><a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a href="https://docs.python.org/3/library/functions.html#bool">bool</a>]], <a href="https://docs.python.org/3/library/functions.html#bool">bool</a>]</td>
+<td>A boolean reduction to allow the configuration of how <code>needles</code> are summarized.</td>
+<td><code>any</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-4" class="level2">
+<h2 class="anchored" data-anchor-id="examples-4">Examples</h2>
+<p>Select columns that contain either <code>"a"</code> or <code>"b"</code></p>
+<div id="2959fa0f" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>...     <span class="bu">dict</span>(</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>...         a<span class="op">=</span><span class="st">"int64"</span>, b<span class="op">=</span><span class="st">"string"</span>, c<span class="op">=</span><span class="st">"float"</span>, d<span class="op">=</span><span class="st">"array&lt;int16&gt;"</span>, ab<span class="op">=</span><span class="st">"struct&lt;x: int&gt;"</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>...     )</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>... )</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.contains((<span class="st">"a"</span>, <span class="st">"b"</span>)))</span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre><code>['a', 'b', 'ab']</code></pre>
+</div>
+</div>
+<p>Select columns that contain all of <code>"a"</code> and <code>"b"</code>, that is, both <code>"a"</code> and <code>"b"</code> must be in each column’s name to match.</p>
+<div id="182f5b6d" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.contains((<span class="st">"a"</span>, <span class="st">"b"</span>), how<span class="op">=</span><span class="bu">all</span>))</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="10">
+<pre><code>['ab']</code></pre>
+</div>
+</div>
+</section>
+<section id="see-also-4" class="level2">
+<h2 class="anchored" data-anchor-id="see-also-4">See Also</h2>
+<p><a href="#ibis.selectors.matches"><code>matches</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.matches" class="level1">
+<h1>matches</h1>
+<p><code>matches(regex)</code></p>
+<p>Return columns whose name matches the regular expression <code>regex</code>.</p>
+<section id="parameters-5" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-5">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>regex</code></td>
+<td><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/re.html#module-re">re</a>.<a href="https://docs.python.org/3/library/re.html#re.Pattern">Pattern</a></td>
+<td>A string or <code>re.Pattern</code> object</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-5" class="level2">
+<h2 class="anchored" data-anchor-id="examples-5">Examples</h2>
+<div id="0844b394" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.table(<span class="bu">dict</span>(ab<span class="op">=</span><span class="st">"string"</span>, abd<span class="op">=</span><span class="st">"int"</span>, be<span class="op">=</span><span class="st">"array&lt;string&gt;"</span>))</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> t.select(s.matches(<span class="vs">r"ab+"</span>))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.columns</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="11">
+<pre><code>['ab', 'abd']</code></pre>
+</div>
+</div>
+</section>
+<section id="see-also-5" class="level2">
+<h2 class="anchored" data-anchor-id="see-also-5">See Also</h2>
+<p><a href="#ibis.selectors.contains"><code>contains</code></a></p>
+</section>
+</section>
+<section id="ibis.selectors.any_of" class="level1">
+<h1>any_of</h1>
+<p><code>any_of(*predicates)</code></p>
+<p>Include columns satisfying any of <code>predicates</code>.</p>
+</section>
+<section id="ibis.selectors.all_of" class="level1">
+<h1>all_of</h1>
+<p><code>all_of(*predicates)</code></p>
+<p>Include columns satisfying all of <code>predicates</code>.</p>
+</section>
+<section id="ibis.selectors.c" class="level1">
+<h1>c</h1>
+<p><code>c(*names)</code></p>
+<p>Select specific column names.</p>
+</section>
+<section id="ibis.selectors.across" class="level1">
+<h1>across</h1>
+<p><code>across(selector, func, names=None)</code></p>
+<p>Apply data transformations across multiple columns.</p>
+<section id="parameters-6" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-6">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>selector</code></td>
+<td><code>Selector</code> | <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable">Iterable</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | <a href="https://docs.python.org/3/library/stdtypes.html#str">str</a></td>
+<td>An expression that selects columns on which the transformation function will be applied, an iterable of <code>str</code> column names or a single <code>str</code> column name.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>func</code></td>
+<td><code>Deferred</code> | <a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<code>ir</code>.<code>Value</code>], <code>ir</code>.<code>Value</code>] | <a href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None, <code>Deferred</code> | <a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<code>ir</code>.<code>Value</code>], <code>ir</code>.<code>Value</code>]]</td>
+<td>A function (or dictionary of functions) to use to transform the data.</td>
+<td><em>required</em></td>
+</tr>
+<tr class="odd">
+<td><code>names</code></td>
+<td><a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | <a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a>[[<a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a href="https://docs.python.org/3/library/stdtypes.html#str">str</a> | None], <a href="https://docs.python.org/3/library/stdtypes.html#str">str</a>] | None</td>
+<td>A lambda function or a format string to name the columns created by the transformation function.</td>
+<td><code>None</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns" class="level2">
+<h2 class="anchored" data-anchor-id="returns">Returns</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>Across</code></td>
+<td>An <code>Across</code> selector object</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-6" class="level2">
+<h2 class="anchored" data-anchor-id="examples-6">Examples</h2>
+<div id="a737bb6d" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">from</span> ibis <span class="im">import</span> _, selectors <span class="im">as</span> s</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t <span class="op">=</span> ibis.examples.penguins.fetch()</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> t.select(s.startswith(<span class="st">"bill"</span>)).mutate(</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>...     s.across(s.numeric(), <span class="bu">dict</span>(centered<span class="op">=</span>_ <span class="op">-</span> _.mean()), names<span class="op">=</span><span class="st">"</span><span class="sc">{fn}</span><span class="st">_</span><span class="sc">{col}</span><span class="st">"</span>)</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>... )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="12">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> centered_bill_length_mm </span>┃<span style="font-weight: bold"> centered_bill_depth_mm </span>┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>                │
+├────────────────┼───────────────┼─────────────────────────┼────────────────────────┤
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.7</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-4.82193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.54883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.5</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.4</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-4.42193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.24883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">40.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.0</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-3.62193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.84883</span> │
+│            <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │                     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │                    <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">nan</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">36.7</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.3</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-7.22193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.14883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.3</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.6</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-4.62193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.44883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38.9</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">17.8</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-5.02193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.64883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">39.2</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19.6</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-4.72193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.44883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">34.1</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">18.1</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-9.82193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.94883</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">42.0</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.2</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.92193</span> │                <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.04883</span> │
+│              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                       <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                      <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└────────────────┴───────────────┴─────────────────────────┴────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="ibis.selectors.if_any" class="level1">
+<h1>if_any</h1>
+<p><code>if_any(selector, predicate)</code></p>
+<p>Return the <strong>disjunction</strong> of <code>predicate</code> applied on all <code>selector</code> columns.</p>
+<section id="parameters-7" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-7">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>selector</code></td>
+<td><code>Selector</code></td>
+<td>A column selector</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>predicate</code></td>
+<td><code>Deferred</code> | <a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></td>
+<td>A callable or deferred object defining a predicate to apply to each column from <code>selector</code>.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-7" class="level2">
+<h2 class="anchored" data-anchor-id="examples-7">Examples</h2>
+<div id="faaba8be" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">from</span> ibis <span class="im">import</span> selectors <span class="im">as</span> s, _</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> penguins <span class="op">=</span> ibis.examples.penguins.fetch()</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> cols <span class="op">=</span> s.across(s.endswith(<span class="st">"_mm"</span>), (_ <span class="op">-</span> _.mean()) <span class="op">/</span> _.std())</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> penguins.mutate(cols).<span class="bu">filter</span>(s.if_any(s.endswith(<span class="st">"_mm"</span>), _.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">2</span>))</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr_by_hand <span class="op">=</span> penguins.mutate(cols).<span class="bu">filter</span>(</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>...     (_.bill_length_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">2</span>)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>...     <span class="op">|</span> (_.bill_depth_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">2</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>...     <span class="op">|</span> (_.flipper_length_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">2</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>... )</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.equals(expr_by_hand)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="13">
+<pre><code>True</code></pre>
+</div>
+</div>
+<div id="e7f1e263" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="14">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>           │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.103002</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.733662</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-2.056307</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3150</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.113285</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.431017</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5700</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.871660</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.076550</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6050</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.900890</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.734846</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.139483</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5650</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.076652</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.177826</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5700</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.856855</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.582932</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5800</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.497929</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.076550</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5550</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.388031</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.431017</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5500</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.047422</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.582932</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.068368</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5850</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream </span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-2.165354</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.836123</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-0.918466</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3050</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │                 <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>      │     <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└─────────┴────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="ibis.selectors.if_all" class="level1">
+<h1>if_all</h1>
+<p><code>if_all(selector, predicate)</code></p>
+<p>Return the <strong>conjunction</strong> of <code>predicate</code> applied on all <code>selector</code> columns.</p>
+<section id="parameters-8" class="level2">
+<h2 class="anchored" data-anchor-id="parameters-8">Parameters</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>selector</code></td>
+<td><code>Selector</code></td>
+<td>A column selector</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>predicate</code></td>
+<td><code>Deferred</code> | <a href="https://docs.python.org/3/library/typing.html#typing.Callable">Callable</a></td>
+<td>A callable or deferred object defining a predicate to apply to each column from <code>selector</code>.</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="examples-8" class="level2">
+<h2 class="anchored" data-anchor-id="examples-8">Examples</h2>
+<div id="d2511627" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> ibis</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">from</span> ibis <span class="im">import</span> selectors <span class="im">as</span> s, _</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> penguins <span class="op">=</span> ibis.examples.penguins.fetch()</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> cols <span class="op">=</span> s.across(s.endswith(<span class="st">"_mm"</span>), (_ <span class="op">-</span> _.mean()) <span class="op">/</span> _.std())</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr <span class="op">=</span> penguins.mutate(cols).<span class="bu">filter</span>(s.if_all(s.endswith(<span class="st">"_mm"</span>), _.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">1</span>))</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr_by_hand <span class="op">=</span> penguins.mutate(cols).<span class="bu">filter</span>(</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>...     (_.bill_length_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>...     <span class="op">&amp;</span> (_.bill_depth_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>...     <span class="op">&amp;</span> (_.flipper_length_mm.<span class="bu">abs</span>() <span class="op">&gt;</span> <span class="dv">1</span>)</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>... )</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr.equals(expr_by_hand)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<pre><code>True</code></pre>
+</div>
+</div>
+<div id="43329d86" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> expr</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="16">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━┓
+┃<span style="font-weight: bold"> species </span>┃<span style="font-weight: bold"> island    </span>┃<span style="font-weight: bold"> bill_length_mm </span>┃<span style="font-weight: bold"> bill_depth_mm </span>┃<span style="font-weight: bold"> flipper_length_mm </span>┃<span style="font-weight: bold"> body_mass_g </span>┃<span style="font-weight: bold"> sex    </span>┃<span style="font-weight: bold"> year  </span>┃
+┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float64</span>           │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span> │
+├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼─────────────┼────────┼───────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Dream    </span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.157951</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.088129</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.416272</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3300</span> │ <span style="color: #008000; text-decoration-color: #008000">female</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Adelie </span> │ <span style="color: #008000; text-decoration-color: #008000">Torgersen</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.231217</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.138768</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.202926</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3900</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.149917</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.443781</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.214987</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5700</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2007</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.040019</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.089314</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.072757</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4750</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.131601</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.089314</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.712792</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5000</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.241499</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.089314</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.570562</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5550</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2008</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Gentoo </span> │ <span style="color: #008000; text-decoration-color: #008000">Biscoe   </span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.351398</span> │     <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1.494420</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.214987</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5300</span> │ <span style="color: #008000; text-decoration-color: #008000">male  </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2009</span> │
+└─────────┴───────────┴────────────────┴───────────────┴───────────────────┴─────────────┴────────┴───────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="ibis.selectors.r" class="level1">
+<h1>r</h1>
+<p><code>r</code></p>
+<p>Ranges of columns.</p>
+</section>
+<section id="ibis.selectors.first" class="level1">
+<h1>first</h1>
+<p><code>first()</code></p>
+<p>Return the first column of a table.</p>
+</section>
+<section id="ibis.selectors.last" class="level1">
+<h1>last</h1>
+<p><code>last()</code></p>
+<p>Return the last column of a table.</p>
+</section>
+<section id="ibis.selectors.all" class="level1">
+<h1>all</h1>
+<p><code>all()</code></p>
+<p>Return every column from a table.</p>
+
+
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        for (let i = 0; i < 2; i++) {
+          container.appendChild(note.children[i].cloneNode(true));
+        }
+        return container.innerHTML
+      } else {
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        console.log("RESIZE");
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

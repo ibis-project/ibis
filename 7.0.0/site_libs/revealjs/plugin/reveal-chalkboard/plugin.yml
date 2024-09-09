@@ -1,0 +1,7 @@
+name: RevealChalkboard
+script: plugin.js
+stylesheet: ["font-awesome/css/all.css", "style.css"]
+self-contained: false
+config:
+  chalkboard:
+    buttons: true

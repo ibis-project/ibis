@@ -1,0 +1,1718 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.339">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Phillip Cloud">
+<meta name="dcterms.date" content="2023-09-12">
+
+<title>Ibis - Working with arrays in Google BigQuery</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "keyboard-shortcut": [
+    null
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta name="twitter:title" content="Ibis - Working with arrays in Google BigQuery">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/backend.html">
+ <span class="dropdown-text">Backend</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/05_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Working with arrays in Google BigQuery</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">blog</div>
+                <div class="quarto-category">bigquery</div>
+                <div class="quarto-category">arrays</div>
+                <div class="quarto-category">cloud</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Phillip Cloud </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">September 12, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#basics" id="toc-basics" class="nav-link" data-scroll-target="#basics">Basics</a>
+  <ul class="collapse">
+  <li><a href="#splitting-strings-into-arrays" id="toc-splitting-strings-into-arrays" class="nav-link" data-scroll-target="#splitting-strings-into-arrays">Splitting strings into arrays</a></li>
+  <li><a href="#array-length" id="toc-array-length" class="nav-link" data-scroll-target="#array-length">Array length</a></li>
+  <li><a href="#index" id="toc-index" class="nav-link" data-scroll-target="#index">Index</a></li>
+  <li><a href="#containment" id="toc-containment" class="nav-link" data-scroll-target="#containment">Containment</a></li>
+  <li><a href="#element-removal" id="toc-element-removal" class="nav-link" data-scroll-target="#element-removal">Element removal</a></li>
+  <li><a href="#slicing-with-square-bracket-syntax" id="toc-slicing-with-square-bracket-syntax" class="nav-link" data-scroll-target="#slicing-with-square-bracket-syntax">Slicing with square-bracket syntax</a></li>
+  </ul></li>
+  <li><a href="#set-operations-and-sorting" id="toc-set-operations-and-sorting" class="nav-link" data-scroll-target="#set-operations-and-sorting">Set operations and sorting</a>
+  <ul class="collapse">
+  <li><a href="#intersection" id="toc-intersection" class="nav-link" data-scroll-target="#intersection">Intersection</a></li>
+  </ul></li>
+  <li><a href="#advanced-operations" id="toc-advanced-operations" class="nav-link" data-scroll-target="#advanced-operations">Advanced operations</a>
+  <ul class="collapse">
+  <li><a href="#flatten-arrays-into-rows" id="toc-flatten-arrays-into-rows" class="nav-link" data-scroll-target="#flatten-arrays-into-rows">Flatten arrays into rows</a></li>
+  <li><a href="#filtering-array-elements" id="toc-filtering-array-elements" class="nav-link" data-scroll-target="#filtering-array-elements">Filtering array elements</a></li>
+  <li><a href="#applying-a-function-to-array-elements" id="toc-applying-a-function-to-array-elements" class="nav-link" data-scroll-target="#applying-a-function-to-array-elements">Applying a function to array elements</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/master/docs/posts/bigquery-arrays/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level2">
+<h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
+<p>Ibis and BigQuery have <a href="https://cloud.google.com/blog/products/data-analytics/ibis-and-bigquery-scalable-analytics-comfort-python">worked well together for years</a>.</p>
+<p>In Ibis 7.0.0, they work even better together with the addition of array functionality for BigQuery.</p>
+<p>Let’s look at some examples using BigQuery’s <a href="https://developer.imdb.com/non-commercial-datasets/">IMDB sample data</a>.</p>
+</section>
+<section id="basics" class="level2">
+<h2 class="anchored" data-anchor-id="basics">Basics</h2>
+<p>First we’ll connect to BigQuery and pluck out a table to work with.</p>
+<p>We’ll start with <code>from ibis.interactive import *</code> for maximum convenience.</p>
+<div id="b789e16f" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="annotated-cell-1"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="1">1</button><span id="annotated-cell-1-1" class="code-annotation-target"><a href="#annotated-cell-1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis.interactive <span class="im">import</span> <span class="op">*</span></span>
+<span id="annotated-cell-1-2"><a href="#annotated-cell-1-2" aria-hidden="true" tabindex="-1"></a></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="2">2</button><span id="annotated-cell-1-3" class="code-annotation-target"><a href="#annotated-cell-1-3" aria-hidden="true" tabindex="-1"></a>con <span class="op">=</span> ibis.<span class="ex">connect</span>(<span class="st">"bigquery://ibis-gbq"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-1" data-target-annotation="3">3</button><span id="annotated-cell-1-4" class="code-annotation-target"><a href="#annotated-cell-1-4" aria-hidden="true" tabindex="-1"></a>con.set_database(<span class="st">"bigquery-public-data.imdb"</span>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-1" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="1" data-code-annotation="1"><code>from ibis.interactive import *</code> imports Ibis APIs into the global namespace and enables <a href="../../how-to/configure/basics.html#interactive-mode">interactive mode</a>.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="3" data-code-annotation="2">Connect to Google BigQuery. Compute (but not storage) is billed to the project you connect to–<code>ibis-gbq</code> in this case.</span>
+</dd>
+<dt data-target-cell="annotated-cell-1" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-1" data-code-lines="4" data-code-annotation="3">Set the database to the project and dataset that we will use for analysis.</span>
+</dd>
+</dl>
+</div>
+</div>
+<p>Let’s look at the tables in this dataset:</p>
+<div id="df3b7c1a" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>con.tables</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="157">
+<pre><code>Tables
+------
+- name_basics
+- reviews
+- title_akas
+- title_basics
+- title_crew
+- title_episode
+- title_principals
+- title_ratings</code></pre>
+</div>
+</div>
+<p>Let’s pull out the <code>name_basics</code> table, which contains names and metadata about people listed on IMDB. We’ll call this <code>ents</code> (short for <code>entities</code>), and remove some columns we won’t need:</p>
+<div id="52171a11" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ents <span class="op">=</span> con.tables.name_basics.drop(<span class="st">"birth_year"</span>, <span class="st">"death_year"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ents</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="158">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst    </span>┃<span style="font-weight: bold"> primary_name      </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles    </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>              │
+├───────────┼───────────────────┼────────────────────┼─────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm7195872</span> │ <span style="color: #008000; text-decoration-color: #008000">Amanda Goetz     </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4529508          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7204100</span> │ <span style="color: #008000; text-decoration-color: #008000">Overload         </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4828308,tt4538296</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7206569</span> │ <span style="color: #008000; text-decoration-color: #008000">Carl Winter      </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>                │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7208626</span> │ <span style="color: #008000; text-decoration-color: #008000">Doug Goodin      </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>                │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7222505</span> │ <span style="color: #008000; text-decoration-color: #008000">Rickard Finndahl </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4519546          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7226759</span> │ <span style="color: #008000; text-decoration-color: #008000">Kenneth Bell     </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt3545908          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7227158</span> │ <span style="color: #008000; text-decoration-color: #008000">Savannah Gardner </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4028790          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7246216</span> │ <span style="color: #008000; text-decoration-color: #008000">Elisabeth Hofmann</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4586074          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7253303</span> │ <span style="color: #008000; text-decoration-color: #008000">Wisda Febriyanti </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt4594232          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7255948</span> │ <span style="color: #008000; text-decoration-color: #008000">Charles Myers    </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="color: #008000; text-decoration-color: #008000">tt2396758          </span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │
+└───────────┴───────────────────┴────────────────────┴─────────────────────┘
+</pre>
+</div>
+</div>
+<section id="splitting-strings-into-arrays" class="level3">
+<h3 class="anchored" data-anchor-id="splitting-strings-into-arrays">Splitting strings into arrays</h3>
+<p>We can see that <code>known_for_titles</code> looks sort of like an array, so let’s call the <a href="../../reference/expression-strings.html#ibis.expr.types.strings.StringValue.split"><code>split</code></a> method on that column and replace the existing column:</p>
+<div id="269b9de2" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ents <span class="op">=</span> ents.mutate(known_for_titles<span class="op">=</span>_.known_for_titles.split(<span class="st">","</span>))</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>ents</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="159">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst    </span>┃<span style="font-weight: bold"> primary_name      </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles           </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>              │
+├───────────┼───────────────────┼────────────────────┼────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm7195872</span> │ <span style="color: #008000; text-decoration-color: #008000">Amanda Goetz     </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4529508'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7204100</span> │ <span style="color: #008000; text-decoration-color: #008000">Overload         </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4828308'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt4538296'</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7206569</span> │ <span style="color: #008000; text-decoration-color: #008000">Carl Winter      </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[]</span>                         │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7208626</span> │ <span style="color: #008000; text-decoration-color: #008000">Doug Goodin      </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[]</span>                         │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7222505</span> │ <span style="color: #008000; text-decoration-color: #008000">Rickard Finndahl </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4519546'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7226759</span> │ <span style="color: #008000; text-decoration-color: #008000">Kenneth Bell     </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt3545908'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7227158</span> │ <span style="color: #008000; text-decoration-color: #008000">Savannah Gardner </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4028790'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7246216</span> │ <span style="color: #008000; text-decoration-color: #008000">Elisabeth Hofmann</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4586074'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7253303</span> │ <span style="color: #008000; text-decoration-color: #008000">Wisda Febriyanti </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4594232'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7255948</span> │ <span style="color: #008000; text-decoration-color: #008000">Charles Myers    </span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">NULL</span>               │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt2396758'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                          │
+└───────────┴───────────────────┴────────────────────┴────────────────────────────┘
+</pre>
+</div>
+</div>
+<p>Similarly for <code>primary_profession</code>, since people involved in show business often have more than one responsibility on a project:</p>
+<div id="4afaa049" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>ents <span class="op">=</span> ents.mutate(primary_profession<span class="op">=</span>_.primary_profession.split(<span class="st">","</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="array-length" class="level3">
+<h3 class="anchored" data-anchor-id="array-length">Array length</h3>
+<p>Let’s see how many titles each entity is known for, and then show the five people with the largest number of titles they’re known for:</p>
+<p>This is computed using the <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.length"><code>length</code></a> API on array expressions:</p>
+<div id="045dab82" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    ents.select(<span class="st">"primary_name"</span>, num_titles<span class="op">=</span>_.known_for_titles.length())</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    .order_by(_.num_titles.desc())</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    .limit(<span class="dv">5</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="161">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> primary_name     </span>┃<span style="font-weight: bold"> num_titles </span>┃
+┡━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>           │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>      │
+├──────────────────┼────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Sally Sun       </span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Matthew Kavuma  </span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Henry Townsend  </span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Alex Koenigsmark</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Carrie Schnelker</span> │          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5</span> │
+└──────────────────┴────────────┘
+</pre>
+</div>
+</div>
+<p>It seems like the length of the <code>known_for_titles</code> might be capped at five!</p>
+</section>
+<section id="index" class="level3">
+<h3 class="anchored" data-anchor-id="index">Index</h3>
+<p>We can see the position of <code>"actor"</code> in <code>primary_profession</code>s:</p>
+<div id="e33090eb" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>ents.primary_profession.index(<span class="st">"actor"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="162">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> ArrayPosition(primary_profession, 'actor') </span>┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>                                      │
+├────────────────────────────────────────────┤
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">-1</span> │
+│                                          <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└────────────────────────────────────────────┘
+</pre>
+</div>
+</div>
+<p>A return value of <code>-1</code> indicates that <code>"actor"</code> is not present in the value:</p>
+<p>Let’s look for entities that are not primarily actors:</p>
+<p>We can do this using the <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.index"><code>index</code></a> method by checking whether the position of the string <code>"actor"</code> is greater than zero:</p>
+<div id="d1804a34" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="annotated-cell-8"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-8-1"><a href="#annotated-cell-8-1" aria-hidden="true" tabindex="-1"></a>actor_index <span class="op">=</span> ents.primary_profession.index(<span class="st">"actor"</span>)</span>
+<span id="annotated-cell-8-2"><a href="#annotated-cell-8-2" aria-hidden="true" tabindex="-1"></a>not_primarily_actors <span class="op">=</span> actor_index <span class="op">&gt;</span> <span class="dv">0</span></span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-8" data-target-annotation="1">1</button><span id="annotated-cell-8-3" class="code-annotation-target"><a href="#annotated-cell-8-3" aria-hidden="true" tabindex="-1"></a>not_primarily_actors.mean()</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-8" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-8" data-code-lines="3" data-code-annotation="1">The average of a <code>bool</code> column gives the percentage of <code>True</code> values</span>
+</dd>
+</dl>
+</div>
+<div class="cell-output cell-output-display">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace"></pre>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="163">
+<div class="ansi-escaped-output">
+<pre><span class="ansi-cyan-fg ansi-bold">0.019474437073314168</span></pre>
+</div>
+</div>
+</div>
+<p>Who are they?</p>
+<div id="4d48ad50" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ents[not_primarily_actors]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="164">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst     </span>┃<span style="font-weight: bold"> primary_name       </span>┃<span style="font-weight: bold"> primary_profession  </span>┃<span style="font-weight: bold"> known_for_titles                    </span>┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>                       │
+├────────────┼────────────────────┼─────────────────────┼─────────────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm2231782 </span> │ <span style="color: #008000; text-decoration-color: #008000">Rene Tovar        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>  │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt21996928'</span><span style="font-weight: bold">]</span>                      │
+│ <span style="color: #008000; text-decoration-color: #008000">nm2250015 </span> │ <span style="color: #008000; text-decoration-color: #008000">Stephen Clark     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>  │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt1452628'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt14372154'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm0352162 </span> │ <span style="color: #008000; text-decoration-color: #008000">Brett Haber       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>  │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt1720280'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt10928526'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm12169237</span> │ <span style="color: #008000; text-decoration-color: #008000">Endi Ndini        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4557810'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt14137514'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm14475156</span> │ <span style="color: #008000; text-decoration-color: #008000">Colby White       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt26313337'</span><span style="font-weight: bold">]</span>                      │
+│ <span style="color: #008000; text-decoration-color: #008000">nm8979480 </span> │ <span style="color: #008000; text-decoration-color: #008000">Bartosz Strusewicz</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt6685946'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt7334964'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span>  │
+│ <span style="color: #008000; text-decoration-color: #008000">nm3116354 </span> │ <span style="color: #008000; text-decoration-color: #008000">Robert Marquis    </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt8376014'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt1283513'</span><span style="font-weight: bold">]</span>          │
+│ <span style="color: #008000; text-decoration-color: #008000">nm9962305 </span> │ <span style="color: #008000; text-decoration-color: #008000">Vino Domi         </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt8680966'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt8669176'</span><span style="font-weight: bold">]</span>          │
+│ <span style="color: #008000; text-decoration-color: #008000">nm10346617</span> │ <span style="color: #008000; text-decoration-color: #008000">Lucas Oliveira    </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt9483226'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt7216954'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span><span style="font-weight: bold">]</span>  │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7206820 </span> │ <span style="color: #008000; text-decoration-color: #008000">Prince Sethi      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span>, <span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt14396686'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt4219300'</span><span style="font-weight: bold">]</span>         │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                                   │
+└────────────┴────────────────────┴─────────────────────┴─────────────────────────────────────┘
+</pre>
+</div>
+</div>
+<p>It’s not 100% clear whether the order of elements in <code>primary_profession</code> matters here.</p>
+</section>
+<section id="containment" class="level3">
+<h3 class="anchored" data-anchor-id="containment">Containment</h3>
+<p>We can get people who are <strong>not</strong> actors using <code>contains</code>:</p>
+<div id="327da073" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>non_actors <span class="op">=</span> ents[<span class="op">~</span>ents.primary_profession.contains(<span class="st">"actor"</span>)]</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>non_actors</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="165">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst     </span>┃<span style="font-weight: bold"> primary_name          </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles </span>┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>                │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>    │
+├────────────┼───────────────────────┼────────────────────┼──────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm13613518</span> │ <span style="color: #008000; text-decoration-color: #008000">Silvia Vannini       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm11482673</span> │ <span style="color: #008000; text-decoration-color: #008000">Umit Yildirim        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm14796117</span> │ <span style="color: #008000; text-decoration-color: #008000">Kendall Jackson      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm3922637 </span> │ <span style="color: #008000; text-decoration-color: #008000">Michael J. Douglas   </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm5249145 </span> │ <span style="color: #008000; text-decoration-color: #008000">Christopher Addy     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm9235293 </span> │ <span style="color: #008000; text-decoration-color: #008000">Baolu Lan            </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm14560328</span> │ <span style="color: #008000; text-decoration-color: #008000">Jean Paul S Voilleque</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm11250663</span> │ <span style="color: #008000; text-decoration-color: #008000">Kelly D. Shapiro     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm11355058</span> │ <span style="color: #008000; text-decoration-color: #008000">Sameer Oberoi        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm8655635 </span> │ <span style="color: #008000; text-decoration-color: #008000">James Madison        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                │
+└────────────┴───────────────────────┴────────────────────┴──────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="element-removal" class="level3">
+<h3 class="anchored" data-anchor-id="element-removal">Element removal</h3>
+<p>We can remove elements from arrays too.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.remove"><code>remove()</code></a> does not mutate the underlying data
+</div>
+</div>
+<div class="callout-body-container callout-body">
+
+</div>
+</div>
+<p>Let’s see who only has “actor” in the list of their primary professions:</p>
+<div id="11189ac7" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>ents.<span class="bu">filter</span>(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        _.primary_profession.length() <span class="op">&gt;</span> <span class="dv">0</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        _.primary_profession.remove(<span class="st">"actor"</span>).length() <span class="op">==</span> <span class="dv">0</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="166">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst    </span>┃<span style="font-weight: bold"> primary_name       </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles                    </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>                       │
+├───────────┼────────────────────┼────────────────────┼─────────────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm7217990</span> │ <span style="color: #008000; text-decoration-color: #008000">Jay Isbell        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4450682'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7218053</span> │ <span style="color: #008000; text-decoration-color: #008000">Eric Crowell      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4500196'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7218081</span> │ <span style="color: #008000; text-decoration-color: #008000">John Wyman        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4500196'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7223556</span> │ <span style="color: #008000; text-decoration-color: #008000">Daniel Hope       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4558584'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt9089514'</span><span style="font-weight: bold">]</span>          │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7223623</span> │ <span style="color: #008000; text-decoration-color: #008000">Marcus Troy       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0120660'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt10914400'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7241836</span> │ <span style="color: #008000; text-decoration-color: #008000">Havár Csongor     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4580414'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7242608</span> │ <span style="color: #008000; text-decoration-color: #008000">Seigô Uetaki      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4581192'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7245253</span> │ <span style="color: #008000; text-decoration-color: #008000">Mahmoud El Faituri</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt2849138'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7254729</span> │ <span style="color: #008000; text-decoration-color: #008000">Tom Keesey        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0924155'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt0924156'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span>  │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7280985</span> │ <span style="color: #008000; text-decoration-color: #008000">Gabriel Garcia    </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4629714'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                                   │
+└───────────┴────────────────────┴────────────────────┴─────────────────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="slicing-with-square-bracket-syntax" class="level3">
+<h3 class="anchored" data-anchor-id="slicing-with-square-bracket-syntax">Slicing with square-bracket syntax</h3>
+<p>Let’s remove everyone’s first profession from the list, but only if they have more than one profession listed:</p>
+<div id="363b1821" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>ents[_.primary_profession.length() <span class="op">&gt;</span> <span class="dv">1</span>].mutate(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    primary_profession<span class="op">=</span>_.primary_profession[<span class="dv">1</span>:],</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="167">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst     </span>┃<span style="font-weight: bold"> primary_name           </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles           </span>┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>              │
+├────────────┼────────────────────────┼────────────────────┼────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm3146692 </span> │ <span style="color: #008000; text-decoration-color: #008000">Keith Sutton          </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0472984'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm2974992 </span> │ <span style="color: #008000; text-decoration-color: #008000">Dávid Farkas          </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0114301'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm6819046 </span> │ <span style="color: #008000; text-decoration-color: #008000">Walter Batt           </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt8592196'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm2231544 </span> │ <span style="color: #008000; text-decoration-color: #008000">Don Steele            </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0818746'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7267327 </span> │ <span style="color: #008000; text-decoration-color: #008000">Navarro Gray          </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'actor'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt1718437'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt7945012'</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7783929 </span> │ <span style="color: #008000; text-decoration-color: #008000">Christopher T. Connell</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span><span style="font-weight: bold">]</span>         │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt7510258'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt5262988'</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">nm6894982 </span> │ <span style="color: #008000; text-decoration-color: #008000">Jason Robert Moore    </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span><span style="font-weight: bold">]</span>         │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4177962'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm10526935</span> │ <span style="color: #008000; text-decoration-color: #008000">Damien Mota           </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span><span style="font-weight: bold">]</span>         │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt9889740'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7151380 </span> │ <span style="color: #008000; text-decoration-color: #008000">Chris Villa           </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span><span style="font-weight: bold">]</span>         │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4479468'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7641135 </span> │ <span style="color: #008000; text-decoration-color: #008000">Curt Champagne        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'editor'</span><span style="font-weight: bold">]</span>         │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt5097098'</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                          │
+└────────────┴────────────────────────┴────────────────────┴────────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="set-operations-and-sorting" class="level2">
+<h2 class="anchored" data-anchor-id="set-operations-and-sorting">Set operations and sorting</h2>
+<p>Treating arrays as sets is possible with the <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.union"><code>union</code></a> and <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.intersect"><code>intersect</code></a> APIs.</p>
+<p>Let’s take a look at <code>intersect</code>:</p>
+<section id="intersection" class="level3">
+<h3 class="anchored" data-anchor-id="intersection">Intersection</h3>
+<p>Let’s see if we can use array intersection to figure which actors share known-for titles and sort the result:</p>
+<div id="11583fdc" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>left <span class="op">=</span> ents.<span class="bu">filter</span>(_.known_for_titles.length() <span class="op">&gt;</span> <span class="dv">0</span>).limit(<span class="dv">10_000</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>right <span class="op">=</span> left.view()</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>shared_titles <span class="op">=</span> (</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    left</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    .join(right, left.nconst <span class="op">!=</span> right.nconst)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>    .select(</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>        s.startswith(<span class="st">"known_for_titles"</span>),</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        left_name<span class="op">=</span><span class="st">"primary_name"</span>,</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        right_name<span class="op">=</span><span class="st">"primary_name_right"</span>,</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    .<span class="bu">filter</span>(_.known_for_titles.intersect(_.known_for_titles_right).length() <span class="op">&gt;</span> <span class="dv">0</span>)</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    .group_by(name<span class="op">=</span><span class="st">"left_name"</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    .agg(together_with<span class="op">=</span>_.right_name.collect())</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    .mutate(together_with<span class="op">=</span>_.together_with.unique().sort())</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>shared_titles</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="168">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> name                  </span>┃<span style="font-weight: bold"> together_with                                       </span>┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>                │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>                                       │
+├───────────────────────┼─────────────────────────────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">Chief Willie Sellars </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Amy Tan'</span>, <span style="color: #008000; text-decoration-color: #008000">'Bruce Williams'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">13</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">Rainer Spanagel      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Andra Arnicane'</span>, <span style="color: #008000; text-decoration-color: #008000">'Aziz Sheikh'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9</span><span style="font-weight: bold">]</span>           │
+│ <span style="color: #008000; text-decoration-color: #008000">Sam Cooper           </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Amy Tan'</span>, <span style="color: #008000; text-decoration-color: #008000">'Bruce Williams'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">10</span><span style="font-weight: bold">]</span>              │
+│ <span style="color: #008000; text-decoration-color: #008000">Michelle Porter      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Amy Tan'</span>, <span style="color: #008000; text-decoration-color: #008000">'Bruce Williams'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">8</span><span style="font-weight: bold">]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">Bryan Carter         </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Andrew Bower'</span>, <span style="color: #008000; text-decoration-color: #008000">'Austin Murtha'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11</span><span style="font-weight: bold">]</span>          │
+│ <span style="color: #008000; text-decoration-color: #008000">Timothy Johnson      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Betsy Blaney'</span>, <span style="color: #008000; text-decoration-color: #008000">'Brendan Halko'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">19</span><span style="font-weight: bold">]</span>          │
+│ <span style="color: #008000; text-decoration-color: #008000">Colin McLean         </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Alison Garnham'</span>, <span style="color: #008000; text-decoration-color: #008000">'Ashley Fox'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20</span><span style="font-weight: bold">]</span>           │
+│ <span style="color: #008000; text-decoration-color: #008000">Jessica Williams     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Austin Williams'</span><span style="font-weight: bold">]</span>                                 │
+│ <span style="color: #008000; text-decoration-color: #008000">Leighann Falcon      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Aaron Green'</span>, <span style="color: #008000; text-decoration-color: #008000">'Alejandro Garza y Garza'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">71</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">Oldham Tuneless Choir</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'Alex Matvienko'</span>, <span style="color: #008000; text-decoration-color: #008000">'Andy McDonald'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">38</span><span style="font-weight: bold">]</span>        │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                                                   │
+└───────────────────────┴─────────────────────────────────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="advanced-operations" class="level2">
+<h2 class="anchored" data-anchor-id="advanced-operations">Advanced operations</h2>
+<section id="flatten-arrays-into-rows" class="level3">
+<h3 class="anchored" data-anchor-id="flatten-arrays-into-rows">Flatten arrays into rows</h3>
+<p>Thanks to the <a href="https://github.com/tobymao/sqlglot/commit/06e0869e7aa5714d77e6ec763da38d6a422965fa">tireless efforts</a> of the <a href="https://github.com/tobymao/sqlglot/graphs/contributors">folks</a> working on <a href="https://github.com/tobymao/sqlglot"><code>sqlglot</code></a>, as of version 7.0.0 Ibis supports <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.unnest"><code>unnest</code></a> for BigQuery!</p>
+<p>You can use it standalone on a column expression:</p>
+<div id="e28c4519" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>ents.primary_profession.unnest()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="169">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> primary_profession </span>┃
+┡━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │
+├────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │
+└────────────────────┘
+</pre>
+</div>
+</div>
+<p>You can also use it in <code>select</code>/<code>mutate</code> calls to expand the table accordingly:</p>
+<div id="99e2daa3" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>ents.mutate(primary_profession<span class="op">=</span>_.primary_profession.unnest())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="170">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst    </span>┃<span style="font-weight: bold"> primary_name       </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>    │
+├───────────┼────────────────────┼────────────────────┼──────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm7211030</span> │ <span style="color: #008000; text-decoration-color: #008000">Josh Berry        </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4046896'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7211205</span> │ <span style="color: #008000; text-decoration-color: #008000">Alan Douglas      </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0038449'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7213536</span> │ <span style="color: #008000; text-decoration-color: #008000">Wilson Recalde    </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt2333598'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7214355</span> │ <span style="color: #008000; text-decoration-color: #008000">Julian Owen       </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt3488298'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7215983</span> │ <span style="color: #008000; text-decoration-color: #008000">Zach Ladouceur    </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4546288'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7221941</span> │ <span style="color: #008000; text-decoration-color: #008000">Alain Milani      </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4548654'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7225536</span> │ <span style="color: #008000; text-decoration-color: #008000">Gary Flanzer      </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4521030'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7236543</span> │ <span style="color: #008000; text-decoration-color: #008000">Bastiaan Schreuder</span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4506254'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7241255</span> │ <span style="color: #008000; text-decoration-color: #008000">Jared Young       </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4579992'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7241835</span> │ <span style="color: #008000; text-decoration-color: #008000">Fagyas Alex       </span> │ <span style="color: #008000; text-decoration-color: #008000">actor             </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4580414'</span><span style="font-weight: bold">]</span>    │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                │
+└───────────┴────────────────────┴────────────────────┴──────────────────┘
+</pre>
+</div>
+</div>
+<p>Unnesting can be useful when joining nested data.</p>
+<p>Here we use unnest to find people known for any of the godfather movies:</p>
+<div id="d3d9d571" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="annotated-cell-16"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="1">1</button><span id="annotated-cell-16-1" class="code-annotation-target"><a href="#annotated-cell-16-1" aria-hidden="true" tabindex="-1"></a>basics <span class="op">=</span> con.tables.title_basics.<span class="bu">filter</span>(</span>
+<span id="annotated-cell-16-2"><a href="#annotated-cell-16-2" aria-hidden="true" tabindex="-1"></a>    [</span>
+<span id="annotated-cell-16-3"><a href="#annotated-cell-16-3" aria-hidden="true" tabindex="-1"></a>        _.title_type <span class="op">==</span> <span class="st">"movie"</span>,</span>
+<span id="annotated-cell-16-4"><a href="#annotated-cell-16-4" aria-hidden="true" tabindex="-1"></a>        _.original_title.lower().startswith(<span class="st">"the godfather"</span>),</span>
+<span id="annotated-cell-16-5"><a href="#annotated-cell-16-5" aria-hidden="true" tabindex="-1"></a>        _.genres.lower().contains(<span class="st">"crime"</span>),</span>
+<span id="annotated-cell-16-6"><a href="#annotated-cell-16-6" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="annotated-cell-16-7"><a href="#annotated-cell-16-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="annotated-cell-16-8"><a href="#annotated-cell-16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="annotated-cell-16-9"><a href="#annotated-cell-16-9" aria-hidden="true" tabindex="-1"></a>known_for_the_godfather <span class="op">=</span> (</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="2">2</button><span id="annotated-cell-16-10" class="code-annotation-target"><a href="#annotated-cell-16-10" aria-hidden="true" tabindex="-1"></a>    ents.mutate(tconst<span class="op">=</span>_.known_for_titles.unnest())</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="3">3</button><span id="annotated-cell-16-11" class="code-annotation-target"><a href="#annotated-cell-16-11" aria-hidden="true" tabindex="-1"></a>    .join(basics, <span class="st">"tconst"</span>)</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-16" data-target-annotation="4">4</button><span id="annotated-cell-16-12" class="code-annotation-target"><a href="#annotated-cell-16-12" aria-hidden="true" tabindex="-1"></a>    .select(<span class="st">"primary_title"</span>, <span class="st">"primary_name"</span>)</span>
+<span id="annotated-cell-16-13"><a href="#annotated-cell-16-13" aria-hidden="true" tabindex="-1"></a>    .distinct()</span>
+<span id="annotated-cell-16-14"><a href="#annotated-cell-16-14" aria-hidden="true" tabindex="-1"></a>    .order_by([<span class="st">"primary_title"</span>, <span class="st">"primary_name"</span>])</span>
+<span id="annotated-cell-16-15"><a href="#annotated-cell-16-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="annotated-cell-16-16"><a href="#annotated-cell-16-16" aria-hidden="true" tabindex="-1"></a>known_for_the_godfather</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-16" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-16" data-code-lines="1,7" data-code-annotation="1">Filter the <code>title_basics</code> data set to only the Godfather movies</span>
+</dd>
+<dt data-target-cell="annotated-cell-16" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-16" data-code-lines="10" data-code-annotation="2">Unnest the <code>known_for_titles</code> array column</span>
+</dd>
+<dt data-target-cell="annotated-cell-16" data-target-annotation="3">3</dt>
+<dd>
+<span data-code-cell="annotated-cell-16" data-code-lines="11" data-code-annotation="3">Join with <code>basics</code> to get movie titles</span>
+</dd>
+<dt data-target-cell="annotated-cell-16" data-target-annotation="4">4</dt>
+<dd>
+<span data-code-cell="annotated-cell-16" data-code-lines="12,14" data-code-annotation="4">Ensure that each entity is only listed once and sort the results</span>
+</dd>
+</dl>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="171">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> primary_title </span>┃<span style="font-weight: bold"> primary_name        </span>┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>        │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>              │
+├───────────────┼─────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">A. Emmett Adams    </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Abe Vigoda         </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Al Lettieri        </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Al Martino         </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Al Pacino          </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Albert S. Ruddy    </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Alex Rocco         </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Andrea Eastman     </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Angelo Infanti     </span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather</span> │ <span style="color: #008000; text-decoration-color: #008000">Anna Hill Johnstone</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                   │
+└───────────────┴─────────────────────┘
+</pre>
+</div>
+</div>
+<p>Let’s summarize by showing how many people are known for each Godfather movie:</p>
+<div id="7a6153fd" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>known_for_the_godfather.primary_title.value_counts()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="172">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> primary_title          </span>┃<span style="font-weight: bold"> primary_title_count </span>┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">int64</span>               │
+├────────────────────────┼─────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather Part III</span> │                 <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">196</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather Part II </span> │                 <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">117</span> │
+│ <span style="color: #008000; text-decoration-color: #008000">The Godfather         </span> │                  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">96</span> │
+└────────────────────────┴─────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="filtering-array-elements" class="level3">
+<h3 class="anchored" data-anchor-id="filtering-array-elements">Filtering array elements</h3>
+<p>Filtering array elements can be done with the <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.filter"><code>filter</code></a> method, which applies a predicate to each array element and returns an array of elements for which the predicate returns <code>True</code>.</p>
+<p>This method is similar to Python’s <a href="https://docs.python.org/3.7/library/functions.html#filter"><code>filter</code></a> function.</p>
+<p>Let’s show all people who are neither editors nor actors:</p>
+<div id="888e227f" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="annotated-cell-18"><pre class="sourceCode python code-annotation-code code-with-copy code-annotated"><code class="sourceCode python"><span id="annotated-cell-18-1"><a href="#annotated-cell-18-1" aria-hidden="true" tabindex="-1"></a>ents.mutate(</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-18" data-target-annotation="1">1</button><span id="annotated-cell-18-2" class="code-annotation-target"><a href="#annotated-cell-18-2" aria-hidden="true" tabindex="-1"></a>    primary_profession<span class="op">=</span>_.primary_profession.<span class="bu">filter</span>(</span>
+<span id="annotated-cell-18-3"><a href="#annotated-cell-18-3" aria-hidden="true" tabindex="-1"></a>        <span class="kw">lambda</span> pp: <span class="op">~</span>pp.isin((<span class="st">"actor"</span>, <span class="st">"editor"</span>))</span>
+<span id="annotated-cell-18-4"><a href="#annotated-cell-18-4" aria-hidden="true" tabindex="-1"></a>    )</span>
+<button class="code-annotation-anchor" data-target-cell="annotated-cell-18" data-target-annotation="2">2</button><span id="annotated-cell-18-5" class="code-annotation-target"><a href="#annotated-cell-18-5" aria-hidden="true" tabindex="-1"></a>).<span class="bu">filter</span>(_.primary_profession.length() <span class="op">&gt;</span> <span class="dv">0</span>)</span><div class="code-annotation-gutter-bg"></div><div class="code-annotation-gutter"></div></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-annotation">
+<dl class="code-annotation-container-hidden code-annotation-container-grid">
+<dt data-target-cell="annotated-cell-18" data-target-annotation="1">1</dt>
+<dd>
+<span data-code-cell="annotated-cell-18" data-code-lines="2" data-code-annotation="1">This <code>filter</code> call is applied to each array element</span>
+</dd>
+<dt data-target-cell="annotated-cell-18" data-target-annotation="2">2</dt>
+<dd>
+<span data-code-cell="annotated-cell-18" data-code-lines="5" data-code-annotation="2">This <code>filter</code> call is applied to the table</span>
+</dd>
+</dl>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="173">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst     </span>┃<span style="font-weight: bold"> primary_name       </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles </span>┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>             │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>    │
+├────────────┼────────────────────┼────────────────────┼──────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm14701100</span> │ <span style="color: #008000; text-decoration-color: #008000">Karin Roach       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm3709802 </span> │ <span style="color: #008000; text-decoration-color: #008000">Kristin L. Holland</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm13336378</span> │ <span style="color: #008000; text-decoration-color: #008000">Rok Salazar       </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7514782 </span> │ <span style="color: #008000; text-decoration-color: #008000">Christopher Spicer</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm11531194</span> │ <span style="color: #008000; text-decoration-color: #008000">J Manuel          </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm9114713 </span> │ <span style="color: #008000; text-decoration-color: #008000">Huy Nguyen        </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm2230248 </span> │ <span style="color: #008000; text-decoration-color: #008000">Jeffrey Galen     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm8479496 </span> │ <span style="color: #008000; text-decoration-color: #008000">Fatima Amgane     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm2229345 </span> │ <span style="color: #008000; text-decoration-color: #008000">Harold Brown      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7383201 </span> │ <span style="color: #008000; text-decoration-color: #008000">Ashley Silver     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'legal'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[]</span>               │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>          │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                │
+└────────────┴────────────────────┴────────────────────┴──────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="applying-a-function-to-array-elements" class="level3">
+<h3 class="anchored" data-anchor-id="applying-a-function-to-array-elements">Applying a function to array elements</h3>
+<p>You can apply a function to run an ibis expression on each element of an array using the <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue.map"><code>map</code></a> method.</p>
+<p>Let’s normalize the case of primary_profession to upper case:</p>
+<div id="b979917c" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ents.mutate(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    primary_profession<span class="op">=</span>_.primary_profession.<span class="bu">map</span>(<span class="kw">lambda</span> pp: pp.upper())</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>).<span class="bu">filter</span>(_.primary_profession.length() <span class="op">&gt;</span> <span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="174">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> nconst    </span>┃<span style="font-weight: bold"> primary_name      </span>┃<span style="font-weight: bold"> primary_profession </span>┃<span style="font-weight: bold"> known_for_titles                    </span>┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>    │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>            │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>      │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">array&lt;string&gt;</span>                       │
+├───────────┼───────────────────┼────────────────────┼─────────────────────────────────────┤
+│ <span style="color: #008000; text-decoration-color: #008000">nm7199328</span> │ <span style="color: #008000; text-decoration-color: #008000">Renzo Castro     </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4623856'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt4494580'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1</span><span style="font-weight: bold">]</span>  │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7199362</span> │ <span style="color: #008000; text-decoration-color: #008000">Pankaj           </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4367318'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7200119</span> │ <span style="color: #008000; text-decoration-color: #008000">Thibault Péan    </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt4534250'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7203213</span> │ <span style="color: #008000; text-decoration-color: #008000">Tim Goodman      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt2234701'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7207130</span> │ <span style="color: #008000; text-decoration-color: #008000">Ruupertti Arponen</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0185819'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt10628202'</span><span style="font-weight: bold">]</span>         │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7223822</span> │ <span style="color: #008000; text-decoration-color: #008000">Federico Carghini</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt1556087'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7232704</span> │ <span style="color: #008000; text-decoration-color: #008000">Ned Jackson      </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0407361'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt20453990'</span><span style="font-weight: bold">]</span>         │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7238980</span> │ <span style="color: #008000; text-decoration-color: #008000">Rasmus Cassanelli</span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0782510'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7240979</span> │ <span style="color: #008000; text-decoration-color: #008000">Changyuan Zhou   </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt0311913'</span><span style="font-weight: bold">]</span>                       │
+│ <span style="color: #008000; text-decoration-color: #008000">nm7242332</span> │ <span style="color: #008000; text-decoration-color: #008000">James Dolbeare   </span> │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'ACTOR'</span><span style="font-weight: bold">]</span>          │ <span style="font-weight: bold">[</span><span style="color: #008000; text-decoration-color: #008000">'tt10151048'</span>, <span style="color: #008000; text-decoration-color: #008000">'tt5769738'</span>, <span style="color: #808000; text-decoration-color: #808000">...</span> +<span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2</span><span style="font-weight: bold">]</span> │
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                 │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                  │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>                                   │
+└───────────┴───────────────────┴────────────────────┴─────────────────────────────────────┘
+</pre>
+</div>
+</div>
+</section>
+</section>
+<section id="conclusion" class="level2">
+<h2 class="anchored" data-anchor-id="conclusion">Conclusion</h2>
+<p>Ibis has a sizable collection of array APIs that work with many different backends and as of version 7.0.0, Ibis supports a much larger set of those APIs for BigQuery!</p>
+<p>Check out <a href="../../reference/expression-collections.html#ibis.expr.types.arrays.ArrayValue">the API documentation</a> for the full set of available methods.</p>
+<p>Try it out, and let us know what you think.</p>
+
+
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        for (let i = 0; i < 2; i++) {
+          container.appendChild(note.children[i].cloneNode(true));
+        }
+        return container.innerHTML
+      } else {
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        console.log("RESIZE");
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://giscus.app/client.js" data-repo="ibis-project/ibis" data-repo-id="MDEwOlJlcG9zaXRvcnkzNDEzOTIzMA==" data-category="Q&amp;A" data-category-id="DIC_kwDOAgjsXs4CASeT" data-mapping="title" data-reactions-enabled="0" data-emit-metadata="0" data-input-position="top" data-theme="light" data-lang="en" crossorigin="anonymous" async="">
+</script>
+<input type="hidden" id="giscus-base-theme" value="light">
+<input type="hidden" id="giscus-alt-theme" value="dark">
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
