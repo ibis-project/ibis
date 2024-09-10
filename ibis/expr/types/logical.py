@@ -6,6 +6,7 @@ from public import public
 
 import ibis
 import ibis.expr.operations as ops
+from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.numeric import NumericColumn, NumericScalar, NumericValue
 
@@ -227,34 +228,16 @@ class BooleanValue(NumericValue):
         │ NULL     │
         └──────────┘
         """
-        return self.negate()
+        return ops.Not(self).to_expr()
 
     def negate(self) -> BooleanValue:
-        """Negate a boolean expression.
-
-        Returns
-        -------
-        BooleanValue
-            A boolean value expression
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"values": [True, False, False, None]})
-        >>> t.values.negate()
-        ┏━━━━━━━━━━━━━┓
-        ┃ Not(values) ┃
-        ┡━━━━━━━━━━━━━┩
-        │ boolean     │
-        ├─────────────┤
-        │ False       │
-        │ True        │
-        │ True        │
-        │ NULL        │
-        └─────────────┘
-        """
-        return ops.Not(self).to_expr()
+        """DEPRECATED."""
+        util.warn_deprecated(
+            "`-bool_val`/`bool_val.negate()`",
+            instead="use `~bool_val` instead",
+            as_of="9.5",
+        )
+        return ~self
 
 
 @public

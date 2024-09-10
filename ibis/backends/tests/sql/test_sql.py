@@ -173,7 +173,7 @@ def test_isnull_notnull(functional_alltypes, method_name, snapshot):
 
 
 def test_negate(functional_alltypes, snapshot):
-    expr = -(functional_alltypes.double_col > 0)
+    expr = ~(functional_alltypes.double_col > 0)
     snapshot.assert_match(to_sql(expr.name("tmp")), "out.sql")
 
 
@@ -319,7 +319,7 @@ def test_self_reference_in_not_exists(functional_alltypes, snapshot):
     cond = (t.string_col == t2.string_col).any()
 
     semi = t.filter(cond)
-    anti = t.filter(-cond)
+    anti = t.filter(~cond)
 
     snapshot.assert_match(to_sql(semi), "semi.sql")
     snapshot.assert_match(to_sql(anti), "anti.sql")

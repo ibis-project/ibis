@@ -673,13 +673,11 @@ def test_identical_to(con, df):
     tm.assert_series_equal(result, expected)
 
 
-@pytest.mark.parametrize("opname", ["invert", "neg"])
-def test_not_and_negate_bool(con, opname, df):
-    op = getattr(operator, opname)
+def test_invert_bool(con, df):
     t = con.table("functional_alltypes").limit(10)
-    expr = t.select(op(t.bool_col).name("bool_col"))
+    expr = t.select((~t.bool_col).name("bool_col"))
     result = expr.execute().bool_col
-    expected = op(df.head(10).bool_col)
+    expected = ~df.head(10).bool_col
     tm.assert_series_equal(result, expected)
 
 
@@ -701,14 +699,6 @@ def test_negate_non_boolean(con, field, df):
     expr = t.select((-t[field]).name(field))
     result = expr.execute()[field]
     expected = -df.head(10)[field]
-    tm.assert_series_equal(result, expected)
-
-
-def test_negate_boolean(con, df):
-    t = con.table("functional_alltypes").limit(10)
-    expr = t.select((-t.bool_col).name("bool_col"))
-    result = expr.execute().bool_col
-    expected = -df.head(10).bool_col
     tm.assert_series_equal(result, expected)
 
 
