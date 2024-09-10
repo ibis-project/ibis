@@ -67,7 +67,7 @@
       "addLabels": ["druid"]
     },
     {
-      "matchPackagePatterns": ["pymysql", "mariadb"],
+      "matchPackagePatterns": ["mysqlclient", "mariadb"],
       "addLabels": ["mysql"]
     },
     {

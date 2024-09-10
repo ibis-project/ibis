@@ -121,9 +121,9 @@ except ImportError:
     ) = PsycoPg2UndefinedObject = None
 
 try:
-    from pymysql.err import NotSupportedError as MySQLNotSupportedError
-    from pymysql.err import OperationalError as MySQLOperationalError
-    from pymysql.err import ProgrammingError as MySQLProgrammingError
+    from MySQLdb import NotSupportedError as MySQLNotSupportedError
+    from MySQLdb import OperationalError as MySQLOperationalError
+    from MySQLdb import ProgrammingError as MySQLProgrammingError
 except ImportError:
     MySQLNotSupportedError = MySQLProgrammingError = MySQLOperationalError = None
 
