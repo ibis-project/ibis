@@ -1300,7 +1300,7 @@ def test_join_key_invalid(con):
         t1.inner_join(t2, [("foo_id", "foo_id", "foo_id")])
 
     # it is working now
-    t1.inner_join(t2, [(s.c("foo_id"), s.c("foo_id"))])
+    t1.inner_join(t2, [(s.cols("foo_id"), s.cols("foo_id"))])
 
 
 def test_join_invalid_refs(con):
@@ -1908,7 +1908,7 @@ def test_pivot_longer():
         },
         name="diamonds",
     )
-    res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
+    res = diamonds.pivot_longer(s.cols("x", "y", "z"), names_to="pos", values_to="xyz")
     assert res.schema().names == (
         "carat",
         "cut",
