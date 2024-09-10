@@ -1580,7 +1580,7 @@ def test_json_to_pyarrow(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion"], raises=NotImplementedError, reason="no temp table support via sql"
+    ["datafusion"], raises=NotImplementedError, reason="no temp table support"
 )
 @pytest.mark.notyet(
     ["risingwave", "exasol"],
