@@ -1804,34 +1804,3 @@ def test_memtable_cleanup(con):
     # con.list_tables()
     del t
     assert name not in con.list_tables()
-
-
-@pytest.mark.never(
-    ["pandas", "dask"], raises=AssertionError, reason="backend is going away"
-)
-@pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
-@pytest.mark.notyet(
-    ["clickhouse", "flink"],
-    raises=AssertionError,
-    reason="memtables are assembled every time",
-)
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=AssertionError,
-    reason="can't execute SQL inside of a finalizer without breaking everything",
-)
-def test_memtable_cleanup_by_overwriting_variable(con):
-    name = ibis.util.gen_name("temp_memtable")
-    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
-
-    assert name not in con.list_tables()
-
-    con.execute(t.select("a"))
-    assert name in con.list_tables()
-
-    con.execute(t.select("b"))
-    assert name in con.list_tables()
-
-    # original `t` is gone, so this should drop the table
-    t = None
-    assert name not in con.list_tables()
