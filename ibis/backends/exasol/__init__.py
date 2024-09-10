@@ -42,7 +42,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     compiler = sc.exasol.compiler
     supports_temporary_tables = False
     supports_create_or_replace = False
-    supports_in_memory_tables = False
     supports_python_udfs = False
 
     @property
