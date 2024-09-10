@@ -331,7 +331,7 @@ class Backend(BasePandasBackend):
     def _create_cached_table(self, name, expr):
         return self.create_table(name, expr.execute())
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
+    def _finalize_memtable(self, op: ops.InMemoryTable):
         """No-op, let Python handle clean up."""
 
 

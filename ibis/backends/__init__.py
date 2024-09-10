@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import collections.abc
+import contextlib
 import functools
 import importlib.metadata
 import keyword
@@ -1116,7 +1117,9 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         for memtable in expr.op().find(ops.InMemoryTable):
             if not self._in_memory_table_exists(memtable.name):
                 self._register_in_memory_table(memtable)
-                self._register_memtable_finalizer(memtable)
+                weakref.finalize(
+                    memtable, self._finalize_in_memory_table, memtable.name
+                )
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         if self.supports_in_memory_tables:
@@ -1124,10 +1127,15 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
                 f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
             )
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable) -> None:
+    def _finalize_in_memory_table(self, name: str) -> None:
+        """Wrap `_finalize_memtable` to suppress exceptions."""
+        with contextlib.suppress(Exception):
+            self._finalize_memtable(name)
+
+    def _finalize_memtable(self, name: str) -> None:
         if self.supports_in_memory_tables:
             raise NotImplementedError(
-                f"{self.name} must implement `_register_memtable_finalizer` to support in-memory tables"
+                f"{self.name} must implement `_finalize_memtable` to support in-memory tables"
             )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:

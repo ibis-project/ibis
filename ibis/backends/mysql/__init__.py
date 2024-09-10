@@ -543,7 +543,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         df = MySQLPandasData.convert_table(df, schema)
         return df
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
+    def _finalize_memtable(self, name: str) -> None:
         """No-op.
 
         Executing **any** SQL in a finalizer causes the underlying connection

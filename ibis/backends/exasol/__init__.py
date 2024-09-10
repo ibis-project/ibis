@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import datetime
 import re
-import weakref
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
@@ -278,14 +277,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             if not df.empty:
                 self.con.ext.insert_multi(name, rows)
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
-        weakref.finalize(op, self._clean_up_tmp_table, op.name)
-
     def _clean_up_tmp_table(self, name: str) -> None:
         ident = sg.to_identifier(name, quoted=self.compiler.quoted)
         sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
         with self._safe_raw_sql(sql):
             pass
+
+    _finalize_memtable = _clean_up_tmp_table
 
     def create_table(
         self,

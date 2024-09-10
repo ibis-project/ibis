@@ -5,7 +5,6 @@ from __future__ import annotations
 import contextlib
 import re
 import warnings
-import weakref
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
@@ -521,9 +520,6 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                     insert_stmt, list(data.iloc[start:end].itertuples(index=False))
                 )
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
-        weakref.finalize(op, self._clean_up_tmp_table, op.name)
-
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")
         dialect = self.name
@@ -622,5 +618,4 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             with contextlib.suppress(oracledb.DatabaseError):
                 bind.execute(drop)
 
-    def _drop_cached_table(self, name: str) -> None:
-        self._clean_up_tmp_table(name)
+    _finalize_memtable = _drop_cached_table = _clean_up_tmp_table

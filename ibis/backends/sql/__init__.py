@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import weakref
 from functools import partial
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -620,5 +619,5 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             f"pandas UDFs are not supported in the {self.dialect} backend"
         )
 
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
-        weakref.finalize(op, self.drop_table, op.name, force=True)
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_table(name, force=True)

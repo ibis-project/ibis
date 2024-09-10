@@ -8,7 +8,6 @@ import json
 import os
 import tempfile
 import warnings
-import weakref
 from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -662,19 +661,6 @@ $$ {defn["source"]} $$"""
             # better than the other options without much loss in speed
             pq.write_table(data, path, compression="zstd")
             self.read_parquet(path, table_name=name)
-
-    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
-        def drop_table(con, sql: str):
-            if not con.is_closed():
-                with con.cursor() as cur:
-                    cur.execute(sql)
-
-        drop_stmt = sg.exp.Drop(
-            kind="TABLE",
-            this=sg.table(op.name, quoted=self.compiler.quoted),
-            exists=True,
-        )
-        weakref.finalize(op, drop_table, self.con, drop_stmt.sql(self.dialect))
 
     def create_catalog(self, name: str, force: bool = False) -> None:
         current_catalog = self.current_catalog
