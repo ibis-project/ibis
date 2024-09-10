@@ -1,0 +1,3406 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.339">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Ibis – expression-geospatial</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "keyboard-shortcut": [
+    null
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_reference.html">
+ <span class="dropdown-text">Test Class Reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../reference/expression-tables.html">Expression API</a></li><li class="breadcrumb-item"><a href="../reference/expression-geospatial.html">Geospatial expressions</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Expression API</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-tables.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Table expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/selectors.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Column selectors</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-generic.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Generic expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-numeric.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Numeric and Boolean expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-strings.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">String expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-temporal.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Temporal expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-collections.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Collection expressions</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/expression-geospatial.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Geospatial expressions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true">
+ <span class="menu-text">Type system</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/datatypes.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data types</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/schemas.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Schemas</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true">
+ <span class="menu-text">UDFs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/scalar-udfs.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Scalar UDFs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true">
+ <span class="menu-text">Connection APIs</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/connection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Top-level connection APIs</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true">
+ <span class="menu-text">Configuration</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/ContextAdjustment.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">ContextAdjustment</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Interactive.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Interactive</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Options.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Options</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/Repr.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Repr</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../reference/SQL.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">SQL</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar,#quarto-sidebar-glass"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#geospatial-expressions" id="toc-geospatial-expressions" class="nav-link active" data-scroll-target="#geospatial-expressions">Geospatial expressions</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue" id="toc-ibis.expr.types.geospatial.GeoSpatialValue" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a>
+  <ul class="collapse">
+  <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a>
+  <ul class="collapse">
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.area" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.area" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.area">area</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary">as_binary</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb">as_ewkb</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt">as_ewkt</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_text" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.as_text">as_text</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth">azimuth</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.buffer" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.buffer">buffer</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.centroid" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.centroid">centroid</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.contains" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.contains">contains</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly">contains_properly</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by">covered_by</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.covers" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.covers" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.covers">covers</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.crosses" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.crosses">crosses</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within">d_fully_within</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_within" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.d_within">d_within</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.difference" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.difference" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.difference">difference</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint">disjoint</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.distance" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.distance" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.distance">distance</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.end_point" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.end_point">end_point</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.envelope" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.envelope">envelope</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals">geo_equals</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n">geometry_n</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type">geometry_type</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersection" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.intersection">intersection</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersects" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.intersects">intersects</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid">is_valid</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.length" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.length" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.length">length</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point">line_locate_point</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge">line_merge</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring">line_substring</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance">max_distance</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_points" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.n_points">n_points</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings">n_rings</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals">ordering_equals</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps">overlaps</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter">perimeter</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.point_n" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.point_n">point_n</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid">set_srid</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.simplify" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.simplify">simplify</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.srid" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.srid" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.srid">srid</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.start_point" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.start_point">start_point</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.touches" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.touches" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.touches">touches</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.transform" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.transform" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.transform">transform</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.union" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.union" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.union">union</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.within" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.within" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.within">within</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.x" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.x">x</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_max" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.x_max">x_max</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_min" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.x_min">x_min</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.y" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.y">y</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_max" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.y_max">y_max</a></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_min" id="toc-ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialValue.y_min">y_min</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialColumn" id="toc-ibis.expr.types.geospatial.GeoSpatialColumn" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialColumn">GeoSpatialColumn</a>
+  <ul class="collapse">
+  <li><a href="#methods-1" id="toc-methods-1" class="nav-link" data-scroll-target="#methods-1">Methods</a>
+  <ul class="collapse">
+  <li><a href="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" id="toc-ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="nav-link" data-scroll-target="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union">unary_union</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/master/docs/reference/expression-geospatial.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+<section id="geospatial-expressions" class="level1">
+<h1>Geospatial expressions</h1>
+<p>Points, Polygons, LineStrings, and other geospatial types.</p>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue" class="level1">
+<h1>GeoSpatialValue</h1>
+<p><code>GeoSpatialValue()</code></p>
+<section id="methods" class="level2">
+<h2 class="anchored" data-anchor-id="methods">Methods</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.area">area</a></td>
+<td>Compute the area of a geospatial value.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_binary">as_binary</a></td>
+<td>Get the geometry as well-known bytes (WKB) without the SRID data.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb">as_ewkb</a></td>
+<td>Get the geometry as well-known bytes (WKB) with the SRID data.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt">as_ewkt</a></td>
+<td>Get the geometry as well-known text (WKT) with the SRID data.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.as_text">as_text</a></td>
+<td>Get the geometry as well-known text (WKT) without the SRID data.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.azimuth">azimuth</a></td>
+<td>Return the angle in radians from the horizontal of the vector defined by the inputs.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.buffer">buffer</a></td>
+<td>Return all points whose distance from this geometry is less than or equal to <code>radius</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.centroid">centroid</a></td>
+<td>Returns the centroid of the geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains">contains</a></td>
+<td>Check if the geometry contains the <code>right</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.contains_properly">contains_properly</a></td>
+<td>Check if the first geometry contains the second one.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.covered_by">covered_by</a></td>
+<td>Check if the first geometry is covered by the second one.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.covers">covers</a></td>
+<td>Check if the first geometry covers the second one.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.crosses">crosses</a></td>
+<td>Check if the geometries have at least one interior point in common.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within">d_fully_within</a></td>
+<td>Check if <code>self</code> is entirely within <code>distance</code> from <code>right</code>.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.d_within">d_within</a></td>
+<td>Check if <code>self</code> is partially within <code>distance</code> from <code>right</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.difference">difference</a></td>
+<td>Return the difference of two geometries.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.disjoint">disjoint</a></td>
+<td>Check if the geometries have no points in common.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.distance">distance</a></td>
+<td>Compute the distance between two geospatial expressions.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.end_point">end_point</a></td>
+<td>Return the last point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.envelope">envelope</a></td>
+<td>Returns a geometry representing the bounding box of <code>self</code>.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geo_equals">geo_equals</a></td>
+<td>Check if the geometries are equal.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_n">geometry_n</a></td>
+<td>Get the 1-based Nth geometry of a multi geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.geometry_type">geometry_type</a></td>
+<td>Get the type of a geometry.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersection">intersection</a></td>
+<td>Return the intersection of two geometries.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.intersects">intersects</a></td>
+<td>Check if the geometries share any points.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.is_valid">is_valid</a></td>
+<td>Check if the geometry is valid.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.length">length</a></td>
+<td>Compute the length of a geospatial expression.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point">line_locate_point</a></td>
+<td>Locate the distance a point falls along the length of a line.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_merge">line_merge</a></td>
+<td>Merge a <code>MultiLineString</code> into a <code>LineString</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.line_substring">line_substring</a></td>
+<td>Clip a substring from a LineString.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.max_distance">max_distance</a></td>
+<td>Returns the 2-dimensional max distance between two geometries in projected units.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_points">n_points</a></td>
+<td>Return the number of points in a geometry. Works for all geometries.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.n_rings">n_rings</a></td>
+<td>Return the number of rings for polygons and multipolygons.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals">ordering_equals</a></td>
+<td>Check if two geometries are equal and have the same point ordering.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.overlaps">overlaps</a></td>
+<td>Check if the geometries share space, have the same dimension, and are not completely contained by each other.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.perimeter">perimeter</a></td>
+<td>Compute the perimeter of a geospatial expression.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.point_n">point_n</a></td>
+<td>Return the Nth point in a single linestring in the geometry.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.set_srid">set_srid</a></td>
+<td>Set the spatial reference identifier for the <code>ST_Geometry</code>.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.simplify">simplify</a></td>
+<td>Simplify a given geometry.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.srid">srid</a></td>
+<td>Return the spatial reference identifier for the ST_Geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.start_point">start_point</a></td>
+<td>Return the first point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.touches">touches</a></td>
+<td>Check if the geometries have at least one point in common, but do not intersect.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.transform">transform</a></td>
+<td>Transform a geometry into a new SRID.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.union">union</a></td>
+<td>Merge two geometries into a union geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.within">within</a></td>
+<td>Check if the first geometry is completely inside of the second.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x">x</a></td>
+<td>Return the X coordinate of <code>self</code>, or NULL if not available.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_max">x_max</a></td>
+<td>Return the X maxima of a geometry.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.x_min">x_min</a></td>
+<td>Return the X minima of a geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y">y</a></td>
+<td>Return the Y coordinate of <code>self</code>, or NULL if not available.</td>
+</tr>
+<tr class="even">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_max">y_max</a></td>
+<td>Return the Y maxima of a geometry.</td>
+</tr>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialValue.y_min">y_min</a></td>
+<td>Return the Y minima of a geometry.</td>
+</tr>
+</tbody>
+</table>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.area" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.area">area</h3>
+<p><code>area()</code></p>
+<p>Compute the area of a geospatial value.</p>
+<section id="returns" class="level4">
+<h4 class="anchored" data-anchor-id="returns">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>The area of <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.as_binary" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.as_binary">as_binary</h3>
+<p><code>as_binary()</code></p>
+<p>Get the geometry as well-known bytes (WKB) without the SRID data.</p>
+<section id="returns-1" class="level4">
+<h4 class="anchored" data-anchor-id="returns-1">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BinaryValue</code></td>
+<td>Binary value</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkb">as_ewkb</h3>
+<p><code>as_ewkb()</code></p>
+<p>Get the geometry as well-known bytes (WKB) with the SRID data.</p>
+<section id="returns-2" class="level4">
+<h4 class="anchored" data-anchor-id="returns-2">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BinaryValue</code></td>
+<td>WKB value</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.as_ewkt">as_ewkt</h3>
+<p><code>as_ewkt()</code></p>
+<p>Get the geometry as well-known text (WKT) with the SRID data.</p>
+<section id="returns-3" class="level4">
+<h4 class="anchored" data-anchor-id="returns-3">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>StringValue</code></td>
+<td>String value</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.as_text" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.as_text">as_text</h3>
+<p><code>as_text()</code></p>
+<p>Get the geometry as well-known text (WKT) without the SRID data.</p>
+<section id="returns-4" class="level4">
+<h4 class="anchored" data-anchor-id="returns-4">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>StringValue</code></td>
+<td>String value</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.azimuth" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.azimuth">azimuth</h3>
+<p><code>azimuth(right)</code></p>
+<p>Return the angle in radians from the horizontal of the vector defined by the inputs.</p>
+<p>Angle is computed clockwise from down-to-up on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.</p>
+<section id="parameters" class="level4">
+<h4 class="anchored" data-anchor-id="parameters">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-5" class="level4">
+<h4 class="anchored" data-anchor-id="returns-5">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>azimuth</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.buffer" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.buffer">buffer</h3>
+<p><code>buffer(radius)</code></p>
+<p>Return all points whose distance from this geometry is less than or equal to <code>radius</code>.</p>
+<p>Calculations are in the Spatial Reference System of this Geometry.</p>
+<section id="parameters-1" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-1">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>radius</code></td>
+<td><a href="https://docs.python.org/3/library/functions.html#float">float</a> | <code>ir</code>.<code>FloatingValue</code></td>
+<td>Floating expression</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-6" class="level4">
+<h4 class="anchored" data-anchor-id="returns-6">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Geometry expression</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.centroid" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.centroid">centroid</h3>
+<p><code>centroid()</code></p>
+<p>Returns the centroid of the geometry.</p>
+<section id="returns-7" class="level4">
+<h4 class="anchored" data-anchor-id="returns-7">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 78%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PointValue</code></td>
+<td>The centroid</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.contains" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.contains">contains</h3>
+<p><code>contains(right)</code></p>
+<p>Check if the geometry contains the <code>right</code>.</p>
+<section id="parameters-2" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-2">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-8" class="level4">
+<h4 class="anchored" data-anchor-id="returns-8">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> contains <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.contains_properly" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.contains_properly">contains_properly</h3>
+<p><code>contains_properly(right)</code></p>
+<p>Check if the first geometry contains the second one.</p>
+<p>Excludes common border points.</p>
+<section id="parameters-3" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-3">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-9" class="level4">
+<h4 class="anchored" data-anchor-id="returns-9">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 37%">
+<col style="width: 62%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether self contains right excluding border points.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.covered_by" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.covered_by">covered_by</h3>
+<p><code>covered_by(right)</code></p>
+<p>Check if the first geometry is covered by the second one.</p>
+<section id="parameters-4" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-4">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-10" class="level4">
+<h4 class="anchored" data-anchor-id="returns-10">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 45%">
+<col style="width: 54%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> is covered by <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.covers" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.covers">covers</h3>
+<p><code>covers(right)</code></p>
+<p>Check if the first geometry covers the second one.</p>
+<section id="parameters-5" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-5">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-11" class="level4">
+<h4 class="anchored" data-anchor-id="returns-11">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> covers <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.crosses" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.crosses">crosses</h3>
+<p><code>crosses(right)</code></p>
+<p>Check if the geometries have at least one interior point in common.</p>
+<section id="parameters-6" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-6">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-12" class="level4">
+<h4 class="anchored" data-anchor-id="returns-12">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 31%">
+<col style="width: 68%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> and <code>right</code> have at least one common interior point.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.d_fully_within">d_fully_within</h3>
+<p><code>d_fully_within(right, distance)</code></p>
+<p>Check if <code>self</code> is entirely within <code>distance</code> from <code>right</code>.</p>
+<section id="parameters-7" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-7">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>distance</code></td>
+<td><code>ir</code>.<code>FloatingValue</code></td>
+<td>Distance to check</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-13" class="level4">
+<h4 class="anchored" data-anchor-id="returns-13">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 65%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> is within a specified distance from <code>right</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.d_within" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.d_within">d_within</h3>
+<p><code>d_within(right, distance)</code></p>
+<p>Check if <code>self</code> is partially within <code>distance</code> from <code>right</code>.</p>
+<section id="parameters-8" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-8">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>distance</code></td>
+<td><code>ir</code>.<code>FloatingValue</code></td>
+<td>Distance to check</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-14" class="level4">
+<h4 class="anchored" data-anchor-id="returns-14">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 65%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> is partially within <code>distance</code> from <code>right</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.difference" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.difference">difference</h3>
+<p><code>difference(right)</code></p>
+<p>Return the difference of two geometries.</p>
+<section id="parameters-9" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-9">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-15" class="level4">
+<h4 class="anchored" data-anchor-id="returns-15">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Difference of <code>self</code> and <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.disjoint" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.disjoint">disjoint</h3>
+<p><code>disjoint(right)</code></p>
+<p>Check if the geometries have no points in common.</p>
+<section id="parameters-10" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-10">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-16" class="level4">
+<h4 class="anchored" data-anchor-id="returns-16">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 43%">
+<col style="width: 56%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> and <code>right</code> are disjoint</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.distance" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.distance">distance</h3>
+<p><code>distance(right)</code></p>
+<p>Compute the distance between two geospatial expressions.</p>
+<section id="parameters-11" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-11">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry or geography</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-17" class="level4">
+<h4 class="anchored" data-anchor-id="returns-17">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 47%">
+<col style="width: 52%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Distance between <code>self</code> and <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.end_point" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.end_point">end_point</h3>
+<p><code>end_point()</code></p>
+<p>Return the last point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</p>
+<p>Return <code>NULL</code> if the input parameter is not a <code>LINESTRING</code></p>
+<section id="returns-18" class="level4">
+<h4 class="anchored" data-anchor-id="returns-18">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 78%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PointValue</code></td>
+<td>End point</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.envelope" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.envelope">envelope</h3>
+<p><code>envelope()</code></p>
+<p>Returns a geometry representing the bounding box of <code>self</code>.</p>
+<section id="returns-19" class="level4">
+<h4 class="anchored" data-anchor-id="returns-19">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 79%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PolygonValue</code></td>
+<td>A polygon</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.geo_equals" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.geo_equals">geo_equals</h3>
+<p><code>geo_equals(right)</code></p>
+<p>Check if the geometries are equal.</p>
+<section id="parameters-12" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-12">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-20" class="level4">
+<h4 class="anchored" data-anchor-id="returns-20">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> equals <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_n" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_n">geometry_n</h3>
+<p><code>geometry_n(n)</code></p>
+<p>Get the 1-based Nth geometry of a multi geometry.</p>
+<section id="parameters-13" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-13">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>n</code></td>
+<td><a href="https://docs.python.org/3/library/functions.html#int">int</a> | <code>ir</code>.<code>IntegerValue</code></td>
+<td>Nth geometry index</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-21" class="level4">
+<h4 class="anchored" data-anchor-id="returns-21">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Geometry value</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_type" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.geometry_type">geometry_type</h3>
+<p><code>geometry_type()</code></p>
+<p>Get the type of a geometry.</p>
+<section id="returns-22" class="level4">
+<h4 class="anchored" data-anchor-id="returns-22">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 42%">
+<col style="width: 57%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>StringValue</code></td>
+<td>String representing the type of <code>self</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.intersection" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.intersection">intersection</h3>
+<p><code>intersection(right)</code></p>
+<p>Return the intersection of two geometries.</p>
+<section id="parameters-14" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-14">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-23" class="level4">
+<h4 class="anchored" data-anchor-id="returns-23">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Intersection of <code>self</code> and <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.intersects" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.intersects">intersects</h3>
+<p><code>intersects(right)</code></p>
+<p>Check if the geometries share any points.</p>
+<section id="parameters-15" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-15">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-24" class="level4">
+<h4 class="anchored" data-anchor-id="returns-24">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> intersects <code>right</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.is_valid" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.is_valid">is_valid</h3>
+<p><code>is_valid()</code></p>
+<p>Check if the geometry is valid.</p>
+<section id="returns-25" class="level4">
+<h4 class="anchored" data-anchor-id="returns-25">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> is valid</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.length" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.length">length</h3>
+<p><code>length()</code></p>
+<p>Compute the length of a geospatial expression.</p>
+<section id="returns-26" class="level4">
+<h4 class="anchored" data-anchor-id="returns-26">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Length of <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.line_locate_point">line_locate_point</h3>
+<p><code>line_locate_point(right)</code></p>
+<p>Locate the distance a point falls along the length of a line.</p>
+<p>Returns a float between zero and one representing the location of the closest point on the linestring to the given point, as a fraction of the total 2d line length.</p>
+<section id="parameters-16" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-16">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 59%">
+<col style="width: 17%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><code>PointValue</code></td>
+<td>Point geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-27" class="level4">
+<h4 class="anchored" data-anchor-id="returns-27">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Fraction of the total line length</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.line_merge" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.line_merge">line_merge</h3>
+<p><code>line_merge()</code></p>
+<p>Merge a <code>MultiLineString</code> into a <code>LineString</code>.</p>
+<p>Returns a (set of) LineString(s) formed by sewing together the constituent line work of a MultiLineString. If a geometry other than a LineString or MultiLineString is given, this will return an empty geometry collection.</p>
+<section id="returns-28" class="level4">
+<h4 class="anchored" data-anchor-id="returns-28">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Merged linestrings</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.line_substring" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.line_substring">line_substring</h3>
+<p><code>line_substring(start, end)</code></p>
+<p>Clip a substring from a LineString.</p>
+<p>Returns a linestring that is a substring of the input one, starting and ending at the given fractions of the total 2d length. The second and third arguments are floating point values between zero and one. This only works with linestrings.</p>
+<section id="parameters-17" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-17">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 10%">
+<col style="width: 59%">
+<col style="width: 17%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>start</code></td>
+<td><code>ir</code>.<code>FloatingValue</code></td>
+<td>Start value</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>end</code></td>
+<td><code>ir</code>.<code>FloatingValue</code></td>
+<td>End value</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-29" class="level4">
+<h4 class="anchored" data-anchor-id="returns-29">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 76%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>LineStringValue</code></td>
+<td>Clipped linestring</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.max_distance" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.max_distance">max_distance</h3>
+<p><code>max_distance(right)</code></p>
+<p>Returns the 2-dimensional max distance between two geometries in projected units.</p>
+<p>If <code>self</code> and <code>right</code> are the same geometry the function will return the distance between the two vertices most far from each other in that geometry.</p>
+<section id="parameters-18" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-18">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-30" class="level4">
+<h4 class="anchored" data-anchor-id="returns-30">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Maximum distance</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.n_points" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.n_points">n_points</h3>
+<p><code>n_points()</code></p>
+<p>Return the number of points in a geometry. Works for all geometries.</p>
+<section id="returns-31" class="level4">
+<h4 class="anchored" data-anchor-id="returns-31">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>IntegerValue</code></td>
+<td>Number of points</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.n_rings" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.n_rings">n_rings</h3>
+<p><code>n_rings()</code></p>
+<p>Return the number of rings for polygons and multipolygons.</p>
+<p>Outer rings are counted as well.</p>
+<section id="returns-32" class="level4">
+<h4 class="anchored" data-anchor-id="returns-32">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>IntegerValue</code></td>
+<td>Number of rings</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.ordering_equals">ordering_equals</h3>
+<p><code>ordering_equals(right)</code></p>
+<p>Check if two geometries are equal and have the same point ordering.</p>
+<p>Returns true if the two geometries are equal and the coordinates are in the same order.</p>
+<section id="parameters-19" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-19">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-33" class="level4">
+<h4 class="anchored" data-anchor-id="returns-33">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 43%">
+<col style="width: 56%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether points and orderings are equal.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.overlaps" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.overlaps">overlaps</h3>
+<p><code>overlaps(right)</code></p>
+<p>Check if the geometries share space, have the same dimension, and are not completely contained by each other.</p>
+<section id="parameters-20" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-20">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-34" class="level4">
+<h4 class="anchored" data-anchor-id="returns-34">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Overlaps indicator</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.perimeter" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.perimeter">perimeter</h3>
+<p><code>perimeter()</code></p>
+<p>Compute the perimeter of a geospatial expression.</p>
+<section id="returns-35" class="level4">
+<h4 class="anchored" data-anchor-id="returns-35">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Perimeter of <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.point_n" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.point_n">point_n</h3>
+<p><code>point_n(n)</code></p>
+<p>Return the Nth point in a single linestring in the geometry.</p>
+<p>Negative values are counted backwards from the end of the LineString, so that -1 is the last point. Returns NULL if there is no linestring in the geometry.</p>
+<section id="parameters-21" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-21">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 9%">
+<col style="width: 57%">
+<col style="width: 19%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>n</code></td>
+<td><code>ir</code>.<code>IntegerValue</code></td>
+<td>Nth point index</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-36" class="level4">
+<h4 class="anchored" data-anchor-id="returns-36">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 72%">
+<col style="width: 27%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PointValue</code></td>
+<td>Nth point in <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.set_srid" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.set_srid">set_srid</h3>
+<p><code>set_srid(srid)</code></p>
+<p>Set the spatial reference identifier for the <code>ST_Geometry</code>.</p>
+<section id="parameters-22" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-22">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 55%">
+<col style="width: 22%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>srid</code></td>
+<td><code>ir</code>.<code>IntegerValue</code></td>
+<td>SRID integer value</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-37" class="level4">
+<h4 class="anchored" data-anchor-id="returns-37">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td><code>self</code> with SRID set to <code>srid</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.simplify" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.simplify">simplify</h3>
+<p><code>simplify(tolerance, preserve_collapsed)</code></p>
+<p>Simplify a given geometry.</p>
+<section id="parameters-23" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-23">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 40%">
+<col style="width: 32%">
+<col style="width: 9%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tolerance</code></td>
+<td><code>ir</code>.<code>FloatingValue</code></td>
+<td>Tolerance</td>
+<td><em>required</em></td>
+</tr>
+<tr class="even">
+<td><code>preserve_collapsed</code></td>
+<td><code>ir</code>.<code>BooleanValue</code></td>
+<td>Whether to preserve collapsed geometries</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-38" class="level4">
+<h4 class="anchored" data-anchor-id="returns-38">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Simplified geometry</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.srid" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.srid">srid</h3>
+<p><code>srid()</code></p>
+<p>Return the spatial reference identifier for the ST_Geometry.</p>
+<section id="returns-39" class="level4">
+<h4 class="anchored" data-anchor-id="returns-39">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>IntegerValue</code></td>
+<td>SRID</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.start_point" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.start_point">start_point</h3>
+<p><code>start_point()</code></p>
+<p>Return the first point of a <code>LINESTRING</code> geometry as a <code>POINT</code>.</p>
+<p>Return <code>NULL</code> if the input parameter is not a <code>LINESTRING</code></p>
+<section id="returns-40" class="level4">
+<h4 class="anchored" data-anchor-id="returns-40">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 78%">
+<col style="width: 21%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>PointValue</code></td>
+<td>Start point</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.touches" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.touches">touches</h3>
+<p><code>touches(right)</code></p>
+<p>Check if the geometries have at least one point in common, but do not intersect.</p>
+<section id="parameters-24" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-24">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-41" class="level4">
+<h4 class="anchored" data-anchor-id="returns-41">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether self and right are touching</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.transform" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.transform">transform</h3>
+<p><code>transform(srid)</code></p>
+<p>Transform a geometry into a new SRID.</p>
+<section id="parameters-25" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-25">Parameters</h4>
+<table class="table">
+<colgroup>
+<col style="width: 8%">
+<col style="width: 55%">
+<col style="width: 22%">
+<col style="width: 13%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>srid</code></td>
+<td><code>ir</code>.<code>IntegerValue</code></td>
+<td>Integer expression</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-42" class="level4">
+<h4 class="anchored" data-anchor-id="returns-42">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Transformed geometry</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.union" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.union">union</h3>
+<p><code>union(right)</code></p>
+<p>Merge two geometries into a union geometry.</p>
+<p>Returns the pointwise union of the two geometries. This corresponds to the non-aggregate version the PostGIS ST_Union.</p>
+<section id="parameters-26" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-26">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-43" class="level4">
+<h4 class="anchored" data-anchor-id="returns-43">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Union of geometries</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.within" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.within">within</h3>
+<p><code>within(right)</code></p>
+<p>Check if the first geometry is completely inside of the second.</p>
+<section id="parameters-27" class="level4">
+<h4 class="anchored" data-anchor-id="parameters-27">Parameters</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>right</code></td>
+<td><a href="../reference/expression-geospatial.html#ibis.expr.types.geospatial.GeoSpatialValue">GeoSpatialValue</a></td>
+<td>Right geometry</td>
+<td><em>required</em></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="returns-44" class="level4">
+<h4 class="anchored" data-anchor-id="returns-44">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>BooleanValue</code></td>
+<td>Whether <code>self</code> is in <code>right</code>.</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.x" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.x">x</h3>
+<p><code>x()</code></p>
+<p>Return the X coordinate of <code>self</code>, or NULL if not available.</p>
+<p>Input must be a point.</p>
+<section id="returns-45" class="level4">
+<h4 class="anchored" data-anchor-id="returns-45">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>X coordinate of <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.x_max" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.x_max">x_max</h3>
+<p><code>x_max()</code></p>
+<p>Return the X maxima of a geometry.</p>
+<section id="returns-46" class="level4">
+<h4 class="anchored" data-anchor-id="returns-46">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>X maxima</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.x_min" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.x_min">x_min</h3>
+<p><code>x_min()</code></p>
+<p>Return the X minima of a geometry.</p>
+<section id="returns-47" class="level4">
+<h4 class="anchored" data-anchor-id="returns-47">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>X minima</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.y" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.y">y</h3>
+<p><code>y()</code></p>
+<p>Return the Y coordinate of <code>self</code>, or NULL if not available.</p>
+<p>Input must be a point.</p>
+<section id="returns-48" class="level4">
+<h4 class="anchored" data-anchor-id="returns-48">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Y coordinate of <code>self</code></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.y_max" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.y_max">y_max</h3>
+<p><code>y_max()</code></p>
+<p>Return the Y maxima of a geometry.</p>
+<section id="returns-49" class="level4">
+<h4 class="anchored" data-anchor-id="returns-49">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Y maxima</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialValue.y_min" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialValue.y_min">y_min</h3>
+<p><code>y_min()</code></p>
+<p>Return the Y minima of a geometry.</p>
+<section id="returns-50" class="level4">
+<h4 class="anchored" data-anchor-id="returns-50">Returns</h4>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>FloatingValue</code></td>
+<td>Y minima</td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+</section>
+<section id="ibis.expr.types.geospatial.GeoSpatialColumn" class="level1">
+<h1>GeoSpatialColumn</h1>
+<p><code>GeoSpatialColumn()</code></p>
+<section id="methods-1" class="level2">
+<h2 class="anchored" data-anchor-id="methods-1">Methods</h2>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="#ibis.expr.types.geospatial.GeoSpatialColumn.unary_union">unary_union</a></td>
+<td>Aggregate a set of geometries into a union.</td>
+</tr>
+</tbody>
+</table>
+<section id="ibis.expr.types.geospatial.GeoSpatialColumn.unary_union" class="level3">
+<h3 class="anchored" data-anchor-id="ibis.expr.types.geospatial.GeoSpatialColumn.unary_union">unary_union</h3>
+<p><code>unary_union()</code></p>
+<p>Aggregate a set of geometries into a union.</p>
+<p>This corresponds to the aggregate version of the PostGIS ST_Union. We give it a different name (following the corresponding method in GeoPandas) to avoid name conflicts with the non-aggregate version.</p>
+<section id="returns-51" class="level4">
+<h4 class="anchored" data-anchor-id="returns-51">Returns</h4>
+<table class="table">
+<colgroup>
+<col style="width: 76%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>GeoSpatialScalar</code></td>
+<td>Union of geometries</td>
+</tr>
+</tbody>
+</table>
+
+
+</section>
+</section>
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        for (let i = 0; i < 2; i++) {
+          container.appendChild(note.children[i].cloneNode(true));
+        }
+        return container.innerHTML
+      } else {
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      return note.innerHTML;
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        console.log("RESIZE");
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

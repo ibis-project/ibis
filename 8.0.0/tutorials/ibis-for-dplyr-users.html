@@ -1,0 +1,2184 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.549">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<link href="../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-dark.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../styles.css">
+<meta property="og:title" content="Ibis">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/tutorials/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/tutorials/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../tutorials/data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../support_matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/elementwise.html">
+ <span class="dropdown-text">Add an elementwise operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/reduction.html">
+ <span class="dropdown-text">Add a reduction operation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../reference/ContextAdjustment.html">
+ <span class="dropdown-text">ContextAdjustment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../contribute/05_reference.html">
+ <span class="dropdown-text">Test Class Reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../tutorials/ibis-for-dplyr-users.html">Tutorial: Ibis for dplyr users</a></li></ol></nav>
+        <a class="flex-grow-1" role="button" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../install.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Installation</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/getting_started.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: getting started</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-dplyr-users.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Tutorial: Ibis for dplyr users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-pandas-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: Ibis for pandas users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/ibis-for-sql-users.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Tutorial: Ibis for SQL users</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true">
+ <span class="menu-text">Data Platforms</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false">
+ <span class="menu-text">Starburst Galaxy</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth2 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/data-platforms/starburst-galaxy/0_setup.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Requirements and setup</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../tutorials/data-platforms/starburst-galaxy/1_basics.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Basic operations</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#tutorial-ibis-for-dplyr-users" id="toc-tutorial-ibis-for-dplyr-users" class="nav-link active" data-scroll-target="#tutorial-ibis-for-dplyr-users">Tutorial: Ibis for dplyr users</a>
+  <ul class="collapse">
+  <li><a href="#loading-ibis" id="toc-loading-ibis" class="nav-link" data-scroll-target="#loading-ibis">Loading Ibis</a></li>
+  <li><a href="#loading-example-data" id="toc-loading-example-data" class="nav-link" data-scroll-target="#loading-example-data">Loading example data</a></li>
+  <li><a href="#inspecting-the-dataset-with-head" id="toc-inspecting-the-dataset-with-head" class="nav-link" data-scroll-target="#inspecting-the-dataset-with-head">Inspecting the dataset with <code>head()</code></a></li>
+  <li><a href="#filtering-rows-with-filter" id="toc-filtering-rows-with-filter" class="nav-link" data-scroll-target="#filtering-rows-with-filter">Filtering rows with <code>filter()</code></a></li>
+  <li><a href="#sorting-your-data-with-order_by" id="toc-sorting-your-data-with-order_by" class="nav-link" data-scroll-target="#sorting-your-data-with-order_by">Sorting your data with <code>order_by()</code></a></li>
+  <li><a href="#selecting-columns-with-select" id="toc-selecting-columns-with-select" class="nav-link" data-scroll-target="#selecting-columns-with-select">Selecting columns with <code>select()</code></a></li>
+  <li><a href="#renaming-columns-with-rename" id="toc-renaming-columns-with-rename" class="nav-link" data-scroll-target="#renaming-columns-with-rename">Renaming columns with <code>rename()</code></a></li>
+  <li><a href="#add-new-columns-with-mutate" id="toc-add-new-columns-with-mutate" class="nav-link" data-scroll-target="#add-new-columns-with-mutate">Add new columns with <code>mutate()</code></a></li>
+  <li><a href="#summarize-values-with-aggregate" id="toc-summarize-values-with-aggregate" class="nav-link" data-scroll-target="#summarize-values-with-aggregate">Summarize values with <code>aggregate()</code></a></li>
+  <li><a href="#join-tables-with-left_join" id="toc-join-tables-with-left_join" class="nav-link" data-scroll-target="#join-tables-with-left_join">Join tables with <code>left_join()</code></a></li>
+  <li><a href="#pivot-data-with-pivot_wider-and-pivot_longer" id="toc-pivot-data-with-pivot_wider-and-pivot_longer" class="nav-link" data-scroll-target="#pivot-data-with-pivot_wider-and-pivot_longer">Pivot data with <code>pivot_wider()</code> and <code>pivot_longer()</code></a></li>
+  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps">Next Steps</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/tutorials/ibis-for-dplyr-users.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+
+
+
+<section id="tutorial-ibis-for-dplyr-users" class="level1">
+<h1>Tutorial: Ibis for dplyr users</h1>
+<p><a href="https://www.r-project.org/">R</a> users familiar with <a href="https://dplyr.tidyverse.org/">dplyr</a>, <a href="https://tidyr.tidyverse.org/">tidyr</a>, and other packages in the <a href="https://www.tidyverse.org/">Tidyverse</a> are likely to find Ibis familiar.</p>
+<p>In fact, some Ibis features were even inspired by similar features in the <a href="https://www.tidyverse.org/">Tidyverse</a>.</p>
+<p>However, due to differences between Python and R and the design and goals of Ibis itself, you may notice some big differences right away:</p>
+<ul>
+<li><strong>No pipe:</strong> The handy <a href="https://magrittr.tidyverse.org/">magrittr pipe</a> (<code>%&gt;%</code>) or R’s newer native pipe (<code>|&gt;</code>) don’t exist in Python so you instead have to chain sequences of operations together with a period (<code>.</code>). The <code>.</code> in Python is analogous to R’s <code>$</code> which lets you access attributes and methods on objects.</li>
+<li><strong>No unquoted column names:</strong> Non-standard evaluation is common in R but not present in Python. To reference a column in Ibis, you can pass a string, property on a table (e.g., <code>tbl.some_column</code>), or you can make use of <a href="../reference/selectors.html">selectors</a>.</li>
+<li><strong>Ibis is lazy by default:</strong> Similar to <a href="https://dbplyr.tidyverse.org/">dbplyr</a> and its <code>collect()</code> method, Ibis does not evaluate our queries until we call <code>.to_pandas()</code>. For the purposes of this document, we set <code>ibis.options.interactive = True</code> which limits results to 10 rows, executes automatically, and prints a nicely-formatted table.</li>
+</ul>
+<p>Using the same example data and similar operations as in <a href="https://dplyr.tidyverse.org/articles/dplyr.html">Introduction to dplyr</a>, below you will find some examples of the more common dplyr and tidyr operations and their Ibis equivalents.</p>
+<section id="loading-ibis" class="level2">
+<h2 class="anchored" data-anchor-id="loading-ibis">Loading Ibis</h2>
+<p>To start using dplyr in R we would run:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>To load Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>And then also load and alias some helpers to make our code more concise:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis.selectors <span class="im">as</span> s</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Last, as mentioned above, to get Ibis to automatically execute our queries and show the results in a nicely-formatted table, we run:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="loading-example-data" class="level2">
+<h2 class="anchored" data-anchor-id="loading-example-data">Loading example data</h2>
+<p>In R, datasets are typically lazily loaded with packages. For instance, the <code>starwars</code> dataset is packaged with dplyr, but is not loaded in memory before you start using it. Ibis provides many datasets in the <code>ibis.examples</code> module. So to be able to use the <code>starwars</code> dataset, you can use:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="op">=</span> ibis.examples.starwars.fetch()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Similar to dplyr, if we evaluate the name of a table, we get a nicely-formatted table:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>starwars</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name               ┃ height ┃ mass    ┃ hair_color    ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string             │ int64  │ float64 │ string        │ string      │ … │
+├────────────────────┼────────┼─────────┼───────────────┼─────────────┼───┤
+│ Luke Skywalker     │    172 │    77.0 │ blond         │ fair        │ … │
+│ C-3PO              │    167 │    75.0 │ NULL          │ gold        │ … │
+│ R2-D2              │     96 │    32.0 │ NULL          │ white, blue │ … │
+│ Darth Vader        │    202 │   136.0 │ none          │ white       │ … │
+│ Leia Organa        │    150 │    49.0 │ brown         │ light       │ … │
+│ Owen Lars          │    178 │   120.0 │ brown, grey   │ light       │ … │
+│ Beru Whitesun lars │    165 │    75.0 │ brown         │ light       │ … │
+│ R5-D4              │     97 │    32.0 │ NULL          │ white, red  │ … │
+│ Biggs Darklighter  │    183 │    84.0 │ black         │ light       │ … │
+│ Obi-Wan Kenobi     │    182 │    77.0 │ auburn, white │ fair        │ … │
+│ …                  │      … │       … │ …             │ …           │ … │
+└────────────────────┴────────┴─────────┴───────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+<p>In addition to printing a nicely-formatted table and automatically executing, setting <code>ibis.options.interactive</code> to <code>True</code> also causes our query to be limited to 10 rows. To get Ibis to give us all rows, we can directly call <code>to_pandas</code> and save the result as a pandas DataFrame:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>starwars_df <span class="op">=</span> starwars.to_pandas()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Which then gives us all of the data as a pandas DataFrame:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>starwars_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>              name  height   mass hair_color  ... species films  vehicles starships
+0   Luke Skywalker   172.0   77.0      blond  ...   Human  None      None      None
+1            C-3PO   167.0   75.0       None  ...   Droid  None      None      None
+2            R2-D2    96.0   32.0       None  ...   Droid  None      None      None
+3      Darth Vader   202.0  136.0       none  ...   Human  None      None      None
+4      Leia Organa   150.0   49.0      brown  ...   Human  None      None      None
+..             ...     ...    ...        ...  ...     ...   ...       ...       ...
+82             Rey     NaN    NaN      brown  ...   Human  None      None      None
+83     Poe Dameron     NaN    NaN      brown  ...   Human  None      None      None
+84             BB8     NaN    NaN       none  ...   Droid  None      None      None
+85  Captain Phasma     NaN    NaN    unknown  ...    None  None      None      None
+86   Padmé Amidala   165.0   45.0      brown  ...   Human  None      None      None
+
+[87 rows x 14 columns]</code></pre>
+</div>
+</div>
+<p>Directly calling <code>to_pandas</code> and saving the result to a variable is useful for passing the results of Ibis table expressions to other packages (e.g., <a href="https://matplotlib.org/"><code>matplotlib</code></a>.</p>
+</section>
+<section id="inspecting-the-dataset-with-head" class="level2">
+<h2 class="anchored" data-anchor-id="inspecting-the-dataset-with-head">Inspecting the dataset with <code>head()</code></h2>
+<p>Just like in R, you can use <code>head()</code> to inspect the beginning of a dataset. You can also specify the number of rows you want to get back by using the parameter <code>n</code> (default <code>n = 5</code>).</p>
+<p>In R:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(starwars) <span class="co"># or starwars |&gt; head()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 6 × 14
+  name      height  mass hair_color skin_color eye_color birth_year sex   gender
+  &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+1 Luke Sky…    172    77 blond      fair       blue            19   male  mascu…
+2 C-3PO        167    75 &lt;NA&gt;       gold       yellow         112   none  mascu…
+3 R2-D2         96    32 &lt;NA&gt;       white, bl… red             33   none  mascu…
+4 Darth Va…    202   136 none       white      yellow          41.9 male  mascu…
+5 Leia Org…    150    49 brown      light      brown           19   fema… femin…
+6 Owen Lars    178   120 brown, gr… light      blue            52   male  mascu…
+# ℹ 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>With Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>starwars.head(<span class="dv">6</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name           ┃ height ┃ mass    ┃ hair_color  ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string         │ int64  │ float64 │ string      │ string      │ … │
+├────────────────┼────────┼─────────┼─────────────┼─────────────┼───┤
+│ Luke Skywalker │    172 │    77.0 │ blond       │ fair        │ … │
+│ C-3PO          │    167 │    75.0 │ NULL        │ gold        │ … │
+│ R2-D2          │     96 │    32.0 │ NULL        │ white, blue │ … │
+│ Darth Vader    │    202 │   136.0 │ none        │ white       │ … │
+│ Leia Organa    │    150 │    49.0 │ brown       │ light       │ … │
+│ Owen Lars      │    178 │   120.0 │ brown, grey │ light       │ … │
+└────────────────┴────────┴─────────┴─────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+<p>There is no <code>tail()</code> in Ibis because most databases do not support this operation.</p>
+<p>Another method you can use to limit the number of rows returned by a query is <code>limit()</code> which also takes the <code>n</code> parameter.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>starwars.limit(<span class="dv">3</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┳━━━┓
+┃ name           ┃ height ┃ mass    ┃ hair_color ┃ skin_color  ┃ eye_color ┃ … ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━╇━━━┩
+│ string         │ int64  │ float64 │ string     │ string      │ string    │ … │
+├────────────────┼────────┼─────────┼────────────┼─────────────┼───────────┼───┤
+│ Luke Skywalker │    172 │    77.0 │ blond      │ fair        │ blue      │ … │
+│ C-3PO          │    167 │    75.0 │ NULL       │ gold        │ yellow    │ … │
+│ R2-D2          │     96 │    32.0 │ NULL       │ white, blue │ red       │ … │
+└────────────────┴────────┴─────────┴────────────┴─────────────┴───────────┴───┘</code></pre>
+</div>
+</div>
+</section>
+<section id="filtering-rows-with-filter" class="level2">
+<h2 class="anchored" data-anchor-id="filtering-rows-with-filter">Filtering rows with <code>filter()</code></h2>
+<p>Ibis, like dplyr, has <code>filter</code> to select rows based on conditions.</p>
+<p>With dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(skin_color <span class="sc">==</span> <span class="st">"light"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 11 × 14
+   name     height  mass hair_color skin_color eye_color birth_year sex   gender
+   &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+ 1 Leia Or…    150    49 brown      light      brown             19 fema… femin…
+ 2 Owen La…    178   120 brown, gr… light      blue              52 male  mascu…
+ 3 Beru Wh…    165    75 brown      light      blue              47 fema… femin…
+ 4 Biggs D…    183    84 black      light      brown             24 male  mascu…
+ 5 Lobot       175    79 none       light      blue              37 male  mascu…
+ 6 Cordé       157    NA brown      light      brown             NA fema… femin…
+ 7 Dormé       165    NA brown      light      brown             NA fema… femin…
+ 8 Raymus …    188    79 brown      light      brown             NA male  mascu…
+ 9 Rey          NA    NA brown      light      hazel             NA fema… femin…
+10 Poe Dam…     NA    NA brown      light      brown             NA male  mascu…
+11 Padmé A…    165    45 brown      light      brown             46 fema… femin…
+# ℹ 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>starwars.<span class="bu">filter</span>(_.skin_color <span class="op">==</span> <span class="st">"light"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+┃ name               ┃ height ┃ mass    ┃ hair_color  ┃ skin_color ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+│ string             │ int64  │ float64 │ string      │ string     │ … │
+├────────────────────┼────────┼─────────┼─────────────┼────────────┼───┤
+│ Leia Organa        │    150 │    49.0 │ brown       │ light      │ … │
+│ Owen Lars          │    178 │   120.0 │ brown, grey │ light      │ … │
+│ Beru Whitesun lars │    165 │    75.0 │ brown       │ light      │ … │
+│ Biggs Darklighter  │    183 │    84.0 │ black       │ light      │ … │
+│ Lobot              │    175 │    79.0 │ none        │ light      │ … │
+│ Cordé              │    157 │     nan │ brown       │ light      │ … │
+│ Dormé              │    165 │     nan │ brown       │ light      │ … │
+│ Raymus Antilles    │    188 │    79.0 │ brown       │ light      │ … │
+│ Rey                │   NULL │     nan │ brown       │ light      │ … │
+│ Poe Dameron        │   NULL │     nan │ brown       │ light      │ … │
+│ …                  │      … │       … │ …           │ …          │ … │
+└────────────────────┴────────┴─────────┴─────────────┴────────────┴───┘</code></pre>
+</div>
+</div>
+<p>In dplyr, you can specify multiple conditions separated with <code>,</code> that are then combined with the <code>&amp;</code> operator:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(skin_color <span class="sc">==</span> <span class="st">"light"</span>, eye_color <span class="sc">==</span> <span class="st">"brown"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 7 × 14
+  name      height  mass hair_color skin_color eye_color birth_year sex   gender
+  &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+1 Leia Org…    150    49 brown      light      brown             19 fema… femin…
+2 Biggs Da…    183    84 black      light      brown             24 male  mascu…
+3 Cordé        157    NA brown      light      brown             NA fema… femin…
+4 Dormé        165    NA brown      light      brown             NA fema… femin…
+5 Raymus A…    188    79 brown      light      brown             NA male  mascu…
+6 Poe Dame…     NA    NA brown      light      brown             NA male  mascu…
+7 Padmé Am…    165    45 brown      light      brown             46 fema… femin…
+# ℹ 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>In Ibis, you can do the same by putting multiple conditions in a list:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>starwars.<span class="bu">filter</span>([_.skin_color <span class="op">==</span> <span class="st">"light"</span>, _.eye_color <span class="op">==</span> <span class="st">"brown"</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+┃ name              ┃ height ┃ mass    ┃ hair_color ┃ skin_color ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+│ string            │ int64  │ float64 │ string     │ string     │ … │
+├───────────────────┼────────┼─────────┼────────────┼────────────┼───┤
+│ Leia Organa       │    150 │    49.0 │ brown      │ light      │ … │
+│ Biggs Darklighter │    183 │    84.0 │ black      │ light      │ … │
+│ Cordé             │    157 │     nan │ brown      │ light      │ … │
+│ Dormé             │    165 │     nan │ brown      │ light      │ … │
+│ Raymus Antilles   │    188 │    79.0 │ brown      │ light      │ … │
+│ Poe Dameron       │   NULL │     nan │ brown      │ light      │ … │
+│ Padmé Amidala     │    165 │    45.0 │ brown      │ light      │ … │
+└───────────────────┴────────┴─────────┴────────────┴────────────┴───┘</code></pre>
+</div>
+</div>
+<p>In previous code, we used the <code>_</code> helper we imported earlier. The <code>_</code> is shorthand for the table returned by the previous step in the chained sequence of operations (in this case, <code>starwars</code>). We could have also written the more verbose form,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>starwars.<span class="bu">filter</span>([starwars.skin_color <span class="op">==</span> <span class="st">"light"</span>, starwars.eye_color <span class="op">==</span> <span class="st">"brown"</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━┓
+┃ name              ┃ height ┃ mass    ┃ hair_color ┃ skin_color ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━┩
+│ string            │ int64  │ float64 │ string     │ string     │ … │
+├───────────────────┼────────┼─────────┼────────────┼────────────┼───┤
+│ Leia Organa       │    150 │    49.0 │ brown      │ light      │ … │
+│ Biggs Darklighter │    183 │    84.0 │ black      │ light      │ … │
+│ Cordé             │    157 │     nan │ brown      │ light      │ … │
+│ Dormé             │    165 │     nan │ brown      │ light      │ … │
+│ Raymus Antilles   │    188 │    79.0 │ brown      │ light      │ … │
+│ Poe Dameron       │   NULL │     nan │ brown      │ light      │ … │
+│ Padmé Amidala     │    165 │    45.0 │ brown      │ light      │ … │
+└───────────────────┴────────┴─────────┴────────────┴────────────┴───┘</code></pre>
+</div>
+</div>
+<p>If you want to combine multiple conditions, in dplyr, you could do:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(</span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>      (skin_color <span class="sc">==</span> <span class="st">"light"</span> <span class="sc">&amp;</span> eye_color <span class="sc">==</span> <span class="st">"brown"</span>) <span class="sc">|</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>       species <span class="sc">==</span> <span class="st">"Droid"</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 13 × 14
+   name     height  mass hair_color skin_color eye_color birth_year sex   gender
+   &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+ 1 C-3PO       167    75 &lt;NA&gt;       gold       yellow           112 none  mascu…
+ 2 R2-D2        96    32 &lt;NA&gt;       white, bl… red               33 none  mascu…
+ 3 Leia Or…    150    49 brown      light      brown             19 fema… femin…
+ 4 R5-D4        97    32 &lt;NA&gt;       white, red red               NA none  mascu…
+ 5 Biggs D…    183    84 black      light      brown             24 male  mascu…
+ 6 IG-88       200   140 none       metal      red               15 none  mascu…
+ 7 Cordé       157    NA brown      light      brown             NA fema… femin…
+ 8 Dormé       165    NA brown      light      brown             NA fema… femin…
+ 9 R4-P17       96    NA none       silver, r… red, blue         NA none  femin…
+10 Raymus …    188    79 brown      light      brown             NA male  mascu…
+11 Poe Dam…     NA    NA brown      light      brown             NA male  mascu…
+12 BB8          NA    NA none       none       black             NA none  mascu…
+13 Padmé A…    165    45 brown      light      brown             46 fema… femin…
+# ℹ 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>In Ibis, this would be:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>starwars.<span class="bu">filter</span>(</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    ((_.skin_color <span class="op">==</span> <span class="st">"light"</span>) <span class="op">&amp;</span> (_.eye_color <span class="op">==</span> <span class="st">"brown"</span>)) <span class="op">|</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    (_.species <span class="op">==</span> <span class="st">"Droid"</span>)</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name              ┃ height ┃ mass    ┃ hair_color ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string            │ int64  │ float64 │ string     │ string      │ … │
+├───────────────────┼────────┼─────────┼────────────┼─────────────┼───┤
+│ C-3PO             │    167 │    75.0 │ NULL       │ gold        │ … │
+│ R2-D2             │     96 │    32.0 │ NULL       │ white, blue │ … │
+│ R5-D4             │     97 │    32.0 │ NULL       │ white, red  │ … │
+│ IG-88             │    200 │   140.0 │ none       │ metal       │ … │
+│ Leia Organa       │    150 │    49.0 │ brown      │ light       │ … │
+│ Biggs Darklighter │    183 │    84.0 │ black      │ light       │ … │
+│ Cordé             │    157 │     nan │ brown      │ light       │ … │
+│ Dormé             │    165 │     nan │ brown      │ light       │ … │
+│ R4-P17            │     96 │     nan │ none       │ silver, red │ … │
+│ BB8               │   NULL │     nan │ none       │ none        │ … │
+│ …                 │      … │       … │ …          │ …           │ … │
+└───────────────────┴────────┴─────────┴────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+</section>
+<section id="sorting-your-data-with-order_by" class="level2">
+<h2 class="anchored" data-anchor-id="sorting-your-data-with-order_by">Sorting your data with <code>order_by()</code></h2>
+<p>To sort a column, dplyr has the verb <code>arrange</code>. For instance, to sort the column <code>height</code> using dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>   <span class="fu">arrange</span>(height)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 14
+   name     height  mass hair_color skin_color eye_color birth_year sex   gender
+   &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+ 1 Yoda         66    17 white      green      brown            896 male  mascu…
+ 2 Ratts T…     79    15 none       grey, blue unknown           NA male  mascu…
+ 3 Wicket …     88    20 brown      brown      brown              8 male  mascu…
+ 4 Dud Bolt     94    45 none       blue, grey yellow            NA male  mascu…
+ 5 R2-D2        96    32 &lt;NA&gt;       white, bl… red               33 none  mascu…
+ 6 R4-P17       96    NA none       silver, r… red, blue         NA none  femin…
+ 7 R5-D4        97    32 &lt;NA&gt;       white, red red               NA none  mascu…
+ 8 Sebulba     112    40 none       grey, red  orange            NA male  mascu…
+ 9 Gasgano     122    NA none       white, bl… black             NA male  mascu…
+10 Watto       137    NA black      blue, grey yellow            NA male  mascu…
+# ℹ 77 more rows
+# ℹ 5 more variables: homeworld &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>Ibis has the <code>order_by</code> method, so to perform the same operation:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>starwars.order_by(_.height)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name                  ┃ height ┃ mass    ┃ hair_color ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string                │ int64  │ float64 │ string     │ string      │ … │
+├───────────────────────┼────────┼─────────┼────────────┼─────────────┼───┤
+│ Yoda                  │     66 │    17.0 │ white      │ green       │ … │
+│ Ratts Tyerell         │     79 │    15.0 │ none       │ grey, blue  │ … │
+│ Wicket Systri Warrick │     88 │    20.0 │ brown      │ brown       │ … │
+│ Dud Bolt              │     94 │    45.0 │ none       │ blue, grey  │ … │
+│ R2-D2                 │     96 │    32.0 │ NULL       │ white, blue │ … │
+│ R4-P17                │     96 │     nan │ none       │ silver, red │ … │
+│ R5-D4                 │     97 │    32.0 │ NULL       │ white, red  │ … │
+│ Sebulba               │    112 │    40.0 │ none       │ grey, red   │ … │
+│ Gasgano               │    122 │     nan │ none       │ white, blue │ … │
+│ Watto                 │    137 │     nan │ black      │ blue, grey  │ … │
+│ …                     │      … │       … │ …          │ …           │ … │
+└───────────────────────┴────────┴─────────┴────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+<p>You might notice that while dplyr puts missing values at the end, Ibis places them at the top. This behavior can actually vary from backend to backend and is something to be aware of when using Ibis.</p>
+<p>If you want to order using multiple variables, you can pass them as a list:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>starwars.order_by([_.height, _.mass]) <span class="co"># or starwars.order_by(["height", "mass"])</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name                  ┃ height ┃ mass    ┃ hair_color ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string                │ int64  │ float64 │ string     │ string      │ … │
+├───────────────────────┼────────┼─────────┼────────────┼─────────────┼───┤
+│ Yoda                  │     66 │    17.0 │ white      │ green       │ … │
+│ Ratts Tyerell         │     79 │    15.0 │ none       │ grey, blue  │ … │
+│ Wicket Systri Warrick │     88 │    20.0 │ brown      │ brown       │ … │
+│ Dud Bolt              │     94 │    45.0 │ none       │ blue, grey  │ … │
+│ R2-D2                 │     96 │    32.0 │ NULL       │ white, blue │ … │
+│ R4-P17                │     96 │     nan │ none       │ silver, red │ … │
+│ R5-D4                 │     97 │    32.0 │ NULL       │ white, red  │ … │
+│ Sebulba               │    112 │    40.0 │ none       │ grey, red   │ … │
+│ Gasgano               │    122 │     nan │ none       │ white, blue │ … │
+│ Watto                 │    137 │     nan │ black      │ blue, grey  │ … │
+│ …                     │      … │       … │ …          │ …           │ … │
+└───────────────────────┴────────┴─────────┴────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+<p>To order a column in descending order, there are two ways to do it. Note that missing values remain at the top.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>starwars.order_by(_.height.desc()) <span class="co"># or: starwars.order_by(ibis.desc("height"))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━┓
+┃ name         ┃ height ┃ mass    ┃ hair_color ┃ skin_color   ┃ … ┃
+┡━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━┩
+│ string       │ int64  │ float64 │ string     │ string       │ … │
+├──────────────┼────────┼─────────┼────────────┼──────────────┼───┤
+│ Yarael Poof  │    264 │     nan │ none       │ white        │ … │
+│ Tarfful      │    234 │   136.0 │ brown      │ brown        │ … │
+│ Lama Su      │    229 │    88.0 │ none       │ grey         │ … │
+│ Chewbacca    │    228 │   112.0 │ brown      │ unknown      │ … │
+│ Roos Tarpals │    224 │    82.0 │ none       │ grey         │ … │
+│ Grievous     │    216 │   159.0 │ none       │ brown, white │ … │
+│ Taun We      │    213 │     nan │ none       │ grey         │ … │
+│ Rugor Nass   │    206 │     nan │ none       │ green        │ … │
+│ Tion Medon   │    206 │    80.0 │ none       │ grey         │ … │
+│ Darth Vader  │    202 │   136.0 │ none       │ white        │ … │
+│ …            │      … │       … │ …          │ …            │ … │
+└──────────────┴────────┴─────────┴────────────┴──────────────┴───┘</code></pre>
+</div>
+</div>
+</section>
+<section id="selecting-columns-with-select" class="level2">
+<h2 class="anchored" data-anchor-id="selecting-columns-with-select">Selecting columns with <code>select()</code></h2>
+<p>Ibis, like dplyr, has a <code>select</code> method to include or exclude columns:</p>
+<p>With dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(hair_color)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 1
+   hair_color   
+   &lt;chr&gt;        
+ 1 blond        
+ 2 &lt;NA&gt;         
+ 3 &lt;NA&gt;         
+ 4 none         
+ 5 brown        
+ 6 brown, grey  
+ 7 brown        
+ 8 &lt;NA&gt;         
+ 9 black        
+10 auburn, white
+# ℹ 77 more rows</code></pre>
+</div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a>starwars.select(_.hair_color)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━┓
+┃ hair_color    ┃
+┡━━━━━━━━━━━━━━━┩
+│ string        │
+├───────────────┤
+│ blond         │
+│ NULL          │
+│ NULL          │
+│ none          │
+│ brown         │
+│ brown, grey   │
+│ brown         │
+│ NULL          │
+│ black         │
+│ auburn, white │
+│ …             │
+└───────────────┘</code></pre>
+</div>
+</div>
+<p>Note: A common pitfall to be aware of when referencing column names in Ibis is when column names collide with built-in methods on the Ibis Table object, such as <code>count</code>. In this situation, you will have to reference <code>count</code> like <code>table["count"]</code> or <code>_["count"]</code>.</p>
+<p>dplyr also allows selecting more than one column at a time:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(hair_color, skin_color, eye_color)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 3
+   hair_color    skin_color  eye_color
+   &lt;chr&gt;         &lt;chr&gt;       &lt;chr&gt;    
+ 1 blond         fair        blue     
+ 2 &lt;NA&gt;          gold        yellow   
+ 3 &lt;NA&gt;          white, blue red      
+ 4 none          white       yellow   
+ 5 brown         light       brown    
+ 6 brown, grey   light       blue     
+ 7 brown         light       blue     
+ 8 &lt;NA&gt;          white, red  red      
+ 9 black         light       brown    
+10 auburn, white fair        blue-gray
+# ℹ 77 more rows</code></pre>
+</div>
+</div>
+<p>In Ibis, we can either quote the names:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>starwars.select(<span class="st">"hair_color"</span>, <span class="st">"skin_color"</span>, <span class="st">"eye_color"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ hair_color    ┃ skin_color  ┃ eye_color ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ string        │ string      │ string    │
+├───────────────┼─────────────┼───────────┤
+│ blond         │ fair        │ blue      │
+│ NULL          │ gold        │ yellow    │
+│ NULL          │ white, blue │ red       │
+│ none          │ white       │ yellow    │
+│ brown         │ light       │ brown     │
+│ brown, grey   │ light       │ blue      │
+│ brown         │ light       │ blue      │
+│ NULL          │ white, red  │ red       │
+│ black         │ light       │ brown     │
+│ auburn, white │ fair        │ blue-gray │
+│ …             │ …           │ …         │
+└───────────────┴─────────────┴───────────┘</code></pre>
+</div>
+</div>
+<p>Or use the <code>_</code> helper:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>starwars.select(_.hair_color, _.skin_color, _.eye_color)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ hair_color    ┃ skin_color  ┃ eye_color ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ string        │ string      │ string    │
+├───────────────┼─────────────┼───────────┤
+│ blond         │ fair        │ blue      │
+│ NULL          │ gold        │ yellow    │
+│ NULL          │ white, blue │ red       │
+│ none          │ white       │ yellow    │
+│ brown         │ light       │ brown     │
+│ brown, grey   │ light       │ blue      │
+│ brown         │ light       │ blue      │
+│ NULL          │ white, red  │ red       │
+│ black         │ light       │ brown     │
+│ auburn, white │ fair        │ blue-gray │
+│ …             │ …           │ …         │
+└───────────────┴─────────────┴───────────┘</code></pre>
+</div>
+</div>
+<p>To select columns by name based on a condition, dplyr has helpers such as:</p>
+<ul>
+<li><code>starts_with()</code>: Starts with a prefix.</li>
+<li><code>ends_with()</code>: Ends with a suffix.</li>
+<li><code>contains()</code>: Contains a literal string.</li>
+</ul>
+<p>These and many more <a href="../reference/selectors.html">selectors</a> are available in Ibis as well, with slightly different names:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>starwars.select(s.startswith(<span class="st">"h"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ height ┃ hair_color    ┃ homeworld ┃
+┡━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ int64  │ string        │ string    │
+├────────┼───────────────┼───────────┤
+│    172 │ blond         │ Tatooine  │
+│    167 │ NULL          │ Tatooine  │
+│     96 │ NULL          │ Naboo     │
+│    202 │ none          │ Tatooine  │
+│    150 │ brown         │ Alderaan  │
+│    178 │ brown, grey   │ Tatooine  │
+│    165 │ brown         │ Tatooine  │
+│     97 │ NULL          │ Tatooine  │
+│    183 │ black         │ Tatooine  │
+│    182 │ auburn, white │ Stewjon   │
+│      … │ …             │ …         │
+└────────┴───────────────┴───────────┘</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>starwars.select(s.endswith(<span class="st">"color"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ hair_color    ┃ skin_color  ┃ eye_color ┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ string        │ string      │ string    │
+├───────────────┼─────────────┼───────────┤
+│ blond         │ fair        │ blue      │
+│ NULL          │ gold        │ yellow    │
+│ NULL          │ white, blue │ red       │
+│ none          │ white       │ yellow    │
+│ brown         │ light       │ brown     │
+│ brown, grey   │ light       │ blue      │
+│ brown         │ light       │ blue      │
+│ NULL          │ white, red  │ red       │
+│ black         │ light       │ brown     │
+│ auburn, white │ fair        │ blue-gray │
+│ …             │ …           │ …         │
+└───────────────┴─────────────┴───────────┘</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>starwars.select(s.contains(<span class="st">"world"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━┓
+┃ homeworld ┃
+┡━━━━━━━━━━━┩
+│ string    │
+├───────────┤
+│ Tatooine  │
+│ Tatooine  │
+│ Naboo     │
+│ Tatooine  │
+│ Alderaan  │
+│ Tatooine  │
+│ Tatooine  │
+│ Tatooine  │
+│ Tatooine  │
+│ Stewjon   │
+│ …         │
+└───────────┘</code></pre>
+</div>
+</div>
+<p>See the Ibis <a href="../reference/selectors.html">Column Selectors</a> documentation for the full list of selectors in Ibis.</p>
+</section>
+<section id="renaming-columns-with-rename" class="level2">
+<h2 class="anchored" data-anchor-id="renaming-columns-with-rename">Renaming columns with <code>rename()</code></h2>
+<p>Ibis allows you to rename columns using <code>rename()</code> which provides similar functionality to <code>rename()</code> in dplyr.</p>
+<p>In dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rename</span>(<span class="st">"home_world"</span> <span class="ot">=</span> <span class="st">"homeworld"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 14
+   name     height  mass hair_color skin_color eye_color birth_year sex   gender
+   &lt;chr&gt;     &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; 
+ 1 Luke Sk…    172    77 blond      fair       blue            19   male  mascu…
+ 2 C-3PO       167    75 &lt;NA&gt;       gold       yellow         112   none  mascu…
+ 3 R2-D2        96    32 &lt;NA&gt;       white, bl… red             33   none  mascu…
+ 4 Darth V…    202   136 none       white      yellow          41.9 male  mascu…
+ 5 Leia Or…    150    49 brown      light      brown           19   fema… femin…
+ 6 Owen La…    178   120 brown, gr… light      blue            52   male  mascu…
+ 7 Beru Wh…    165    75 brown      light      blue            47   fema… femin…
+ 8 R5-D4        97    32 &lt;NA&gt;       white, red red             NA   none  mascu…
+ 9 Biggs D…    183    84 black      light      brown           24   male  mascu…
+10 Obi-Wan…    182    77 auburn, w… fair       blue-gray       57   male  mascu…
+# ℹ 77 more rows
+# ℹ 5 more variables: home_world &lt;chr&gt;, species &lt;chr&gt;, films &lt;list&gt;,
+#   vehicles &lt;list&gt;, starships &lt;list&gt;</code></pre>
+</div>
+</div>
+<p>In Ibis, use <code>rename</code> and pass a <code>dict</code> of name mappings:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a>starwars.rename(home_world<span class="op">=</span><span class="st">"homeworld"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━┓
+┃ name               ┃ height ┃ mass    ┃ hair_color    ┃ skin_color  ┃ … ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━┩
+│ string             │ int64  │ float64 │ string        │ string      │ … │
+├────────────────────┼────────┼─────────┼───────────────┼─────────────┼───┤
+│ Luke Skywalker     │    172 │    77.0 │ blond         │ fair        │ … │
+│ C-3PO              │    167 │    75.0 │ NULL          │ gold        │ … │
+│ R2-D2              │     96 │    32.0 │ NULL          │ white, blue │ … │
+│ Darth Vader        │    202 │   136.0 │ none          │ white       │ … │
+│ Leia Organa        │    150 │    49.0 │ brown         │ light       │ … │
+│ Owen Lars          │    178 │   120.0 │ brown, grey   │ light       │ … │
+│ Beru Whitesun lars │    165 │    75.0 │ brown         │ light       │ … │
+│ R5-D4              │     97 │    32.0 │ NULL          │ white, red  │ … │
+│ Biggs Darklighter  │    183 │    84.0 │ black         │ light       │ … │
+│ Obi-Wan Kenobi     │    182 │    77.0 │ auburn, white │ fair        │ … │
+│ …                  │      … │       … │ …             │ …           │ … │
+└────────────────────┴────────┴─────────┴───────────────┴─────────────┴───┘</code></pre>
+</div>
+</div>
+</section>
+<section id="add-new-columns-with-mutate" class="level2">
+<h2 class="anchored" data-anchor-id="add-new-columns-with-mutate">Add new columns with <code>mutate()</code></h2>
+<p>Ibis, like dplyr, uses the <code>mutate</code> verb to add columns.</p>
+<p>In dplyr,</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">|&gt;</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">height_m =</span> height <span class="sc">/</span> <span class="dv">100</span>) <span class="sc">|&gt;</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">select</span>(name, height_m)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 2
+   name               height_m
+   &lt;chr&gt;                 &lt;dbl&gt;
+ 1 Luke Skywalker         1.72
+ 2 C-3PO                  1.67
+ 3 R2-D2                  0.96
+ 4 Darth Vader            2.02
+ 5 Leia Organa            1.5 
+ 6 Owen Lars              1.78
+ 7 Beru Whitesun lars     1.65
+ 8 R5-D4                  0.97
+ 9 Biggs Darklighter      1.83
+10 Obi-Wan Kenobi         1.82
+# ℹ 77 more rows</code></pre>
+</div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>    starwars</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>        .mutate(height_m <span class="op">=</span> _.height <span class="op">/</span> <span class="dv">100</span>)</span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>        .select(<span class="st">"name"</span>, <span class="st">"height_m"</span>)</span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┓
+┃ name               ┃ height_m ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━┩
+│ string             │ float64  │
+├────────────────────┼──────────┤
+│ Luke Skywalker     │     1.72 │
+│ C-3PO              │     1.67 │
+│ R2-D2              │     0.96 │
+│ Darth Vader        │     2.02 │
+│ Leia Organa        │     1.50 │
+│ Owen Lars          │     1.78 │
+│ Beru Whitesun lars │     1.65 │
+│ R5-D4              │     0.97 │
+│ Biggs Darklighter  │     1.83 │
+│ Obi-Wan Kenobi     │     1.82 │
+│ …                  │        … │
+└────────────────────┴──────────┘</code></pre>
+</div>
+</div>
+<p>A big difference between dplyr’s <code>mutate</code> and Ibis’ <code>mutate</code> is that, in Ibis, you have to chain separate <code>mutate</code> calls together when you reference newly-created columns in the same <code>mutate</code> whereas in dplyr, you can put them all in the same call. This makes Ibis’ <code>mutate</code> more similar to <code>transform</code> in base R.</p>
+<p>In dplyr, we only need one <code>mutate</code> call:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">height_m =</span> height <span class="sc">/</span> <span class="dv">100</span>,</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">BMI =</span> mass <span class="sc">/</span> (height_m<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span></span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(BMI, <span class="fu">everything</span>())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 16
+     BMI name      height  mass hair_color skin_color eye_color birth_year sex  
+   &lt;dbl&gt; &lt;chr&gt;      &lt;int&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;      &lt;chr&gt;          &lt;dbl&gt; &lt;chr&gt;
+ 1  26.0 Luke Sky…    172    77 blond      fair       blue            19   male 
+ 2  26.9 C-3PO        167    75 &lt;NA&gt;       gold       yellow         112   none 
+ 3  34.7 R2-D2         96    32 &lt;NA&gt;       white, bl… red             33   none 
+ 4  33.3 Darth Va…    202   136 none       white      yellow          41.9 male 
+ 5  21.8 Leia Org…    150    49 brown      light      brown           19   fema…
+ 6  37.9 Owen Lars    178   120 brown, gr… light      blue            52   male 
+ 7  27.5 Beru Whi…    165    75 brown      light      blue            47   fema…
+ 8  34.0 R5-D4         97    32 &lt;NA&gt;       white, red red             NA   none 
+ 9  25.1 Biggs Da…    183    84 black      light      brown           24   male 
+10  23.2 Obi-Wan …    182    77 auburn, w… fair       blue-gray       57   male 
+# ℹ 77 more rows
+# ℹ 7 more variables: gender &lt;chr&gt;, homeworld &lt;chr&gt;, species &lt;chr&gt;,
+#   films &lt;list&gt;, vehicles &lt;list&gt;, starships &lt;list&gt;, height_m &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>In Ibis, for <code>BMI</code> to reference <code>height_m</code>, it needs to be in a separate <code>mutate</code> call:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb65"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a>(starwars</span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>    .mutate(</span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>        height_m <span class="op">=</span> _.height <span class="op">/</span> <span class="dv">100</span></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>    .mutate(</span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>        BMI <span class="op">=</span> _.mass <span class="op">/</span> (_.height_m<span class="op">**</span><span class="dv">2</span>)</span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a>    .select(<span class="st">"BMI"</span>, <span class="op">~</span>s.matches(<span class="st">"BMI"</span>))</span>
+<span id="cb65-9"><a href="#cb65-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━┓
+┃ BMI       ┃ name               ┃ height ┃ mass    ┃ hair_color    ┃ … ┃
+┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━┩
+│ float64   │ string             │ int64  │ float64 │ string        │ … │
+├───────────┼────────────────────┼────────┼─────────┼───────────────┼───┤
+│ 26.027582 │ Luke Skywalker     │    172 │    77.0 │ blond         │ … │
+│ 26.892323 │ C-3PO              │    167 │    75.0 │ NULL          │ … │
+│ 34.722222 │ R2-D2              │     96 │    32.0 │ NULL          │ … │
+│ 33.330066 │ Darth Vader        │    202 │   136.0 │ none          │ … │
+│ 21.777778 │ Leia Organa        │    150 │    49.0 │ brown         │ … │
+│ 37.874006 │ Owen Lars          │    178 │   120.0 │ brown, grey   │ … │
+│ 27.548209 │ Beru Whitesun lars │    165 │    75.0 │ brown         │ … │
+│ 34.009990 │ R5-D4              │     97 │    32.0 │ NULL          │ … │
+│ 25.082863 │ Biggs Darklighter  │    183 │    84.0 │ black         │ … │
+│ 23.245985 │ Obi-Wan Kenobi     │    182 │    77.0 │ auburn, white │ … │
+│         … │ …                  │      … │       … │ …             │ … │
+└───────────┴────────────────────┴────────┴─────────┴───────────────┴───┘</code></pre>
+</div>
+</div>
+</section>
+<section id="summarize-values-with-aggregate" class="level2">
+<h2 class="anchored" data-anchor-id="summarize-values-with-aggregate">Summarize values with <code>aggregate()</code></h2>
+<p>To summarize tables, dplyr has the verbs <code>summarise</code>/<code>summarize</code>:</p>
+<p>In dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a>starwars <span class="sc">%&gt;%</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">height =</span> <span class="fu">mean</span>(height, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 1
+  height
+   &lt;dbl&gt;
+1   174.</code></pre>
+</div>
+</div>
+<p>In Ibis, the corresponding verb is <code>aggregate</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>starwars.aggregate(height <span class="op">=</span> _.height.mean())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━┓
+┃ height     ┃
+┡━━━━━━━━━━━━┩
+│ float64    │
+├────────────┤
+│ 174.358025 │
+└────────────┘</code></pre>
+</div>
+</div>
+<p><strong>Note</strong>: Throughout this guide, where dplyr uses R generics, Ibis uses Python methods. In the previous code cell, <code>aggregate</code> is a method on a <em>table</em> and <code>mean</code> is a method on a <em>column</em>. If you want to perform aggregations on multiple columns, you can call the method that you want on the column you want to apply it to.</p>
+</section>
+<section id="join-tables-with-left_join" class="level2">
+<h2 class="anchored" data-anchor-id="join-tables-with-left_join">Join tables with <code>left_join()</code></h2>
+<p>To demonstrate how to do joins with Ibis, we’ll load two more example datasets that also come from the example datasets included in dplyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>band_members <span class="op">=</span> ibis.examples.band_members.fetch()</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>band_instruments <span class="op">=</span> ibis.examples.band_instruments.fetch()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In dplyr, we can perform a left join of these two tables like:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb72"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>band_members <span class="sc">|&gt;</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(band_instruments)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 3
+  name  band    plays 
+  &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt; 
+1 Mick  Stones  &lt;NA&gt;  
+2 John  Beatles guitar
+3 Paul  Beatles bass  </code></pre>
+</div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb74"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a>band_members.left_join(band_instruments, <span class="st">"name"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━┓
+┃ name   ┃ band    ┃ name_right ┃ plays  ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━┩
+│ string │ string  │ string     │ string │
+├────────┼─────────┼────────────┼────────┤
+│ John   │ Beatles │ John       │ guitar │
+│ Paul   │ Beatles │ Paul       │ bass   │
+│ Mick   │ Stones  │ NULL       │ NULL   │
+└────────┴─────────┴────────────┴────────┘</code></pre>
+</div>
+</div>
+<p>There are two main differences between Ibis and dplyr here:</p>
+<ul>
+<li>Ibis requires us to explicitly specify our join key (“name”, in this example) whereas in dplyr, if the join key is missing, we get the natural join of the two tables which joins across all shared column names</li>
+<li>Ibis keeps columns for join keys from each table whereas dplyr does not by default</li>
+</ul>
+<p>To replicate the result we’d get by default in dplyr but using Ibis, we need to incorporate two other verbs we’ve already seen in this tutorial:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb76"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>    band_members</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>        .left_join(band_instruments, <span class="st">"name"</span>)</span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>        .select(<span class="op">~</span>s.contains(<span class="st">"_right"</span>))</span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━┓
+┃ name   ┃ band    ┃ plays  ┃
+┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━┩
+│ string │ string  │ string │
+├────────┼─────────┼────────┤
+│ John   │ Beatles │ guitar │
+│ Paul   │ Beatles │ bass   │
+│ Mick   │ Stones  │ NULL   │
+└────────┴─────────┴────────┘</code></pre>
+</div>
+</div>
+</section>
+<section id="pivot-data-with-pivot_wider-and-pivot_longer" class="level2">
+<h2 class="anchored" data-anchor-id="pivot-data-with-pivot_wider-and-pivot_longer">Pivot data with <code>pivot_wider()</code> and <code>pivot_longer()</code></h2>
+<p>dplyr users are likely to be familiar with the <code>pivot_wider</code> and <code>pivot_longer</code> functions from the <a href="https://tidyr.tidyverse.org">tidyr</a> package which convert tables between wide and long formats, respectively.</p>
+<p><code>pivot_longer</code> in dplyr + tidyr:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb78"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>starwars_colors <span class="ot">&lt;-</span></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>    starwars <span class="sc">|&gt;</span></span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>        <span class="fu">select</span>(name, <span class="fu">matches</span>(<span class="st">"color"</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>        <span class="fu">pivot_longer</span>(<span class="fu">matches</span>(<span class="st">"color"</span>), <span class="at">names_to =</span> <span class="st">"attribute"</span>, <span class="at">values_to =</span> <span class="st">"color"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a>starwars_colors <span class="op">=</span> (</span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>    starwars</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a>        .select(<span class="st">"name"</span>, s.matches(<span class="st">"color"</span>))</span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>        .pivot_longer(s.matches(<span class="st">"color"</span>), names_to<span class="op">=</span><span class="st">"attribute"</span>, values_to<span class="op">=</span><span class="st">"color"</span>)</span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>starwars_colors</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ name           ┃ attribute  ┃ color       ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ string         │ string     │ string      │
+├────────────────┼────────────┼─────────────┤
+│ Luke Skywalker │ hair_color │ blond       │
+│ Luke Skywalker │ skin_color │ fair        │
+│ Luke Skywalker │ eye_color  │ blue        │
+│ C-3PO          │ hair_color │ NULL        │
+│ C-3PO          │ skin_color │ gold        │
+│ C-3PO          │ eye_color  │ yellow      │
+│ R2-D2          │ hair_color │ NULL        │
+│ R2-D2          │ skin_color │ white, blue │
+│ R2-D2          │ eye_color  │ red         │
+│ Darth Vader    │ hair_color │ none        │
+│ …              │ …          │ …           │
+└────────────────┴────────────┴─────────────┘</code></pre>
+</div>
+</div>
+<p>And <code>pivot_wider</code>:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>starwars_colors <span class="sc">|&gt;</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_wider</span>(<span class="at">names_from =</span> <span class="st">"attribute"</span>, <span class="at">values_from =</span> <span class="st">"color"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 87 × 4
+   name               hair_color    skin_color  eye_color
+   &lt;chr&gt;              &lt;chr&gt;         &lt;chr&gt;       &lt;chr&gt;    
+ 1 Luke Skywalker     blond         fair        blue     
+ 2 C-3PO              &lt;NA&gt;          gold        yellow   
+ 3 R2-D2              &lt;NA&gt;          white, blue red      
+ 4 Darth Vader        none          white       yellow   
+ 5 Leia Organa        brown         light       brown    
+ 6 Owen Lars          brown, grey   light       blue     
+ 7 Beru Whitesun lars brown         light       blue     
+ 8 R5-D4              &lt;NA&gt;          white, red  red      
+ 9 Biggs Darklighter  black         light       brown    
+10 Obi-Wan Kenobi     auburn, white fair        blue-gray
+# ℹ 77 more rows</code></pre>
+</div>
+</div>
+<p>In Ibis:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>    starwars_colors.</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>        pivot_wider(names_from<span class="op">=</span><span class="st">"attribute"</span>, values_from<span class="op">=</span><span class="st">"color"</span>)</span>
+<span id="cb83-4"><a href="#cb83-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃ name               ┃ hair_color    ┃ skin_color  ┃ eye_color ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ string             │ string        │ string      │ string    │
+├────────────────────┼───────────────┼─────────────┼───────────┤
+│ Luke Skywalker     │ blond         │ fair        │ blue      │
+│ C-3PO              │ NULL          │ gold        │ yellow    │
+│ R2-D2              │ NULL          │ white, blue │ red       │
+│ Darth Vader        │ none          │ white       │ yellow    │
+│ Leia Organa        │ brown         │ light       │ brown     │
+│ Owen Lars          │ brown, grey   │ light       │ blue      │
+│ Beru Whitesun lars │ brown         │ light       │ blue      │
+│ R5-D4              │ NULL          │ white, red  │ red       │
+│ Biggs Darklighter  │ black         │ light       │ brown     │
+│ Obi-Wan Kenobi     │ auburn, white │ fair        │ blue-gray │
+│ …                  │ …             │ …           │ …         │
+└────────────────────┴───────────────┴─────────────┴───────────┘</code></pre>
+</div>
+</div>
+</section>
+<section id="next-steps" class="level2">
+<h2 class="anchored" data-anchor-id="next-steps">Next Steps</h2>
+<p>Now that you’ve gotten an introduction to the common differences between dplyr and Ibis, head over to <a href="../tutorials/getting_started.html">Getting started with ibis</a> for a full introduction. If you’re familiar with SQL, check out <a href="../tutorials/ibis-for-sql-users.html">Ibis for SQL users</a>. If you’re familiar with pandas, take a look at <a href="../tutorials/ibis-for-pandas-users.html">Ibis for pandas users</a></p>
+
+
+</section>
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/tutorials/ibis-for-dplyr-users.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

@@ -1,0 +1,22 @@
+[
+  {
+    "listing": "/posts.html",
+    "items": [
+      "/posts/bigquery-arrays/index.html",
+      "/posts/snowflake-io/index.html",
+      "/posts/v6.1.0-release/index.html",
+      "/posts/ibis-version-6.0.0-release/index.html",
+      "/posts/torch/index.html",
+      "/posts/campaign-finance/index.html",
+      "/posts/ibis-to-file/index.html",
+      "/posts/ibis-examples/index.html",
+      "/posts/selectors/index.html",
+      "/posts/ibis_substrait_to_duckdb/index.html",
+      "/posts/ci-analysis/index.html",
+      "/posts/ibis-version-4.0.0-release/index.html",
+      "/posts/ffill-and-bfill-using-ibis/index.html",
+      "/posts/Ibis-version-3.1.0-release/index.html",
+      "/posts/Ibis-version-3.0.0-release/index.html"
+    ]
+  }
+]
