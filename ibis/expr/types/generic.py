@@ -1999,7 +1999,9 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
+    def topk(
+        self, k: int, by: ir.Value | None = None, *, name: str | None = None
+    ) -> ir.Table:
         """Return a "top k" expression.
 
         Computes a Table containing the top `k` values by a certain metric
@@ -2011,6 +2013,9 @@ class Column(Value, _FixedTextJupyterMixin):
             The number of rows to return.
         by
             The metric to compute "top" by. Defaults to `count`.
+        name
+            The name to use for the metric column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
@@ -2048,6 +2053,18 @@ class Column(Value, _FixedTextJupyterMixin):
         │ I      │ 5091.874954 │
         │ H      │ 4486.669196 │
         └────────┴─────────────┘
+
+        Compute the top 2 diamond colors by max carat:
+
+        >>> t.color.topk(2, by=t.carat.max(), name="max_carat")
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ color  ┃ max_carat ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ string │ float64   │
+        ├────────┼───────────┤
+        │ J      │      5.01 │
+        │ H      │      4.13 │
+        └────────┴───────────┘
         """
         from ibis.expr.types.relations import bind
 
@@ -2062,6 +2079,9 @@ class Column(Value, _FixedTextJupyterMixin):
             by = lambda t: t.count()
 
         (metric,) = bind(table, by)
+
+        if name is not None:
+            metric = metric.name(name)
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
