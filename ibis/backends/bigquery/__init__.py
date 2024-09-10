@@ -185,20 +185,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.client.delete_table(table_ref, not_found_ok=True)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        session_dataset = self._session_dataset
-
-        table_id = sg.table(
-            op.name,
-            db=session_dataset.dataset_id,
-            catalog=session_dataset.project,
-            quoted=False,
-        ).sql(dialect=self.name)
+        table_ref = bq.TableReference(self._session_dataset, op.name)
 
         bq_schema = BigQuerySchema.from_ibis(op.schema)
 
         load_job = self.client.load_table_from_dataframe(
             op.data.to_frame(),
-            table_id,
+            table_ref,
             job_config=bq.LoadJobConfig(
                 # fail if the table already exists and contains data
                 write_disposition=bq.WriteDisposition.WRITE_EMPTY,
