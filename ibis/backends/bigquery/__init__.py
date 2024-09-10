@@ -183,7 +183,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     def _finalize_memtable(self, name: str) -> None:
         session_dataset = self._session_dataset
         table_id = sg.table(
-            name, db=session_dataset.dataset_id, catalog=session_dataset.project
+            name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
         )
         drop_sql_stmt = sge.Drop(kind="TABLE", this=table_id, exists=True)
         self.raw_sql(drop_sql_stmt)
@@ -192,7 +195,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         session_dataset = self._session_dataset
 
         table_id = sg.table(
-            op.name, db=session_dataset.dataset_id, catalog=session_dataset.project
+            op.name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
         ).sql(dialect=self.name)
 
         bq_schema = BigQuerySchema.from_ibis(op.schema)
