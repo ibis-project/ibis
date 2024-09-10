@@ -5,7 +5,7 @@ import datetime
 import decimal
 from collections import Counter
 from itertools import permutations
-from operator import invert, methodcaller, neg
+from operator import invert, methodcaller
 
 import pytest
 import toolz
@@ -76,7 +76,7 @@ def test_null_literal_typed(con, backend):
     expr = ibis.null(bool)
     assert expr.type() == dt.boolean
     assert pd.isna(con.execute(expr))
-    assert pd.isna(con.execute(expr.negate()))
+    assert pd.isna(con.execute(~expr))
     assert pd.isna(con.execute(expr.cast(str).upper()))
 
 
@@ -1003,15 +1003,13 @@ def test_isin_notin_column_expr(backend, alltypes, df, ibis_op, pandas_op):
         param(False, False, toolz.identity, id="false_noop"),
         param(True, False, invert, id="true_invert"),
         param(False, True, invert, id="false_invert"),
-        param(True, False, neg, id="true_negate"),
-        param(False, True, neg, id="false_negate"),
     ],
 )
 def test_logical_negation_literal(con, expr, expected, op):
     assert con.execute(op(ibis.literal(expr)).name("tmp")) == expected
 
 
-@pytest.mark.parametrize("op", [toolz.identity, invert, neg])
+@pytest.mark.parametrize("op", [toolz.identity, invert])
 def test_logical_negation_column(backend, alltypes, df, op):
     result = op(alltypes["bool_col"]).name("tmp").execute()
     expected = op(df["bool_col"])

@@ -501,17 +501,15 @@ def test_negate(table, col):
     assert isinstance(result.op(), ops.Negate)
 
 
-@pytest.mark.parametrize("op", [operator.neg, operator.invert])
 @pytest.mark.parametrize("value", [True, False])
-def test_negate_boolean_scalar(op, value):
-    result = op(ibis.literal(value))
+def test_negate_boolean_scalar(value):
+    result = ~ibis.literal(value)
     assert isinstance(result, ir.BooleanScalar)
     assert isinstance(result.op(), ops.Not)
 
 
-@pytest.mark.parametrize("op", [operator.neg, operator.invert])
-def test_negate_boolean_column(table, op):
-    result = op(table["h"])
+def test_negate_boolean_column(table):
+    result = ~table["h"]
     assert isinstance(result, ir.BooleanColumn)
     assert isinstance(result.op(), ops.Not)
 
