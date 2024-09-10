@@ -38,7 +38,7 @@ import ibis.selectors as s
 
 expr = (
     t.group_by("species")
-     .mutate(s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std()))
+     .mutate(s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std()))
 )
 expr
 ```

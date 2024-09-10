@@ -989,7 +989,7 @@ def test_duckdb_timestamp_conversion(benchmark, con):
 def test_selectors(benchmark, cols):
     t = ibis.table(name="t", schema={f"col{i}": "int" for i in range(cols)})
     n = cols - cols // 10
-    sel = s.across(s.c(*[f"col{i}" for i in range(n)]), lambda c: c.cast("str"))
+    sel = s.across(s.cols(*[f"col{i}" for i in range(n)]), lambda c: c.cast("str"))
     benchmark(sel.expand, t)
 
 

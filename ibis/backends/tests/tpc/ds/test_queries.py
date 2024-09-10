@@ -1341,7 +1341,7 @@ def test_24(store_sales, store_returns, store, item, customer, customer_address)
         .group_by(_.c_last_name, _.c_first_name, _.s_store_name)
         .having(_.netpaid.sum() > ssales.netpaid.mean().as_scalar() * 0.05)
         .agg(paid=_.netpaid.sum())
-        .order_by(~s.c("paid"))
+        .order_by(~s.cols("paid"))
     )
 
 
@@ -1497,17 +1497,17 @@ def test_28(store_sales):
 def test_29(store_sales, store_returns, catalog_sales, date_dim, store, item):
     d1 = (
         date_dim.filter(_.d_moy == 9, _.d_year == 1999)
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d1_date_sk="d_date_sk")
     )
     d2 = (
         date_dim.filter(_.d_moy.between(9, 9 + 3), _.d_year == 1999)
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d2_date_sk="d_date_sk")
     )
     d3 = (
         date_dim.filter(_.d_year.isin((1999, 1999 + 1, 1999 + 2)))
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d3_date_sk="d_date_sk")
     )
     return (
@@ -1864,7 +1864,7 @@ def test_35(
         .relocate("cd_dep_employed_count", before="cnt2")
         .relocate("cd_dep_college_count", before="cnt3")
         .order_by(
-            s.across(s.startswith("cd_") | s.c("ca_state"), _.asc(nulls_first=True))
+            s.across(s.startswith("cd_") | s.cols("ca_state"), _.asc(nulls_first=True))
         )
         .limit(100)
     )
@@ -1894,7 +1894,7 @@ def test_36(store_sales, date_dim, item, store):
             g_category=lit(0),
             g_class=lit(0),
         )
-        .relocate(s.c("i_category", "i_class"), after="gross_margin")
+        .relocate(s.cols("i_category", "i_class"), after="gross_margin")
     )
     return (
         results.select(
@@ -2035,7 +2035,9 @@ def test_39(inventory, item, warehouse, date_dim):
         )
         .order_by(
             s.across(
-                s.c("wsk1", "isk1", "dmoy1", "mean1", "cov1", "d_moy", "mean", "cov"),
+                s.cols(
+                    "wsk1", "isk1", "dmoy1", "mean1", "cov1", "d_moy", "mean", "cov"
+                ),
                 _.asc(nulls_first=True),
             )
         )
@@ -2169,7 +2171,7 @@ def test_42(date_dim, store_sales, item):
         .join(item.filter(_.i_manager_id == 1), [("ss_item_sk", "i_item_sk")])
         .group_by(_.d_year, _.i_category_id, _.i_category)
         .agg(total_sales=_.ss_ext_sales_price.sum())
-        .order_by(_.total_sales.desc(), ~s.c("total_sales"))
+        .order_by(_.total_sales.desc(), ~s.cols("total_sales"))
         .limit(100)
     )
 
@@ -2268,7 +2270,7 @@ def test_45(web_sales, customer, customer_address, date_dim, item):
         )
         .group_by(_.ca_zip, _.ca_city)
         .agg(total_web_sales=_.ws_sales_price.sum())
-        .order_by(~s.c("total_web_sales"))
+        .order_by(~s.cols("total_web_sales"))
         .limit(100)
     )
 
@@ -2318,7 +2320,7 @@ def test_46(
             _.amt,
             _.profit,
         )
-        .order_by(s.across(~s.c("amt", "profit"), _.asc(nulls_first=True)))
+        .order_by(s.across(~s.cols("amt", "profit"), _.asc(nulls_first=True)))
         .limit(100)
     )
 
@@ -2346,7 +2348,7 @@ def test_47(item, store_sales, date_dim, store):
         .mutate(
             avg_monthly_sales=_.sum_sales.mean().over(
                 # TODO: add support for selectors in window over specification
-                # group_by=~s.c("sum_sales", "d_moy")
+                # group_by=~s.cols("sum_sales", "d_moy")
                 group_by=(
                     _.i_category,
                     _.i_brand,
@@ -2966,7 +2968,9 @@ def test_57(item, catalog_sales, date_dim, call_center):
             )
             > 0.1,
         )
-        .order_by((_.sum_sales - _.avg_monthly_sales).asc(nulls_first=True), s.r[1:10])
+        .order_by(
+            (_.sum_sales - _.avg_monthly_sales).asc(nulls_first=True), s.index[1:10]
+        )
         .limit(100)
     )
 
@@ -4885,7 +4889,7 @@ def test_89(item, store_sales, date_dim, store):
         .order_by(
             _.sum_sales - _.avg_monthly_sales,
             _.s_store_name,
-            s.r[:9] & ~s.c("s_store_name"),
+            s.index[:9] & ~s.cols("s_store_name"),
         )
     ).limit(100)
 
