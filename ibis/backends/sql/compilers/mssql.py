@@ -525,16 +525,22 @@ class MSSQLCompiler(SQLGlotCompiler):
         return arg.like(self.f.concat("%", end))
 
     def visit_LPad(self, op, *, arg, length, pad):
-        return self.f.left(
-            self.f.right(
+        return sge.Case(
+            ifs=[self.if_(length <= self.f.length(arg), arg)],
+            default=self.f.left(
                 self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
-                length + self.f.length(arg),
+                length,
             ),
-            length,
         )
 
     def visit_RPad(self, op, *, arg, length, pad):
-        return self.f.left(self.f.concat(arg, self.f.replicate(pad, length)), length)
+        return sge.Case(
+            ifs=[self.if_(length <= self.f.length(arg), arg)],
+            default=self.f.left(
+                self.f.concat(arg, self.f.replicate(pad, length - self.f.length(arg))),
+                length,
+            ),
+        )
 
 
 compiler = MSSQLCompiler()

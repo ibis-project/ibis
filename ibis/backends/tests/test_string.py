@@ -1114,7 +1114,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["dask", "pandas", "polars"],
+                    ["dask", "mssql", "pandas", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
@@ -1141,7 +1141,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 4, len(Éé) == 4",
                 ),
                 pytest.mark.notyet(
-                    ["dask", "pandas", "polars"],
+                    ["dask", "mssql", "pandas", "polars"],
                     raises=AssertionError,
                     reason="Python style padding, e.g. doesn't trim strings to pad-length",
                 ),
