@@ -622,10 +622,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if schema is not None:
             schema = ibis.schema(schema)
 
-        properties = []
-
         if temp:
-            properties.append(sge.TemporaryProperty())
+            raise NotImplementedError("DataFusion does not support temporary tables")
 
         quoted = self.compiler.quoted
 
@@ -669,7 +667,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         create_stmt = sge.Create(
             kind="TABLE",
             this=target,
-            properties=sge.Properties(expressions=properties),
             expression=query,
             replace=overwrite,
         )
