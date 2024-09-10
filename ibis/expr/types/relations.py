@@ -1881,7 +1881,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Mutate across multiple columns
 
-        >>> t.mutate(s.across(s.numeric() & ~s.c("year"), _ - _.mean())).head()
+        >>> t.mutate(s.across(s.numeric() & ~s.cols("year"), _ - _.mean())).head()
         ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ species ┃ year  ┃ bill_length_mm ┃
         ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -2051,7 +2051,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Projection with a selector
 
         >>> import ibis.selectors as s
-        >>> t.select(s.numeric() & ~s.c("year")).head()
+        >>> t.select(s.numeric() & ~s.cols("year")).head()
         ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
         ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -2067,7 +2067,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Projection + aggregation across multiple columns
 
         >>> from ibis import _
-        >>> t.select(s.across(s.numeric() & ~s.c("year"), _.mean())).head()
+        >>> t.select(s.across(s.numeric() & ~s.cols("year"), _.mean())).head()
         ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
         ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -2161,7 +2161,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> import ibis
         >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
-        >>> first3 = s.r[:3]  # first 3 columns
+        >>> first3 = s.index[:3]  # first 3 columns
         >>> t = ibis.examples.penguins_raw_raw.fetch().select(first3)
         >>> t
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -3597,7 +3597,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Here we convert column names not matching the selector for the `religion` column
         and convert those names into values
 
-        >>> relig_income.pivot_longer(~s.c("religion"), names_to="income", values_to="count")
+        >>> relig_income.pivot_longer(~s.cols("religion"), names_to="income", values_to="count")
         ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ religion ┃ income             ┃ count ┃
         ┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -3718,7 +3718,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> len(who.columns)
         60
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_(.)(.*)",
         ...     values_to="count",
@@ -3749,7 +3749,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Let's recode gender and age to numeric values using a mapping
 
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_(.)(.*)",
         ...     names_transform=dict(
@@ -3784,7 +3784,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         The number of match groups in `names_pattern` must match the length of `names_to`
 
         >>> who.pivot_longer(  # quartodoc: +EXPECTED_FAILURE
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_.(.*)",
         ... )
@@ -3795,7 +3795,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         `names_transform` must be a mapping or callable
 
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"], names_transform="upper"
+        ...     s.index["new_sp_m014":"newrel_f65"], names_transform="upper"
         ... )  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
           ...
@@ -4429,14 +4429,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├────────┼────────┼────────┼───────┼───────┼───────┤
         │ a      │ a      │ a      │     1 │     1 │     1 │
         └────────┴────────┴────────┴───────┴───────┴───────┘
-        >>> t.relocate(s.any_of(s.c(*"ae")))
-        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ a     ┃ e      ┃ b     ┃ c     ┃ d      ┃ f      ┃
-        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ int64 │ string │ int64 │ int64 │ string │ string │
-        ├───────┼────────┼───────┼───────┼────────┼────────┤
-        │     1 │ a      │     1 │     1 │ a      │ a      │
-        └───────┴────────┴───────┴───────┴────────┴────────┘
 
         When multiple columns are selected with `before` or `after`, those
         selected columns are moved before and after the `selectors` input

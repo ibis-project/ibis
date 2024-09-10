@@ -1345,7 +1345,7 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 def test_pivot_longer(backend):
     diamonds = backend.diamonds
     df = diamonds.execute()
-    res = diamonds.pivot_longer(s.c("x", "y", "z"), names_to="pos", values_to="xyz")
+    res = diamonds.pivot_longer(s.cols("x", "y", "z"), names_to="pos", values_to="xyz")
     assert res.schema().names == (
         "carat",
         "cut",
@@ -2469,7 +2469,7 @@ def test_union_generates_predictable_aliases(con):
     assert len(df) == 2
 
 
-@pytest.mark.parametrize("id_cols", [s.none(), [], s.c()])
+@pytest.mark.parametrize("id_cols", [s.none(), [], s.cols()])
 def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     data = pd.DataFrame(
