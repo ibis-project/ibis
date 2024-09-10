@@ -1778,6 +1778,11 @@ def test_insert_into_table_missing_columns(con, temp_table):
     raises=AssertionError,
     reason="memtables are assembled every time",
 )
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="can't execute SQL inside of a finalizer without breaking everything",
+)
 def test_memtable_cleanup(con):
     name = ibis.util.gen_name("temp_memtable")
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
@@ -1809,6 +1814,11 @@ def test_memtable_cleanup(con):
     ["clickhouse", "flink"],
     raises=AssertionError,
     reason="memtables are assembled every time",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="can't execute SQL inside of a finalizer without breaking everything",
 )
 def test_memtable_cleanup_by_overwriting_variable(con):
     name = ibis.util.gen_name("temp_memtable")

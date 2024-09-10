@@ -535,3 +535,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             raise
         df = MySQLPandasData.convert_table(df, schema)
         return df
+
+    def _register_memtable_finalizer(self, op: ops.InMemoryTable):
+        """No-op.
+
+        Executing **any** SQL in a finalizer causes the underlying connection
+        socket to be set to `None`. It is unclear why this happens.
+        """
