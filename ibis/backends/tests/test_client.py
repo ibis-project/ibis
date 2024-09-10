@@ -323,7 +323,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="`tbl_properties` is required when creating table with schema",
 )
 @pytest.mark.notimpl(
-    ["datafusion"], raises=NotImplementedError, reason="no temp table support via sql"
+    ["datafusion"], raises=NotImplementedError, reason="no temp table support"
 )
 def test_create_temporary_table_from_schema(con_no_data, new_schema):
     if con_no_data.name == "snowflake" and os.environ.get("SNOWFLAKE_SNOWPARK"):
