@@ -62,6 +62,6 @@ def test_raise_create_temp_table(conn):
     tab = pa.table({"x": [1, 2, 3]})
     with pytest.raises(
         NotImplementedError,
-        match="Datafusion does not support temporary tables on sql mode",
+        match="DataFusion does not support temporary tables",
     ):
         conn.create_table("my_temp_table", tab, temp=True)
