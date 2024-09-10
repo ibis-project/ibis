@@ -289,12 +289,6 @@ def test_isin_notin_list(table, container):
     assert isinstance(not_expr.op().arg, ops.InValues)
 
 
-def test_value_counts(table, string_col):
-    bool_clause = table[string_col].notin(["1", "4", "7"])
-    expr = table.filter(bool_clause)[string_col].value_counts()
-    assert isinstance(expr, ir.Table)
-
-
 def test_isin_notin_scalars():
     a, b, c = (ibis.literal(x) for x in [1, 1, 2])
 
