@@ -1803,6 +1803,9 @@ def test_insert_into_table_missing_columns(con, temp_table):
     raises=AssertionError,
     reason="can't execute SQL inside of a finalizer without breaking everything",
 )
+@pytest.mark.notyet(
+    ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
+)
 def test_memtable_cleanup(con):
     name = ibis.util.gen_name("temp_memtable")
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
