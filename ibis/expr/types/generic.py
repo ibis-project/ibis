@@ -2002,17 +2002,52 @@ class Column(Value, _FixedTextJupyterMixin):
     def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
         """Return a "top k" expression.
 
+        Computes a Table containing the top `k` values by a certain metric
+        (defaults to count).
+
         Parameters
         ----------
         k
-            Return this number of rows
+            The number of rows to return.
         by
-            An expression. Defaults to `count`.
+            The metric to compute "top" by. Defaults to `count`.
 
         Returns
         -------
         Table
-            A top-k expression
+            The top `k` values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.diamonds.fetch()
+
+        Compute the top 3 diamond colors by frequency:
+
+        >>> t.color.topk(3)
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ color  ┃ CountStar(diamonds) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ int64               │
+        ├────────┼─────────────────────┤
+        │ G      │               11292 │
+        │ E      │                9797 │
+        │ F      │                9542 │
+        └────────┴─────────────────────┘
+
+        Compute the top 3 diamond colors by mean price:
+
+        >>> t.color.topk(3, by=t.price.mean())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ color  ┃ Mean(price) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ float64     │
+        ├────────┼─────────────┤
+        │ J      │ 5323.818020 │
+        │ I      │ 5091.874954 │
+        │ H      │ 4486.669196 │
+        └────────┴─────────────┘
         """
         from ibis.expr.types.relations import bind
 
