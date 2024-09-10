@@ -1779,25 +1779,26 @@ def test_insert_into_table_missing_columns(con, temp_table):
     reason="memtables are assembled every time",
 )
 def test_memtable_cleanup(con):
-    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name="temp_memtable")
+    name = ibis.util.gen_name("temp_memtable")
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
 
     # the table isn't registered until we actually execute, and since we
     # haven't yet executed anything, the table shouldn't be there
-    assert "temp_memtable" not in con.list_tables()
+    assert name not in con.list_tables()
 
     # execute, which means the table is registered and should be visible in
     # con.list_tables()
     con.execute(t.select("a"))
-    assert "temp_memtable" in con.list_tables()
+    assert name in con.list_tables()
 
     con.execute(t.select("b"))
-    assert "temp_memtable" in con.list_tables()
+    assert name in con.list_tables()
 
     # remove all references to `t`, which means the `op` shouldn't be reachable
     # and the table should thus be dropped and no longer visible in
     # con.list_tables()
     del t
-    assert "temp_memtable" not in con.list_tables()
+    assert name not in con.list_tables()
 
 
 @pytest.mark.never(
@@ -1810,16 +1811,17 @@ def test_memtable_cleanup(con):
     reason="memtables are assembled every time",
 )
 def test_memtable_cleanup_by_overwriting_variable(con):
-    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name="temp_memtable")
+    name = ibis.util.gen_name("temp_memtable")
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
 
-    assert "temp_memtable" not in con.list_tables()
+    assert name not in con.list_tables()
 
     con.execute(t.select("a"))
-    assert "temp_memtable" in con.list_tables()
+    assert name in con.list_tables()
 
     con.execute(t.select("b"))
-    assert "temp_memtable" in con.list_tables()
+    assert name in con.list_tables()
 
     # original `t` is gone, so this should drop the table
     t = None
-    assert "temp_memtable" not in con.list_tables()
+    assert name not in con.list_tables()
