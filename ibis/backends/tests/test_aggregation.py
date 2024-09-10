@@ -294,7 +294,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.any(where=where),
+            lambda t, where: ~t.bool_col.any(where=where),
             lambda t, where: ~t.bool_col[where].any(),
             id="any_negate",
             marks=[
@@ -330,7 +330,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.all(where=where),
+            lambda t, where: ~t.bool_col.all(where=where),
             lambda t, where: ~t.bool_col[where].all(),
             id="all_negate",
             marks=[

@@ -157,7 +157,7 @@ def test_decimal_casts(table, expr_fn, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-@pytest.mark.parametrize("colname", ["a", "f", "h"])
+@pytest.mark.parametrize("colname", ["a", "f"])
 def test_negate(table, colname, snapshot):
     result = translate(-table[colname])
     snapshot.assert_match(result, "out.sql")
@@ -263,9 +263,9 @@ def test_correlated_predicate_subquery(table, snapshot):
     "expr_fn",
     [
         param(lambda b: b.any(), id="any"),
-        param(lambda b: -b.any(), id="not_any"),
+        param(lambda b: ~b.any(), id="not_any"),
         param(lambda b: b.all(), id="all"),
-        param(lambda b: -b.all(), id="not_all"),
+        param(lambda b: ~b.all(), id="not_all"),
     ],
 )
 def test_any_all(table, expr_fn, snapshot):
