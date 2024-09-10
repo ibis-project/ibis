@@ -17,6 +17,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
@@ -110,3 +111,15 @@ def test_topk_function_late_bind(airlines):
     expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
 
     assert_equal(expr1, expr2)
+
+
+def test_topk_name(airlines):
+    expr1 = airlines.dest.topk(5, name="mycol")
+    expr2 = airlines.dest.topk(5, by=_.count().name("mycol"))
+    assert expr1.columns == ["dest", "mycol"]
+    assert_equal(expr1, expr2)
+
+    expr3 = airlines.dest.topk(5, by=_.arrdelay.mean(), name="mycol")
+    expr4 = airlines.dest.topk(5, by=_.arrdelay.mean().name("mycol"))
+    assert expr3.columns == ["dest", "mycol"]
+    assert_equal(expr3, expr4)
