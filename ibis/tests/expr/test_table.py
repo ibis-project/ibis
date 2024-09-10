@@ -871,19 +871,21 @@ def test_group_by_column_select_api(table):
         getattr(grouped.f, fn)()
 
 
-def test_value_counts_convenience(table):
-    # #152
-    result = table.g.value_counts()
-    expected = table.select("g").group_by("g").aggregate(g_count=lambda t: t.count())
+def test_value_counts(table):
+    expr1 = table.g.value_counts()
+    expr2 = table[["g"]].group_by("g").aggregate(g_count=_.count())
+    assert expr1.columns == ["g", "g_count"]
+    assert_equal(expr1, expr2)
 
-    assert_equal(result, expected)
+    expr3 = table.g.value_counts(name="freq")
+    expr4 = table[["g"]].group_by("g").aggregate(freq=_.count())
+    assert expr3.columns == ["g", "freq"]
+    assert_equal(expr3, expr4)
 
 
-def test_isin_value_counts(table):
-    # #157, this code path was untested before
-    bool_clause = table.g.notin(["1", "4", "7"])
-    # it works!
-    bool_clause.name("notin").value_counts()
+def test_value_counts_on_window_function(table):
+    expr = (table.a - table.a.mean()).name("x").value_counts(name="count")
+    assert expr.columns == ["x", "count"]
 
 
 def test_value_counts_unnamed_expr(con):

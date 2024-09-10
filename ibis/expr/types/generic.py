@@ -2155,33 +2155,28 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def value_counts(self) -> ir.Table:
+    def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table.
+
+        Parameters
+        ----------
+        name
+            The name to use for the frequency column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
         Table
-            Frequency table expression
+            The frequency table.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"chars": char} for char in "aabcddd")
-        >>> t
-        ┏━━━━━━━━┓
-        ┃ chars  ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ a      │
-        │ a      │
-        │ b      │
-        │ c      │
-        │ d      │
-        │ d      │
-        │ d      │
-        └────────┘
+        >>> t = ibis.memtable({"chars": ["a", "a", "b", "c", "c", "c", "d", "d", "d", "d"]})
+
+        Compute the count of each unique value in "chars", ordered by "chars":
+
         >>> t.chars.value_counts().order_by("chars")
         ┏━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ chars  ┃ chars_count ┃
@@ -2190,13 +2185,30 @@ class Column(Value, _FixedTextJupyterMixin):
         ├────────┼─────────────┤
         │ a      │           2 │
         │ b      │           1 │
-        │ c      │           1 │
-        │ d      │           3 │
+        │ c      │           3 │
+        │ d      │           4 │
         └────────┴─────────────┘
+
+        Compute the count of each unique value in "chars" as a column named
+        "freq", ordered by "freq":
+
+        >>> t.chars.value_counts(name="freq").order_by("freq")
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ chars  ┃ freq  ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │
+        ├────────┼───────┤
+        │ b      │     1 │
+        │ a      │     2 │
+        │ c      │     3 │
+        │ d      │     4 │
+        └────────┴───────┘
         """
-        name = self.get_name()
-        metric = _.count().name(f"{name}_count")
-        return self.as_table().group_by(name).aggregate(metric)
+        colname = self.get_name()
+        if name is None:
+            name = f"{colname}_count"
+        t = self.as_table()
+        return t.group_by(t[colname]).aggregate(t.count().name(name))
 
     def first(
         self,
