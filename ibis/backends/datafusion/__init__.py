@@ -624,7 +624,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
 
         if temp:
             raise NotImplementedError(
-                "Datafusion does not support temporary tables on sql mode"
+                "DataFusion does not support temporary tables"
             )
 
         quoted = self.compiler.quoted
