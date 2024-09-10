@@ -623,9 +623,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             schema = ibis.schema(schema)
 
         if temp:
-            raise NotImplementedError(
-                "DataFusion does not support temporary tables"
-            )
+            raise NotImplementedError("DataFusion does not support temporary tables")
 
         quoted = self.compiler.quoted
 
