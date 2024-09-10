@@ -1767,3 +1767,40 @@ def test_insert_into_table_missing_columns(con, temp_table):
     expected_result = {"a": [1], "b": [1]}
 
     assert result == expected_result
+
+
+@pytest.mark.never(
+    ["pandas", "dask"], raises=AssertionError, reason="backend is going away"
+)
+@pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
+@pytest.mark.notyet(
+    ["clickhouse", "flink"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="can't execute SQL inside of a finalizer without breaking everything",
+)
+def test_memtable_cleanup(con):
+    name = ibis.util.gen_name("temp_memtable")
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
+
+    # the table isn't registered until we actually execute, and since we
+    # haven't yet executed anything, the table shouldn't be there
+    assert not con._in_memory_table_exists(name)
+
+    # execute, which means the table is registered and should be visible in
+    # con.list_tables()
+    con.execute(t.select("a"))
+    assert con._in_memory_table_exists(name)
+
+    con.execute(t.select("b"))
+    assert con._in_memory_table_exists(name)
+
+    # remove all references to `t`, which means the `op` shouldn't be reachable
+    # and the table should thus be dropped and no longer visible in
+    # con.list_tables()
+    del t
+    assert not con._in_memory_table_exists(name)

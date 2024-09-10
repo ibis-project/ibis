@@ -821,11 +821,9 @@ $$ {defn["source"]} $$"""
         if comment is not None:
             properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -845,11 +843,6 @@ $$ {defn["source"]} $$"""
 
         with self._safe_raw_sql(create_stmt):
             pass
-
-        # Clean up temporary memtable if we've created one
-        # for in-memory reads
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import atexit
 import contextlib
 import datetime
 import re
@@ -42,7 +41,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     compiler = sc.exasol.compiler
     supports_temporary_tables = False
     supports_create_or_replace = False
-    supports_in_memory_tables = False
     supports_python_udfs = False
 
     @property
@@ -278,13 +276,14 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         with self._safe_raw_sql(create_stmt_sql):
             if not df.empty:
                 self.con.ext.insert_multi(name, rows)
-        atexit.register(self._clean_up_tmp_table, ident)
 
-    def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
-        with self._safe_raw_sql(
-            sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
-        ):
+    def _clean_up_tmp_table(self, name: str) -> None:
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
+        with self._safe_raw_sql(sql):
             pass
+
+    _finalize_memtable = _clean_up_tmp_table
 
     def create_table(
         self,
@@ -334,11 +333,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         quoted = self.compiler.quoted
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -356,8 +353,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         if not schema:
             schema = table.schema()
 
-        table = sg.table(temp_name, catalog=database, quoted=quoted)
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(kind="TABLE", this=target)
 
@@ -365,7 +364,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         with self._safe_raw_sql(create_stmt):
             if query is not None:
                 self.con.execute(
-                    sge.Insert(this=table, expression=query).sql(self.name)
+                    sge.Insert(this=table_expr, expression=query).sql(self.name)
                 )
 
             if overwrite:
@@ -373,14 +372,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 self.con.execute(
-                    f"RENAME TABLE {table.sql(self.name)} TO {this.sql(self.name)}"
+                    f"RENAME TABLE {table_expr.sql(self.name)} TO {this.sql(self.name)}"
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

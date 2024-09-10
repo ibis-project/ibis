@@ -81,6 +81,9 @@ class Backend(BaseBackend, NoUrl):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self._add_table(op.name, op.data.to_polars(op.schema).lazy())
 
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_table(name, force=True)
+
     @deprecated(
         as_of="9.1",
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",

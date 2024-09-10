@@ -180,6 +180,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         else:
             return True
 
+    def _finalize_memtable(self, name: str) -> None:
+        session_dataset = self._session_dataset
+        table_id = sg.table(
+            name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
+        )
+        drop_sql_stmt = sge.Drop(kind="TABLE", this=table_id, exists=True)
+        self.raw_sql(drop_sql_stmt)
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         session_dataset = self._session_dataset
 

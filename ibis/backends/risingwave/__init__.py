@@ -195,11 +195,9 @@ class Backend(PostgresBackend):
                 f"Creating temp tables is not supported by {self.name}"
             )
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -217,8 +215,10 @@ class Backend(PostgresBackend):
         if not schema:
             schema = table.schema()
 
-        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         if connector_properties is None:
             create_stmt = sge.Create(
@@ -241,20 +241,18 @@ class Backend(PostgresBackend):
         this = sg.table(name, db=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
                 self.drop_table(name, database=database, force=True)
                 cur.execute(
-                    f"ALTER TABLE {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

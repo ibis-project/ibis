@@ -425,8 +425,10 @@ class Backend(SQLBackend, CanCreateDatabase):
         if not schema:
             schema = table.schema()
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
+        table_expr = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -437,7 +439,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.name
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -445,7 +449,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.name)} RENAME TO {this.sql(self.name)}"
                 )
 
         if schema is None:
@@ -538,3 +542,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             raise
         df = MySQLPandasData.convert_table(df, schema)
         return df
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op.
+
+        Executing **any** SQL in a finalizer causes the underlying connection
+        socket to be set to `None`. It is unclear why this happens.
+        """
