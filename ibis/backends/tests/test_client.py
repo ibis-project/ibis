@@ -1789,18 +1789,18 @@ def test_memtable_cleanup(con):
 
     # the table isn't registered until we actually execute, and since we
     # haven't yet executed anything, the table shouldn't be there
-    assert name not in con.list_tables()
+    assert not con._in_memory_table_exists(name)
 
     # execute, which means the table is registered and should be visible in
     # con.list_tables()
     con.execute(t.select("a"))
-    assert name in con.list_tables()
+    assert con._in_memory_table_exists(name)
 
     con.execute(t.select("b"))
-    assert name in con.list_tables()
+    assert con._in_memory_table_exists(name)
 
     # remove all references to `t`, which means the `op` shouldn't be reachable
     # and the table should thus be dropped and no longer visible in
     # con.list_tables()
     del t
-    assert name not in con.list_tables()
+    assert not con._in_memory_table_exists(name)
