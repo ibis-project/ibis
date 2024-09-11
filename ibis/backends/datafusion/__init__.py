@@ -360,43 +360,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
-        """Register a data set with `table_name` located at `source`.
-
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file or directory of
-            parquet/csv files, a pandas dataframe, or a pyarrow table, dataset
-            or record batch.
-        table_name
-            The name of the table
-        kwargs
-            DataFusion-specific keyword arguments
-
-        Examples
-        --------
-        Register a csv:
-
-        >>> import ibis
-        >>> con = ibis.datafusion.connect()
-        >>> con.register("path/to/data.csv", "my_table")
-        >>> con.table("my_table")
-
-        Register a PyArrow table:
-
-        >>> import pyarrow as pa
-        >>> tab = pa.table({"x": [1, 2, 3]})
-        >>> con.register(tab, "my_table")
-        >>> con.table("my_table")
-
-        Register a PyArrow dataset:
-
-        >>> import pyarrow.dataset as ds
-        >>> dataset = ds.dataset("path/to/table")
-        >>> con.register(dataset, "my_table")
-        >>> con.table("my_table")
-
-        """
         import pandas as pd
 
         if isinstance(source, (str, Path)):
