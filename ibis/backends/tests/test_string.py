@@ -1116,22 +1116,10 @@ def string_temp_table(backend, con):
                     raises=(OracleDatabaseError, TrinoUserError),
                     reason="No string repeat function available",
                 ),
-            ],
-        ),
-        param(
-            lambda t: t.string_col.rpad(8, "-"),
-            lambda t: t.str.pad(8, side="right", fillchar="-"),
-            id="rpad_gt",
-            marks=[
                 pytest.mark.notyet(
-                    ["flink"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 2 so padding is off",
-                ),
-                pytest.mark.notyet(
-                    ["oracle", "trino"],
-                    raises=(OracleDatabaseError, TrinoUserError),
-                    reason="No string repeat function available",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
             ],
         ),
@@ -1162,6 +1150,11 @@ def string_temp_table(backend, con):
                     raises=(OracleDatabaseError, TrinoUserError),
                     reason="No string repeat function available",
                 ),
+                pytest.mark.notyet(
+                    ["impala", "mysql"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
+                ),
             ],
         ),
         param(
@@ -1173,6 +1166,11 @@ def string_temp_table(backend, con):
                     ["oracle", "trino"],
                     raises=(OracleDatabaseError, TrinoUserError),
                     reason="No string repeat function available",
+                ),
+                pytest.mark.notyet(
+                    ["impala", "mysql"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
             ],
         ),
