@@ -13,6 +13,7 @@ from urllib.parse import unquote_plus
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
+from pymysql.constants import ER
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -464,6 +465,23 @@ class Backend(SQLBackend, CanCreateDatabase):
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        name = sg.to_identifier(name, quoted=self.compiler.quoted).sql(self.dialect)
+        # just return the single field with column names; no need to bring back
+        # everything if the command succeeds
+        sql = f"SHOW COLUMNS FROM {name} LIKE 'Field'"
+        try:
+            with self.begin() as cur:
+                cur.execute(sql)
+                cur.fetchall()
+        except pymysql.err.ProgrammingError as e:
+            err_code, _ = e.args
+            if err_code == ER.NO_SUCH_TABLE:
+                return False
+            raise
+        else:
+            return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
