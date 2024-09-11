@@ -518,6 +518,20 @@ class FlinkCompiler(SQLGlotCompiler):
 
         return self.f.instr(arg, substr)
 
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(self.f.repeat(pad, length - self.f.length(arg)), arg),
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(arg, self.f.repeat(pad, length - self.f.length(arg))),
+        )
+
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.char_length(start)).eq(start)
 
