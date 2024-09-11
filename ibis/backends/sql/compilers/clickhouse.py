@@ -162,11 +162,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        start = self._add_parens(op.start, start)
+        start = self._add_parens(start)
         start_correct = self.if_(start < 0, start, start + 1)
 
         if stop is not None:
-            stop = self._add_parens(op.stop, stop)
+            stop = self._add_parens(stop)
 
             length = self.if_(
                 stop < 0,
