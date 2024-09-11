@@ -37,9 +37,9 @@ def test_complex_projections(simple_table, assert_sql):
 
 
 def test_filter(simple_table, assert_sql):
-    expr = simple_table[
+    expr = simple_table.filter(
         ((simple_table.c > 0) | (simple_table.c < 0)) & simple_table.g.isin(["A", "B"])
-    ]
+    )
     assert_sql(expr)
 
 

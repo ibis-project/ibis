@@ -22,6 +22,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 
@@ -113,6 +114,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     supports_qualify = True
 
@@ -1015,7 +1017,14 @@ class BigQueryCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -1027,9 +1036,8 @@ class BigQueryCompiler(SQLGlotCompiler):
 
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         # replace the existing column if the unnested column hasn't been
         # renamed

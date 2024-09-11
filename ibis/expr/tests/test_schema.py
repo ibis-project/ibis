@@ -159,12 +159,6 @@ def test_nullable_output():
     assert "baz  !boolean" not in sch_str
 
 
-@pytest.fixture
-def df():
-    pd = pytest.importorskip("pandas")
-    return pd.DataFrame({"A": pd.Series([1], dtype="int8"), "b": ["x"]})
-
-
 def test_api_accepts_schema_objects():
     s1 = sch.schema(dict(a="int", b="str"))
     s2 = sch.schema(s1)

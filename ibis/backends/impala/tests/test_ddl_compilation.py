@@ -168,7 +168,7 @@ def test_alter_table_properties(part_schema, table_name, snapshot):
 
 @pytest.fixture
 def expr(t):
-    return t[t.bigint_col > 0]
+    return t.filter(t.bigint_col > 0)
 
 
 def test_create_external_table_as(mockcon, snapshot):

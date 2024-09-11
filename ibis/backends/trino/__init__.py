@@ -7,11 +7,12 @@ import warnings
 from functools import cached_property
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
-from urllib.parse import unquote_plus
+from urllib.parse import unquote_plus, urlparse
 
 import sqlglot as sg
 import sqlglot.expressions as sge
 import trino
+from trino.auth import BasicAuthentication
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -309,10 +310,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 raise ValueError(
                     "Cannot specify both `auth` and `password` when connecting to Trino"
                 )
+            else:
+                auth = password
             warnings.warn(
                 "The `password` parameter is deprecated and will be removed in 10.0; use `auth` instead",
                 FutureWarning,
             )
+
+        if (
+            isinstance(auth, str)
+            and (scheme := urlparse(host).scheme)
+            and scheme != "http"
+        ):
+            auth = BasicAuthentication(user, auth)
+
         self.con = trino.dbapi.connect(
             user=user,
             host=host,
@@ -321,7 +332,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             schema=schema,
             source=source or "ibis",
             timezone=timezone,
-            auth=auth or password,
+            auth=auth,
             **kwargs,
         )
 
@@ -455,18 +466,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         table_ref = sg.table(name, catalog=catalog, db=db, quoted=quoted)
 
         if schema is not None and obj is None:
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    # TODO(cpcloud): not null constraints are unreliable in
-                    # trino, so we ignore them
-                    # https://github.com/trinodb/trino/issues/2923
-                    constraints=None,
-                )
-                for name, typ in schema.items()
-            ]
-            target = sge.Schema(this=table_ref, expressions=column_defs)
+            target = sge.Schema(
+                this=table_ref, expressions=schema.to_sqlglot(self.dialect)
+            )
         else:
             target = table_ref
 
@@ -481,13 +483,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         if comment:
             property_list.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
-        temp_memtable_view = None
         if obj is not None:
             if isinstance(obj, ir.Table):
                 table = obj
             else:
                 table = ibis.memtable(obj, schema=schema)
-                temp_memtable_view = table.op().name
 
             self._run_pre_execute_hooks(table)
 
@@ -531,9 +531,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     ).sql(self.name)
                 )
 
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
-
         return self.table(orig_table_ref.name, database=(catalog, db))
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
@@ -563,32 +560,20 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    # we don't support `NOT NULL` constraints in trino because
-                    # because each trino connector differs in whether it
-                    # supports nullability constraints, and whether the
-                    # connector supports it isn't visible to ibis via a
-                    # metadata query
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-            ).sql(self.name, pretty=True)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        ).sql(self.name)
 
-            data = op.data.to_frame().itertuples(index=False)
-            insert_stmt = self._build_insert_template(name, schema=schema)
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                for row in data:
-                    cur.execute(insert_stmt, row)
+        data = op.data.to_frame().itertuples(index=False)
+        insert_stmt = self._build_insert_template(name, schema=schema)
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            for row in data:
+                cur.execute(insert_stmt, row)

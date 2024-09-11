@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import atexit
 import contextlib
 import re
 import warnings
@@ -419,11 +418,9 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         if temp:
             properties.append(sge.TemporaryProperty())
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -433,26 +430,16 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
         initial_table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=initial_table, expressions=column_defs)
+        target = sge.Schema(
+            this=initial_table,
+            expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -478,10 +465,6 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided
@@ -515,46 +498,27 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sge.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
+        name = op.name
+        quoted = self.compiler.quoted
+        create_stmt = sge.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+        ).sql(self.name)
+
+        data = op.data.to_frame().replace(float("nan"), None)
+        insert_stmt = self._build_insert_template(
+            name, schema=schema, placeholder=":{i:d}"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            for start, end in util.chunks(len(data), chunk_size=128):
+                cur.executemany(
+                    insert_stmt, list(data.iloc[start:end].itertuples(index=False))
                 )
-                for colname, typ in schema.items()
-            ]
-
-            create_stmt = sge.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-            ).sql(self.name)
-
-            data = op.data.to_frame().replace(float("nan"), None)
-            insert_stmt = self._build_insert_template(
-                name, schema=schema, placeholder=":{i:d}"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                for start, end in util.chunks(len(data), chunk_size=128):
-                    cur.executemany(
-                        insert_stmt, list(data.iloc[start:end].itertuples(index=False))
-                    )
-
-        atexit.register(self._clean_up_tmp_table, name)
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         name = util.gen_name("oracle_metadata")
@@ -635,6 +599,13 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         return OraclePandasData.convert_table(df, schema)
 
     def _clean_up_tmp_table(self, name: str) -> None:
+        dialect = self.dialect
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+
+        truncate = sge.TruncateTable(expressions=[ident]).sql(dialect)
+        drop = sge.Drop(kind="TABLE", this=ident).sql(dialect)
+
         with self.begin() as bind:
             # global temporary tables cannot be dropped without first truncating them
             #
@@ -643,9 +614,8 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             # ignore DatabaseError exceptions because the table may not exist
             # because it's already been deleted
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'TRUNCATE TABLE "{name}"')
+                bind.execute(truncate)
             with contextlib.suppress(oracledb.DatabaseError):
-                bind.execute(f'DROP TABLE "{name}"')
+                bind.execute(drop)
 
-    def _drop_cached_table(self, name):
-        self._clean_up_tmp_table(name)
+    _finalize_memtable = _drop_cached_table = _clean_up_tmp_table

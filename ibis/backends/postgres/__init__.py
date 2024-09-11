@@ -99,54 +99,37 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.dialect)
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.dialect)
+        df = op.data.to_frame()
+        # nan gets compiled into 'NaN'::float which throws errors in non-float columns
+        # In order to hold NaN values, pandas automatically converts integer columns
+        # to float columns if there are NaN values in them. Therefore, we need to convert
+        # them to their original dtypes (that support pd.NA) to figure out which columns
+        # are actually non-float, then fill the NaN values in those columns with None.
+        convert_df = df.convert_dtypes()
+        for col in convert_df.columns:
+            if not is_float_dtype(convert_df[col]):
+                df[col] = df[col].replace(float("nan"), None)
 
-            df = op.data.to_frame()
-            # nan gets compiled into 'NaN'::float which throws errors in non-float columns
-            # In order to hold NaN values, pandas automatically converts integer columns
-            # to float columns if there are NaN values in them. Therefore, we need to convert
-            # them to their original dtypes (that support pd.NA) to figure out which columns
-            # are actually non-float, then fill the NaN values in those columns with None.
-            convert_df = df.convert_dtypes()
-            for col in convert_df.columns:
-                if not is_float_dtype(convert_df[col]):
-                    df[col] = df[col].replace(float("nan"), None)
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
-                execute_batch(cur, sql, data, 128)
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
+            execute_batch(cur, sql, data, 128)
 
     @contextlib.contextmanager
     def begin(self):
@@ -671,26 +654,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -701,7 +676,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -709,7 +686,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:

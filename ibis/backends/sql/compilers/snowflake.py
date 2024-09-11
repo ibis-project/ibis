@@ -424,13 +424,7 @@ $$""",
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         # https://docs.snowflake.com/en/sql-reference/functions/regexp_substr
-        return sge.RegexpExtract(
-            this=arg,
-            expression=pattern,
-            position=sge.convert(1),
-            group=index,
-            parameters=sge.convert("ce"),
-        )
+        return self.f.anon.regexp_substr(arg, pattern, 1, 1, "ce", index)
 
     def visit_ArrayZip(self, op, *, arg):
         return self.if_(
@@ -810,7 +804,14 @@ $$""",
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -825,12 +826,10 @@ $$""",
 
         selcols = []
 
-        opcol = op.column
-        opname = opcol.name
-        overlaps_with_parent = opname in op.parent.schema
+        overlaps_with_parent = column_name in op.parent.schema
         computed_column = self.cast(
-            self.f.nullif(column_alias, null_sentinel), opcol.dtype.value_type
-        ).as_(opname, quoted=quoted)
+            self.f.nullif(column_alias, null_sentinel), op.column.dtype.value_type
+        ).as_(column_name, quoted=quoted)
 
         if overlaps_with_parent:
             selcols.append(

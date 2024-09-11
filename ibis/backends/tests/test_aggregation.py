@@ -93,7 +93,6 @@ aggregate_test_params = [
                     "pyspark",
                     "trino",
                     "druid",
-                    "oracle",
                     "flink",
                     "risingwave",
                     "exasol",
@@ -295,7 +294,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.any(where=where),
+            lambda t, where: ~t.bool_col.any(where=where),
             lambda t, where: ~t.bool_col[where].any(),
             id="any_negate",
             marks=[
@@ -331,7 +330,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.all(where=where),
+            lambda t, where: ~t.bool_col.all(where=where),
             lambda t, where: ~t.bool_col[where].all(),
             id="all_negate",
             marks=[
@@ -391,7 +390,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "trino",
                         "druid",
-                        "oracle",
                         "exasol",
                         "flink",
                         "risingwave",
@@ -468,6 +466,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
+            marks=pytest.mark.xfail_version(
+                duckdb=["duckdb>=1.1"],
+                raises=AssertionError,
+                reason="not exact, even at this tiny scale",
+                strict=False,
+            ),
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
@@ -1592,7 +1596,7 @@ def test_agg_sort(alltypes):
 
 def test_filter(backend, alltypes, df):
     expr = (
-        alltypes[_.string_col == "1"]
+        alltypes.filter(_.string_col == "1")
         .mutate(x=L(1, "int64"))
         .group_by(_.x)
         .aggregate(sum=_.double_col.sum())

@@ -17,7 +17,7 @@ from ibis.expr import api
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
+    expr = t.select((t.double_col * 2).name("double(fun)"))["double(fun)"].sum()
     expr.execute()
 
 
@@ -134,7 +134,7 @@ def test_builtins(con, alltypes):
 
     proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
-    projection = table[proj_exprs]
+    projection = table.select(proj_exprs)
     projection.limit(10).execute()
 
     _check_impala_output_types_match(con, projection)
@@ -352,7 +352,7 @@ def test_filter_predicates(con):
 
     expr = t
     for pred in predicates:
-        expr = expr[pred(expr)].select(expr)
+        expr = expr.filter(pred(expr)).select(expr)
 
     expr.execute()
 
@@ -420,7 +420,7 @@ def test_decimal_timestamp_builtins(con):
 
     proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
 
-    projection = table[proj_exprs].limit(10)
+    projection = table.select(proj_exprs).limit(10)
     projection.execute()
 
 
@@ -461,10 +461,10 @@ def test_aggregations(alltypes):
         d.var(how="pop"),
         table.bool_col.any(),
         table.bool_col.notany(),
-        -table.bool_col.any(),
+        ~table.bool_col.any(),
         table.bool_col.all(),
         table.bool_col.notall(),
-        -table.bool_col.all(),
+        ~table.bool_col.all(),
         table.bool_col.count(where=cond),
         d.sum(where=cond),
         d.mean(where=cond),
@@ -520,7 +520,7 @@ def test_analytic_functions(alltypes):
 def test_anti_join_self_reference_works(con, alltypes):
     t = alltypes.limit(100)
     t2 = t.view()
-    case = t[-((t.string_col == t2.string_col).any())]
+    case = t.filter(~((t.string_col == t2.string_col).any()))
     con.explain(case)
 
 
@@ -540,7 +540,8 @@ def test_tpch_self_join_failure(con):
     joined_all = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
+        .join(orders, orders.o_custkey == customer.c_custkey)
+        .select(fields_of_interest)
     )
 
     year = joined_all.odate.year().name("year")
@@ -554,7 +555,7 @@ def test_tpch_self_join_failure(con):
     yoy = current.join(
         prior,
         ((current.region == prior.region) & (current.year == (prior.year - 1))),
-    )[current.region, current.year, yoy_change]
+    ).select(current.region, current.year, yoy_change)
 
     # no analysis failure
     con.explain(yoy)
@@ -577,14 +578,15 @@ def test_tpch_correlated_subquery_failure(con):
     tpch = (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
+        .join(orders, orders.o_custkey == customer.c_custkey)
+        .select(fields_of_interest)
     )
 
     t2 = tpch.view()
-    conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
+    conditional_avg = t2.filter(t2.region == tpch.region).amount.mean()
     amount_filter = tpch.amount > conditional_avg
 
-    expr = tpch[amount_filter].limit(0)
+    expr = tpch.filter(amount_filter).limit(0)
 
     # impala can't plan this because its correlated subquery implementation is
     # broken: it cannot detect the outer reference inside the inner query
@@ -622,7 +624,7 @@ def test_unions_with_ctes(con, alltypes):
     )
     expr2 = expr1.view()
 
-    join1 = expr1.join(expr2, expr1.string_col == expr2.string_col)[[expr1]]
+    join1 = expr1.join(expr2, expr1.string_col == expr2.string_col).select(expr1)
     join2 = join1.view()
 
     expr = join1.union(join2)
@@ -665,12 +667,12 @@ def test_where_with_timestamp(snapshot):
 
 def test_filter_with_analytic(snapshot):
     x = ibis.table(ibis.schema([("col", "int32")]), "x")
-    with_filter_col = x[x.columns + [ibis.null().name("filter")]]
-    filtered = with_filter_col[with_filter_col["filter"].isnull()]
-    subquery = filtered[filtered.columns]
+    with_filter_col = x.select(x.columns + [ibis.null().name("filter")])
+    filtered = with_filter_col.filter(with_filter_col["filter"].isnull())
+    subquery = filtered.select(filtered.columns)
 
-    with_analytic = subquery[["col", subquery.count().name("analytic")]]
-    expr = with_analytic[with_analytic.columns]
+    with_analytic = subquery.select("col", subquery.count().name("analytic"))
+    expr = with_analytic.select(with_analytic.columns)
 
     snapshot.assert_match(ibis.impala.compile(expr), "out.sql")
 

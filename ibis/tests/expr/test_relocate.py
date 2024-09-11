@@ -27,8 +27,8 @@ def test_duplicates_not_renamed():
 
 def test_keep_non_contiguous_variables():
     t = ibis.table(dict.fromkeys("abcde", "int"))
-    assert t.relocate("b", after=s.c("a", "c", "e")).columns == list("acdeb")
-    assert t.relocate("e", before=s.c("b", "d")).columns == list("aebcd")
+    assert t.relocate("b", after=s.cols("a", "c", "e")).columns == list("acdeb")
+    assert t.relocate("e", before=s.cols("b", "d")).columns == list("aebcd")
 
 
 def test_before_after_does_not_move_to_front():

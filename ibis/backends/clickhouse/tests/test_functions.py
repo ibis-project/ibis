@@ -476,7 +476,7 @@ def test_udf_in_array_map(alltypes):
 
     n = 5
     expr = (
-        alltypes[alltypes.int_col == 1]
+        alltypes.filter(alltypes.int_col == 1)
         .limit(n)
         .int_col.collect()
         .map(lambda x: my_add(x, 1))

@@ -111,7 +111,9 @@ def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     unique_keys = df[part_keys].drop_duplicates()
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-        select_stmt = unpart_t[(unpart_t.year == year) & (unpart_t.month == month)]
+        select_stmt = unpart_t.filter(
+            (unpart_t.year == year) & (unpart_t.month == month)
+        )
 
         # test both styles of insert
         if i:
@@ -132,7 +134,7 @@ def tmp_parted(con):
 
 def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     t = alltypes
-    expr = t[t.id <= 10][["id", "double_col", "month", "year"]]
+    expr = t.filter(t.id <= 10)[["id", "double_col", "month", "year"]]
     name = tmp_parted
     con.create_table(name, expr, partition=[t.year])
     new = con.table(name)

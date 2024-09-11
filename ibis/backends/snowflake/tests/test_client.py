@@ -97,8 +97,8 @@ def test_repeated_memtable_registration(simple_con, mocker):
     for _ in range(n):
         tm.assert_frame_equal(simple_con.execute(t), expected)
 
-    # assert that we called _register_in_memory_table exactly n times
-    assert spy.call_count == n
+    # assert that we called _register_in_memory_table exactly once
+    spy.assert_called_once()
 
 
 def test_timestamp_tz_column(simple_con):
@@ -312,17 +312,17 @@ def test_compile_does_not_make_requests(con, mocker):
     expr = astronauts.year_of_selection.value_counts()
     spy = mocker.spy(con.con, "cursor")
     assert expr.compile() is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     t = ibis.memtable({"a": [1, 2, 3]})
     assert con.compile(t) is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     assert ibis.to_sql(t, dialect="snowflake") is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
     assert ibis.to_sql(expr) is not None
-    assert spy.call_count == 0
+    spy.assert_not_called()
 
 
 # this won't be hit in CI, but folks can test locally

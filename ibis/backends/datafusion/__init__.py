@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, Any
 
 import datafusion as df
 import pyarrow as pa
-import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -71,7 +70,6 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
-    supports_in_memory_tables = True
     supports_arrays = True
     compiler = sc.datafusion.compiler
 
@@ -443,16 +441,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             f"please call one of {msg} directly"
         )
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        name = op.name
-        schema = op.schema
-
-        self.con.deregister_table(name)
-        if batches := op.data.to_pyarrow(schema).to_batches():
-            self.con.register_record_batches(name, [batches])
+    def _in_memory_table_exists(self, name: str) -> bool:
+        db = self.con.catalog().database()
+        try:
+            db.table(name)
+        except Exception:  # noqa: BLE001 because DataFusion has nothing better
+            return False
         else:
-            empty_dataset = ds.dataset([], schema=schema.to_pyarrow())
-            self.con.register_dataset(name=name, dataset=empty_dataset)
+            return True
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # self.con.register_table is broken, so we do this roundabout thing
+        # of constructing a datafusion DataFrame, which has a side effect
+        # of registering the table
+        self.con.from_arrow_table(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -647,10 +649,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if schema is not None:
             schema = ibis.schema(schema)
 
-        properties = []
-
         if temp:
-            properties.append(sge.TemporaryProperty())
+            raise NotImplementedError("DataFusion does not support temporary tables")
 
         quoted = self.compiler.quoted
 
@@ -684,27 +684,16 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_ident = sg.table(name, db=database, quoted=quoted)
 
         if query is None:
-            column_defs = [
-                sge.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                    ),
-                )
-                for colname, typ in (schema or table.schema()).items()
-            ]
-
-            target = sge.Schema(this=table_ident, expressions=column_defs)
+            target = sge.Schema(
+                this=table_ident,
+                expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+            )
         else:
             target = table_ident
 
         create_stmt = sge.Create(
             kind="TABLE",
             this=target,
-            properties=sge.Properties(expressions=properties),
             expression=query,
             replace=overwrite,
         )

@@ -30,8 +30,8 @@ def key(node):
         lambda t: t.a,
         lambda t: t.a + t.b,
         lambda t: t.a + t.b > 3**t.a,
-        lambda t: t[(t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)],
-        lambda t: t[(t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)]
+        lambda t: t.filter((t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5)),
+        lambda t: t.filter((t.a + t.b * 2 * t.b / t.b**3 > 4) & (t.b > 5))
         .group_by("c")
         .aggregate(amean=lambda f: f.a.mean(), bsum=lambda f: f.b.sum()),
     ],
@@ -86,7 +86,7 @@ def test_join(how):
     left = ibis.table([("a", "int64"), ("b", "string")])
     right = ibis.table([("b", "string"), ("c", "int64")])
     joined = left.join(right, left.b == right.b, how=how)
-    result = joined[left.a, right.c]
+    result = joined.select(left.a, right.c)
     graph = viz.to_graph(result)
     assert key(result.op()) in graph.source
 
@@ -134,7 +134,7 @@ def test_asof_join():
     right = right.mutate(foo=1)
 
     joined = api.asof_join(left, right, "time")
-    result = joined[left, right.foo]
+    result = joined.select(left, right.foo)
     graph = viz.to_graph(result)
     assert key(result.op()) in graph.source
 

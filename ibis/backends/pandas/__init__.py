@@ -331,6 +331,9 @@ class Backend(BasePandasBackend):
     def _create_cached_table(self, name, expr):
         return self.create_table(name, expr.execute())
 
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op, let Python handle clean up."""
+
 
 @lazy_singledispatch
 def _convert_object(obj: Any, _conn):

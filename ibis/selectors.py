@@ -72,6 +72,20 @@ from ibis.common.selectors import All, Any, Expandable, Selector
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
 
+def __getattr__(name):
+    if name == "c":
+        util.warn_deprecated(
+            "c", instead="use `ibis.selectors.cols` instead", as_of="9.5"
+        )
+        return cols
+    elif name == "r":
+        util.warn_deprecated(
+            "r", instead="use `ibis.selectors.index` instead", as_of="9.5"
+        )
+        return index
+    raise AttributeError(name)
+
+
 class Where(Selector):
     predicate: Callable[[ir.Value], bool]
 
@@ -381,8 +395,27 @@ class Cols(Selector):
 
 
 @public
-def c(*names: str | ir.Column) -> Selector:
-    """Select specific column names."""
+def cols(*names: str | ir.Column) -> Selector:
+    """Select specific column names.
+
+    Parameters
+    ----------
+    names
+        The column names to select
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table({"a": "int", "b": "int", "c": "int"})
+    >>> expr = t.select(s.cols("a", "b"))
+    >>> expr.columns
+    ['a', 'b']
+
+    See Also
+    --------
+    [`index`](#ibis.selectors.cols)
+    """
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
     return Cols(names)
 
@@ -605,7 +638,7 @@ class Slice(Concrete):
     step: int | None = None
 
 
-class ColumnSlice(Selector):
+class ColumnIndex(Selector):
     key: str | int | Slice | VarTuple[int | str]
 
     @staticmethod
@@ -639,15 +672,48 @@ class ColumnSlice(Selector):
         return frozenset(iterable)
 
 
-class Sliceable(Singleton):
+class Indexable(Singleton):
     def __getitem__(self, key: str | int | slice | Iterable[int | str]):
         if isinstance(key, slice):
             key = Slice(key.start, key.stop, key.step)
-        return ColumnSlice(key)
+        return ColumnIndex(key)
 
 
-r = Sliceable()
-"""Ranges of columns."""
+index = Indexable()
+"""Select columns by index.
+
+Examples
+--------
+>>> import ibis
+>>> import ibis.selectors as s
+>>> t = ibis.table(
+...     {"a": "int", "b": "int", "c": "int", "d": "int", "e": "int"}
+... )
+
+Select one column by numeric index:
+>>> expr = t.select(s.index[0])
+>>> expr.columns
+['a']
+
+Select multiple columns by numeric index:
+>>> expr = t.select(s.index[[0, 1]])
+>>> expr.columns
+['a', 'b']
+
+Select a slice of columns by numeric index:
+>>> expr = t.select(s.index[1:4])
+>>> expr.columns
+['b', 'c', 'd']
+
+Select a slice of columns by name:
+>>> expr = t.select(s.index["b":"d"])
+>>> expr.columns
+['b', 'c', 'd']
+
+See Also
+--------
+[`cols`](#ibis.selectors.cols)
+"""
 
 
 class First(Singleton, Selector):
@@ -713,9 +779,9 @@ def _to_selector(
     if isinstance(obj, Selector):
         return obj
     elif isinstance(obj, ir.Column):
-        return c(obj.get_name())
+        return cols(obj.get_name())
     elif isinstance(obj, str):
-        return c(obj)
+        return cols(obj)
     elif isinstance(obj, Expandable):
         raise exc.IbisInputError(
             f"Cannot compose {obj.__class__.__name__} with other selectors"

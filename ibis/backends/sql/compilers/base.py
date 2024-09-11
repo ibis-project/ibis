@@ -32,6 +32,7 @@ from ibis.backends.sql.rewrites import (
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
+from ibis.util import get_subclasses
 
 try:
     from sqlglot.expressions import Alter
@@ -51,15 +52,7 @@ if TYPE_CHECKING:
     from ibis.backends.sql.datatypes import SqlglotType
 
 
-def get_leaf_classes(op):
-    for child_class in op.__subclasses__():
-        if not child_class.__subclasses__():
-            yield child_class
-        else:
-            yield from get_leaf_classes(child_class)
-
-
-ALL_OPERATIONS = frozenset(get_leaf_classes(ops.Node))
+ALL_OPERATIONS = frozenset(get_subclasses(ops.Node))
 
 
 class AggGen:
@@ -239,20 +232,6 @@ TRUE = sge.true()
 STAR = sge.Star()
 
 
-def parenthesize_inputs(f):
-    """Decorate a translation rule to parenthesize inputs."""
-
-    def wrapper(self, op, *, left, right):
-        return f(
-            self,
-            op,
-            left=self._add_parens(op.left, left),
-            right=self._add_parens(op.right, right),
-        )
-
-    return wrapper
-
-
 @public
 class SQLGlotCompiler(abc.ABC):
     __slots__ = "f", "v"
@@ -266,7 +245,10 @@ class SQLGlotCompiler(abc.ABC):
         one_to_zero_index,
         add_one_to_nth_value_input,
     )
-    """A sequence of rewrites to apply to the expression tree before compilation."""
+    """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
+
+    post_rewrites: tuple[type[pats.Replace], ...] = ()
+    """A sequence of rewrites to apply to the expression tree after SQL-specific transforms."""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -390,45 +372,50 @@ class SQLGlotCompiler(abc.ABC):
         ops.Uppercase: "upper",
     }
 
-    BINARY_INFIX_OPS = (
-        # Binary operations
-        ops.Add,
-        ops.Subtract,
-        ops.Multiply,
-        ops.Divide,
-        ops.Modulus,
-        ops.Power,
+    BINARY_INFIX_OPS = {
+        # Numeric
+        ops.Add: (sge.Add, True),
+        ops.Subtract: (sge.Sub, False),
+        ops.Multiply: (sge.Mul, True),
+        ops.Divide: (sge.Div, False),
+        ops.Modulus: (sge.Mod, False),
+        ops.Power: (sge.Pow, False),
         # Comparisons
-        ops.GreaterEqual,
-        ops.Greater,
-        ops.LessEqual,
-        ops.Less,
-        ops.Equals,
-        ops.NotEquals,
-        # Boolean comparisons
-        ops.And,
-        ops.Or,
-        ops.Xor,
-        # Bitwise business
-        ops.BitwiseLeftShift,
-        ops.BitwiseRightShift,
-        ops.BitwiseAnd,
-        ops.BitwiseOr,
-        ops.BitwiseXor,
-        # Time arithmetic
-        ops.DateAdd,
-        ops.DateSub,
-        ops.DateDiff,
-        ops.TimestampAdd,
-        ops.TimestampSub,
-        ops.TimestampDiff,
-        # Interval Marginalia
-        ops.IntervalAdd,
-        ops.IntervalMultiply,
-        ops.IntervalSubtract,
-    )
+        ops.GreaterEqual: (sge.GTE, False),
+        ops.Greater: (sge.GT, False),
+        ops.LessEqual: (sge.LTE, False),
+        ops.Less: (sge.LT, False),
+        ops.Equals: (sge.EQ, False),
+        ops.NotEquals: (sge.NEQ, False),
+        # Logical
+        ops.And: (sge.And, True),
+        ops.Or: (sge.Or, True),
+        ops.Xor: (sge.Xor, True),
+        # Bitwise
+        ops.BitwiseLeftShift: (sge.BitwiseLeftShift, False),
+        ops.BitwiseRightShift: (sge.BitwiseRightShift, False),
+        ops.BitwiseAnd: (sge.BitwiseAnd, True),
+        ops.BitwiseOr: (sge.BitwiseOr, True),
+        ops.BitwiseXor: (sge.BitwiseXor, True),
+        # Date
+        ops.DateAdd: (sge.Add, True),
+        ops.DateSub: (sge.Sub, False),
+        ops.DateDiff: (sge.Sub, False),
+        # Time
+        ops.TimeAdd: (sge.Add, True),
+        ops.TimeSub: (sge.Sub, False),
+        ops.TimeDiff: (sge.Sub, False),
+        # Timestamp
+        ops.TimestampAdd: (sge.Add, True),
+        ops.TimestampSub: (sge.Sub, False),
+        ops.TimestampDiff: (sge.Sub, False),
+        # Interval
+        ops.IntervalAdd: (sge.Add, True),
+        ops.IntervalMultiply: (sge.Mul, True),
+        ops.IntervalSubtract: (sge.Sub, False),
+    }
 
-    NEEDS_PARENS = BINARY_INFIX_OPS + (ops.IsNull,)
+    NEEDS_PARENS = tuple(BINARY_INFIX_OPS) + (ops.IsNull,)
 
     # Constructed dynamically in `__init_subclass__` from their respective
     # UPPERCASE values to handle inheritance, do not modify directly here.
@@ -465,6 +452,19 @@ class SQLGlotCompiler(abc.ABC):
 
         for op, target_name in cls.SIMPLE_OPS.items():
             setattr(cls, methodname(op), make_impl(op, target_name))
+
+        # Define binary op methods, only if BINARY_INFIX_OPS is set on the
+        # compiler class.
+        if binops := cls.__dict__.get("BINARY_INFIX_OPS", {}):
+
+            def make_binop(sge_cls, associative):
+                def impl(self, op, *, left, right):
+                    return self.binop(sge_cls, op, left, right, associative=associative)
+
+                return impl
+
+            for op, (sge_cls, associative) in binops.items():
+                setattr(cls, methodname(op), make_binop(sge_cls, associative))
 
         # unconditionally raise an exception for unsupported operations
         #
@@ -606,6 +606,7 @@ class SQLGlotCompiler(abc.ABC):
             op,
             params=params,
             rewrites=self.rewrites,
+            post_rewrites=self.post_rewrites,
             fuse_selects=options.sql.fuse_selects,
         )
 
@@ -680,9 +681,6 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_ScalarSubquery(self, op, *, rel):
         return rel.this.subquery(copy=False)
-
-    def visit_Alias(self, op, *, arg, name):
-        return arg
 
     def visit_Literal(self, op, *, value, dtype):
         """Compile a literal value.
@@ -1257,9 +1255,11 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not (selections or predicates or qualified or sort_keys):
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
@@ -1285,6 +1285,9 @@ class SQLGlotCompiler(abc.ABC):
 
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
+
+        if distinct:
+            result = result.distinct()
 
         return result
 
@@ -1470,11 +1473,6 @@ class SQLGlotCompiler(abc.ABC):
             return result.subquery(alias, copy=False)
         return result
 
-    def visit_Distinct(self, op, *, parent):
-        return (
-            sg.select(STAR, copy=False).distinct(copy=False).from_(parent, copy=False)
-        )
-
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
@@ -1501,93 +1499,16 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
-    @parenthesize_inputs
-    def visit_Add(self, op, *, left, right):
-        return sge.Add(this=left, expression=right)
-
-    visit_DateAdd = visit_TimestampAdd = visit_IntervalAdd = visit_Add
-
-    @parenthesize_inputs
-    def visit_Subtract(self, op, *, left, right):
-        return sge.Sub(this=left, expression=right)
-
-    visit_DateSub = visit_DateDiff = visit_TimestampSub = visit_TimestampDiff = (
-        visit_IntervalSubtract
-    ) = visit_Subtract
-
-    @parenthesize_inputs
-    def visit_Multiply(self, op, *, left, right):
-        return sge.Mul(this=left, expression=right)
-
-    visit_IntervalMultiply = visit_Multiply
-
-    @parenthesize_inputs
-    def visit_Divide(self, op, *, left, right):
-        return sge.Div(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Modulus(self, op, *, left, right):
-        return sge.Mod(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Power(self, op, *, left, right):
-        return sge.Pow(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_GreaterEqual(self, op, *, left, right):
-        return sge.GTE(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Greater(self, op, *, left, right):
-        return sge.GT(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_LessEqual(self, op, *, left, right):
-        return sge.LTE(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Less(self, op, *, left, right):
-        return sge.LT(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Equals(self, op, *, left, right):
-        return sge.EQ(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_NotEquals(self, op, *, left, right):
-        return sge.NEQ(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_And(self, op, *, left, right):
-        return sge.And(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Or(self, op, *, left, right):
-        return sge.Or(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Xor(self, op, *, left, right):
-        return sge.Xor(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseLeftShift(self, op, *, left, right):
-        return sge.BitwiseLeftShift(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseRightShift(self, op, *, left, right):
-        return sge.BitwiseRightShift(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseAnd(self, op, *, left, right):
-        return sge.BitwiseAnd(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseOr(self, op, *, left, right):
-        return sge.BitwiseOr(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseXor(self, op, *, left, right):
-        return sge.BitwiseXor(this=left, expression=right)
+    def binop(self, sg_expr, op, left, right, *, associative=False):
+        # If the op is associative we can skip parenthesizing ops of the same
+        # type if they're on the left, since they would evaluate the same.
+        # SQLGlot has an optimizer for generating long sql chains of the same
+        # op of this form without recursion, by avoiding parenthesis in this
+        # common case we can make use of this optimization to handle large
+        # operator chains.
+        if not associative or type(op) is not type(op.left):
+            left = self._add_parens(op.left, left)
+        return sg_expr(this=left, expression=self._add_parens(op.right, right))
 
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(

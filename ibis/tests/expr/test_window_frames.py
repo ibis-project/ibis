@@ -511,7 +511,9 @@ def test_window_analysis_auto_windowize_bug():
         return x.arrdelay.mean().name("avg_delay")
 
     annual_delay = (
-        t[t.dest.isin(["JFK", "SFO"])].group_by(["dest", "year"]).aggregate(metric)
+        t.filter(t.dest.isin(["JFK", "SFO"]))
+        .group_by(["dest", "year"])
+        .aggregate(metric)
     )
     what = annual_delay.group_by("dest")
     enriched = what.mutate(grand_avg=annual_delay.avg_delay.mean())
@@ -521,7 +523,7 @@ def test_window_analysis_auto_windowize_bug():
         .name("grand_avg")
         .over(ibis.window(group_by=annual_delay.dest))
     )
-    expected = annual_delay[annual_delay, expr]
+    expected = annual_delay.select(annual_delay, expr)
 
     assert enriched.equals(expected)
 

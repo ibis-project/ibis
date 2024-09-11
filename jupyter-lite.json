@@ -1,0 +1,11 @@
+{
+  "jupyter-lite-schema-version": 0,
+  "jupyter-config-data": {
+    "appName": "Ibis JupyterLite Console",
+    "disabledExtensions": [
+      "@jupyterlab/markdownviewer-extension:plugin",
+      "@jupyterlab/mathjax-extension:plugin",
+      "@jupyterlab/mathjax2-extension:plugin"
+    ]
+  }
+}

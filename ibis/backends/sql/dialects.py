@@ -205,6 +205,7 @@ def _explode_to_unnest():
 
 class Flink(Hive):
     UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
         UNNEST_WITH_ORDINALITY = False
@@ -308,6 +309,7 @@ class Flink(Hive):
 
 class Impala(Hive):
     NULL_ORDERING = "nulls_are_large"
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
@@ -330,7 +332,6 @@ class MSSQL(TSQL):
             sge.Variance: rename_func("var"),
             sge.VariancePop: rename_func("varp"),
             sge.Ceil: rename_func("ceiling"),
-            sge.Trim: lambda self, e: f"TRIM({e.this.sql(self.dialect)})",
             sge.DateFromParts: rename_func("datefromparts"),
         }
 

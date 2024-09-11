@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
+from ibis.util import get_subclasses
 
 typecode = sge.DataType.Type
 
@@ -493,6 +494,7 @@ class RisingWaveType(PostgresType):
 
 
 class DataFusionType(PostgresType):
+    dialect = "datafusion"
     unknown_type_strings = {
         "utf8": dt.string,
         "float64": dt.float64,
@@ -1156,3 +1158,9 @@ class FlinkType(SqlglotType):
             ],
             nested=True,
         )
+
+
+TYPE_MAPPERS = {
+    mapper.dialect: mapper
+    for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
+}
