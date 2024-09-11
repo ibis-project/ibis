@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PyODBCProgrammingError,
+    TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
 from ibis.util import gen_name
@@ -1107,23 +1108,13 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.rpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="right", fillchar="-"),
+            lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad",
             marks=[
                 pytest.mark.notyet(
-                    ["flink", "oracle"],
-                    raises=AssertionError,
-                    reason="Treats len(🐍) == 2 so padding is off",
-                ),
-                pytest.mark.notyet(
-                    ["impala"],
-                    raises=AssertionError,
-                    reason="Treats len(🐍) == 4, len(Éé) == 4",
-                ),
-                pytest.mark.notyet(
-                    ["dask", "mssql", "pandas", "polars"],
-                    raises=AssertionError,
-                    reason="Python style padding, e.g. doesn't trim strings to pad-length",
+                    ["oracle", "trino"],
+                    raises=(OracleDatabaseError, TrinoUserError),
+                    reason="No string repeat function available",
                 ),
                 pytest.mark.notyet(
                     ["clickhouse"],
@@ -1133,24 +1124,48 @@ def string_temp_table(backend, con):
             ],
         ),
         param(
-            lambda t: t.string_col.lpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="left", fillchar="-"),
-            id="lpad",
+            lambda t: t.string_col.rpad(8, "-"),
+            lambda t: t.str.pad(8, side="right", fillchar="-"),
+            id="rpad_gt",
             marks=[
                 pytest.mark.notyet(
-                    ["flink", "oracle"],
-                    raises=AssertionError,
-                    reason="Treats len(🐍) == 2 so padding is off",
+                    ["oracle", "trino"],
+                    raises=(OracleDatabaseError, TrinoUserError),
+                    reason="No string repeat function available",
                 ),
                 pytest.mark.notyet(
-                    ["impala"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 4, len(Éé) == 4",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
+                ),
+            ],
+        ),
+        param(
+            lambda t: t.string_col.lpad(4, "-"),
+            lambda t: t.str.pad(4, side="left", fillchar="-"),
+            id="lpad_lt",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle", "trino"],
+                    raises=(OracleDatabaseError, TrinoUserError),
+                    reason="No string repeat function available",
                 ),
                 pytest.mark.notyet(
-                    ["dask", "mssql", "pandas", "polars"],
+                    ["clickhouse"],
                     raises=AssertionError,
-                    reason="Python style padding, e.g. doesn't trim strings to pad-length",
+                    reason="Can use leftPadUTF8 instead",
+                ),
+            ],
+        ),
+        param(
+            lambda t: t.string_col.lpad(8, "-"),
+            lambda t: t.str.pad(8, side="left", fillchar="-"),
+            id="lpad_gt",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle", "trino"],
+                    raises=(OracleDatabaseError, TrinoUserError),
+                    reason="No string repeat function available",
                 ),
                 pytest.mark.notyet(
                     ["clickhouse"],
@@ -1355,6 +1370,8 @@ def string_temp_table_no_complications(backend, con):
 
     temp_table_name = gen_name("strings")
     temp = backend.name() not in ["exasol", "impala", "pyspark", "risingwave", "trino"]
+    if backend.name() == "datafusion":
+        temp = None
     if backend.name() == "druid":
         yield "I HATE DRUID"
     else:
@@ -1369,30 +1386,43 @@ def string_temp_table_no_complications(backend, con):
     [
         param(
             lambda t: t.string_col.rpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="right", fillchar="-"),
-            id="rpad",
-            marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                )
-            ],
+            lambda t: t.str.pad(4, side="right", fillchar="-"),
+            id="rpad_lt",
+            marks=pytest.mark.notyet(
+                ["oracle", "trino"],
+                raises=(OracleDatabaseError, TrinoUserError),
+                reason="No string repeat function available",
+            ),
+        ),
+        param(
+            lambda t: t.string_col.rpad(8, "-"),
+            lambda t: t.str.pad(8, side="right", fillchar="-"),
+            id="rpad_gt",
+            marks=pytest.mark.notyet(
+                ["oracle", "trino"],
+                raises=(OracleDatabaseError, TrinoUserError),
+                reason="No string repeat function available",
+            ),
         ),
         param(
             lambda t: t.string_col.lpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="left", fillchar="-"),
-            id="lpad",
-            marks=[
-                pytest.mark.notimpl(
-                    ["mssql"],
-                    raises=com.OperationNotDefinedError,
-                ),
-            ],
+            lambda t: t.str.pad(4, side="left", fillchar="-"),
+            id="lpad_lt",
+            marks=pytest.mark.notyet(
+                ["oracle", "trino"],
+                raises=(OracleDatabaseError, TrinoUserError),
+                reason="No string repeat function available",
+            ),
         ),
         param(
-            lambda t: t.string_col.length(),
-            lambda t: t.str.len().astype("int32"),
-            id="len",
+            lambda t: t.string_col.lpad(8, "-"),
+            lambda t: t.str.pad(8, side="left", fillchar="-"),
+            id="lpad_gt",
+            marks=pytest.mark.notyet(
+                ["oracle", "trino"],
+                raises=(OracleDatabaseError, TrinoUserError),
+                reason="No string repeat function available",
+            ),
         ),
     ],
 )

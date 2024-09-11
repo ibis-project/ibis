@@ -183,8 +183,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.IsInf: "is_inf",
         ops.IsNan: "is_nan",
         ops.Log10: "log10",
-        ops.LPad: "lpad",
-        ops.RPad: "rpad",
         ops.Levenshtein: "edit_distance",
         ops.Modulus: "mod",
         ops.RegexReplace: "regexp_replace",

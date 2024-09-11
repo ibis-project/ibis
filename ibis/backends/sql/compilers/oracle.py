@@ -82,8 +82,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitXor: "bit_xor_agg",
         ops.BitwiseAnd: "bitand",
         ops.Hash: "ora_hash",
-        ops.LPad: "lpad",
-        ops.RPad: "rpad",
         ops.StringAscii: "ascii",
         ops.Mode: "stats_mode",
     }

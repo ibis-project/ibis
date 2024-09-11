@@ -331,7 +331,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.IsInf: "isinf",
         ops.IsNan: "isnan",
         ops.JSONGetItem: "json_extract",
-        ops.LPad: "lpad",
         LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
@@ -347,7 +346,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.PercentRank: "percent_rank",
         ops.Pi: "pi",
         ops.Power: "pow",
-        ops.RPad: "rpad",
         ops.Radians: "radians",
         ops.RegexSearch: "regexp_like",
         ops.RegexSplit: "regexp_split",
@@ -971,6 +969,20 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_LStrip(self, op, *, arg):
         return self.f.ltrim(arg, string.whitespace)
+
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(self.f.repeat(pad, length - self.f.length(arg)), arg),
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(arg, self.f.repeat(pad, length - self.f.length(arg))),
+        )
 
     def visit_Substring(self, op, *, arg, start, length):
         if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:
