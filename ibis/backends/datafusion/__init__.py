@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 
 import datafusion as df
 import pyarrow as pa
+import pyarrow.dataset as ds
 import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -372,7 +373,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             self.con.deregister_table(table_name)
             self.con.register_record_batches(table_name, [[source]])
             return self.table(table_name)
-        elif isinstance(source, pa.dataset.Dataset):
+        elif isinstance(source, ds.Dataset):
             self.con.deregister_table(table_name)
             self.con.register_dataset(table_name, source)
             return self.table(table_name)
