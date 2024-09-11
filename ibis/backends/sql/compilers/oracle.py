@@ -273,6 +273,12 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.concat(*toolz.interpose(sep, arg))
 
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.f.lpad(arg, self.f.greatest(self.f.length(arg), length), pad)
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.f.rpad(arg, self.f.greatest(self.f.length(arg), length), pad)
+
     ## Aggregate stuff
 
     def visit_Correlation(self, op, *, left, right, where, how):

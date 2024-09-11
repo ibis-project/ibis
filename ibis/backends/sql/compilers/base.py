@@ -971,18 +971,10 @@ class SQLGlotCompiler(abc.ABC):
         return self.f.ltrim(arg, string.whitespace)
 
     def visit_LPad(self, op, *, arg, length, pad):
-        return self.if_(
-            length <= self.f.length(arg),
-            arg,
-            self.f.concat(self.f.repeat(pad, length - self.f.length(arg)), arg),
-        )
+        return self.f.lpad(arg, self.f.greatest(self.f.length(arg), length), pad)
 
     def visit_RPad(self, op, *, arg, length, pad):
-        return self.if_(
-            length <= self.f.length(arg),
-            arg,
-            self.f.concat(arg, self.f.repeat(pad, length - self.f.length(arg))),
-        )
+        return self.f.rpad(arg, self.f.greatest(self.f.length(arg), length), pad)
 
     def visit_Substring(self, op, *, arg, start, length):
         if isinstance(op.length, ops.Literal) and (value := op.length.value) < 0:

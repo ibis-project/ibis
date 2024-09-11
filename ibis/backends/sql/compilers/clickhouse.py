@@ -481,17 +481,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
         )
 
     def visit_LPad(self, op, *, arg, length, pad):
-        return self.if_(
-            length <= self.f.lengthUTF8(arg),
-            arg,
-            self.f.concat(self.f.repeat(pad, length - self.f.lengthUTF8(arg)), arg),
+        return self.f.leftPadUTF8(
+            arg, self.f.greatest(self.f.lengthUTF8(arg), length), pad
         )
 
     def visit_RPad(self, op, *, arg, length, pad):
-        return self.if_(
-            length <= self.f.lengthUTF8(arg),
-            arg,
-            self.f.concat(arg, self.f.repeat(pad, length - self.f.lengthUTF8(arg))),
+        return self.f.rightPadUTF8(
+            arg, self.f.greatest(self.f.lengthUTF8(arg), length), pad
         )
 
     def visit_DayOfWeekIndex(self, op, *, arg):

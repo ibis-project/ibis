@@ -16,7 +16,6 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PyODBCProgrammingError,
-    TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
 from ibis.util import gen_name
@@ -1112,9 +1111,9 @@ def string_temp_table(backend, con):
             id="rpad",
             marks=[
                 pytest.mark.notyet(
-                    ["oracle", "trino"],
-                    raises=(OracleDatabaseError, TrinoUserError),
-                    reason="No string repeat function available",
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
                     ["impala", "mysql"],
@@ -1129,9 +1128,9 @@ def string_temp_table(backend, con):
             id="rpad_gt",
             marks=[
                 pytest.mark.notyet(
-                    ["oracle", "trino"],
-                    raises=(OracleDatabaseError, TrinoUserError),
-                    reason="No string repeat function available",
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
                     ["impala", "mysql"],
@@ -1146,9 +1145,9 @@ def string_temp_table(backend, con):
             id="lpad_lt",
             marks=[
                 pytest.mark.notyet(
-                    ["oracle", "trino"],
-                    raises=(OracleDatabaseError, TrinoUserError),
-                    reason="No string repeat function available",
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
                     ["impala", "mysql"],
@@ -1163,9 +1162,9 @@ def string_temp_table(backend, con):
             id="lpad_gt",
             marks=[
                 pytest.mark.notyet(
-                    ["oracle", "trino"],
-                    raises=(OracleDatabaseError, TrinoUserError),
-                    reason="No string repeat function available",
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
                     ["impala", "mysql"],
@@ -1388,41 +1387,21 @@ def string_temp_table_no_complications(backend, con):
             lambda t: t.string_col.rpad(4, "-"),
             lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad_lt",
-            marks=pytest.mark.notyet(
-                ["oracle", "trino"],
-                raises=(OracleDatabaseError, TrinoUserError),
-                reason="No string repeat function available",
-            ),
         ),
         param(
             lambda t: t.string_col.rpad(8, "-"),
             lambda t: t.str.pad(8, side="right", fillchar="-"),
             id="rpad_gt",
-            marks=pytest.mark.notyet(
-                ["oracle", "trino"],
-                raises=(OracleDatabaseError, TrinoUserError),
-                reason="No string repeat function available",
-            ),
         ),
         param(
             lambda t: t.string_col.lpad(4, "-"),
             lambda t: t.str.pad(4, side="left", fillchar="-"),
             id="lpad_lt",
-            marks=pytest.mark.notyet(
-                ["oracle", "trino"],
-                raises=(OracleDatabaseError, TrinoUserError),
-                reason="No string repeat function available",
-            ),
         ),
         param(
             lambda t: t.string_col.lpad(8, "-"),
             lambda t: t.str.pad(8, side="left", fillchar="-"),
             id="lpad_gt",
-            marks=pytest.mark.notyet(
-                ["oracle", "trino"],
-                raises=(OracleDatabaseError, TrinoUserError),
-                reason="No string repeat function available",
-            ),
         ),
     ],
 )
