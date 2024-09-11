@@ -378,23 +378,23 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         Register a csv:
 
         >>> import ibis
-        >>> conn = ibis.datafusion.connect(config)
-        >>> conn.register("path/to/data.csv", "my_table")
-        >>> conn.table("my_table")
+        >>> con = ibis.datafusion.connect()
+        >>> con.register("path/to/data.csv", "my_table")
+        >>> con.table("my_table")
 
         Register a PyArrow table:
 
         >>> import pyarrow as pa
         >>> tab = pa.table({"x": [1, 2, 3]})
-        >>> conn.register(tab, "my_table")
-        >>> conn.table("my_table")
+        >>> con.register(tab, "my_table")
+        >>> con.table("my_table")
 
         Register a PyArrow dataset:
 
         >>> import pyarrow.dataset as ds
         >>> dataset = ds.dataset("path/to/table")
-        >>> conn.register(dataset, "my_table")
-        >>> conn.table("my_table")
+        >>> con.register(dataset, "my_table")
+        >>> con.table("my_table")
 
         """
         import pandas as pd
