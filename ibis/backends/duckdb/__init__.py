@@ -393,8 +393,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         Examples
         --------
         >>> import ibis
-        >>> ibis.duckdb.connect(threads=4, memory_limit="1GB")
-        <ibis.backends.duckdb.Backend object at ...>
+        >>> ibis.duckdb.connect(threads=4, memory_limit="1GB")  # doctest: +ELLIPSIS
+        <ibis.backends.duckdb.Backend object at 0x...>
         """
         if not isinstance(database, Path) and not database.startswith(
             ("md:", "motherduck:", ":memory:")
@@ -1318,9 +1318,15 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         ...     table_name="band_members",
         ... )
         >>> t
-        DatabaseTable: band_members
-          name string
-          band string
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ name   ┃ band    ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ string  │
+        ├────────┼─────────┤
+        │ Mick   │ Stones  │
+        │ John   │ Beatles │
+        │ Paul   │ Beatles │
+        └────────┴─────────┘
         """
         self.con.register_filesystem(filesystem)
 
