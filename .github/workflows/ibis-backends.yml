@@ -68,7 +68,7 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras "bigquery examples"
+        run: poetry install --without dev --without docs --extras bigquery
 
       - uses: extractions/setup-just@v2
         env:
