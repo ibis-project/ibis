@@ -123,33 +123,30 @@ class Backend(SQLBackend, CanCreateDatabase):
         Examples
         --------
         >>> import os
-        >>> import getpass
+        >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
-        >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", getpass.getuser())
-        >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD")
+        >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", "ibis")
+        >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
         >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
-        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con = ibis.mysql.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        MySQLTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : int8
-            tinyint_col : int8
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+        DatabaseTable: functional_alltypes
+          id : int32
+          bool_col : int8
+          tinyint_col : int8
+          smallint_col : int16
+          int_col : int32
+          bigint_col : int64
+          float_col : float32
+          double_col : float64
+          date_string_col : string
+          string_col : string
+          timestamp_col : timestamp
+          year : int32
+          month : int32
         """
         self.con = pymysql.connect(
             user=user,
