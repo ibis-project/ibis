@@ -68,7 +68,7 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras bigquery
+        run: poetry install --without dev --without docs --extras "bigquery examples"
 
       - uses: extractions/setup-just@v2
         env:
@@ -468,7 +468,7 @@ jobs:
         run: pip install 'poetry==1.8.3'
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
 
       - name: install deps for broken avro-python setup
         if: matrix.backend.name == 'flink'
@@ -663,7 +663,7 @@ jobs:
         run: poetry lock --no-update
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
 
       - name: run tests
         run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
@@ -749,7 +749,7 @@ jobs:
         run: poetry lock --no-update
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras pyspark
+        run: poetry install --without dev --without docs --extras "pyspark examples"
 
       - name: install delta-spark
         if: matrix.pyspark-version == '3.5'
