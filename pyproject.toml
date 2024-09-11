@@ -27,7 +27,7 @@ classifiers = [
 ]
 dependencies = [
   "atpublic>=2.3",
-  "koerce>=0.4.2,<1",
+  "koerce>=0.5.1,<1",
   "parsy>=2",
   "python-dateutil>=2.8.2",
   "pytz>=2022.7",

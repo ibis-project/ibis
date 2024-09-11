@@ -1717,3 +1717,21 @@ def test_value_fillna_depr_warn():
     t = ibis.table({"a": "int", "b": "str"})
     with pytest.warns(FutureWarning, match="v9.1"):
         t.b.fillna("missing")
+
+
+def assert_slotted(obj):
+    assert hasattr(obj, "__slots__")
+    assert not hasattr(obj, "__dict__")
+
+
+def test_that_value_expressions_are_slotted():
+    t = ibis.table({"a": "int", "b": "str"})
+    exprs = [
+        t.a,
+        t.b,
+        t.a + 1,
+        t,
+    ]
+    for expr in exprs:
+        assert_slotted(expr)
+        assert_slotted(expr.op())

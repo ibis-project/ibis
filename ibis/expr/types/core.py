@@ -5,7 +5,7 @@ import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, NoReturn
 
-from koerce import MatchError
+from koerce import Immutable, MatchError
 from public import public
 
 import ibis
@@ -38,10 +38,14 @@ except ImportError:
 
     class _FixedTextJupyterMixin:
         """No-op when rich is not installed."""
+
+        __slots__ = ()
 else:
 
     class _FixedTextJupyterMixin(JupyterMixin):
         """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+        __slots__ = ()
 
         def _repr_mimebundle_(self, *args, **kwargs):
             try:
@@ -63,7 +67,7 @@ def _capture_rich_renderable(renderable: RenderableType) -> str:
 
 
 @public
-class Expr:
+class Expr(Immutable):
     """Base expression class."""
 
     __slots__ = ("_arg",)

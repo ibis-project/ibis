@@ -2876,6 +2876,9 @@ class NullColumn(Column, NullValue):
     pass
 
 
+_THE_NULL = None
+
+
 @public
 @deferrable
 def null(type: dt.DataType | str | None = None, /) -> Value:
@@ -2901,8 +2904,11 @@ def null(type: dt.DataType | str | None = None, /) -> Value:
     │ True │
     └──────┘
     """
+    global _THE_NULL  # noqa: PLW0603
     if type is None:
-        type = dt.null
+        if _THE_NULL is None:
+            _THE_NULL = ops.Literal(None, dt.null).to_expr()
+        return _THE_NULL
     return ops.Literal(None, type).to_expr()
 
 

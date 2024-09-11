@@ -38,8 +38,8 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.conftest import IS_SPARK_REMOTE
 from ibis.common.grounds import ValidationError
+from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
