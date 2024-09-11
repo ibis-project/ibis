@@ -107,7 +107,7 @@ jobs:
         run: poetry add snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
 
       - uses: extractions/setup-just@v2
         env:
