@@ -80,7 +80,7 @@ class Example(Concrete):
 
             obj = ibis.memtable(table, name=table_name)
             backend._register_in_memory_tables(obj)
-            return backend.table(table_name)
+            return backend.table(table_name).cache()
 
 
 _FETCH_DOCSTRING_TEMPLATE = """\
