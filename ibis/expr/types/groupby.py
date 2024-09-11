@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated
 
-from koerce import Length  # noqa: TCH001
+from koerce import Length  # noqa: TCH002
 from public import public
 
 import ibis
