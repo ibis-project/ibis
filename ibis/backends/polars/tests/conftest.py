@@ -57,8 +57,3 @@ def con(data_dir, tmp_path_factory, worker_id):
 @pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
-
-
-@pytest.fixture(scope="session")
-def alltypes_df(alltypes):
-    return alltypes.execute()

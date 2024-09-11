@@ -64,8 +64,8 @@ def check_eq(left, right, how, **kwargs):
 )
 @pytest.mark.notimpl(["druid"])
 def test_mutating_join(backend, batting, awards_players, how):
-    left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
+    left = batting.filter(batting.yearID == 2015)
+    right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
 
     left_df = left.execute()
     right_df = right.execute()
@@ -114,8 +114,8 @@ def test_mutating_join(backend, batting, awards_players, how):
 @pytest.mark.notimpl(["dask", "druid"])
 @pytest.mark.notyet(["flink"], reason="Flink doesn't support semi joins or anti joins")
 def test_filtering_join(backend, batting, awards_players, how):
-    left = batting[batting.yearID == 2015]
-    right = awards_players[awards_players.lgID == "NL"].drop("yearID", "lgID")
+    left = batting.filter(batting.yearID == 2015)
+    right = awards_players.filter(awards_players.lgID == "NL").drop("yearID", "lgID")
 
     left_df = left.execute()
     right_df = right.execute()
@@ -142,10 +142,10 @@ def test_filtering_join(backend, batting, awards_players, how):
 
 
 def test_join_then_filter_no_column_overlap(awards_players, batting):
-    left = batting[batting.yearID == 2015]
+    left = batting.filter(batting.yearID == 2015)
     year = left.yearID.name("year")
-    left = left[year, "RBI"]
-    right = awards_players[awards_players.lgID == "NL"]
+    left = left.select(year, "RBI")
+    right = awards_players.filter(awards_players.lgID == "NL")
 
     expr = left.join(right, left.year == right.yearID)
     filters = [expr.RBI == 9]
@@ -196,8 +196,8 @@ def test_semi_join_topk(con, batting, awards_players, func):
     reason="postgres can't handle null types columns",
 )
 def test_join_with_pandas(batting, awards_players):
-    batting_filt = batting[lambda t: t.yearID < 1900]
-    awards_players_filt = awards_players[lambda t: t.yearID < 1900].execute()
+    batting_filt = batting.filter(lambda t: t.yearID < 1900)
+    awards_players_filt = awards_players.filter(lambda t: t.yearID < 1900).execute()
     assert isinstance(awards_players_filt, pd.DataFrame)
     expr = batting_filt.join(awards_players_filt, "yearID")
     df = expr.execute()
@@ -205,10 +205,10 @@ def test_join_with_pandas(batting, awards_players):
 
 
 def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
-    batting_filt = batting[lambda t: t.yearID < 1900][["yearID"]]
-    awards_players_filt = awards_players[lambda t: t.yearID < 1900][
-        ["yearID"]
-    ].execute()
+    batting_filt = batting.filter(lambda t: t.yearID < 1900).select("yearID")
+    awards_players_filt = (
+        awards_players.filter(lambda t: t.yearID < 1900).select("yearID").execute()
+    )
 
     # ensure that none of the columns of either table have type null
     batting_schema = batting_filt.schema()

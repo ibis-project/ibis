@@ -120,7 +120,7 @@ def test_collect_into_struct(alltypes):
 
     t = alltypes
     expr = (
-        t[_.string_col.isin(("0", "1"))]
+        t.filter(_.string_col.isin(("0", "1")))
         .group_by(group="string_col")
         .agg(
             val=lambda t: ibis.struct(

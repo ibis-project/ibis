@@ -679,9 +679,6 @@ def test_array_remove(con, input, expected):
     raises=(AssertionError, GoogleBadRequest),
     reason="bigquery doesn't support null elements in arrays",
 )
-@pytest.mark.notimpl(
-    ["risingwave"], raises=AssertionError, reason="TODO(Kexiang): seems a bug"
-)
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="empty arrays not supported"
 )
@@ -719,11 +716,6 @@ def test_array_unique(con, input, expected):
                     ["flink"],
                     raises=Py4JJavaError,
                     reason="flink cannot handle empty arrays",
-                ),
-                pytest.mark.notyet(
-                    ["risingwave"],
-                    raises=AssertionError,
-                    reason="Refer to https://github.com/risingwavelabs/risingwave/issues/14735",
                 ),
             ],
             id="empty",
@@ -1033,7 +1025,6 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
         param(
@@ -1046,12 +1037,6 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=TypeError,
-                    reason="comparison of nested arrays doesn't work in pandas testing module",
-                ),
-                pytest.mark.notimpl(["datafusion"], raises=AssertionError),
             ],
         ),
     ],
@@ -1059,13 +1044,14 @@ def flatten_data():
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 def test_array_flatten(backend, flatten_data, column, expected):
     data = flatten_data[column]
-    t = ibis.memtable({column: data["data"]}, schema={column: data["type"]})
-    expr = t[column].flatten()
-    result = backend.connection.execute(expr)
-    backend.assert_series_equal(
-        result.sort_values().reset_index(drop=True),
-        expected.sort_values().reset_index(drop=True),
-        check_names=False,
+    ids = range(len(data["data"]))
+    t = ibis.memtable(
+        {column: data["data"], "id": ids}, schema={column: data["type"], "id": "int64"}
+    )
+    expr = t.select("id", flat=t[column].flatten()).order_by("id")
+    result = backend.connection.to_pandas(expr)
+    tm.assert_frame_equal(
+        result, expected.rename("flat").to_frame().assign(id=ids)[["id", "flat"]]
     )
 
 

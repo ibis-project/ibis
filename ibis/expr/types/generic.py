@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
 
 
@@ -1261,20 +1262,31 @@ class Value(Expr):
 @public
 class Scalar(Value):
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Scalar:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_scalar(table[0][0], self.type())
+        return data_mapper.convert_scalar(
+            table[0][0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> Any:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
-        return PandasData.convert_scalar(
-            df, self.type() if schema is None else schema[df.columns[0]]
+        return data_mapper.convert_scalar(
+            df, self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
@@ -1342,10 +1354,13 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        parents = self.op().relations
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable({self.get_name(): self}).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().aggregate(self)
@@ -1437,17 +1452,28 @@ class Column(Value, _FixedTextJupyterMixin):
         )
 
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Array | pa.ChunkedArray:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_column(table[0], self.type())
+        return data_mapper.convert_column(
+            table[0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> pd.Series:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
         assert (
             len(df.columns) == 1
@@ -1460,9 +1486,8 @@ class Column(Value, _FixedTextJupyterMixin):
         # df.loc[:, column_name] returns the special GeoSeries object.
         #
         # this bug is fixed in later versions of geopandas
-        (column,) = df.columns
-        return PandasData.convert_column(
-            df.loc[:, column], self.type() if schema is None else schema[column]
+        return data_mapper.convert_column(
+            df.loc[:, df.columns[0]], self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> pl.Series:
@@ -1521,11 +1546,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> expr.equals(expected)
         True
         """
-        parents = self.op().relations
-        values = {self.get_name(): self}
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().select(self)
@@ -1603,11 +1630,11 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
         ┌────┐
-        │ 94 │
+        │ 92 │
         └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
         ┌────┐
-        │ 55 │
+        │ 61 │
         └────┘
         """
         return ops.ApproxCountDistinct(

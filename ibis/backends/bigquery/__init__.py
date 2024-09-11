@@ -34,7 +34,6 @@ from ibis.backends.bigquery.client import (
 )
 from ibis.backends.bigquery.datatypes import BigQuerySchema
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -147,10 +146,18 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
     return table
 
 
+def _postprocess_arrow(
+    table_or_batch: pa.Table | pa.RecordBatch, names: list[str]
+) -> pa.Table | pa.RecordBatch:
+    """Drop `_TABLE_SUFFIX` if present in the results, then rename columns."""
+    if "_TABLE_SUFFIX" in table_or_batch.column_names:
+        table_or_batch = table_or_batch.drop_columns(["_TABLE_SUFFIX"])
+    return table_or_batch.rename_columns(names)
+
+
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
     compiler = sc.bigquery.compiler
-    supports_in_memory_tables = True
     supports_python_udfs = False
 
     def __init__(self, *args, **kwargs) -> None:
@@ -163,31 +170,49 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             self.__session_dataset = self._make_session()
         return self.__session_dataset
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        raw_name = op.name
+    def _in_memory_table_exists(self, name: str) -> bool:
+        table_ref = bq.TableReference(self._session_dataset, name)
 
-        session_dataset = self._session_dataset
-        project = session_dataset.project
-        dataset = session_dataset.dataset_id
-
-        table_ref = bq.TableReference(session_dataset, raw_name)
         try:
             self.client.get_table(table_ref)
         except google.api_core.exceptions.NotFound:
-            table_id = sg.table(
-                raw_name, db=dataset, catalog=project, quoted=False
-            ).sql(dialect=self.name)
-            bq_schema = BigQuerySchema.from_ibis(op.schema)
-            load_job = self.client.load_table_from_dataframe(
-                op.data.to_frame(),
-                table_id,
-                job_config=bq.LoadJobConfig(
-                    # fail if the table already exists and contains data
-                    write_disposition=bq.WriteDisposition.WRITE_EMPTY,
-                    schema=bq_schema,
-                ),
-            )
-            load_job.result()
+            return False
+        else:
+            return True
+
+    def _finalize_memtable(self, name: str) -> None:
+        session_dataset = self._session_dataset
+        table_id = sg.table(
+            name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
+        )
+        drop_sql_stmt = sge.Drop(kind="TABLE", this=table_id, exists=True)
+        self.raw_sql(drop_sql_stmt)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        session_dataset = self._session_dataset
+
+        table_id = sg.table(
+            op.name,
+            db=session_dataset.dataset_id,
+            catalog=session_dataset.project,
+            quoted=False,
+        ).sql(dialect=self.name)
+
+        bq_schema = BigQuerySchema.from_ibis(op.schema)
+
+        load_job = self.client.load_table_from_dataframe(
+            op.data.to_frame(),
+            table_id,
+            job_config=bq.LoadJobConfig(
+                # fail if the table already exists and contains data
+                write_disposition=bq.WriteDisposition.WRITE_EMPTY,
+                schema=bq_schema,
+            ),
+        )
+        load_job.result()
 
     def _read_file(
         self,
@@ -702,50 +727,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self._log(sql)
         return sql
 
-    def execute(self, expr, params=None, limit="default", **kwargs):
-        """Compile and execute the given Ibis expression.
-
-        Compile and execute Ibis expression using this backend client
-        interface, returning results in-memory in the appropriate object type
-
-        Parameters
-        ----------
-        expr
-            Ibis expression to execute
-        limit
-            Retrieve at most this number of values/rows. Overrides any limit
-            already set on the expression.
-        params
-            Query parameters
-        kwargs
-            Extra arguments specific to the backend
-
-        Returns
-        -------
-        pd.DataFrame | pd.Series | scalar
-            Output from execution
-
-        """
-        from ibis.backends.bigquery.converter import BigQueryPandasData
-
-        self._run_pre_execute_hooks(expr)
-
-        schema = expr.as_table().schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, **kwargs)
-
-        arrow_t = query.to_arrow(
-            progress_bar_type=None, bqstorage_client=self.storage_client
-        )
-
-        result = BigQueryPandasData.convert_table(
-            arrow_t.to_pandas(timestamp_as_object=True), schema
-        )
-
-        return expr.__pandas_result__(result, schema=schema)
-
     def insert(
         self,
         table_name: str,
@@ -784,6 +765,21 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             overwrite=overwrite,
         )
 
+    def _to_query(
+        self,
+        table_expr: ir.Table,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        page_size: int | None = None,
+        **kwargs: Any,
+    ):
+        self._run_pre_execute_hooks(table_expr)
+        sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
+        self._log(sql)
+
+        return self.raw_sql(sql, params=params, page_size=page_size)
+
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -793,15 +789,16 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
-        self._register_in_memory_tables(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, **kwargs)
+
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
-        table = table.rename_columns(list(expr.as_table().schema().names))
-        return expr.__pyarrow_result__(table)
+        table = _postprocess_arrow(table, list(schema.names))
+        return expr.__pyarrow_result__(table, schema=schema)
 
     def to_pyarrow_batches(
         self,
@@ -814,14 +811,55 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     ):
         pa = self._import_pyarrow()
 
-        schema = expr.as_table().schema()
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+        colnames = list(schema.names)
 
-        self._register_in_memory_tables(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, page_size=chunk_size, **kwargs)
+        query = self._to_query(
+            table_expr, params=params, limit=limit, page_size=chunk_size, **kwargs
+        )
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
+        return pa.ipc.RecordBatchReader.from_batches(
+            schema.to_pyarrow(),
+            (_postprocess_arrow(b, colnames) for b in batch_iter),
+        )
+
+    def execute(self, expr, params=None, limit="default", **kwargs):
+        """Compile and execute the given Ibis expression.
+
+        Compile and execute Ibis expression using this backend client
+        interface, returning results in-memory in the appropriate object type
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute
+        limit
+            Retrieve at most this number of values/rows. Overrides any limit
+            already set on the expression.
+        params
+            Query parameters
+        kwargs
+            Extra arguments specific to the backend
+
+        Returns
+        -------
+        pd.DataFrame | pd.Series | scalar
+            Output from execution
+
+        """
+        from ibis.backends.bigquery.converter import BigQueryPandasData
+
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        df = query.to_arrow(
+            progress_bar_type=None, bqstorage_client=self.storage_client
+        ).to_pandas(timestamp_as_object=True)
+        # Drop _TABLE_SUFFIX if present in the results, then rename columns
+        df = df.drop(columns="_TABLE_SUFFIX", errors="ignore")
+        df.columns = schema.names
+        return expr.__pandas_result__(df, schema=schema, data_mapper=BigQueryPandasData)
 
     def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
         func = ".".join(filter(None, (schema, name)))
@@ -868,6 +906,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     ) -> list[str]:
         """List the tables in the database.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         like
@@ -880,18 +929,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
             To specify a table in a separate BigQuery dataset, you can pass in the
             dataset and project as a string `"dataset.project"`, or as a tuple of
-            strings `("dataset", "project")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
+            strings `(dataset, project)`.
         schema
             [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
@@ -1010,7 +1048,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             obj = ibis.memtable(obj, schema=schema)
 
         if obj is not None:
-            self._register_in_memory_tables(obj)
+            self._run_pre_execute_hooks(obj)
 
         if temp:
             dataset = self._session_dataset.dataset_id
@@ -1038,22 +1076,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         table = _force_quote_table(table)
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=BigQueryType.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable or typ.is_array()
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for name, typ in (schema or {}).items()
-        ]
-
         stmt = sge.Create(
             kind="TABLE",
-            this=sge.Schema(this=table, expressions=column_defs or None),
+            this=sge.Schema(
+                this=table,
+                expressions=schema.to_sqlglot(self.dialect) if schema else None,
+            ),
             replace=overwrite,
             properties=sge.Properties(expressions=properties),
             expression=None if obj is None else self.compile(obj),
@@ -1107,7 +1135,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             expression=self.compile(obj),
             replace=overwrite,
         )
-        self._register_in_memory_tables(obj)
+        self._run_pre_execute_hooks(obj)
         self.raw_sql(stmt.sql(self.name))
         return self.table(name, database=(catalog, database))
 

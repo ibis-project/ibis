@@ -92,26 +92,21 @@ def t2(con):
 
 
 @pytest.fixture(scope="module")
-def where_uncorrelated_subquery(foo, bar):
-    return foo[foo.job.isin(bar.job)]
-
-
-@pytest.fixture(scope="module")
 def not_exists(foo_t, bar_t):
-    return foo_t[-(foo_t.key1 == bar_t.key1).any()]
+    return foo_t.filter(~(foo_t.key1 == bar_t.key1).any())
 
 
 @pytest.fixture(scope="module")
 def union(con):
     table = con.table("functional_alltypes")
 
-    t1 = table[table.int_col > 0][
+    t1 = table.filter(table.int_col > 0).select(
         table.string_col.name("key"),
         table.float_col.cast("double").name("value"),
-    ]
-    t2 = table[table.int_col <= 0][
+    )
+    t2 = table.filter(table.int_col <= 0).select(
         table.string_col.name("key"), table.double_col.name("value")
-    ]
+    )
 
     return t1.union(t2, distinct=True)
 
@@ -120,13 +115,13 @@ def union(con):
 def union_all(con):
     table = con.table("functional_alltypes")
 
-    t1 = table[table.int_col > 0][
+    t1 = table.filter(table.int_col > 0).select(
         table.string_col.name("key"),
         table.float_col.cast("double").name("value"),
-    ]
-    t2 = table[table.int_col <= 0][
+    )
+    t2 = table.filter(table.int_col <= 0).select(
         table.string_col.name("key"), table.double_col.name("value")
-    ]
+    )
 
     return t1.union(t2, distinct=False)
 
@@ -135,13 +130,13 @@ def union_all(con):
 def intersect(con):
     table = con.table("functional_alltypes")
 
-    t1 = table[table.int_col > 0][
+    t1 = table.filter(table.int_col > 0).select(
         table.string_col.name("key"),
         table.float_col.cast("double").name("value"),
-    ]
-    t2 = table[table.int_col <= 0][
+    )
+    t2 = table.filter(table.int_col <= 0).select(
         table.string_col.name("key"), table.double_col.name("value")
-    ]
+    )
 
     return t1.intersect(t2)
 
@@ -150,13 +145,13 @@ def intersect(con):
 def difference(con):
     table = con.table("functional_alltypes")
 
-    t1 = table[table.int_col > 0][
+    t1 = table.filter(table.int_col > 0).select(
         table.string_col.name("key"),
         table.float_col.cast("double").name("value"),
-    ]
-    t2 = table[table.int_col <= 0][
+    )
+    t2 = table.filter(table.int_col <= 0).select(
         table.string_col.name("key"), table.double_col.name("value")
-    ]
+    )
 
     return t1.difference(t2)
 
@@ -198,12 +193,12 @@ def projection_fuse_filter():
     proj = t["a", "b", "c"]
 
     # Rewrite a little more aggressively here
-    expr1 = proj[t.a > 0]
+    expr1 = proj.filter(t.a > 0)
 
     # at one point these yielded different results
-    filtered = t[t.a > 0]
+    filtered = t.filter(t.a > 0)
 
-    expr2 = filtered[t.a, t.b, t.c]
+    expr2 = filtered.select(t.a, t.b, t.c)
     expr3 = filtered.select(["a", "b", "c"])
 
     return expr1, expr2, expr3

@@ -1,0 +1,16 @@
+# Cursed Knowledge
+
+Cursed knowledge the Ibis developers have acquired via battling with many, many
+execution engines.
+
+## Oracle
+
+* Oracle's `LTRIM` and `RTRIM` functions accept a _set_ of whitespace (or other)
+  characters to remove from the left-, and right-hand-side sides of the input
+  string, but the `TRIM` function only accepts a single character to remove.
+
+## Impala
+
+* Impala's `LTRIM` and `RTRIM` functions accept a _set_ of whitespace (or other)
+  characters to remove from the left-, and right-hand-side sides of the input
+  string, but the `TRIM` function only removes _spaces_.

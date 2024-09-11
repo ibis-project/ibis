@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "9.3.0"
+version = "9.4.0"
 packages = [{ include = "ibis" }]
 include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
 exclude = [
@@ -41,7 +41,7 @@ atpublic = ">=2.3,<6"
 parsy = ">=2,<3"
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
-sqlglot = ">=23.4,<25.19"
+sqlglot = ">=23.4,<25.21"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
 numpy = { version = ">=1.23.2,<3", optional = true }
@@ -62,7 +62,7 @@ dask = { version = ">=2022.9.1,<2024.3.0", optional = true, extras = [
 datafusion = { version = ">=0.6,<41", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
-duckdb = { version = ">=0.8.1,<2", optional = true }
+duckdb = { version = ">=0.8.1,<1.2", optional = true }
 geopandas = { version = ">=0.6,<2", optional = true }
 geoarrow-types = { version = ">=0.2,<1", optional = true }
 pyproj = { version = ">=3.3.0,<4", optional = true }
@@ -73,7 +73,6 @@ impyla = { version = ">=0.17,<1", optional = true }
 oracledb = { version = ">=1.3.1,<3", optional = true }
 packaging = { version = ">=21.3,<25", optional = true }
 pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
-fsspec = { version = "<2024.6.2", optional = true }
 polars = { version = ">=1,<2", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
@@ -107,10 +106,12 @@ tqdm = ">=4.66.1,<5"
 [tool.poetry.group.test.dependencies]
 cloudpickle = "*"
 filelock = ">=3.7.0,<4"
+fsspec = "<2024.9.1"
 hypothesis = ">=6.58.0,<7"
 packaging = ">=21.3,<25"
 pytest = ">=8.2.0,<9"
 pytest-benchmark = ">=3.4.1,<5"
+pytest-deadfixtures = ">=2.2.1,<3"
 pytest-clarity = ">=1.0.1,<2"
 pytest-cov = ">=3.0.0,<6"
 pytest-httpserver = ">=1.0.5,<2"
@@ -183,7 +184,15 @@ datafusion = [
   "rich",
 ]
 druid = ["pydruid", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+duckdb = [
+  "duckdb",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+  "packaging",
+]
 exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 flink = ["pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 impala = ["impyla", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
@@ -248,7 +257,7 @@ trino = ["trino", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 visualization = ["graphviz"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
-examples = ["pins", "fsspec"]
+examples = ["pins"]
 geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 
 [tool.poetry.plugins."ibis.backends"]

@@ -8,7 +8,13 @@
 }:
 # pyspark could be added here, but it doesn't handle parallel test execution
 # well and serially it takes on the order of 7-8 minutes to execute serially
-{ backends ? [ ], extras ? [ ] }: poetry2nix.mkPoetryApplication {
+let
+  extras = [ "decompiler" "visualization" ];
+  backends = [ "datafusion" "duckdb" "pandas" "polars" "sqlite" ]
+    # dask version has a show-stopping bug for Python >=3.11
+    ++ lib.optionals (python3.pythonOlder "3.11") [ "dask" ];
+in
+poetry2nix.mkPoetryApplication {
   python = python3;
   groups = [ ];
   checkGroups = [ "test" ];
@@ -45,7 +51,7 @@
 
       runHook preCheck
 
-      pytest -m '${markers}' --numprocesses "$NIX_BUILD_CORES" --dist loadgroup
+      pytest -m 'not tpcds and (${markers})'
 
       runHook postCheck
     '';

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 import getpass
 
 import pytest
@@ -14,7 +13,11 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis.backends import _get_backend_names
 from ibis.backends.tests.base import PYTHON_SHORT_VERSION
-from ibis.backends.tests.errors import GoogleBadRequest, OracleDatabaseError
+from ibis.backends.tests.errors import (
+    ExaQueryError,
+    GoogleBadRequest,
+    OracleDatabaseError,
+)
 
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
@@ -293,23 +296,6 @@ def test_dot_sql_limit(con):
     assert result.iat[0, 0] == "abc"
 
 
-@pytest.fixture(scope="module")
-def mem_t(con):
-    if con.name == "druid":
-        pytest.xfail("druid does not support create_table")
-
-    name = ibis.util.gen_name(con.name)
-
-    # flink only supports memtables if `temp` is True, seems like we should
-    # address that for users
-    con.create_table(
-        name, ibis.memtable({"a": list("def")}), temp=con.name == "flink" or None
-    )
-    yield name
-    with contextlib.suppress(NotImplementedError):
-        con.drop_table(name, force=True)
-
-
 @dot_sql_never
 @pytest.mark.notyet(
     ["druid"],
@@ -348,3 +334,26 @@ def test_embedded_cte(alltypes, ftname_raw):
     expr = alltypes.sql(sql, dialect="duckdb")
     result = expr.head(1).execute()
     assert len(result) == 1
+
+
+@dot_sql_never
+@pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
+@pytest.mark.never(
+    ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
+)
+def test_unnamed_columns(con):
+    sql = "SELECT 'a', 1 AS \"col42\""
+    sgexpr = sg.parse_one(sql, read="duckdb")
+    expr = con.sql(sgexpr.sql(con.dialect))
+
+    schema = expr.schema()
+    names = schema.names
+    types = schema.types
+
+    assert len(names) == 2
+
+    assert names[0]
+    assert names[1] == "col42"
+
+    assert types[0].is_string()
+    assert types[1].is_integer()

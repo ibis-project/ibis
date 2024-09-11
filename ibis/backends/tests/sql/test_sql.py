@@ -90,6 +90,66 @@ def test_comparisons(functional_alltypes, opname, snapshot):
 
 
 @pytest.mark.parametrize(
+    "opname, dtype, associative",
+    [
+        param(*v, id=f"{v[0]}-{v[1]}")
+        for v in [
+            # Numeric
+            ("add", "int8", True),
+            ("mul", "int8", True),
+            ("sub", "int8", False),
+            ("truediv", "int8", False),
+            ("mod", "int8", False),
+            ("pow", "int8", False),
+            ("and_", "int8", True),
+            ("or_", "int8", True),
+            ("xor", "int8", True),
+            ("lshift", "int8", False),
+            ("rshift", "int8", False),
+            # Logical
+            ("and_", "bool", True),
+            ("or_", "bool", True),
+            ("xor", "bool", True),
+            # Date
+            ("add", "date,interval('D')", True),
+            ("sub", "date,interval('D')", False),
+            # Time
+            ("add", "time,interval", True),
+            ("sub", "time,interval", False),
+            # Timestamp
+            ("add", "timestamp,interval", True),
+            ("sub", "timestamp,interval", False),
+            # Interval
+            ("add", "interval", True),
+            ("sub", "interval", False),
+            ("mul", "interval,int8", True),
+        ]
+    ],
+)
+def test_binop_parens(snapshot, opname, dtype, associative):
+    op = getattr(operator, opname)
+    dtypes = [ibis.dtype(d) for d in dtype.split(",")]
+    while len(dtypes) < 3:
+        dtypes.append(dtypes[-1])  # repeat last dtype
+
+    t = ibis.table(dict(zip("abc", dtypes)), name="t")
+
+    expr1 = op(op(t.a, t.b), t.c).name("x")
+    expr2 = op(t.a, op(t.b, t.c)).name("x")
+    sql1 = to_sql(expr1)
+    sql2 = to_sql(expr2)
+    assert sql1 != sql2
+    combined = f"{sql1} --- op(op(a, b), c);\n{sql2} --- op(a, op(b, c));\n"
+    snapshot.assert_match(combined, "out.sql")
+
+
+def test_binop_with_alias_still_parenthesized(snapshot):
+    t = ibis.table({"a": "int", "b": "int", "c": "int"}, name="t")
+    sql = to_sql(((t.a + t.b).name("d") * t.c).name("x"))
+    snapshot.assert_match(sql, "out.sql")
+
+
+@pytest.mark.parametrize(
     "expr_fn",
     [
         param(lambda d: (d > 0) & (d < 5), id="and"),
@@ -126,7 +186,7 @@ def test_coalesce(functional_alltypes, snapshot):
 
 
 def test_named_expr(functional_alltypes, snapshot):
-    expr = functional_alltypes[(functional_alltypes.double_col * 2).name("foo")]
+    expr = functional_alltypes.select((functional_alltypes.double_col * 2).name("foo"))
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -223,12 +283,12 @@ def test_limit(star1, expr_fn, snapshot):
 
 
 def test_limit_filter(star1, snapshot):
-    expr = star1[star1.f > 0].limit(10)
+    expr = star1.filter(star1.f > 0).limit(10)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_limit_subquery(star1, snapshot):
-    expr = star1.limit(10)[lambda x: x.f > 0]
+    expr = star1.limit(10).filter(lambda x: x.f > 0)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -239,7 +299,7 @@ def test_cte_factor_distinct_but_equal(alltypes, snapshot):
     expr1 = t.group_by("g").aggregate(t.f.sum().name("metric"))
     expr2 = tt.group_by("g").aggregate(tt.f.sum().name("metric")).view()
 
-    expr = expr1.join(expr2, expr1.g == expr2.g)[[expr1]]
+    expr = expr1.join(expr2, expr1.g == expr2.g).select(expr1)
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -247,7 +307,7 @@ def test_cte_factor_distinct_but_equal(alltypes, snapshot):
 def test_self_reference_join(star1, snapshot):
     t1 = star1
     t2 = t1.view()
-    expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id])[[t1]]
+    expr = t1.inner_join(t2, [t1.foo_id == t2.bar_id]).select(t1)
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -258,15 +318,15 @@ def test_self_reference_in_not_exists(functional_alltypes, snapshot):
 
     cond = (t.string_col == t2.string_col).any()
 
-    semi = t[cond]
-    anti = t[-cond]
+    semi = t.filter(cond)
+    anti = t.filter(-cond)
 
     snapshot.assert_match(to_sql(semi), "semi.sql")
     snapshot.assert_match(to_sql(anti), "anti.sql")
 
 
 def test_where_uncorrelated_subquery(foo, bar, snapshot):
-    expr = foo[foo.job.isin(bar.job)]
+    expr = foo.filter(foo.job.isin(bar.job))
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -275,8 +335,8 @@ def test_where_correlated_subquery(foo, snapshot):
     t1 = foo
     t2 = t1.view()
 
-    stat = t2[t1.dept_id == t2.dept_id].y.mean()
-    expr = t1[t1.y > stat]
+    stat = t2.filter(t1.dept_id == t2.dept_id).y.mean()
+    expr = t1.filter(t1.y > stat)
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -286,7 +346,7 @@ def test_subquery_aliased(star1, star2, snapshot):
     t2 = star2
 
     agged = t1.aggregate([t1.f.sum().name("total")], by=["foo_id"])
-    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
+    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id]).select(agged, t2.value1)
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -296,9 +356,9 @@ def test_lower_projection_sort_key(star1, star2, snapshot):
     t2 = star2
 
     agged = t1.aggregate([t1.f.sum().name("total")], by=["foo_id"])
-    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id])[agged, t2.value1]
+    expr = agged.inner_join(t2, [agged.foo_id == t2.foo_id]).select(agged, t2.value1)
 
-    expr2 = expr[expr.total > 100].order_by(ibis.desc("total"))
+    expr2 = expr.filter(expr.total > 100).order_by(ibis.desc("total"))
     snapshot.assert_match(to_sql(expr2), "out.sql")
     assert_decompile_roundtrip(expr2, snapshot)
 
@@ -307,12 +367,12 @@ def test_exists(foo_t, bar_t, snapshot):
     t1 = foo_t
     t2 = bar_t
     cond = (t1.key1 == t2.key1).any()
-    e1 = t1[cond]
+    e1 = t1.filter(cond)
 
     snapshot.assert_match(to_sql(e1), "e1.sql")
 
     cond2 = ((t1.key1 == t2.key1) & (t2.key2 == "foo")).any()
-    e2 = t1[cond2]
+    e2 = t1.filter(cond2)
 
     snapshot.assert_match(to_sql(e2), "e2.sql")
 
@@ -329,7 +389,8 @@ def test_not_exists(not_exists, snapshot):
             lambda t: t["string_col", "int_col"].distinct(), id="projection_distinct"
         ),
         param(
-            lambda t: t[t.string_col].distinct(), id="single_column_projection_distinct"
+            lambda t: t.select(t.string_col).distinct(),
+            id="single_column_projection_distinct",
         ),
         param(lambda t: t.int_col.nunique().name("nunique"), id="count_distinct"),
         param(
@@ -372,15 +433,12 @@ def test_where_correlated_subquery_with_join(snapshot):
     supplier = ibis.table([("s_suppkey", "int64")], name="supplier")
 
     q = part.join(partsupp, part.p_partkey == partsupp.ps_partkey)
-    q = q[
-        part.p_partkey,
-        partsupp.ps_supplycost,
-    ]
+    q = q.select(part.p_partkey, partsupp.ps_supplycost)
     subq = partsupp.join(supplier, supplier.s_suppkey == partsupp.ps_suppkey)
     subq = subq.select(partsupp.ps_partkey, partsupp.ps_supplycost)
-    subq = subq[subq.ps_partkey == q.p_partkey]
+    subq = subq.filter(subq.ps_partkey == q.p_partkey)
 
-    expr = q[q.ps_supplycost == subq.ps_supplycost.min()]
+    expr = q.filter(q.ps_supplycost == subq.ps_supplycost.min())
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -391,7 +449,7 @@ def test_mutate_filter_join_no_cross_join(snapshot):
         name="person",
     )
     mutated = person.mutate(age=ibis.literal(400))
-    expr = mutated.filter(mutated.age <= 40)[mutated.person_id]
+    expr = mutated.filter(mutated.age <= 40).select(mutated.person_id)
 
     snapshot.assert_match(to_sql(expr), "out.sql")
 
@@ -465,7 +523,7 @@ def test_gh_1045(test1, test2, test3, snapshot):
     t3 = t3.mutate(t3_val2=t3.id3)
     t4 = t3.join(t2, t2.id2b == t3.id3)
 
-    t1 = t1[[t1[c].name(f"t1_{c}") for c in t1.columns]]
+    t1 = t1.select([t1[c].name(f"t1_{c}") for c in t1.columns])
 
     expr = t1.left_join(t4, t1.t1_id1 == t4.id2a)
 
@@ -515,7 +573,7 @@ def test_no_cart_join(snapshot):
 
 def test_order_by_expr(snapshot):
     t = ibis.table(dict(a="int", b="string"), name="t")
-    expr = t[lambda t: t.a == 1].order_by(lambda t: t.b + "a")
+    expr = t.filter(lambda t: t.a == 1).order_by(lambda t: t.b + "a")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -579,7 +637,8 @@ def test_no_cartesian_join(snapshot):
     final = (
         customers.left_join(customer_orders, "customer_id")
         .drop("customer_id_right")
-        .left_join(customer_payments, "customer_id")[
+        .left_join(customer_payments, "customer_id")
+        .select(
             customers.customer_id,
             customers.first_name,
             customers.last_name,
@@ -587,7 +646,7 @@ def test_no_cartesian_join(snapshot):
             customer_orders.most_recent_order,
             customer_orders.number_of_orders,
             customer_payments.total_amount.name("customer_lifetime_value"),
-        ]
+        )
     )
     snapshot.assert_match(ibis.to_sql(final, dialect="duckdb"), "out.sql")
 

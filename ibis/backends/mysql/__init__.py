@@ -417,26 +417,18 @@ class Backend(SQLBackend, CanCreateDatabase):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -447,7 +439,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.name
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -455,7 +449,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.name)} RENAME TO {this.sql(self.name)}"
                 )
 
         if schema is None:
@@ -479,48 +473,32 @@ class Backend(SQLBackend, CanCreateDatabase):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.name)
 
-            df = op.data.to_frame()
-            # nan can not be used with MySQL
-            df = df.replace(float("nan"), None)
+        df = op.data.to_frame()
+        # nan can not be used with MySQL
+        df = df.replace(float("nan"), None)
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
 
-                if not df.empty:
-                    cur.executemany(sql, data)
+            if not df.empty:
+                cur.executemany(sql, data)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -564,3 +542,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             raise
         df = MySQLPandasData.convert_table(df, schema)
         return df
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op.
+
+        Executing **any** SQL in a finalizer causes the underlying connection
+        socket to be set to `None`. It is unclear why this happens.
+        """

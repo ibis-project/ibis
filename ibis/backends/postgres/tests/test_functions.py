@@ -647,7 +647,7 @@ def test_not_exists(alltypes, df):
     t = alltypes
     t2 = t.view()
 
-    expr = t[~((t.string_col == t2.string_col).any())]
+    expr = t.filter(~((t.string_col == t2.string_col).any()))
     result = expr.execute()
 
     left, right = df, t2.execute()
@@ -855,7 +855,7 @@ def test_window_with_arithmetic(alltypes, df):
 
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
-    expr = t[t.double_col > t.double_col.mean()]
+    expr = t.filter(t.double_col > t.double_col.mean())
     result = expr.execute()
     expected = df[df.double_col > df.double_col.mean()].reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
@@ -908,7 +908,7 @@ def test_array_collect(array_types):
 
 @pytest.mark.parametrize("index", [0, 1, 3, 4, 11, -1, -3, -4, -11])
 def test_array_index(array_types, index):
-    expr = array_types[array_types.y[index].name("indexed")]
+    expr = array_types.select(array_types.y[index].name("indexed"))
     result = expr.execute()
     expected = pd.DataFrame(
         {
@@ -957,31 +957,6 @@ def test_array_concat(array_types, catop):
 def test_array_concat_mixed_types(array_types):
     with pytest.raises(TypeError):
         array_types.y + array_types.x.cast("array<double>")
-
-
-@pytest.fixture
-def t(con, temp_table):
-    with con.begin() as c:
-        c.execute(f"CREATE TABLE {temp_table} (id SERIAL PRIMARY KEY, name TEXT)")
-    return con.table(temp_table)
-
-
-@pytest.fixture
-def s(con, t, temp_table2):
-    temp_table = t.op().name
-    assert temp_table != temp_table2
-
-    with con.begin() as c:
-        c.execute(
-            f"""
-            CREATE TABLE {temp_table2} (
-              id SERIAL PRIMARY KEY,
-              left_t_id INTEGER REFERENCES {temp_table},
-              cost DOUBLE PRECISION
-            )
-            """
-        )
-    return con.table(temp_table2)
 
 
 @pytest.fixture

@@ -119,7 +119,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notyet(
@@ -145,7 +145,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
@@ -157,7 +157,7 @@ def test_create_table(backend, con, temp_table, func, sch):
         ),
     ],
 )
-@pytest.mark.notimpl(["druid", "impala"])
+@pytest.mark.notimpl(["druid"])
 def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
     df = pd.DataFrame(
         {
@@ -218,7 +218,7 @@ def test_load_data(backend, con, temp_table, lamduh):
     [
         param(lambda t: t.string_col, [("string_col", dt.String)], id="column"),
         param(
-            lambda t: t[t.string_col, t.bigint_col],
+            lambda t: t.select(t.string_col, t.bigint_col),
             [("string_col", dt.String), ("bigint_col", dt.Int64)],
             id="table",
         ),
@@ -369,9 +369,6 @@ def test_rename_table(con, temp_table, temp_table_orig):
 
 @mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
-@mark.notyet(
-    ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -1770,3 +1767,40 @@ def test_insert_into_table_missing_columns(con, temp_table):
     expected_result = {"a": [1], "b": [1]}
 
     assert result == expected_result
+
+
+@pytest.mark.never(
+    ["pandas", "dask"], raises=AssertionError, reason="backend is going away"
+)
+@pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
+@pytest.mark.notyet(
+    ["clickhouse", "flink"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="can't execute SQL inside of a finalizer without breaking everything",
+)
+def test_memtable_cleanup(con):
+    name = ibis.util.gen_name("temp_memtable")
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
+
+    # the table isn't registered until we actually execute, and since we
+    # haven't yet executed anything, the table shouldn't be there
+    assert not con._in_memory_table_exists(name)
+
+    # execute, which means the table is registered and should be visible in
+    # con.list_tables()
+    con.execute(t.select("a"))
+    assert con._in_memory_table_exists(name)
+
+    con.execute(t.select("b"))
+    assert con._in_memory_table_exists(name)
+
+    # remove all references to `t`, which means the `op` shouldn't be reachable
+    # and the table should thus be dropped and no longer visible in
+    # con.list_tables()
+    del t
+    assert not con._in_memory_table_exists(name)

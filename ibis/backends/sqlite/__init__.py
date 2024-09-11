@@ -160,11 +160,12 @@ class Backend(SQLBackend, UrlFromPath):
         return sorted(self._filter_with_like(results, like))
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
+        self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """List the tables in the database.
+
+        If `database` is None, the current database is used, and temporary
+        tables are included in the result.
 
         Parameters
         ----------
@@ -176,23 +177,24 @@ class Backend(SQLBackend, UrlFromPath):
         """
         if database is None:
             database = "main"
+            schemas = [database, "temp"]
+        else:
+            schemas = [database]
 
         sql = (
-            sg.select("name")
+            sg.select(C.name)
             .from_(F.pragma_table_list())
             .where(
-                C.schema.eq(sge.convert(database)),
+                C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),
-                ~(
-                    C.name.isin(
-                        sge.convert("sqlite_schema"),
-                        sge.convert("sqlite_master"),
-                        sge.convert("sqlite_temp_schema"),
-                        sge.convert("sqlite_temp_master"),
-                    )
+                ~C.name.isin(
+                    sge.convert("sqlite_schema"),
+                    sge.convert("sqlite_master"),
+                    sge.convert("sqlite_temp_schema"),
+                    sge.convert("sqlite_temp_master"),
                 ),
             )
-            .sql(self.name)
+            .sql(self.dialect)
         )
         with self._safe_raw_sql(sql) as cur:
             results = [r[0] for r in cur.fetchall()]
@@ -339,38 +341,23 @@ class Backend(SQLBackend, UrlFromPath):
         return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in schema.items()
-        ]
-
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         return sge.Create(kind="TABLE", this=target)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        # only register if we haven't already done so
-        if op.name not in self.list_tables(database="temp"):
-            table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
-            create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
-            df = op.data.to_frame()
+        table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
+        create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
+        df = op.data.to_frame()
 
-            data = df.itertuples(index=False)
-            insert_stmt = self._build_insert_template(
-                op.name, schema=op.schema, catalog="temp", columns=True
-            )
+        data = df.itertuples(index=False)
+        insert_stmt = self._build_insert_template(
+            op.name, schema=op.schema, catalog="temp", columns=True
+        )
 
-            with self.begin() as cur:
-                cur.execute(create_stmt)
-                cur.executemany(insert_stmt, data)
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            cur.executemany(insert_stmt, data)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops
@@ -476,11 +463,9 @@ class Backend(SQLBackend, UrlFromPath):
         if schema is not None:
             schema = ibis.schema(schema)
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 obj = ibis.memtable(obj)
-                temp_memtable_view = obj.op().name
 
             self._run_pre_execute_hooks(obj)
 
@@ -536,10 +521,6 @@ class Backend(SQLBackend, UrlFromPath):
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

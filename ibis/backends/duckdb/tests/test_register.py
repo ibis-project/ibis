@@ -505,3 +505,16 @@ def test_memtable_null_column_parquet_dtype_roundtrip(con, tmp_path):
     after = con.read_parquet(tmp_path / "tmp.parquet")
 
     assert before.a.type() == after.a.type()
+
+
+def test_read_json_no_auto_detection(con, tmp_path):
+    ndjson_data = """
+    {"year": 2007}
+    {"year": 2008}
+    {"year": 2009}
+    """
+    path = tmp_path.joinpath("test.ndjson")
+    path.write_text(ndjson_data)
+
+    t = con.read_json(path, auto_detect=False, columns={"year": "varchar"})
+    assert t.year.type() == dt.string

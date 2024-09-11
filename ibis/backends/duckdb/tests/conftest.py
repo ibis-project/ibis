@@ -112,16 +112,17 @@ class TestConf(BackendTest):
     def _load_tpc(self, *, suite, scale_factor):
         con = self.connection
         schema = f"tpc{suite}"
-        con.con.execute(f"CREATE OR REPLACE SCHEMA {schema}")
+        con.create_database(schema, force=True)
         parquet_dir = self.data_dir.joinpath(schema, f"sf={scale_factor}", "parquet")
         assert parquet_dir.exists(), parquet_dir
         for path in parquet_dir.glob("*.parquet"):
             table_name = path.with_suffix("").name
             # duckdb automatically infers the sf= as a hive partition so we
             # need to disable it
-            con.con.execute(
-                f"CREATE OR REPLACE VIEW {schema}.{table_name} AS "
-                f"FROM read_parquet({str(path)!r}, hive_partitioning=false)"
+            con.create_table(
+                table_name,
+                con.read_parquet(path, hive_partitioning=False),
+                database=schema,
             )
 
     def _transform_tpc_sql(self, parsed, *, suite, leaves):

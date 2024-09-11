@@ -769,7 +769,7 @@ def test_join_predicate_dereferencing():
     table2 = ibis.table({"foo_id": str, "value1": float, "value3": float})
     table3 = ibis.table({"bar_id": str, "value2": float})
 
-    filtered = table[table["f"] > 0]
+    filtered = table.filter(table["f"] > 0)
 
     # dereference table.foo_id to filtered.foo_id
     j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
@@ -793,7 +793,7 @@ def test_join_predicate_dereferencing():
 
     j1 = filtered.left_join(table2, table["foo_id"] == table2["foo_id"])
     j2 = j1.inner_join(table3, filtered["bar_id"] == table3["bar_id"])
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
+    view = j2.select(filtered, table2["value1"], table3["value2"])
     with join_tables(j2) as (r1, r2, r3):
         expected = ops.JoinChain(
             first=r1,
@@ -1148,7 +1148,7 @@ def test_self_join_view():
 def test_self_join_with_view_projection():
     t1 = ibis.table(schema={"x": "int", "y": "int", "z": "str"})
     t2 = t1.view()
-    expr = t1.inner_join(t2, ["x"])[[t1]]
+    expr = t1.inner_join(t2, ["x"]).select(t1)
 
     with join_tables(expr) as (r1, r2):
         expected = ops.JoinChain(
@@ -1200,7 +1200,7 @@ def test_join_chain_gets_reused_and_continued_after_a_select():
     c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
 
     ab = a.join(b, [a.a == b.c])
-    abc = ab[a.b, b.d].join(c, [a.a == c.e])
+    abc = ab.select(a.b, b.d).join(c, [a.a == c.e])
 
     with join_tables(abc) as (r1, r2, r3):
         expected = ops.JoinChain(
@@ -1442,8 +1442,8 @@ def test_join_between_joins():
     )
     t4 = ibis.table([("key3", "string"), ("value4", "double")], "fourth")
 
-    left = t1.inner_join(t2, [("key1", "key1")])[t1, t2.value2]
-    right = t3.inner_join(t4, [("key3", "key3")])[t3, t4.value4]
+    left = t1.inner_join(t2, [("key1", "key1")]).select(t1, t2.value2)
+    right = t3.inner_join(t4, [("key3", "key3")]).select(t3, t4.value4)
 
     joined = left.inner_join(right, left.key2 == right.key2)
 
@@ -1535,7 +1535,7 @@ def test_join_with_compound_predicate():
             (t1.a + t1.a != t2.b) & (t1.b + t1.b != t2.a),
         ],
     )
-    expr = joined[t1]
+    expr = joined.select(t1)
     with join_tables(joined) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,

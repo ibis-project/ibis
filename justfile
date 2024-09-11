@@ -98,20 +98,19 @@ doctest *args:
     set -eo pipefail
 
     if [ -n "${CI}" ]; then
-        runner=(poetry run pytest)
+        runner=(poetry run)
     else
-        runner=(pytest)
+        runner=(python -m)
     fi
 
     # TODO(cpcloud): why doesn't pytest --ignore-glob=test_*.py work?
-    "${runner[@]}" --doctest-modules {{ args }} $(
+    "${runner[@]}" pytest --doctest-modules {{ args }} $(
       find \
         ibis \
         -wholename '*.py' \
         -and -not -wholename '*test*.py' \
         -and -not -wholename '*__init__*' \
         -and -not -wholename '*gen_*.py' \
-        -and -not -wholename '*ibis/expr/selectors.py' \
         -and -not -wholename '*ibis/backends/flink/*' # FIXME(deepyaman)
     )
 

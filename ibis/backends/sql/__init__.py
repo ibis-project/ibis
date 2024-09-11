@@ -618,3 +618,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         raise NotImplementedError(
             f"pandas UDFs are not supported in the {self.dialect} backend"
         )
+
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_table(name, force=True)

@@ -66,9 +66,9 @@ def test_02(part, supplier, partsupp, nation, region):
         .join(region, nation.n_regionkey == region.r_regionkey)
     )
 
-    subexpr = subexpr[
+    subexpr = subexpr.filter(
         (subexpr.r_name == REGION) & (expr.p_partkey == subexpr.ps_partkey)
-    ]
+    )
 
     filters = [
         expr.p_size == SIZE,
@@ -210,7 +210,7 @@ def test_07(supplier, lineitem, orders, customer, nation):
     q = q.join(n1, supplier.s_nationkey == n1.n_nationkey)
     q = q.join(n2, customer.c_nationkey == n2.n_nationkey)
 
-    q = q[
+    q = q.select(
         n1.n_name.name("supp_nation"),
         n2.n_name.name("cust_nation"),
         lineitem.l_shipdate,
@@ -218,7 +218,7 @@ def test_07(supplier, lineitem, orders, customer, nation):
         lineitem.l_discount,
         lineitem.l_shipdate.year().name("l_year"),
         (lineitem.l_extendedprice * (1 - lineitem.l_discount)).name("volume"),
-    ]
+    )
 
     q = q.filter(
         [
@@ -255,14 +255,14 @@ def test_08(part, supplier, region, lineitem, orders, customer, nation):
     q = q.join(region, n1.n_regionkey == region.r_regionkey)
     q = q.join(n2, supplier.s_nationkey == n2.n_nationkey)
 
-    q = q[
+    q = q.select(
         orders.o_orderdate.year().name("o_year"),
         (lineitem.l_extendedprice * (1 - lineitem.l_discount)).name("volume"),
         n2.n_name.name("nation"),
         region.r_name,
         orders.o_orderdate,
         part.p_type,
-    ]
+    )
 
     q = q.filter(
         [
@@ -297,14 +297,14 @@ def test_09(part, supplier, lineitem, partsupp, orders, nation):
     q = q.join(orders, orders.o_orderkey == lineitem.l_orderkey)
     q = q.join(nation, supplier.s_nationkey == nation.n_nationkey)
 
-    q = q[
+    q = q.select(
         (q.l_extendedprice * (1 - q.l_discount) - q.ps_supplycost * q.l_quantity).name(
             "amount"
         ),
         q.o_orderdate.year().name("o_year"),
         q.n_name.name("nation"),
         q.p_name,
-    ]
+    )
 
     q = q.filter([q.p_name.like("%" + COLOR + "%")])
 
@@ -494,7 +494,7 @@ def test_15(lineitem, supplier):
 
     q = supplier.join(qrev, supplier.s_suppkey == qrev.l_suppkey)
     q = q.filter([q.total_revenue == qrev.total_revenue.max()])
-    q = q[q.s_suppkey, q.s_name, q.s_address, q.s_phone, q.total_revenue]
+    q = q.select(q.s_suppkey, q.s_name, q.s_address, q.s_phone, q.total_revenue)
     return q.order_by([q.s_suppkey])
 
 
@@ -679,7 +679,7 @@ def test_20(supplier, nation, partsupp, part, lineitem):
 
     q1 = q1.filter([q1.n_name == NATION, q1.s_suppkey.isin(q2.ps_suppkey)])
 
-    q1 = q1[q1.s_name, q1.s_address]
+    q1 = q1.select(q1.s_name, q1.s_address)
 
     return q1.order_by(q1.s_name)
 
@@ -704,7 +704,7 @@ def test_21(supplier, lineitem, orders, nation):
     q = q.join(lineitem, supplier.s_suppkey == lineitem.l_suppkey)
     q = q.join(orders, orders.o_orderkey == lineitem.l_orderkey)
     q = q.join(nation, supplier.s_nationkey == nation.n_nationkey)
-    q = q[
+    q = q.select(
         q.l_orderkey.name("l1_orderkey"),
         q.o_orderstatus,
         q.l_receiptdate,
@@ -712,7 +712,7 @@ def test_21(supplier, lineitem, orders, nation):
         q.l_suppkey.name("l1_suppkey"),
         q.s_name,
         q.n_name,
-    ]
+    )
     q = q.filter(
         [
             q.o_orderstatus == "F",
@@ -764,9 +764,9 @@ def test_22(customer, orders):
             ~(orders.o_custkey == customer.c_custkey).any(),
         ]
     )
-    custsale = custsale[
+    custsale = custsale.select(
         customer.c_phone.substr(0, 2).name("cntrycode"), customer.c_acctbal
-    ]
+    )
 
     gq = custsale.group_by(custsale.cntrycode)
     outerq = gq.aggregate(numcust=custsale.count(), totacctbal=custsale.c_acctbal.sum())

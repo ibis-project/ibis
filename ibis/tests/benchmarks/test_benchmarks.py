@@ -7,6 +7,7 @@ import functools
 import inspect
 import itertools
 import math
+import operator
 import os
 import random
 import string
@@ -52,7 +53,7 @@ def t():
 
 
 def make_base(t):
-    return t[
+    return t.filter(
         (
             (t.year > 2016)
             | ((t.year == 2016) & (t.month > 6))
@@ -79,7 +80,7 @@ def make_base(t):
                 & (t.minute <= 5)
             )
         )
-    ]
+    )
 
 
 @pytest.fixture(scope="module")
@@ -393,9 +394,9 @@ def tpc_h02(part, supplier, partsupp, nation, region):
         .join(region, nation.n_regionkey == region.r_regionkey)
     )
 
-    subexpr = subexpr[
+    subexpr = subexpr.filter(
         (subexpr.r_name == REGION) & (expr.p_partkey == subexpr.ps_partkey)
-    ]
+    )
 
     filters = [
         expr.p_size == SIZE,
@@ -528,7 +529,7 @@ def test_eq_datatypes(benchmark, dtypes):
 def multiple_joins(table, num_joins):
     for _ in range(num_joins):
         table = table.mutate(dummy=ibis.literal(""))
-        table = table.left_join(table.view(), ["dummy"])[[table]]
+        table = table.left_join(table.view(), ["dummy"]).select(table)
 
 
 @pytest.mark.parametrize("num_joins", [1, 10])
@@ -868,6 +869,23 @@ def test_large_union_compile(benchmark, many_tables):
 
     expr = ibis.union(*many_tables)
     assert benchmark(ibis.to_sql, expr, dialect="duckdb") is not None
+
+
+@pytest.mark.parametrize("cols", [128, 256])
+@pytest.mark.parametrize("op", ["construct", "compile"])
+def test_large_add(benchmark, cols, op):
+    t = ibis.table(name="t", schema={f"x{i}": "int" for i in range(cols)})
+
+    def construct():
+        return functools.reduce(operator.add, (t[c] for c in t.columns))
+
+    def compile(expr):
+        return ibis.to_sql(expr, dialect="duckdb")
+
+    if op == "construct":
+        benchmark(construct)
+    else:
+        benchmark(compile, construct())
 
 
 @pytest.fixture(scope="session")

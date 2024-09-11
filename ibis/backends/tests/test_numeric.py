@@ -1290,14 +1290,13 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["duckdb", "sqlite"],
-    raises=AssertionError,
-    reason="returns NULL when dividing by zero",
+    ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
@@ -1382,16 +1381,14 @@ def test_histogram(con, alltypes):
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
-    assert vc.tolist() == vc_np.tolist()
-    assert (
-        con.execute(
-            ibis.memtable({"value": range(100)})
-            .select(bin=_.value.histogram(10))
-            .value_counts()
-            .bin_count.nunique()
-        )
-        == 1
+    expr = (
+        ibis.memtable({"value": range(100)})
+        .select(bin=_.value.histogram(10))
+        .value_counts()
+        .bin_count.nunique()
     )
+    assert vc.tolist() == vc_np.tolist()
+    assert con.execute(expr) == 1
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])
