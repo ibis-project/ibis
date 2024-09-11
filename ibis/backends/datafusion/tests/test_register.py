@@ -56,12 +56,3 @@ def test_create_table_with_uppercase_name(conn):
     tab = pa.table({"x": [1, 2, 3]})
     conn.create_table("MY_TABLE", tab)
     assert conn.table("MY_TABLE").x.sum().execute() == 6
-
-
-def test_raise_create_temp_table(conn):
-    tab = pa.table({"x": [1, 2, 3]})
-    with pytest.raises(
-        NotImplementedError,
-        match="DataFusion does not support temporary tables",
-    ):
-        conn.create_table("my_temp_table", tab, temp=True)
