@@ -52,11 +52,13 @@ class Backend(BaseBackend, NoUrl):
             An optional mapping of string table names to polars LazyFrames.
 
         Examples
-        ----------
+        --------
         >>> import ibis
         >>> import polars as pl
         >>> ibis.options.interactive = True
-        >>> lazy_frame = pl.LazyFrame({"name": ["Jimmy", "Keith"], "band": ["Led Zeppelin", "Stones"]})
+        >>> lazy_frame = pl.LazyFrame(
+        ...     {"name": ["Jimmy", "Keith"], "band": ["Led Zeppelin", "Stones"]}
+        ... )
         >>> con = ibis.polars.connect(tables={"band_members": lazy_frame})
         >>> t = con.table("band_members")
         >>> t
