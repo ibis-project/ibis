@@ -16,7 +16,7 @@ from ibis.common.graph import traverse
 
 # from ibis.common.patterns import Check, pattern, replace
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.util import Namespace, promote_list
+from ibis.util import promote_list
 
 p, d = namespace(ops)
 

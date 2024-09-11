@@ -3,7 +3,7 @@ from __future__ import annotations
 from itertools import product, starmap
 from typing import Optional
 
-from koerce import Annotable, attribute, pattern
+from koerce import Annotable, attribute
 from public import public
 
 import ibis.expr.datatypes as dt

@@ -277,7 +277,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         signature = [
             sge.ColumnDef(
                 this=sg.to_identifier(name, quoted=self.quoted),
-                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
+                kind=type_mapper.from_ibis(dt.dtype(param.typehint)),
             )
             for name, param in udf_node.__signature__.parameters.items()
         ]

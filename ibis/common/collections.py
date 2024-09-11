@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import collections.abc
 from abc import abstractmethod
-from itertools import tee
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from koerce import AbstractMeta

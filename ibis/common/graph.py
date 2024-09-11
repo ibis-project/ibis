@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import itertools
-from abc import abstractmethod
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, KeysView, Mapping, Sequence
 from typing import TYPE_CHECKING, Any, Optional, TypeVar, Union
@@ -47,7 +46,7 @@ def _flatten_collections(node: Any) -> Iterator[N]:
     >>> from ibis.common.grounds import Concrete
     >>> from ibis.common.graph import Node
     >>>
-    >>> class MyNode(Concrete, Node):
+    >>> class MyNode(Node):
     ...     number: int
     ...     string: str
     ...     children: tuple[Node, ...]
@@ -95,7 +94,7 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
     >>> from ibis.common.grounds import Concrete
     >>> from ibis.common.graph import Node
     >>>
-    >>> class MyNode(Concrete, Node):
+    >>> class MyNode(Node):
     ...     number: int
     ...     string: str
     ...     children: tuple[Node, ...]

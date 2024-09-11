@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from koerce import Replace
+from koerce import Replace  # noqa: TCH002
 from public import public
 
 import ibis.common.exceptions as com
@@ -446,7 +446,7 @@ class SQLGlotCompiler(abc.ABC):
     # Constructed dynamically in `__init_subclass__` from their respective
     # UPPERCASE values to handle inheritance, do not modify directly here.
     extra_supported_ops: ClassVar[frozenset[type[ops.Node]]] = frozenset()
-    lowered_ops: ClassVar[dict[type[ops.Node], pats.Replace]] = {}
+    lowered_ops: ClassVar[dict[type[ops.Node], Replace]] = {}
 
     def __init__(self) -> None:
         self.f = FuncGen(

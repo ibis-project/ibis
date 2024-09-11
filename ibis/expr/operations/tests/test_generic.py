@@ -4,7 +4,7 @@ from functools import partial
 from typing import Union
 
 import pytest
-from koerce import MatchError, NoMatch, Pattern
+from koerce import MatchError, Pattern
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt

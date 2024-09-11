@@ -19,7 +19,7 @@ from ibis.common.collections import (
 )
 from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
-from ibis.common.typing import VarTuple
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema

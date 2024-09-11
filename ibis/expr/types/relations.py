@@ -4393,7 +4393,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴──────────┴──────────┴──────────┘
         """
         import ibis.selectors as s
-        from ibis.expr.rewrites import _, p, x
+        from ibis.expr.rewrites import _, p
 
         orig_names_from = util.promote_list(names_from)
 
