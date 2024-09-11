@@ -125,6 +125,41 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
             See https://learn.microsoft.com/en-us/sql/connect/odbc/windows/system-requirements-installation-and-driver-files
         kwargs
             Additional keyword arguments to pass to PyODBC.
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")
+        >>> password = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
+        >>> database = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
+        >>> driver = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
+        >>> con = ibis.mssql.connect(
+        ...     database=database,
+        ...     host=host,
+        ...     user=user,
+        ...     password=password,
+        ...     driver=driver,
+        ... )
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(7)
+          year            int32
+          month           int32
         """
 
         # If no user/password given, assume Windows Integrated Authentication

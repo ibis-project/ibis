@@ -77,7 +77,32 @@ class Backend(SQLBackend):
         return "druid"
 
     def do_connect(self, **kwargs: Any) -> None:
-        """Create an Ibis client using the passed connection parameters."""
+        """Create an Ibis client using the passed connection parameters.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.connect("druid://localhost:8082/druid/v2/sql?header=true")
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          __time          timestamp
+          id              int64
+          bool_col        int64
+          tinyint_col     int64
+          smallint_col    int64
+          int_col         int64
+          bigint_col      int64
+          float_col       float64
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   int64
+          year            int64
+          month           int64
+        """
         header = kwargs.pop("header", True)
         self.con = pydruid.db.connect(**kwargs, header=header)
 
