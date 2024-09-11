@@ -432,20 +432,29 @@ def test_struct_equality():
     assert st3 != st2
 
 
-def test_booleqn_equality():
+def test_singleton_datatypes():
+    assert dt.null is dt.Null()
+    assert dt.unknown is dt.Unknown()
+    assert dt.boolean is dt.Boolean()
+    assert dt.string is dt.String()
+    assert dt.binary is dt.Binary()
+
+
+def test_singleton_boolean():
     assert dt.Boolean() == dt.boolean
-    assert dt.Boolean() == dt.Boolean()
-    assert dt.Boolean(nullable=True) == dt.boolean
-    assert dt.Boolean(nullable=False) != dt.boolean
-    assert dt.Boolean(nullable=False) == dt.Boolean(nullable=False)
-    assert dt.Boolean(nullable=True) == dt.Boolean(nullable=True)
-    assert dt.Boolean(nullable=True) != dt.Boolean(nullable=False)
+    assert dt.Boolean() is dt.boolean
+    assert dt.Boolean() is dt.Boolean()
+    assert dt.Boolean(nullable=True) is dt.boolean
+    assert dt.Boolean(nullable=False) is not dt.boolean
+    assert dt.Boolean(nullable=False) is dt.Boolean(nullable=False)
+    assert dt.Boolean(nullable=True) is dt.Boolean(nullable=True)
+    assert dt.Boolean(nullable=True) is not dt.Boolean(nullable=False)
 
 
-def test_primite_equality():
-    assert dt.Int64() == dt.int64
-    assert dt.Int64(nullable=False) != dt.int64
-    assert dt.Int64(nullable=False) == dt.Int64(nullable=False)
+def test_singleton_primitive():
+    assert dt.Int64() is dt.int64
+    assert dt.Int64(nullable=False) is not dt.int64
+    assert dt.Int64(nullable=False) is dt.Int64(nullable=False)
 
 
 def test_array_type_not_equals():

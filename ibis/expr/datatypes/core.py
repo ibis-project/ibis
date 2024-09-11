@@ -466,7 +466,7 @@ class DataType(Concrete):
 
 
 @public
-class Unknown(DataType):
+class Unknown(DataType, singleton=True):
     """An unknown type."""
 
     scalar = "UnknownScalar"
@@ -474,7 +474,7 @@ class Unknown(DataType):
 
 
 @public
-class Primitive(DataType):
+class Primitive(DataType, singleton=True):
     """Values with known size."""
 
 
@@ -535,7 +535,7 @@ class Integer(Primitive, Numeric):
 
 
 @public
-class String(Variadic):
+class String(Variadic, singleton=True):
     """A type representing a string.
 
     Notes
@@ -550,7 +550,7 @@ class String(Variadic):
 
 
 @public
-class Binary(Variadic):
+class Binary(Variadic, singleton=True):
     """A type representing a sequence of bytes.
 
     Notes
