@@ -1310,6 +1310,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         --------
         >>> import ibis
         >>> import fsspec
+        >>> ibis.options.interactive = True
         >>> gcs = fsspec.filesystem("gcs")
         >>> con = ibis.duckdb.connect()
         >>> con.register_filesystem(gcs)
