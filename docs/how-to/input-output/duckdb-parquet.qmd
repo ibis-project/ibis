@@ -17,7 +17,7 @@ hosted on S3 at `s3://gbif-open-data-us-east-1/occurrence/`
 We can read a single partition by specifying its path.
 
 We do this by calling
-[`read_parquet`](https://ibis-project.org/api/expressions/top_level/#ibis.read_parquet)
+[`read_parquet`](https://ibis-project.org/backends/duckdb#ibis.backends.duckdb.Backend.read_parquet)
 on the partition we care about.
 
 So to read the first partition in this dataset, we'll call `read_parquet` on
