@@ -78,7 +78,9 @@ class Example(Concrete):
                     if pyarrow.types.is_null(field.type):
                         table = table.set_column(i, field.name, table[i].cast("string"))
 
-            return ibis.memtable(table, name=table_name)
+            obj = ibis.memtable(table, name=table_name)
+            backend._register_in_memory_tables(obj)
+            return backend.table(table_name)
 
 
 _FETCH_DOCSTRING_TEMPLATE = """\
