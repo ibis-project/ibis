@@ -93,7 +93,6 @@ aggregate_test_params = [
                     "pyspark",
                     "trino",
                     "druid",
-                    "oracle",
                     "flink",
                     "risingwave",
                     "exasol",
@@ -126,20 +125,14 @@ argidx_not_grouped_marks = [
 ]
 
 
-def make_argidx_params(marks, grouped=False):
+def make_argidx_params(marks):
     marks = [pytest.mark.notyet(marks, raises=com.OperationNotDefinedError)]
     return [
         param(
             lambda t: t.timestamp_col.argmin(t.id),
             lambda s: s.timestamp_col.iloc[s.id.argmin()],
             id="argmin",
-            marks=marks
-            + [
-                pytest.mark.xfail_version(
-                    polars=["polars>=0.19.12,<1"], raises=BaseException
-                )
-            ]
-            * grouped,
+            marks=marks,
         ),
         param(
             lambda t: t.double_col.argmax(t.id),
@@ -167,7 +160,7 @@ def test_aggregate(backend, alltypes, df, result_fn, expected_fn):
 
 @pytest.mark.parametrize(
     ("result_fn", "expected_fn"),
-    aggregate_test_params + make_argidx_params(argidx_not_grouped_marks, grouped=True),
+    aggregate_test_params + make_argidx_params(argidx_not_grouped_marks),
 )
 def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     grouping_key_col = "bigint_col"
@@ -301,7 +294,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.any(where=where),
+            lambda t, where: ~t.bool_col.any(where=where),
             lambda t, where: ~t.bool_col[where].any(),
             id="any_negate",
             marks=[
@@ -337,7 +330,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             ],
         ),
         param(
-            lambda t, where: -t.bool_col.all(where=where),
+            lambda t, where: ~t.bool_col.all(where=where),
             lambda t, where: ~t.bool_col[where].all(),
             id="all_negate",
             marks=[
@@ -397,7 +390,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "mssql",
                         "trino",
                         "druid",
-                        "oracle",
                         "exasol",
                         "flink",
                         "risingwave",
@@ -474,6 +466,12 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
+            marks=pytest.mark.xfail_version(
+                duckdb=["duckdb>=1.1"],
+                raises=AssertionError,
+                reason="not exact, even at this tiny scale",
+                strict=False,
+            ),
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
@@ -825,7 +823,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.UnsupportedBackendType,
                 ),
                 pytest.mark.notyet(
-                    ["snowflake"],
+                    ["snowflake", "risingwave"],
                     reason="backend doesn't implement array of quantiles as input",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -844,11 +842,6 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     reason="backend doesn't implement approximate quantiles yet",
                     raises=com.OperationNotDefinedError,
                 ),
-                pytest.mark.notimpl(
-                    ["risingwave"],
-                    reason="Invalid input syntax: direct arg in `percentile_cont` must be castable to float64",
-                    raises=PsycoPg2InternalError,
-                ),
             ],
         ),
     ],
@@ -862,14 +855,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
             lambda t: t.string_col.isin(["1", "7"]),
             id="is_in",
             marks=[
-                pytest.mark.notimpl(
-                    ["datafusion"], raises=com.OperationNotDefinedError
-                ),
-                pytest.mark.notimpl(
-                    "risingwave",
-                    raises=PsycoPg2InternalError,
-                    reason="probably incorrect filter syntax but not sure",
-                ),
+                pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
             ],
         ),
     ],
@@ -886,6 +872,51 @@ def test_quantile(
     result = expr.execute().squeeze()
     expected = expected_fn(df, pandas_cond(df))
     assert pytest.approx(result) == expected
+
+
+@pytest.mark.parametrize("filtered", [False, True])
+@pytest.mark.parametrize(
+    "multi",
+    [
+        False,
+        param(
+            True,
+            marks=[
+                pytest.mark.notimpl(
+                    ["datafusion", "oracle", "snowflake", "polars", "risingwave"],
+                    raises=com.OperationNotDefinedError,
+                    reason="multi-quantile not yet implemented",
+                ),
+                pytest.mark.notyet(
+                    ["mssql", "exasol"],
+                    raises=com.UnsupportedBackendType,
+                    reason="array types not supported",
+                ),
+            ],
+        ),
+    ],
+)
+@pytest.mark.notyet(
+    ["druid", "flink", "impala", "mysql", "sqlite"],
+    raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
+    reason="quantiles (approximate or otherwise) not supported",
+)
+def test_approx_quantile(con, filtered, multi):
+    t = ibis.memtable({"x": [0, 25, 25, 50, 75, 75, 100, 125, 125, 150, 175, 175, 200]})
+    where = t.x <= 100 if filtered else None
+    q = [0.25, 0.75] if multi else 0.25
+    res = con.execute(t.x.approx_quantile(q, where=where))
+    if multi:
+        assert isinstance(res, list)
+        assert all(pd.api.types.is_float(r) for r in res)
+        sol = [25, 75] if filtered else [50, 150]
+    else:
+        assert pd.api.types.is_float(res)
+        sol = 25 if filtered else 50
+
+    # Give pretty wide bounds for approximation - we're mostly testing that
+    # the call is valid and the filtering logic is applied properly.
+    assert res == pytest.approx(sol, abs=10)
 
 
 @pytest.mark.parametrize(
@@ -1563,12 +1594,9 @@ def test_agg_sort(alltypes):
         query.order_by(alltypes.year)
 
 
-@pytest.mark.xfail_version(
-    polars=["polars==0.14.31"], reason="projection of scalars is broken"
-)
 def test_filter(backend, alltypes, df):
     expr = (
-        alltypes[_.string_col == "1"]
+        alltypes.filter(_.string_col == "1")
         .mutate(x=L(1, "int64"))
         .group_by(_.x)
         .aggregate(sum=_.double_col.sum())

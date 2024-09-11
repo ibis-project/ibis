@@ -88,7 +88,7 @@ def test_cte_refs_in_topo_order(backend, snapshot):
 @pytest.mark.never(["pandas", "dask", "polars"], reason="not SQL", raises=ValueError)
 def test_isin_bug(con, snapshot):
     t = ibis.table(dict(x="int"), name="t")
-    good = t[t.x > 2].x
+    good = t.filter(t.x > 2).x
     expr = t.x.isin(good)
     snapshot.assert_match(str(ibis.to_sql(expr, dialect=con.name)), "out.sql")
 

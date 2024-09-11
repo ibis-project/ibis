@@ -23,6 +23,7 @@ from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    split_select_distinct_with_order_by,
 )
 from ibis.util import gen_name
 
@@ -39,6 +40,7 @@ class TrinoCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     quoted = True
 
     NAN = sg.func("nan")
@@ -108,17 +110,16 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
-        if op.seed is not None:
+        if seed is not None:
             raise com.UnsupportedOperationError(
                 "`Table.sample` with a random seed is unsupported"
             )
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
@@ -132,6 +133,13 @@ class TrinoCompiler(SQLGlotCompiler):
             right = self.cast(right, dt.Int32(nullable=right_type.nullable))
 
         return self.agg.corr(left, right, where=where)
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        return self.agg.approx_quantile(arg, quantile, where=where)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
 
     def visit_BitXor(self, op, *, arg, where):
         a, b = map(sg.to_identifier, "ab")
@@ -214,9 +222,7 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return self.cast(
-            sge.paren(self.f.day_of_week(arg) + 6, copy=False) % 7, op.dtype
-        )
+        return self.cast(sge.paren(self.f.anon.dow(arg) + 6, copy=False) % 7, op.dtype)
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.date_format(arg, "%W")
@@ -540,16 +546,22 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         parent_alias_or_name = parent.alias_or_name
 

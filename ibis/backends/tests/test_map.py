@@ -241,9 +241,6 @@ def test_map_table(backend):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<0.8.0"], raises=exc.UnsupportedOperationError
-)
 @mark_notimpl_risingwave_hstore
 def test_column_map_values(backend):
     table = backend.map
@@ -254,9 +251,6 @@ def test_column_map_values(backend):
 
 
 @pytest.mark.notimpl(["pandas", "dask"])
-@pytest.mark.xfail_version(
-    duckdb=["duckdb<0.8.0"], raises=exc.UnsupportedOperationError
-)
 def test_column_map_merge(backend):
     table = backend.map
     expr = table.select(

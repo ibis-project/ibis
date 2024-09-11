@@ -1,7 +1,7 @@
 ---
-title: Farewell Pandas, and thanks for all the fish.
+title: Farewell pandas, and thanks for all the fish.
 author: Gil Forsyth
-date: 2024-08-22
+date: 2024-08-26
 categories:
     - blog
     - pandas
@@ -13,11 +13,11 @@ removing them in version 10.0.
 
 There is no feature gap between the `pandas` backend and our default DuckDB
 backend, and DuckDB is _much_ more performant.  `pandas` DataFrames will still
-be available as _format_ for getting data from Ibis, we just won't support using
-`pandas` to execute queries.
+be available as _format_ for getting data to and from Ibis, we just won't
+support using `pandas` to execute queries.
 
 Most of the rationale below applies to the Dask backend since it has so much in
-common with Pandas. Dask is a great project and people should continue to use
+common with pandas. Dask is a great project and people should continue to use
 it outside the Ibis context.
 
 ## Why `pandas`? And a bit of Ibis history

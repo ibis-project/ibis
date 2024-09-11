@@ -89,6 +89,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         return self.connect(**kwargs)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        import psycopg2.errors
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
+
+        try:
+            with self.begin() as cur:
+                cur.execute(sql)
+                cur.fetchall()
+        except psycopg2.errors.UndefinedTable:
+            return False
+        else:
+            return True
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         from psycopg2.extras import execute_batch
 
@@ -99,54 +114,37 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.dialect)
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.dialect)
+        df = op.data.to_frame()
+        # nan gets compiled into 'NaN'::float which throws errors in non-float columns
+        # In order to hold NaN values, pandas automatically converts integer columns
+        # to float columns if there are NaN values in them. Therefore, we need to convert
+        # them to their original dtypes (that support pd.NA) to figure out which columns
+        # are actually non-float, then fill the NaN values in those columns with None.
+        convert_df = df.convert_dtypes()
+        for col in convert_df.columns:
+            if not is_float_dtype(convert_df[col]):
+                df[col] = df[col].replace(float("nan"), None)
 
-            df = op.data.to_frame()
-            # nan gets compiled into 'NaN'::float which throws errors in non-float columns
-            # In order to hold NaN values, pandas automatically converts integer columns
-            # to float columns if there are NaN values in them. Therefore, we need to convert
-            # them to their original dtypes (that support pd.NA) to figure out which columns
-            # are actually non-float, then fill the NaN values in those columns with None.
-            convert_df = df.convert_dtypes()
-            for col in convert_df.columns:
-                if not is_float_dtype(convert_df[col]):
-                    df[col] = df[col].replace(float("nan"), None)
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
-                execute_batch(cur, sql, data, 128)
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
+            execute_batch(cur, sql, data, 128)
 
     @contextlib.contextmanager
     def begin(self):
@@ -225,34 +223,30 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         Examples
         --------
         >>> import os
-        >>> import getpass
         >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
-        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", getpass.getuser())
-        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD")
+        >>> user = os.environ.get("IBIS_TEST_POSTGRES_USER", "postgres")
+        >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD", "postgres")
         >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
-        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con = ibis.postgres.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        PostgreSQLTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : boolean
-            tinyint_col : int16
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(6)
+          year            int32
+          month           int32
         """
         import psycopg2
         import psycopg2.extras
@@ -626,7 +620,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -655,6 +649,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 
@@ -673,26 +669,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -703,7 +691,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -711,7 +701,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:

@@ -15,7 +15,12 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
-from ibis.backends.sql.rewrites import FirstValue, LastValue, p
+from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
+    p,
+    split_select_distinct_with_order_by,
+)
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
@@ -51,6 +56,7 @@ class PySparkCompiler(SQLGlotCompiler):
     dialect = PySpark
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.RowID,
@@ -290,6 +296,15 @@ class PySparkCompiler(SQLGlotCompiler):
 
     visit_MultiQuantile = visit_Quantile
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.approx_percentile(arg, quantile)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
+
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
             left = self.cast(left, dt.Int32(nullable=left_type.nullable))
@@ -325,11 +340,8 @@ class PySparkCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(
                 "PySpark backend does not support sampling with seed."
             )
-        sample = sge.TableSample(
-            this=parent,
-            percent=sge.convert(fraction * 100.0),
-        )
-        return sg.select(STAR).from_(sample)
+        sample = sge.TableSample(percent=sge.convert(int(fraction * 100.0)))
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:
@@ -488,16 +500,22 @@ class PySparkCompiler(SQLGlotCompiler):
             raise NotImplementedError(f"No available hashing function for {how}")
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         parent_alias = parent.alias_or_name
 

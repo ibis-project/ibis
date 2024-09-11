@@ -55,7 +55,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
-        ops.Mode,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,
@@ -63,7 +62,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.Bucket,
         ops.TimestampBucket,
         ops.TimeDelta,
-        ops.DateDelta,
         ops.TimestampDelta,
         ops.TimestampFromYMDHMS,
         ops.TimeFromHMS,
@@ -83,12 +81,11 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or_agg",
         ops.BitXor: "bit_xor_agg",
         ops.BitwiseAnd: "bitand",
-        ops.Hash: "hash",
+        ops.Hash: "ora_hash",
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
-        ops.Strip: "trim",
-        ops.Hash: "ora_hash",
+        ops.Mode: "stats_mode",
     }
 
     @staticmethod
@@ -308,6 +305,15 @@ class OracleCompiler(SQLGlotCompiler):
         )
         return expr
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        return sge.WithinGroup(
+            this=self.f.approx_percentile(quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg)
@@ -465,6 +471,29 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         return self._value_to_interval(arg, unit)
+
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        year = self.f.lpad(year, 4, "0")
+        month = self.f.lpad(month, 2, "0")
+        day = self.f.lpad(day, 2, "0")
+        return self.f.to_date(self.f.concat(year, month, day), "FXYYYYMMDD")
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return left - right
+
+    def visit_Strip(self, op, *, arg):
+        # Oracle's `TRIM` only accepts a single character to trim off, unlike
+        # Oracle's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
 
 compiler = OracleCompiler()

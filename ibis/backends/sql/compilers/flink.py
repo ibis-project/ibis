@@ -110,7 +110,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.StringLength: "char_length",
         ops.StringToDate: "to_date",
         ops.StringToTimestamp: "to_timestamp",
-        ops.Strip: "trim",
         ops.TypeOf: "typeof",
     }
 
@@ -588,6 +587,11 @@ class FlinkCompiler(SQLGlotCompiler):
         if where is not None:
             out = sge.Filter(this=out, expression=sge.Where(this=where))
         return out
+
+    def visit_Strip(self, op, *, arg):
+        # TODO: at some point, the upstream `BTRIM` function should work, but it
+        # currently doesn't, so we use a combination of left and right trim here
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
 
 compiler = FlinkCompiler()

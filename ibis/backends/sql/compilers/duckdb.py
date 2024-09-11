@@ -51,7 +51,6 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
-        ops.ArrayPosition: "list_indexof",
         ops.ArrayMin: "list_min",
         ops.ArrayMax: "list_max",
         ops.ArrayAny: "list_bool_or",
@@ -150,6 +149,13 @@ class DuckDBCompiler(SQLGlotCompiler):
             ),
         )
 
+    def visit_ArrayPosition(self, op, *, arg, other):
+        return self.if_(
+            arg.is_(NULL) | other.is_(NULL),
+            NULL,
+            self.f.coalesce(self.f.list_indexof(arg, other), 0),
+        )
+
     def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
@@ -168,12 +174,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         arg_length = self.f.len(arg)
@@ -352,7 +358,11 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[f"to_{unit.plural}"](arg)
 
     def visit_FindInSet(self, op, *, needle, values):
-        return self.f.list_indexof(self.f.array(*values), needle)
+        return self.if_(
+            needle.is_(NULL),
+            NULL,
+            self.f.coalesce(self.f.list_indexof(self.f.array(*values), needle), 0),
+        )
 
     def visit_CountDistinctStar(self, op, *, where, arg):
         # use a tuple because duckdb doesn't accept COUNT(DISTINCT a, b, c, ...)
@@ -532,6 +542,13 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_MultiQuantile(self, op, *, arg, quantile, where):
         return self.visit_Quantile(op, arg=arg, quantile=quantile, where=where)
 
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        return self.agg.approx_quantile(arg, quantile, where=where)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
+
     def visit_HexDigest(self, op, *, arg, how):
         if how in ("md5", "sha256"):
             return getattr(self.f, how)(arg)
@@ -602,15 +619,21 @@ class DuckDBCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         selcols = []
 
@@ -620,7 +643,9 @@ class DuckDBCompiler(SQLGlotCompiler):
             # TODO: clean this up once WITH ORDINALITY is supported in DuckDB
             # no need for struct_extract once that's upstream
             column = self.f.list_zip(column, self.f.range(self.f.len(column)))
-            extract = self.f.struct_extract(column_alias, 1).as_(opname, quoted=quoted)
+            extract = self.f.struct_extract(column_alias, 1).as_(
+                column_name, quoted=quoted
+            )
 
             if overlaps_with_parent:
                 replace = sge.Column(this=sge.Star(replace=[extract]), table=table)

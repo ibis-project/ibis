@@ -11,7 +11,6 @@ import sqlglot.expressions as sge
 import ibis
 import ibis.expr.schema as sch
 from ibis.backends.conftest import TEST_TABLES
-from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.tests.base import ServiceBackendTest
 
 if TYPE_CHECKING:
@@ -167,39 +166,6 @@ def con(tmp_path_factory, data_dir, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
-@pytest.fixture(scope="module")
-def alltypes(con):
-    return con.tableds.functional_alltypes
-
-
-@pytest.fixture(scope="module")
-def geotable(con):
-    return con.table("geo")
-
-
-@pytest.fixture(scope="module")
-def df(alltypes):
-    return alltypes.execute()
-
-
-@pytest.fixture(scope="module")
-def gdf(geotable):
-    return geotable.execute()
-
-
-@pytest.fixture(scope="module")
-def intervals(con):
-    return con.table("intervals")
-
-
-@pytest.fixture
-def translate():
-    from ibis.backends.trino import Backend
-
-    context = Backend.compiler.make_context()
-    return lambda expr: (Backend.compiler.translator_class(expr, context).get_result())
-
-
 def generate_tpc_tables(suite_name, *, data_dir):
     import pyarrow.parquet as pq
 
@@ -215,13 +181,7 @@ def generate_tpc_tables(suite_name, *, data_dir):
             exists=True,
             this=sge.Schema(
                 this=sg.table(name, db=suite_name, catalog="hive", quoted=True),
-                expressions=[
-                    sge.ColumnDef(
-                        this=sg.to_identifier(col, quoted=True),
-                        kind=TrinoType.from_ibis(dtype),
-                    )
-                    for col, dtype in schema.items()
-                ],
+                expressions=schema.to_sqlglot("trino"),
             ),
             properties=sge.Properties(
                 expressions=[

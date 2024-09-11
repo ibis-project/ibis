@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 import rich.console
+import sqlglot as sg
 import toolz
 from packaging.version import parse as vparse
 from pytest import mark, param
@@ -33,6 +34,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
+    Py4JJavaError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
     SnowflakeProgrammingError,
@@ -85,16 +87,11 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     "sch",
     [
         None,
-        ibis.schema(
-            dict(
-                first_name="string",
-                last_name="string",
-                department_name="string",
-                salary="float64",
-            )
-        ),
+        dict(first_name="string", salary="float64"),
+        dict(first_name="string", salary="float64").items(),
+        ibis.schema(dict(first_name="string", salary="float64")),
     ],
-    ids=["no_schema", "schema"],
+    ids=["no_schema", "dict_schema", "tuples", "schema"],
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
@@ -102,14 +99,7 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
 def test_create_table(backend, con, temp_table, func, sch):
-    df = pd.DataFrame(
-        {
-            "first_name": ["A", "B", "C"],
-            "last_name": ["D", "E", "F"],
-            "department_name": ["AA", "BB", "CC"],
-            "salary": [100.0, 200.0, 300.0],
-        }
-    )
+    df = pd.DataFrame({"first_name": ["A", "B", "C"], "salary": [100.0, 200.0, 300.0]})
 
     con.create_table(temp_table, func(df), schema=sch)
     result = (
@@ -129,7 +119,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notyet(
@@ -155,7 +145,7 @@ def test_create_table(backend, con, temp_table, func, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave"],
+                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
@@ -167,7 +157,7 @@ def test_create_table(backend, con, temp_table, func, sch):
         ),
     ],
 )
-@pytest.mark.notimpl(["druid", "impala"])
+@pytest.mark.notimpl(["druid"])
 def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
     df = pd.DataFrame(
         {
@@ -228,7 +218,7 @@ def test_load_data(backend, con, temp_table, lamduh):
     [
         param(lambda t: t.string_col, [("string_col", dt.String)], id="column"),
         param(
-            lambda t: t[t.string_col, t.bigint_col],
+            lambda t: t.select(t.string_col, t.bigint_col),
             [("string_col", dt.String), ("bigint_col", dt.Int64)],
             id="table",
         ),
@@ -379,9 +369,6 @@ def test_rename_table(con, temp_table, temp_table_orig):
 
 @mark.notimpl(["polars", "druid"])
 @mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
-@mark.notyet(
-    ["trino"], reason="trino doesn't support NOT NULL in its in-memory catalog"
-)
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -1750,3 +1737,73 @@ def test_cross_database_join(con_create_database, monkeypatch):
     con.drop_table(left_table)
     con.drop_table(right_table, database=dbname)
     con.drop_database(dbname)
+
+
+@pytest.mark.notimpl(
+    ["druid"], raises=AttributeError, reason="doesn't implement `raw_sql`"
+)
+@pytest.mark.notimpl(["clickhouse"], reason="create table isn't implemented")
+@pytest.mark.notyet(["flink"], raises=Py4JJavaError)
+@pytest.mark.notyet(["pandas", "dask", "polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
+@pytest.mark.notimpl(
+    ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+)
+def test_insert_into_table_missing_columns(con, temp_table):
+    db = getattr(con, "current_database", None)
+
+    raw_ident = sg.table(
+        temp_table,
+        db=db if db is None else sg.to_identifier(db, quoted=True),
+        quoted=True,
+    ).sql("duckdb")
+
+    ct_sql = f'CREATE TABLE {raw_ident} ("a" INT DEFAULT 1, "b" INT)'
+    sg_expr = sg.parse_one(ct_sql, read="duckdb")
+    con.raw_sql(sg_expr.sql(dialect=con.dialect))
+    con.insert(temp_table, [{"b": 1}])
+
+    result = con.table(temp_table).to_pyarrow().to_pydict()
+    expected_result = {"a": [1], "b": [1]}
+
+    assert result == expected_result
+
+
+@pytest.mark.never(
+    ["pandas", "dask"], raises=AssertionError, reason="backend is going away"
+)
+@pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
+@pytest.mark.notyet(
+    ["clickhouse", "flink"],
+    raises=AssertionError,
+    reason="memtables are assembled every time",
+)
+@pytest.mark.notyet(
+    ["mysql"],
+    raises=AssertionError,
+    reason="can't execute SQL inside of a finalizer without breaking everything",
+)
+@pytest.mark.notyet(
+    ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
+)
+def test_memtable_cleanup(con):
+    name = ibis.util.gen_name("temp_memtable")
+    t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
+
+    # the table isn't registered until we actually execute, and since we
+    # haven't yet executed anything, the table shouldn't be there
+    assert not con._in_memory_table_exists(name)
+
+    # execute, which means the table is registered and should be visible in
+    # con.list_tables()
+    con.execute(t.select("a"))
+    assert con._in_memory_table_exists(name)
+
+    con.execute(t.select("b"))
+    assert con._in_memory_table_exists(name)
+
+    # remove all references to `t`, which means the `op` shouldn't be reachable
+    # and the table should thus be dropped and no longer visible in
+    # con.list_tables()
+    del t
+    assert not con._in_memory_table_exists(name)

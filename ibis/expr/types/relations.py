@@ -3,6 +3,7 @@ from __future__ import annotations
 import itertools
 import operator
 import re
+import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
@@ -18,7 +19,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
 from ibis.common.deferred import Deferred, Resolver
-from ibis.common.selectors import Selector
+from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
@@ -38,6 +39,7 @@ if TYPE_CHECKING:
     from ibis.expr.types import Table
     from ibis.expr.types.groupby import GroupedTable
     from ibis.expr.types.temporal_windows import WindowedTable
+    from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
     from ibis.selectors import IfAnyAll
 
@@ -108,7 +110,7 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield value.resolve(table)
     elif isinstance(value, Resolver):
         yield value.resolve({"_": table})
-    elif isinstance(value, Selector):
+    elif isinstance(value, Expandable):
         yield from value.expand(table)
     elif callable(value):
         # rebind, otherwise the callable is required to return an expression
@@ -116,6 +118,14 @@ def bind(table: Table, value) -> Iterator[ir.Value]:
         yield from bind(table, value(table))
     else:
         yield literal(value)
+
+
+def unwrap_alias(node: ops.Value) -> ops.Value:
+    """Unwrap an alias node."""
+    if isinstance(node, ops.Alias):
+        return node.arg
+    else:
+        return node
 
 
 def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
@@ -127,10 +137,7 @@ def unwrap_aliases(values: Iterator[ir.Value]) -> Mapping[str, ir.Value]:
             raise com.IbisInputError(
                 f"Duplicate column name {node.name!r} in result set"
             )
-        if isinstance(node, ops.Alias):
-            result[node.name] = node.arg
-        else:
-            result[node.name] = node
+        result[node.name] = unwrap_alias(node)
     return result
 
 
@@ -193,19 +200,32 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.to_pyarrow().__arrow_c_stream__(requested_schema)
 
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Table:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_table(table, self.schema())
+        return data_mapper.convert_table(
+            table, self.schema() if schema is None else schema
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> pd.DataFrame:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
-        return PandasData.convert_table(df, self.schema() if schema is None else schema)
+        return data_mapper.convert_table(
+            df, self.schema() if schema is None else schema
+        )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
         from ibis.formats.polars import PolarsData
@@ -540,16 +560,16 @@ class Table(Expr, _FixedTextJupyterMixin):
             console_width=console_width,
         )
 
-    def __getitem__(self, what):
-        """Select items from a table expression.
-
-        This method implements square bracket syntax for table expressions,
-        including various forms of projection and filtering.
+    def __getitem__(self, what: str | int | slice | Sequence[str | int]):
+        """Select one or more columns or rows from a table expression.
 
         Parameters
         ----------
         what
-            Selection object. This can be a variety of types including strings, ints, lists.
+            What to select. Options are:
+            - A `str` column name or `int` column index to select a single column.
+            - A sequence of column names or indices to select multiple columns.
+            - A slice to select a subset of rows.
 
         Returns
         -------
@@ -560,10 +580,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         Examples
         --------
         >>> import ibis
-        >>> import ibis.selectors as s
-        >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
+        >>> t = ibis.examples.penguins.fetch().head()
         >>> t
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
         ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
@@ -575,15 +593,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
         │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
-        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
-        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
-        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
-        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
-        │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
 
-        Return a column by name
+        Select a single column by name:
 
         >>> t["island"]
         ┏━━━━━━━━━━━┓
@@ -596,15 +608,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │
         │ Torgersen │
         │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ …         │
         └───────────┘
 
-        Return the second column, starting from index 0
+        Select a single column by index:
 
         >>> t.columns[1]
         'island'
@@ -619,15 +625,24 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │
         │ Torgersen │
         │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ Torgersen │
-        │ …         │
         └───────────┘
 
-        Extract a range of rows
+        Select multiple columns by name:
+
+        >>> t[["island", "bill_length_mm"]]
+        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ island    ┃ bill_length_mm ┃
+        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string    │ float64        │
+        ├───────────┼────────────────┤
+        │ Torgersen │           39.1 │
+        │ Torgersen │           39.5 │
+        │ Torgersen │           40.3 │
+        │ Torgersen │           NULL │
+        │ Torgersen │           36.7 │
+        └───────────┴────────────────┘
+
+        Select a range of rows:
 
         >>> t[:2]
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -637,18 +652,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
         │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
         │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
-        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t[:5]
-        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string    │ float64        │ float64       │ int64             │ … │
-        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
-        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
-        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> t[2:5]
         ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
@@ -660,152 +663,34 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-
-        Some backends support negative slice indexing
-
-        >>> t[-5:]  # last 5 rows
-        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species   ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string    │ string │ float64        │ float64       │ int64             │ … │
-        ├───────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Chinstrap │ Dream  │           55.8 │          19.8 │               207 │ … │
-        │ Chinstrap │ Dream  │           43.5 │          18.1 │               202 │ … │
-        │ Chinstrap │ Dream  │           49.6 │          18.2 │               193 │ … │
-        │ Chinstrap │ Dream  │           50.8 │          19.0 │               210 │ … │
-        │ Chinstrap │ Dream  │           50.2 │          18.7 │               198 │ … │
-        └───────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t[-5:-3]  # last 5th to 3rd rows
-        ┏━━━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species   ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string    │ string │ float64        │ float64       │ int64             │ … │
-        ├───────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Chinstrap │ Dream  │           55.8 │          19.8 │               207 │ … │
-        │ Chinstrap │ Dream  │           43.5 │          18.1 │               202 │ … │
-        └───────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t[2:-2]  # chop off the first two and last two rows
-        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string    │ float64        │ float64       │ int64             │ … │
-        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
-        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
-        │ Adelie  │ Torgersen │           39.3 │          20.6 │               190 │ … │
-        │ Adelie  │ Torgersen │           38.9 │          17.8 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.2 │          19.6 │               195 │ … │
-        │ Adelie  │ Torgersen │           34.1 │          18.1 │               193 │ … │
-        │ Adelie  │ Torgersen │           42.0 │          20.2 │               190 │ … │
-        │ Adelie  │ Torgersen │           37.8 │          17.1 │               186 │ … │
-        │ Adelie  │ Torgersen │           37.8 │          17.3 │               180 │ … │
-        │ …       │ …         │              … │             … │                 … │ … │
-        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-
-        Select columns
-
-        >>> t[["island", "bill_length_mm"]].head()
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ island    ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ string    │ float64        │
-        ├───────────┼────────────────┤
-        │ Torgersen │           39.1 │
-        │ Torgersen │           39.5 │
-        │ Torgersen │           40.3 │
-        │ Torgersen │           NULL │
-        │ Torgersen │           36.7 │
-        └───────────┴────────────────┘
-        >>> t["island", "bill_length_mm"].head()
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ island    ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ string    │ float64        │
-        ├───────────┼────────────────┤
-        │ Torgersen │           39.1 │
-        │ Torgersen │           39.5 │
-        │ Torgersen │           40.3 │
-        │ Torgersen │           NULL │
-        │ Torgersen │           36.7 │
-        └───────────┴────────────────┘
-        >>> t[_.island, _.bill_length_mm].head()
-        ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
-        ┃ island    ┃ bill_length_mm ┃
-        ┡━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
-        │ string    │ float64        │
-        ├───────────┼────────────────┤
-        │ Torgersen │           39.1 │
-        │ Torgersen │           39.5 │
-        │ Torgersen │           40.3 │
-        │ Torgersen │           NULL │
-        │ Torgersen │           36.7 │
-        └───────────┴────────────────┘
-
-        Filtering
-
-        >>> t[t.island.lower() != "torgersen"].head()
-        ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string │ float64        │ float64       │ int64             │ … │
-        ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Adelie  │ Biscoe │           37.8 │          18.3 │               174 │ … │
-        │ Adelie  │ Biscoe │           37.7 │          18.7 │               180 │ … │
-        │ Adelie  │ Biscoe │           35.9 │          19.2 │               189 │ … │
-        │ Adelie  │ Biscoe │           38.2 │          18.1 │               185 │ … │
-        │ Adelie  │ Biscoe │           38.8 │          17.2 │               180 │ … │
-        └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
-
-        Selectors
-
-        >>> t[~s.numeric() | (s.numeric() & ~s.c("year"))].head()
-        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-        │ string  │ string    │ float64        │ float64       │ int64             │ … │
-        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
-        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
-        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
-        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
-        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
-        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
-        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t[s.r["bill_length_mm":"body_mass_g"]].head()
-        ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
-        ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
-        ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
-        │ float64        │ float64       │ int64             │ int64       │
-        ├────────────────┼───────────────┼───────────────────┼─────────────┤
-        │           39.1 │          18.7 │               181 │        3750 │
-        │           39.5 │          17.4 │               186 │        3800 │
-        │           40.3 │          18.0 │               195 │        3250 │
-        │           NULL │          NULL │              NULL │        NULL │
-        │           36.7 │          19.3 │               193 │        3450 │
-        └────────────────┴───────────────┴───────────────────┴─────────────┘
         """
         from ibis.expr.types.logical import BooleanValue
 
-        if isinstance(what, slice):
-            limit, offset = util.slice_to_limit_offset(what, self.count())
-            return self.limit(limit, offset=offset)
-        # skip the self.bind call for single column access with strings or ints
-        # because dereferencing has significant overhead
-        elif isinstance(what, str):
+        if isinstance(what, str):
             return ops.Field(self.op(), what).to_expr()
         elif isinstance(what, int):
             return ops.Field(self.op(), self.columns[what]).to_expr()
+        elif isinstance(what, slice):
+            limit, offset = util.slice_to_limit_offset(what, self.count())
+            return self.limit(limit, offset=offset)
 
         args = [
             self.columns[arg] if isinstance(arg, int) else arg
             for arg in util.promote_list(what)
         ]
+        if util.all_of(args, str):
+            return self.select(args)
+
+        # Once this deprecation is removed, we'll want to error here instead.
+        warnings.warn(
+            "Selecting/filtering arbitrary expressions in `Table.__getitem__` is "
+            "deprecated and will be removed in version 10.0. Please use "
+            "`Table.select` or `Table.filter` instead.",
+            FutureWarning,
+        )
         values = self.bind(args)
 
-        if isinstance(what, (str, int)):
-            assert len(values) == 1
-            return values[0]
-        elif util.all_of(values, BooleanValue):
+        if util.all_of(values, BooleanValue):
             return self.filter(values)
         else:
             return self.select(values)
@@ -1996,7 +1881,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Mutate across multiple columns
 
-        >>> t.mutate(s.across(s.numeric() & ~s.c("year"), _ - _.mean())).head()
+        >>> t.mutate(s.across(s.numeric() & ~s.cols("year"), _ - _.mean())).head()
         ┏━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ species ┃ year  ┃ bill_length_mm ┃
         ┡━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━━━━━━━┩
@@ -2166,7 +2051,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Projection with a selector
 
         >>> import ibis.selectors as s
-        >>> t.select(s.numeric() & ~s.c("year")).head()
+        >>> t.select(s.numeric() & ~s.cols("year")).head()
         ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
         ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -2182,7 +2067,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Projection + aggregation across multiple columns
 
         >>> from ibis import _
-        >>> t.select(s.across(s.numeric() & ~s.c("year"), _.mean())).head()
+        >>> t.select(s.across(s.numeric() & ~s.cols("year"), _.mean())).head()
         ┏━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ body_mass_g ┃
         ┡━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -2276,7 +2161,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> import ibis
         >>> import ibis.selectors as s
         >>> ibis.options.interactive = True
-        >>> first3 = s.r[:3]  # first 3 columns
+        >>> first3 = s.index[:3]  # first 3 columns
         >>> t = ibis.examples.penguins_raw_raw.fetch().select(first3)
         >>> t
         ┏━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -2904,7 +2789,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 result_columns.extend(expr[field] for field in expr.names)
             else:
                 result_columns.append(column)
-        return self[result_columns]
+        return self.select(result_columns)
 
     def info(self) -> Table:
         """Return summary information about a table.
@@ -3258,11 +3143,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━┩
         │ int64   │ string            │ int64         │ string            │
         ├─────────┼───────────────────┼───────────────┼───────────────────┤
-        │    1732 │ funny             │         60756 │ funny             │
-        │    1732 │ Highly quotable   │         60756 │ Highly quotable   │
-        │    1732 │ drugs             │        106782 │ drugs             │
-        │    5989 │ Leonardo DiCaprio │        106782 │ Leonardo DiCaprio │
-        │  139385 │ tom hardy         │         89774 │ Tom Hardy         │
+        │   60756 │ funny             │          1732 │ funny             │
+        │   60756 │ Highly quotable   │          1732 │ Highly quotable   │
+        │   89774 │ Tom Hardy         │        139385 │ tom hardy         │
+        │  106782 │ drugs             │          1732 │ drugs             │
+        │  106782 │ Leonardo DiCaprio │          5989 │ Leonardo DiCaprio │
         └─────────┴───────────────────┴───────────────┴───────────────────┘
         """
         from ibis.expr.types.joins import Join
@@ -3641,7 +3526,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         """
         current_backend = self._find_backend(use_default=True)
-        return current_backend._cached(self)
+        return current_backend._cached_table(self)
 
     def pivot_longer(
         self,
@@ -3712,7 +3597,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Here we convert column names not matching the selector for the `religion` column
         and convert those names into values
 
-        >>> relig_income.pivot_longer(~s.c("religion"), names_to="income", values_to="count")
+        >>> relig_income.pivot_longer(~s.cols("religion"), names_to="income", values_to="count")
         ┏━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
         ┃ religion ┃ income             ┃ count ┃
         ┡━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -3833,7 +3718,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> len(who.columns)
         60
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_(.)(.*)",
         ...     values_to="count",
@@ -3864,7 +3749,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Let's recode gender and age to numeric values using a mapping
 
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_(.)(.*)",
         ...     names_transform=dict(
@@ -3899,7 +3784,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         The number of match groups in `names_pattern` must match the length of `names_to`
 
         >>> who.pivot_longer(  # quartodoc: +EXPECTED_FAILURE
-        ...     s.r["new_sp_m014":"newrel_f65"],
+        ...     s.index["new_sp_m014":"newrel_f65"],
         ...     names_to=["diagnosis", "gender", "age"],
         ...     names_pattern="new_?(.*)_.(.*)",
         ... )
@@ -3910,7 +3795,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         `names_transform` must be a mapping or callable
 
         >>> who.pivot_longer(
-        ...     s.r["new_sp_m014":"newrel_f65"], names_transform="upper"
+        ...     s.index["new_sp_m014":"newrel_f65"], names_transform="upper"
         ... )  # quartodoc: +EXPECTED_FAILURE
         Traceback (most recent call last):
           ...
@@ -4074,6 +3959,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  4854 │       1 │     1 │   NULL │  NULL │    NULL │  NULL │  NULL │ … │
         │     … │       … │     … │      … │     … │       … │     … │     … │ … │
         └───────┴─────────┴───────┴────────┴───────┴─────────┴───────┴───────┴───┘
+
+        You can do simple transpose-like operations using `pivot_wider`
+
+        >>> t = ibis.memtable(dict(outcome=["yes", "no"], counted=[3, 4]))
+        >>> t
+        ┏━━━━━━━━━┳━━━━━━━━━┓
+        ┃ outcome ┃ counted ┃
+        ┡━━━━━━━━━╇━━━━━━━━━┩
+        │ string  │ int64   │
+        ├─────────┼─────────┤
+        │ yes     │       3 │
+        │ no      │       4 │
+        └─────────┴─────────┘
+        >>> t.pivot_wider(names_from="outcome", values_from="counted", names_sort=True)
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ no    ┃ yes   ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │     4 │     3 │
+        └───────┴───────┘
 
         Fill missing pivoted values using `values_fill`
 
@@ -4411,7 +4317,13 @@ class Table(Expr, _FixedTextJupyterMixin):
                 key = names_sep.join(filter(None, key_components))
                 aggs[key] = arg if values_fill is None else arg.coalesce(values_fill)
 
-        return self.group_by(id_cols).aggregate(**aggs)
+        grouping_keys = id_cols.expand(self)
+
+        # no id columns, so do an ungrouped aggregation
+        if not grouping_keys:
+            return self.aggregate(**aggs)
+
+        return self.group_by(*grouping_keys).aggregate(**aggs)
 
     def relocate(
         self,
@@ -4517,14 +4429,6 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├────────┼────────┼────────┼───────┼───────┼───────┤
         │ a      │ a      │ a      │     1 │     1 │     1 │
         └────────┴────────┴────────┴───────┴───────┴───────┘
-        >>> t.relocate(s.any_of(s.c(*"ae")))
-        ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
-        ┃ a     ┃ e      ┃ b     ┃ c     ┃ d      ┃ f      ┃
-        ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
-        │ int64 │ string │ int64 │ int64 │ string │ string │
-        ├───────┼────────┼───────┼───────┼────────┼────────┤
-        │     1 │ a      │     1 │     1 │ a      │ a      │
-        └───────┴────────┴───────┴───────┴────────┴────────┘
 
         When multiple columns are selected with `before` or `after`, those
         selected columns are moved before and after the `selectors` input
@@ -4858,7 +4762,11 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         (column,) = self.bind(column)
         return ops.TableUnnest(
-            parent=self, column=column, offset=offset, keep_empty=keep_empty
+            parent=self,
+            column=column,
+            column_name=column.get_name(),
+            offset=offset,
+            keep_empty=keep_empty,
         ).to_expr()
 
 
@@ -4873,7 +4781,7 @@ class CachedTable(Table):
     def release(self):
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
-        return current_backend._release_cached(self)
+        return current_backend._finalize_cached_table(self.op().name)
 
 
 public(Table=Table, CachedTable=CachedTable)

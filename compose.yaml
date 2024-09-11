@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.7.3.42-alpine
+    image: clickhouse/clickhouse-server:24.8.4.13-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.8.17
+    image: bitnami/minio:2024.9.9
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:454
+    image: trinodb/trino:457
     ports:
       - 8080:8080
     networks:
@@ -367,7 +367,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:8.29.1
+    image: exasol/docker-db:8.31.0
     privileged: true
     ports:
       - 8563:8563
@@ -547,7 +547,7 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:nightly-20240204
+    image: ghcr.io/risingwavelabs/risingwave:v1.10.1
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \

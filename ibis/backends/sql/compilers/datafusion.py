@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 
@@ -25,6 +26,8 @@ class DataFusionCompiler(SQLGlotCompiler):
     type_mapper = DataFusionType
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
+
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,
@@ -51,6 +54,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.ApproxQuantile: "approx_percentile_cont",
         ops.ApproxMedian: "approx_median",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",
@@ -497,6 +501,9 @@ class DataFusionCompiler(SQLGlotCompiler):
         return super().visit_GroupConcat(
             op, arg=arg, sep=sep, where=where, order_by=order_by
         )
+
+    def visit_ArrayFlatten(self, op, *, arg):
+        return self.if_(arg.is_(NULL), NULL, self.f.flatten(arg))
 
 
 compiler = DataFusionCompiler()

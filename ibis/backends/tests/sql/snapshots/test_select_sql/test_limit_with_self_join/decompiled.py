@@ -24,7 +24,7 @@ selfreference = functional_alltypes.view()
 result = (
     functional_alltypes.inner_join(
         selfreference,
-        functional_alltypes.tinyint_col < selfreference.timestamp_col.minute(),
+        (functional_alltypes.tinyint_col < selfreference.timestamp_col.minute()),
     )
     .select(
         functional_alltypes.id,

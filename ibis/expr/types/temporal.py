@@ -474,6 +474,42 @@ class DateValue(Value, _DateComponentMixin):
         """
         return ops.DateDelta(left=self, right=other, part=part).to_expr()
 
+    def epoch_days(self) -> ir.IntegerValue:
+        """Return the number of days since the UNIX epoch date.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> date = ibis.date(2020, 1, 1)
+        >>> date
+        ┌────────────┐
+        │ 2020-01-01 │
+        └────────────┘
+        >>> date.epoch_days()
+        ┌───────┐
+        │ 18262 │
+        └───────┘
+        >>> t = date.name("date_col").as_table()
+        >>> t
+        ┏━━━━━━━━━━━━┓
+        ┃ date_col   ┃
+        ┡━━━━━━━━━━━━┩
+        │ date       │
+        ├────────────┤
+        │ 2020-01-01 │
+        └────────────┘
+        >>> t.mutate(epoch=t.date_col.epoch_days())
+        ┏━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ date_col   ┃ epoch ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━┩
+        │ date       │ int64 │
+        ├────────────┼───────┤
+        │ 2020-01-01 │ 18262 │
+        └────────────┴───────┘
+        """
+        return self.delta(ibis.date(1970, 1, 1), "day")
+
 
 @public
 class DateScalar(Scalar, DateValue):

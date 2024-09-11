@@ -339,7 +339,7 @@ def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
 def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     """Test that summarization can handle empty data."""
     # First filter down to zero rows
-    t = udf_alltypes[udf_alltypes["int_col"] > np.inf]
+    t = udf_alltypes.filter(udf_alltypes["int_col"] > np.inf)
     result = t.group_by("year").aggregate(mean=calc_mean(t["int_col"])).execute()
     expected = pd.DataFrame({"year": [], "mean": []})
     # We check that the result is an empty DataFrame,
@@ -538,7 +538,6 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.xfail_version(pyspark=["pyspark<3.1"])
 @pytest.mark.parametrize("method", ["destructure", "lift", "unpack"])
 def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
     with pytest.warns(FutureWarning, match="v9.0"):

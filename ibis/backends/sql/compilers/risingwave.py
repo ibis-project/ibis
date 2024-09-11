@@ -6,7 +6,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers import PostgresCompiler
-from ibis.backends.sql.compilers.base import ALL_OPERATIONS
+from ibis.backends.sql.compilers.base import ALL_OPERATIONS, NULL
 from ibis.backends.sql.datatypes import RisingWaveType
 from ibis.backends.sql.dialects import RisingWave
 
@@ -19,9 +19,10 @@ class RisingWaveCompiler(PostgresCompiler):
 
     UNSUPPORTED_OPS = (
         ops.Arbitrary,
-        ops.DateFromYMD,
         ops.Mode,
         ops.RandomUUID,
+        ops.MultiQuantile,
+        ops.ApproxMultiQuantile,
         *(
             op
             for op in ALL_OPERATIONS
@@ -64,6 +65,17 @@ class RisingWaveCompiler(PostgresCompiler):
         return super().visit_Correlation(
             op, left=left, right=right, how=how, where=where
         )
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        return sge.WithinGroup(
+            this=self.f[f"percentile_{suffix}"](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+
+    visit_ApproxQuantile = visit_Quantile
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {

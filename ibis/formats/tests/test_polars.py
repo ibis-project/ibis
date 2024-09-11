@@ -100,8 +100,9 @@ def test_decimal():
     )
 
 
-def test_categorical():
+def test_enum_categorical():
     assert PolarsType.to_ibis(pl.Categorical()) == dt.string
+    assert PolarsType.to_ibis(pl.Enum(["a", "b"])) == dt.string
 
 
 def test_interval_unsupported_unit():
@@ -162,7 +163,7 @@ def test_convert_column():
 
 
 def test_convert_table():
-    df = pl.DataFrame({"x": ["1", "2"], "y": ["a", "b"]})
+    df = pl.DataFrame({"x": ["1", "2"], "z": ["a", "b"]})
     schema = ibis.schema({"x": "int64", "z": "string"})
     df = PolarsData.convert_table(df, schema)
     sol = pl.DataFrame(

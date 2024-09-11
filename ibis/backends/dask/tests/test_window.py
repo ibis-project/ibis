@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import date
 from operator import methodcaller
 
 import dask.dataframe as dd
@@ -162,7 +161,7 @@ def test_players(players, players_df):
 
 
 def test_batting_filter_mean(batting, batting_df):
-    expr = batting[batting.G > batting.G.mean()]
+    expr = batting.filter(batting.G > batting.G.mean())
     result = expr.execute()
     expected = (
         batting_df[batting_df.G > batting_df.G.mean()].reset_index(drop=True).compute()
@@ -349,7 +348,7 @@ def test_mutate_with_window_after_join(con, sort_kind):
     right = ibis.memtable(right_df)
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
+    proj = joined.select(left, right.value)
     expr = proj.group_by("ints").mutate(sum=proj.value.sum())
     result = con.execute(expr)
     expected = pd.DataFrame(
@@ -381,7 +380,7 @@ def test_mutate_scalar_with_window_after_join(npartitions):
     left, right = map(con.table, ("left", "right"))
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
+    proj = joined.select(left, right.value)
     expr = proj.mutate(sum=proj.value.sum(), const=ibis.literal(1))
     result = expr.execute()
     result = result.sort_values(["ints", "value"]).reset_index(drop=True)
@@ -416,8 +415,8 @@ def test_project_scalar_after_join(npartitions):
     left, right = map(con.table, ("left", "right"))
 
     joined = left.outer_join(right, left.ints == right.group)
-    proj = joined[left, right.value]
-    expr = proj[proj.value.sum().name("sum"), ibis.literal(1).name("const")]
+    proj = joined.select(left, right.value)
+    expr = proj.select(proj.value.sum().name("sum"), ibis.literal(1).name("const"))
     result = expr.execute().reset_index(drop=True)
     expected = pd.DataFrame(
         {
@@ -500,27 +499,3 @@ def test_window_on_and_by_key_as_window_input(t, df):
         t[control].count().over(row_window).execute(),
         check_names=False,
     )
-
-
-@pytest.fixture
-def events(npartitions) -> dd.DataFrame:
-    df = pd.DataFrame(
-        {
-            "event_id": [1] * 4 + [2] * 6 + [3] * 2,
-            "measured_on": map(
-                pd.Timestamp,
-                map(
-                    date,
-                    [2021] * 12,
-                    [6] * 4 + [5] * 6 + [7] * 2,
-                    range(1, 13),
-                ),
-            ),
-            "measurement": np.nan,
-        }
-    )
-    df.at[1, "measurement"] = 5.0
-    df.at[4, "measurement"] = 42.0
-    df.at[5, "measurement"] = 42.0
-    df.at[7, "measurement"] = 11.0
-    return dd.from_pandas(df, npartitions=npartitions)

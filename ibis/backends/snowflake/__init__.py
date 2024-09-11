@@ -6,7 +6,6 @@ import glob
 import itertools
 import json
 import os
-import shutil
 import tempfile
 import warnings
 from operator import itemgetter
@@ -645,25 +644,37 @@ $$ {defn["source"]} $$"""
 
         return self._filter_with_like(tables + views, like=like)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        import snowflake.connector
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
+
+        try:
+            with self.con.cursor() as cur:
+                cur.execute(sql).fetchall()
+        except snowflake.connector.errors.ProgrammingError as e:
+            # this cryptic error message is the only generic and reliable way
+            # to tell if the error means "table not found for any reason"
+            # otherwise, we need to reraise the exception
+            if e.sqlstate == "42S02":
+                return False
+            raise
+        else:
+            return True
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
-        raw_name = op.name
+        name = op.name
+        data = op.data.to_pyarrow(schema=op.schema)
 
-        with self.con.cursor() as con:
-            if not con.execute(f"SHOW TABLES LIKE '{raw_name}'").fetchone():
-                tmpdir = tempfile.TemporaryDirectory()
-                try:
-                    path = os.path.join(tmpdir.name, f"{raw_name}.parquet")
-                    # optimize for bandwidth so use zstd which typically compresses
-                    # better than the other options without much loss in speed
-                    pq.write_table(
-                        op.data.to_pyarrow(schema=op.schema), path, compression="zstd"
-                    )
-                    self.read_parquet(path, table_name=raw_name)
-                finally:
-                    with contextlib.suppress(Exception):
-                        shutil.rmtree(tmpdir.name)
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
+            path = Path(tmpdir, f"{name}.parquet")
+            # optimize for bandwidth so use zstd which typically compresses
+            # better than the other options without much loss in speed
+            pq.write_table(data, path, compression="zstd")
+            self.read_parquet(path, table_name=name)
 
     def create_catalog(self, name: str, force: bool = False) -> None:
         current_catalog = self.current_catalog
@@ -765,7 +776,7 @@ $$ {defn["source"]} $$"""
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -797,6 +808,8 @@ $$ {defn["source"]} $$"""
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         quoted = self.compiler.quoted
 
@@ -809,21 +822,10 @@ $$ {defn["source"]} $$"""
             db = db.name
             target = sg.table(name, db=db, catalog=catalog, quoted=quoted)
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
+        if schema:
+            target = sge.Schema(
+                this=target, expressions=schema.to_sqlglot(self.dialect)
             )
-            for name, typ in (schema or {}).items()
-        ]
-
-        if column_defs:
-            target = sge.Schema(this=target, expressions=column_defs)
 
         properties = []
 
@@ -833,11 +835,9 @@ $$ {defn["source"]} $$"""
         if comment is not None:
             properties.append(sge.SchemaCommentProperty(this=sge.convert(comment)))
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -857,11 +857,6 @@ $$ {defn["source"]} $$"""
 
         with self._safe_raw_sql(create_stmt):
             pass
-
-        # Clean up temporary memtable if we've created one
-        # for in-memory reads
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 
@@ -1132,19 +1127,7 @@ $$ {defn["source"]} $$"""
             sge.Create(
                 kind="TABLE",
                 this=sge.Schema(
-                    this=qtable,
-                    expressions=[
-                        sge.ColumnDef(
-                            this=sg.to_identifier(col, quoted=quoted),
-                            kind=type_mapper.from_ibis(typ),
-                            constraints=(
-                                [sge.NotNullColumnConstraint()]
-                                if not typ.nullable
-                                else None
-                            ),
-                        )
-                        for col, typ in schema.items()
-                    ],
+                    this=qtable, expressions=schema.to_sqlglot(self.dialect)
                 ),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
             ).sql(self.dialect),

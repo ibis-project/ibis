@@ -40,13 +40,12 @@ class Backend(BasePandasBackend, NoUrl):
         Examples
         --------
         >>> import ibis
+        >>> import pandas as pd
         >>> import dask.dataframe as dd
-        >>> data = {
-        ...     "t": dd.read_parquet("path/to/file.parquet"),
-        ...     "s": dd.read_csv("path/to/file.csv"),
-        ... }
-        >>> ibis.dask.connect(data)
-
+        >>> ibis.dask.connect(
+        ...     {"t": dd.from_pandas(pd.DataFrame({"a": [1, 2, 3]}), npartitions=1)}
+        ... )  # doctest: +ELLIPSIS
+        <ibis.backends.dask.Backend object at 0x...>
         """
         super().do_connect(dictionary)
 
@@ -179,5 +178,5 @@ class Backend(BasePandasBackend, NoUrl):
         pandas_df = super()._convert_object(obj)
         return dd.from_pandas(pandas_df, npartitions=1)
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, self.compile(expr).persist())
+    def _create_cached_table(self, name, expr):
+        return self.create_table(name, self.compile(expr).persist())

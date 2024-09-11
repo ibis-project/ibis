@@ -223,6 +223,8 @@ class ExasolCompiler(SQLGlotCompiler):
             expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
         )
 
+    visit_ApproxQuantile = visit_Quantile
+
     def visit_TimestampTruncate(self, op, *, arg, unit):
         short_name = unit.short
         unit_mapping = {"W": "IW"}

@@ -48,9 +48,8 @@ class BasePandasBackend(BaseBackend, NoUrl):
         Examples
         --------
         >>> import ibis
-        >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
-        <ibis.backends.pandas.Backend at 0x...>
-
+        >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})  # doctest: +ELLIPSIS
+        <ibis.backends.pandas.Backend object at 0x...>
         """
         warnings.warn(
             f"The {self.name} backend is slated for removal in 10.0.",
@@ -210,6 +209,8 @@ class BasePandasBackend(BaseBackend, NoUrl):
             )
         if obj is None and schema is None:
             raise com.IbisError("The schema or obj parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if obj is not None:
             df = self._convert_object(obj)
@@ -262,7 +263,7 @@ class BasePandasBackend(BaseBackend, NoUrl):
     def has_operation(cls, operation: type[ops.Value]) -> bool:
         return operation in cls._get_operations()
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         del self.dictionary[name]
 
     def to_pyarrow(
@@ -326,8 +327,11 @@ class Backend(BasePandasBackend):
 
         return PandasExecutor.execute(query.op(), backend=self, params=params)
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr.execute())
+    def _create_cached_table(self, name, expr):
+        return self.create_table(name, expr.execute())
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op, let Python handle clean up."""
 
 
 @lazy_singledispatch

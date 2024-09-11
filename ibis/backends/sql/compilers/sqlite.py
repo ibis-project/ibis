@@ -59,7 +59,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.TimeDelta,
-        ops.DateDelta,
         ops.TimestampDelta,
         ops.TryCast,
     )
@@ -530,6 +529,17 @@ class SQLiteCompiler(SQLGlotCompiler):
         ):
             raise com.UnsupportedBackendType(f"Unsupported type: {dtype!r}")
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return self.f._ibis_date_delta(left, right)
 
 
 compiler = SQLiteCompiler()

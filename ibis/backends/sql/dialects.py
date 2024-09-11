@@ -9,7 +9,6 @@ import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
-    ClickHouse,
     Hive,
     MySQL,
     Oracle,
@@ -19,15 +18,27 @@ from sqlglot.dialects import (
     SQLite,
     Trino,
 )
+from sqlglot.dialects import ClickHouse as _ClickHouse
 from sqlglot.dialects.dialect import rename_func
 from sqlglot.helper import find_new_name, seq_get
 
-ClickHouse.Generator.TRANSFORMS |= {
-    sge.ArraySize: rename_func("length"),
-    sge.ArraySort: rename_func("arraySort"),
-    sge.LogicalAnd: rename_func("min"),
-    sge.LogicalOr: rename_func("max"),
-}
+
+class ClickHouse(_ClickHouse):
+    class Generator(_ClickHouse.Generator):
+        _ClickHouse.Generator.TRANSFORMS |= {
+            sge.ArraySize: rename_func("length"),
+            sge.ArraySort: rename_func("arraySort"),
+            sge.LogicalAnd: rename_func("min"),
+            sge.LogicalOr: rename_func("max"),
+        }
+
+        def except_op(self, expression: sge.Except) -> str:
+            return f"EXCEPT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+
+        def intersect_op(self, expression: sge.Intersect) -> str:
+            return (
+                f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
+            )
 
 
 class DataFusion(Postgres):
@@ -194,6 +205,7 @@ def _explode_to_unnest():
 
 class Flink(Hive):
     UNESCAPED_SEQUENCES = {"\\\\d": "\\d"}
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
         UNNEST_WITH_ORDINALITY = False
@@ -297,6 +309,7 @@ class Flink(Hive):
 
 class Impala(Hive):
     NULL_ORDERING = "nulls_are_large"
+    REGEXP_EXTRACT_DEFAULT_GROUP = 0
 
     class Generator(Hive.Generator):
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
@@ -319,7 +332,6 @@ class MSSQL(TSQL):
             sge.Variance: rename_func("var"),
             sge.VariancePop: rename_func("varp"),
             sge.Ceil: rename_func("ceiling"),
-            sge.Trim: lambda self, e: f"TRIM({e.this.sql(self.dialect)})",
             sge.DateFromParts: rename_func("datefromparts"),
         }
 
@@ -446,18 +458,9 @@ Snowflake.Generator.TRANSFORMS |= {
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
 
 
-# TODO(cpcloud): remove this hack once
-# https://github.com/tobymao/sqlglot/issues/2735 is resolved
-def make_cross_joins_explicit(node):
-    if not (node.kind or node.side):
-        node.args["kind"] = "CROSS"
-    return node
-
-
 Trino.Generator.TRANSFORMS |= {
     sge.BitwiseLeftShift: rename_func("bitwise_left_shift"),
     sge.BitwiseRightShift: rename_func("bitwise_right_shift"),
     sge.FirstValue: rename_func("first_value"),
-    sge.Join: transforms.preprocess([make_cross_joins_explicit]),
     sge.LastValue: rename_func("last_value"),
 }

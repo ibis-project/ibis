@@ -181,6 +181,10 @@ website:
             - reference/Repr.qmd
             - reference/SQL.qmd
 
+        - section: Cursed Knowledge
+          contents:
+            - reference/cursed_knowledge.qmd
+
 format:
   html:
     theme:
@@ -568,14 +572,15 @@ quartodoc:
             - matches
             - any_of
             - all_of
-            - c
+            - cols
             - across
             - if_any
             - if_all
-            - r
+            - index
             - first
             - last
             - all
+            - none
 
     - title: Type System
       desc: "Data types and schemas"

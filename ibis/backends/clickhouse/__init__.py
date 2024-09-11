@@ -143,8 +143,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> import ibis
         >>> client = ibis.clickhouse.connect()
         >>> client
-        <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-
+        <ibis.backends.clickhouse.Backend object at 0x...>
         """
         if settings is None:
             settings = {}
@@ -308,7 +307,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         params: Mapping[ir.Scalar, Any] | None = None,
         external_tables: Mapping[str, Any] | None = None,
         chunk_size: int = 1_000_000,
-        **_: Any,
+        **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         """Execute expression and return an iterator of pyarrow record batches.
 
@@ -328,6 +327,8 @@ class Backend(SQLBackend, CanCreateDatabase):
             External data
         chunk_size
             Maximum number of row to return in a single chunk
+        kwargs
+            Extra arguments passed directly to clickhouse-connect
 
         Returns
         -------
@@ -357,14 +358,17 @@ class Backend(SQLBackend, CanCreateDatabase):
         external_tables = self._collect_in_memory_tables(expr, external_tables)
         external_data = self._normalize_external_tables(external_tables)
 
-        def batcher(sql: str, *, schema: pa.Schema) -> Iterator[pa.RecordBatch]:
-            settings = {}
+        settings = kwargs.pop("settings", {})
 
-            # readonly != 1 means that the server setting is writable
-            if self.con.server_settings["max_block_size"].readonly != 1:
-                settings["max_block_size"] = chunk_size
+        # readonly != 1 means that the server setting is writable
+        if self.con.server_settings["max_block_size"].readonly != 1:
+            settings["max_block_size"] = chunk_size
+
+        def batcher(
+            sql: str, *, schema: pa.Schema, settings, **kwargs
+        ) -> Iterator[pa.RecordBatch]:
             with self.con.query_column_block_stream(
-                sql, external_data=external_data, settings=settings
+                sql, external_data=external_data, settings=settings, **kwargs
             ) as blocks:
                 yield from map(
                     partial(pa.RecordBatch.from_arrays, schema=schema), blocks
@@ -373,13 +377,14 @@ class Backend(SQLBackend, CanCreateDatabase):
         self._log(sql)
         schema = table.schema().to_pyarrow()
         return pa.ipc.RecordBatchReader.from_batches(
-            schema, batcher(sql, schema=schema)
+            schema, batcher(sql, schema=schema, settings=settings, **kwargs)
         )
 
     def execute(
         self,
         expr: ir.Expr,
         limit: str | None = "default",
+        params: Mapping[ir.Scalar, Any] | None = None,
         external_tables: Mapping[str, pd.DataFrame] | None = None,
         **kwargs: Any,
     ) -> Any:
@@ -387,7 +392,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         import pandas as pd
 
         table = expr.as_table()
-        sql = self.compile(table, limit=limit, **kwargs)
+        sql = self.compile(table, params=params, limit=limit)
 
         schema = table.schema()
         self._log(sql)
@@ -395,7 +400,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         external_tables = self._collect_in_memory_tables(expr, external_tables)
         external_data = self._normalize_external_tables(external_tables)
         df = self.con.query_df(
-            sql, external_data=external_data, use_na_values=False, use_none=True
+            sql,
+            external_data=external_data,
+            use_na_values=False,
+            use_none=True,
+            **kwargs,
         )
 
         if df.empty:
@@ -601,7 +610,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -656,22 +665,15 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         if obj is None and schema is None:
             raise com.IbisError("The `schema` or `obj` parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if obj is not None and not isinstance(obj, ir.Expr):
             obj = ibis.memtable(obj, schema=schema)
 
-        if schema is None:
-            schema = obj.schema()
-
         this = sge.Schema(
-            this=sg.table(name, db=database),
-            expressions=[
-                sge.ColumnDef(
-                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                )
-                for name, typ in schema.items()
-            ],
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            expressions=(schema or obj.schema()).to_sqlglot(self.dialect),
         )
         properties = [
             # the engine cannot be quoted, since clickhouse won't allow e.g.,
@@ -770,3 +772,23 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        name = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
+        try:
+            # DESCRIBE TABLE $TABLE FORMAT NULL is the fastest way to check
+            # table existence in clickhouse; FORMAT NULL produces no data which
+            # is ideal since we don't care about the output for existence
+            # checking
+            #
+            # Other methods compared were
+            # 1. SELECT 1 FROM $TABLE LIMIT 0
+            # 2. SHOW TABLES LIKE $TABLE LIMIT 1
+            #
+            # if the table exists nothing is returned and there's no error
+            # otherwise there's an error
+            self.con.raw_query(f"DESCRIBE {name} FORMAT NULL")
+        except cc.driver.exceptions.DatabaseError:
+            return False
+        else:
+            return True
