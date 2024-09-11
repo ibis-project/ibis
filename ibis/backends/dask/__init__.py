@@ -43,7 +43,7 @@ class Backend(BasePandasBackend, NoUrl):
         >>> import pandas as pd
         >>> import dask.dataframe as dd
         >>> ibis.dask.connect(
-        ...     {"t": dd.from_pandas(pd.DataFrame({"a": [1, 2, 3]}))}
+        ...     {"t": dd.from_pandas(pd.DataFrame({"a": [1, 2, 3]}), npartitions=1)}
         ... )  # doctest: +ELLIPSIS
         <ibis.backends.dask.Backend object at 0x...>
         """
