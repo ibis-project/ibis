@@ -297,13 +297,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         Connect using a URL
 
-        >>> con = ibis.connect(f"trino://user:password@host:port/{catalog}/{schema}")
+        >>> con = ibis.connect(f"trino://user@localhost:8080/{catalog}/{schema}")
 
         Connect using keyword arguments
 
         >>> con = ibis.trino.connect(database=catalog, schema=schema)
         >>> con = ibis.trino.connect(database=catalog, schema=schema, source="my-app")
-
         """
         if password is not None:
             if auth is not None:
