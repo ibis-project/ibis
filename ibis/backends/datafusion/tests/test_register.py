@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.dataset as ds
 import pytest
 
 import ibis
@@ -45,6 +44,8 @@ def test_register_batches(conn):
 
 
 def test_register_dataset(conn):
+    import pyarrow.dataset as ds
+
     tab = pa.table({"x": [1, 2, 3]})
     dataset = ds.InMemoryDataset(tab)
     with pytest.warns(FutureWarning, match="v9.1"):
