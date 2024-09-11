@@ -121,6 +121,33 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             An Oracle Data Source Name.  If provided, overrides all other
             connection arguments except username and password.
 
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_ORACLE_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_ORACLE_USER", "ibis")
+        >>> password = os.environ.get("IBIS_TEST_ORACLE_PASSWORD", "ibis")
+        >>> database = os.environ.get("IBIS_TEST_ORACLE_DATABASE", "IBIS_TESTING")
+        >>> con = ibis.oracle.connect(database=database, host=host, user=user, password=password)
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id : int32
+          bool_col : boolean
+          tinyint_col : int16
+          smallint_col : int16
+          int_col : int32
+          bigint_col : int64
+          float_col : float32
+          double_col : float64
+          date_string_col : string
+          string_col : string
+          timestamp_col : timestamp
+          year : int32
+          month : int32
         """
         # SID: unique name of an INSTANCE running an oracle process (a single, identifiable machine)
         # service name: an ALIAS to one (or many) individual instances that can
