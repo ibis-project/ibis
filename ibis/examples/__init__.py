@@ -78,11 +78,7 @@ class Example(Concrete):
                     if pyarrow.types.is_null(field.type):
                         table = table.set_column(i, field.name, table[i].cast("string"))
 
-            # TODO: It should be possible to avoid this memtable call, once all
-            # backends support passing a `pyarrow.Table` to `create_table`
-            # directly.
-            obj = ibis.memtable(table)
-            return backend.create_table(table_name, obj, temp=True, overwrite=True)
+            return ibis.memtable(table, name=table_name)
 
 
 _FETCH_DOCSTRING_TEMPLATE = """\
