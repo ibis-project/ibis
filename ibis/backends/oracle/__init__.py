@@ -135,19 +135,19 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         >>> t = con.table("functional_alltypes")
         >>> t
         DatabaseTable: functional_alltypes
-          id : int32
-          bool_col : boolean
-          tinyint_col : int16
-          smallint_col : int16
-          int_col : int32
-          bigint_col : int64
-          float_col : float32
-          double_col : float64
-          date_string_col : string
-          string_col : string
-          timestamp_col : timestamp
-          year : int32
-          month : int32
+          id              int64
+          bool_col        int64
+          tinyint_col     int64
+          smallint_col    int64
+          int_col         int64
+          bigint_col      int64
+          float_col       float64
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(3)
+          year            int64
+          month           int64
         """
         # SID: unique name of an INSTANCE running an oracle process (a single, identifiable machine)
         # service name: an ALIAS to one (or many) individual instances that can
