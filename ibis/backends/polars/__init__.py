@@ -51,6 +51,25 @@ class Backend(BaseBackend, NoUrl):
         tables
             An optional mapping of string table names to polars LazyFrames.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> import polars as pl
+        >>> ibis.options.interactive = True
+        >>> lazy_frame = pl.LazyFrame(
+        ...     {"name": ["Jimmy", "Keith"], "band": ["Led Zeppelin", "Stones"]}
+        ... )
+        >>> con = ibis.polars.connect(tables={"band_members": lazy_frame})
+        >>> t = con.table("band_members")
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ name   ┃ band         ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ string │ string       │
+        ├────────┼──────────────┤
+        │ Jimmy  │ Led Zeppelin │
+        │ Keith  │ Stones       │
+        └────────┴──────────────┘
         """
         if tables is not None and not isinstance(tables, Mapping):
             raise TypeError("Input to ibis.polars.connect must be a mapping")

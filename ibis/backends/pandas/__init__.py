@@ -48,9 +48,8 @@ class BasePandasBackend(BaseBackend, NoUrl):
         Examples
         --------
         >>> import ibis
-        >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})
-        <ibis.backends.pandas.Backend at 0x...>
-
+        >>> ibis.pandas.connect({"t": pd.DataFrame({"a": [1, 2, 3]})})  # doctest: +ELLIPSIS
+        <ibis.backends.pandas.Backend object at 0x...>
         """
         warnings.warn(
             f"The {self.name} backend is slated for removal in 10.0.",

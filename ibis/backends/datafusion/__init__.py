@@ -93,9 +93,25 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         Examples
         --------
         >>> import ibis
-        >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
-        >>> ibis.datafusion.connect(config)
-
+        >>> config = {
+        ...     "astronauts": "ci/ibis-testing-data/parquet/astronauts.parquet",
+        ...     "diamonds": "ci/ibis-testing-data/csv/diamonds.csv",
+        ... }
+        >>> con = ibis.datafusion.connect(config)
+        >>> con.list_tables()
+        ['astronauts', 'diamonds']
+        >>> con.table("diamonds")
+        DatabaseTable: diamonds
+          carat   float64
+          cut     string
+          color   string
+          clarity string
+          depth   float64
+          table   float64
+          price   int64
+          x       float64
+          y       float64
+          z       float64
         """
         if isinstance(config, SessionContext):
             (self.con, config) = (config, None)
@@ -121,7 +137,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             config = {}
 
         for name, path in config.items():
-            self.register(path, table_name=name)
+            self._register(path, table_name=name)
 
     @util.experimental
     @classmethod
@@ -300,8 +316,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             sg.select("table_name")
             .from_("information_schema.tables")
             .where(sg.column("table_schema").eq(sge.convert(database)))
+            .order_by("table_name")
         )
-        return self.raw_sql(query).to_pydict()["table_name"]
+        return self._filter_with_like(
+            self.raw_sql(query).to_pydict()["table_name"], like
+        )
 
     def get_schema(
         self,
@@ -333,43 +352,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
-        """Register a data set with `table_name` located at `source`.
+        return self._register(source, table_name, **kwargs)
 
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file or directory of
-            parquet/csv files, a pandas dataframe, or a pyarrow table, dataset
-            or record batch.
-        table_name
-            The name of the table
-        kwargs
-            DataFusion-specific keyword arguments
-
-        Examples
-        --------
-        Register a csv:
-
-        >>> import ibis
-        >>> conn = ibis.datafusion.connect(config)
-        >>> conn.register("path/to/data.csv", "my_table")
-        >>> conn.table("my_table")
-
-        Register a PyArrow table:
-
-        >>> import pyarrow as pa
-        >>> tab = pa.table({"x": [1, 2, 3]})
-        >>> conn.register(tab, "my_table")
-        >>> conn.table("my_table")
-
-        Register a PyArrow dataset:
-
-        >>> import pyarrow.dataset as ds
-        >>> dataset = ds.dataset("path/to/table")
-        >>> conn.register(dataset, "my_table")
-        >>> conn.table("my_table")
-
-        """
+    def _register(
+        self,
+        source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
         import pandas as pd
 
         if isinstance(source, (str, Path)):
