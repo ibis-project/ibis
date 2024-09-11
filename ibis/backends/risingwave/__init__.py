@@ -260,6 +260,21 @@ class Backend(PostgresBackend):
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        import psycopg2.errors
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
+
+        try:
+            with self.begin() as cur:
+                cur.execute(sql)
+                cur.fetchall()
+        except psycopg2.errors.InternalError:
+            return False
+        else:
+            return True
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
