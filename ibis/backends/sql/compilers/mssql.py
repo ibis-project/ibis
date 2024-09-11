@@ -528,7 +528,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.if_(
             length <= self.f.length(arg),
             arg,
-            self.f.left(
+            self.f.right(
                 self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
                 length,
             ),
