@@ -1,0 +1,94 @@
+---
+title: "Dataframe Interfaces are a nightmare"
+author: Gil Forsyth
+date: "2024-09-14"
+execute:
+  echo: true
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    footer: <https://ibis-project.org/presentations/datafusion-meetup-nyc-2024/talk>
+---
+
+## Who?
+
+:::: {.columns}
+
+::: {.column width="40%"}
+### Me
+
+- Gil Forsyth
+- Ibis project
+- Xonsh
+- Voltron Data
+- Recovering academic
+:::
+
+::: {.column width="60%"}
+### Where
+
+- {{< fa brands github >}} [`@gforsyth`](https://github.com/gforsyth)
+- {{< fa brands mastodon >}} [`@gforsyth@fosstodon.org`](https://fosstodon.org/@gforsyth)
+:::
+
+::::
+
+# Show of hands
+
+## Who here is a...
+
+::: {.incremental}
+- Data analyst / Data scientist?
+- Data engineer?
+- Software engineer?
+- ML something-something?
+:::
+
+## Who here uses...
+
+::: {.incremental}
+- Rust?
+- Python?
+- SQL?
+- R?
+- KDB+ Q?
+:::
+
+# Don't design a Python Dataframe API
+
+## Python/pandas terminology or SQL terminology?
+
+::: {.incremental}
+- `order_by` or `orderby` or `sort` or `sort_by` or `sortby`?
+- `group_by` or `groupby` or `partition` or `partition_by` or `partitionby`?
+:::
+
+::: {.fragment}
+::: {.r-fit-text}
+_please_ only choose one
+:::
+:::
+
+## Python/pandas semantics or SQL semantics?
+
+
+::: {.incremental}
+- 0-indexing or 1-indexing?
+- Do `rpad` and `lpad` also `trim`?
+- Is _implicit ordering_ guaranteed everywhere?
+:::
+
+# Don't design a SQL dialect
+
+## (SQL) Questions with no (single) answer
+
+::: {.incremental}
+- Does a week start on Sunday or Monday?
+- Are the days of a week 0-indexed or 1-indexed?
+- Do nulls sort ascending, or descending, or always first, or always last?
+- Given a function to compute $log_b(x)$, is the function signature:
+  - `log(b, x)`?
+  - `log(x, b)`?
+:::
+
+## Obligatory XKCD
