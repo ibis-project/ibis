@@ -36,3 +36,20 @@ section[id^="parameters-"] {
   margin: 0 5px;
   /* Adds a small margin between columns */
 }
+
+/* dropdown menu styles */
+.dropdown-menu {
+  max-height: 400px;
+  overflow: auto;
+}
+
+.quarto-navbar-tools .dropdown-menu.show {
+  right: 0px;
+  left: auto;
+}
+
+@media (max-width: 988px) {
+  .quarto-navbar-tools .dropdown-menu.show {
+    right: -80px;
+  }
+}
