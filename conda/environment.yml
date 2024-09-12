@@ -44,7 +44,7 @@ dependencies:
   - pytz >=2022.7
   - regex >=2021.7.6
   - requests >=2
-  - rich >=12.4.4
+  - rich >=13.8.0
   - shapely >=2,<3
   - snowflake-connector-python >=3.0.2
   - sqlglot >=22.5,<23.1
