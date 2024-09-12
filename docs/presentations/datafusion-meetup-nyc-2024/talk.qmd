@@ -76,6 +76,7 @@ _please_ only choose one
 - 0-indexing or 1-indexing?
 - Do `rpad` and `lpad` also `trim`?
 - Is _implicit ordering_ guaranteed everywhere?
+- Are multi-indexes a good idea? (No)
 :::
 
 # Don't design a SQL dialect
@@ -89,6 +90,55 @@ _please_ only choose one
 - Given a function to compute $log_b(x)$, is the function signature:
   - `log(b, x)`?
   - `log(x, b)`?
+:::
+
+## SQL ain't standard
+
+#### Which is (a small part of) why you end up with:
+::: {.fragment}
+::: {.r-fit-text}
+```sql
+SELECT SUM(CAST(CONTAINS(LOWER("t0"."name"), 'darth') AS INT)) FROM "starwars"
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(strpos(LOWER(`t0`.`name`), 'darth') > 0 AS INT64)) FROM `starwars`
+```
+
+<br>
+
+```sql
+SELECT SUM(IIF(CONTAINS(LOWER([t0].[name]), 'darth'), 1, 0)) FROM [starwars]
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
+```
+:::
+:::
+
+## SQL ain't standard
+
+<br>
+
+![](./images/sql_is_really_difficult_at_first.png){fig-align="center"}
+
+
+## (Some) Answers to the DataFrame questions
+
+
+::: {.r-stack}
+![](images/orderby_sortby.png){.fragment}
+
+![](images/deprecate_sortby.png){.fragment}
+
+![](images/deprecate_groupby.png){.fragment}
+
+![](images/python_padding.png){.fragment}
 :::
 
 ## Obligatory XKCD
