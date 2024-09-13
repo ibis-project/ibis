@@ -9,7 +9,7 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
+from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
@@ -376,6 +376,15 @@ class ArrayCollect(Filterable, Reduction):
     arg: Column
     order_by: VarTuple[SortKey] = ()
     include_null: bool = False
+    distinct: bool = False
+
+    def __init__(self, arg, order_by, distinct, **kwargs):
+        if distinct and order_by and [arg] != [key.expr for key in order_by]:
+            raise ValidationError(
+                "`collect` with `order_by` and `distinct=True` and may only "
+                "order by the collected column"
+            )
+        super().__init__(arg=arg, order_by=order_by, distinct=distinct, **kwargs)
 
     @attribute
     def dtype(self):
