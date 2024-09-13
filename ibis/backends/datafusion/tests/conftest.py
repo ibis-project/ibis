@@ -28,13 +28,10 @@ class TestConf(BackendTest):
         con = self.connection
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-            with pytest.warns(FutureWarning, match="v9.1"):
-                con.register(path, table_name=table_name)
-        # TODO: remove warnings and replace register when implementing 8858
-        with pytest.warns(FutureWarning, match="v9.1"):
-            con.register(array_types, table_name="array_types")
-            con.register(win, table_name="win")
-            con.register(topk, table_name="topk")
+            con.read_parquet(path, table_name=table_name)
+        con.create_table("array_types", array_types)
+        con.create_table("win", win)
+        con.create_table("topk", topk)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
