@@ -479,16 +479,24 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
-        if where is not None and include_null:
-            raise com.UnsupportedOperationError(
-                "Combining `include_null=True` and `where` is not supported "
-                "by bigquery"
-            )
-        out = self.agg.array_agg(arg, where=where, order_by=order_by)
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+        if where is not None:
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported by bigquery"
+                )
+            if distinct:
+                raise com.UnsupportedOperationError(
+                    "Combining `distinct=True` and `where` is not supported by bigquery"
+                )
+            arg = compiler.if_(where, arg, NULL)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
         if not include_null:
-            out = sge.IgnoreNulls(this=out)
-        return out
+            arg = sge.IgnoreNulls(this=arg)
+        return self.f.array_agg(arg)
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)

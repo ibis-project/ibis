@@ -611,12 +611,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
             )
-        return self.agg.groupArray(arg, where=where, order_by=order_by)
+        func = self.agg.groupUniqArray if distinct else self.agg.groupArray
+        return func(arg, where=where, order_by=order_by)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:

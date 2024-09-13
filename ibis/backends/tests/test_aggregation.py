@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 from datetime import date
 from operator import methodcaller
 
@@ -1301,67 +1302,75 @@ def test_group_concat_ordered(alltypes, df, filtered):
     assert result == expected
 
 
-@pytest.mark.notimpl(
-    ["druid", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
-    raises=com.OperationNotDefinedError,
-)
-@pytest.mark.notimpl(
-    ["clickhouse", "pyspark", "flink"], raises=com.UnsupportedOperationError
-)
-@pytest.mark.parametrize("filtered", [True, False])
-def test_collect_ordered(alltypes, df, filtered):
-    ibis_cond = (_.id % 13 == 0) if filtered else None
-    pd_cond = (df.id % 13 == 0) if filtered else True
-    result = (
-        alltypes.filter(_.bigint_col == 10)
-        .id.cast("str")
-        .collect(where=ibis_cond, order_by=_.id.desc())
-        .execute()
-    )
-    expected = list(
-        df.id[(df.bigint_col == 10) & pd_cond].sort_values(ascending=False).astype(str)
-    )
-    assert result == expected
+def gen_test_collect_marks(distinct, filtered, ordered, include_null):
+    """The marks for this test fail for different combinations of parameters.
+    Rather than set `strict=False` (which can let bugs sneak through), we split
+    the mark generation into a function"""
+    if distinct:
+        yield pytest.mark.notimpl(["datafusion"], raises=com.UnsupportedOperationError)
+    if ordered:
+        yield pytest.mark.notimpl(
+            ["clickhouse", "pyspark", "flink"], raises=com.UnsupportedOperationError
+        )
+    if include_null:
+        yield pytest.mark.notimpl(
+            ["clickhouse", "pyspark", "snowflake"], raises=com.UnsupportedOperationError
+        )
+
+    # Handle special cases
+    if filtered and distinct:
+        yield pytest.mark.notimpl(
+            ["bigquery", "snowflake"],
+            raises=com.UnsupportedOperationError,
+            reason="Can't combine where and distinct",
+        )
+    elif filtered and include_null:
+        yield pytest.mark.notimpl(
+            ["bigquery"],
+            raises=com.UnsupportedOperationError,
+            reason="Can't combine where and include_null",
+        )
+    elif include_null:
+        yield pytest.mark.notimpl(
+            ["bigquery"],
+            raises=GoogleBadRequest,
+            reason="BigQuery can't retrieve arrays with null values",
+        )
 
 
 @pytest.mark.notimpl(
     ["druid", "exasol", "impala", "mssql", "mysql", "oracle", "sqlite"],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.parametrize("filtered", [True, False])
 @pytest.mark.parametrize(
-    "include_null",
+    "distinct, filtered, ordered, include_null",
     [
-        False,
-        param(
-            True,
-            marks=[
-                pytest.mark.notimpl(
-                    ["clickhouse", "pyspark", "snowflake"],
-                    raises=com.UnsupportedOperationError,
-                    reason="`include_null=True` is not supported",
-                ),
-                pytest.mark.notimpl(
-                    ["bigquery"],
-                    raises=com.UnsupportedOperationError,
-                    reason="Can't mix `where` and `include_null=True`",
-                    strict=False,
-                ),
-            ],
-        ),
+        param(*ps, marks=list(gen_test_collect_marks(*ps)))
+        for ps in itertools.product(*([[True, False]] * 4))
     ],
 )
-def test_collect(alltypes, df, filtered, include_null):
-    ibis_cond = (_.id % 13 == 0) if filtered else None
-    pd_cond = (df.id % 13 == 0) if filtered else slice(None)
-    expr = (
-        alltypes.string_col.nullif("3")
-        .collect(where=ibis_cond, include_null=include_null)
-        .length()
+def test_collect(alltypes, df, distinct, filtered, ordered, include_null):
+    expr = alltypes.mutate(x=_.string_col.nullif("3")).x.collect(
+        where=((_.id % 13 == 0) if filtered else None),
+        include_null=include_null,
+        distinct=distinct,
+        order_by=(_.x.desc() if ordered else ()),
     )
     res = expr.execute()
-    vals = df.string_col if include_null else df.string_col[df.string_col != "3"]
-    sol = len(vals[pd_cond])
+
+    x = df.string_col.where(df.string_col != "3", None)
+    if filtered:
+        x = x[df.id % 13 == 0]
+    if not include_null:
+        x = x.dropna()
+    if distinct:
+        x = x.drop_duplicates()
+    sol = sorted(x, key=lambda x: (x is not None, x), reverse=True)
+
+    if not ordered:
+        # If unordered, order afterwards so we can compare
+        res = sorted(res, key=lambda x: (x is not None, x), reverse=True)
+
     assert res == sol
 
 

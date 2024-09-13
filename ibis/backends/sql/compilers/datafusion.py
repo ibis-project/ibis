@@ -327,7 +327,11 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+        if distinct:
+            raise com.UnsupportedOperationError(
+                "`collect` with `distinct=True` is not supported"
+            )
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
