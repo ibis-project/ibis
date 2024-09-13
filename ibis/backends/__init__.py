@@ -1425,10 +1425,15 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
             return ibis.duckdb.connect(path, **kwargs)
         elif path.endswith((".sqlite", ".db")):
             return ibis.sqlite.connect(path, **kwargs)
-        elif path.endswith((".parquet", ".csv", ".csv.gz")):
-            # Load parquet/csv/csv.gz files with duckdb by default
+        elif path.endswith((".csv", ".csv.gz")):
+            # Load csv/csv.gz files with duckdb by default
             con = ibis.duckdb.connect(**kwargs)
-            con.register(path)
+            con.read_csv(path)
+            return con
+        elif path.endswith(".parquet"):
+            # Load parquet files with duckdb by default
+            con = ibis.duckdb.connect(**kwargs)
+            con.read_parquet(path)
             return con
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")
