@@ -26,17 +26,13 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
-    ClickHouseDatabaseError,
     ExaQueryError,
-    GoogleNotFound,
     ImpalaHiveServer2Error,
-    MySQLProgrammingError,
     OracleDatabaseError,
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
     Py4JJavaError,
     PyODBCProgrammingError,
-    PySparkAnalysisException,
     SnowflakeProgrammingError,
 )
 from ibis.util import gen_name
@@ -1631,33 +1627,8 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
     con.drop_table(table)
 
-    # NOTE: this entire block of exception type munging goes away once we unify
-    # table-not-found exceptions
-
-    # always allowed to raise
-    always_allowed = (com.IbisError,)
-
-    # these exception types are None when the backend dependency that
-    # defines them is not installed
-    allowed_when_installed = filter(
-        None,
-        (
-            ClickHouseDatabaseError,
-            PySparkAnalysisException,
-            MySQLProgrammingError,
-            ExaQueryError,
-            SnowflakeProgrammingError,
-            GoogleNotFound,
-        ),
-    )
-
-    # we only want to allow base Exception when we're testing datafusion
-    # otherwise any exceptions, including those that are unrelated to the
-    # problem under test will be considered correctly raising
-    datafusion_only = (Exception,) * (con.name == "datafusion")
-
     # Now attempting to load same table name without specifying db should fail
-    with pytest.raises((*always_allowed, *allowed_when_installed, *datafusion_only)):
+    with pytest.raises(com.TableNotFound):
         t = con.table(table)
 
     # But can load if specify other db

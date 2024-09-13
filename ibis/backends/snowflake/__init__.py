@@ -538,6 +538,8 @@ $$ {defn["source"]} $$"""
         catalog: str | None = None,
         database: str | None = None,
     ) -> Iterable[tuple[str, dt.DataType]]:
+        import snowflake.connector
+
         # this will always show temp tables with the same name as a non-temp
         # table first
         #
