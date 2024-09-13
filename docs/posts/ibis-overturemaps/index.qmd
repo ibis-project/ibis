@@ -1,0 +1,170 @@
+---
+title: "From query to plot: Exploring GeoParquet Overture Maps with Ibis, DuckDB, and Lonboard"
+author: Naty Clementi and Kyle Barron
+date: 2024-09-13
+categories:
+  - blog
+  - duckdb
+  - overturemaps
+  - lonboard
+  - geospatial
+execute:
+  freeze: false
+---
+
+With the release of `DuckDB 1.1.0`, now we have support for reading GeoParquet
+files! With this exciting update we can query rich datasets from Overture Maps using python via Ibis with the performance of `DuckDB`.
+
+But the good news don't stop there, since `Ibis 9.2`, `lonboard` can plot data directly from an `Ibis` table, adding more simplicity and speed to your geospatial analysis.
+
+Let’s dive into how these tools come together.
+
+## Installation
+
+Install Ibis with the dependencies needed to work with geospatial data using DuckDB. To be able to read geoparquet files the duckdb version should be `>=1.1.0`.
+
+::: {.callout-note}
+At the moment duckdb 1.1.0 has a bug that prevents us from querying and writing the data to parquet using Ibis and DuckDB, so we are installing the `overturemaps` CLI to get the data.
+:::
+
+```bash
+$ pip install 'ibis-framework[duckdb,geospatial]' lonboard overturemaps
+```
+
+## Motivation
+
+Overture Maps offers a variety of datasets to query, but we thought that it would
+be interesting to see in a plot the entire power lines infrastructure of most of the USA (excluding territories and Alaska for simplicity of the bounding box).
+
+## Download data
+
+**NOTE: not sure if I should have this here or avoid it because it's broken**
+
+With Ibis and DuckDB we could download only the necessary columns needed but at
+the moment this fails due to a bug.
+
+For future reference when this gets fixed, the expression would look like this:
+
+```python
+import ibis
+from ibis import _
+
+con = ibis.get_backend()
+
+# look into type infrastructure
+url = "s3://overturemaps-us-west-2/release/2024-07-22.0/theme=base/type=infrastructure/*"
+t = con.read_parquet(url, table_name="infra-usa")
+
+# filter for USA bounding box, subtype="power", and selecting only few columns
+expr = t.filter(_.bbox.xmin > -125.0, _.bbox.ymin > 24.8,
+                _.bbox.xmax < -65.8, _.bbox.ymax < 49.2,
+                _.subtype=="power"
+                ).select(["names",
+                          "geometry",
+                          "class",
+                          "sources",
+                          "source_tags"])
+
+```
+
+::: {.callout-note}
+If you inspect expr, you can see that the filters and projections get pushed down
+meaning you only bring the data that you asked for.
+:::
+
+```python
+# to write it to a parquet file we would do (currently broken)
+con.to_parquet(expr, "power-infra-usa.parquet")
+```
+
+But, no worries! Overture Maps has a nice [python CLI](https://docs.overturemaps.org/getting-data/overturemaps-py/) that allow us to download
+some the data, we can filter by bounding box and type but any other filters will have to happen afterwards.
+
+```bash
+$ overturemaps download --bbox=-125.0,24.8,-65.8,49.2 -f geoparquet --type=infrastructure -o usa-infra.geoparquet
+```
+
+Now that we have the data lets explore it in Ibis interactive mode and make some beautiful maps.
+
+## Data exploration
+
+```{python}
+import ibis
+from ibis import _
+
+ibis.options.interactive = True
+con = ibis.get_backend() # default duckdb backend
+```
+
+```{python}
+usa_infra = con.read_parquet("usa-infra.geoparquet")
+usa_infra
+```
+
+We take a look at the subtypes of infrastructure:
+
+```{python}
+usa_infra.subtype.value_counts().preview(max_rows=15)
+```
+
+If we want to look at power lines we need to look into `subtype=="power"`
+and see what kind of `class` we have in there.
+
+```{python}
+(usa_infra.filter(_.subtype=="power")["class"]
+          .value_counts()
+          .order_by(ibis.desc("class_count"))
+          )
+```
+
+Looks like we have `power_lines` and `minor_lines`, so we can plot them both.
+
+```{python}
+power_lines = usa_infra.filter(_.subtype=="power", usa_infra["class"]=="power_line")
+minor_lines = usa_infra.filter(_.subtype=="power", usa_infra["class"]=="minor_line")
+```
+
+## Plotting
+
+**Note: maybe here explain why lonboard ?**
+
+```{python}
+import lonboard
+
+# lonboard warns you about no CRS exists on data, I'm filtering this warning because in this case we are on CRS WGS84
+import warnings
+warnings.filterwarnings('ignore')
+```
+
+```{python}
+lonboard.viz([minor_lines, power_lines])
+```
+
+and that's how you can visualize ~7 million points from the comfort of
+your laptop.
+
+Note: I got the ~7M by adding the number of points in power_lines and minor_lines. I'm not sure if plotting the lines that connect these points add points to this.
+
+```python
+>>> power_lines.geometry.n_points().sum()
+5329836
+>>> minor_lines.geometry.n_points().sum()
+1430042
+```
+
+With Ibis and DuckDB working with geospatial data has never been easier or faster.
+We saw how to query a dataset from Overture Maps with the simplicity of Python and
+the performance of DuckDB. Last but not least, we saw how simple and quick lonboard
+got us from query-to-plot. Together, these libraries make exploring and handling
+geospatial data a breeze.
+
+
+## Resources
+- [Ibis Docs](https://ibis-project.org/)
+- [Lonboard Docs](https://developmentseed.org/lonboard/latest/)
+- [DuckDB spatial extension](https://duckdb.org/docs/extensions/spatial.html)
+- [DuckDB spatial functions docs](https://github.com/duckdb/duckdb_spatial/blob/main/docs/functions.md)
+
+Chat with us on Zulip:
+
+- [Ibis Zulip Chat](https://ibis-project.zulipchat.com/)
