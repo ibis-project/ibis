@@ -23,15 +23,11 @@ Ibis is governed by the
 ## Reporting and Enforcement Violations
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported by contacting the Ibis Code of Conduct committee at
-ibis-conduct@googlegroups.com. You can also report
+(privately) reported by contacting the [Ibis Code of Conduct
+committee](mailto:ibis-conduct.5e76f3596b52d3bb7ca89a83e6cdbb54.show-sender@streams.zulipchat.com).
 
-The committee currently consists of:
-
-- Phillip Cloud
-- Wes McKinney
-- Krisztián Szűcs
-- Jeff Reback
+The committee currently consists of [the Ibis Project Steering Council
+members](https://github.com/ibis-project/governance/blob/main/governance.md#steering-committee-members)
 
 All complaints will be reviewed and investigated and will result in a response
 that is deemed necessary and appropriate to the circumstances. The committee is
@@ -41,8 +37,8 @@ anonymously. Further details of specific enforcement policies may be posted
 separately.
 
 Project maintainers who do not follow or enforce the Code of Conduct in good
-faith may face temporary or permanent repercussions as determined by other
-members of the project's leadership.
+faith may face temporary or permanent repercussions as determined by members of
+the project's steering council.
 
 ## Attribution
 
