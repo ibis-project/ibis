@@ -117,10 +117,6 @@ jobs:
             extras:
               - clickhouse
               - examples
-          - name: pandas
-            title: Pandas
-            extras:
-              - pandas
           - name: sqlite
             title: SQLite
             extras:
