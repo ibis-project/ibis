@@ -1003,7 +1003,10 @@ def array_collect(op, in_group_by=False, **kw):
     if op.order_by:
         keys = [translate(k.expr, **kw).filter(predicate) for k in op.order_by]
         descending = [k.descending for k in op.order_by]
-        arg = arg.sort_by(keys, descending=descending)
+        arg = arg.sort_by(keys, descending=descending, nulls_last=True)
+
+    if op.distinct:
+        arg = arg.unique(maintain_order=op.order_by is not None)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756
