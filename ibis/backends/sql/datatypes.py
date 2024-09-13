@@ -40,6 +40,7 @@ _from_sqlglot_types = {
     typecode.LONGBLOB: dt.Binary,
     typecode.LONGTEXT: dt.String,
     typecode.MEDIUMBLOB: dt.Binary,
+    typecode.MEDIUMINT: dt.Int32,
     typecode.MEDIUMTEXT: dt.String,
     typecode.MONEY: dt.Decimal(19, 4),
     typecode.NCHAR: dt.String,
