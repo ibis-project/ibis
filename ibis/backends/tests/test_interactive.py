@@ -33,7 +33,7 @@ def table(backend):
     return backend.functional_alltypes
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars"])
+@pytest.mark.notimpl(["polars"])
 def test_interactive_execute_on_repr(table, queries):
     repr(table.bigint_col.sum())
     assert len(queries) >= 1
@@ -54,21 +54,21 @@ def test_repr_png_is_not_none_in_not_interactive(table):
         assert table._repr_png_() is not None
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars"])
+@pytest.mark.notimpl(["polars"])
 def test_default_limit(table, queries):
     repr(table.select("id", "bool_col"))
 
     assert len(queries) >= 1
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars"])
+@pytest.mark.notimpl(["polars"])
 def test_respect_set_limit(table, queries):
     repr(table.select("id", "bool_col").limit(10))
 
     assert len(queries) >= 1
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars"])
+@pytest.mark.notimpl(["polars"])
 def test_disable_query_limit(table, queries):
     assert ibis.options.sql.default_limit is None
 
@@ -86,6 +86,6 @@ def test_interactive_non_compilable_repr_does_not_fail(table):
 
 def test_isin_rule_suppressed_exception_repr_not_fail(table):
     bool_clause = table["string_col"].notin(["1", "4", "7"])
-    expr = table[bool_clause]["string_col"].value_counts()
+    expr = table.filter(bool_clause)["string_col"].value_counts()
 
     repr(expr)

@@ -10,7 +10,6 @@ from textwrap import dedent
 backends = [
     {"name": "BigQuery", "module": "bigquery"},
     {"name": "ClickHouse", "module": "clickhouse"},
-    {"name": "Dask", "module": "dask"},
     {"name": "DataFusion", "module": "datafusion"},
     {"name": "Druid", "module": "druid"},
     {"name": "DuckDB", "module": "duckdb"},
@@ -20,7 +19,6 @@ backends = [
     {"name": "MSSQL", "module": "mssql"},
     {"name": "MySQL", "module": "mysql"},
     {"name": "Oracle", "module": "oracle"},
-    {"name": "pandas", "module": "pandas"},
     {"name": "Polars", "module": "polars"},
     {"name": "PostgreSQL", "module": "postgres"},
     {"name": "PySpark", "module": "pyspark"},

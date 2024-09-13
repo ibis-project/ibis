@@ -22,7 +22,7 @@ def test_count_star(simple_table, assert_sql):
     ],
 )
 def test_timestamp_from_unix(simple_table, unit, assert_sql):
-    expr = simple_table.d.to_timestamp(unit=unit)
+    expr = simple_table.d.as_timestamp(unit=unit)
     assert_sql(expr)
 
 
@@ -37,9 +37,9 @@ def test_complex_projections(simple_table, assert_sql):
 
 
 def test_filter(simple_table, assert_sql):
-    expr = simple_table[
+    expr = simple_table.filter(
         ((simple_table.c > 0) | (simple_table.c < 0)) & simple_table.g.isin(["A", "B"])
-    ]
+    )
     assert_sql(expr)
 
 

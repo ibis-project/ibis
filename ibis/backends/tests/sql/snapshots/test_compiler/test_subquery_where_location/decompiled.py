@@ -11,7 +11,7 @@ alltypes = ibis.table(
     },
 )
 param = ibis.param("timestamp")
-f = alltypes.filter(alltypes.timestamp_col < param.name("my_param"))
+f = alltypes.filter((alltypes.timestamp_col < param))
 agg = f.aggregate([f.float_col.sum().name("foo")], by=[f.string_col])
 
 result = agg.foo.count()

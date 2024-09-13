@@ -9,7 +9,6 @@ from datetime import date, datetime, time
 from decimal import Decimal
 from operator import attrgetter, methodcaller
 
-import numpy as np
 import pytest
 import pytz
 import toolz
@@ -290,12 +289,6 @@ def test_isin_notin_list(table, container):
     assert isinstance(not_expr.op().arg, ops.InValues)
 
 
-def test_value_counts(table, string_col):
-    bool_clause = table[string_col].notin(["1", "4", "7"])
-    expr = table[bool_clause][string_col].value_counts()
-    assert isinstance(expr, ir.Table)
-
-
 def test_isin_notin_scalars():
     a, b, c = (ibis.literal(x) for x in [1, 1, 2])
 
@@ -373,7 +366,7 @@ def test_isnan_isinf_column(table, column):
     assert isinstance(expr.op(), ops.IsInf)
 
 
-@pytest.mark.parametrize("value", [1.3, np.nan, np.inf, -np.inf])
+@pytest.mark.parametrize("value", [1.3, float("nan"), float("inf"), -float("inf")])
 def test_isnan_isinf_scalar(value):
     expr = ibis.literal(value).isnan()
     assert isinstance(expr, ir.BooleanScalar)
@@ -502,17 +495,15 @@ def test_negate(table, col):
     assert isinstance(result.op(), ops.Negate)
 
 
-@pytest.mark.parametrize("op", [operator.neg, operator.invert])
 @pytest.mark.parametrize("value", [True, False])
-def test_negate_boolean_scalar(op, value):
-    result = op(ibis.literal(value))
+def test_negate_boolean_scalar(value):
+    result = ~ibis.literal(value)
     assert isinstance(result, ir.BooleanScalar)
     assert isinstance(result.op(), ops.Not)
 
 
-@pytest.mark.parametrize("op", [operator.neg, operator.invert])
-def test_negate_boolean_column(table, op):
-    result = op(table["h"])
+def test_negate_boolean_column(table):
+    result = ~table["h"]
     assert isinstance(result, ir.BooleanColumn)
     assert isinstance(result.op(), ops.Not)
 
@@ -1281,26 +1272,32 @@ def test_invalid_negate(value, expected_type):
 @pytest.mark.parametrize(
     "type",
     [
-        np.float16,
-        np.float32,
-        np.float64,
-        np.int16,
-        np.int32,
-        np.int64,
-        np.int64,
-        np.int8,
-        np.timedelta64,
-        np.uint16,
-        np.uint32,
-        np.uint64,
-        np.uint64,
-        np.uint8,
-        float,
-        int,
+        "float16",
+        "float32",
+        "float64",
+        "int16",
+        "int32",
+        "int64",
+        "int64",
+        "int8",
+        "timedelta64",
+        "uint16",
+        "uint32",
+        "uint64",
+        "uint64",
+        "uint8",
     ],
 )
 def test_valid_negate(type):
-    expr = ibis.literal(1)
+    np = pytest.importorskip("numpy")
+    typ = getattr(np, type)
+    expr = ibis.literal(typ(1))
+    assert -expr is not None
+
+
+@pytest.mark.parametrize("type", [float, int])
+def test_valid_negate_builtin(type):
+    expr = ibis.literal(type(1))
     assert -expr is not None
 
 
@@ -1357,7 +1354,7 @@ def test_select_on_unambiguous_join(join_method):
 def test_chained_select_on_join():
     t = ibis.table([("a", dt.int64)], name="t")
     s = ibis.table([("a", dt.int64), ("b", dt.string)], name="s")
-    join = t.join(s)[t.a, s.b]
+    join = t.join(s).select(t.a, s.b)
     expr1 = join["a", "b"]
     expr2 = join.select(["a", "b"])
     assert expr1.equals(expr2)
@@ -1371,7 +1368,7 @@ def test_repr_list_of_lists():
 def test_repr_list_of_lists_in_table():
     t = ibis.table([("a", "int64")], name="t")
     lit = ibis.literal([[1]])
-    expr = t[t, lit.name("array_of_array")]
+    expr = t.select(t, lit.name("array_of_array"))
     repr(expr)
 
 
@@ -1499,7 +1496,7 @@ def test_deferred_r_ops(op_name, expected_left, expected_right):
     right = _.a
 
     op = getattr(operator, op_name)
-    expr = t[op(left, right).name("b")]
+    expr = t.select(op(left, right).name("b"))
     node = expr.op().values["b"]
     assert node.left.equals(expected_left(t).op())
     assert node.right.equals(expected_right(t).op())
@@ -1627,6 +1624,8 @@ def test_deferred_nested_types(case):
 
 
 def test_numpy_ufuncs_dont_cast_columns():
+    np = pytest.importorskip("numpy")
+
     t = ibis.table(dict.fromkeys("abcd", "int"))
 
     # Adding a numpy array doesn't implicitly compute
@@ -1668,7 +1667,7 @@ def test_rowid_only_physical_tables():
     table = ibis.table({"x": "int", "y": "string"}, name="t")
 
     table.rowid()  # works
-    table[table.rowid(), table.x].filter(_.x > 10)  # works
+    table.select(table.rowid(), table.x).filter(_.x > 10)  # works
     with pytest.raises(com.IbisTypeError, match="only valid for physical tables"):
         table.filter(table.x > 0).rowid()
 

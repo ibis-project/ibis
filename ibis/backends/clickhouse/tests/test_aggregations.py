@@ -62,7 +62,7 @@ def test_reduction_invalid_where(alltypes, reduction):
         ),
         (
             lambda t, cond: t.int_col.approx_median(),
-            lambda df, cond: np.int32(df.int_col.median()),
+            lambda df, cond: df.int_col.median(),
         ),
         (
             lambda t, cond: t.double_col.min(),
@@ -163,7 +163,7 @@ def test_boolean_reduction(alltypes, op, df):
 
 def test_anonymous_aggregate(alltypes, df):
     t = alltypes
-    expr = t[t.double_col > t.double_col.mean()]
+    expr = t.filter(t.double_col > t.double_col.mean())
     result = expr.execute().set_index("id")
     expected = df[df.double_col > df.double_col.mean()].set_index("id")
     tm.assert_frame_equal(result, expected, check_like=True)

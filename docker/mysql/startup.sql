@@ -1,5 +1,4 @@
 CREATE USER 'ibis'@'localhost' IDENTIFIED BY 'ibis';
 CREATE SCHEMA IF NOT EXISTS test_schema;
-GRANT CREATE, DROP ON *.* TO 'ibis'@'%';
-GRANT CREATE,SELECT,DROP ON `test_schema`.* TO 'ibis'@'%';
+GRANT CREATE,SELECT,DROP,INSERT ON *.* TO 'ibis'@'%';
 FLUSH PRIVILEGES;

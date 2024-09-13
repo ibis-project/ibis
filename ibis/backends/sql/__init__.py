@@ -14,7 +14,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import BaseBackend
-from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -132,10 +131,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
 
-        catalog, database = None, None
-        if table_loc is not None:
-            catalog = table_loc.catalog or None
-            database = table_loc.db or None
+        catalog = table_loc.catalog or None
+        database = table_loc.db or None
 
         table_schema = self.get_schema(name, catalog=catalog, database=database)
         return ops.DatabaseTable(
@@ -145,39 +142,15 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             namespace=ops.Namespace(catalog=catalog, database=database),
         ).to_expr()
 
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-
-        if limit == "default":
-            limit = ibis.options.sql.default_limit
-        if limit is not None:
-            table_expr = table_expr.limit(limit)
-
-        if params is None:
-            params = {}
-
-        sql = self.compiler.translate(table_expr.op(), params=params)
-        assert not isinstance(sql, sge.Subquery)
-
-        if isinstance(sql, sge.Table):
-            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
-
-        assert not isinstance(sql, sge.Subquery)
-        return sql
-
     def compile(
         self,
         expr: ir.Expr,
         limit: str | None = None,
-        params=None,
+        params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
-        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
-        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
+        query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
         sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
         self._log(sql)
         return sql
@@ -218,19 +191,26 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             The schema inferred from `query`
         """
 
-    def _get_sql_string_view_schema(self, name, table, query) -> sch.Schema:
-        compiler = self.compiler
-        dialect = compiler.dialect
-
-        cte = self._to_sqlglot(table)
-        parsed = sg.parse_one(query, read=dialect)
-        parsed.args["with"] = cte.args.pop("with", [])
-        parsed = parsed.with_(
-            sg.to_identifier(name, quoted=compiler.quoted), as_=cte, dialect=dialect
-        )
-
-        sql = parsed.sql(dialect)
+    def _get_sql_string_view_schema(
+        self, *, name: str, table: ir.Table, query: str
+    ) -> sch.Schema:
+        sql = self.compiler.add_query_to_expr(name=name, table=table, query=query)
         return self._get_schema_using_query(sql)
+
+    def _register_udfs(self, expr: ir.Expr) -> None:
+        udf_sources = []
+        compiler = self.compiler
+        for udf_node in expr.op().find(ops.ScalarUDF):
+            compile_func = getattr(
+                compiler, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+            )
+            if sql := compile_func(udf_node):
+                udf_sources.append(sql)
+        if udf_sources:
+            # define every udf in one execution to avoid the overhead of db
+            # round trips per udf
+            with self._safe_raw_sql(";\n".join(udf_sources)):
+                pass
 
     def create_view(
         self,
@@ -273,12 +253,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         )
         with self._safe_raw_sql(src):
             pass
-
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, name):
-        self.drop_table(name, force=True)
 
     def execute(
         self,
@@ -443,14 +417,13 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         compiler = self.compiler
         quoted = compiler.quoted
         # Compare the columns between the target table and the object to be inserted
-        # If they don't match, assume auto-generated column names and use positional
-        # ordering.
-        source_cols = source.columns
+        # If source is a subset of target, use source columns for insert list
+        # Otherwise, assume auto-generated column names and use positional ordering.
+        target_cols = self.get_schema(target).keys()
+
         columns = (
             source_cols
-            if not set(target_cols := self.get_schema(target).names).difference(
-                source_cols
-            )
+            if (source_cols := source.schema().keys()) <= target_cols
             else target_cols
         )
 
@@ -570,28 +543,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         # _most_ sqlglot backends
         self.con.close()
 
-    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF | ops.AggUDF) -> None:
-        """Compile a built-in UDF. No-op by default."""
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError(
-            f"Python UDFs are not supported in the {self.name} backend"
-        )
-
-    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
-        raise NotImplementedError(
-            f"PyArrow UDFs are not supported in the {self.name} backend"
-        )
-
-    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
-        raise NotImplementedError(
-            f"pandas UDFs are not supported in the {self.name} backend"
-        )
-
     def _to_catalog_db_tuple(self, table_loc: sge.Table):
-        if table_loc is None or table_loc == (None, None):
-            return None, None
-
         if (sg_cat := table_loc.args["catalog"]) is not None:
             sg_cat.args["quoted"] = False
             sg_cat = sg_cat.sql(self.name)
@@ -603,7 +555,8 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
 
     def _to_sqlglot_table(self, database):
         if database is None:
-            return None
+            # Create "table" with empty catalog and db
+            database = sg.exp.Table(catalog=None, db=None)
         elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(
@@ -647,3 +600,24 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             )
 
         return database
+
+    def _register_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:
+        """No-op."""
+
+    def _register_python_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _register_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _register_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_table(name, force=True)

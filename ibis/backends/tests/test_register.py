@@ -85,12 +85,10 @@ def gzip_csv(data_dir, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -114,12 +112,10 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -140,12 +136,10 @@ def test_register_csv_gz(con, data_dir, gzip_csv):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -199,12 +193,10 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -237,13 +229,11 @@ def test_register_parquet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -277,18 +267,18 @@ def test_register_iterator_parquet(
     assert table.count().execute()
 
 
-# TODO: modify test to use read_in_memory when implemented xref: 8858
+# TODO: remove entirely when `register` is removed
+# This same functionality is implemented across all backends
+# via `create_table` and tested in `test_client.py`
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -311,18 +301,18 @@ def test_register_pandas(con):
     assert t.x.sum().execute() == 6
 
 
-# TODO: modify test to use read_in_memory when implemented xref: 8858
+# TODO: remove entirely when `register` is removed
+# This same functionality is implemented across all backends
+# via `create_table` and tested in `test_client.py`
 @pytest.mark.notimpl(["datafusion", "polars"])
 @pytest.mark.notyet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -344,12 +334,10 @@ def test_register_pyarrow_tables(con):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -384,13 +372,11 @@ def test_csv_reregister_schema(con, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
         "mysql",
         "mssql",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -458,7 +444,6 @@ def ft_data(data_dir):
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",
@@ -487,7 +472,6 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",
@@ -513,12 +497,10 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "clickhouse",
-        "dask",
         "datafusion",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",

@@ -384,7 +384,7 @@ def test_infoschema_dtypes(con):
 
 
 def test_password_with_bracket():
-    password = f"{IBIS_POSTGRES_PASS}["
+    password = f"{IBIS_POSTGRES_PASS}[]"
     quoted_pass = quote_plus(password)
     url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
     with pytest.raises(
@@ -417,3 +417,18 @@ def test_create_geospatial_table_with_srid(con):
             for column, dtype in zip(column_names, column_types)
         }
     )
+
+
+@pytest.fixture(scope="module")
+def enum_table(con):
+    name = gen_name("enum_table")
+    con.raw_sql("CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy')")
+    con.raw_sql(f"CREATE TEMP TABLE {name} (mood mood)")
+    yield name
+    con.raw_sql(f"DROP TABLE {name}")
+    con.raw_sql("DROP TYPE mood")
+
+
+def test_enum_table(con, enum_table):
+    t = con.table(enum_table)
+    assert t.mood.type() == dt.unknown

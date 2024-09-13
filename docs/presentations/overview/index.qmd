@@ -2,6 +2,7 @@
 title: "Ibis: an overview"
 author:
   - Cody Peterson
+date: "2024-07-24"
 execute:
   echo: true
 format:

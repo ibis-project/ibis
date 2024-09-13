@@ -32,6 +32,17 @@ from ibis.backends.sql.rewrites import (
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.expr.rewrites import lower_stringslice
+from ibis.util import get_subclasses
+
+try:
+    from sqlglot.expressions import Alter
+except ImportError:
+    from sqlglot.expressions import AlterTable
+else:
+
+    def AlterTable(*args, kind="TABLE", **kwargs):
+        return Alter(*args, kind=kind, **kwargs)
+
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
@@ -41,15 +52,7 @@ if TYPE_CHECKING:
     from ibis.backends.sql.datatypes import SqlglotType
 
 
-def get_leaf_classes(op):
-    for child_class in op.__subclasses__():
-        if not child_class.__subclasses__():
-            yield child_class
-        else:
-            yield from get_leaf_classes(child_class)
-
-
-ALL_OPERATIONS = frozenset(get_leaf_classes(ops.Node))
+ALL_OPERATIONS = frozenset(get_subclasses(ops.Node))
 
 
 class AggGen:
@@ -63,6 +66,9 @@ class AggGen:
     supports_filter
         Whether the backend supports a FILTER clause in the aggregate.
         Defaults to False.
+    supports_order_by
+        Whether the backend supports an ORDER BY clause in (relevant)
+        aggregates. Defaults to False.
     """
 
     class _Accessor:
@@ -79,10 +85,13 @@ class AggGen:
 
         __getitem__ = __getattr__
 
-    __slots__ = ("supports_filter",)
+    __slots__ = ("supports_filter", "supports_order_by")
 
-    def __init__(self, *, supports_filter: bool = False):
+    def __init__(
+        self, *, supports_filter: bool = False, supports_order_by: bool = False
+    ):
         self.supports_filter = supports_filter
+        self.supports_order_by = supports_order_by
 
     def __get__(self, instance, owner=None):
         if instance is None:
@@ -96,6 +105,7 @@ class AggGen:
         name: str,
         *args: Any,
         where: Any = None,
+        order_by: tuple = (),
     ):
         """Compile the specified aggregate.
 
@@ -109,21 +119,31 @@ class AggGen:
             Any arguments to pass to the aggregate.
         where
             An optional column filter to apply before performing the aggregate.
-
+        order_by
+            Optional ordering keys to use to order the rows before performing
+            the aggregate.
         """
         func = compiler.f[name]
 
-        if where is None:
-            return func(*args)
-
-        if self.supports_filter:
-            return sge.Filter(
-                this=func(*args),
-                expression=sge.Where(this=where),
+        if order_by and not self.supports_order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                f"not supported for the {compiler.dialect} backend"
             )
-        else:
+
+        if where is not None and not self.supports_filter:
             args = tuple(compiler.if_(where, arg, NULL) for arg in args)
-            return func(*args)
+
+        if order_by and self.supports_order_by:
+            *rest, last = args
+            out = func(*rest, sge.Order(this=last, expressions=order_by))
+        else:
+            out = func(*args)
+
+        if where is not None and self.supports_filter:
+            out = sge.Filter(this=out, expression=sge.Where(this=where))
+
+        return out
 
 
 class VarGen:
@@ -212,20 +232,6 @@ TRUE = sge.true()
 STAR = sge.Star()
 
 
-def parenthesize_inputs(f):
-    """Decorate a translation rule to parenthesize inputs."""
-
-    def wrapper(self, op, *, left, right):
-        return f(
-            self,
-            op,
-            left=self._add_parens(op.left, left),
-            right=self._add_parens(op.right, right),
-        )
-
-    return wrapper
-
-
 @public
 class SQLGlotCompiler(abc.ABC):
     __slots__ = "f", "v"
@@ -239,7 +245,10 @@ class SQLGlotCompiler(abc.ABC):
         one_to_zero_index,
         add_one_to_nth_value_input,
     )
-    """A sequence of rewrites to apply to the expression tree before compilation."""
+    """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
+
+    post_rewrites: tuple[type[pats.Replace], ...] = ()
+    """A sequence of rewrites to apply to the expression tree after SQL-specific transforms."""
 
     no_limit_value: sge.Null | None = None
     """The value to use to indicate no limit."""
@@ -249,6 +258,9 @@ class SQLGlotCompiler(abc.ABC):
 
     copy_func_args: bool = False
     """Whether to copy function arguments when generating SQL."""
+
+    supports_qualify: bool = False
+    """Whether the backend supports the QUALIFY clause."""
 
     NAN: ClassVar[sge.Expression] = sge.Cast(
         this=sge.convert("NaN"), to=sge.DataType(this=sge.DataType.Type.DOUBLE)
@@ -296,7 +308,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.ApproxCountDistinct: "approx_distinct",
         ops.ArgMax: "max_by",
         ops.ArgMin: "min_by",
-        ops.ArrayCollect: "array_agg",
         ops.ArrayContains: "array_contains",
         ops.ArrayFlatten: "flatten",
         ops.ArrayLength: "array_size",
@@ -314,7 +325,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.Degrees: "degrees",
         ops.DenseRank: "dense_rank",
         ops.Exp: "exp",
-        ops.First: "first",
         FirstValue: "first_value",
         ops.GroupConcat: "group_concat",
         ops.IfElse: "if",
@@ -322,7 +332,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.IsNan: "isnan",
         ops.JSONGetItem: "json_extract",
         ops.LPad: "lpad",
-        ops.Last: "last",
         LastValue: "last_value",
         ops.Levenshtein: "levenshtein",
         ops.Ln: "ln",
@@ -363,45 +372,63 @@ class SQLGlotCompiler(abc.ABC):
         ops.Uppercase: "upper",
     }
 
-    BINARY_INFIX_OPS = (
-        # Binary operations
-        ops.Add,
-        ops.Subtract,
-        ops.Multiply,
-        ops.Divide,
-        ops.Modulus,
-        ops.Power,
+    BINARY_INFIX_OPS = {
+        # Numeric
+        ops.Add: sge.Add,
+        ops.Subtract: sge.Sub,
+        ops.Multiply: sge.Mul,
+        ops.Divide: sge.Div,
+        ops.Modulus: sge.Mod,
+        ops.Power: sge.Pow,
         # Comparisons
-        ops.GreaterEqual,
-        ops.Greater,
-        ops.LessEqual,
-        ops.Less,
-        ops.Equals,
-        ops.NotEquals,
-        # Boolean comparisons
-        ops.And,
-        ops.Or,
-        ops.Xor,
-        # Bitwise business
-        ops.BitwiseLeftShift,
-        ops.BitwiseRightShift,
-        ops.BitwiseAnd,
-        ops.BitwiseOr,
-        ops.BitwiseXor,
-        # Time arithmetic
-        ops.DateAdd,
-        ops.DateSub,
-        ops.DateDiff,
-        ops.TimestampAdd,
-        ops.TimestampSub,
-        ops.TimestampDiff,
-        # Interval Marginalia
-        ops.IntervalAdd,
-        ops.IntervalMultiply,
-        ops.IntervalSubtract,
-    )
+        ops.GreaterEqual: sge.GTE,
+        ops.Greater: sge.GT,
+        ops.LessEqual: sge.LTE,
+        ops.Less: sge.LT,
+        ops.Equals: sge.EQ,
+        ops.NotEquals: sge.NEQ,
+        # Logical
+        ops.And: sge.And,
+        ops.Or: sge.Or,
+        ops.Xor: sge.Xor,
+        # Bitwise
+        ops.BitwiseLeftShift: sge.BitwiseLeftShift,
+        ops.BitwiseRightShift: sge.BitwiseRightShift,
+        ops.BitwiseAnd: sge.BitwiseAnd,
+        ops.BitwiseOr: sge.BitwiseOr,
+        ops.BitwiseXor: sge.BitwiseXor,
+        # Date
+        ops.DateAdd: sge.Add,
+        ops.DateSub: sge.Sub,
+        ops.DateDiff: sge.Sub,
+        # Time
+        ops.TimeAdd: sge.Add,
+        ops.TimeSub: sge.Sub,
+        ops.TimeDiff: sge.Sub,
+        # Timestamp
+        ops.TimestampAdd: sge.Add,
+        ops.TimestampSub: sge.Sub,
+        ops.TimestampDiff: sge.Sub,
+        # Interval
+        ops.IntervalAdd: sge.Add,
+        ops.IntervalMultiply: sge.Mul,
+        ops.IntervalSubtract: sge.Sub,
+    }
 
-    NEEDS_PARENS = BINARY_INFIX_OPS + (ops.IsNull,)
+    # A set of SQLGlot classes that may need to be parenthesized
+    SQLGLOT_NEEDS_PARENS = set(BINARY_INFIX_OPS.values()).union((sge.Is,))
+
+    # A set of SQLGlot classes that are associative operations
+    SQLGLOT_ASSOCIATIVE_OPS = {
+        sge.Add,
+        sge.Mul,
+        sge.And,
+        sge.Or,
+        sge.Xor,
+        sge.BitwiseAnd,
+        sge.BitwiseOr,
+        sge.BitwiseXor,
+    }
 
     # Constructed dynamically in `__init_subclass__` from their respective
     # UPPERCASE values to handle inheritance, do not modify directly here.
@@ -424,8 +451,10 @@ class SQLGlotCompiler(abc.ABC):
 
             if issubclass(op, ops.Reduction):
 
-                def impl(self, _, *, _name: str = target_name, where, **kw):
-                    return self.agg[_name](*kw.values(), where=where)
+                def impl(
+                    self, _, *, _name: str = target_name, where, order_by=(), **kw
+                ):
+                    return self.agg[_name](*kw.values(), where=where, order_by=order_by)
 
             else:
 
@@ -434,14 +463,30 @@ class SQLGlotCompiler(abc.ABC):
 
             return impl
 
+        for op, target_name in cls.SIMPLE_OPS.items():
+            setattr(cls, methodname(op), make_impl(op, target_name))
+
+        # Define binary op methods, only if BINARY_INFIX_OPS is set on the
+        # compiler class.
+        if binops := cls.__dict__.get("BINARY_INFIX_OPS", {}):
+
+            def make_binop(sge_cls):
+                def impl(self, op, *, left, right):
+                    return self.binop(sge_cls, left, right)
+
+                return impl
+
+            for op, sge_cls in binops.items():
+                setattr(cls, methodname(op), make_binop(sge_cls))
+
         # unconditionally raise an exception for unsupported operations
+        #
+        # these *must* be defined after SIMPLE_OPS to handle compilers that
+        # subclass other compilers
         for op in cls.UNSUPPORTED_OPS:
             # change to visit_Unsupported in a follow up
             # TODO: handle geoespatial ops as a separate case?
             setattr(cls, methodname(op), cls.visit_Undefined)
-
-        for op, target_name in cls.SIMPLE_OPS.items():
-            setattr(cls, methodname(op), make_impl(op, target_name))
 
         # raise on any remaining unsupported operations
         for op in ALL_OPERATIONS:
@@ -474,6 +519,24 @@ class SQLGlotCompiler(abc.ABC):
     def type_mapper(self) -> type[SqlglotType]:
         """The type mapper for the backend."""
 
+    def _compile_builtin_udf(self, udf_node: ops.ScalarUDF) -> None:  # noqa: B027
+        """No-op."""
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"Python UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _compile_pyarrow_udf(self, udf_node: ops.ScalarUDF) -> None:
+        raise NotImplementedError(
+            f"PyArrow UDFs are not supported in the {self.dialect} backend"
+        )
+
+    def _compile_pandas_udf(self, udf_node: ops.ScalarUDF) -> str:
+        raise NotImplementedError(
+            f"pandas UDFs are not supported in the {self.dialect} backend"
+        )
+
     # Concrete API
 
     def if_(self, condition, true, false: sge.Expression | None = None) -> sge.If:
@@ -484,7 +547,9 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def cast(self, arg, to: dt.DataType) -> sge.Cast:
-        return sg.cast(sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False)
+        return sge.Cast(
+            this=sge.convert(arg), to=self.type_mapper.from_ibis(to), copy=False
+        )
 
     def _prepare_params(self, params):
         result = {}
@@ -494,6 +559,34 @@ class SQLGlotCompiler(abc.ABC):
                 node = node.arg
             result[node] = value
         return result
+
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        import ibis
+
+        table_expr = expr.as_table()
+
+        if limit == "default":
+            limit = ibis.options.sql.default_limit
+        if limit is not None:
+            table_expr = table_expr.limit(limit)
+
+        if params is None:
+            params = {}
+
+        sql = self.translate(table_expr.op(), params=params)
+        assert not isinstance(sql, sge.Subquery)
+
+        if isinstance(sql, sge.Table):
+            sql = sg.select(STAR, copy=False).from_(sql, copy=False)
+
+        assert not isinstance(sql, sge.Subquery)
+        return sql
 
     def translate(self, op, *, params: Mapping[ir.Value, Any]) -> sge.Expression:
         """Translate an ibis operation to a sqlglot expression.
@@ -526,6 +619,7 @@ class SQLGlotCompiler(abc.ABC):
             op,
             params=params,
             rewrites=self.rewrites,
+            post_rewrites=self.post_rewrites,
             fuse_selects=options.sql.fuse_selects,
         )
 
@@ -591,13 +685,15 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_Cast(self, op, *, arg, to):
+        from_ = op.arg.dtype
+
+        if from_.is_integer() and to.is_interval():
+            return self._make_interval(arg, to.unit)
+
         return self.cast(arg, to)
 
     def visit_ScalarSubquery(self, op, *, rel):
         return rel.this.subquery(copy=False)
-
-    def visit_Alias(self, op, *, arg, name):
-        return arg
 
     def visit_Literal(self, op, *, value, dtype):
         """Compile a literal value.
@@ -873,10 +969,11 @@ class SQLGlotCompiler(abc.ABC):
             ifs=list(itertools.starmap(self.if_, enumerate(calendar.day_name))),
         )
 
+    def _make_interval(self, arg, unit):
+        return sge.Interval(this=arg, unit=self.v[unit.singular])
+
     def visit_IntervalFromInteger(self, op, *, arg, unit):
-        return sge.Interval(
-            this=sge.convert(arg), unit=sge.Var(this=unit.singular.upper())
-        )
+        return self._make_interval(arg, unit)
 
     ### String Instruments
     def visit_Strip(self, op, *, arg):
@@ -969,19 +1066,6 @@ class SQLGlotCompiler(abc.ABC):
         return self.agg.max(arg, where=where)
 
     ### Stats
-
-    def visit_Quantile(self, op, *, arg, quantile, where):
-        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
-        funcname = f"percentile_{suffix}"
-        expr = sge.WithinGroup(
-            this=self.f[funcname](quantile),
-            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
-        )
-        if where is not None:
-            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
-        return expr
-
-    visit_MultiQuantile = visit_Quantile
 
     def visit_VarianceStandardDevCovariance(self, op, *, how, where, **kw):
         hows = {"sample": "samp", "pop": "pop"}
@@ -1184,15 +1268,23 @@ class SQLGlotCompiler(abc.ABC):
             else:
                 yield value.as_(name, quoted=self.quoted, copy=False)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
 
         if selections:
-            if op.is_star_selection():
+            # if there are `qualify` predicates then sqlglot adds a hidden
+            # column to implement the functionality if the dialect doesn't
+            # support it
+            #
+            # using STAR in that case would lead to an extra column, so in that
+            # case we have to spell out the columns
+            if op.is_star_selection() and (not qualified or self.supports_qualify):
                 fields = [STAR]
             else:
                 fields = self._cleanup_names(selections)
@@ -1201,8 +1293,14 @@ class SQLGlotCompiler(abc.ABC):
         if predicates:
             result = result.where(*predicates, copy=False)
 
+        if qualified:
+            result = result.qualify(*qualified, copy=False)
+
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
+
+        if distinct:
+            result = result.distinct()
 
         return result
 
@@ -1299,8 +1397,8 @@ class SQLGlotCompiler(abc.ABC):
         return sel
 
     @classmethod
-    def _add_parens(cls, op, sg_expr):
-        if isinstance(op, cls.NEEDS_PARENS):
+    def _add_parens(cls, sg_expr):
+        if type(sg_expr) in cls.SQLGLOT_NEEDS_PARENS:
             return sge.paren(sg_expr, copy=False)
         return sg_expr
 
@@ -1388,11 +1486,6 @@ class SQLGlotCompiler(abc.ABC):
             return result.subquery(alias, copy=False)
         return result
 
-    def visit_Distinct(self, op, *, parent):
-        return (
-            sg.select(STAR, copy=False).distinct(copy=False).from_(parent, copy=False)
-        )
-
     def visit_CTE(self, op, *, parent):
         return sg.table(parent.alias_or_name, quoted=self.quoted)
 
@@ -1419,93 +1512,16 @@ class SQLGlotCompiler(abc.ABC):
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
-    @parenthesize_inputs
-    def visit_Add(self, op, *, left, right):
-        return sge.Add(this=left, expression=right)
-
-    visit_DateAdd = visit_TimestampAdd = visit_IntervalAdd = visit_Add
-
-    @parenthesize_inputs
-    def visit_Subtract(self, op, *, left, right):
-        return sge.Sub(this=left, expression=right)
-
-    visit_DateSub = visit_DateDiff = visit_TimestampSub = visit_TimestampDiff = (
-        visit_IntervalSubtract
-    ) = visit_Subtract
-
-    @parenthesize_inputs
-    def visit_Multiply(self, op, *, left, right):
-        return sge.Mul(this=left, expression=right)
-
-    visit_IntervalMultiply = visit_Multiply
-
-    @parenthesize_inputs
-    def visit_Divide(self, op, *, left, right):
-        return sge.Div(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Modulus(self, op, *, left, right):
-        return sge.Mod(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Power(self, op, *, left, right):
-        return sge.Pow(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_GreaterEqual(self, op, *, left, right):
-        return sge.GTE(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Greater(self, op, *, left, right):
-        return sge.GT(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_LessEqual(self, op, *, left, right):
-        return sge.LTE(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Less(self, op, *, left, right):
-        return sge.LT(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Equals(self, op, *, left, right):
-        return sge.EQ(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_NotEquals(self, op, *, left, right):
-        return sge.NEQ(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_And(self, op, *, left, right):
-        return sge.And(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Or(self, op, *, left, right):
-        return sge.Or(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_Xor(self, op, *, left, right):
-        return sge.Xor(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseLeftShift(self, op, *, left, right):
-        return sge.BitwiseLeftShift(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseRightShift(self, op, *, left, right):
-        return sge.BitwiseRightShift(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseAnd(self, op, *, left, right):
-        return sge.BitwiseAnd(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseOr(self, op, *, left, right):
-        return sge.BitwiseOr(this=left, expression=right)
-
-    @parenthesize_inputs
-    def visit_BitwiseXor(self, op, *, left, right):
-        return sge.BitwiseXor(this=left, expression=right)
+    def binop(self, sg_cls, left, right):
+        # If the op is associative we can skip parenthesizing ops of the same
+        # type if they're on the left, since they would evaluate the same.
+        # SQLGlot has an optimizer for generating long sql chains of the same
+        # op of this form without recursion, by avoiding parenthesis in this
+        # common case we can make use of this optimization to handle large
+        # operator chains.
+        if not (sg_cls in self.SQLGLOT_ASSOCIATIVE_OPS and type(left) is sg_cls):
+            left = self._add_parens(left)
+        return sg_cls(this=left, expression=self._add_parens(right))
 
     def visit_Undefined(self, op, **_):
         raise com.OperationNotDefinedError(
@@ -1529,6 +1545,41 @@ class SQLGlotCompiler(abc.ABC):
             for column in op.schema.names
         )
         return sg.select(*columns_to_keep).from_(parent)
+
+    def add_query_to_expr(self, *, name: str, table: ir.Table, query: str) -> str:
+        dialect = self.dialect
+
+        compiled_ibis_expr = self.to_sqlglot(table)
+
+        # pull existing CTEs from the compiled Ibis expression and combine them
+        # with the new query
+        parsed = reduce(
+            lambda parsed, cte: parsed.with_(cte.args["alias"], as_=cte.args["this"]),
+            compiled_ibis_expr.ctes,
+            sg.parse_one(query, read=dialect),
+        )
+
+        # remove all ctes from the compiled expression, since they're now in
+        # our larger expression
+        compiled_ibis_expr.args.pop("with", None)
+
+        # add the new str query as a CTE
+        parsed = parsed.with_(
+            sg.to_identifier(name, quoted=self.quoted), as_=compiled_ibis_expr
+        )
+
+        # generate the SQL string
+        return parsed.sql(dialect)
+
+    def _make_sample_backwards_compatible(self, *, sample, parent):
+        # sample was changed to be owned by the table being sampled in 25.17.0
+        #
+        # this is a small workaround for backwards compatibility
+        if "this" in sample.__class__.arg_types:
+            sample.args["this"] = parent
+        else:
+            parent.args["sample"] = sample
+        return sg.select(STAR).from_(parent)
 
 
 # `__init_subclass__` is uncalled for subclasses - we manually call it here to

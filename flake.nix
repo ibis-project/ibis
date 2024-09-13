@@ -109,10 +109,7 @@
 
         inherit shellHook;
 
-        PGPASSWORD = "postgres";
-        MYSQL_PWD = "ibis";
-        MSSQL_SA_PASSWORD = "1bis_Testing!";
-        DRUID_URL = "druid://localhost:8082/druid/v2/sql";
+        PYSPARK_PYTHON = "${env}/bin/python";
 
         # needed for mssql+pyodbc
         ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
@@ -129,7 +126,7 @@
 
         default = pkgs.ibis312;
 
-        inherit (pkgs) update-lock-files gen-examples check-release-notes-spelling;
+        inherit (pkgs) update-lock-files check-release-notes-spelling;
       };
 
       devShells = rec {
@@ -137,9 +134,7 @@
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        # move back to 3.12 when dask-expr is supported or the dask backend is
-        # removed
-        default = ibis310;
+        default = ibis312;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";

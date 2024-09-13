@@ -1,10 +1,6 @@
 SELECT
   "t1"."key" AS "key",
-  SUM((
-    (
-      "t1"."value" + 1
-    ) + 2
-  ) + 3) AS "foo"
+  SUM("t1"."value" + 1 + 2 + 3) AS "foo"
 FROM (
   SELECT
     *

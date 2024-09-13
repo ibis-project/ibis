@@ -33,6 +33,6 @@ def test_literal_in_fields(table, method_name, snapshot):
 def test_isin_notin_in_select(table, method_name, snapshot):
     values = ["foo", "bar"]
     method = getattr(table.g, method_name)
-    filtered = table[method(values)]
+    filtered = table.filter(method(values))
     result = translate(filtered)
     snapshot.assert_match(result, "out.sql")

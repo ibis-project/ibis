@@ -3,11 +3,10 @@ channels:
   - conda-forge
 dependencies:
   # runtime dependencies
-  - apache-flink
+  - apache-flink =1.20.0
   - atpublic >=2.3
   - black >=22.1.0,<25
   - clickhouse-connect >=0.5.23
-  - dask >=2022.9.1
   - datafusion >=0.6
   - db-dtypes >=0.3.0,<2
   - deltalake
@@ -44,7 +43,7 @@ dependencies:
   - pytz >=2022.7
   - regex >=2021.7.6
   - requests >=2
-  - rich >=12.4.4
+  - rich >=13.8.0
   - shapely >=2,<3
   - snowflake-connector-python >=3.0.2
   - sqlglot >=22.5,<23.1

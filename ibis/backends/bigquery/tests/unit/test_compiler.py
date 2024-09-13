@@ -111,7 +111,7 @@ def test_hashbytes(case, how, dtype, snapshot):
     ),
 )
 def test_integer_to_timestamp(case, unit, snapshot):
-    expr = ibis.literal(case, type=dt.int64).to_timestamp(unit=unit).name("tmp")
+    expr = ibis.literal(case, type=dt.int64).as_timestamp(unit=unit).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -151,11 +151,11 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
         ("val", "int64"),
     ]
     table = ibis.table(schema, name="unbound_table")
-    table = table[table.PARTITIONTIME < ibis.date("2017-01-01")]
+    table = table.filter(table.PARTITIONTIME < ibis.date("2017-01-01"))
     table = table.mutate(file_date=table.file_date.cast("date"))
-    table = table[table.file_date < ibis.date("2017-01-01")]
+    table = table.filter(table.file_date < ibis.date("2017-01-01"))
     table = table.mutate(XYZ=table.val * 2)
-    expr = table.join(table.view())[table]
+    expr = table.join(table.view()).select(table)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -276,7 +276,7 @@ def test_large_compile():
     for _ in range(num_joins):  # noqa: F402
         table = table.mutate(dummy=ibis.literal(""))
         table_ = table.view()
-        table = table.left_join(table_, ["dummy"])[[table_]]
+        table = table.left_join(table_, ["dummy"]).select(table_)
 
     start = time.time()
     table.compile()
@@ -417,19 +417,19 @@ def test_divide_by_zero(alltypes, op, snapshot):
 
 
 def test_identical_to(alltypes, snapshot):
-    expr = alltypes[
+    expr = alltypes.filter(
         _.string_col.identical_to("a") & _.date_string_col.identical_to("b")
-    ]
+    )
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_to_timestamp_no_timezone(alltypes, snapshot):
-    expr = alltypes.date_string_col.to_timestamp("%F")
+    expr = alltypes.date_string_col.as_timestamp("%F")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_to_timestamp_timezone(alltypes, snapshot):
-    expr = (alltypes.date_string_col + " America/New_York").to_timestamp("%F %Z")
+    expr = (alltypes.date_string_col + " America/New_York").as_timestamp("%F %Z")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -677,3 +677,28 @@ def test_time_from_hms_with_micros(snapshot):
     literal = ibis.literal(datetime.time(12, 34, 56))
     result = ibis.to_sql(literal, dialect="bigquery")
     snapshot.assert_match(result, "no_micros.sql")
+
+
+@pytest.mark.parametrize(
+    "quantiles",
+    [
+        param(0.5, id="scalar"),
+        param(1 / 3, id="tricky-scalar"),
+        param([0.25, 0.5, 0.75], id="array"),
+        param([0.5, 0.25, 0.75], id="shuffled-array"),
+        param([0, 0.25, 0.5, 0.75, 1], id="complete-array"),
+    ],
+)
+def test_approx_quantiles(alltypes, quantiles, snapshot):
+    query = alltypes.double_col.approx_quantile(quantiles).name("qs")
+    result = ibis.to_sql(query, dialect="bigquery")
+    snapshot.assert_match(result, "out.sql")
+
+
+def test_unreasonably_long_name():
+    expr = ibis.literal("hello, world!").name("a" * 301)
+    with pytest.raises(
+        com.IbisError,
+        match="BigQuery does not allow column names longer than 300 characters",
+    ):
+        ibis.to_sql(expr, dialect="bigquery")

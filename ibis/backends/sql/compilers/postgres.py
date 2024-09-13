@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import inspect
 import string
+import textwrap
 from functools import partial, reduce
+from itertools import takewhile
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -13,8 +17,20 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
+from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.types as ir
+
+
+def _verify_source_line(func_name: str, line: str):
+    if line.startswith("@"):
+        raise InvalidDecoratorError(func_name, line)
+    return line
 
 
 class PostgresUDFNode(ops.Value):
@@ -26,10 +42,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
+    post_rewrites = (split_select_distinct_with_order_by,)
 
-    rewrites = (exclude_nulls_from_array_collect, *SQLGlotCompiler.rewrites)
-
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
@@ -43,7 +58,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "first",  # could use any_value for postgres>=16
-        ops.ArrayCollect: "array_agg",
         ops.ArrayRemove: "array_remove",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
@@ -100,6 +114,64 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "make_time",
     }
 
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        table_expr = expr.as_table()
+        geocols = table_expr.schema().geospatial
+        conversions = {name: table_expr[name].as_ewkb() for name in geocols}
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super().to_sqlglot(table_expr, limit=limit, params=params)
+
+    def _compile_python_udf(self, udf_node: ops.ScalarUDF):
+        config = udf_node.__config__
+        func = udf_node.__func__
+        func_name = func.__name__
+
+        lines, _ = inspect.getsourcelines(func)
+        iter_lines = iter(lines)
+
+        function_premable_lines = list(
+            takewhile(lambda line: not line.lstrip().startswith("def "), iter_lines)
+        )
+
+        if len(function_premable_lines) > 1:
+            raise InvalidDecoratorError(
+                name=func_name, lines="".join(function_premable_lines)
+            )
+
+        source = textwrap.dedent(
+            "".join(map(partial(_verify_source_line, func_name), iter_lines))
+        ).strip()
+
+        type_mapper = self.type_mapper
+        argnames = udf_node.argnames
+        return """\
+    CREATE OR REPLACE FUNCTION {ident}({signature})
+    RETURNS {return_type}
+    LANGUAGE {language}
+    AS $$
+    {source}
+    return {name}({args})
+    $$""".format(
+            name=type(udf_node).__name__,
+            ident=self.__sql_name__(udf_node),
+            signature=", ".join(
+                f"{argname} {type_mapper.to_string(arg.dtype)}"
+                for argname, arg in zip(argnames, udf_node.args)
+            ),
+            return_type=type_mapper.to_string(udf_node.dtype),
+            language=config.get("language", "plpython3u"),
+            source=source,
+            args=", ".join(argnames),
+        )
+
     def visit_RandomUUID(self, op, **kwargs):
         return self.f.gen_random_uuid()
 
@@ -155,6 +227,21 @@ class PostgresCompiler(SQLGlotCompiler):
             )
         )
         return self.agg.count(sge.Distinct(expressions=[row]), where=where)
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        expr = sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+        if where is not None:
+            expr = sge.Filter(this=expr, expression=sge.Where(this=where))
+        return expr
+
+    visit_MultiQuantile = visit_Quantile
+    visit_ApproxQuantile = visit_Quantile
+    visit_ApproxMultiQuantile = visit_Quantile
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
@@ -284,6 +371,26 @@ class PostgresCompiler(SQLGlotCompiler):
                 sg.select(self.f.explode(left)), sg.select(self.f.explode(right))
             )
         )
+
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.first(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the postgres backend"
+            )
+        return self.agg.last(arg, where=where, order_by=order_by)
 
     def visit_Log2(self, op, *, arg):
         return self.cast(
@@ -542,7 +649,7 @@ class PostgresCompiler(SQLGlotCompiler):
         slice_expr = sge.Slice(this=start + 1, expression=stop)
         return sge.paren(arg, copy=False)[slice_expr]
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
+    def _make_interval(self, arg, unit):
         plural = unit.plural
         if plural == "minutes":
             plural = "mins"
@@ -576,11 +683,6 @@ class PostgresCompiler(SQLGlotCompiler):
             if (timezone := to.timezone) is not None:
                 arg = self.f.timezone(timezone, arg)
             return arg
-        elif from_.is_integer() and to.is_interval():
-            unit = to.unit
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit), arg=arg, unit=unit
-            )
         elif from_.is_string() and to.is_binary():
             # Postgres and Python use the words "decode" and "encode" in
             # opposite ways, sweet!
@@ -588,7 +690,7 @@ class PostgresCompiler(SQLGlotCompiler):
         elif from_.is_binary() and to.is_string():
             return self.f.encode(arg, "escape")
 
-        return self.cast(arg, op.to)
+        return super().visit_Cast(op, arg=arg, to=to)
 
     visit_TryCast = visit_Cast
 
@@ -616,7 +718,14 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -624,10 +733,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
         parent_alias = parent.alias_or_name
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         selcols = []
 
@@ -700,3 +808,6 @@ class PostgresCompiler(SQLGlotCompiler):
 
     def visit_ArrayAll(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="bool_and")
+
+
+compiler = PostgresCompiler()

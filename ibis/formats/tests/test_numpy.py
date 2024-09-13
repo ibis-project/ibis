@@ -1,15 +1,17 @@
 from __future__ import annotations
 
 import hypothesis as h
-import hypothesis.extra.numpy as npst
 import hypothesis.strategies as st
-import numpy as np
 import pytest
 from packaging.version import parse as vparse
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as ibst
-from ibis.formats.numpy import NumpySchema, NumpyType
+
+np = pytest.importorskip("numpy")
+npst = pytest.importorskip("hypothesis.extra.numpy")
+
+from ibis.formats.numpy import NumpySchema, NumpyType  # noqa: E402
 
 roundtripable_types = st.deferred(
     lambda: (

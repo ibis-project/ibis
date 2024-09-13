@@ -1,6 +1,7 @@
 ---
-title: "Test 20 databases on every commit"
+title: "Test 20 databases on every commit @ PyCon 2024"
 subtitle: "It's not hyperbole"
+date: "2024-05-19"
 author:
   - Phillip Cloud
 execute:

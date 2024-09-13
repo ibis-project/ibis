@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 Finder = Callable[["Node"], bool]
 FinderLike = Union[Finder, Pattern, _ClassInfo]
 
-Replacer = Callable[["Node", dict["Node", Any]], "Node"]
+Replacer = Callable[["Node", dict["Node", Any] | None], "Node"]
 ReplacerLike = Union[Replacer, Pattern, Mapping]
 
 
@@ -127,6 +127,47 @@ def _recursive_lookup(obj: Any, dct: dict) -> Any:
         return obj
 
 
+def _apply_replacements(obj: Any, replacements: dict) -> tuple[Any, bool]:
+    """Replace nodes in a possibly nested object.
+
+    Parameters
+    ----------
+    obj
+        The object to traverse.
+    replacements
+        A mapping of replacement values.
+
+    Returns
+    -------
+    tuple[Any, bool]
+        A tuple of the replaced object and whether any replacements were made.
+    """
+    if isinstance(obj, Node):
+        val = replacements.get(obj)
+        return (obj, False) if val is None else (val, True)
+    typ = type(obj)
+    if typ in (tuple, frozenset, list):
+        changed = False
+        items = []
+        for i in obj:
+            i, ichanged = _apply_replacements(i, replacements)
+            changed |= ichanged
+            items.append(i)
+        return typ(items), changed
+    elif isinstance(obj, dict):
+        changed = False
+        items = {}
+        for k, v in obj.items():
+            k, kchanged = _apply_replacements(k, replacements)
+            v, vchanged = _apply_replacements(v, replacements)
+            changed |= kchanged
+            changed |= vchanged
+            items[k] = v
+        return items, changed
+    else:
+        return obj, False
+
+
 def _coerce_finder(obj: FinderLike, context: Optional[dict] = None) -> Finder:
     """Coerce an object into a callable finder function.
 
@@ -165,8 +206,7 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
     Parameters
     ----------
     obj
-        A Pattern, a Mapping or a callable which can be fed to `node.map()`
-        to replace nodes.
+        A Pattern, Mapping, or Callable.
     context
         Optional context to use if the replacer is a pattern.
 
@@ -176,27 +216,27 @@ def _coerce_replacer(obj: ReplacerLike, context: Optional[dict] = None) -> Repla
 
     """
     if isinstance(obj, Pattern):
-        ctx = context or {}
 
-        def fn(node, _, **kwargs):
+        def fn(node, kwargs):
+            ctx = context or {}
             # need to first reconstruct the node from the possible rewritten
             # children, so we can match on the new node containing the rewritten
             # child arguments, this way we can propagate the rewritten nodes
-            # upward in the hierarchy, using a specialized __recreate__ method
-            # improves the performance by 17% compared node.__class__(**kwargs)
-            recreated = node.__recreate__(kwargs)
+            # upward in the hierarchy
+            recreated = node.__recreate__(kwargs) if kwargs else node
             if (result := obj.match(recreated, ctx)) is NoMatch:
                 return recreated
-            else:
-                return result
+            return result
 
     elif isinstance(obj, Mapping):
 
-        def fn(node, _, **kwargs):
+        def fn(node, kwargs):
+            # For a mapping we want to lookup the original node first, and
+            # return a recreated one from the children if it's not present
             try:
                 return obj[node]
             except KeyError:
-                return node.__recreate__(kwargs)
+                return node.__recreate__(kwargs) if kwargs else node
     elif callable(obj):
         fn = obj
     else:
@@ -313,7 +353,7 @@ class Node(Hashable):
                 if not dependents[dependency]:
                     del results[dependency]
 
-        return results[self]
+        return results.get(self, self)
 
     @experimental
     def map_nodes(self, fn: Callable, filter: Optional[Finder] = None) -> Any:
@@ -451,8 +491,9 @@ class Node(Hashable):
         Parameters
         ----------
         replacer
-            A `Pattern`, a `Mapping` or a callable which can be fed to
-            `node.map()` directly to replace nodes.
+            A `Pattern`, `Mapping` or Callable taking the original unrewritten
+            node, and a mapping of attribute name to value of its rewritten
+            children (or None if no children were rewritten).
         filter
             A type, tuple of types, a pattern or a callable to filter out nodes
             from the traversal. The traversal will only visit nodes that match
@@ -465,9 +506,28 @@ class Node(Hashable):
         The root node of the graph with the replaced nodes.
 
         """
-        replacer = _coerce_replacer(replacer, context)
-        results = self.map(replacer, filter=filter)
-        return results.get(self, self)
+        replacements: dict[Node, Any] = {}
+
+        fn = _coerce_replacer(replacer, context)
+
+        graph, _ = Graph.from_bfs(self, filter=filter).toposort()
+        for node in graph:
+            kwargs = {}
+            # Apply already rewritten nodes to the children of the node
+            changed = False
+            for k, v in zip(node.__argnames__, node.__args__):
+                v, vchanged = _apply_replacements(v, replacements)
+                changed |= vchanged
+                kwargs[k] = v
+
+            # Call the replacer on the node with any rewritten nodes (or None
+            # if unchanged).
+            result = fn(node, kwargs if changed else None)
+            if result is not node:
+                # The node is changed, store it in the mapping of replacements
+                replacements[node] = result
+
+        return replacements.get(self, self)
 
 
 class Graph(dict[Node, Sequence[Node]]):

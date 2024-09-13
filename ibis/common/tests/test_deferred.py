@@ -6,6 +6,7 @@ import pickle
 import pytest
 from pytest import param
 
+import ibis
 from ibis.common.bases import Slotted
 from ibis.common.collections import FrozenDict
 from ibis.common.deferred import (
@@ -296,6 +297,9 @@ class ColumnMock(ValueMock):
 
     def __deferred_repr__(self):
         return f"<column[{self.dtype}]>"
+
+    def type(self):
+        return self.dtype
 
 
 class UnaryMock(ValueMock):
@@ -602,3 +606,9 @@ def test_deferred_namespace(table):
 def test_custom_deferred_repr(table):
     expr = _.x + table.a
     assert repr(expr) == "(_.x + <column[int]>)"
+
+
+def test_null_deferrable(table):
+    result = ibis.null(_.a.type()).resolve(table).op()
+    expected = ibis.null(table.a.type()).op()
+    assert result == expected

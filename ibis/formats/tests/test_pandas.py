@@ -3,18 +3,19 @@ from __future__ import annotations
 from datetime import time
 from decimal import Decimal
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
-from ibis.formats.pandas import PandasData, PandasSchema, PandasType
 
 pa = pytest.importorskip("pyarrow")
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
+
+from ibis.formats.pandas import PandasData, PandasSchema, PandasType  # noqa: E402
 
 
 @pytest.mark.parametrize(
@@ -432,3 +433,10 @@ def test_convert_dataframe_with_timezone():
     desired_schema = ibis.schema(dict(time='timestamp("EST")'))
     result = PandasData.convert_table(df.copy(), desired_schema)
     tm.assert_frame_equal(expected, result)
+
+
+def test_schema_doesnt_match_input_columns():
+    df = pd.DataFrame({"x": [1], "y": [2]})
+    schema = sch.Schema({"a": "int64", "b": "int64"})
+    with pytest.raises(ValueError, match="schema names don't match"):
+        PandasData.convert_table(df, schema)

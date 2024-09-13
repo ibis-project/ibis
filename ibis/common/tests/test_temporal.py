@@ -4,11 +4,8 @@ import itertools
 from datetime import date, datetime, time, timedelta, timezone
 
 import dateutil
-import pandas as pd
 import pytest
 import pytz
-from packaging.version import parse as vparse
-from pytest import param
 
 from ibis.common.patterns import CoercedTo
 from ibis.common.temporal import (
@@ -152,18 +149,6 @@ def test_normalize_timezone(value, expected):
         ),
         # date object
         (datetime(2017, 1, 1).date(), datetime(2017, 1, 1)),
-        # pandas timestamp object
-        (pd.Timestamp("2017-01-01"), datetime(2017, 1, 1)),
-        (pd.Timestamp("2017-01-01 00:00:00.000001"), datetime(2017, 1, 1, 0, 0, 0, 1)),
-        # pandas timestamp object with timezone
-        (
-            pd.Timestamp("2017-01-01 00:00:00.000001+00:00"),
-            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
-        ),
-        (
-            pd.Timestamp("2017-01-01 00:00:00.000001+01:00"),
-            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.tzoffset(None, 3600)),
-        ),
         # datetime string
         ("2017-01-01", datetime(2017, 1, 1)),
         ("2017-01-01 00:00:00.000001", datetime(2017, 1, 1, 0, 0, 0, 1)),
@@ -193,6 +178,27 @@ def test_normalize_timezone(value, expected):
 )
 def test_normalize_datetime(value, expected):
     result = normalize_datetime(value)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("2017-01-01", datetime(2017, 1, 1)),
+        ("2017-01-01 00:00:00.000001", datetime(2017, 1, 1, 0, 0, 0, 1)),
+        (
+            "2017-01-01 00:00:00.000001+00:00",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.UTC),
+        ),
+        (
+            "2017-01-01 00:00:00.000001+01:00",
+            datetime(2017, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.tzoffset(None, 3600)),
+        ),
+    ],
+)
+def test_normalize_datetime_pandas(value, expected):
+    pd = pytest.importorskip("pandas")
+    result = normalize_datetime(pd.Timestamp(value))
     assert result == expected
 
 
@@ -233,22 +239,31 @@ def test_normalize_datetime_with_time(mocker):
         ),
         # timezone aware datetime with timezone name
         (datetime(2022, 1, 1, 0, 0, 0, 1, tzinfo=dateutil.tz.gettz("CET")), "CET"),
-        # pandas timestamp with timezone
-        (pd.Timestamp("2022-01-01 00:00:00.000001+00:00"), "UTC"),
-        param(
-            pd.Timestamp("2022-01-01 00:00:00.000001+01:00"),
-            "UTC+01:00",
-            marks=pytest.mark.xfail(
-                vparse(pd.__version__) < vparse("2.0.0") and not WINDOWS,
-                reason=(
-                    "tzdata is missing in pandas < 2.0.0 due to an incorrect marker "
-                    "in the tzdata package specification that restricts its installation "
-                    "to windows only"
-                ),
-            ),
-        ),
     ],
 )
 def test_normalized_datetime_tzname(value, expected):
     result = normalize_datetime(value)
     assert result.tzname() == expected
+
+
+def test_normalized_datetime_tzname_pandas():
+    pd = pytest.importorskip("pandas")
+
+    result = normalize_datetime(pd.Timestamp("2022-01-01 00:00:00.000001+00:00"))
+    assert result.tzname() == "UTC"
+
+
+def test_normalized_datetime_tzname_pandas_non_utc():
+    from packaging.version import parse as vparse
+
+    pd = pytest.importorskip("pandas")
+
+    if vparse(pd.__version__) < vparse("2.0.0") and not WINDOWS:
+        pytest.xfail(
+            "tzdata is missing in pandas < 2.0.0 due to an incorrect marker "
+            "in the tzdata package specification that restricts its installation "
+            "to windows only"
+        )
+
+    result = normalize_datetime(pd.Timestamp("2022-01-01 00:00:00.000001+01:00"))
+    assert result.tzname() == "UTC+01:00"

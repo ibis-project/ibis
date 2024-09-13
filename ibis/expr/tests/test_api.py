@@ -3,7 +3,6 @@ from __future__ import annotations
 import operator
 from datetime import datetime
 
-import pandas as pd
 import pytest
 from dateutil.tz import tzoffset, tzutc
 from pytest import param
@@ -78,28 +77,42 @@ def test_schema_from_names_and_typesield_names():
             "UTC+01:00",
             id="from_string_millis_utc_+1_offset",
         ),
+    ],
+)
+def test_timestamp(string, expected_value, expected_timezone):
+    expr = ibis.timestamp(string)
+    op = expr.op()
+    assert isinstance(expr, ibis.expr.types.TimestampScalar)
+    assert op.value == expected_value
+    assert op.dtype == dt.Timestamp(timezone=expected_timezone)
+
+
+@pytest.mark.parametrize(
+    ("string", "expected_value", "expected_timezone"),
+    [
         param(
-            pd.Timestamp("2015-01-01 12:34:56.789"),
+            "2015-01-01 12:34:56.789",
             datetime(2015, 1, 1, 12, 34, 56, 789000),
             None,
             id="from_pandas_millis",
         ),
         param(
-            pd.Timestamp("2015-01-01 12:34:56.789", tz="UTC"),
+            "2015-01-01 12:34:56.789+00:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzutc()),
             "UTC",
             id="from_pandas_millis_utc",
         ),
         param(
-            pd.Timestamp("2015-01-01 12:34:56.789+03:00"),
+            "2015-01-01 12:34:56.789+03:00",
             datetime(2015, 1, 1, 12, 34, 56, 789000, tzinfo=tzoffset(None, 10800)),
             "UTC+03:00",
             id="from_pandas_millis_+3_offset",
         ),
     ],
 )
-def test_timestamp(string, expected_value, expected_timezone):
-    expr = ibis.timestamp(string)
+def test_timestamp_pandas(string, expected_value, expected_timezone):
+    pd = pytest.importorskip("pandas")
+    expr = ibis.timestamp(pd.Timestamp(string))
     op = expr.op()
     assert isinstance(expr, ibis.expr.types.TimestampScalar)
     assert op.value == expected_value
@@ -122,6 +135,8 @@ def test_repr_deferred_with_exprs(f, sol):
 
 
 def test_duplicate_columns_in_memtable_not_allowed():
+    pd = pytest.importorskip("pandas")
+
     df = pd.DataFrame([[1, 2], [3, 4]], columns=["a", "a"])
 
     with pytest.raises(IbisInputError, match="Duplicate column names"):

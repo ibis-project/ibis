@@ -6,6 +6,8 @@ import types
 from typing import TYPE_CHECKING
 from typing import Any as AnyType
 
+from typing_extensions import Self
+
 from ibis.common.bases import Immutable, Slotted
 from ibis.common.patterns import (
     Any,
@@ -258,18 +260,6 @@ class Parameter(inspect.Parameter):
 
     __slots__ = ()
 
-    def __init__(self, name, annotation):
-        if not isinstance(annotation, Argument):
-            raise TypeError(
-                f"annotation must be an instance of Argument, got {annotation}"
-            )
-        super().__init__(
-            name,
-            kind=annotation.kind,
-            default=annotation.default,
-            annotation=annotation,
-        )
-
     def __str__(self):
         formatted = self._name
 
@@ -289,6 +279,20 @@ class Parameter(inspect.Parameter):
             formatted = "**" + formatted
 
         return formatted
+
+    @classmethod
+    def from_argument(cls, name: str, annotation: Argument) -> Self:
+        """Construct a Parameter from an Argument annotation."""
+        if not isinstance(annotation, Argument):
+            raise TypeError(
+                f"annotation must be an instance of Argument, got {annotation}"
+            )
+        return cls(
+            name,
+            kind=annotation.kind,
+            default=annotation.default,
+            annotation=annotation,
+        )
 
 
 class Signature(inspect.Signature):
@@ -324,7 +328,7 @@ class Signature(inspect.Signature):
 
         inherited = set(params.keys())
         for name, annot in annotations.items():
-            params[name] = Parameter(name, annotation=annot)
+            params[name] = Parameter.from_argument(name, annotation=annot)
 
         # mandatory fields without default values must precede the optional
         # ones in the function signature, the partial ordering will be kept
@@ -406,7 +410,7 @@ class Signature(inspect.Signature):
             else:
                 annot = Argument(pattern, kind=kind, default=default, typehint=typehint)
 
-            parameters.append(Parameter(param.name, annot))
+            parameters.append(Parameter.from_argument(param.name, annot))
 
         if return_pattern is not None:
             return_annotation = return_pattern

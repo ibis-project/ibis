@@ -27,7 +27,6 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayFlatten,
@@ -43,15 +42,11 @@ class DruidCompiler(SQLGlotCompiler):
         ops.DateFromYMD,
         ops.DayOfWeekIndex,
         ops.DayOfWeekName,
-        ops.First,
         ops.IntervalFromInteger,
         ops.IsNan,
         ops.IsInf,
-        ops.Last,
         ops.Levenshtein,
         ops.Median,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RandomUUID,
         ops.RegexReplace,
         ops.RegexSplit,
@@ -121,8 +116,8 @@ class DruidCompiler(SQLGlotCompiler):
     def visit_Sign(self, op, *, arg):
         return self.if_(arg.eq(0), 0, self.if_(arg > 0, 1, -1))
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
-        return self.agg.string_agg(arg, sep, 1 << 20, where=where)
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        return self.agg.string_agg(arg, sep, 1 << 20, where=where, order_by=order_by)
 
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.length(start)).eq(start)
@@ -199,3 +194,6 @@ class DruidCompiler(SQLGlotCompiler):
                 "Z",
             )
         )
+
+
+compiler = DruidCompiler()

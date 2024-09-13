@@ -157,7 +157,7 @@ def test_decimal_casts(table, expr_fn, snapshot):
     snapshot.assert_match(result, "out.sql")
 
 
-@pytest.mark.parametrize("colname", ["a", "f", "h"])
+@pytest.mark.parametrize("colname", ["a", "f"])
 def test_negate(table, colname, snapshot):
     result = translate(-table[colname])
     snapshot.assert_match(result, "out.sql")
@@ -175,11 +175,11 @@ def test_timestamp_extract_field(table, field, snapshot):
 
 def test_sql_extract(table, snapshot):
     # integration with SQL translation
-    expr = table[
+    expr = table.select(
         table.i.year().name("year"),
         table.i.month().name("month"),
         table.i.day().name("day"),
-    ]
+    )
 
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
@@ -235,9 +235,9 @@ def test_timestamp_day_of_week(method_name, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda col: col.to_timestamp(),
-        lambda col: col.to_timestamp("ms"),
-        lambda col: col.to_timestamp("us"),
+        lambda col: col.as_timestamp("s"),
+        lambda col: col.as_timestamp("ms"),
+        lambda col: col.as_timestamp("us"),
     ],
     ids=["default", "ms", "us"],
 )
@@ -252,8 +252,8 @@ def test_correlated_predicate_subquery(table, snapshot):
     t1 = t0.view()
 
     # both are valid constructions
-    expr1 = t0[t0.g == t1.g]
-    expr2 = t1[t0.g == t1.g]
+    expr1 = t0.filter(t0.g == t1.g)
+    expr2 = t1.filter(t0.g == t1.g)
 
     snapshot.assert_match(translate(expr1), "out1.sql")
     snapshot.assert_match(translate(expr2), "out2.sql")
@@ -263,9 +263,9 @@ def test_correlated_predicate_subquery(table, snapshot):
     "expr_fn",
     [
         param(lambda b: b.any(), id="any"),
-        param(lambda b: -b.any(), id="not_any"),
+        param(lambda b: ~b.any(), id="not_any"),
         param(lambda b: b.all(), id="all"),
-        param(lambda b: -b.all(), id="not_all"),
+        param(lambda b: ~b.all(), id="not_all"),
     ],
 )
 def test_any_all(table, expr_fn, snapshot):

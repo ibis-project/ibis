@@ -8,25 +8,27 @@ import struct
 from contextlib import closing
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
+from urllib.parse import unquote_plus
 
 import pyodbc
 import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MSSQLCompiler
 from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
+    from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
@@ -73,9 +75,9 @@ def datetimeoffset_to_datetime(value):
 # Databases: sys.schemas
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
     name = "mssql"
-    compiler = MSSQLCompiler()
+    compiler = sc.mssql.compiler
     supports_create_or_replace = False
 
     @property
@@ -123,6 +125,41 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             See https://learn.microsoft.com/en-us/sql/connect/odbc/windows/system-requirements-installation-and-driver-files
         kwargs
             Additional keyword arguments to pass to PyODBC.
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")
+        >>> password = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
+        >>> database = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
+        >>> driver = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
+        >>> con = ibis.mssql.connect(
+        ...     database=database,
+        ...     host=host,
+        ...     user=user,
+        ...     password=password,
+        ...     driver=driver,
+        ... )
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(7)
+          year            int32
+          month           int32
         """
 
         # If no user/password given, assume Windows Integrated Authentication
@@ -169,6 +206,40 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         with closing(self.con.cursor()) as cur:
             cur.execute("SET DATEFIRST 1")
 
+    def _from_url(self, url: ParseResult, **kwargs):
+        database, *_ = url.path[1:].split("/", 1)
+        kwargs.update(
+            {
+                "user": url.username,
+                "password": unquote_plus(url.password or ""),
+                "host": url.hostname,
+                "database": database or "",
+                "port": url.port or None,
+            }
+        )
+
+        self._convert_kwargs(kwargs)
+
+        if "host" in kwargs and not kwargs["host"]:
+            del kwargs["host"]
+
+        if "user" in kwargs and not kwargs["user"]:
+            del kwargs["user"]
+
+        if "password" in kwargs and kwargs["password"] is None:
+            del kwargs["password"]
+
+        if "port" in kwargs and kwargs["port"] is None:
+            del kwargs["port"]
+
+        if "database" in kwargs and not kwargs["database"]:
+            del kwargs["database"]
+
+        if "driver" in kwargs and not kwargs["driver"]:
+            del kwargs["driver"]
+
+        return self.connect(**kwargs)
+
     def get_schema(
         self, name: str, *, catalog: str | None = None, database: str | None = None
     ) -> sch.Schema:
@@ -178,19 +249,15 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         if name.startswith("ibis_cache_"):
             catalog, database = ("tempdb", "dbo")
             name = "##" + name
-        conditions = [sg.column("table_name").eq(sge.convert(name))]
-
-        if database is not None:
-            conditions.append(sg.column("table_schema").eq(sge.convert(database)))
 
         query = (
             sg.select(
-                "column_name",
-                "data_type",
-                "is_nullable",
-                "numeric_precision",
-                "numeric_scale",
-                "datetime_precision",
+                C.column_name,
+                C.data_type,
+                C.is_nullable,
+                C.numeric_precision,
+                C.numeric_scale,
+                C.datetime_precision,
             )
             .from_(
                 sg.table(
@@ -199,8 +266,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                     catalog=catalog or self.current_catalog,
                 )
             )
-            .where(*conditions)
-            .order_by("ordinal_position")
+            .where(
+                C.table_name.eq(sge.convert(name)),
+                C.table_schema.eq(sge.convert(database or self.current_database)),
+            )
+            .order_by(C.ordinal_position)
         )
 
         with self._safe_raw_sql(query) as cur:
@@ -245,24 +315,21 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         # us to pre-filter the columns we want back.
         # The syntax is:
         # `sys.dm_exec_describe_first_result_set(@tsql, @params, @include_browse_information)`
-        query = f"""SELECT name,
-                        is_nullable AS nullable,
-                        system_type_name,
-                        precision,
-                        scale
-                    FROM
-                        sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)"""
+        query = f"""
+        SELECT
+          name,
+          is_nullable,
+          system_type_name,
+          precision,
+          scale
+        FROM sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)
+        ORDER BY column_ordinal
+        """
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
 
         schema = {}
-        for (
-            name,
-            nullable,
-            system_type_name,
-            precision,
-            scale,
-        ) in sorted(rows, key=itemgetter(1)):
+        for name, nullable, system_type_name, precision, scale in rows:
             newtyp = self.compiler.type_mapper.from_string(
                 system_type_name, nullable=nullable
             )
@@ -274,6 +341,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 newtyp = newtyp.copy(precision=precision, scale=scale)
             elif newtyp.is_timestamp():
                 newtyp = newtyp.copy(scale=scale)
+
+            if name is None:
+                name = util.gen_name("col")
 
             schema[name] = newtyp
 
@@ -487,13 +557,9 @@ GO"""
         """
         table_loc = self._warn_and_create_table_loc(database, schema)
         catalog, db = self._to_catalog_db_tuple(table_loc)
-        conditions = []
-
-        if table_loc is not None:
-            conditions.append(C.table_schema.eq(sge.convert(db)))
 
         sql = (
-            sg.select("table_name")
+            sg.select(C.table_name)
             .from_(
                 sg.table(
                     "TABLES",
@@ -501,11 +567,9 @@ GO"""
                     catalog=catalog if catalog is not None else self.current_catalog,
                 )
             )
+            .where(C.table_schema.eq(sge.convert(db or self.current_database)))
             .distinct()
         )
-
-        if conditions:
-            sql = sql.where(*conditions)
 
         sql = sql.sql(self.dialect)
 
@@ -538,7 +602,7 @@ GO"""
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -579,6 +643,8 @@ GO"""
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if temp and overwrite:
             raise ValueError(
@@ -594,43 +660,34 @@ GO"""
             properties.append(sge.TemporaryProperty())
             catalog, db = None, None
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
-
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
 
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(
-            "#" * temp + temp_name, catalog=catalog, db=db, quoted=self.compiler.quoted
-        )
+        if not schema:
+            schema = table.schema()
+
+        quoted = self.compiler.quoted
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(
+            this=sg.table(
+                "#" * temp + temp_name, catalog=catalog, db=db, quoted=quoted
+            ),
+            expressions=schema.to_sqlglot(self.dialect),
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -638,7 +695,7 @@ GO"""
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=catalog, db=db, quoted=self.compiler.quoted)
+        this = sg.table(name, catalog=catalog, db=db, quoted=quoted)
         raw_this = sg.table(name, catalog=catalog, db=db, quoted=False)
         with self._safe_ddl(create_stmt) as cur:
             if query is not None:
@@ -664,15 +721,14 @@ GO"""
                 new = raw_this.sql(self.dialect)
                 cur.execute(f"EXEC sp_rename '{old}', '{new}'")
 
+        if temp:
+            # If a temporary table, amend the output name/catalog/db accordingly
+            name = "##" + name
+            catalog = "tempdb"
+            db = "dbo"
+
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
-            return self.table(
-                "##" * temp + name,
-                database=("tempdb" * temp or catalog, "dbo" * temp or db),
-            )
+            return self.table(name, database=(catalog, db))
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
@@ -682,6 +738,16 @@ GO"""
             namespace=ops.Namespace(catalog=catalog, database=db),
         ).to_expr()
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        # The single character U here means user-defined table
+        # see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver16
+        sql = sg.select(sg.func("object_id", sge.convert(name), sge.convert("U"))).sql(
+            self.dialect
+        )
+        with self.begin() as cur:
+            [(result,)] = cur.execute(sql).fetchall()
+        return result is not None
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -690,56 +756,24 @@ GO"""
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                # properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        )
 
-            df = op.data.to_frame()
-            data = df.itertuples(index=False)
+        df = op.data.to_frame()
+        data = df.itertuples(index=False)
 
-            insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
-            with self._safe_ddl(create_stmt) as cur:
-                if not df.empty:
-                    cur.executemany(insert_stmt, data)
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, *, limit: str | None = None, params=None, **_: Any
-    ):
-        """Compile an Ibis expression to a sqlglot object."""
-        table_expr = expr.as_table()
-        conversions = {
-            name: ibis.ifelse(table_expr[name], 1, 0).cast("boolean")
-            for name, typ in table_expr.schema().items()
-            if typ.is_boolean()
-        }
-
-        if conversions:
-            table_expr = table_expr.mutate(**conversions)
-        return super()._to_sqlglot(table_expr, limit=limit, params=params)
+        insert_stmt = self._build_insert_template(name, schema=schema, columns=True)
+        with self._safe_ddl(create_stmt) as cur:
+            if not df.empty:
+                cur.executemany(insert_stmt, data)
 
     def _cursor_batches(
         self,

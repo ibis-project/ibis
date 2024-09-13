@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import functools
 from typing import TYPE_CHECKING, Any
+
+import pyarrow as pa
+import pyarrow_hotfix  # noqa: F401
 
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
@@ -11,77 +13,63 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     import polars as pl
-    import pyarrow as pa
 
 
-@functools.cache
-def _from_pyarrow_types():
-    import pyarrow as pa
-    import pyarrow_hotfix  # noqa: F401
-
-    return {
-        pa.int8(): dt.Int8,
-        pa.int16(): dt.Int16,
-        pa.int32(): dt.Int32,
-        pa.int64(): dt.Int64,
-        pa.uint8(): dt.UInt8,
-        pa.uint16(): dt.UInt16,
-        pa.uint32(): dt.UInt32,
-        pa.uint64(): dt.UInt64,
-        pa.float16(): dt.Float16,
-        pa.float32(): dt.Float32,
-        pa.float64(): dt.Float64,
-        pa.string(): dt.String,
-        pa.binary(): dt.Binary,
-        pa.bool_(): dt.Boolean,
-        pa.date32(): dt.Date,
-        pa.date64(): dt.Date,
-        pa.null(): dt.Null,
-        pa.string(): dt.String,
-        pa.large_binary(): dt.Binary,
-        pa.large_string(): dt.String,
-        pa.binary(): dt.Binary,
-    }
+_from_pyarrow_types = {
+    pa.int8(): dt.Int8,
+    pa.int16(): dt.Int16,
+    pa.int32(): dt.Int32,
+    pa.int64(): dt.Int64,
+    pa.uint8(): dt.UInt8,
+    pa.uint16(): dt.UInt16,
+    pa.uint32(): dt.UInt32,
+    pa.uint64(): dt.UInt64,
+    pa.float16(): dt.Float16,
+    pa.float32(): dt.Float32,
+    pa.float64(): dt.Float64,
+    pa.string(): dt.String,
+    pa.binary(): dt.Binary,
+    pa.bool_(): dt.Boolean,
+    pa.date32(): dt.Date,
+    pa.date64(): dt.Date,
+    pa.null(): dt.Null,
+    pa.string(): dt.String,
+    pa.large_binary(): dt.Binary,
+    pa.large_string(): dt.String,
+    pa.binary(): dt.Binary,
+}
 
 
-@functools.cache
-def _to_pyarrow_types():
-    import pyarrow as pa
-    import pyarrow_hotfix  # noqa: F401
-
-    return {
-        dt.Null: pa.null(),
-        dt.Boolean: pa.bool_(),
-        dt.Binary: pa.binary(),
-        dt.Int8: pa.int8(),
-        dt.Int16: pa.int16(),
-        dt.Int32: pa.int32(),
-        dt.Int64: pa.int64(),
-        dt.UInt8: pa.uint8(),
-        dt.UInt16: pa.uint16(),
-        dt.UInt32: pa.uint32(),
-        dt.UInt64: pa.uint64(),
-        dt.Float16: pa.float16(),
-        dt.Float32: pa.float32(),
-        dt.Float64: pa.float64(),
-        dt.String: pa.string(),
-        dt.Binary: pa.binary(),
-        # assume unknown types can be converted into strings
-        dt.Unknown: pa.string(),
-        dt.MACADDR: pa.string(),
-        dt.INET: pa.string(),
-        dt.UUID: pa.string(),
-        dt.JSON: pa.string(),
-    }
+_to_pyarrow_types = {
+    dt.Null: pa.null(),
+    dt.Boolean: pa.bool_(),
+    dt.Binary: pa.binary(),
+    dt.Int8: pa.int8(),
+    dt.Int16: pa.int16(),
+    dt.Int32: pa.int32(),
+    dt.Int64: pa.int64(),
+    dt.UInt8: pa.uint8(),
+    dt.UInt16: pa.uint16(),
+    dt.UInt32: pa.uint32(),
+    dt.UInt64: pa.uint64(),
+    dt.Float16: pa.float16(),
+    dt.Float32: pa.float32(),
+    dt.Float64: pa.float64(),
+    dt.String: pa.string(),
+    dt.Binary: pa.binary(),
+    # assume unknown types can be converted into strings
+    dt.Unknown: pa.string(),
+    dt.MACADDR: pa.string(),
+    dt.INET: pa.string(),
+    dt.UUID: pa.string(),
+    dt.JSON: pa.string(),
+}
 
 
 class PyArrowType(TypeMapper):
     @classmethod
     def to_ibis(cls, typ: pa.DataType, nullable=True) -> dt.DataType:
         """Convert a pyarrow type to an ibis type."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         if pa.types.is_null(typ):
             return dt.null
         elif pa.types.is_decimal(typ):
@@ -162,14 +150,11 @@ class PyArrowType(TypeMapper):
 
             return dt.GeoSpatial(geotype, srid, nullable)
         else:
-            return _from_pyarrow_types()[typ](nullable=nullable)
+            return _from_pyarrow_types[typ](nullable=nullable)
 
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> pa.DataType:
         """Convert an ibis type to a pyarrow type."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         if dtype.is_decimal():
             # set default precision and scale to something; unclear how to choose this
             precision = 38 if dtype.precision is None else dtype.precision
@@ -247,7 +232,7 @@ class PyArrowType(TypeMapper):
             return gat.wkb(crs=crs, edge_type=edge_type).to_pyarrow()
         else:
             try:
-                return _to_pyarrow_types()[type(dtype)]
+                return _to_pyarrow_types[type(dtype)]
             except KeyError:
                 raise NotImplementedError(
                     f"Converting {dtype} to pyarrow is not supported yet"
@@ -258,9 +243,6 @@ class PyArrowSchema(SchemaMapper):
     @classmethod
     def from_ibis(cls, schema: Schema) -> pa.Schema:
         """Convert a schema to a pyarrow schema."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         fields = [
             pa.field(name, PyArrowType.from_ibis(dtype), nullable=dtype.nullable)
             for name, dtype in schema.items()
@@ -278,17 +260,11 @@ class PyArrowData(DataMapper):
     @classmethod
     def infer_scalar(cls, scalar: Any) -> dt.DataType:
         """Infer the ibis type of a scalar."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         return PyArrowType.to_ibis(pa.scalar(scalar).type)
 
     @classmethod
     def infer_column(cls, column: Sequence) -> dt.DataType:
         """Infer the ibis type of a sequence."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         if isinstance(column, pa.Array):
             return PyArrowType.to_ibis(column.type)
 
@@ -313,9 +289,6 @@ class PyArrowData(DataMapper):
     @classmethod
     def infer_table(cls, table) -> Schema:
         """Infer the schema of a table."""
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         if not isinstance(table, pa.Table):
             table = pa.table(table)
 
@@ -323,9 +296,6 @@ class PyArrowData(DataMapper):
 
     @classmethod
     def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
-        import pyarrow as pa
-        import pyarrow_hotfix  # noqa: F401
-
         desired_type = PyArrowType.from_ibis(dtype)
         scalar_type = scalar.type
         if scalar_type != desired_type:

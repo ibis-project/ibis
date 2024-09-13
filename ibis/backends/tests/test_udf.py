@@ -12,14 +12,12 @@ no_python_udfs = mark.notimpl(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "druid",
         "exasol",
         "impala",
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "trino",
         "risingwave",
     ]
@@ -34,7 +32,6 @@ cloudpickle_version_mismatch = mark.notimpl(
 
 @no_python_udfs
 @cloudpickle_version_mismatch
-@mark.notimpl(["pyspark"])
 @mark.notyet(["datafusion"], raises=NotImplementedError)
 def test_udf(batting):
     @udf.scalar.python
@@ -59,7 +56,6 @@ def test_udf(batting):
 
 @no_python_udfs
 @cloudpickle_version_mismatch
-@mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
@@ -89,7 +85,6 @@ def test_map_udf(batting):
 
 @no_python_udfs
 @cloudpickle_version_mismatch
-@mark.notimpl(["pyspark"])
 @mark.notyet(
     ["postgres"], raises=TypeError, reason="postgres only supports map<string, string>"
 )
@@ -174,10 +169,11 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
             add_one_pyarrow,
             marks=[
                 mark.notyet(
-                    ["snowflake", "sqlite", "pyspark", "flink"],
+                    ["snowflake", "sqlite", "flink"],
                     raises=NotImplementedError,
                     reason="backend doesn't support pyarrow UDFs",
-                )
+                ),
+                mark.xfail_version(pyspark=["pyspark<3.5"]),
             ],
         ),
     ],

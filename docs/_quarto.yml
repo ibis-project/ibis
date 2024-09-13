@@ -122,7 +122,10 @@ website:
       collapse-level: 2
       contents:
         - auto: backends/*.qmd
-        - auto: backends/support
+        - section: Support
+          contents:
+            - auto: backends/support/*.qmd
+            - reference/operations.qmd
     - id: how-to
       title: "How-to"
       style: "docked"
@@ -168,6 +171,7 @@ website:
         - section: UDFs
           contents:
             - reference/scalar-udfs.qmd
+            - reference/aggregate-udfs.qmd
 
         - section: Connection APIs
           contents:
@@ -179,6 +183,10 @@ website:
             - reference/Options.qmd
             - reference/Repr.qmd
             - reference/SQL.qmd
+
+        - section: Cursed Knowledge
+          contents:
+            - reference/cursed_knowledge.qmd
 
 format:
   html:
@@ -567,14 +575,15 @@ quartodoc:
             - matches
             - any_of
             - all_of
-            - c
+            - cols
             - across
             - if_any
             - if_all
-            - r
+            - index
             - first
             - last
             - all
+            - none
 
     - title: Type System
       desc: "Data types and schemas"

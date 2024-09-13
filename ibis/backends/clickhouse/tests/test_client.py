@@ -129,7 +129,7 @@ def test_sql_query_limits(alltypes):
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
+    expr = t.select((t.double_col * 2).name("double(fun)"))["double(fun)"].sum()
     expr.execute()
 
 
@@ -375,7 +375,18 @@ def test_from_url(con):
     )
 
 
-def test_invalid_port(con):
+def test_from_url_with_kwargs(con):
+    # since explicit kwargs take precedence, this passes, because we're passing
+    # `database` explicitly, even though our connection string says to use a
+    # random database
+    database = ibis.util.gen_name("clickhouse_database")
+    assert ibis.connect(
+        f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/{database}",
+        database=IBIS_TEST_CLICKHOUSE_DB,
+    )
+
+
+def test_invalid_port():
     port = 9999
     url = f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{port}/{IBIS_TEST_CLICKHOUSE_DB}"
     with pytest.raises(cc.driver.exceptions.DatabaseError):
@@ -409,3 +420,36 @@ def test_subquery_with_join(con):
     expr = s.join(w, "a").select(a=w.a).select(b=lambda t: t.a + 1)
     result = expr.to_pandas()
     assert set(result["b"].tolist()) == {2, 3, 4}
+
+
+def test_alias_column_ref(con):
+    data = {"user_id": [1, 2, 3], "account_id": [4, 5, 6]}
+    t = con.create_table(gen_name("clickhouse_temp_table"), data, temp=True)
+    expr = t.alias("df").sql("select *, halfMD5(account_id) as id_md5 from df")
+
+    result = expr.execute()
+
+    assert len(result) == 3
+
+    assert result.columns.tolist() == ["user_id", "account_id", "id_md5"]
+
+    assert result.user_id.notnull().all()
+    assert result.account_id.notnull().all()
+    assert result.id_md5.notnull().all()
+
+
+@pytest.mark.parametrize("method_name", ["to_pandas", "to_pyarrow"])
+def test_query_cache(con, method_name):
+    t = con.table("functional_alltypes")
+    expr = t.count()
+
+    method = getattr(expr, method_name)
+
+    expected = method()
+    result = method(settings={"use_query_cache": True})
+
+    # test a bogus setting
+    with pytest.raises(ClickHouseDatabaseError):
+        method(settings={"ooze_query_cash": True})
+
+    assert result == expected

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import calendar
+from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -13,6 +14,7 @@ from ibis.backends.sql.compilers.base import (
     NULL,
     STAR,
     TRUE,
+    AggGen,
     SQLGlotCompiler,
 )
 from ibis.backends.sql.datatypes import MSSQLType
@@ -22,8 +24,14 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
+    split_select_distinct_with_order_by,
 )
 from ibis.common.deferred import var
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    import ibis.expr.operations as ir
 
 y = var("y")
 start = var("start")
@@ -52,6 +60,8 @@ def rewrite_rows_range_order_by_window(_, **kwargs):
 class MSSQLCompiler(SQLGlotCompiler):
     __slots__ = ()
 
+    agg = AggGen(supports_order_by=True)
+
     dialect = MSSQL
     type_mapper = MSSQLType
     rewrites = (
@@ -60,13 +70,13 @@ class MSSQLCompiler(SQLGlotCompiler):
         rewrite_rows_range_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     copy_func_args = True
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayDistinct,
         ops.ArrayFlatten,
@@ -78,40 +88,28 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.BitXor,
         ops.Covariance,
         ops.CountDistinctStar,
-        ops.DateAdd,
         ops.DateDiff,
-        ops.DateSub,
-        ops.EndsWith,
-        ops.First,
         ops.IntervalAdd,
-        ops.IntervalFromInteger,
-        ops.IntervalMultiply,
         ops.IntervalSubtract,
+        ops.IntervalMultiply,
+        ops.IntervalFloorDivide,
         ops.IsInf,
         ops.IsNan,
-        ops.Last,
-        ops.LPad,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
         ops.Mode,
-        ops.MultiQuantile,
         ops.NthValue,
-        ops.Quantile,
         ops.RegexExtract,
         ops.RegexReplace,
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
-        ops.RPad,
-        ops.StartsWith,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.StructColumn,
-        ops.TimestampAdd,
         ops.TimestampDiff,
-        ops.TimestampSub,
         ops.Unnest,
     )
 
@@ -130,17 +128,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Max: "max",
     }
 
-    @property
-    def NAN(self):
-        return self.f.double("NaN")
-
-    @property
-    def POS_INF(self):
-        return self.f.double("Infinity")
-
-    @property
-    def NEG_INF(self):
-        return self.f.double("-Infinity")
+    NAN = sg.func("double", sge.convert("NaN"))
+    POS_INF = sg.func("double", sge.convert("Infinity"))
+    NEG_INF = sg.func("double", sge.convert("-Infinity"))
 
     @staticmethod
     def _generate_groups(groups):
@@ -157,7 +147,28 @@ class MSSQLCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def visit_RandomUUID(self, op, **kwargs):
+    def to_sqlglot(
+        self,
+        expr: ir.Expr,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+    ):
+        """Compile an Ibis expression to a sqlglot object."""
+        import ibis
+
+        table_expr = expr.as_table()
+        conversions = {
+            name: ibis.ifelse(table_expr[name], 1, 0).cast(dt.boolean)
+            for name, typ in table_expr.schema().items()
+            if typ.is_boolean()
+        }
+
+        if conversions:
+            table_expr = table_expr.mutate(**conversions)
+        return super().to_sqlglot(table_expr, limit=limit, params=params)
+
+    def visit_RandomUUID(self, op, **_):
         return self.f.newid()
 
     def visit_StringLength(self, op, *, arg):
@@ -185,10 +196,16 @@ class MSSQLCompiler(SQLGlotCompiler):
             length = self.f.length(arg)
         return self.f.substring(arg, start, length)
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.group_concat(arg, sep)
+
+        out = self.f.group_concat(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out
 
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
@@ -199,6 +216,14 @@ class MSSQLCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.WithinGroup(
+            this=self.f.approx_percentile_cont(quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg, nulls_first=True)]),
+        )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.datepart(self.v.weekday, arg) - 1
@@ -452,9 +477,11 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
-    def visit_Select(self, op, *, parent, selections, predicates, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not selections and not predicates and not sort_keys:
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
@@ -467,7 +494,55 @@ class MSSQLCompiler(SQLGlotCompiler):
         if predicates:
             result = result.where(*predicates, copy=True)
 
+        if qualified:
+            result = result.qualify(*qualified, copy=True)
+
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
 
+        if distinct:
+            result = result.distinct()
+
         return result
+
+    def visit_TimestampAdd(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    def visit_TimestampSub(self, op, *, left, right):
+        return self.f.dateadd(
+            right.unit, -self.cast(right.this, dt.int64), left, dialect=self.dialect
+        )
+
+    visit_DateAdd = visit_TimestampAdd
+    visit_DateSub = visit_TimestampSub
+
+    def visit_StartsWith(self, op, *, arg, start):
+        return arg.like(self.f.concat(start, "%"))
+
+    def visit_EndsWith(self, op, *, arg, end):
+        return arg.like(self.f.concat("%", end))
+
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.left(
+                self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
+                length,
+            ),
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.left(
+                self.f.concat(arg, self.f.replicate(pad, length - self.f.length(arg))),
+                length,
+            ),
+        )
+
+
+compiler = MSSQLCompiler()

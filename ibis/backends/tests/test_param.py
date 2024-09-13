@@ -3,8 +3,6 @@ from __future__ import annotations
 import datetime
 from collections import OrderedDict
 
-import numpy as np
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -12,6 +10,9 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
 from ibis.backends.tests.errors import OracleDatabaseError, PsycoPg2InternalError
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
 
 
 @pytest.mark.parametrize(
@@ -156,7 +157,7 @@ def test_scalar_param(backend, alltypes, df, value, dtype, col):
     ["2009-01-20", datetime.date(2009, 1, 20), datetime.datetime(2009, 1, 20)],
     ids=["string", "date", "datetime"],
 )
-@pytest.mark.notimpl(["druid", "oracle"])
+@pytest.mark.notimpl(["druid"])
 def test_scalar_param_date(backend, alltypes, value):
     param = ibis.param("date")
     ds_col = alltypes.date_string_col

@@ -62,12 +62,12 @@ def test_dataframe_interchange_dataframe_methods_execute(con, alltypes, mocker):
 
     df = t.__dataframe__()
 
-    assert to_pyarrow.call_count == 0
+    to_pyarrow.assert_not_called()
     assert df.metadata == pa_df.metadata
     assert df.num_rows() == pa_df.num_rows()
     assert df.num_chunks() == pa_df.num_chunks()
     assert len(list(df.get_chunks())) == df.num_chunks()
-    assert to_pyarrow.call_count == 1
+    to_pyarrow.assert_called_once()
 
 
 @pytest.mark.notimpl(["flink"])
@@ -81,7 +81,7 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     col = df.get_column(0)
     pa_col = pa_df.get_column(0)
 
-    assert to_pyarrow.call_count == 0
+    to_pyarrow.assert_not_called()
     assert col.size() == pa_col.size()
     assert col.offset == pa_col.offset
 
@@ -91,7 +91,7 @@ def test_dataframe_interchange_column_methods_execute(con, alltypes, mocker):
     assert col.num_chunks() == pa_col.num_chunks()
     assert len(list(col.get_chunks())) == pa_col.num_chunks()
     assert len(list(col.get_buffers())) == len(list(pa_col.get_buffers()))
-    assert to_pyarrow.call_count == 1
+    to_pyarrow.assert_called_once()
 
     # Access another column doesn't execute
     col2 = df.get_column(1)
@@ -111,13 +111,13 @@ def test_dataframe_interchange_select_after_execution_no_reexecute(
     df = t.__dataframe__()
 
     # An operation that requires loading data
-    assert to_pyarrow.call_count == 0
+    to_pyarrow.assert_not_called()
     assert df.num_rows() == pa_df.num_rows()
-    assert to_pyarrow.call_count == 1
+    to_pyarrow.assert_called_once()
 
     # Subselect columns doesn't reexecute
     df2 = df.select_columns([1, 0])
     pa_df2 = pa_df.select_columns([1, 0])
     assert df2.num_rows() == pa_df2.num_rows()
     assert df2.column_names() == pa_df2.column_names()
-    assert to_pyarrow.call_count == 1
+    to_pyarrow.assert_called_once()

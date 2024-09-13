@@ -10,7 +10,6 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import numpy as np
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -18,6 +17,7 @@ from pymysql.constants.ER import NO_SUCH_TABLE
 from pymysql.err import ProgrammingError
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -26,7 +26,6 @@ from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.mysql.datatypes import _type_from_cursor_info
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import MySQLCompiler
 from ibis.backends.sql.compilers.base import STAR, TRUE, C
 
 if TYPE_CHECKING:
@@ -40,7 +39,7 @@ if TYPE_CHECKING:
 
 class Backend(SQLBackend, CanCreateDatabase):
     name = "mysql"
-    compiler = MySQLCompiler()
+    compiler = sc.mysql.compiler
     supports_create_or_replace = False
 
     def _from_url(self, url: ParseResult, **kwargs):
@@ -125,33 +124,30 @@ class Backend(SQLBackend, CanCreateDatabase):
         Examples
         --------
         >>> import os
-        >>> import getpass
+        >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
-        >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", getpass.getuser())
-        >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD")
+        >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", "ibis")
+        >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
         >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
-        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con = ibis.mysql.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        MySQLTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : int8
-            tinyint_col : int8
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        int8
+          tinyint_col     int8
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp
+          year            int32
+          month           int32
         """
         self.con = pymysql.connect(
             user=user,
@@ -351,11 +347,11 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         conditions = [TRUE]
 
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
+        if (sg_cat := table_loc.args["catalog"]) is not None:
+            sg_cat.args["quoted"] = False
+        if (sg_db := table_loc.args["db"]) is not None:
+            sg_db.args["quoted"] = False
+        if table_loc.catalog or table_loc.db:
             conditions = [C.table_schema.eq(sge.convert(table_loc.sql(self.name)))]
 
         col = "table_name"
@@ -397,20 +393,15 @@ class Backend(SQLBackend, CanCreateDatabase):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
     ) -> ir.Table:
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
-
-        if database is not None and database != self.current_database:
-            raise com.UnsupportedOperationError(
-                "Creating tables in other databases is not supported by Postgres"
-            )
-        else:
-            database = None
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 
@@ -427,30 +418,22 @@ class Backend(SQLBackend, CanCreateDatabase):
 
             self._run_pre_execute_hooks(table)
 
-            query = self._to_sqlglot(table)
+            query = self.compiler.to_sqlglot(table)
         else:
             query = None
-
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
 
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, catalog=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -461,7 +444,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.name)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.name
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
@@ -469,7 +454,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table.sql(self.name)} RENAME TO {this.sql(self.name)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.name)} RENAME TO {this.sql(self.name)}"
                 )
 
         if schema is None:
@@ -485,6 +470,23 @@ class Backend(SQLBackend, CanCreateDatabase):
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        name = sg.to_identifier(name, quoted=self.compiler.quoted).sql(self.dialect)
+        # just return the single field with column names; no need to bring back
+        # everything if the command succeeds
+        sql = f"SHOW COLUMNS FROM {name} LIKE 'Field'"
+        try:
+            with self.begin() as cur:
+                cur.execute(sql)
+                cur.fetchall()
+        except pymysql.err.ProgrammingError as e:
+            err_code, _ = e.args
+            if err_code == NO_SUCH_TABLE:
+                return False
+            raise
+        else:
+            return True
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -493,48 +495,32 @@ class Backend(SQLBackend, CanCreateDatabase):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-                properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
+        )
+        create_stmt_sql = create_stmt.sql(self.name)
 
-            df = op.data.to_frame()
-            # nan can not be used with MySQL
-            df = df.replace(np.nan, None)
+        df = op.data.to_frame()
+        # nan can not be used with MySQL
+        df = df.replace(float("nan"), None)
 
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
 
-                if not df.empty:
-                    cur.executemany(sql, data)
+            if not df.empty:
+                cur.executemany(sql, data)
 
     @util.experimental
     def to_pyarrow_batches(
@@ -578,3 +564,10 @@ class Backend(SQLBackend, CanCreateDatabase):
             raise
         df = MySQLPandasData.convert_table(df, schema)
         return df
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op.
+
+        Executing **any** SQL in a finalizer causes the underlying connection
+        socket to be set to `None`. It is unclear why this happens.
+        """

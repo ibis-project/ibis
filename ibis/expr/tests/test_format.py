@@ -89,7 +89,7 @@ def test_format_multiple_join_with_projection(snapshot):
 
     table3 = ibis.table([("bar_id", "string"), ("value2", "double")], "three")
 
-    filtered = table[table["f"] > 0]
+    filtered = table.filter(table["f"] > 0)
 
     pred1 = filtered["foo_id"] == table2["foo_id"]
     pred2 = filtered["bar_id"] == table3["bar_id"]
@@ -98,7 +98,7 @@ def test_format_multiple_join_with_projection(snapshot):
     j2 = j1.inner_join(table3, [pred2])
 
     # Project out the desired fields
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
+    view = j2.select(filtered, table2["value1"], table3["value2"])
 
     # it works!
     result = repr(view)
@@ -112,7 +112,7 @@ def test_memoize_filtered_table(snapshot):
     )
 
     dests = ["ORD", "JFK", "SFO"]
-    t = airlines[airlines.dest.isin(dests)]
+    t = airlines.filter(airlines.dest.isin(dests))
     delay_filter = t.dest.topk(10, by=t.arrdelay.mean())
 
     result = repr(delay_filter)
@@ -149,11 +149,11 @@ def test_memoize_filtered_tables_in_join(snapshot):
     metric = purchases.amount.sum().name("total")
     agged = purchases.group_by(["region", "kind"]).aggregate(metric)
 
-    left = agged[agged.kind == "foo"]
-    right = agged[agged.kind == "bar"]
+    left = agged.filter(agged.kind == "foo")
+    right = agged.filter(agged.kind == "bar")
 
     cond = left.region == right.region
-    joined = left.join(right, cond)[left, right.total.name("right_total")]
+    joined = left.join(right, cond).select(left, right.total.name("right_total"))
 
     result = repr(joined)
     snapshot.assert_match(result, "repr.txt")
@@ -179,7 +179,7 @@ def test_scalar_parameter_formatting():
 
 def test_same_column_multiple_aliases(snapshot):
     table = ibis.table([("col", "int64")], name="t")
-    expr = table[table.col.name("fakealias1"), table.col.name("fakealias2")]
+    expr = table.select(table.col.name("fakealias1"), table.col.name("fakealias2"))
     result = repr(expr)
 
     assert "UnboundTable: t" in result
@@ -349,8 +349,6 @@ def test_destruct_selection(snapshot):
     expr = table.aggregate(multi_output_udf(table["col"]).destructure())
     result = repr(expr)
 
-    assert "sum:  StructField(ReductionVectorizedUDF" in result
-    assert "mean: StructField(ReductionVectorizedUDF" in result
     snapshot.assert_match(result, "repr.txt")
 
 
@@ -371,6 +369,8 @@ def test_format_dummy_table(snapshot):
 
 
 def test_format_in_memory_table(snapshot):
+    pytest.importorskip("pandas")
+
     t = ibis.memtable([(1, 2), (3, 4), (5, 6)], columns=["x", "y"])
     expr = t.x.sum() + t.y.sum()
 
@@ -412,7 +412,7 @@ def test_format_new_relational_operation(alltypes, snapshot):
             return {}
 
     table = MyRelation(alltypes, kind="foo").to_expr()
-    expr = table[table, table.a.name("a2")]
+    expr = table.select(table, table.a.name("a2"))
     result = repr(expr)
 
     snapshot.assert_match(result, "repr.txt")
@@ -441,7 +441,7 @@ def test_format_new_value_operation(alltypes, snapshot):
 def test_format_show_variables(monkeypatch, alltypes, snapshot):
     monkeypatch.setattr(ibis.options.repr, "show_variables", True)
 
-    filtered = alltypes[alltypes.f > 0]
+    filtered = alltypes.filter(alltypes.f > 0)
     ordered = filtered.order_by("f")
     projected = ordered[["a", "b", "f"]]
 

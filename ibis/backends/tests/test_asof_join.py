@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import operator
 
-import pandas as pd
-import pandas.testing as tm
 import pytest
 
 import ibis
 from ibis.backends.tests.errors import DuckDBInvalidInputException
+
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 
 @pytest.fixture(scope="module")

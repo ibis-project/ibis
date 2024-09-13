@@ -8,6 +8,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as exc
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -24,7 +25,6 @@ from ibis.backends.flink.ddl import (
     RenameTable,
 )
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import FlinkCompiler
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name
@@ -45,7 +45,7 @@ _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pand
 
 class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     name = "flink"
-    compiler = FlinkCompiler()
+    compiler = sc.flink.compiler
     supports_temporary_tables = True
     supports_python_udfs = True
 
@@ -67,9 +67,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         >>> import ibis
         >>> from pyflink.table import EnvironmentSettings, TableEnvironment
         >>> table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
-        >>> ibis.flink.connect(table_env)
-        <ibis.backends.flink.Backend at 0x...>
-
+        >>> ibis.flink.connect(table_env)  # doctest: +ELLIPSIS
+        <ibis.backends.flink.Backend object at 0x...>
         """
         self._table_env = table_env
 
@@ -336,26 +335,27 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def _register_udfs(self, expr: ir.Expr) -> None:
         for udf_node in expr.op().find(ops.ScalarUDF):
             register_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             register_func(udf_node)
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
-        import pyflink.table.udf
+        from pyflink.table.udf import udf
 
         from ibis.backends.flink.datatypes import FlinkType
 
         name = type(udf_node).__name__
         self._table_env.drop_temporary_function(name)
-        udf = pyflink.table.udf.udf(
+
+        func = udf(
             udf_node.__func__,
             result_type=FlinkType.from_ibis(udf_node.dtype),
             func_type=_INPUT_TYPE_TO_FUNC_TYPE[udf_node.__input_type__],
         )
-        self._table_env.create_temporary_function(name, udf)
+        self._table_env.create_temporary_function(name, func)
 
-    _compile_pandas_udf = _register_udf
-    _compile_python_udf = _register_udf
+    _register_pandas_udf = _register_udf
+    _register_python_udf = _register_udf
 
     def compile(
         self,
@@ -368,11 +368,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         return super().compile(
             expr, params=params, pretty=pretty
         )  # Discard `limit` and other kwargs.
-
-    def _to_sqlglot(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, Any] | None = None, **_: Any
-    ) -> str:
-        return super()._to_sqlglot(expr, params=params)
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""

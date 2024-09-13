@@ -10,6 +10,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -866,7 +867,7 @@ class StringValue(Value):
         return cls(strings, sep=self).to_expr()
 
     def startswith(self, start: str | StringValue) -> ir.BooleanValue:
-        """Determine whether `self` starts with `end`.
+        """Determine whether `self` starts with `start`.
 
         Parameters
         ----------
@@ -1269,7 +1270,7 @@ class StringValue(Value):
         """
         return ops.StringReplace(self, pattern, replacement).to_expr()
 
-    def to_timestamp(self, format_str: str) -> ir.TimestampValue:
+    def as_timestamp(self, format_str: str) -> ir.TimestampValue:
         """Parse a string and return a timestamp.
 
         Parameters
@@ -1287,7 +1288,7 @@ class StringValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"ts": ["20170206"]})
-        >>> t.ts.to_timestamp("%Y%m%d")
+        >>> t.ts.as_timestamp("%Y%m%d")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ StringToTimestamp(ts, '%Y%m%d') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1298,7 +1299,11 @@ class StringValue(Value):
         """
         return ops.StringToTimestamp(self, format_str).to_expr()
 
-    def to_date(self, format_str: str) -> ir.DateValue:
+    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    def to_timestamp(self, format_str: str) -> ir.TimestampValue:
+        return self.as_timestamp(format_str=format_str)
+
+    def as_date(self, format_str: str) -> ir.DateValue:
         """Parse a string and return a date.
 
         Parameters
@@ -1316,7 +1321,7 @@ class StringValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"ts": ["20170206"]})
-        >>> t.ts.to_date("%Y%m%d")
+        >>> t.ts.as_date("%Y%m%d")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ StringToDate(ts, '%Y%m%d') ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -1326,6 +1331,10 @@ class StringValue(Value):
         └────────────────────────────┘
         """
         return ops.StringToDate(self, format_str).to_expr()
+
+    @deprecated(as_of="10.0", instead="use as_date() instead")
+    def to_date(self, format_str: str) -> ir.DateValue:
+        return self.as_date(format_str=format_str)
 
     def protocol(self):
         """Parse a URL and extract protocol.
@@ -1695,9 +1704,9 @@ class StringValue(Value):
         >>> ibis.options.interactive = True
         >>> s = ibis.literal("kitten")
         >>> s.levenshtein("sitting")
-        ┌─────────────┐
-        │ np.int64(3) │
-        └─────────────┘
+        ┌───┐
+        │ 3 │
+        └───┘
         """
         return ops.Levenshtein(self, other).to_expr()
 

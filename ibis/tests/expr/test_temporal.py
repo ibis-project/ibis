@@ -107,8 +107,13 @@ def test_interval_function_invalid():
     ],
 )
 def test_upconvert_interval(interval, unit, expected):
-    result = interval.to_unit(unit)
-    assert result.equals(expected)
+    result_as = interval.as_unit(unit)
+
+    with pytest.warns(FutureWarning, match="v10.0"):
+        result_to = interval.to_unit(unit)
+
+    assert result_as.equals(expected)
+    assert result_to.equals(expected)
 
 
 @pytest.mark.parametrize("target", ["Y", "Q", "M"])
@@ -127,7 +132,7 @@ def test_upconvert_interval(interval, unit, expected):
 )
 def test_cannot_upconvert(delta, target):
     with pytest.raises(ValueError):
-        delta.to_unit(target)
+        delta.as_unit(target)
 
 
 @pytest.mark.parametrize(
@@ -191,41 +196,41 @@ def test_subtract(expr, expected_unit):
 @pytest.mark.parametrize(
     ("case", "expected"),
     [
-        (api.interval(seconds=2).to_unit("s"), api.interval(seconds=2)),
+        (api.interval(seconds=2).as_unit("s"), api.interval(seconds=2)),
         (
-            api.interval(seconds=2).to_unit("ms"),
+            api.interval(seconds=2).as_unit("ms"),
             api.interval(milliseconds=2 * 1000),
         ),
         (
-            api.interval(seconds=2).to_unit("us"),
+            api.interval(seconds=2).as_unit("us"),
             api.interval(microseconds=2 * 1000000),
         ),
         (
-            api.interval(seconds=2).to_unit("ns"),
+            api.interval(seconds=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 1000000000),
         ),
         (
-            api.interval(milliseconds=2).to_unit("ms"),
+            api.interval(milliseconds=2).as_unit("ms"),
             api.interval(milliseconds=2),
         ),
         (
-            api.interval(milliseconds=2).to_unit("us"),
+            api.interval(milliseconds=2).as_unit("us"),
             api.interval(microseconds=2 * 1000),
         ),
         (
-            api.interval(milliseconds=2).to_unit("ns"),
+            api.interval(milliseconds=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 1000000),
         ),
         (
-            api.interval(microseconds=2).to_unit("us"),
+            api.interval(microseconds=2).as_unit("us"),
             api.interval(microseconds=2),
         ),
         (
-            api.interval(microseconds=2).to_unit("ns"),
+            api.interval(microseconds=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 1000),
         ),
         (
-            api.interval(nanoseconds=2).to_unit("ns"),
+            api.interval(nanoseconds=2).as_unit("ns"),
             api.interval(nanoseconds=2),
         ),
     ],
@@ -239,19 +244,19 @@ def test_downconvert_second_parts(case, expected):
 @pytest.mark.parametrize(
     ("case", "expected"),
     [
-        (api.interval(hours=2).to_unit("h"), api.interval(hours=2)),
-        (api.interval(hours=2).to_unit("m"), api.interval(minutes=2 * 60)),
-        (api.interval(hours=2).to_unit("s"), api.interval(seconds=2 * 3600)),
+        (api.interval(hours=2).as_unit("h"), api.interval(hours=2)),
+        (api.interval(hours=2).as_unit("m"), api.interval(minutes=2 * 60)),
+        (api.interval(hours=2).as_unit("s"), api.interval(seconds=2 * 3600)),
         (
-            api.interval(hours=2).to_unit("ms"),
+            api.interval(hours=2).as_unit("ms"),
             api.interval(milliseconds=2 * 3600000),
         ),
         (
-            api.interval(hours=2).to_unit("us"),
+            api.interval(hours=2).as_unit("us"),
             api.interval(microseconds=2 * 3600000000),
         ),
         (
-            api.interval(hours=2).to_unit("ns"),
+            api.interval(hours=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 3600000000000),
         ),
     ],
@@ -265,43 +270,43 @@ def test_downconvert_hours(case, expected):
 @pytest.mark.parametrize(
     ("case", "expected"),
     [
-        (api.interval(minutes=2).to_unit("m"), api.interval(minutes=2)),
-        (api.interval(minutes=2).to_unit("s"), api.interval(seconds=2 * 60)),
+        (api.interval(minutes=2).as_unit("m"), api.interval(minutes=2)),
+        (api.interval(minutes=2).as_unit("s"), api.interval(seconds=2 * 60)),
         (
-            api.interval(minutes=2).to_unit("ms"),
+            api.interval(minutes=2).as_unit("ms"),
             api.interval(milliseconds=2 * 60 * 1000),
         ),
         (
-            api.interval(minutes=2).to_unit("us"),
+            api.interval(minutes=2).as_unit("us"),
             api.interval(microseconds=2 * 60 * 1000000),
         ),
         (
-            api.interval(minutes=2).to_unit("ns"),
+            api.interval(minutes=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 60 * 1000000000),
         ),
-        (api.interval(hours=2).to_unit("h"), api.interval(hours=2)),
-        (api.interval(hours=2).to_unit("m"), api.interval(minutes=2 * 60)),
-        (api.interval(hours=2).to_unit("s"), api.interval(seconds=2 * 3600)),
-        (api.interval(weeks=2).to_unit("D"), api.interval(days=2 * 7)),
-        (api.interval(days=2).to_unit("D"), api.interval(days=2)),
-        (api.interval(years=2).to_unit("Y"), api.interval(years=2)),
-        (api.interval(years=2).to_unit("M"), api.interval(months=24)),
-        (api.interval(years=2).to_unit("Q"), api.interval(quarters=8)),
-        (api.interval(months=2).to_unit("M"), api.interval(months=2)),
-        (api.interval(weeks=2).to_unit("h"), api.interval(hours=2 * 7 * 24)),
-        (api.interval(days=2).to_unit("h"), api.interval(hours=2 * 24)),
-        (api.interval(days=2).to_unit("m"), api.interval(minutes=2 * 24 * 60)),
-        (api.interval(days=2).to_unit("s"), api.interval(seconds=2 * 24 * 60 * 60)),
+        (api.interval(hours=2).as_unit("h"), api.interval(hours=2)),
+        (api.interval(hours=2).as_unit("m"), api.interval(minutes=2 * 60)),
+        (api.interval(hours=2).as_unit("s"), api.interval(seconds=2 * 3600)),
+        (api.interval(weeks=2).as_unit("D"), api.interval(days=2 * 7)),
+        (api.interval(days=2).as_unit("D"), api.interval(days=2)),
+        (api.interval(years=2).as_unit("Y"), api.interval(years=2)),
+        (api.interval(years=2).as_unit("M"), api.interval(months=24)),
+        (api.interval(years=2).as_unit("Q"), api.interval(quarters=8)),
+        (api.interval(months=2).as_unit("M"), api.interval(months=2)),
+        (api.interval(weeks=2).as_unit("h"), api.interval(hours=2 * 7 * 24)),
+        (api.interval(days=2).as_unit("h"), api.interval(hours=2 * 24)),
+        (api.interval(days=2).as_unit("m"), api.interval(minutes=2 * 24 * 60)),
+        (api.interval(days=2).as_unit("s"), api.interval(seconds=2 * 24 * 60 * 60)),
         (
-            api.interval(days=2).to_unit("ms"),
+            api.interval(days=2).as_unit("ms"),
             api.interval(milliseconds=2 * 24 * 60 * 60 * 1_000),
         ),
         (
-            api.interval(days=2).to_unit("us"),
+            api.interval(days=2).as_unit("us"),
             api.interval(microseconds=2 * 24 * 60 * 60 * 1_000_000),
         ),
         (
-            api.interval(days=2).to_unit("ns"),
+            api.interval(days=2).as_unit("ns"),
             api.interval(nanoseconds=2 * 24 * 60 * 60 * 1_000_000_000),
         ),
     ],
@@ -618,9 +623,16 @@ def test_unsupported_properties(interval, prop):
 )
 def test_integer_to_interval(column, unit, table):
     c = table[column]
-    i = c.to_interval(unit)
+    i = c.as_interval(unit)
+
+    with pytest.warns(FutureWarning, match="v10.0"):
+        j = c.to_interval(unit)
+
     assert isinstance(i, ir.IntervalColumn)
     assert i.type().unit == IntervalUnit(unit)
+
+    assert isinstance(j, ir.IntervalColumn)
+    assert j.type().unit == IntervalUnit(unit)
 
 
 @pytest.mark.parametrize(
@@ -631,8 +643,8 @@ def test_integer_to_interval(column, unit, table):
     [
         lambda t, u: (api.interval(3, unit=u), api.interval(2, unit=u)),
         lambda t, u: (api.interval(3, unit=u), api.interval(3, unit=u)),
-        lambda t, u: (t.c.to_interval(unit=u), api.interval(2, unit=u)),
-        lambda t, u: (t.c.to_interval(unit=u), t.d.to_interval(unit=u)),
+        lambda t, u: (t.c.as_interval(unit=u), api.interval(2, unit=u)),
+        lambda t, u: (t.c.as_interval(unit=u), t.d.as_interval(unit=u)),
     ],
 )
 @pytest.mark.parametrize(
@@ -681,10 +693,10 @@ def test_interval_comparisons(unit, operands, operator, table):
         lambda t: api.interval(months=3),
         lambda t: api.interval(weeks=2),
         lambda t: api.interval(days=1),
-        lambda t: t.c.to_interval(unit="Y"),
-        lambda t: t.c.to_interval(unit="M"),
-        lambda t: t.c.to_interval(unit="W"),
-        lambda t: t.c.to_interval(unit="D"),
+        lambda t: t.c.as_interval(unit="Y"),
+        lambda t: t.c.as_interval(unit="M"),
+        lambda t: t.c.as_interval(unit="W"),
+        lambda t: t.c.as_interval(unit="D"),
     ],
     ids=[
         "years",
@@ -928,3 +940,8 @@ def test_today():
     result = ibis.today()
     assert isinstance(result, ir.DateScalar)
     assert isinstance(result.op(), ops.DateNow)
+
+
+def test_to_date_deprecation():
+    with pytest.warns(FutureWarning, match="v10.0"):
+        ibis.literal("20170206").to_date("%Y%m%d")

@@ -26,20 +26,14 @@ class ImpalaCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayPosition,
         ops.Array,
         ops.Covariance,
-        ops.DateDelta,
         ops.ExtractDayOfYear,
-        ops.First,
-        ops.Last,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
-        ops.MultiQuantile,
         ops.NthValue,
-        ops.Quantile,
         ops.RegexSplit,
         ops.RowID,
         ops.StringSplit,
@@ -66,10 +60,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.DayOfWeekName: "dayname",
         ops.ExtractEpochSeconds: "unix_timestamp",
         ops.Hash: "fnv_hash",
-        ops.LStrip: "ltrim",
         ops.Ln: "ln",
-        ops.RStrip: "rtrim",
-        ops.Strip: "trim",
         ops.TypeOf: "typeof",
     }
 
@@ -194,9 +185,7 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return sge.Interval(this=sge.convert(arg), unit=to.unit.singular.upper())
-        elif from_.is_temporal() and to.is_integer():
+        if from_.is_temporal() and to.is_integer():
             return 1_000_000 * self.f.unix_timestamp(arg)
         return super().visit_Cast(op, arg=arg, to=to)
 
@@ -306,6 +295,9 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
         return self.f.regexp_replace(arg, pattern, replacement, dialect=self.dialect)
 
+    def visit_RegexExtract(self, op, *, arg, pattern, index):
+        return self.f.anon.regexp_extract(arg, pattern, index)
+
     def visit_Round(self, op, *, arg, digits):
         rounded = self.f.round(*filter(None, (arg, digits)))
 
@@ -320,3 +312,23 @@ class ImpalaCompiler(SQLGlotCompiler):
         if not dtype.is_float32():
             return self.cast(sign, dtype)
         return sign
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return self.f.datediff(left, right)
+
+    def visit_Strip(self, op, *, arg):
+        # Impala's `TRIM` doesn't allow specifying characters to trim off, unlike
+        # Impala's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
+
+
+compiler = ImpalaCompiler()

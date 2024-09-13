@@ -14,7 +14,7 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DataFusionType
 from ibis.backends.sql.dialects import DataFusion
-from ibis.backends.sql.rewrites import exclude_nulls_from_array_collect
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 from ibis.expr.operations.udf import InputType
 
@@ -25,12 +25,9 @@ class DataFusionCompiler(SQLGlotCompiler):
     dialect = DataFusion
     type_mapper = DataFusionType
 
-    rewrites = (
-        exclude_nulls_from_array_collect,
-        *SQLGlotCompiler.rewrites,
-    )
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
-    agg = AggGen(supports_filter=True)
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,
@@ -46,8 +43,6 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.Greatest,
         ops.IntervalFromInteger,
         ops.Least,
-        ops.MultiQuantile,
-        ops.Quantile,
         ops.RowID,
         ops.Strftime,
         ops.TimeDelta,
@@ -59,6 +54,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        ops.ApproxQuantile: "approx_percentile_cont",
         ops.ApproxMedian: "approx_median",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",
@@ -331,6 +327,12 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayPosition(self, op, *, arg, other):
         return self.f.coalesce(self.f.array_position(arg, other), 0)
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
     def visit_Covariance(self, op, *, left, right, how, where):
         x = op.left
         if x.dtype.is_boolean():
@@ -425,15 +427,17 @@ class DataFusionCompiler(SQLGlotCompiler):
             sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
         )
 
-    def visit_First(self, op, *, arg, where):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.first_value(arg, where=where)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.first_value(arg, where=where, order_by=order_by)
 
-    def visit_Last(self, op, *, arg, where):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.agg.last_value(arg, where=where)
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""
@@ -488,3 +492,18 @@ class DataFusionCompiler(SQLGlotCompiler):
             args.append(sge.convert(name))
             args.append(value)
         return self.f.named_struct(*args)
+
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "DataFusion does not support order-sensitive group_concat"
+            )
+        return super().visit_GroupConcat(
+            op, arg=arg, sep=sep, where=where, order_by=order_by
+        )
+
+    def visit_ArrayFlatten(self, op, *, arg):
+        return self.if_(arg.is_(NULL), NULL, self.f.flatten(arg))
+
+
+compiler = DataFusionCompiler()

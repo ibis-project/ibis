@@ -6,7 +6,7 @@ import toolz
 
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import OracleType
 from ibis.backends.sql.dialects import Oracle
 from ibis.backends.sql.rewrites import (
@@ -22,6 +22,8 @@ from ibis.backends.sql.rewrites import (
 
 class OracleCompiler(SQLGlotCompiler):
     __slots__ = ()
+
+    agg = AggGen(supports_order_by=True)
 
     dialect = Oracle
     type_mapper = OracleType
@@ -49,14 +51,10 @@ class OracleCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
-        ops.First,
-        ops.Last,
-        ops.Mode,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,
@@ -64,11 +62,9 @@ class OracleCompiler(SQLGlotCompiler):
         ops.Bucket,
         ops.TimestampBucket,
         ops.TimeDelta,
-        ops.DateDelta,
         ops.TimestampDelta,
         ops.TimestampFromYMDHMS,
         ops.TimeFromHMS,
-        ops.IntervalFromInteger,
         ops.DayOfWeekIndex,
         ops.DayOfWeekName,
         ops.DateDiff,
@@ -85,12 +81,11 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitOr: "bit_or_agg",
         ops.BitXor: "bit_xor_agg",
         ops.BitwiseAnd: "bitand",
-        ops.Hash: "hash",
+        ops.Hash: "ora_hash",
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
-        ops.Strip: "trim",
-        ops.Hash: "ora_hash",
+        ops.Mode: "stats_mode",
     }
 
     @staticmethod
@@ -139,30 +134,37 @@ class OracleCompiler(SQLGlotCompiler):
         elif dtype.is_uuid():
             return sge.convert(str(value))
         elif dtype.is_interval():
-            if dtype.unit.short in ("Y", "M"):
-                return self.f.numtoyminterval(value, dtype.unit.name)
-            elif dtype.unit.short in ("D", "h", "m", "s"):
-                return self.f.numtodsinterval(value, dtype.unit.name)
-            else:
-                raise com.UnsupportedOperationError(
-                    f"Intervals with precision {dtype.unit.name} not supported in Oracle."
-                )
+            return self._value_to_interval(value, dtype.unit)
 
         return super().visit_Literal(op, value=value, dtype=dtype)
 
+    def _value_to_interval(self, arg, unit):
+        short = unit.short
+
+        if short in ("Y", "M"):
+            return self.f.numtoyminterval(arg, unit.singular)
+        elif short in ("D", "h", "m", "s"):
+            return self.f.numtodsinterval(arg, unit.singular)
+        elif short == "ms":
+            return self.f.numtodsinterval(arg / 1e3, "second")
+        elif short in "us":
+            return self.f.numtodsinterval(arg / 1e6, "second")
+        elif short in "ns":
+            return self.f.numtodsinterval(arg / 1e9, "second")
+        else:
+            raise com.UnsupportedArgumentError(
+                f"Interval {unit.name} not supported by Oracle"
+            )
+
     def visit_Cast(self, op, *, arg, to):
-        if to.is_interval():
+        from_ = op.arg.dtype
+        if from_.is_numeric() and to.is_interval():
             # CASTing to an INTERVAL in Oracle requires specifying digits of
             # precision that are a pain.  There are two helper functions that
             # should be used instead.
-            if to.unit.short in ("D", "h", "m", "s"):
-                return self.f.numtodsinterval(arg, to.unit.name)
-            elif to.unit.short in ("Y", "M"):
-                return self.f.numtoyminterval(arg, to.unit.name)
-            else:
-                raise com.UnsupportedArgumentError(
-                    f"Interval {to.unit.name} not supported by Oracle"
-                )
+            return self._value_to_interval(arg, to.unit)
+        elif from_.is_string() and to.is_date():
+            return self.f.to_date(arg, "FXYYYY-MM-DD")
         return self.cast(arg, to)
 
     def visit_Limit(self, op, *, parent, n, offset):
@@ -302,6 +304,15 @@ class OracleCompiler(SQLGlotCompiler):
             expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
         )
         return expr
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg)
+
+        return sge.WithinGroup(
+            this=self.f.approx_percentile(quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
 
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
@@ -447,8 +458,42 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_ExtractIsoYear(self, op, *, arg):
         return self.cast(self.f.to_char(arg, "IYYY"), op.dtype)
 
-    def visit_GroupConcat(self, op, *, arg, where, sep):
+    def visit_GroupConcat(self, op, *, arg, where, sep, order_by):
         if where is not None:
-            arg = self.if_(where, arg)
+            arg = self.if_(where, arg, NULL)
 
-        return self.f.listagg(arg, sep)
+        out = self.f.listagg(arg, sep)
+
+        if order_by:
+            out = sge.WithinGroup(this=out, expression=sge.Order(expressions=order_by))
+
+        return out
+
+    def visit_IntervalFromInteger(self, op, *, arg, unit):
+        return self._value_to_interval(arg, unit)
+
+    def visit_DateFromYMD(self, op, *, year, month, day):
+        year = self.f.lpad(year, 4, "0")
+        month = self.f.lpad(month, 2, "0")
+        day = self.f.lpad(day, 2, "0")
+        return self.f.to_date(self.f.concat(year, month, day), "FXYYYYMMDD")
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return left - right
+
+    def visit_Strip(self, op, *, arg):
+        # Oracle's `TRIM` only accepts a single character to trim off, unlike
+        # Oracle's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
+
+
+compiler = OracleCompiler()

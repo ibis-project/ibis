@@ -13,6 +13,7 @@ from ibis.common.annotations import annotated
 from ibis.common.temporal import IntervalUnit
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     import datetime
@@ -278,9 +279,9 @@ class TimeValue(_TimeComponentMixin, Value):
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
         >>> end.delta(start, "hour")
-        ┌──────────────┐
-        │ np.int64(22) │
-        └──────────────┘
+        ┌────┐
+        │ 22 │
+        └────┘
         >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
         ... 2016-02-01T00:23:56,2016-02-01T00:42:28
         ... 2016-02-01T00:12:14,2016-02-01T00:21:41
@@ -445,9 +446,9 @@ class DateValue(Value, _DateComponentMixin):
         >>> start = ibis.date("1992-09-30")
         >>> end = ibis.date("1992-10-01")
         >>> end.delta(start, "day")
-        ┌─────────────┐
-        │ np.int64(1) │
-        └─────────────┘
+        ┌───┐
+        │ 1 │
+        └───┘
         >>> prez = ibis.examples.presidential.fetch()
         >>> prez.mutate(
         ...     years_in_office=prez.end.delta(prez.start, "year"),
@@ -472,6 +473,42 @@ class DateValue(Value, _DateComponentMixin):
         └────────────┴────────────┴────────────┴─────────────────┴─────────────────┘
         """
         return ops.DateDelta(left=self, right=other, part=part).to_expr()
+
+    def epoch_days(self) -> ir.IntegerValue:
+        """Return the number of days since the UNIX epoch date.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> date = ibis.date(2020, 1, 1)
+        >>> date
+        ┌────────────┐
+        │ 2020-01-01 │
+        └────────────┘
+        >>> date.epoch_days()
+        ┌───────┐
+        │ 18262 │
+        └───────┘
+        >>> t = date.name("date_col").as_table()
+        >>> t
+        ┏━━━━━━━━━━━━┓
+        ┃ date_col   ┃
+        ┡━━━━━━━━━━━━┩
+        │ date       │
+        ├────────────┤
+        │ 2020-01-01 │
+        └────────────┘
+        >>> t.mutate(epoch=t.date_col.epoch_days())
+        ┏━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ date_col   ┃ epoch ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━┩
+        │ date       │ int64 │
+        ├────────────┼───────┤
+        │ 2020-01-01 │ 18262 │
+        └────────────┴───────┘
+        """
+        return self.delta(ibis.date(1970, 1, 1), "day")
 
 
 @public
@@ -779,9 +816,9 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
         >>> end.delta(start, "hour")
-        ┌──────────────┐
-        │ np.int64(22) │
-        └──────────────┘
+        ┌────┐
+        │ 22 │
+        └────┘
         >>> data = '''tpep_pickup_datetime,tpep_dropoff_datetime
         ... 2016-02-01T00:23:56,2016-02-01T00:42:28
         ... 2016-02-01T00:12:14,2016-02-01T00:21:41
@@ -822,7 +859,7 @@ class TimestampColumn(Column, TimestampValue):
 
 @public
 class IntervalValue(Value):
-    def to_unit(self, target_unit: str) -> IntervalValue:
+    def as_unit(self, target_unit: str) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
         # TODO(kszucs): should use a separate operation for unit conversion
         # which we can rewrite/simplify to integer multiplication/division
@@ -839,62 +876,66 @@ class IntervalValue(Value):
             value = util.convert_unit(
                 self.cast(dt.int64), current_unit.short, target_unit.short
             )
-            return value.to_interval(target_unit)
+            return value.as_interval(target_unit)
+
+    @deprecated(as_of="10.0", instead="use as_unit() instead")
+    def to_unit(self, target_unit: str) -> IntervalValue:
+        return self.as_unit(target_unit=target_unit)
 
     @property
     def years(self) -> ir.IntegerValue:
         """The number of years (IntegerValue)."""
-        return self.to_unit("Y")
+        return self.as_unit("Y")
 
     @property
     def quarters(self) -> ir.IntegerValue:
         """The number of quarters (IntegerValue)."""
-        return self.to_unit("Q")
+        return self.as_unit("Q")
 
     @property
     def months(self) -> ir.IntegerValue:
         """The number of months (IntegerValue)."""
-        return self.to_unit("M")
+        return self.as_unit("M")
 
     @property
     def weeks(self) -> ir.IntegerValue:
         """The number of weeks (IntegerValue)."""
-        return self.to_unit("W")
+        return self.as_unit("W")
 
     @property
     def days(self) -> ir.IntegerValue:
         """The number of days (IntegerValue)."""
-        return self.to_unit("D")
+        return self.as_unit("D")
 
     @property
     def hours(self) -> ir.IntegerValue:
         """The number of hours (IntegerValue)."""
-        return self.to_unit("h")
+        return self.as_unit("h")
 
     @property
     def minutes(self) -> ir.IntegerValue:
         """The number of minutes (IntegerValue)."""
-        return self.to_unit("m")
+        return self.as_unit("m")
 
     @property
     def seconds(self) -> ir.IntegerValue:
         """The number of seconds (IntegerValue)."""
-        return self.to_unit("s")
+        return self.as_unit("s")
 
     @property
     def milliseconds(self) -> ir.IntegerValue:
         """The number of milliseconds (IntegerValue)."""
-        return self.to_unit("ms")
+        return self.as_unit("ms")
 
     @property
     def microseconds(self) -> ir.IntegerValue:
         """The number of microseconds (IntegerValue)."""
-        return self.to_unit("us")
+        return self.as_unit("us")
 
     @property
     def nanoseconds(self) -> ir.IntegerValue:
         """The number of nanoseconds (IntegerValue)."""
-        return self.to_unit("ns")
+        return self.as_unit("ns")
 
     def __add__(
         self,

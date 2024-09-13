@@ -8,19 +8,20 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from filelock import FileLock
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator
 
     import ibis.expr.types as ir
 
 
 PYTHON_SHORT_VERSION = f"{sys.version_info.major}{sys.version_info.minor}"
+
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
 
 
 class BackendTest(abc.ABC):
@@ -305,9 +306,6 @@ class BackendTest(abc.ABC):
     @property
     def api(self):
         return self.connection
-
-    def make_context(self, params: Mapping[ir.Value, Any] | None = None):
-        return self.api.compiler.make_context(params=params)
 
     def _tpc_table(self, name: str, benchmark: Literal["h", "ds"]):
         if not getattr(self, f"supports_tpc{benchmark}"):

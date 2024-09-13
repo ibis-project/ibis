@@ -15,7 +15,12 @@ import ibis.expr.operations as ops
 from ibis.backends.sql.compilers.base import FALSE, NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PySparkType
 from ibis.backends.sql.dialects import PySpark
-from ibis.backends.sql.rewrites import FirstValue, LastValue, p
+from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
+    p,
+    split_select_distinct_with_order_by,
+)
 from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
@@ -51,6 +56,7 @@ class PySparkCompiler(SQLGlotCompiler):
     dialect = PySpark
     type_mapper = PySparkType
     rewrites = (offset_to_filter, *SQLGlotCompiler.rewrites)
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
         ops.RowID,
@@ -240,15 +246,27 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_LastValue(self, op, *, arg):
         return sge.IgnoreNulls(this=self.f.last(arg))
 
-    def visit_First(self, op, *, arg, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return sge.IgnoreNulls(this=self.f.first(arg))
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.first(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
-    def visit_Last(self, op, *, arg, where):
-        if where is not None:
-            arg = self.if_(where, arg, NULL)
-        return sge.IgnoreNulls(this=self.f.last(arg))
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if where is not None and include_null:
+            raise com.UnsupportedOperationError(
+                "Combining `include_null=True` and `where` is not supported "
+                "by pyspark"
+            )
+        out = self.agg.last(arg, where=where, order_by=order_by)
+        if not include_null:
+            out = sge.IgnoreNulls(this=out)
+        return out
 
     def visit_Arbitrary(self, op, *, arg, where):
         # For Spark>=3.4 we could use any_value here
@@ -259,12 +277,33 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_Median(self, op, *, arg, where):
         return self.agg.percentile(arg, 0.5, where=where)
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         if where is not None:
             arg = self.if_(where, arg, NULL)
         collected = self.f.collect_list(arg)
         collected = self.if_(self.f.size(collected).eq(0), NULL, collected)
         return self.f.array_join(collected, sep)
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.percentile(arg, quantile)
+
+    visit_MultiQuantile = visit_Quantile
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.approx_percentile(arg, quantile)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if (left_type := op.left.dtype).is_boolean():
@@ -301,11 +340,8 @@ class PySparkCompiler(SQLGlotCompiler):
             raise com.UnsupportedOperationError(
                 "PySpark backend does not support sampling with seed."
             )
-        sample = sge.TableSample(
-            this=parent,
-            percent=sge.convert(fraction * 100.0),
-        )
-        return sg.select(STAR).from_(sample)
+        sample = sge.TableSample(percent=sge.convert(int(fraction * 100.0)))
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:
@@ -396,6 +432,13 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.concat_ws(sep, arg)
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the pyspark backend"
+            )
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:
             raise com.UnsupportedOperationError(
@@ -457,16 +500,22 @@ class PySparkCompiler(SQLGlotCompiler):
             raise NotImplementedError(f"No available hashing function for {how}")
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         parent_alias = parent.alias_or_name
 
@@ -633,3 +682,6 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+
+compiler = PySparkCompiler()

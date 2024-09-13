@@ -3,9 +3,9 @@ from __future__ import annotations
 import warnings
 
 import hypothesis as h
-import hypothesis.extra.pandas as past
 import hypothesis.extra.pytz as tzst
 import hypothesis.strategies as st
+import pytest
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -240,6 +240,9 @@ all_schema = schema(all_dtypes)
 
 @st.composite
 def memtable(draw, schema=schema(primitive_dtypes)):  # noqa: B008
+    pytest.importorskip("pandas")
+    past = pytest.importorskip("hypothesis.extra.pandas")
+
     schema = draw(schema)
 
     columns = [past.column(name, dtype=dtype) for name, dtype in schema.to_pandas()]

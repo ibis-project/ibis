@@ -5,7 +5,6 @@ from posixpath import join as pjoin
 import pandas as pd
 import pandas.testing as tm
 import pytest
-from impala.error import HiveServer2Error
 
 import ibis
 from ibis import util
@@ -112,7 +111,9 @@ def test_insert_select_partitioned_table(con, df, temp_table, unpart_t):
     unique_keys = df[part_keys].drop_duplicates()
 
     for i, (year, month) in enumerate(unique_keys.itertuples(index=False)):
-        select_stmt = unpart_t[(unpart_t.year == year) & (unpart_t.month == month)]
+        select_stmt = unpart_t.filter(
+            (unpart_t.year == year) & (unpart_t.month == month)
+        )
 
         # test both styles of insert
         if i:
@@ -133,7 +134,7 @@ def tmp_parted(con):
 
 def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     t = alltypes
-    expr = t[t.id <= 10][["id", "double_col", "month", "year"]]
+    expr = t.filter(t.id <= 10)[["id", "double_col", "month", "year"]]
     name = tmp_parted
     con.create_table(name, expr, partition=[t.year])
     new = con.table(name)
@@ -142,10 +143,14 @@ def test_create_partitioned_table_from_expr(con, alltypes, tmp_parted):
     tm.assert_frame_equal(result, expected)
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_no_location(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
     table = con.table(temp_table)
 
     part = {"year": 2007, "month": 4}
@@ -159,10 +164,14 @@ def test_add_drop_partition_no_location(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_owned_by_impala(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
 
     table = con.table(temp_table)
 
@@ -181,10 +190,14 @@ def test_add_drop_partition_owned_by_impala(con, temp_table):
     assert len(table.partitions()) == 1
 
 
-@pytest.mark.xfail(raises=HiveServer2Error)
 def test_add_drop_partition_hive_bug(con, temp_table):
     schema = ibis.schema([("foo", "string"), ("year", "int32"), ("month", "int16")])
-    con.create_table(temp_table, schema=schema, partition=["year", "month"])
+    con.create_table(
+        temp_table,
+        schema=schema,
+        partition=["year", "month"],
+        tbl_properties={"transactional": "false"},
+    )
 
     table = con.table(temp_table)
 

@@ -8,14 +8,15 @@ from collections.abc import Mapping
 from functools import partial, reduce, singledispatch
 from math import isnan
 
-import numpy as np
-import pandas as pd
 import polars as pl
+import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.polars.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.sql.compilers.base import STAR
+from ibis.backends.sql.dialects import Polars
 from ibis.expr.operations.udf import InputType
 from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
@@ -45,7 +46,7 @@ def _literal_value(op, nan_as_none=False):
 
 
 @singledispatch
-def translate(expr, *, ctx):
+def translate(expr, **_):
     raise NotImplementedError(expr)
 
 
@@ -61,19 +62,14 @@ def table(op, **_):
 
 @translate.register(ops.DummyTable)
 def dummy_table(op, **kw):
-    selections = [translate(arg, **kw) for name, arg in op.values.items()]
+    selections = [translate(arg, **kw).alias(name) for name, arg in op.values.items()]
     return pl.DataFrame().lazy().select(selections)
 
 
 @translate.register(ops.InMemoryTable)
-def in_memory_table(op, **_):
-    return op.data.to_polars(op.schema).lazy()
-
-
-@translate.register(ops.Alias)
-def alias(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.alias(op.name)
+def in_memory_table(op, *, ctx, **_):
+    sql = sg.select(STAR).from_(sg.to_identifier(op.name, quoted=True)).sql(Polars)
+    return ctx.execute(sql, eager=False)
 
 
 def _make_duration(value, dtype):
@@ -710,6 +706,7 @@ _reductions = {
     ops.All: "all",
     ops.Any: "any",
     ops.ApproxMedian: "median",
+    ops.ApproxCountDistinct: "approx_n_unique",
     ops.Count: "count",
     ops.CountDistinct: "n_unique",
     ops.Max: "max",
@@ -741,12 +738,16 @@ for cls in _reductions:
 def execute_first_last(op, **kw):
     arg = translate(op.arg, **kw)
 
-    # polars doesn't ignore nulls by default for these methods
-    predicate = arg.is_not_null()
+    predicate = True if getattr(op, "include_null", False) else arg.is_not_null()
     if op.where is not None:
         predicate &= translate(op.where, **kw)
 
     arg = arg.filter(predicate)
+
+    if order_by := getattr(op, "order_by", ()):
+        keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
+        descending = [k.descending for k in order_by]
+        arg = arg.sort_by(keys, descending=descending)
 
     return arg.last() if isinstance(op, ops.Last) else arg.first()
 
@@ -782,6 +783,7 @@ def execute_mode(op, **kw):
 
 
 @translate.register(ops.Quantile)
+@translate.register(ops.ApproxQuantile)
 def execute_quantile(op, **kw):
     arg = translate(op.arg, **kw)
     quantile = translate(op.quantile, **kw)
@@ -829,7 +831,7 @@ def count_star(op, **kw):
 
 @translate.register(ops.TimestampNow)
 def timestamp_now(op, **_):
-    return pl.lit(pd.Timestamp("now", tz="UTC").tz_localize(None))
+    return pl.lit(datetime.datetime.now())
 
 
 @translate.register(ops.DateNow)
@@ -953,6 +955,12 @@ def timestamp_diff(op, **kw):
     return left.dt.truncate("1s") - right.dt.truncate("1s")
 
 
+@translate.register(ops.ArraySort)
+def array_sort(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.list.sort()
+
+
 @translate.register(ops.ArrayLength)
 def array_length(op, **kw):
     arg = translate(op.arg, **kw)
@@ -985,19 +993,33 @@ def array_column(op, **kw):
 @translate.register(ops.ArrayCollect)
 def array_collect(op, in_group_by=False, **kw):
     arg = translate(op.arg, **kw)
-    if (where := op.where) is not None:
-        arg = arg.filter(translate(where, **kw))
-    out = arg.drop_nulls()
-    if not in_group_by:
-        # Polars' behavior changes for `implode` within a `group_by` currently.
-        # See https://github.com/pola-rs/polars/issues/16756
-        out = out.implode()
-    return out
+
+    predicate = True if op.include_null else arg.is_not_null()
+    if op.where is not None:
+        predicate &= translate(op.where, **kw)
+
+    arg = arg.filter(predicate)
+
+    if op.order_by:
+        keys = [translate(k.expr, **kw).filter(predicate) for k in op.order_by]
+        descending = [k.descending for k in op.order_by]
+        arg = arg.sort_by(keys, descending=descending)
+
+    # Polars' behavior changes for `implode` within a `group_by` currently.
+    # See https://github.com/pola-rs/polars/issues/16756
+    return arg if in_group_by else arg.implode()
 
 
 @translate.register(ops.ArrayFlatten)
 def array_flatten(op, **kw):
-    return pl.concat_list(translate(op.arg, **kw))
+    result = translate(op.arg, **kw)
+    return (
+        pl.when(result.is_null())
+        .then(None)
+        .when(result.list.len() == 0)
+        .then([])
+        .otherwise(result.flatten())
+    )
 
 
 _date_methods = {
@@ -1098,9 +1120,24 @@ def comparison(op, **kw):
 @translate.register(ops.Between)
 def between(op, **kw):
     op_arg = op.arg
+    arg_dtype = op_arg.dtype
+
     arg = translate(op_arg, **kw)
-    lower = translate(op.lower_bound, **kw)
-    upper = translate(op.upper_bound, **kw)
+
+    dtype = PolarsType.from_ibis(arg_dtype)
+
+    lower_bound = op.lower_bound
+    lower = translate(lower_bound, **kw)
+
+    if lower_bound.dtype != arg_dtype:
+        lower = lower.cast(dtype)
+
+    upper_bound = op.upper_bound
+    upper = translate(upper_bound, **kw)
+
+    if upper_bound.dtype != arg_dtype:
+        upper = upper.cast(dtype)
+
     return arg.is_between(lower, upper, closed="both")
 
 
@@ -1163,12 +1200,12 @@ def elementwise_udf(op, **kw):
 
 @translate.register(ops.E)
 def execute_e(op, **_):
-    return pl.lit(np.e)
+    return pl.lit(math.e)
 
 
 @translate.register(ops.Pi)
 def execute_pi(op, **_):
-    return pl.lit(np.pi)
+    return pl.lit(math.pi)
 
 
 @translate.register(ops.Time)
@@ -1390,3 +1427,32 @@ def execute_array_all(op, **kw):
     arg = translate(op.arg, **kw)
     no_nulls = arg.list.drop_nulls()
     return pl.when(no_nulls.list.len() == 0).then(None).otherwise(no_nulls.list.all())
+
+
+@translate.register(ops.GroupConcat)
+def execute_group_concat(op, **kw):
+    arg = translate(op.arg, **kw)
+    sep = _literal_value(op.sep)
+
+    predicate = arg.is_not_null()
+
+    if (where := op.where) is not None:
+        predicate &= translate(where, **kw)
+
+    arg = arg.filter(predicate)
+
+    if order_by := op.order_by:
+        keys = [translate(k.expr, **kw).filter(predicate) for k in order_by]
+        descending = [k.descending for k in order_by]
+        arg = arg.sort_by(keys, descending=descending)
+
+    return pl.when(arg.count() > 0).then(arg.str.join(sep)).otherwise(None)
+
+
+@translate.register(ops.DateDelta)
+def execute_date_delta(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    delta = left - right
+    method_name = f"total_{_literal_value(op.part)}s"
+    return getattr(delta.dt, method_name)()

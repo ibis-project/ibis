@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import sqlite3
 
 import sqlglot as sg
 import sqlglot.expressions as sge
@@ -19,7 +20,10 @@ class SQLiteCompiler(SQLGlotCompiler):
 
     dialect = SQLite
     type_mapper = SQLiteType
+    supports_time_shift_modifiers = sqlite3.sqlite_version_info >= (3, 46, 0)
+    supports_subsec = sqlite3.sqlite_version_info >= (3, 42, 0)
 
+    # We could set `supports_order_by=True` for SQLite >= 3.44.0 (2023-11-01).
     agg = AggGen(supports_filter=True)
 
     NAN = NULL
@@ -34,14 +38,11 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.IsInf,
         ops.Covariance,
         ops.Correlation,
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.Median,
         ops.ApproxMedian,
         ops.Array,
         ops.ArrayConcat,
         ops.ArrayStringJoin,
-        ops.ArrayCollect,
         ops.ArrayContains,
         ops.ArrayFlatten,
         ops.ArrayLength,
@@ -53,15 +54,11 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.IntervalSubtract,
         ops.IntervalMultiply,
         ops.IntervalFloorDivide,
-        ops.IntervalFromInteger,
         ops.TimestampBucket,
-        ops.TimestampAdd,
-        ops.TimestampSub,
         ops.TimestampDiff,
         ops.StringToDate,
         ops.StringToTimestamp,
         ops.TimeDelta,
-        ops.DateDelta,
         ops.TimestampDelta,
         ops.TryCast,
     )
@@ -90,8 +87,6 @@ class SQLiteCompiler(SQLGlotCompiler):
         ops.BitOr: "_ibis_bit_or",
         ops.BitAnd: "_ibis_bit_and",
         ops.BitXor: "_ibis_bit_xor",
-        ops.First: "_ibis_first",
-        ops.Last: "_ibis_last",
         ops.Mode: "_ibis_mode",
         ops.Time: "time",
         ops.Date: "date",
@@ -249,6 +244,14 @@ class SQLiteCompiler(SQLGlotCompiler):
             NULL,
         )
 
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        func = "_ibis_first_include_null" if include_null else "_ibis_first"
+        return self.agg[func](arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        func = "_ibis_last_include_null" if include_null else "_ibis_last"
+        return self.agg[func](arg, where=where, order_by=order_by)
+
     def visit_Variance(self, op, *, arg, how, where):
         return self.agg[f"_ibis_var_{op.how}"](arg, where=where)
 
@@ -327,18 +330,65 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self._temporal_truncate(self.f.anon.datetime, arg, unit)
 
     def visit_DateArithmetic(self, op, *, left, right):
-        unit = op.right.dtype.unit
-        sign = "+" if isinstance(op, ops.DateAdd) else "-"
-        if unit not in (IntervalUnit.YEAR, IntervalUnit.MONTH, IntervalUnit.DAY):
-            raise com.UnsupportedOperationError(
-                "SQLite does not allow binary op {sign!r} with INTERVAL offset {unit}"
-            )
-        if isinstance(op.right, ops.Literal):
-            return self.f.date(left, f"{sign}{op.right.value} {unit.plural}")
-        else:
-            return self.f.date(left, self.f.concat(sign, right, f" {unit.plural}"))
+        right = right.this
 
-    visit_DateAdd = visit_DateSub = visit_DateArithmetic
+        if (unit := op.right.dtype.unit) in (
+            IntervalUnit.QUARTER,
+            IntervalUnit.MICROSECOND,
+            IntervalUnit.NANOSECOND,
+        ):
+            raise com.UnsupportedOperationError(
+                f"SQLite does not support `{unit}` units in temporal arithmetic"
+            )
+        elif unit == IntervalUnit.WEEK:
+            unit = IntervalUnit.DAY
+            right *= 7
+        elif unit == IntervalUnit.MILLISECOND:
+            # sqlite doesn't allow milliseconds, so divide milliseconds by 1e3 to
+            # get seconds, and change the unit to seconds
+            unit = IntervalUnit.SECOND
+            right /= 1e3
+
+        # compute whether we're adding or subtracting an interval
+        sign = "+" if isinstance(op, (ops.DateAdd, ops.TimestampAdd)) else "-"
+
+        modifiers = []
+
+        # floor the result if the unit is a year, month, or day to match other
+        # backend behavior
+        if unit in (IntervalUnit.YEAR, IntervalUnit.MONTH, IntervalUnit.DAY):
+            if not self.supports_time_shift_modifiers:
+                raise com.UnsupportedOperationError(
+                    "SQLite does not support time shift modifiers until version 3.46; "
+                    f"found version {sqlite3.sqlite_version}"
+                )
+            modifiers.append("floor")
+
+        if isinstance(op, (ops.TimestampAdd, ops.TimestampSub)):
+            # if the left operand is a timestamp, return as much precision as
+            # possible
+            if not self.supports_subsec:
+                raise com.UnsupportedOperationError(
+                    "SQLite does not support subsecond resolution until version 3.42; "
+                    f"found version {sqlite3.sqlite_version}"
+                )
+            func = self.f.datetime
+            modifiers.append("subsec")
+        else:
+            func = self.f.date
+
+        return func(
+            left,
+            self.f.concat(
+                sign, self.cast(right, dt.string), " ", unit.singular.lower()
+            ),
+            *modifiers,
+            dialect=self.dialect,
+        )
+
+    visit_TimestampAdd = visit_TimestampSub = visit_DateAdd = visit_DateSub = (
+        visit_DateArithmetic
+    )
 
     def visit_DateDiff(self, op, *, left, right):
         return self.f.julianday(left) - self.f.julianday(right)
@@ -479,3 +529,17 @@ class SQLiteCompiler(SQLGlotCompiler):
         ):
             raise com.UnsupportedBackendType(f"Unsupported type: {dtype!r}")
         return super().visit_NonNullLiteral(op, value=value, dtype=dtype)
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        if not isinstance(part, sge.Literal):
+            raise com.UnsupportedOperationError(
+                "Only literal `part` values are supported for date delta"
+            )
+        if part.this != "day":
+            raise com.UnsupportedOperationError(
+                f"Only 'day' part is supported for date delta in the {self.dialect} backend"
+            )
+        return self.f._ibis_date_delta(left, right)
+
+
+compiler = SQLiteCompiler()

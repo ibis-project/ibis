@@ -19,7 +19,7 @@ from ibis.common.graph import (
     traverse,
 )
 from ibis.common.grounds import Annotable, Concrete
-from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _
+from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _, pattern
 
 
 class MyNode(Node):
@@ -168,6 +168,36 @@ def test_replace_with_mapping():
     }
     result = A.replace(subs)
     assert result == new_A
+
+
+@pytest.mark.parametrize("kind", ["pattern", "mapping", "function"])
+def test_replace_doesnt_recreate_unchanged_nodes(kind):
+    A1 = MyNode(name="A1", children=[])
+    A2 = MyNode(name="A2", children=[A1])
+    B1 = MyNode(name="B1", children=[])
+    B2 = MyNode(name="B2", children=[B1])
+    C = MyNode(name="C", children=[A2, B2])
+
+    B3 = MyNode(name="B3", children=[])
+
+    if kind == "pattern":
+        replacer = pattern(MyNode)(name="B2") >> B3
+    elif kind == "mapping":
+        replacer = {B2: B3}
+    else:
+
+        def replacer(node, children):
+            if node is B2:
+                return B3
+            return node.__recreate__(children) if children else node
+
+    res = C.replace(replacer)
+
+    assert res is not C
+    assert res.name == "C"
+    assert len(res.children) == 2
+    assert res.children[0] is A2
+    assert res.children[1] is B3
 
 
 def test_example():
@@ -343,17 +373,18 @@ def test_coerce_finder():
 
 
 def test_coerce_replacer():
-    r = _coerce_replacer(lambda x, _, **kwargs: D)
-    assert r(C, {}) == D
+    r = _coerce_replacer(lambda x, children: D if children else C)
+    assert r(C, {"children": []}) is D
+    assert r(C, None) is C
 
     r = _coerce_replacer({C: D, D: E})
     assert r(C, {}) == D
     assert r(D, {}) == E
-    assert r(A, {}, name="A", children=[B, C]) == A
+    assert r(A, {"name": "A", "children": [B, C]}) == A
 
     r = _coerce_replacer(InstanceOf(MyNode) >> _.copy(name=_.name.lower()))
-    assert r(C, {}, name="C", children=[]) == MyNode(name="c", children=[])
-    assert r(D, {}, name="D", children=[]) == MyNode(name="d", children=[])
+    assert r(C, {"name": "C", "children": []}) == MyNode(name="c", children=[])
+    assert r(D, {"name": "D", "children": []}) == MyNode(name="d", children=[])
 
 
 def test_node_find_using_type():

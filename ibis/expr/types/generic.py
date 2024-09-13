@@ -14,8 +14,7 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
-from ibis.expr.types.pretty import to_rich
-from ibis.util import deprecated, warn_deprecated
+from ibis.util import deprecated, promote_list, warn_deprecated
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -25,6 +24,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
 
 
@@ -72,7 +72,7 @@ class Value(Expr):
         # TODO(kszucs): shouldn't do simplification here, but rather later
         # when simplifying the whole operation tree
         # the expression's name is idendical to the new one
-        if self.has_name() and self.get_name() == name:
+        if self.get_name() == name:
             return self
 
         if isinstance(self.op(), ops.Alias):
@@ -1017,7 +1017,12 @@ class Value(Expr):
             builder = builder.when(case, result)
         return builder.else_(default).end()
 
-    def collect(self, where: ir.BooleanValue | None = None) -> ir.ArrayScalar:
+    def collect(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
         This function is called `array_agg`, `list_agg`, or `list` in other systems.
@@ -1025,7 +1030,15 @@ class Value(Expr):
         Parameters
         ----------
         where
-            Filter to apply before aggregation
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Returns
         -------
@@ -1082,7 +1095,12 @@ class Value(Expr):
         │ b      │ [4, 5]               │
         └────────┴──────────────────────┘
         """
-        return ops.ArrayCollect(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.ArrayCollect(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
@@ -1106,9 +1124,9 @@ class Value(Expr):
         >>> one = ibis.literal(1)
         >>> two = ibis.literal(2)
         >>> two.identical_to(one + one)
-        ┌──────────┐
-        │ np.True_ │
-        └──────────┘
+        ┌──────┐
+        │ True │
+        └──────┘
         """
         try:
             return ops.IdenticalTo(self, other).to_expr()
@@ -1119,15 +1137,21 @@ class Value(Expr):
         self,
         sep: str = ",",
         where: ir.BooleanValue | None = None,
+        order_by: Any = None,
     ) -> ir.StringScalar:
         """Concatenate values using the indicated separator to produce a string.
 
         Parameters
         ----------
         sep
-            Separator will be used to join strings
+            The separator to use to join strings.
         where
-            Filter expression
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the order of the items in the result
+            is undefined and backend specific.
 
         Returns
         -------
@@ -1152,22 +1176,25 @@ class Value(Expr):
         │           36.7 │          19.3 │
         └────────────────┴───────────────┘
         >>> t.bill_length_mm.group_concat()
-        ┌───────────────────────┐
-        │ '39.1,39.5,40.3,36.7' │
-        └───────────────────────┘
+        ┌─────────────────────┐
+        │ 39.1,39.5,40.3,36.7 │
+        └─────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ")
-        ┌──────────────────────────┐
-        │ '39.1: 39.5: 40.3: 36.7' │
-        └──────────────────────────┘
+        ┌────────────────────────┐
+        │ 39.1: 39.5: 40.3: 36.7 │
+        └────────────────────────┘
 
         >>> t.bill_length_mm.group_concat(sep=": ", where=t.bill_depth_mm > 18)
-        ┌──────────────┐
-        │ '39.1: 36.7' │
-        └──────────────┘
+        ┌────────────┐
+        │ 39.1: 36.7 │
+        └────────────┘
         """
         return ops.GroupConcat(
-            self, sep=sep, where=self._bind_to_parent_table(where)
+            self,
+            sep=sep,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
         ).to_expr()
 
     def __hash__(self) -> int:
@@ -1235,20 +1262,31 @@ class Value(Expr):
 @public
 class Scalar(Value):
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Scalar:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_scalar(table[0][0], self.type())
+        return data_mapper.convert_scalar(
+            table[0][0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> Any:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
-        return PandasData.convert_scalar(
-            df, self.type() if schema is None else schema[df.columns[0]]
+        return data_mapper.convert_scalar(
+            df, self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
@@ -1316,10 +1354,13 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        parents = self.op().relations
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable({self.get_name(): self}).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().aggregate(self)
@@ -1339,7 +1380,7 @@ class Scalar(Value):
 
 @public
 class Column(Value, _FixedTextJupyterMixin):
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None
@@ -1399,6 +1440,8 @@ class Column(Value, _FixedTextJupyterMixin):
         │ …      │
         └────────┘
         """
+        from ibis.expr.types.pretty import to_rich
+
         return to_rich(
             self,
             max_rows=max_rows,
@@ -1409,17 +1452,28 @@ class Column(Value, _FixedTextJupyterMixin):
         )
 
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Array | pa.ChunkedArray:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_column(table[0], self.type())
+        return data_mapper.convert_column(
+            table[0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> pd.Series:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
         assert (
             len(df.columns) == 1
@@ -1432,9 +1486,8 @@ class Column(Value, _FixedTextJupyterMixin):
         # df.loc[:, column_name] returns the special GeoSeries object.
         #
         # this bug is fixed in later versions of geopandas
-        (column,) = df.columns
-        return PandasData.convert_column(
-            df.loc[:, column], self.type() if schema is None else schema[column]
+        return data_mapper.convert_column(
+            df.loc[:, df.columns[0]], self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> pl.Series:
@@ -1493,11 +1546,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> expr.equals(expected)
         True
         """
-        parents = self.op().relations
-        values = {self.get_name(): self}
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().select(self)
@@ -1506,6 +1561,11 @@ class Column(Value, _FixedTextJupyterMixin):
                 f"Cannot convert {type(self)} expression involving multiple "
                 "base table references to a projection"
             )
+
+    def _bind_order_by(self, value) -> tuple[ops.SortKey, ...]:
+        if value is None:
+            return ()
+        return tuple(self._bind_to_parent_table(v) for v in promote_list(value))
 
     def _bind_to_parent_table(self, value) -> Value | None:
         """Bind an expr to the parent table of `self`."""
@@ -1569,13 +1629,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
-        ┌──────────────┐
-        │ np.int64(94) │
-        └──────────────┘
+        ┌────┐
+        │ 92 │
+        └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
-        ┌──────────────┐
-        │ np.int64(55) │
-        └──────────────┘
+        ┌────┐
+        │ 61 │
+        └────┘
         """
         return ops.ApproxCountDistinct(
             self, where=self._bind_to_parent_table(where)
@@ -1611,13 +1671,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_median()
-        ┌────────────────┐
-        │ np.int64(4030) │
-        └────────────────┘
+        ┌────────┐
+        │ 4030.0 │
+        └────────┘
         >>> t.body_mass_g.approx_median(where=t.species == "Chinstrap")
-        ┌────────────────┐
-        │ np.int64(3700) │
-        └────────────────┘
+        ┌────────┐
+        │ 3700.0 │
+        └────────┘
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1640,13 +1700,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.mode()
-        ┌────────────────┐
-        │ np.int64(3800) │
-        └────────────────┘
+        ┌──────┐
+        │ 3800 │
+        └──────┘
         >>> t.body_mass_g.mode(where=(t.species == "Gentoo") & (t.sex == "male"))
-        ┌────────────────┐
-        │ np.int64(5550) │
-        └────────────────┘
+        ┌──────┐
+        │ 5550 │
+        └──────┘
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1669,13 +1729,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.max()
-        ┌────────────────┐
-        │ np.int64(6300) │
-        └────────────────┘
+        ┌──────┐
+        │ 6300 │
+        └──────┘
         >>> t.body_mass_g.max(where=t.species == "Chinstrap")
-        ┌────────────────┐
-        │ np.int64(4800) │
-        └────────────────┘
+        ┌──────┐
+        │ 4800 │
+        └──────┘
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1698,13 +1758,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.min()
-        ┌────────────────┐
-        │ np.int64(2700) │
-        └────────────────┘
+        ┌──────┐
+        │ 2700 │
+        └──────┘
         >>> t.body_mass_g.min(where=t.species == "Adelie")
-        ┌────────────────┐
-        │ np.int64(2850) │
-        └────────────────┘
+        ┌──────┐
+        │ 2850 │
+        └──────┘
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -1729,13 +1789,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmax(t.body_mass_g)
-        ┌──────────┐
-        │ 'Gentoo' │
-        └──────────┘
+        ┌────────┐
+        │ Gentoo │
+        └────────┘
         >>> t.species.argmax(t.body_mass_g, where=t.island == "Dream")
-        ┌─────────────┐
-        │ 'Chinstrap' │
-        └─────────────┘
+        ┌───────────┐
+        │ Chinstrap │
+        └───────────┘
         """
         return ops.ArgMax(
             self,
@@ -1764,14 +1824,14 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.species.argmin(t.body_mass_g)
-        ┌─────────────┐
-        │ 'Chinstrap' │
-        └─────────────┘
+        ┌───────────┐
+        │ Chinstrap │
+        └───────────┘
 
         >>> t.species.argmin(t.body_mass_g, where=t.island == "Biscoe")
-        ┌──────────┐
-        │ 'Adelie' │
-        └──────────┘
+        ┌────────┐
+        │ Adelie │
+        └────────┘
         """
         return ops.ArgMin(
             self,
@@ -1802,9 +1862,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the median of `bill_depth_mm`
 
         >>> t.bill_depth_mm.median()
-        ┌──────────────────┐
-        │ np.float64(17.3) │
-        └──────────────────┘
+        ┌──────┐
+        │ 17.3 │
+        └──────┘
         >>> t.group_by(t.species).agg(median_bill_depth=t.bill_depth_mm.median()).order_by(
         ...     ibis.desc("median_bill_depth")
         ... )
@@ -1868,9 +1928,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the 99th percentile of `bill_depth`
 
         >>> t.bill_depth_mm.quantile(0.99)
-        ┌──────────────────┐
-        │ np.float64(21.1) │
-        └──────────────────┘
+        ┌──────┐
+        │ 21.1 │
+        └──────┘
         >>> t.group_by(t.species).agg(p99_bill_depth=t.bill_depth_mm.quantile(0.99)).order_by(
         ...     ibis.desc("p99_bill_depth")
         ... )
@@ -1927,32 +1987,84 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.nunique()
-        ┌──────────────┐
-        │ np.int64(94) │
-        └──────────────┘
+        ┌────┐
+        │ 94 │
+        └────┘
         >>> t.body_mass_g.nunique(where=t.species == "Adelie")
-        ┌──────────────┐
-        │ np.int64(55) │
-        └──────────────┘
+        ┌────┐
+        │ 55 │
+        └────┘
         """
         return ops.CountDistinct(
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
+    def topk(
+        self, k: int, by: ir.Value | None = None, *, name: str | None = None
+    ) -> ir.Table:
         """Return a "top k" expression.
+
+        Computes a Table containing the top `k` values by a certain metric
+        (defaults to count).
 
         Parameters
         ----------
         k
-            Return this number of rows
+            The number of rows to return.
         by
-            An expression. Defaults to `count`.
+            The metric to compute "top" by. Defaults to `count`.
+        name
+            The name to use for the metric column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
         Table
-            A top-k expression
+            The top `k` values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.diamonds.fetch()
+
+        Compute the top 3 diamond colors by frequency:
+
+        >>> t.color.topk(3)
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ color  ┃ CountStar(diamonds) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ int64               │
+        ├────────┼─────────────────────┤
+        │ G      │               11292 │
+        │ E      │                9797 │
+        │ F      │                9542 │
+        └────────┴─────────────────────┘
+
+        Compute the top 3 diamond colors by mean price:
+
+        >>> t.color.topk(3, by=t.price.mean())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ color  ┃ Mean(price) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ float64     │
+        ├────────┼─────────────┤
+        │ J      │ 5323.818020 │
+        │ I      │ 5091.874954 │
+        │ H      │ 4486.669196 │
+        └────────┴─────────────┘
+
+        Compute the top 2 diamond colors by max carat:
+
+        >>> t.color.topk(2, by=t.carat.max(), name="max_carat")
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ color  ┃ max_carat ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ string │ float64   │
+        ├────────┼───────────┤
+        │ J      │      5.01 │
+        │ H      │      4.13 │
+        └────────┴───────────┘
         """
         from ibis.expr.types.relations import bind
 
@@ -1967,6 +2079,9 @@ class Column(Value, _FixedTextJupyterMixin):
             by = lambda t: t.count()
 
         (metric,) = bind(table, by)
+
+        if name is not None:
+            metric = metric.name(name)
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
@@ -2040,33 +2155,28 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def value_counts(self) -> ir.Table:
+    def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table.
+
+        Parameters
+        ----------
+        name
+            The name to use for the frequency column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
         Table
-            Frequency table expression
+            The frequency table.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"chars": char} for char in "aabcddd")
-        >>> t
-        ┏━━━━━━━━┓
-        ┃ chars  ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ a      │
-        │ a      │
-        │ b      │
-        │ c      │
-        │ d      │
-        │ d      │
-        │ d      │
-        └────────┘
+        >>> t = ibis.memtable({"chars": ["a", "a", "b", "c", "c", "c", "d", "d", "d", "d"]})
+
+        Compute the count of each unique value in "chars", ordered by "chars":
+
         >>> t.chars.value_counts().order_by("chars")
         ┏━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ chars  ┃ chars_count ┃
@@ -2075,16 +2185,51 @@ class Column(Value, _FixedTextJupyterMixin):
         ├────────┼─────────────┤
         │ a      │           2 │
         │ b      │           1 │
-        │ c      │           1 │
-        │ d      │           3 │
+        │ c      │           3 │
+        │ d      │           4 │
         └────────┴─────────────┘
-        """
-        name = self.get_name()
-        metric = _.count().name(f"{name}_count")
-        return self.as_table().group_by(name).aggregate(metric)
 
-    def first(self, where: ir.BooleanValue | None = None) -> Value:
+        Compute the count of each unique value in "chars" as a column named
+        "freq", ordered by "freq":
+
+        >>> t.chars.value_counts(name="freq").order_by("freq")
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ chars  ┃ freq  ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │
+        ├────────┼───────┤
+        │ b      │     1 │
+        │ a      │     2 │
+        │ c      │     3 │
+        │ d      │     4 │
+        └────────┴───────┘
+        """
+        colname = self.get_name()
+        if name is None:
+            name = f"{colname}_count"
+        t = self.as_table()
+        return t.group_by(t[colname]).aggregate(t.count().name(name))
+
+    def first(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> Value:
         """Return the first value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `first` is undefined
+            and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2103,18 +2248,41 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.first()
-        ┌─────┐
-        │ 'a' │
-        └─────┘
+        ┌───┐
+        │ a │
+        └───┘
         >>> t.chars.first(where=t.chars != "a")
-        ┌─────┐
-        │ 'b' │
-        └─────┘
+        ┌───┐
+        │ b │
+        └───┘
         """
-        return ops.First(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.First(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
-    def last(self, where: ir.BooleanValue | None = None) -> Value:
+    def last(
+        self,
+        where: ir.BooleanValue | None = None,
+        order_by: Any = None,
+        include_null: bool = False,
+    ) -> Value:
         """Return the last value of a column.
+
+        Parameters
+        ----------
+        where
+            An optional filter expression. If provided, only rows where `where`
+            is `True` will be included in the aggregate.
+        order_by
+            An ordering key (or keys) to use to order the rows before
+            aggregating. If not provided, the meaning of `last` is undefined
+            and will be backend specific.
+        include_null
+            Whether to include null values when performing this aggregation. Set
+            to `True` to include nulls in the result.
 
         Examples
         --------
@@ -2133,15 +2301,20 @@ class Column(Value, _FixedTextJupyterMixin):
         │ d      │
         └────────┘
         >>> t.chars.last()
-        ┌─────┐
-        │ 'd' │
-        └─────┘
+        ┌───┐
+        │ d │
+        └───┘
         >>> t.chars.last(where=t.chars != "d")
-        ┌─────┐
-        │ 'c' │
-        └─────┘
+        ┌───┐
+        │ c │
+        └───┘
         """
-        return ops.Last(self, where=self._bind_to_parent_table(where)).to_expr()
+        return ops.Last(
+            self,
+            where=self._bind_to_parent_table(where),
+            order_by=self._bind_order_by(order_by),
+            include_null=include_null,
+        ).to_expr()
 
     def rank(self) -> ir.IntegerColumn:
         """Compute position of first element within each equal-value group in sorted order.
@@ -2320,6 +2493,7 @@ class NullColumn(Column, NullValue):
 
 
 @public
+@deferrable
 def null(type: dt.DataType | str | None = None) -> Value:
     """Create a NULL scalar.
 
@@ -2337,9 +2511,9 @@ def null(type: dt.DataType | str | None = None) -> Value:
     │ None │
     └──────┘
     >>> ibis.null(str).upper().isnull()
-    ┌──────────┐
-    │ np.True_ │
-    └──────────┘
+    ┌──────┐
+    │ True │
+    └──────┘
     """
     if type is None:
         type = dt.null
@@ -2347,6 +2521,7 @@ def null(type: dt.DataType | str | None = None) -> Value:
 
 
 @public
+@deferrable
 def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     """Create a scalar expression from a Python value.
 
@@ -2400,6 +2575,23 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     Traceback (most recent call last):
       ...
     TypeError: Value 'foobar' cannot be safely coerced to int64
+
+    Literals can also be used in a deferred context.
+
+    Here's an example of constructing a table of a column's type repeated for
+    every row:
+
+    >>> from ibis import _, selectors as s
+    >>> ibis.options.interactive = True
+    >>> t = ibis.examples.penguins.fetch()
+    >>> t.select(s.across(s.all(), ibis.literal(_.type(), type=str).name(_.get_name()))).head(1)
+    ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string │ string         │ string        │ string            │ … │
+    ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ string  │ string │ float64        │ float64       │ int64             │ … │
+    └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
     """
     if isinstance(value, Expr):
         node = value.op()

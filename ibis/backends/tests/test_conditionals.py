@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from collections import Counter
 
-import numpy as np
-import pandas as pd
 import pytest
 
 import ibis
@@ -33,6 +31,9 @@ def test_ifelse_select(backend, alltypes, df):
 
 
 def test_ifelse_column(backend, alltypes, df):
+    np = pytest.importorskip("numpy")
+    pd = pytest.importorskip("pandas")
+
     expr = ibis.ifelse(alltypes["int_col"] == 0, 42, -1).cast("int64").name("where_col")
     result = expr.execute()
 
@@ -79,19 +80,19 @@ def test_substitute(backend):
     ],
 )
 def test_value_cases_scalar(con, inp, exp):
+    pd = pytest.importorskip("pandas")
+
     result = con.execute(inp())
+
     if exp is None:
         assert pd.isna(result)
     else:
         assert result == exp
 
 
-@pytest.mark.notimpl(
-    "exasol",
-    reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to ints",
-    raises=AssertionError,
-)
 def test_value_cases_column(batting):
+    np = pytest.importorskip("numpy")
+
     df = batting.to_pandas()
     expr = (
         batting.RBI.case()
@@ -118,11 +119,13 @@ def test_ibis_cases_scalar():
 
 
 @pytest.mark.notimpl(
-    ["sqlite", "exasol"],
+    ["sqlite"],
     reason="the int64 RBI column is .to_pandas()ed to an object column, which is incomparable to 5",
     raises=TypeError,
 )
 def test_ibis_cases_column(batting):
+    np = pytest.importorskip("numpy")
+
     t = batting
     df = batting.to_pandas()
     expr = (

@@ -3,9 +3,6 @@ from __future__ import annotations
 import contextlib
 from collections.abc import Mapping
 
-import numpy as np
-import pandas as pd
-import pandas.testing as tm
 import pytest
 from pytest import param
 
@@ -21,6 +18,10 @@ from ibis.backends.tests.errors import (
 )
 from ibis.common.exceptions import IbisError
 
+np = pytest.importorskip("numpy")
+pd = pytest.importorskip("pandas")
+tm = pytest.importorskip("pandas.testing")
+
 pytestmark = [
     pytest.mark.never(["mysql", "sqlite", "mssql"], reason="No struct support"),
     pytest.mark.notyet(["impala"]),
@@ -28,7 +29,6 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask"])
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
@@ -55,7 +55,6 @@ def test_single_field(struct, field, expected):
     tm.assert_series_equal(result.field, pd.Series(expected, name="field"))
 
 
-@pytest.mark.notimpl(["dask"])
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
@@ -114,16 +113,12 @@ def test_struct_column(alltypes, df):
 
 
 @pytest.mark.notimpl(["postgres", "risingwave", "polars"])
-@pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
-@pytest.mark.notyet(
-    ["flink"], reason="flink doesn't support creating struct columns from collect"
-)
 def test_collect_into_struct(alltypes):
     from ibis import _
 
     t = alltypes
     expr = (
-        t[_.string_col.isin(("0", "1"))]
+        t.filter(_.string_col.isin(("0", "1")))
         .group_by(group="string_col")
         .agg(
             val=lambda t: ibis.struct(
@@ -248,12 +243,6 @@ def test_keyword_fields(con, nullable):
     ["polars"],
     raises=PolarsColumnNotFoundError,
     reason="doesn't seem to support IN-style subqueries on structs",
-)
-@pytest.mark.notimpl(
-    # https://github.com/pandas-dev/pandas/issues/58909
-    ["pandas", "dask"],
-    raises=TypeError,
-    reason="unhashable type: 'dict'",
 )
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.5"],

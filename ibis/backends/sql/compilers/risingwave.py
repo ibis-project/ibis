@@ -3,11 +3,10 @@ from __future__ import annotations
 import sqlglot.expressions as sge
 
 import ibis.common.exceptions as com
-import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.sql.compilers import PostgresCompiler
-from ibis.backends.sql.compilers.base import ALL_OPERATIONS
+from ibis.backends.sql.compilers.base import ALL_OPERATIONS, NULL
 from ibis.backends.sql.datatypes import RisingWaveType
 from ibis.backends.sql.dialects import RisingWave
 
@@ -20,9 +19,10 @@ class RisingWaveCompiler(PostgresCompiler):
 
     UNSUPPORTED_OPS = (
         ops.Arbitrary,
-        ops.DateFromYMD,
         ops.Mode,
         ops.RandomUUID,
+        ops.MultiQuantile,
+        ops.ApproxMultiQuantile,
         *(
             op
             for op in ALL_OPERATIONS
@@ -32,13 +32,30 @@ class RisingWaveCompiler(PostgresCompiler):
         ),
     )
 
-    SIMPLE_OPS = {
-        ops.First: "first_value",
-        ops.Last: "last_value",
-    }
-
     def visit_DateNow(self, op):
         return self.cast(sge.CurrentTimestamp(), dt.date)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the risingwave backend"
+            )
+        if not order_by:
+            raise com.UnsupportedOperationError(
+                "RisingWave requires an `order_by` be specified in `first`"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the risingwave backend"
+            )
+        if not order_by:
+            raise com.UnsupportedOperationError(
+                "RisingWave requires an `order_by` be specified in `last`"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
@@ -48,6 +65,17 @@ class RisingWaveCompiler(PostgresCompiler):
         return super().visit_Correlation(
             op, left=left, right=right, how=how, where=where
         )
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        return sge.WithinGroup(
+            this=self.f[f"percentile_{suffix}"](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
+        )
+
+    visit_ApproxQuantile = visit_Quantile
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         unit_mapping = {
@@ -70,13 +98,8 @@ class RisingWaveCompiler(PostgresCompiler):
 
     visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        if op.arg.shape == ds.scalar:
-            return sge.Interval(this=arg, unit=self.v[unit.name])
-        elif op.arg.shape == ds.columnar:
-            return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
-        else:
-            raise ValueError("Invalid shape for converting to interval")
+    def _make_interval(self, arg, unit):
+        return arg * sge.Interval(this=sge.convert(1), unit=self.v[unit.name])
 
     def visit_NonNullLiteral(self, op, *, value, dtype):
         if dtype.is_binary():
@@ -86,3 +109,6 @@ class RisingWaveCompiler(PostgresCompiler):
         elif dtype.is_json():
             return sge.convert(str(value))
         return None
+
+
+compiler = RisingWaveCompiler()

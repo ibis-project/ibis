@@ -186,7 +186,7 @@ def test_scalar_param_partition_time(parted_alltypes):
     assert "PARTITIONTIME" in parted_alltypes.columns
     assert "PARTITIONTIME" in parted_alltypes.schema()
     param = ibis.param("timestamp('UTC')")
-    expr = parted_alltypes[param > parted_alltypes.PARTITIONTIME]
+    expr = parted_alltypes.filter(param > parted_alltypes.PARTITIONTIME)
     df = expr.execute(params={param: "2017-01-01"})
     assert df.empty
 
@@ -199,11 +199,9 @@ def test_parted_column(con, kind):
     assert t.columns == [expected_column, "string_col", "int_col"]
 
 
-def test_cross_project_query(public, snapshot):
+def test_cross_project_query(public):
     table = public.table("posts_questions")
-    expr = table[table.tags.contains("ibis")][["title", "tags"]]
-    result = expr.compile()
-    snapshot.assert_match(result, "out.sql")
+    expr = table.filter(table.tags.contains("ibis"))[["title", "tags"]]
     n = 5
     df = expr.limit(n).execute()
     assert len(df) == n
@@ -226,17 +224,6 @@ def test_exists_table_different_project(con):
     assert "foobar" not in con.list_tables(database=dataset)
 
 
-def test_multiple_project_queries(con, snapshot):
-    so = con.table(
-        "posts_questions",
-        database=("bigquery-public-data", "stackoverflow"),
-    )
-    trips = con.table("trips", database="nyc-tlc.yellow")
-    join = so.join(trips, so.tags == trips.rate_code)[[so.title]]
-    result = join.compile()
-    snapshot.assert_match(result, "out.sql")
-
-
 def test_multiple_project_queries_execute(con):
     posts_questions = con.table(
         "posts_questions", database="bigquery-public-data.stackoverflow"
@@ -244,17 +231,17 @@ def test_multiple_project_queries_execute(con):
     trips = con.table("trips", database="nyc-tlc.yellow").limit(5)
     predicate = posts_questions.tags == trips.rate_code
     cols = [posts_questions.title]
-    join = posts_questions.left_join(trips, predicate)[cols]
+    join = posts_questions.left_join(trips, predicate).select(cols)
     result = join.execute()
     assert list(result.columns) == ["title"]
     assert len(result) == 5
 
 
-def test_string_to_timestamp(con):
+def test_string_as_timestamp(con):
     timestamp = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone("UTC")
     )
-    expr = ibis.literal("2017-02-06").to_timestamp("%F")
+    expr = ibis.literal("2017-02-06").as_timestamp("%F")
     result = con.execute(expr)
     assert result == timestamp
 
@@ -262,7 +249,7 @@ def test_string_to_timestamp(con):
         datetime.datetime(year=2017, month=2, day=6, hour=5),
         tz=pytz.timezone("UTC"),
     )
-    expr_tz = ibis.literal("2017-02-06 America/New_York").to_timestamp("%F %Z")
+    expr_tz = ibis.literal("2017-02-06 America/New_York").as_timestamp("%F %Z")
     result_tz = con.execute(expr_tz)
     assert result_tz == timestamp_tz
 
@@ -434,12 +421,22 @@ def test_create_table_from_scratch_with_spaces(project_id, dataset_id):
         con.drop_table(name)
 
 
-def test_table_suffix():
+@pytest.mark.parametrize("ret_type", ["pandas", "pyarrow", "pyarrow_batches"])
+def test_table_suffix(ret_type):
     con = ibis.connect("bigquery://ibis-gbq")
     t = con.table("gsod*", database="bigquery-public-data.noaa_gsod")
     expr = t.filter(t._TABLE_SUFFIX == "1929", t.max != 9999.9).head(1)
-    result = expr.execute()
-    assert not result.empty
+    if ret_type == "pandas":
+        result = expr.to_pandas()
+        cols = list(result.columns)
+    elif ret_type == "pyarrow":
+        result = expr.to_pyarrow()
+        cols = result.column_names
+    elif ret_type == "pyarrow_batches":
+        result = pa.Table.from_batches(expr.to_pyarrow_batches())
+        cols = result.column_names
+    assert len(result)
+    assert "_TABLE_PREFIX" not in cols
 
 
 def test_parameters_in_url_connect(mocker):

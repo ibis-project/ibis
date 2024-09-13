@@ -126,13 +126,6 @@ Selecting columns is very similar to in pandas. In fact, you can use the same sy
 t[["one", "two"]]
 ```
 
-However, since row-level indexing is not supported in Ibis, the inner list is not necessary.
-
-
-```{python}
-t["one", "two"]
-```
-
 ## Selecting columns
 
 Selecting columns is done using the same syntax as in pandas `DataFrames`. You can use either
@@ -192,11 +185,11 @@ new_col = unnamed.name("new_col")
 new_col
 ```
 
-You can then add this column to the table using a projection.
+You can then add this column to the table using `mutate`
 
 
 ```{python}
-proj = t["one", "two", new_col]
+proj = t.mutate(new_col)
 proj
 ```
 
@@ -301,10 +294,9 @@ penguins.limit(5)
 ### Filtering rows
 
 In addition to limiting the number of rows that are returned, it is possible to
-filter the rows using expressions. Expressions are constructed very similarly to
-the way they are in pandas.  Ibis expressions are constructed from operations on
-columns in a table which return a boolean result.  This result is then used to
-filter the table.
+filter the rows using expressions. This is done using the `filter` method in
+ibis. Ibis expressions are constructed from operations on columns in a table
+which return a boolean result. This result is then used to filter the table.
 
 
 ```{python}
@@ -324,7 +316,7 @@ get 6 rows back.
 
 
 ```{python}
-filtered = penguins[expr]
+filtered = penguins.filter(expr)
 filtered
 ```
 
@@ -332,24 +324,22 @@ Of course, the filtering expression can be applied inline as well.
 
 
 ```{python}
-filtered = penguins[penguins.bill_length_mm > 37.0]
+filtered = penguins.filter(penguins.bill_length_mm > 37.0)
 filtered
 ```
 
-Multiple filtering expressions can be combined into a single expression or chained onto existing
-table expressions.
+Multiple filtering expressions may be passed in to a single call (filtering
+only rows where they're all true), or combined together using common boolean
+operators like (`&`, `|`). The expressions below are equivalent:
 
 
 ```{python}
-filtered = penguins[(penguins.bill_length_mm > 37.0) & (penguins.bill_depth_mm > 18.0)]
+filtered = penguins.filter(penguins.bill_length_mm > 37.0, penguins.bill_depth_mm > 18.0)
 filtered
 ```
 
-The code above will return the same rows as the code below.
-
-
 ```{python}
-filtered = penguins[penguins.bill_length_mm > 37.0][penguins.bill_depth_mm > 18.0]
+filtered = penguins.filter((penguins.bill_length_mm > 37.0) & (penguins.bill_depth_mm > 18.0))
 filtered
 ```
 
@@ -359,7 +349,7 @@ is greater than the mean.
 
 
 ```{python}
-filtered = penguins[penguins.bill_length_mm > penguins.bill_length_mm.mean()]
+filtered = penguins.filter(penguins.bill_length_mm > penguins.bill_length_mm.mean())
 filtered
 ```
 

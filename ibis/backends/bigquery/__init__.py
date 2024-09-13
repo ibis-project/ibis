@@ -19,6 +19,7 @@ import sqlglot.expressions as sge
 from pydata_google_auth import cache
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
@@ -32,10 +33,7 @@ from ibis.backends.bigquery.client import (
     schema_from_bigquery_table,
 )
 from ibis.backends.bigquery.datatypes import BigQuerySchema
-from ibis.backends.bigquery.udf.core import PythonToJavaScriptTranslator
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import BigQueryCompiler
-from ibis.backends.sql.datatypes import BigQueryType
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping
@@ -148,19 +146,23 @@ def _force_quote_table(table: sge.Table) -> sge.Table:
     return table
 
 
+def _postprocess_arrow(
+    table_or_batch: pa.Table | pa.RecordBatch, names: list[str]
+) -> pa.Table | pa.RecordBatch:
+    """Drop `_TABLE_SUFFIX` if present in the results, then rename columns."""
+    if "_TABLE_SUFFIX" in table_or_batch.column_names:
+        table_or_batch = table_or_batch.drop_columns(["_TABLE_SUFFIX"])
+    return table_or_batch.rename_columns(names)
+
+
 class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     name = "bigquery"
-    compiler = BigQueryCompiler()
-    supports_in_memory_tables = True
+    compiler = sc.bigquery.compiler
     supports_python_udfs = False
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.__session_dataset: bq.DatasetReference | None = None
-        self._query_cache.lookup = lambda name: self.table(
-            name,
-            database=(self._session_dataset.project, self._session_dataset.dataset_id),
-        ).op()
 
     @property
     def _session_dataset(self):
@@ -168,31 +170,35 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             self.__session_dataset = self._make_session()
         return self.__session_dataset
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        raw_name = op.name
+    def _in_memory_table_exists(self, name: str) -> bool:
+        table_ref = bq.TableReference(self._session_dataset, name)
 
-        session_dataset = self._session_dataset
-        project = session_dataset.project
-        dataset = session_dataset.dataset_id
-
-        table_ref = bq.TableReference(session_dataset, raw_name)
         try:
             self._get_table(table_ref)
         except com.TableNotFound:
-            table_id = sg.table(
-                raw_name, db=dataset, catalog=project, quoted=False
-            ).sql(dialect=self.name)
-            bq_schema = BigQuerySchema.from_ibis(op.schema)
-            load_job = self.client.load_table_from_dataframe(
-                op.data.to_frame(),
-                table_id,
-                job_config=bq.LoadJobConfig(
-                    # fail if the table already exists and contains data
-                    write_disposition=bq.WriteDisposition.WRITE_EMPTY,
-                    schema=bq_schema,
-                ),
-            )
-            load_job.result()
+            return False
+        else:
+            return True
+
+    def _finalize_memtable(self, name: str) -> None:
+        table_ref = bq.TableReference(self._session_dataset, name)
+        self.client.delete_table(table_ref, not_found_ok=True)
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        table_ref = bq.TableReference(self._session_dataset, op.name)
+
+        bq_schema = BigQuerySchema.from_ibis(op.schema)
+
+        load_job = self.client.load_table_from_dataframe(
+            op.data.to_frame(),
+            table_ref,
+            job_config=bq.LoadJobConfig(
+                # fail if the table already exists and contains data
+                write_disposition=bq.WriteDisposition.WRITE_EMPTY,
+                schema=bq_schema,
+            ),
+        )
+        load_job.result()
 
     def _read_file(
         self,
@@ -587,9 +593,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         # Default `catalog` to None unless we've parsed it out of the database/schema kwargs
         # Raise if there are path specifications in both the name and as a kwarg
-        catalog = None if table_loc is None else table_loc.catalog
+        catalog = table_loc.args["catalog"]  # args access will return None, not ''
         if table.catalog:
-            if table_loc is not None and table_loc.catalog:
+            if table_loc.catalog:
                 raise com.IbisInputError(
                     "Cannot specify catalog both in the table name and as an argument"
                 )
@@ -597,9 +603,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 catalog = table.catalog
 
         # Default `db` to None unless we've parsed it out of the database/schema kwargs
-        db = None if table_loc is None else table_loc.db
+        db = table_loc.args["db"]  # args access will return None, not ''
         if table.db:
-            if table_loc is not None and table_loc.db:
+            if table_loc.db:
                 raise com.IbisInputError(
                     "Cannot specify database both in the table name and as an argument"
                 )
@@ -657,68 +663,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         return BigQuerySchema.to_ibis(job.schema)
 
-    def _to_sqlglot(
-        self,
-        expr: ir.Expr,
-        limit: str | None = None,
-        params: Mapping[ir.Expr, Any] | None = None,
-        **kwargs,
-    ) -> Any:
-        """Compile an Ibis expression.
-
-        Parameters
-        ----------
-        expr
-            Ibis expression
-        limit
-            For expressions yielding result sets; retrieve at most this number
-            of values/rows. Overrides any limit already set on the expression.
-        params
-            Named unbound parameters
-        kwargs
-            Keyword arguments passed to the compiler
-
-        Returns
-        -------
-        Any
-            The output of compilation. The type of this value depends on the
-            backend.
-
-        """
-        self._define_udf_translation_rules(expr)
-        sql = super()._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-
-        table_expr = expr.as_table()
-        geocols = [
-            name for name, typ in table_expr.schema().items() if typ.is_geospatial()
-        ]
-
-        query = sql.transform(
-            _qualify_memtable,
-            dataset=getattr(self._session_dataset, "dataset_id", None),
-            project=getattr(self._session_dataset, "project", None),
-        ).transform(_remove_null_ordering_from_unsupported_window)
-
-        if not geocols:
-            return query
-
-        # if there are any geospatial columns, we have to convert them to WKB,
-        # so interactive mode knows how to display them
-        #
-        # by default bigquery returns data to python as WKT, and there's really
-        # no point in supporting both if we don't need to.
-        compiler = self.compiler
-        quoted = compiler.quoted
-        f = compiler.f
-        return sg.select(
-            sge.Star(
-                replace=[
-                    f.st_asbinary(sg.column(col, quoted=quoted)).as_(col, quoted=quoted)
-                    for col in geocols
-                ]
-            )
-        ).from_(query.subquery())
-
     def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
             bigquery_param(
@@ -752,65 +696,27 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         return self.dataset
 
     def compile(
-        self, expr: ir.Expr, limit: str | None = None, params=None, **kwargs: Any
+        self,
+        expr: ir.Expr,
+        limit: str | None = None,
+        params=None,
+        pretty: bool = True,
+        **kwargs: Any,
     ):
         """Compile an Ibis expression to a SQL string."""
-        query = self._to_sqlglot(expr, limit=limit, params=params, **kwargs)
-        udf_sources = []
-        for udf_node in expr.op().find(ops.ScalarUDF):
-            compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
-            )
-            if sql := compile_func(udf_node):
-                udf_sources.append(sql.sql(self.name, pretty=True))
-
-        sql = ";\n".join([*udf_sources, query.sql(dialect=self.name, pretty=True)])
+        session_dataset = self._session_dataset
+        query = self.compiler.to_sqlglot(
+            expr,
+            limit=limit,
+            params=params,
+            session_dataset_id=getattr(session_dataset, "dataset_id", None),
+            session_project=getattr(session_dataset, "project", None),
+            **kwargs,
+        )
+        queries = query if isinstance(query, list) else [query]
+        sql = ";\n".join(query.sql(self.dialect, pretty=pretty) for query in queries)
         self._log(sql)
         return sql
-
-    def execute(self, expr, params=None, limit="default", **kwargs):
-        """Compile and execute the given Ibis expression.
-
-        Compile and execute Ibis expression using this backend client
-        interface, returning results in-memory in the appropriate object type
-
-        Parameters
-        ----------
-        expr
-            Ibis expression to execute
-        limit
-            Retrieve at most this number of values/rows. Overrides any limit
-            already set on the expression.
-        params
-            Query parameters
-        kwargs
-            Extra arguments specific to the backend
-
-        Returns
-        -------
-        pd.DataFrame | pd.Series | scalar
-            Output from execution
-
-        """
-        from ibis.backends.bigquery.converter import BigQueryPandasData
-
-        self._run_pre_execute_hooks(expr)
-
-        schema = expr.as_table().schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
-
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, **kwargs)
-
-        arrow_t = query.to_arrow(
-            progress_bar_type=None, bqstorage_client=self.storage_client
-        )
-
-        result = BigQueryPandasData.convert_table(
-            arrow_t.to_pandas(timestamp_as_object=True), schema
-        )
-
-        return expr.__pandas_result__(result, schema=schema)
 
     def insert(
         self,
@@ -850,6 +756,21 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             overwrite=overwrite,
         )
 
+    def _to_query(
+        self,
+        table_expr: ir.Table,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        page_size: int | None = None,
+        **kwargs: Any,
+    ):
+        self._run_pre_execute_hooks(table_expr)
+        sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
+        self._log(sql)
+
+        return self.raw_sql(sql, params=params, page_size=page_size)
+
     def to_pyarrow(
         self,
         expr: ir.Expr,
@@ -859,15 +780,16 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         **kwargs: Any,
     ) -> pa.Table:
         self._import_pyarrow()
-        self._register_in_memory_tables(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, **kwargs)
+
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
         table = query.to_arrow(
             progress_bar_type=None, bqstorage_client=self.storage_client
         )
-        table = table.rename_columns(list(expr.as_table().schema().names))
-        return expr.__pyarrow_result__(table)
+        table = _postprocess_arrow(table, list(schema.names))
+        return expr.__pyarrow_result__(table, schema=schema)
 
     def to_pyarrow_batches(
         self,
@@ -880,14 +802,55 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     ):
         pa = self._import_pyarrow()
 
-        schema = expr.as_table().schema()
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+        colnames = list(schema.names)
 
-        self._register_in_memory_tables(expr)
-        sql = self.compile(expr, limit=limit, params=params, **kwargs)
-        self._log(sql)
-        query = self.raw_sql(sql, params=params, page_size=chunk_size, **kwargs)
+        query = self._to_query(
+            table_expr, params=params, limit=limit, page_size=chunk_size, **kwargs
+        )
         batch_iter = query.to_arrow_iterable(bqstorage_client=self.storage_client)
-        return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), batch_iter)
+        return pa.ipc.RecordBatchReader.from_batches(
+            schema.to_pyarrow(),
+            (_postprocess_arrow(b, colnames) for b in batch_iter),
+        )
+
+    def execute(self, expr, params=None, limit="default", **kwargs):
+        """Compile and execute the given Ibis expression.
+
+        Compile and execute Ibis expression using this backend client
+        interface, returning results in-memory in the appropriate object type
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute
+        limit
+            Retrieve at most this number of values/rows. Overrides any limit
+            already set on the expression.
+        params
+            Query parameters
+        kwargs
+            Extra arguments specific to the backend
+
+        Returns
+        -------
+        pd.DataFrame | pd.Series | scalar
+            Output from execution
+
+        """
+        from ibis.backends.bigquery.converter import BigQueryPandasData
+
+        table_expr = expr.as_table()
+        schema = table_expr.schema() - ibis.schema({"_TABLE_SUFFIX": "string"})
+        query = self._to_query(table_expr, params=params, limit=limit, **kwargs)
+        df = query.to_arrow(
+            progress_bar_type=None, bqstorage_client=self.storage_client
+        ).to_pandas(timestamp_as_object=True)
+        # Drop _TABLE_SUFFIX if present in the results, then rename columns
+        df = df.drop(columns="_TABLE_SUFFIX", errors="ignore")
+        df.columns = schema.names
+        return expr.__pandas_result__(df, schema=schema, data_mapper=BigQueryPandasData)
 
     def _gen_udf_name(self, name: str, schema: Optional[str]) -> str:
         func = ".".join(filter(None, (schema, name)))
@@ -937,6 +900,17 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     ) -> list[str]:
         """List the tables in the database.
 
+        ::: {.callout-note}
+        ## Ibis does not use the word `schema` to refer to database hierarchy.
+
+        A collection of tables is referred to as a `database`.
+        A collection of `database` is referred to as a `catalog`.
+
+        These terms are mapped onto the corresponding features in each
+        backend (where available), regardless of whether the backend itself
+        uses the same terminology.
+        :::
+
         Parameters
         ----------
         like
@@ -949,18 +923,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
             To specify a table in a separate BigQuery dataset, you can pass in the
             dataset and project as a string `"dataset.project"`, or as a tuple of
-            strings `("dataset", "project")`.
-
-            ::: {.callout-note}
-            ## Ibis does not use the word `schema` to refer to database hierarchy.
-
-            A collection of tables is referred to as a `database`.
-            A collection of `database` is referred to as a `catalog`.
-
-            These terms are mapped onto the corresponding features in each
-            backend (where available), regardless of whether the backend itself
-            uses the same terminology.
-            :::
+            strings `(dataset, project)`.
         schema
             [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
@@ -988,7 +951,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -1037,6 +1000,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         if isinstance(obj, ir.Table) and schema is not None:
             if not schema.equals(obj.schema()):
@@ -1077,7 +1042,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             obj = ibis.memtable(obj, schema=schema)
 
         if obj is not None:
-            self._register_in_memory_tables(obj)
+            self._run_pre_execute_hooks(obj)
 
         if temp:
             dataset = self._session_dataset.dataset_id
@@ -1105,22 +1070,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         table = _force_quote_table(table)
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=BigQueryType.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable or typ.is_array()
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for name, typ in (schema or {}).items()
-        ]
-
         stmt = sge.Create(
             kind="TABLE",
-            this=sge.Schema(this=table, expressions=column_defs or None),
+            this=sge.Schema(
+                this=table,
+                expressions=schema.to_sqlglot(self.dialect) if schema else None,
+            ),
             replace=overwrite,
             properties=sge.Properties(expressions=properties),
             expression=None if obj is None else self.compile(obj),
@@ -1174,7 +1129,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             expression=self.compile(obj),
             replace=overwrite,
         )
-        self._register_in_memory_tables(obj)
+        self._run_pre_execute_hooks(obj)
         self.raw_sql(stmt.sql(self.name))
         return self.table(name, database=(catalog, database))
 
@@ -1200,77 +1155,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         self.raw_sql(stmt.sql(self.name))
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, expr, schema=expr.schema(), temp=True)
-
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self.drop_table(
             name,
             database=(self._session_dataset.project, self._session_dataset.dataset_id),
             force=True,
         )
-
-    def _get_udf_source(self, udf_node: ops.ScalarUDF):
-        name = type(udf_node).__name__
-        type_mapper = self.compiler.udf_type_mapper
-
-        body = PythonToJavaScriptTranslator(udf_node.__func__).compile()
-        config = udf_node.__config__
-        libraries = config.get("libraries", [])
-
-        signature = [
-            sge.ColumnDef(
-                this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                kind=type_mapper.from_ibis(param.annotation.pattern.dtype),
-            )
-            for name, param in udf_node.__signature__.parameters.items()
-        ]
-
-        lines = ['"""']
-
-        if config.get("strict", True):
-            lines.append('"use strict";')
-
-        lines += [
-            body,
-            "",
-            f"return {udf_node.__func_name__}({', '.join(udf_node.argnames)});",
-            '"""',
-        ]
-
-        func = sge.Create(
-            kind="FUNCTION",
-            this=sge.UserDefinedFunction(
-                this=sg.to_identifier(name), expressions=signature, wrapped=True
-            ),
-            # not exactly what I had in mind, but it works
-            #
-            # quoting is too simplistic to handle multiline strings
-            expression=sge.Var(this="\n".join(lines)),
-            exists=False,
-            properties=sge.Properties(
-                expressions=[
-                    sge.TemporaryProperty(),
-                    sge.ReturnsProperty(this=type_mapper.from_ibis(udf_node.dtype)),
-                    sge.StabilityProperty(
-                        this="IMMUTABLE" if config.get("determinism") else "VOLATILE"
-                    ),
-                    sge.LanguageProperty(this=sg.to_identifier("js")),
-                ]
-                + [
-                    sge.Property(
-                        this=sg.to_identifier("library"),
-                        value=self.compiler.f.array(*libraries),
-                    )
-                ]
-                * bool(libraries)
-            ),
-        )
-
-        return func
-
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
-        return self._get_udf_source(udf_node)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         """No op because UDFs made with CREATE TEMPORARY FUNCTION must be followed by a query."""

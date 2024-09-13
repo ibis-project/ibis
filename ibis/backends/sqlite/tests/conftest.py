@@ -3,7 +3,6 @@ from __future__ import annotations
 import contextlib
 import csv
 import io
-import sqlite3
 from typing import Any
 
 import pytest
@@ -55,30 +54,6 @@ class TestConf(BackendTest):
         return t.mutate(timestamp_col=t.timestamp_col.cast("timestamp"))
 
 
-@pytest.fixture
-def dbpath(tmp_path):
-    path = tmp_path / "test.db"
-    con = sqlite3.connect(path)
-    con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    con.execute("CREATE TABLE s AS SELECT 1 b UNION SELECT 2")
-    return path
-
-
 @pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
-
-
-@pytest.fixture(scope="session")
-def translate(dialect):
-    return lambda expr: ibis.to_sql(expr, dialect="sqlite")
-
-
-@pytest.fixture(scope="session")
-def alltypes(con):
-    return con.table("functional_alltypes")
-
-
-@pytest.fixture(scope="session")
-def df(alltypes):
-    return alltypes.execute()

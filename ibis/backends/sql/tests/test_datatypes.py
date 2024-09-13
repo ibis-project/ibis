@@ -8,7 +8,12 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.backends.sql.datatypes import DuckDBType, PostgresType, SqlglotType
+from ibis.backends.sql.datatypes import (
+    ClickHouseType,
+    DuckDBType,
+    PostgresType,
+    SqlglotType,
+)
 
 
 def assert_dtype_roundtrip(ibis_type, sqlglot_expected=None):
@@ -63,3 +68,20 @@ def test_interval_without_unit():
         SqlglotType.from_string("INTERVAL")
     assert PostgresType.from_string("INTERVAL") == dt.Interval("s")
     assert DuckDBType.from_string("INTERVAL") == dt.Interval("us")
+
+
+@pytest.mark.parametrize(
+    "typ",
+    [
+        sge.DataType.Type.UINT256,
+        sge.DataType.Type.UINT128,
+        sge.DataType.Type.BIGSERIAL,
+        sge.DataType.Type.HLLSKETCH,
+    ],
+)
+@pytest.mark.parametrize(
+    "typengine",
+    [ClickHouseType, PostgresType, DuckDBType],
+)
+def test_unsupported_dtypes_are_unknown(typengine, typ):
+    assert typengine.to_ibis(sge.DataType(this=typ)) == dt.unknown

@@ -15,6 +15,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -23,7 +24,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import DataFusionCompiler
 from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
@@ -39,6 +39,11 @@ try:
     from datafusion import SessionConfig
 except ImportError:
     SessionConfig = None
+
+try:
+    from datafusion import RuntimeConfig
+except ImportError:
+    RuntimeConfig = None
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -66,9 +71,8 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
 
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
     name = "datafusion"
-    supports_in_memory_tables = True
     supports_arrays = True
-    compiler = DataFusionCompiler()
+    compiler = sc.datafusion.compiler
 
     @property
     def version(self):
@@ -90,9 +94,25 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         Examples
         --------
         >>> import ibis
-        >>> config = {"t": "path/to/file.parquet", "s": "path/to/file.csv"}
-        >>> ibis.datafusion.connect(config)
-
+        >>> config = {
+        ...     "astronauts": "ci/ibis-testing-data/parquet/astronauts.parquet",
+        ...     "diamonds": "ci/ibis-testing-data/csv/diamonds.csv",
+        ... }
+        >>> con = ibis.datafusion.connect(config)
+        >>> con.list_tables()
+        ['astronauts', 'diamonds']
+        >>> con.table("diamonds")
+        DatabaseTable: diamonds
+          carat   float64
+          cut     string
+          color   string
+          clarity string
+          depth   float64
+          table   float64
+          price   int64
+          x       float64
+          y       float64
+          z       float64
         """
         if isinstance(config, SessionContext):
             (self.con, config) = (config, None)
@@ -105,7 +125,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
                 ).with_information_schema(True)
             else:
                 df_config = None
-            self.con = SessionContext(df_config)
+            if RuntimeConfig is None:
+                self.con = SessionContext(df_config)
+            else:
+                # datafusion 40.1.0 has a bug where SessionContext requires
+                # both SessionConfig and RuntimeConfig be provided.
+                self.con = SessionContext(df_config, RuntimeConfig())
 
         self._register_builtin_udfs()
 
@@ -113,7 +138,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             config = {}
 
         for name, path in config.items():
-            self.register(path, table_name=name)
+            self._register(path, table_name=name)
 
     @util.experimental
     @classmethod
@@ -225,14 +250,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         self._log(query)
         return self.con.sql(query)
 
-    @property
-    def current_catalog(self) -> str:
-        raise NotImplementedError()
-
-    @property
-    def current_database(self) -> str:
-        return NotImplementedError()
-
     def list_catalogs(self, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
@@ -300,8 +317,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             sg.select("table_name")
             .from_("information_schema.tables")
             .where(sg.column("table_schema").eq(sge.convert(database)))
+            .order_by("table_name")
         )
-        return self.raw_sql(query).to_pydict()["table_name"]
+        return self._filter_with_like(
+            self.raw_sql(query).to_pydict()["table_name"], like
+        )
 
     def get_schema(
         self,
@@ -336,43 +356,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
-        """Register a data set with `table_name` located at `source`.
+        return self._register(source, table_name, **kwargs)
 
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file or directory of
-            parquet/csv files, a pandas dataframe, or a pyarrow table, dataset
-            or record batch.
-        table_name
-            The name of the table
-        kwargs
-            DataFusion-specific keyword arguments
-
-        Examples
-        --------
-        Register a csv:
-
-        >>> import ibis
-        >>> conn = ibis.datafusion.connect(config)
-        >>> conn.register("path/to/data.csv", "my_table")
-        >>> conn.table("my_table")
-
-        Register a PyArrow table:
-
-        >>> import pyarrow as pa
-        >>> tab = pa.table({"x": [1, 2, 3]})
-        >>> conn.register(tab, "my_table")
-        >>> conn.table("my_table")
-
-        Register a PyArrow dataset:
-
-        >>> import pyarrow.dataset as ds
-        >>> dataset = ds.dataset("path/to/table")
-        >>> conn.register(dataset, "my_table")
-        >>> conn.table("my_table")
-
-        """
+    def _register(
+        self,
+        source: str | Path | pa.Table | pa.RecordBatch | pa.Dataset | pd.DataFrame,
+        table_name: str | None = None,
+        **kwargs: Any,
+    ) -> ir.Table:
         import pandas as pd
 
         if isinstance(source, (str, Path)):
@@ -385,7 +376,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             self.con.deregister_table(table_name)
             self.con.register_record_batches(table_name, [[source]])
             return self.table(table_name)
-        elif isinstance(source, pa.dataset.Dataset):
+        elif isinstance(source, ds.Dataset):
             self.con.deregister_table(table_name)
             self.con.register_dataset(table_name, source)
             return self.table(table_name)
@@ -417,16 +408,20 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             f"please call one of {msg} directly"
         )
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        name = op.name
-        schema = op.schema
-
-        self.con.deregister_table(name)
-        if batches := op.data.to_pyarrow(schema).to_batches():
-            self.con.register_record_batches(name, [batches])
+    def _in_memory_table_exists(self, name: str) -> bool:
+        db = self.con.catalog().database()
+        try:
+            db.table(name)
+        except Exception:  # noqa: BLE001 because DataFusion has nothing better
+            return False
         else:
-            empty_dataset = ds.dataset([], schema=schema.to_pyarrow())
-            self.con.register_dataset(name=name, dataset=empty_dataset)
+            return True
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        # self.con.register_table is broken, so we do this roundabout thing
+        # of constructing a datafusion DataFrame, which has a side effect
+        # of registering the table
+        self.con.from_arrow_table(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -589,7 +584,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         | pl.LazyFrame
         | None = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -618,6 +613,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
+        if schema is not None:
+            schema = ibis.schema(schema)
 
         properties = []
 
@@ -632,16 +629,17 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             # If it's a memtable, it will get registered in the pre-execute hooks
             self._run_pre_execute_hooks(table)
 
+            compiler = self.compiler
             relname = "_"
             query = sg.select(
                 *(
-                    self.compiler.cast(
+                    compiler.cast(
                         sg.column(col, table=relname, quoted=quoted), dtype
                     ).as_(col, quoted=quoted)
                     for col, dtype in table.schema().items()
                 )
             ).from_(
-                self._to_sqlglot(table).subquery(
+                compiler.to_sqlglot(table).subquery(
                     sg.to_identifier(relname, quoted=quoted)
                 )
             )
@@ -655,20 +653,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         table_ident = sg.table(name, db=database, quoted=quoted)
 
         if query is None:
-            column_defs = [
-                sge.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                    ),
-                )
-                for colname, typ in (schema or table.schema()).items()
-            ]
-
-            target = sge.Schema(this=table_ident, expressions=column_defs)
+            target = sge.Schema(
+                this=table_ident,
+                expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+            )
         else:
             target = table_ident
 

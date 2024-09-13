@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
 import pytest
 from pytest import param
 
@@ -264,11 +263,15 @@ def test_window_api_properly_determines_how():
     assert ibis.window(between=(None, 5)).how == "rows"
     assert ibis.window(between=(1, 3)).how == "rows"
     assert ibis.window(5).how == "rows"
-    assert ibis.window(np.int64(7)).how == "rows"
     assert ibis.window(ibis.interval(days=3)).how == "range"
     assert ibis.window(3.1).how == "range"
     assert ibis.window(following=3.14).how == "range"
     assert ibis.window(following=3).how == "rows"
+
+
+def test_window_api_properly_determines_how_numpy():
+    np = pytest.importorskip("numpy")
+    assert ibis.window(np.int64(7)).how == "rows"
 
 
 def test_window_api_mutually_exclusive_options():
@@ -508,7 +511,9 @@ def test_window_analysis_auto_windowize_bug():
         return x.arrdelay.mean().name("avg_delay")
 
     annual_delay = (
-        t[t.dest.isin(["JFK", "SFO"])].group_by(["dest", "year"]).aggregate(metric)
+        t.filter(t.dest.isin(["JFK", "SFO"]))
+        .group_by(["dest", "year"])
+        .aggregate(metric)
     )
     what = annual_delay.group_by("dest")
     enriched = what.mutate(grand_avg=annual_delay.avg_delay.mean())
@@ -518,7 +523,7 @@ def test_window_analysis_auto_windowize_bug():
         .name("grand_avg")
         .over(ibis.window(group_by=annual_delay.dest))
     )
-    expected = annual_delay[annual_delay, expr]
+    expected = annual_delay.select(annual_delay, expr)
 
     assert enriched.equals(expected)
 

@@ -9,6 +9,7 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
@@ -17,7 +18,6 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import SQLiteCompiler
 from ibis.backends.sql.compilers.base import C, F
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
@@ -45,7 +45,7 @@ def _quote(name: str) -> str:
 
 class Backend(SQLBackend, UrlFromPath):
     name = "sqlite"
-    compiler = SQLiteCompiler()
+    compiler = sc.sqlite.compiler
     supports_python_udfs = True
 
     @property
@@ -79,8 +79,15 @@ class Backend(SQLBackend, UrlFromPath):
         Examples
         --------
         >>> import ibis
-        >>> ibis.sqlite.connect("path/to/my/sqlite.db")
-
+        >>> con = ibis.sqlite.connect()
+        >>> t = con.create_table("my_table", schema=ibis.schema(dict(x="int64")))
+        >>> con.insert("my_table", obj=[(1,), (2,), (3,)])
+        >>> t
+        DatabaseTable: my_table
+          x int64
+        >>> t.head(1).execute()
+           x
+        0  1
         """
         _init_sqlite3()
 
@@ -153,11 +160,12 @@ class Backend(SQLBackend, UrlFromPath):
         return sorted(self._filter_with_like(results, like))
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
+        self, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """List the tables in the database.
+
+        If `database` is None, the current database is used, and temporary
+        tables are included in the result.
 
         Parameters
         ----------
@@ -169,23 +177,24 @@ class Backend(SQLBackend, UrlFromPath):
         """
         if database is None:
             database = "main"
+            schemas = [database, "temp"]
+        else:
+            schemas = [database]
 
         sql = (
-            sg.select("name")
+            sg.select(C.name)
             .from_(F.pragma_table_list())
             .where(
-                C.schema.eq(sge.convert(database)),
+                C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),
-                ~(
-                    C.name.isin(
-                        sge.convert("sqlite_schema"),
-                        sge.convert("sqlite_master"),
-                        sge.convert("sqlite_temp_schema"),
-                        sge.convert("sqlite_temp_master"),
-                    )
+                ~C.name.isin(
+                    sge.convert("sqlite_schema"),
+                    sge.convert("sqlite_master"),
+                    sge.convert("sqlite_temp_schema"),
+                    sge.convert("sqlite_temp_master"),
                 ),
             )
-            .sql(self.name)
+            .sql(self.dialect)
         )
         with self._safe_raw_sql(sql) as cur:
             results = [r[0] for r in cur.fetchall()]
@@ -332,41 +341,35 @@ class Backend(SQLBackend, UrlFromPath):
         return table.to_reader(max_chunksize=chunk_size)
 
     def _generate_create_table(self, table: sge.Table, schema: sch.Schema):
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in schema.items()
-        ]
-
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         return sge.Create(kind="TABLE", this=target)
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        # only register if we haven't already done so
-        if op.name not in self.list_tables(database="temp"):
-            table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
-            create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
-            df = op.data.to_frame()
-
-            data = df.itertuples(index=False)
-            insert_stmt = self._build_insert_template(
-                op.name, schema=op.schema, catalog="temp", columns=True
-            )
-
+    def _in_memory_table_exists(self, name: str) -> bool:
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        query = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
+        try:
             with self.begin() as cur:
-                cur.execute(create_stmt)
-                cur.executemany(insert_stmt, data)
+                cur.execute(query)
+                cur.fetchall()
+        except sqlite3.OperationalError:
+            return False
+        else:
+            return True
 
-    def _define_udf_translation_rules(self, expr):
-        """No-op, these are defined in the compiler."""
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
+        create_stmt = self._generate_create_table(table, op.schema).sql(self.name)
+        df = op.data.to_frame()
+
+        data = df.itertuples(index=False)
+        insert_stmt = self._build_insert_template(
+            op.name, schema=op.schema, catalog="temp", columns=True
+        )
+
+        with self.begin() as cur:
+            cur.execute(create_stmt)
+            cur.executemany(insert_stmt, data)
 
     def _register_udfs(self, expr: ir.Expr) -> None:
         import ibis.expr.operations as ops
@@ -375,13 +378,13 @@ class Backend(SQLBackend, UrlFromPath):
 
         for udf_node in expr.op().find(ops.ScalarUDF):
             compile_func = getattr(
-                self, f"_compile_{udf_node.__input_type__.name.lower()}_udf"
+                self, f"_register_{udf_node.__input_type__.name.lower()}_udf"
             )
             registration_func = compile_func(udf_node)
             if registration_func is not None:
                 registration_func(con)
 
-    def _compile_python_udf(self, udf_node: ops.ScalarUDF) -> None:
+    def _register_python_udf(self, udf_node: ops.ScalarUDF) -> None:
         name = type(udf_node).__name__
         nargs = len(udf_node.__signature__.parameters)
         func = udf_node.__func__
@@ -420,11 +423,11 @@ class Backend(SQLBackend, UrlFromPath):
 
         Examples
         --------
-        >>> con1 = ibis.sqlite.connect("original.db")
-        >>> con2 = ibis.sqlite.connect("new.db")
-        >>> con1.attach("new", "new.db")
+        >>> con1 = ibis.sqlite.connect("/tmp/original.db")
+        >>> con2 = ibis.sqlite.connect("/tmp/new.db")
+        >>> con1.attach("new", "/tmp/new.db")
         >>> con1.list_tables(database="new")
-
+        []
         """
         with self.begin() as cur:
             cur.execute(f"ATTACH DATABASE {str(path)!r} AS {_quote(name)}")
@@ -439,7 +442,7 @@ class Backend(SQLBackend, UrlFromPath):
         | pl.LazyFrame
         | None = None,
         *,
-        schema: ibis.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool = False,
         overwrite: bool = False,
@@ -472,15 +475,13 @@ class Backend(SQLBackend, UrlFromPath):
         if schema is not None:
             schema = ibis.schema(schema)
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 obj = ibis.memtable(obj)
-                temp_memtable_view = obj.op().name
 
             self._run_pre_execute_hooks(obj)
 
-            insert_query = self._to_sqlglot(obj)
+            insert_query = self.compiler.to_sqlglot(obj)
         else:
             insert_query = None
 
@@ -532,10 +533,6 @@ class Backend(SQLBackend, UrlFromPath):
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

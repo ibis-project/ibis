@@ -57,7 +57,8 @@ def _(dtype, values, **fmt_kwargs):
     import shapely
 
     return _format_nested(
-        [None if v is None else shapely.from_wkb(v) for v in values], **fmt_kwargs
+        [shapely.from_wkb(v) if isinstance(v, (bytes, str)) else v for v in values],
+        **fmt_kwargs,
     )
 
 
@@ -288,13 +289,14 @@ def _to_rich_scalar(
     max_string: int | None = None,
     max_depth: int | None = None,
 ) -> Pretty:
-    scalar = Pretty(
-        expr.execute(),
+    value = format_values(
+        expr.type(),
+        [expr.execute()],
         max_length=max_length or ibis.options.repr.interactive.max_length,
         max_string=max_string or ibis.options.repr.interactive.max_string,
         max_depth=max_depth or ibis.options.repr.interactive.max_depth,
-    )
-    return Panel(scalar, expand=False, box=box.SQUARE)
+    )[0]
+    return Panel(value, expand=False, box=box.SQUARE)
 
 
 def _to_rich_table(

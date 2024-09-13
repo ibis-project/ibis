@@ -6,7 +6,7 @@ import sqlglot.expressions as sge
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.sql.compilers.base import NULL, SQLGlotCompiler
+from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ExasolType
 from ibis.backends.sql.dialects import Exasol
 from ibis.backends.sql.rewrites import (
@@ -32,10 +32,8 @@ class ExasolCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
-        ops.ApproxMedian,
         ops.ArgMax,
         ops.ArgMin,
-        ops.ArrayCollect,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayFlatten,
@@ -46,7 +44,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.ArrayUnion,
         ops.ArrayZip,
         ops.BitwiseNot,
-        ops.Covariance,
         ops.CumeDist,
         ops.DateAdd,
         ops.DateSub,
@@ -57,9 +54,7 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.IsInf,
         ops.IsNan,
         ops.Levenshtein,
-        ops.Median,
         ops.MultiQuantile,
-        ops.Quantile,
         ops.RandomUUID,
         ops.ReductionVectorizedUDF,
         ops.RegexExtract,
@@ -67,7 +62,6 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
-        ops.StandardDev,
         ops.Strftime,
         ops.StringJoin,
         ops.StringSplit,
@@ -81,15 +75,12 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.TimestampSub,
         ops.TypeOf,
         ops.Unnest,
-        ops.Variance,
     )
 
     SIMPLE_OPS = {
         ops.Log10: "log10",
         ops.All: "min",
         ops.Any: "max",
-        ops.First: "first_value",
-        ops.Last: "last_value",
     }
 
     @staticmethod
@@ -128,6 +119,43 @@ class ExasolCompiler(SQLGlotCompiler):
     def visit_Date(self, op, *, arg):
         return self.cast(arg, dt.date)
 
+    def visit_Correlation(self, op, *, left, right, how, where):
+        if how == "sample":
+            raise com.UnsupportedOperationError(
+                "Exasol only implements `pop` correlation coefficient"
+            )
+
+        if (left_type := op.left.dtype).is_boolean():
+            left = self.cast(left, dt.Int32(nullable=left_type.nullable))
+
+        if (right_type := op.right.dtype).is_boolean():
+            right = self.cast(right, dt.Int32(nullable=right_type.nullable))
+
+        return self.agg.corr(left, right, where=where)
+
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
+
+        return sge.GroupConcat(this=arg, separator=sep)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the exasol backend"
+            )
+        return self.agg.first_value(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the exasol backend"
+            )
+        return self.agg.last_value(arg, where=where, order_by=order_by)
+
     def visit_StartsWith(self, op, *, arg, start):
         return self.f.left(arg, self.f.length(start)).eq(start)
 
@@ -163,10 +191,39 @@ class ExasolCompiler(SQLGlotCompiler):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(sg.or_(*any_args_null), NULL, self.f.concat(*arg))
 
+    def visit_CountDistinct(self, op, *, arg, where):
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return self.f.count(sge.Distinct(expressions=[arg]))
+
+    def visit_CountStar(self, op, *, arg, where):
+        if where is not None:
+            return self.f.sum(self.cast(where, op.dtype))
+        return self.f.count(STAR)
+
     def visit_CountDistinctStar(self, op, *, arg, where):
-        raise com.UnsupportedOperationError(
-            "COUNT(DISTINCT *) is not supported in Exasol"
+        cols = [sg.column(k, quoted=self.quoted) for k in op.arg.schema.keys()]
+        if where is not None:
+            cols = [self.if_(where, c, NULL) for c in cols]
+        row = sge.Tuple(expressions=cols)
+        return self.f.count(sge.Distinct(expressions=[row]))
+
+    def visit_Median(self, op, *, arg, where):
+        return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)
+
+    visit_ApproxMedian = visit_Median
+
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
+        funcname = f"percentile_{suffix}"
+        if where is not None:
+            arg = self.if_(where, arg, NULL)
+        return sge.WithinGroup(
+            this=self.f[funcname](quantile),
+            expression=sge.Order(expressions=[sge.Ordered(this=arg)]),
         )
+
+    visit_ApproxQuantile = visit_Quantile
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         short_name = unit.short
@@ -241,3 +298,6 @@ class ExasolCompiler(SQLGlotCompiler):
 
     def visit_BitwiseXor(self, op, *, left, right):
         return self.cast(self.f.bit_xor(left, right), op.dtype)
+
+
+compiler = ExasolCompiler()

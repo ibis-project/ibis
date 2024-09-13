@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import contextlib
 import functools
 
+import dateutil.parser
 import google.cloud.bigquery as bq
-import pandas as pd
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -69,9 +70,9 @@ def bq_param_array(dtype: dt.Array, value, name):
 
 @bigquery_param.register
 def bq_param_timestamp(_: dt.Timestamp, value, name):
-    # TODO(phillipc): Not sure if this is the correct way to do this.
-    timestamp_value = pd.Timestamp(value, tz="UTC").to_pydatetime()
-    return bq.ScalarQueryParameter(name, "TIMESTAMP", timestamp_value)
+    with contextlib.suppress(TypeError):
+        value = dateutil.parser.parse(value)
+    return bq.ScalarQueryParameter(name, "TIMESTAMP", value.isoformat())
 
 
 @bigquery_param.register
@@ -96,9 +97,13 @@ def bq_param_boolean(_: dt.Boolean, value, name):
 
 @bigquery_param.register
 def bq_param_date(_: dt.Date, value, name):
-    return bq.ScalarQueryParameter(
-        name, "DATE", pd.Timestamp(value).to_pydatetime().date()
-    )
+    with contextlib.suppress(TypeError):
+        value = dateutil.parser.parse(value)
+
+    with contextlib.suppress(AttributeError):
+        value = value.date()
+
+    return bq.ScalarQueryParameter(name, "DATE", value.isoformat())
 
 
 def rename_partitioned_column(table_expr, bq_table, partition_col):

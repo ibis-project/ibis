@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import random
 
-import pandas as pd
 import pytest
 from pytest import param
 
@@ -11,6 +10,8 @@ import ibis.common.exceptions as com
 import ibis.expr.types as ir
 from ibis import _
 from ibis.backends.tests.errors import PsycoPg2InternalError, PyDruidProgrammingError
+
+pd = pytest.importorskip("pandas")
 
 
 @pytest.fixture
@@ -69,16 +70,7 @@ def test_union_mixed_distinct(backend, union_subsets):
             False,
             marks=[
                 pytest.mark.notyet(
-                    [
-                        "impala",
-                        "bigquery",
-                        "dask",
-                        "pandas",
-                        "sqlite",
-                        "snowflake",
-                        "mssql",
-                        "exasol",
-                    ],
+                    ["impala", "bigquery", "sqlite", "snowflake", "mssql", "exasol"],
                     reason="backend doesn't support INTERSECT ALL",
                 ),
                 pytest.mark.notimpl(
@@ -123,16 +115,7 @@ def test_intersect(backend, alltypes, df, distinct):
             False,
             marks=[
                 pytest.mark.notyet(
-                    [
-                        "impala",
-                        "bigquery",
-                        "dask",
-                        "pandas",
-                        "sqlite",
-                        "snowflake",
-                        "mssql",
-                        "exasol",
-                    ],
+                    ["impala", "bigquery", "sqlite", "snowflake", "mssql", "exasol"],
                     reason="backend doesn't support EXCEPT ALL",
                 ),
                 pytest.mark.notimpl(
@@ -224,16 +207,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
             False,
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "impala",
-                        "bigquery",
-                        "dask",
-                        "mssql",
-                        "pandas",
-                        "snowflake",
-                        "sqlite",
-                        "exasol",
-                    ]
+                    ["impala", "bigquery", "mssql", "snowflake", "sqlite", "exasol"]
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],

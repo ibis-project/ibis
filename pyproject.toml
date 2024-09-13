@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ibis-framework"
-version = "9.2.0"
+version = "9.5.0"
 packages = [{ include = "ibis" }]
 include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
 exclude = [
@@ -38,31 +38,27 @@ classifiers = [
 [tool.poetry.dependencies]
 python = "^3.10"
 atpublic = ">=2.3,<6"
-numpy = ">=1.23.2,<3"
-pandas = ">=1.5.3,<3"
 parsy = ">=2,<3"
-pyarrow = { version = ">=10.0.1,<18", optional = true }
-pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
 python-dateutil = ">=2.8.2,<3"
 pytz = ">=2022.7"
-rich = ">=12.4.4,<14"
-sqlglot = ">=23.4,<25.9"
+sqlglot = ">=23.4,<25.21"
 toolz = ">=0.11,<1"
 typing-extensions = ">=4.3.0,<5"
+numpy = { version = ">=1.23.2,<3", optional = true }
+pandas = { version = ">=1.5.3,<3", optional = true }
+pyarrow = { version = ">=10.0.1,<18", optional = true }
+pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
+rich = { version = ">=12.4.4,<14", optional = true }
 black = { version = ">=22.1.0,<25", optional = true }
 clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "arrow",
   "numpy",
   "pandas",
 ] }
-dask = { version = ">=2022.9.1,<2024.3.0", optional = true, extras = [
-  "array",
-  "dataframe",
-] }
-datafusion = { version = ">=0.6,<40", optional = true }
+datafusion = { version = ">=0.6,<41", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
-duckdb = { version = ">=0.8.1,<2", optional = true }
+duckdb = { version = ">=0.8.1,<1.2", optional = true }
 geopandas = { version = ">=0.6,<2", optional = true }
 geoarrow-types = { version = ">=0.2,<1", optional = true }
 pyproj = { version = ">=3.3.0,<4", optional = true }
@@ -73,7 +69,6 @@ impyla = { version = ">=0.17,<1", optional = true }
 oracledb = { version = ">=1.3.1,<3", optional = true }
 packaging = { version = ">=21.3,<25", optional = true }
 pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
-fsspec = { version = "<2024.6.2", optional = true }
 polars = { version = ">=1,<2", optional = true }
 psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
@@ -82,7 +77,7 @@ pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
 pymysql = { version = ">=1,<2", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
 pyspark = { version = ">=3.3.3,<4", optional = true }
-# used to support posix regexen in the pandas, dask and sqlite backends
+# used to support posix regexen in the pandas and sqlite backends
 regex = { version = ">=2021.7.6", optional = true }
 shapely = { version = ">=2,<3", optional = true }
 # we don't support arbitrarily old versions of this library due to security
@@ -105,11 +100,14 @@ ruff = ">=0.1.8"
 tqdm = ">=4.66.1,<5"
 
 [tool.poetry.group.test.dependencies]
+cloudpickle = "*"
 filelock = ">=3.7.0,<4"
+fsspec = "<2024.9.1"
 hypothesis = ">=6.58.0,<7"
 packaging = ">=21.3,<25"
 pytest = ">=8.2.0,<9"
 pytest-benchmark = ">=3.4.1,<5"
+pytest-deadfixtures = ">=2.2.1,<3"
 pytest-clarity = ">=1.0.1,<2"
 pytest-cov = ">=3.0.0,<6"
 pytest-httpserver = ">=1.0.5,<2"
@@ -124,6 +122,8 @@ tomli = ">=2.0.1,<3"
 
 [tool.poetry.group.docs.dependencies]
 altair = { version = ">=5.0.1,<6", python = ">=3.10,<3.13" }
+# pin griffe until https://github.com/ibis-project/ibis/pull/9865 is addressed
+griffe = { version = "<1", python = ">=3.10,<3.13" }
 ipykernel = { version = ">=6.25.1,<7", python = ">=3.10,<3.13" }
 itables = { version = ">=1.6.3,<2.2", python = ">=3.10,<3.13" }
 nbclient = { version = ">=0.8.0,<1", python = ">=3.10,<3.13" }
@@ -132,14 +132,15 @@ plotnine = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
 py-cpuinfo = { version = ">=9,<10", python = ">=3.10,<3.13" }
 quartodoc = { version = ">=0.6.1,<1", python = ">=3.10,<3.13" }
 requests = { version = ">=2,<3", python = ">=3.10,<3.13" }
+rich = { version = ">13.8.0,<14", python = ">=3.10,<3.13" }
 scikit-learn = { version = ">=1.3,<2", python = ">=3.10,<3.13" }
 seaborn = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
 lonboard = { version = "0.9.3", python = ">=3.10,<3.13" }
 jupyter-cache = { version = ">=1.0.0,<2", python = ">=3.10,<3.13" }
-jupyterlab = { version = ">=4.1.6,<5", python = ">=3.10,<3.13" }
+jupyterlab = { version = ">=4.2.5,<5", python = ">=3.10,<3.13" }
 jupyterlab-night = { version = ">=0.4.6,<1", python = ">=3.10,<3.13" }
-jupyterlite-core = { version = ">=0.3.0,<1", python = ">=3.10,<3.13" }
-jupyterlite-pyodide-kernel = { version = ">=0.3.1,<1", python = ">=3.10,<3.13" }
+jupyterlite-core = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
+jupyterlite-pyodide-kernel = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
 
 [tool.poetry.extras]
 bigquery = [
@@ -149,37 +150,106 @@ bigquery = [
   "pyarrow",
   "pyarrow-hotfix",
   "pydata-google-auth",
+  "numpy",
+  "pandas",
+  "rich",
 ]
-clickhouse = ["clickhouse-connect", "pyarrow", "pyarrow-hotfix"]
-dask = ["dask", "regex", "packaging", "pyarrow", "pyarrow-hotfix"]
-datafusion = ["datafusion", "pyarrow", "pyarrow-hotfix"]
-druid = ["pydruid", "pyarrow", "pyarrow-hotfix"]
-duckdb = ["duckdb", "pyarrow", "pyarrow-hotfix"]
-exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix"]
-flink = ["pyarrow", "pyarrow-hotfix"]
-impala = ["impyla", "pyarrow", "pyarrow-hotfix"]
-mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix"]
-mysql = ["pymysql", "pyarrow", "pyarrow-hotfix"]
-oracle = ["oracledb", "pyarrow", "pyarrow-hotfix"]
-pandas = ["regex", "packaging", "pyarrow", "pyarrow-hotfix"]
-polars = ["polars", "pyarrow", "pyarrow-hotfix"]
-postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
-pyspark = ["pyspark", "packaging", "pyarrow", "pyarrow-hotfix"]
-snowflake = ["snowflake-connector-python", "pyarrow", "pyarrow-hotfix"]
-sqlite = ["regex", "pyarrow", "pyarrow-hotfix"]
-risingwave = ["psycopg2", "pyarrow", "pyarrow-hotfix"]
-trino = ["trino", "pyarrow", "pyarrow-hotfix"]
+clickhouse = [
+  "clickhouse-connect",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+datafusion = [
+  "datafusion",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+druid = ["pydruid", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+duckdb = [
+  "duckdb",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+  "packaging",
+]
+exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+flink = ["pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+impala = ["impyla", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+mysql = ["pymysql", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+oracle = [
+  "oracledb",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+pandas = [
+  "regex",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+polars = [
+  "polars",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+pyspark = [
+  "pyspark",
+  "packaging",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+snowflake = [
+  "snowflake-connector-python",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+sqlite = ["regex", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+risingwave = [
+  "psycopg2",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
+trino = ["trino", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 # non-backend extras
 visualization = ["graphviz"]
 decompiler = ["black"]
 deltalake = ["deltalake"]
-examples = ["pins", "fsspec"]
+examples = ["pins"]
 geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 
 [tool.poetry.plugins."ibis.backends"]
 bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
-dask = "ibis.backends.dask"
 datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
@@ -189,7 +259,6 @@ impala = "ibis.backends.impala"
 mysql = "ibis.backends.mysql"
 mssql = "ibis.backends.mssql"
 oracle = "ibis.backends.oracle"
-pandas = "ibis.backends.pandas"
 polars = "ibis.backends.polars"
 postgres = "ibis.backends.postgres"
 risingwave = "ibis.backends.risingwave"
@@ -237,19 +306,6 @@ filterwarnings = [
   "ignore:is_datetime64tz_dtype is deprecated and will be removed in a future version:DeprecationWarning",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
-  # dask
-  "ignore:Using the ``in`` operator to test for membership in Series is deprecated:FutureWarning",
-  "ignore:In a future version of pandas, a length 1 tuple will be returned when iterating over a groupby:FutureWarning",
-  "ignore:index is deprecated and will be removed in a future release:FutureWarning",
-  "ignore:`meta` is not specified:UserWarning",
-  "ignore:Concatenating dataframes with unknown divisions:UserWarning",
-  "ignore:Possible nested set at position:FutureWarning",
-  'ignore:\s+You did not provide metadata:UserWarning',
-  "ignore:Minimal version of pyarrow will soon be increased:FutureWarning",
-  # Dask deprecation warning - switch to dask-expr
-  "ignore:The current Dask DataFrame implementation is deprecated:DeprecationWarning",
-  # numpy by way of dask
-  'ignore:np\.find_common_type is deprecated:DeprecationWarning',
   # pandas
   "ignore:Boolean Series key will be reindexed:UserWarning",
   'ignore:Using \.astype to convert from timezone-(naive|aware) dtype:FutureWarning',
@@ -264,11 +320,12 @@ filterwarnings = [
   # numpy, coming from a pandas call
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
   # pandas by way of polars when comparing arrays
-  'ignore:The truth value of an empty array is ambiguous.:DeprecationWarning',
+  'ignore:The truth value of an empty array is ambiguous\.:DeprecationWarning',
   # druid
   'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
   'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
+  'ignore:`StructValue\.destructure` is deprecated as of v10\.0; use lift or unpack instead:FutureWarning',
   # spark
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
   "ignore:The distutils package is deprecated and slated for removal:DeprecationWarning",
@@ -307,6 +364,10 @@ filterwarnings = [
   'ignore:Downcasting object dtype arrays on \.fillna, \.ffill, \.bfill is deprecated:FutureWarning',
   # pandas 2.2 warnings coming directly from the way flink uses pandas
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
+  # snowpark logging warnings
+  "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
+  # dask and pandas backend deprecation
+  'ignore:The (dask|pandas) backend is slated for removal in 10\.0:DeprecationWarning',
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
@@ -321,7 +382,6 @@ markers = [
   "never: The backend will never support this / pass this test. Don't bother trying to fix it",
   "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
-  "dask: Dask tests",
   "datafusion: Apache Datafusion tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
@@ -331,7 +391,6 @@ markers = [
   "mysql: MySQL tests",
   "mssql: MS SQL Server tests",
   "oracle: Oracle tests",
-  "pandas: Pandas tests",
   "polars: Polars tests",
   "postgres: PostgreSQL tests",
   "risingwave: RisingWave tests",
@@ -346,7 +405,7 @@ markers = [
 [tool.ruff]
 line-length = 88
 respect-gitignore = true
-exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py"]
+exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py", "out_tpch.py"]
 target-version = "py310"
 
 [tool.ruff.lint]

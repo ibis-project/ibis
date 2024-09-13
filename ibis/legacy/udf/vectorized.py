@@ -10,8 +10,6 @@ from __future__ import annotations
 import functools
 from typing import TYPE_CHECKING, Any
 
-import numpy as np
-
 import ibis.expr.datatypes as dt
 import ibis.legacy.udf.validate as v
 from ibis.expr.operations import (
@@ -22,6 +20,7 @@ from ibis.expr.operations import (
 from ibis.util import deprecated
 
 if TYPE_CHECKING:
+    import numpy as np
     import pandas as pd
 
 
@@ -50,6 +49,8 @@ def _coerce_to_np_array(
     - `np.ndarray`
     - `pd.Series`
     """
+    import numpy as np
+
     return np.array(data)
 
 
@@ -84,6 +85,7 @@ def _coerce_to_series(
         Output Series
 
     """
+    import numpy as np
     import pandas as pd
 
     if isinstance(data, (list, np.ndarray)):
@@ -160,6 +162,7 @@ def _coerce_to_dataframe(
     0  1  2  3
 
     """
+    import numpy as np
     import pandas as pd
 
     if isinstance(data, pd.DataFrame):

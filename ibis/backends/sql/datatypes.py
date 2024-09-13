@@ -10,6 +10,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.common.collections import FrozenDict
 from ibis.formats import TypeMapper
+from ibis.util import get_subclasses
 
 typecode = sge.DataType.Type
 
@@ -20,6 +21,7 @@ _from_sqlglot_types = {
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
+    typecode.DATETIME: dt.Timestamp,
     typecode.DATE32: dt.Date,
     typecode.DOUBLE: dt.Float64,
     typecode.ENUM: dt.String,
@@ -38,6 +40,7 @@ _from_sqlglot_types = {
     typecode.LONGBLOB: dt.Binary,
     typecode.LONGTEXT: dt.String,
     typecode.MEDIUMBLOB: dt.Binary,
+    typecode.MEDIUMINT: dt.Int32,
     typecode.MEDIUMTEXT: dt.String,
     typecode.MONEY: dt.Decimal(19, 4),
     typecode.NCHAR: dt.String,
@@ -169,8 +172,10 @@ class SqlglotType(TypeMapper):
 
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
             dtype = method(*typ.expressions)
+        elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
+            dtype = known_typ(nullable=cls.default_nullable)
         else:
-            dtype = _from_sqlglot_types[typecode](nullable=cls.default_nullable)
+            dtype = dt.unknown
 
         if nullable is not None:
             return dtype.copy(nullable=nullable)
@@ -193,12 +198,11 @@ class SqlglotType(TypeMapper):
 
         try:
             sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-            return cls.to_ibis(sgtype, nullable=nullable)
         except sg.errors.ParseError:
             # If sqlglot can't parse the type fall back to `dt.unknown`
-            pass
-
-        return dt.unknown
+            return dt.unknown
+        else:
+            return cls.to_ibis(sgtype, nullable=nullable)
 
     @classmethod
     def to_string(cls, dtype: dt.DataType) -> str:
@@ -468,11 +472,8 @@ class PostgresType(SqlglotType):
     def from_string(cls, text: str, nullable: bool | None = None) -> dt.DataType:
         if text.lower().startswith("vector"):
             text = "vector"
-        if dtype := cls.unknown_type_strings.get(text.lower()):
-            return dtype
 
-        sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
-        return cls.to_ibis(sgtype, nullable=nullable)
+        return super().from_string(text, nullable=nullable)
 
 
 class RisingWaveType(PostgresType):
@@ -494,6 +495,7 @@ class RisingWaveType(PostgresType):
 
 
 class DataFusionType(PostgresType):
+    dialect = "datafusion"
     unknown_type_strings = {
         "utf8": dt.string,
         "float64": dt.float64,
@@ -1059,7 +1061,12 @@ class ClickHouseType(SqlglotType):
     @classmethod
     def from_ibis(cls, dtype: dt.DataType) -> sge.DataType:
         typ = super().from_ibis(dtype)
+
+        if typ.this == typecode.NULLABLE:
+            return typ
+
         # nested types cannot be nullable in clickhouse
+        typ.args["nullable"] = False
         if dtype.nullable and not (
             dtype.is_map() or dtype.is_array() or dtype.is_struct()
         ):
@@ -1152,3 +1159,9 @@ class FlinkType(SqlglotType):
             ],
             nested=True,
         )
+
+
+TYPE_MAPPERS = {
+    mapper.dialect: mapper
+    for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
+}

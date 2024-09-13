@@ -21,6 +21,7 @@ except ImportError:
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
+import ibis.backends.sql.compilers as sc
 import ibis.common.exceptions as com
 import ibis.config
 import ibis.expr.operations as ops
@@ -31,7 +32,7 @@ from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers import PySparkCompiler
+from ibis.backends.sql.compilers.base import AlterTable
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
@@ -53,7 +54,7 @@ if TYPE_CHECKING:
     from ibis.expr.api import Watermark
 
 PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
-
+PYSPARK_LT_35 = vparse(pyspark.__version__) < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
 
@@ -111,7 +112,7 @@ def _interval_to_string(interval):
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "pyspark"
-    compiler = PySparkCompiler()
+    compiler = sc.pyspark.compiler
 
     class Options(ibis.config.Config):
         """PySpark options.
@@ -187,7 +188,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
         self._session.conf.set("spark.sql.session.timeZone", "UTC")
-        self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
+
+        # Databricks Serverless compute only supports limited properties
+        # and any attempt to set unsupported properties will result in an error.
+        # https://docs.databricks.com/en/spark/conf.html
+        try:
+            from pyspark.errors.exceptions.connect import SparkConnectGrpcException
+        except ImportError:
+            # Use a dummy class for when spark connect is not available
+            class SparkConnectGrpcException(Exception):
+                pass
+
+        with contextlib.suppress(SparkConnectGrpcException):
+            self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
         for key, value in kwargs.items():
             self._session.conf.set(key, value)
@@ -366,18 +379,26 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _register_udfs(self, expr: ir.Expr) -> None:
         node = expr.op()
         for udf in node.find(ops.ScalarUDF):
-            if udf.__input_type__ not in (InputType.PANDAS, InputType.BUILTIN):
-                raise NotImplementedError(
-                    "Only Builtin UDFs and Pandas UDFs are supported in the PySpark backend"
-                )
-            # register pandas UDFs
+            udf_name = self.compiler.__sql_name__(udf)
+            udf_return = PySparkType.from_ibis(udf.dtype)
             if udf.__input_type__ == InputType.PANDAS:
-                udf_name = self.compiler.__sql_name__(udf)
                 udf_func = self._wrap_udf_to_return_pandas(udf.__func__, udf.dtype)
-                udf_return = PySparkType.from_ibis(udf.dtype)
                 spark_udf = F.pandas_udf(udf_func, udf_return, F.PandasUDFType.SCALAR)
-                self._session.udf.register(udf_name, spark_udf)
-
+            elif udf.__input_type__ == InputType.PYTHON:
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return)
+            elif udf.__input_type__ == InputType.PYARROW:
+                # raise not implemented error if running on pyspark < 3.5
+                if PYSPARK_LT_35:
+                    raise NotImplementedError(
+                        "pyarrow UDFs are only supported in pyspark >= 3.5"
+                    )
+                udf_func = udf.__func__
+                spark_udf = F.udf(udf_func, udf_return, useArrow=True)
+            else:
+                # Builtin functions don't need to be registered
+                continue
+            self._session.udf.register(udf_name, spark_udf)
         for udf in node.find(ops.ElementWiseVectorizedUDF):
             udf_name = self.compiler.__sql_name__(udf)
             udf_func = self._wrap_udf_to_return_pandas(udf.func, udf.return_type)
@@ -397,10 +418,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             self._session.udf.register(f"unwrap_json_{typ.__name__}", unwrap_json(typ))
         self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        sql = f"SHOW TABLES IN {self.current_database} LIKE '{name}'"
+        return bool(self._session.sql(sql).count())
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
-        df.createOrReplaceTempView(op.name)
+        df.createTempView(op.name)
+
+    def _finalize_memtable(self, name: str) -> None:
+        self._session.catalog.dropTempView(name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
@@ -539,7 +567,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
         ) = None,
         *,
-        schema: sch.Schema | None = None,
+        schema: sch.SchemaLike | None = None,
         database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
@@ -586,13 +614,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        temp_memtable_view = None
         if obj is not None:
             if isinstance(obj, ir.Expr):
                 table = obj
             else:
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             query = self.compile(table)
             mode = "overwrite" if overwrite else "error"
             with self._active_catalog_database(catalog, db):
@@ -600,16 +626,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 df = self._session.sql(query)
                 df.write.saveAsTable(name, format=format, mode=mode)
         elif schema is not None:
+            schema = ibis.schema(schema)
             schema = PySparkSchema.from_ibis(schema)
             with self._active_catalog_database(catalog, db):
                 self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
-
-        # Clean up temporary memtable if we've created one
-        # for in-memory reads
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 
@@ -664,10 +686,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         old = sg.table(old_name, quoted=True)
         new = sg.table(new_name, quoted=True)
-        query = sge.AlterTable(
-            this=old,
-            exists=False,
-            actions=[sge.RenameTable(this=new, exists=True)],
+        query = AlterTable(
+            this=old, exists=False, actions=[sge.RenameTable(this=new, exists=True)]
         )
         with self._safe_raw_sql(query):
             pass
@@ -697,7 +717,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
         return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 
-    def _load_into_cache(self, name, expr):
+    def _create_cached_table(self, name, expr):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
@@ -705,8 +725,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
+        return self.table(name)
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached
@@ -1291,7 +1312,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             df = df.write.format(format)
             for k, v in (options or {}).items():
                 df = df.option(k, v)
-            df.save(path)
+            df.save(os.fspath(path))
             return None
         sq = df.writeStream.format(format)
         sq = sq.option("path", os.fspath(path))

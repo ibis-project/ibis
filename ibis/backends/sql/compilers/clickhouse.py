@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
+from string import whitespace
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -20,7 +21,12 @@ if TYPE_CHECKING:
 
 
 class ClickhouseAggGen(AggGen):
-    def aggregate(self, compiler, name, *args, where=None):
+    def aggregate(self, compiler, name, *args, where=None, order_by=()):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         # Clickhouse aggregate functions all have filtering variants with a
         # `If` suffix (e.g. `SumIf` instead of `Sum`).
         if where is not None:
@@ -36,6 +42,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
     type_mapper = ClickHouseType
 
     agg = ClickhouseAggGen()
+
+    supports_qualify = True
 
     UNSUPPORTED_OPS = (
         ops.RowID,
@@ -56,7 +64,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Arbitrary: "any",
         ops.ArgMax: "argMax",
         ops.ArgMin: "argMin",
-        ops.ArrayCollect: "groupArray",
         ops.ArrayContains: "has",
         ops.ArrayFlatten: "arrayFlatten",
         ops.ArrayIntersect: "arrayIntersect",
@@ -86,13 +93,10 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ExtractWeekOfYear: "toISOWeek",
         ops.ExtractYear: "toYear",
         ops.ExtractIsoYear: "toISOYear",
-        ops.First: "any",
         ops.IntegerRange: "range",
         ops.IsInf: "isInfinite",
         ops.IsNan: "isNaN",
         ops.IsNull: "isNull",
-        ops.LStrip: "trimLeft",
-        ops.Last: "anyLast",
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.MapKeys: "mapKeys",
@@ -102,7 +106,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Median: "quantileExactExclusive",
         ops.NotNull: "isNotNull",
         ops.NullIf: "nullIf",
-        ops.RStrip: "trimRight",
         ops.RegexReplace: "replaceRegexpAll",
         ops.RowNumber: "row_number",
         ops.StartsWith: "startsWith",
@@ -110,7 +113,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Strftime: "formatDateTime",
         ops.StringLength: "length",
         ops.StringReplace: "replaceAll",
-        ops.Strip: "trimBoth",
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
@@ -160,11 +162,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        start = self._add_parens(op.start, start)
+        start = self._add_parens(start)
         start_correct = self.if_(start < 0, start, start + 1)
 
         if stop is not None:
-            stop = self._add_parens(op.stop, stop)
+            stop = self._add_parens(stop)
 
             length = self.if_(
                 stop < 0,
@@ -184,18 +186,24 @@ class ClickHouseCompiler(SQLGlotCompiler):
             return self.f.countIf(where)
         return sge.Count(this=STAR)
 
-    def visit_Quantile(self, op, *, arg, quantile, where):
-        if where is None:
-            return self.agg.quantile(arg, quantile, where=where)
-
-        func = "quantile" + "s" * isinstance(op, ops.MultiQuantile)
+    def _visit_quantile(self, func, arg, quantile, where):
         return sge.ParameterizedAgg(
-            this=f"{func}If",
+            this=f"{func}If" if where is not None else func,
             expressions=util.promote_list(quantile),
-            params=[arg, where],
+            params=[arg, where] if where is not None else [arg],
         )
 
-    visit_MultiQuantile = visit_Quantile
+    def visit_Quantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantile", arg, quantile, where)
+
+    def visit_MultiQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantiles", arg, quantile, where)
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantileTDigest", arg, quantile, where)
+
+    def visit_ApproxMultiQuantile(self, op, *, arg, quantile, where):
+        return self._visit_quantile("quantilesTDigest", arg, quantile, where)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "pop":
@@ -368,24 +376,23 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.toDateTime(arg)
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
-        converters = {
-            "Y": "toStartOfYear",
-            "Q": "toStartOfQuarter",
-            "M": "toStartOfMonth",
-            "W": "toMonday",
-            "D": "toDate",
-            "h": "toStartOfHour",
-            "m": "toStartOfMinute",
-            "s": "toDateTime",
-        }
+        if (short := unit.short) == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
 
-        unit = unit.short
-        if (converter := converters.get(unit)) is None:
-            raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
+        if short in ("s", "ms", "us", "ns"):
+            arg = self.f.toDateTime64(arg, op.arg.dtype.scale or 0)
+        return self.f[func](arg)
 
-        return self.f[converter](arg)
+    visit_TimeTruncate = visit_TimestampTruncate
 
-    visit_TimeTruncate = visit_DateTruncate = visit_TimestampTruncate
+    def visit_DateTruncate(self, op, *, arg, unit):
+        if unit.short == "W":
+            func = "toMonday"
+        else:
+            func = f"toStartOf{unit.singular.capitalize()}"
+        return self.f[func](arg)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
         if offset is not None:
@@ -433,7 +440,12 @@ class ClickHouseCompiler(SQLGlotCompiler):
             delimiter, self.cast(arg, dt.String(nullable=False))
         )
 
-    def visit_GroupConcat(self, op, *, arg, sep, where):
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
+        if order_by:
+            raise com.UnsupportedOperationError(
+                "ordering of order-sensitive aggregations via `order_by` is "
+                "not supported for this backend"
+            )
         call = self.agg.groupArray(arg, where=where)
         return self.if_(self.f.empty(call), NULL, self.f.arrayStringConcat(call, sep))
 
@@ -462,6 +474,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_StringContains(self, op, haystack, needle):
         return self.f.position(haystack, needle) > 0
+
+    def visit_Strip(self, op, *, arg):
+        return sge.Trim(
+            this=arg, position="BOTH", expression=sge.Literal.string(whitespace)
+        )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
         weekdays = len(calendar.day_name)
@@ -594,6 +611,27 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.groupArray(arg, where=where, order_by=order_by)
+
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.any(arg, where=where, order_by=order_by)
+
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if include_null:
+            raise com.UnsupportedOperationError(
+                "`include_null=True` is not supported by the clickhouse backend"
+            )
+        return self.agg.anyLast(arg, where=where, order_by=order_by)
+
     def visit_CountDistinctStar(
         self, op: ops.CountDistinctStar, *, where, **_: Any
     ) -> str:
@@ -650,7 +688,14 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -662,9 +707,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         selcols = []
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         if offset is not None:
             if overlaps_with_parent:
@@ -785,3 +829,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.if_(
             sg.or_(arg.is_(NULL), key.is_(NULL)), NULL, self.f.mapContains(arg, key)
         )
+
+
+compiler = ClickHouseCompiler()

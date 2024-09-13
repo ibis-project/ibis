@@ -803,9 +803,9 @@ class GeoSpatialValue(NumericValue):
         >>> line = shapely.LineString([[0, 0], [1, 0], [1, 1]])
         >>> line_lit = ibis.literal(line, type="geometry")
         >>> line_lit.length()
-        ┌─────────────────┐
-        │ np.float64(2.0) │
-        └─────────────────┘
+        ┌─────┐
+        │ 2.0 │
+        └─────┘
         >>> t = ibis.examples.zones.fetch()
         >>> t.geom.length()
         ┏━━━━━━━━━━━━━━━━━┓

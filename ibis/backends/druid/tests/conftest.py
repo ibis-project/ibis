@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
 from typing import TYPE_CHECKING, Any
 
-import pytest
 from requests import Session
 
 import ibis
@@ -116,7 +115,7 @@ class TestConf(ServiceBackendTest):
             # tool that calls itself a time series database or "good for
             # working with time series", that lacks a first-class timestamp
             # type.
-            timestamp_col=t.timestamp_col.to_timestamp(unit="ms"),
+            timestamp_col=t.timestamp_col.as_timestamp(unit="ms"),
         )
 
     @property
@@ -148,8 +147,3 @@ class TestConf(ServiceBackendTest):
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.connect(DRUID_URL, **kw)
-
-
-@pytest.fixture(scope="session")
-def con(data_dir, tmp_path_factory, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

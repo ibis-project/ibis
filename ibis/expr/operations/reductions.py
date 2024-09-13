@@ -10,8 +10,10 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
+from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
 
 
 @public
@@ -78,6 +80,8 @@ class First(Filterable, Reduction):
     """Retrieve the first element."""
 
     arg: Column[dt.Any]
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -87,6 +91,8 @@ class Last(Filterable, Reduction):
     """Retrieve the last element."""
 
     arg: Column[dt.Any]
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     dtype = rlz.dtype_like("arg")
 
@@ -205,10 +211,22 @@ class Median(QuantileBase):
 
 
 @public
+class ApproxMedian(Median):
+    """Compute the approximate median of a column."""
+
+
+@public
 class Quantile(QuantileBase):
     """Compute the quantile of a column."""
 
     quantile: Value[dt.Numeric]
+
+
+@public
+class ApproxQuantile(Quantile):
+    """Compute the approximate quantile of a column."""
+
+    arg: Column[dt.Numeric]
 
 
 @public
@@ -224,6 +242,13 @@ class MultiQuantile(Filterable, Reduction):
         if dtype.is_numeric():
             dtype = dt.higher_precedence(dtype, dt.float64)
         return dt.Array(dtype)
+
+
+@public
+class ApproxMultiQuantile(MultiQuantile):
+    """Compute multiple approximate quantiles of a column."""
+
+    arg: Column[dt.Numeric]
 
 
 class VarianceBase(Filterable, Reduction):
@@ -320,30 +345,12 @@ class ArgMin(Filterable, Reduction):
 
 
 @public
-class ApproxCountDistinct(Filterable, Reduction):
-    """Approximate number of unique values."""
-
-    arg: Column
-
-    # Impala 2.0 and higher returns a DOUBLE
-    dtype = dt.int64
-
-
-@public
-class ApproxMedian(Filterable, Reduction):
-    """Compute the approximate median of a set of comparable values."""
-
-    arg: Column
-
-    dtype = rlz.dtype_like("arg")
-
-
-@public
 class GroupConcat(Filterable, Reduction):
     """Concatenate strings in a group with a given separator character."""
 
     arg: Column
     sep: Value[dt.String]
+    order_by: VarTuple[SortKey] = ()
 
     dtype = dt.string
 
@@ -358,10 +365,17 @@ class CountDistinct(Filterable, Reduction):
 
 
 @public
+class ApproxCountDistinct(CountDistinct):
+    """Approximate number of unique values."""
+
+
+@public
 class ArrayCollect(Filterable, Reduction):
     """Collect values into an array."""
 
     arg: Column
+    order_by: VarTuple[SortKey] = ()
+    include_null: bool = False
 
     @attribute
     def dtype(self):

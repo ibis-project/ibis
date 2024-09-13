@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ast
 
-from ibis.backends.bigquery.udf.find import find_names
+from ibis.backends.sql.compilers.bigquery.udf.find import find_names
 from ibis.util import is_iterable
 
 

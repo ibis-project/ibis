@@ -6,9 +6,6 @@ import webbrowser
 from typing import TYPE_CHECKING, Any, NoReturn
 
 from public import public
-from rich.console import Console
-from rich.jupyter import JupyterMixin
-from rich.text import Text
 
 import ibis
 import ibis.expr.operations as ops
@@ -20,8 +17,7 @@ from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
 from ibis.expr.format import pretty
-from ibis.expr.types.pretty import to_rich
-from ibis.util import experimental
+from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -31,19 +27,41 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
     import torch
+    from rich.console import Console, RenderableType
 
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
     from ibis.expr.visualize import EdgeAttributeGetter, NodeAttributeGetter
 
 
-class _FixedTextJupyterMixin(JupyterMixin):
-    """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+try:
+    from rich.jupyter import JupyterMixin
+except ImportError:
 
-    def _repr_mimebundle_(self, *args, **kwargs):
-        bundle = super()._repr_mimebundle_(*args, **kwargs)
-        bundle["text/plain"] = bundle["text/plain"].rstrip()
-        return bundle
+    class _FixedTextJupyterMixin:
+        """No-op when rich is not installed."""
+else:
+
+    class _FixedTextJupyterMixin(JupyterMixin):
+        """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+        def _repr_mimebundle_(self, *args, **kwargs):
+            try:
+                bundle = super()._repr_mimebundle_(*args, **kwargs)
+            except Exception:  # noqa: BLE001
+                return None
+            else:
+                bundle["text/plain"] = bundle["text/plain"].rstrip()
+                return bundle
+
+
+def _capture_rich_renderable(renderable: RenderableType) -> str:
+    from rich.console import Console
+
+    console = Console(force_terminal=False)
+    with console.capture() as capture:
+        console.print(renderable)
+    return capture.get().rstrip()
 
 
 @public
@@ -60,28 +78,15 @@ class Expr(Immutable, Coercible):
             scope = None
         return pretty(self.op(), scope=scope)
 
-    def _interactive_repr(self) -> str:
-        console = Console(force_terminal=False)
-        with console.capture() as capture:
-            try:
-                console.print(self)
-            except TranslationError as e:
-                lines = [
-                    "Translation to backend failed",
-                    f"Error message: {e!r}",
-                    "Expression repr follows:",
-                    self._noninteractive_repr(),
-                ]
-                return "\n".join(lines)
-        return capture.get().rstrip()
-
     def __repr__(self) -> str:
         if ibis.options.interactive:
-            return self._interactive_repr()
+            return _capture_rich_renderable(self)
         else:
             return self._noninteractive_repr()
 
     def __rich_console__(self, console: Console, options):
+        from rich.text import Text
+
         if console.is_jupyter:
             # Rich infers a console width in jupyter notebooks, but since
             # notebooks can use horizontal scroll bars we don't want to apply a
@@ -96,26 +101,19 @@ class Expr(Immutable, Coercible):
 
         try:
             if opts.interactive:
+                from ibis.expr.types.pretty import to_rich
+
                 rich_object = to_rich(self, console_width=console_width)
             else:
                 rich_object = Text(self._noninteractive_repr())
-        except Exception as e:
-            # In IPython exceptions inside of _repr_mimebundle_ are swallowed to
-            # allow calling several display functions and choosing to display
-            # the "best" result based on some priority.
-            # This behavior, though, means that exceptions that bubble up inside of the interactive repr
-            # are silently caught.
-            #
-            # We can't stop the exception from being swallowed, but we can force
-            # the display of that exception as we do here.
-            #
-            # A _very_ annoying caveat is that this exception is _not_ being
-            # ` raise`d, it is only being printed to the console.  This means
-            # that you cannot "catch" it.
-            #
-            # This restriction is only present in IPython, not in other REPLs.
-            console.print_exception()
-            raise e
+        except TranslationError as e:
+            lines = [
+                "Translation to backend failed",
+                f"Error message: {e!r}",
+                "Expression repr follows:",
+                self._noninteractive_repr(),
+            ]
+            return Text("\n".join(lines))
         return console.render(rich_object, options=options)
 
     def __init__(self, arg: ops.Node) -> None:
@@ -171,6 +169,11 @@ class Expr(Immutable, Coercible):
 
     __nonzero__ = __bool__
 
+    @deprecated(
+        instead="remove any usage of `has_name`, since it is always `True`",
+        as_of="9.4",
+        removed_in="10.0",
+    )
     def has_name(self):
         """Check whether this expression has an explicit name."""
         return hasattr(self._arg, "name")
@@ -603,6 +606,33 @@ class Expr(Immutable, Coercible):
         :::
         """
         self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
+
+    @experimental
+    def to_parquet_dir(
+        self,
+        directory: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a parquet file in a directory.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        directory
+            The data target. A string or Path to the directory where the parquet file will be written.
+        params
+            Mapping of scalar parameter expressions to value.
+        **kwargs
+            Additional keyword arguments passed to pyarrow.dataset.write_dataset
+
+        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
+
+        """
+        self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
 
     @experimental
     def to_csv(

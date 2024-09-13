@@ -42,7 +42,7 @@ def test_uuid_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
@@ -55,7 +55,7 @@ def test_uuid_function(con):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave", "pandas", "dask"],
+    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
     raises=com.OperationNotDefinedError,
 )
 def test_uuid_unique_each_row(con):

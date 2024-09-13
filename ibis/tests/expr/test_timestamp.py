@@ -2,8 +2,6 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-import numpy as np
-import pandas as pd
 import pytest
 
 import ibis
@@ -53,15 +51,8 @@ def test_now():
     assert isinstance(result.op(), ops.TimestampNow)
 
 
-@pytest.mark.parametrize(
-    ("function", "value"),
-    [
-        (ibis.timestamp, "2015-01-01 00:00:00"),
-        (ibis.literal, pd.Timestamp("2015-01-01 00:00:00")),
-    ],
-)
-def test_timestamp_literals(function, value):
-    expr = function(value)
+def test_timestamp_literals():
+    expr = ibis.timestamp("2015-01-01 00:00:00")
     assert isinstance(expr, ir.TimestampScalar)
 
 
@@ -88,17 +79,23 @@ def test_comparisons_string(alltypes):
 
 
 def test_comparisons_pandas_timestamp(alltypes):
+    pd = pytest.importorskip("pandas")
+
     val = pd.Timestamp("2015-01-01 00:00:00")
     expr = alltypes.i > val
     op = expr.op()
+    assert isinstance(op, ops.Greater)
     assert isinstance(op.right, ops.Literal)
     assert isinstance(op.right.dtype, dt.Timestamp)
 
+    expr = ibis.literal(val) < alltypes.i
+    op = expr.op()
+    assert isinstance(op, ops.Less)
+    assert isinstance(op.left, ops.Literal)
+    assert isinstance(op.left.dtype, dt.Timestamp)
 
-def test_greater_comparison_pandas_timestamp(alltypes):
-    val = pd.Timestamp("2015-01-01 00:00:00")
-    expr2 = val < alltypes.i
-    op = expr2.op()
+    expr = val < alltypes.i
+    op = expr.op()
     assert isinstance(op, ops.Greater)
     assert isinstance(op.right, ops.Literal)
     assert isinstance(op.right.dtype, dt.Timestamp)
@@ -164,26 +161,21 @@ def test_timestamp_field_access_on_time(
     assert isinstance(result.op(), expected_operation)
 
 
-@pytest.mark.parametrize(
-    ("field", "expected_operation", "expected_type"),
-    [
-        ("year", ops.ExtractYear, ir.IntegerColumn),
-        ("month", ops.ExtractMonth, ir.IntegerColumn),
-        ("day", ops.ExtractDay, ir.IntegerColumn),
-    ],
-)
-def test_timestamp_field_access_on_time_failure(
-    field, expected_operation, expected_type, alltypes
-):
+@pytest.mark.parametrize("field", ["year", "month", "day"])
+def test_timestamp_field_access_on_time_failure(field, alltypes):
     date_col = alltypes.i.time()
     with pytest.raises(AttributeError):
         getattr(date_col, field)
 
 
-@pytest.mark.parametrize("value", [42, np.int64(42), np.int8(-42)])
-def test_integer_timestamp_fails(value):
-    with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.to_timestamp"):
-        ibis.timestamp(value)
+def test_integer_timestamp_fails():
+    with pytest.raises(TypeError, match=r"Use ibis\.literal\(\.\.\.\)\.as_timestamp"):
+        ibis.timestamp(42)
+
+
+def test_to_timestamp_deprecation():
+    with pytest.warns(FutureWarning, match="v10.0"):
+        ibis.literal(42).to_timestamp()
 
 
 @pytest.mark.parametrize(

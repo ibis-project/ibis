@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
-import polars as pl
 import pytest
 
 import ibis
@@ -23,16 +22,11 @@ class TestConf(BackendTest):
         con = self.connection
         for table_name in TEST_TABLES:
             path = self.data_dir / "parquet" / f"{table_name}.parquet"
-            with pytest.warns(FutureWarning, match="v9.1"):
-                con.register(path, table_name=table_name)
-        # TODO: remove warnings and replace register when implementing 8858
-        with pytest.warns(FutureWarning, match="v9.1"):
-            con.register(array_types, table_name="array_types")
-            con.register(struct_types, table_name="struct")
-            con.register(win, table_name="win")
-
-        # TODO: remove when pyarrow inputs are supported
-        con._add_table("topk", pl.from_arrow(topk).lazy())
+            con.read_parquet(path, table_name=table_name)
+        con.create_table("array_types", array_types)
+        con.create_table("struct", struct_types)
+        con.create_table("win", win)
+        con.create_table("topk", topk)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
@@ -57,8 +51,3 @@ def con(data_dir, tmp_path_factory, worker_id):
 @pytest.fixture(scope="session")
 def alltypes(con):
     return con.table("functional_alltypes")
-
-
-@pytest.fixture(scope="session")
-def alltypes_df(alltypes):
-    return alltypes.execute()

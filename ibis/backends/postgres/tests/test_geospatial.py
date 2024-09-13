@@ -232,7 +232,7 @@ def test_get_point(geotable, expr_fn, expected):
     # boundaries with the contains predicate. Work around this by adding a
     # small buffer.
     expr = geotable["geo_linestring"].buffer(0.01).contains(arg)
-    result = geotable[geotable, expr.name("tmp")].execute()["tmp"]
+    result = geotable.select(geotable, expr.name("tmp")).execute()["tmp"]
     testing.assert_almost_equal(result, expected, decimal=2)
 
 
@@ -257,7 +257,7 @@ def test_area(con, geotable):
 )
 def test_srid(geotable, condition, expected):
     """Testing for geo spatial srid operation."""
-    expr = geotable[geotable.id, condition(geotable).name("tmp")]
+    expr = geotable.select(geotable.id, condition(geotable).name("tmp"))
     result = expr.execute()["tmp"][[0]]
     assert np.all(result == expected)
 
@@ -275,7 +275,7 @@ def test_srid(geotable, condition, expected):
 )
 def test_set_srid(geotable, condition, expected):
     """Testing for geo spatial set_srid operation."""
-    expr = geotable[geotable.id, condition(geotable).name("tmp")]
+    expr = geotable.select(geotable.id, condition(geotable).name("tmp"))
     result = expr.execute()["tmp"][[0]]
     assert np.all(result == expected)
 
@@ -305,7 +305,7 @@ def test_set_srid(geotable, condition, expected):
 )
 def test_transform(geotable, condition, expected):
     """Testing for geo spatial transform operation."""
-    expr = geotable[geotable.id, condition(geotable).name("tmp")]
+    expr = geotable.select(geotable.id, condition(geotable).name("tmp"))
     result = expr.execute()["tmp"][[0]]
     assert np.all(result == expected)
 
@@ -325,7 +325,7 @@ def test_transform(geotable, condition, expected):
 def test_cast_geography(geotable, expr_fn):
     """Testing for geo spatial transform operation."""
     p = expr_fn(geotable).cast("geography")
-    expr = geotable[geotable.id, p.distance(p).name("tmp")]
+    expr = geotable.select(geotable.id, p.distance(p).name("tmp"))
     result = expr.execute()["tmp"][[0]]
     # distance from a point to a same point should be 0
     assert np.all(result == 0)
@@ -346,7 +346,7 @@ def test_cast_geography(geotable, expr_fn):
 def test_cast_geometry(geotable, expr_fn):
     """Testing for geo spatial transform operation."""
     p = expr_fn(geotable).cast("geometry")
-    expr = geotable[geotable.id, p.distance(p).name("tmp")]
+    expr = geotable.select(geotable.id, p.distance(p).name("tmp"))
     result = expr.execute()["tmp"][[0]]
     # distance from a point to a same point should be 0
     assert np.all(result == 0)

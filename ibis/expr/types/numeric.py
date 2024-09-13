@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
 from public import public
@@ -10,9 +11,10 @@ import ibis.expr.operations as ops
 from ibis.common.exceptions import IbisTypeError
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable
 
     import ibis.expr.types as ir
 
@@ -1010,12 +1012,65 @@ class NumericColumn(Column, NumericValue):
 
         return ((self - base) / binwidth).floor().clip(-1, nbins - 1)
 
+    def approx_quantile(
+        self,
+        quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        where: ir.BooleanValue | None = None,
+    ) -> NumericScalar:
+        """Compute one or more approximate quantiles of a column.
+
+        ::: {.callout-note}
+        ## The result may or may not be exact
+
+        Whether the result is an approximation depends on the backend.
+        :::
+
+        Parameters
+        ----------
+        quantile
+            `0 <= quantile <= 1`, or an array of such values
+            indicating the quantile or quantiles to compute
+        where
+            Boolean filter for input values
+
+        Returns
+        -------
+        Scalar
+            Quantile of the input
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+
+        Compute the approximate 0.50 quantile of `bill_depth_mm`.
+
+        >>> t.bill_depth_mm.approx_quantile(0.50)
+        ┌────────┐
+        │ 17.318 │
+        └────────┘
+
+        Compute multiple approximate quantiles in one call - in this case the
+        result is an array.
+
+        >>> t.bill_depth_mm.approx_quantile([0.25, 0.75])
+        ┌────────────────────────┐
+        │ [15.565625, 18.671875] │
+        └────────────────────────┘
+        """
+        if isinstance(quantile, Sequence):
+            op = ops.ApproxMultiQuantile
+        else:
+            op = ops.ApproxQuantile
+        return op(self, quantile, where=self._bind_to_parent_table(where)).to_expr()
+
 
 @public
 class IntegerValue(NumericValue):
-    def to_timestamp(
+    def as_timestamp(
         self,
-        unit: Literal["s", "ms", "us"] = "s",
+        unit: Literal["s", "ms", "us"],
     ) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
@@ -1031,7 +1086,7 @@ class IntegerValue(NumericValue):
         """
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
-    def to_interval(
+    def as_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
     ) -> ir.IntervalValue:
@@ -1048,6 +1103,20 @@ class IntegerValue(NumericValue):
             An interval in units of `unit`
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
+
+    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    def to_timestamp(
+        self,
+        unit: Literal["s", "ms", "us"] = "s",
+    ) -> ir.TimestampValue:
+        return self.as_timestamp(unit=unit)
+
+    @deprecated(as_of="10.0", instead="use as_interval() instead")
+    def to_interval(
+        self,
+        unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+    ) -> ir.IntervalValue:
+        return self.as_interval(unit=unit)
 
     def convert_base(
         self,

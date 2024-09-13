@@ -22,8 +22,8 @@ from ibis.backends.sql.compilers.base import (
 from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
-    exclude_nulls_from_array_collect,
     exclude_unsupported_window_frame_from_ops,
+    split_select_distinct_with_order_by,
 )
 from ibis.util import gen_name
 
@@ -34,13 +34,13 @@ class TrinoCompiler(SQLGlotCompiler):
     dialect = Trino
     type_mapper = TrinoType
 
-    agg = AggGen(supports_filter=True)
+    agg = AggGen(supports_filter=True, supports_order_by=True)
 
     rewrites = (
-        exclude_nulls_from_array_collect,
         exclude_unsupported_window_frame_from_ops,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     quoted = True
 
     NAN = sg.func("nan")
@@ -48,8 +48,6 @@ class TrinoCompiler(SQLGlotCompiler):
     NEG_INF = -POS_INF
 
     UNSUPPORTED_OPS = (
-        ops.Quantile,
-        ops.MultiQuantile,
         ops.Median,
         ops.RowID,
         ops.TimestampBucket,
@@ -85,7 +83,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArraySort: "array_sort",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayLength: "cardinality",
-        ops.ArrayCollect: "array_agg",
         ops.ArrayIntersect: "array_intersect",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
@@ -113,17 +110,16 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_Sample(
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
-        if op.seed is not None:
+        if seed is not None:
             raise com.UnsupportedOperationError(
                 "`Table.sample` with a random seed is unsupported"
             )
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
@@ -137,6 +133,13 @@ class TrinoCompiler(SQLGlotCompiler):
             right = self.cast(right, dt.Int32(nullable=right_type.nullable))
 
         return self.agg.corr(left, right, where=where)
+
+    def visit_ApproxQuantile(self, op, *, arg, quantile, where):
+        if not op.arg.dtype.is_floating():
+            arg = self.cast(arg, dt.float64)
+        return self.agg.approx_quantile(arg, quantile, where=where)
+
+    visit_ApproxMultiQuantile = visit_ApproxQuantile
 
     def visit_BitXor(self, op, *, arg, where):
         a, b = map(sg.to_identifier, "ab")
@@ -179,6 +182,12 @@ class TrinoCompiler(SQLGlotCompiler):
             NULL,
         )
 
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.agg.array_agg(arg, where=where, order_by=order_by)
+
     def visit_JSONGetItem(self, op, *, arg, index):
         fmt = "%d" if op.index.dtype.is_integer() else '"%s"'
         return self.f.json_extract(arg, self.f.format(f"$[{fmt}]", index))
@@ -213,9 +222,7 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return self.cast(
-            sge.paren(self.f.day_of_week(arg) + 6, copy=False) % 7, op.dtype
-        )
+        return self.cast(sge.paren(self.f.anon.dow(arg) + 6, copy=False) % 7, op.dtype)
 
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.date_format(arg, "%W")
@@ -324,9 +331,7 @@ class TrinoCompiler(SQLGlotCompiler):
         elif dtype.is_time():
             return self.cast(value.isoformat(), dtype)
         elif dtype.is_interval():
-            return sge.Interval(
-                this=sge.convert(str(value)), unit=self.v[dtype.resolution.upper()]
-            )
+            return self._make_interval(sge.convert(str(value)), dtype.unit)
         elif dtype.is_binary():
             return self.f.from_hex(value.hex())
         else:
@@ -370,15 +375,29 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, sep, arg):
         return self.f.array_join(arg, sep)
 
-    def visit_First(self, op, *, arg, where):
-        cond = arg.is_(sg.not_(NULL, copy=False))
-        where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.f.element_at(self.agg.array_agg(arg, where=where), 1)
+    def visit_First(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.f.element_at(
+            self.agg.array_agg(arg, where=where, order_by=order_by), 1
+        )
 
-    def visit_Last(self, op, *, arg, where):
+    def visit_Last(self, op, *, arg, where, order_by, include_null):
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
+        return self.f.element_at(
+            self.agg.array_agg(arg, where=where, order_by=order_by), -1
+        )
+
+    def visit_GroupConcat(self, op, *, arg, sep, where, order_by):
         cond = arg.is_(sg.not_(NULL, copy=False))
         where = cond if where is None else sge.And(this=cond, expression=where)
-        return self.f.element_at(self.agg.array_agg(arg, where=where), -1)
+        array = self.agg.array_agg(
+            self.cast(arg, dt.string), where=where, order_by=order_by
+        )
+        return self.f.array_join(array, sep)
 
     def visit_ArrayZip(self, op, *, arg):
         max_zip_arguments = 5
@@ -425,15 +444,26 @@ class TrinoCompiler(SQLGlotCompiler):
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta
 
-    def visit_IntervalFromInteger(self, op, *, arg, unit):
-        unit = op.unit.short
-        if unit in ("Y", "Q", "M", "W"):
+    def _make_interval(self, arg, unit):
+        short = unit.short
+        if short in ("Q", "W"):
             raise com.UnsupportedOperationError(f"Interval unit {unit!r} not supported")
-        return self.f.parse_duration(
-            self.f.concat(
-                self.cast(arg, dt.String(nullable=op.arg.dtype.nullable)), unit.lower()
+
+        if isinstance(arg, sge.Literal):
+            # force strings in interval literals because trino requires it
+            arg.args["is_string"] = True
+            return super()._make_interval(arg, unit)
+
+        elif short in ("Y", "M"):
+            return arg * super()._make_interval(sge.convert("1"), unit)
+        elif short in ("D", "h", "m", "s", "ms", "us"):
+            return self.f.parse_duration(
+                self.f.concat(self.cast(arg, dt.string), short.lower())
             )
-        )
+        else:
+            raise com.UnsupportedOperationError(
+                f"Interval unit {unit.name!r} not supported"
+            )
 
     def visit_Range(self, op, *, start, stop, step):
         def zero_value(dtype):
@@ -475,13 +505,7 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
-        if from_.is_integer() and to.is_interval():
-            return self.visit_IntervalFromInteger(
-                ops.IntervalFromInteger(op.arg, unit=to.unit),
-                arg=arg,
-                unit=to.unit,
-            )
-        elif from_.is_integer() and to.is_timestamp():
+        if from_.is_integer() and to.is_timestamp():
             return self.f.from_unixtime(arg, to.timezone or "UTC")
         return super().visit_Cast(op, arg=arg, to=to)
 
@@ -522,16 +546,22 @@ class TrinoCompiler(SQLGlotCompiler):
         )
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
         column_alias = sg.to_identifier(gen_name("table_unnest_column"), quoted=quoted)
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         parent_alias_or_name = parent.alias_or_name
 
@@ -641,3 +671,6 @@ class TrinoCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self.visit_ArraySumAgg(op, arg=arg, output=operator.truediv)
+
+
+compiler = TrinoCompiler()

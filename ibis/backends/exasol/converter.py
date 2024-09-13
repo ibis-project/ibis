@@ -14,6 +14,15 @@ class ExasolPandasData(PandasData):
             return s
 
     @classmethod
+    def convert_Int64(cls, s, dtype, pandas_dtype):
+        if s.dtype == "object":
+            # exasol returns BIGINT types as strings (or None for NULL).
+            # s.astype("int64") will fail in this case, using `Series.map`
+            # is the best we can do.
+            return s.map(int, na_action="ignore")
+        return s if s.dtype == pandas_dtype else s.astype(pandas_dtype)
+
+    @classmethod
     def convert_Interval(cls, s, dtype, pandas_dtype):
         def parse_timedelta(value):
             # format is '(+|-)days hour:minute:second.millisecond'

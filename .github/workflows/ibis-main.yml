@@ -80,13 +80,13 @@ jobs:
       - name: install ibis
         run: poetry install --without dev --without docs --extras "visualization decompiler"
 
-      - name: install pyarrow
+      - name: install numpy/pandas/pyarrow
         if: matrix.pyarrow
-        run: poetry run pip install pyarrow pyarrow-hotfix
+        run: poetry run pip install numpy pandas pyarrow pyarrow-hotfix
 
-      - name: check pyarrow import
+      - name: check imports
         if: matrix.pyarrow
-        run: poetry run python -c 'import pyarrow, pyarrow_hotfix'
+        run: poetry run python -c 'import numpy, pandas, pyarrow, pyarrow_hotfix'
 
       - uses: extractions/setup-just@v2
         env:
@@ -169,7 +169,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run doctests
-        run: just ci-doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+        run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+
+      - name: check for dead fixtures
+        run: poetry run pytest --dead-fixtures -m 'not flink'
 
       - name: upload code coverage
         if: success()

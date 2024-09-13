@@ -1,0 +1,104 @@
+---
+title: Farewell pandas, and thanks for all the fish.
+author: Gil Forsyth
+date: 2024-08-26
+categories:
+    - blog
+    - pandas
+    - community
+---
+
+**TL; DR**: we are deprecating the `pandas` and `dask` backends and will be
+removing them in version 10.0.
+
+There is no feature gap between the `pandas` backend and our default DuckDB
+backend, and DuckDB is _much_ more performant.  `pandas` DataFrames will still
+be available as _format_ for getting data to and from Ibis, we just won't
+support using `pandas` to execute queries.
+
+Most of the rationale below applies to the Dask backend since it has so much in
+common with pandas. Dask is a great project and people should continue to use
+it outside the Ibis context.
+
+## Why `pandas`? And a bit of Ibis history
+
+Way back in the early days of Ibis, there was only one backend: Impala.  Not
+everyone used Impala (mindblowing, we know), and so it wasn't too long until the
+Postgres backend was added (by the inimitable Phillip Cloud).
+
+These two backends were both featureful, but there was a big problem with adoption:
+Want to try out Ibis?  You need to install Impala or Postgres first.
+
+Not an insurmountable problem, but a LOT more work than "just `pip install
+<newthing>`" -- which prompted the question, how can a prospective Ibis user
+take the API for a spin without requiring a DBA or extra infrastructure beyond a
+laptop?
+
+The obvious answer (at the time) was to use the only in-memory DataFrame engine
+around and wire up a `pandas` backend.
+
+## The agony and the agony
+
+`pandas` was the best option at the time, and it allowed new users to try out
+Ibis.  But, it never fit well into the model of data analysis that Ibis strives
+for.  The `pandas` backend has more specialized code than any other backend,
+because it is so fundamentally different than all the other systems Ibis works
+with.
+
+### Deferred vs Eager
+
+`pandas` is inherently an eager engine -- every time you hit Enter you are
+computing an intermediate result. Ibis uses a deferred execution model, similar
+to what nearly all SQL backends use, that enables query planning and
+optimization passes.
+
+Trying to make a `pandas` interface that behaves in a deferred way is hard.
+
+One of the unfortunate effects of this mismatch is that, unlike our other
+backends, the `pandas` backend is often _much_ slower than just using `pandas`
+directly.
+
+And to provide this suboptimal experience, we have a few thousand lines of code
+that are only used in the `pandas` backend.
+
+### `NaN` vs `NULL`
+
+The choice was made a long time ago to accept using `NaN` as the marker for
+missing values in `pandas`.  This is because NumPy has a notion of `NaN`, but a
+Python `None` would lead to an `object`-dtype and poor performance.
+
+Practicality beats purity, but this is a horrible decision to have to make.
+Ibis _doesn't_ have to make it with any other backend, because NULL indicates a
+missing value, and NaN is Not a Number.
+
+Those are fundamentally different ideas and it is an ongoing headache for Ibis
+to try to pretend that they aren't.
+
+### Data types
+
+The new Arrow-backed types in `pandas` are a great improvement and we'll leave
+it at that.
+
+## Misleading new users
+
+People reach for what is familiar.  When you try Ibis for the first time, we're
+asking you to both a) try Ibis and b) pick a backend. We have defaults to try to
+help with this, but it can be confusing at first.
+
+We have many reports from new users that "Ibis is slow".  What this almost
+always means is that they tried the `pandas` backend (because they know
+`pandas`) and they are having a less-than-great time.
+
+If they tried DuckDB or Polars, instead, they would have a much easier time
+getting things going.
+
+## Feature parity
+
+This is the one of the strongest reasons to drop the `pandas` backend -- it is redundant.  The
+DuckDB backend can seamlessly query pandas DataFrames, supports several flavors
+of UDF, and can read and write parquet, CSV, JSON, and other formats.
+
+There is a reason DuckDB is our default backend: it's easy to install, it runs
+locally, it's blazing fast, and it interacts well with the Python ecosystem.
+Those are all the reasons we added `pandas` as a backend in the first place, but
+with the added benefit of blazing-fast results, and no type-system headaches.

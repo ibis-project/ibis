@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import warnings
 from functools import partial
 from importlib.util import find_spec as _find_spec
 from typing import TYPE_CHECKING
@@ -24,14 +23,6 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow as pa
 
-_has_arrow_dtype = hasattr(pd, "ArrowDtype")
-
-if not _has_arrow_dtype:
-    warnings.warn(
-        f"The `ArrowDtype` class is not available in pandas {pd.__version__}. "
-        "Install pandas >= 1.5.0 for interop with pandas and arrow dtype support"
-    )
-
 geospatial_supported = _find_spec("geopandas") is not None
 
 
@@ -47,7 +38,7 @@ class PandasType(NumpyType):
                 return dt.String(nullable=nullable)
             return cls.to_ibis(typ.categories.dtype, nullable=nullable)
         elif pdt.is_extension_array_dtype(typ):
-            if _has_arrow_dtype and isinstance(typ, pd.ArrowDtype):
+            if isinstance(typ, pd.ArrowDtype):
                 return PyArrowType.to_ibis(typ.pyarrow_dtype, nullable=nullable)
             else:
                 name = typ.__class__.__name__.replace("Dtype", "")
@@ -118,19 +109,13 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_table(cls, df, schema):
-        if len(schema) != len(df.columns):
-            raise ValueError(
-                "schema column count does not match input data column count"
-            )
+        if schema.names != tuple(df.columns):
+            raise ValueError("schema names don't match input data columns")
 
-        columns = []
-        for (_, series), dtype in zip(df.items(), schema.types):
-            columns.append(cls.convert_column(series, dtype))
-        df = cls.concat(columns, axis=1)
-
-        # return data with the schema's columns which may be different than the
-        # input columns
-        df.columns = schema.names
+        columns = {
+            name: cls.convert_column(df[name], dtype) for name, dtype in schema.items()
+        }
+        df = pd.DataFrame(columns)
 
         if geospatial_supported:
             from geopandas import GeoDataFrame
@@ -163,7 +148,7 @@ class PandasData(DataMapper):
 
     @classmethod
     def convert_scalar(cls, obj, dtype):
-        df = PandasData.convert_table(obj, sch.Schema({obj.columns[0]: dtype}))
+        df = PandasData.convert_table(obj, sch.Schema({str(obj.columns[0]): dtype}))
         return df.iat[0, 0]
 
     @classmethod
@@ -398,6 +383,8 @@ class PandasData(DataMapper):
                 return value
             elif isinstance(value, UUID):
                 return value
+            elif isinstance(value, bytes):
+                return UUID(bytes=value)
             return UUID(value)
 
         return convert
