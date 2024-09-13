@@ -54,7 +54,7 @@ format:
 - KDB+ Q?
 :::
 
-# Don't design a Python Dataframe API
+# So you want to design a Python Dataframe API?
 
 ## Python/pandas terminology or SQL terminology?
 
@@ -79,7 +79,7 @@ _please_ only choose one
 - Are multi-indexes a good idea? (No)
 :::
 
-# Don't design a SQL dialect
+# So you want to design a SQL dialect?
 
 ## (SQL) Questions with no (single) answer
 
@@ -127,6 +127,28 @@ SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
 
 ![](./images/sql_is_really_difficult_at_first.png){fig-align="center"}
 
+# Wait, what is this talk about?
+
+## We built a dataframe interface
+
+### Ibis
+
+:::: {.columns}
+
+::: {.column width="50%"}
+* Open-source (Apache 2.0)
+* Pure Python
+* DataFrame interface
+* Pretty cool
+* Independently governed
+:::
+
+
+::: {.column width="50%"}
+![](../../logo.svg){fig-align="center"}
+
+:::
+::::
 
 ## (Some) Answers to the DataFrame questions
 
@@ -141,4 +163,22 @@ SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
 ![](images/python_padding.png){.fragment}
 :::
 
-## Obligatory XKCD
+
+## Ibis is _only_ an interface
+
+* Not an engine
+* We don't compute anything
+
+TODO: move pypi examples to a new folder
+
+
+## Why use Ibis?
+
+Gives you flexibility
+
+It's a pretty good API (no really!)
+
+## Try it out
+
+pip install 'ibis-framework[datafusion]'
+conda install -c conda-forge ibis-datafusion
