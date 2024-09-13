@@ -74,7 +74,7 @@ marks = {
         SQLBackend,
         "drop_table",
         marks=pytest.mark.notyet(
-            ["bigquery", "dask", "druid", "flink", "impala", "pandas", "polars"]
+            ["bigquery", "druid", "flink", "impala", "pandas", "polars"]
         ),
     ),
     "execute": pytest.param(
@@ -114,7 +114,7 @@ marks = {
     "read_csv": pytest.param(
         BaseBackend,
         "read_csv",
-        marks=pytest.mark.notyet(["dask", "duckdb", "flink", "pandas", "pyspark"]),
+        marks=pytest.mark.notyet(["duckdb", "flink", "pandas", "pyspark"]),
     ),
     "read_delta": pytest.param(
         BaseBackend,
@@ -129,7 +129,7 @@ marks = {
     "read_parquet": pytest.param(
         BaseBackend,
         "read_parquet",
-        marks=pytest.mark.notyet(["dask", "duckdb", "flink", "pandas"]),
+        marks=pytest.mark.notyet(["duckdb", "flink", "pandas"]),
     ),
     "table": pytest.param(
         BaseBackend,
@@ -137,7 +137,6 @@ marks = {
         marks=pytest.mark.notyet(
             [
                 "clickhouse",
-                "dask",
                 "datafusion",
                 "druid",
                 "duckdb",
