@@ -270,9 +270,7 @@ def test_connect_local_file(out_method, extension, tmp_path):
     df = pd.DataFrame({"a": [1, 2, 3]})
     path = tmp_path / f"out.{extension}"
     getattr(df, out_method)(path)
-    with pytest.warns(FutureWarning, match="v9.1"):
-        # ibis.connect uses con.register
-        con = ibis.connect(path)
+    con = ibis.connect(path)
     t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
