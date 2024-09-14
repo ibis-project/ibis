@@ -34,6 +34,14 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      - name: restore cache of the previously rendered notebooks
+        uses: actions/cache/restore@v4
+        with:
+          # https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
+          # > The SHA of the most recent commit on ref before the push.
+          key: docs-${{ github.event.push.before }}
+          path: docs/**/.jupyter_cache
+
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
@@ -44,6 +52,12 @@ jobs:
 
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-render
+
+      - name: cache rendered notebooks
+        uses: actions/cache/save@v4
+        with:
+          key: docs-${{ github.sha }}
+          path: docs/**/.jupyter_cache
 
       - name: build jupyterlite
         run: nix develop --ignore-environment --keep HOME -c just build-jupyterlite
