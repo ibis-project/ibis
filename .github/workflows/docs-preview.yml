@@ -70,6 +70,12 @@ jobs:
             done
           } | tee /tmp/comment
 
+      - name: restore cache of the previously rendered notebooks
+        uses: actions/cache/restore@v4
+        with:
+          key: docs-${{ github.event.pull_request.base.sha }}
+          path: docs/**/.jupyter_cache
+
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-build-all
 
