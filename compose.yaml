@@ -446,7 +446,7 @@ services:
         - kudu cluster ksck kudu:7051
 
   impala-hive-metastore:
-    image: apache/impala:4.0.0-impala_quickstart_hms
+    image: apache/impala:4.4.1-impala_quickstart_hms
     container_name: impala-hive-metastore
     command: hms
     volumes:
@@ -463,7 +463,7 @@ services:
           - impala-hive-metastore.impala
 
   statestored:
-    image: apache/impala:4.0.0-statestored
+    image: apache/impala:4.4.1-statestored
     ports:
       - 25010:25010 # Web debug UI
     command:
@@ -487,7 +487,7 @@ services:
         condition: service_started
       statestored:
         condition: service_healthy
-    image: apache/impala:4.0.0-catalogd
+    image: apache/impala:4.4.1-catalogd
     ports:
       - 25020:25020 # Web debug UI
     command:
@@ -511,7 +511,7 @@ services:
       - impala
 
   impala:
-    image: apache/impala:4.0.0-impalad_coord_exec
+    image: apache/impala:4.4.1-impalad_coord_exec
     depends_on:
       statestored:
         condition: service_healthy
