@@ -36,6 +36,12 @@ jobs:
       - name: checkout
         uses: actions/checkout@v4
 
+      - name: restore cache of the previously rendered notebooks
+        uses: actions/cache/restore@v4
+        with:
+          key: docs-${{ github.event.pull_request.base.sha }}
+          path: docs/**/.jupyter_cache
+
       - name: run doctest
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
