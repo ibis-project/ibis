@@ -17,7 +17,31 @@ permissions:
   contents: read
 
 jobs:
-  docs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: run doctest
+        # keep HOME because duckdb (which we use for doctests) wants to use
+        # that for extensions
+        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
+
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: install nix
@@ -41,11 +65,6 @@ jobs:
         with:
           key: docs-${{ github.event.pull_request.base.sha }}
           path: docs/**/.jupyter_cache
-
-      - name: run doctest
-        # keep HOME because duckdb (which we use for doctests) wants to use
-        # that for extensions
-        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
       - name: generate api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
