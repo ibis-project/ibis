@@ -39,7 +39,7 @@ jobs:
         with:
           # https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
           # > The SHA of the most recent commit on ref before the push.
-          key: docs-${{ github.event.push.before }}
+          key: docs-${{ github.event.before }}
           path: docs/**/.jupyter_cache
 
       - name: run doctests
