@@ -313,7 +313,6 @@ filterwarnings = [
   # pandas by way of polars when comparing arrays
   'ignore:The truth value of an empty array is ambiguous\.:DeprecationWarning',
   # ibis
-  'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
   'ignore:`StructValue\.destructure` is deprecated as of v10\.0; use lift or unpack instead:FutureWarning',
   # spark
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
