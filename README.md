@@ -166,7 +166,7 @@ Ibis broadly supports two types of backend:
 1. SQL-generating backends
 2. DataFrame-generating backends
 
-![Ibis backend types](https://raw.githubusercontent.com/ibis-project/ibis/main/docs/images/backends.png)
+![Ibis backend types](./docs/images/backends.png)
 
 ## Portability
 
