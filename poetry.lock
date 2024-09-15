@@ -7838,7 +7838,6 @@ impala = ["impyla", "numpy", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
 mssql = ["numpy", "pandas", "pyarrow", "pyarrow-hotfix", "pyodbc", "rich"]
 mysql = ["numpy", "pandas", "pyarrow", "pyarrow-hotfix", "pymysql", "rich"]
 oracle = ["numpy", "oracledb", "packaging", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
-pandas = ["numpy", "packaging", "pandas", "pyarrow", "pyarrow-hotfix", "regex", "rich"]
 polars = ["numpy", "packaging", "pandas", "polars", "pyarrow", "pyarrow-hotfix", "rich"]
 postgres = ["numpy", "pandas", "psycopg2", "pyarrow", "pyarrow-hotfix", "rich"]
 pyspark = ["numpy", "packaging", "pandas", "pyarrow", "pyarrow-hotfix", "pyspark", "rich"]
@@ -7851,4 +7850,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "41eb04e1f27af161f35cabe968009102c211634554d8239f46e2f958e1d40445"
+content-hash = "ee02b6724647e52fe93cbb3259dba3956a3e7349d7b8c5c8a48bf254b8f9b9ab"

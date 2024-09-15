@@ -91,7 +91,7 @@ class PandasData(DataMapper):
         for column_name in df.dtypes.keys():
             if not isinstance(column_name, str):
                 raise TypeError(
-                    "Column names must be strings to use the pandas backend"
+                    "Column names must be strings to ingest a pandas DataFrame"
                 )
 
             pandas_column = df[column_name]
