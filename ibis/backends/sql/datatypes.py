@@ -199,6 +199,9 @@ class SqlglotType(TypeMapper):
         if dtype := cls.unknown_type_strings.get(text.lower()):
             return dtype
 
+        if nullable is None:
+            nullable = cls.default_nullable
+
         try:
             sgtype = sg.parse_one(text, into=sge.DataType, read=cls.dialect)
         except sg.errors.ParseError:
@@ -501,7 +504,9 @@ class PostgresType(SqlglotType):
         if text.lower().startswith("vector"):
             text = "vector"
 
-        return super().from_string(text, nullable=nullable)
+        return super().from_string(
+            text, nullable=nullable if nullable is not None else cls.default_nullable
+        )
 
 
 class RisingWaveType(PostgresType):
@@ -752,7 +757,7 @@ class SnowflakeType(SqlglotType):
         if scale is None or int(scale.this.this) == 0:
             return dt.Int64(nullable=nullable)
         else:
-            return super()._from_sqlglot_DECIMAL(precision, scale)
+            return super()._from_sqlglot_DECIMAL(precision, scale, nullable=nullable)
 
     @classmethod
     def _from_sqlglot_ARRAY(
