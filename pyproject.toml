@@ -354,8 +354,6 @@ filterwarnings = [
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
-  # dask and pandas backend deprecation
-  'ignore:The (dask|pandas) backend is slated for removal in 10\.0:DeprecationWarning',
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [
