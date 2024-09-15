@@ -1366,7 +1366,7 @@ class Scalar(Value):
             return parent.to_expr().aggregate(self)
         else:
             raise com.RelationError(
-                f"The scalar expression {self} cannot be converted to a "
+                "The scalar expression cannot be converted to a "
                 "table expression because it involves multiple base table "
                 "references"
             )
