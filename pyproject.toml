@@ -194,15 +194,6 @@ oracle = [
   "pandas",
   "rich",
 ]
-pandas = [
-  "regex",
-  "packaging",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
-]
 polars = [
   "polars",
   "packaging",
