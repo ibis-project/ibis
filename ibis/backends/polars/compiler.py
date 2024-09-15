@@ -14,7 +14,7 @@ import sqlglot as sg
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.polars.rewrites import PandasAsofJoin, PandasJoin, PandasRename
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.dialects import Polars
 from ibis.expr.operations.udf import InputType

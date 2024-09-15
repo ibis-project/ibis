@@ -117,10 +117,6 @@ jobs:
             extras:
               - clickhouse
               - examples
-          - name: pandas
-            title: Pandas
-            extras:
-              - pandas
           - name: sqlite
             title: SQLite
             extras:
@@ -233,13 +229,6 @@ jobs:
             services:
               - flink
         include:
-          - os: ubuntu-latest
-            python-version: "3.11.8"
-            backend:
-              name: dask
-              title: Dask
-              extras:
-                - dask
           - os: ubuntu-latest
             python-version: "3.11"
             backend:
@@ -539,17 +528,6 @@ jobs:
           - "3.10"
           - "3.12"
         backend:
-          - name: dask
-            title: Dask
-            deps:
-              required:
-                - "numpy@1.23.5"
-                - "pyarrow@10.0.1"
-              optional:
-                - "dask[array,dataframe]@2022.9.1"
-                - "pandas@1.5.3"
-            extras:
-              - dask
           - name: postgres
             title: PostgreSQL
             deps:
@@ -600,19 +578,6 @@ jobs:
               extras:
                 - postgres
                 - geospatial
-          - python-version: "3.12"
-            backend:
-              name: dask
-              title: Dask
-              deps:
-                required:
-                  - "numpy@1.23.5"
-                  - "pyarrow@10.0.1"
-                optional:
-                  - "dask[array,dataframe]@2022.9.1"
-                  - "pandas@1.5.3"
-              extras:
-                - dask
     steps:
       - name: checkout
         uses: actions/checkout@v4

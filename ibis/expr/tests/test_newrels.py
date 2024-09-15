@@ -761,6 +761,29 @@ def test_chained_join_referencing_intermediate_table():
     assert isinstance(abc, ir.JoinExpr)
 
 
+@pytest.mark.parametrize("how", ["positional", "cross"])
+def test_chained_join_positional_cross(how):
+    a = ibis.table(name="a", schema={"a": "int64", "b": "string"})
+    b = ibis.table(name="b", schema={"c": "int64", "d": "string"})
+    c = ibis.table(name="c", schema={"e": "int64", "f": "string"})
+    joined = a.join(b, how=how).join(c, how=how)
+    result = joined._finish()
+
+    with join_tables(joined) as (r1, r2, r3):
+        assert result.op() == JoinChain(
+            first=r1,
+            rest=[JoinLink(how, r2, ()), JoinLink(how, r3, ())],
+            values={
+                "a": r1.a,
+                "b": r1.b,
+                "c": r2.c,
+                "d": r2.d,
+                "e": r3.e,
+                "f": r3.f,
+            },
+        )
+
+
 def test_join_predicate_dereferencing():
     # See #790, predicate pushdown in joins not supported
 

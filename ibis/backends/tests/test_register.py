@@ -83,12 +83,10 @@ def gzip_csv(data_dir, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -113,12 +111,10 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -139,12 +135,10 @@ def test_register_csv_gz(con, data_dir, gzip_csv):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -199,12 +193,10 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -238,13 +230,11 @@ def test_register_parquet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -287,12 +277,10 @@ def test_register_iterator_parquet(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -323,12 +311,10 @@ def test_register_pandas(con):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "pyspark",
@@ -350,12 +336,10 @@ def test_register_pyarrow_tables(con):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "flink",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "snowflake",
@@ -391,7 +375,6 @@ def test_csv_reregister_schema(con, tmp_path):
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "druid",
         "exasol",
@@ -400,7 +383,6 @@ def test_csv_reregister_schema(con, tmp_path):
         "mysql",
         "mssql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -515,8 +497,19 @@ def ft_data(data_dir):
     return table.slice(0, nrows)
 
 
-@pytest.mark.notyet(["flink", "pandas"])
 @pytest.mark.notimpl(["druid"])
+@pytest.mark.notyet(
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+    ]
+)
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
 
@@ -539,7 +532,6 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",
@@ -566,12 +558,10 @@ def test_read_csv_glob(con, tmp_path, ft_data):
 @pytest.mark.notyet(
     [
         "clickhouse",
-        "dask",
         "datafusion",
         "impala",
         "mssql",
         "mysql",
-        "pandas",
         "postgres",
         "risingwave",
         "sqlite",

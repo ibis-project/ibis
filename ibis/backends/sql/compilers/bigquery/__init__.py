@@ -519,15 +519,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > 0
 
-    def visti_StringFind(self, op, *, arg, substr, start, end):
-        if start is not None:
-            raise NotImplementedError(
-                "`start` not implemented for BigQuery string find"
-            )
-        if end is not None:
-            raise NotImplementedError("`end` not implemented for BigQuery string find")
-        return self.f.strpos(arg, substr)
-
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
     ):

@@ -446,7 +446,8 @@ services:
         - kudu cluster ksck kudu:7051
 
   impala-hive-metastore:
-    image: apache/impala:4.0.0-impala_quickstart_hms
+    image: impala-quickstart_hms
+    build: ./docker/impala/quickstart_hms
     container_name: impala-hive-metastore
     command: hms
     volumes:
@@ -456,6 +457,12 @@ services:
       # shared volume.
       - impala:/user/hive/warehouse
       - ./docker/impala/conf:/opt/hive/conf:ro
+    healthcheck:
+      interval: 3s
+      retries: 20
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 9083 && nc -z impala-hive-metastore 9083 && nc -z impala-hive-metastore.impala 9083
     networks:
       impala:
         aliases:
@@ -463,7 +470,8 @@ services:
           - impala-hive-metastore.impala
 
   statestored:
-    image: apache/impala:4.0.0-statestored
+    image: impala-statestored
+    build: ./docker/impala/statestored
     ports:
       - 25010:25010 # Web debug UI
     command:
@@ -473,7 +481,7 @@ services:
     volumes:
       - ./docker/impala/conf:/opt/impala/conf:ro
     healthcheck:
-      interval: 30s
+      interval: 3s
       retries: 20
       test:
         - CMD-SHELL
@@ -487,7 +495,8 @@ services:
         condition: service_started
       statestored:
         condition: service_healthy
-    image: apache/impala:4.0.0-catalogd
+    image: impala-catalogd
+    build: ./docker/impala/catalogd
     ports:
       - 25020:25020 # Web debug UI
     command:
@@ -502,7 +511,7 @@ services:
       - impala:/user/hive/warehouse
       - ./docker/impala/conf:/opt/impala/conf:ro
     healthcheck:
-      interval: 30s
+      interval: 3s
       retries: 20
       test:
         - CMD-SHELL
@@ -511,7 +520,8 @@ services:
       - impala
 
   impala:
-    image: apache/impala:4.0.0-impalad_coord_exec
+    image: impala-coord_exec
+    build: ./docker/impala/coord_exec
     depends_on:
       statestored:
         condition: service_healthy
@@ -524,7 +534,7 @@ services:
     ports:
       - 21050:21050 # HS2 endpoint
     healthcheck:
-      interval: 30s
+      interval: 3s
       retries: 20
       test:
         - CMD-SHELL

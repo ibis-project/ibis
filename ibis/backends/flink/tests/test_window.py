@@ -54,18 +54,6 @@ def test_window_invalid_start_end(con, window):
     con.execute(expr)
 
 
-def test_range_window(simple_table, assert_sql):
-    expr = simple_table.f.sum().over(
-        range=(-ibis.interval(minutes=500), 0), order_by=simple_table.f
-    )
-    assert_sql(expr)
-
-
-def test_rows_window(simple_table, assert_sql):
-    expr = simple_table.f.sum().over(rows=(-1000, 0), order_by=simple_table.f)
-    assert_sql(expr)
-
-
 def test_tumble_window_by_grouped_agg(con):
     t = con.table("functional_alltypes_with_watermark")
     expr = (

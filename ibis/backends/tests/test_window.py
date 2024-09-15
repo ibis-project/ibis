@@ -152,10 +152,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t: pandas_ntile(t.float_col, 7),
             id="ntile",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "pandas", "polars"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["impala"],
                     raises=AssertionError,
@@ -195,11 +192,9 @@ with pytest.warns(FutureWarning, match="v9.0"):
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
@@ -599,7 +594,6 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.notimpl(["snowflake"], raises=AssertionError)
-@pytest.mark.notimpl(["dask"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
@@ -676,9 +670,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="unordered-ntile",
             marks=[
-                pytest.mark.notimpl(
-                    ["pandas", "dask"], raises=com.OperationNotDefinedError
-                ),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,

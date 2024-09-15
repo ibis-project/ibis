@@ -160,9 +160,9 @@ def test_builtins(benchmark, expr_fn, builtin, t, base, large_expr):
     benchmark(builtin, expr)
 
 
-_backends = _get_backend_names(exclude=("pandas",))
+_backends = _get_backend_names()
 
-_XFAIL_COMPILE_BACKENDS = ("dask", "polars")
+_XFAIL_COMPILE_BACKENDS = ("polars",)
 
 
 @pytest.mark.benchmark(group="compilation")
@@ -991,6 +991,13 @@ def test_selectors(benchmark, cols):
     n = cols - cols // 10
     sel = s.across(s.cols(*[f"col{i}" for i in range(n)]), lambda c: c.cast("str"))
     benchmark(sel.expand, t)
+
+
+@pytest.mark.parametrize("ncols", [10_000, 100_000, 1_000_000])
+def test_dot_columns(benchmark, ncols):
+    t = ibis.table(name="t", schema={f"col{i}": "int" for i in range(ncols)})
+    result = benchmark(lambda t: t.columns, t)
+    assert len(result) == ncols
 
 
 def test_dedup_schema_failure_mode(benchmark):

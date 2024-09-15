@@ -22,10 +22,6 @@ from ibis.backends.tests.errors import (
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
 
-dot_sql_never = pytest.mark.never(
-    ["dask", "pandas"], reason="dask and pandas do not accept SQL"
-)
-
 _NAMES = {
     "bigquery": f"ibis_gbq_testing_{getpass.getuser()}_{PYTHON_SHORT_VERSION}.functional_alltypes",
 }
@@ -43,7 +39,6 @@ def ftname(con, ftname_raw):
     return table.sql(con.dialect)
 
 
-@dot_sql_never
 @pytest.mark.parametrize(
     "schema",
     [
@@ -92,7 +87,6 @@ def test_con_dot_sql(backend, con, schema, ftname):
 @pytest.mark.notyet(
     ["druid"], raises=com.IbisTypeError, reason="druid does not preserve case"
 )
-@dot_sql_never
 def test_table_dot_sql(backend):
     alltypes = backend.functional_alltypes
     t = (
@@ -127,7 +121,6 @@ def test_table_dot_sql(backend):
     assert pytest.approx(result) == expected
 
 
-@dot_sql_never
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
@@ -188,7 +181,6 @@ def test_table_dot_sql_with_join(backend):
 @pytest.mark.notyet(
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
-@dot_sql_never
 def test_table_dot_sql_repr(backend):
     alltypes = backend.functional_alltypes
     t = (
@@ -213,7 +205,6 @@ def test_table_dot_sql_repr(backend):
     assert repr(t)
 
 
-@dot_sql_never
 def test_dot_sql_alias_with_params(backend, alltypes, df):
     t = alltypes
     x = t.select(x=t.string_col + " abc").alias("foo")
@@ -222,7 +213,6 @@ def test_dot_sql_alias_with_params(backend, alltypes, df):
     backend.assert_series_equal(result.x, expected)
 
 
-@dot_sql_never
 def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     foo1 = alltypes.select(x=alltypes.string_col).alias("foo")
     foo2 = alltypes.select(x=alltypes.bigint_col).alias("foo")
@@ -232,15 +222,10 @@ def test_dot_sql_reuse_alias_with_different_types(backend, alltypes, df):
     backend.assert_series_equal(foo2.x.execute(), expected2)
 
 
-_NO_SQLGLOT_DIALECT = ("pandas", "dask")
-no_sqlglot_dialect = [
-    param(dialect, marks=pytest.mark.xfail) for dialect in sorted(_NO_SQLGLOT_DIALECT)
-]
-dialects = sorted(_get_backend_names(exclude=_NO_SQLGLOT_DIALECT)) + no_sqlglot_dialect
+dialects = sorted(_get_backend_names())
 
 
 @pytest.mark.parametrize("dialect", dialects)
-@dot_sql_never
 @pytest.mark.notyet(["druid"], reason="druid doesn't respect column name case")
 def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     name = "foo2"
@@ -258,7 +243,6 @@ def test_table_dot_sql_transpile(backend, alltypes, dialect, df):
     ["druid"], raises=AttributeError, reason="druid doesn't respect column names"
 )
 @pytest.mark.notyet(["bigquery"])
-@dot_sql_never
 def test_con_dot_sql_transpile(backend, con, dialect, df):
     t = sg.table("functional_alltypes", quoted=True)
     foo = sg.select(
@@ -271,7 +255,6 @@ def test_con_dot_sql_transpile(backend, con, dialect, df):
     backend.assert_series_equal(result.x, expected)
 
 
-@dot_sql_never
 @pytest.mark.notimpl(["druid", "polars"])
 def test_order_by_no_projection(backend):
     con = backend.connection
@@ -285,7 +268,6 @@ def test_order_by_no_projection(backend):
     assert set(result) == {"Ross, Jerry L.", "Chang-Diaz, Franklin R."}
 
 
-@dot_sql_never
 def test_dot_sql_limit(con):
     expr = con.sql('SELECT * FROM (SELECT \'abc\' "ts") "x"', dialect="duckdb").limit(1)
     result = expr.execute()
@@ -296,7 +278,6 @@ def test_dot_sql_limit(con):
     assert result.iat[0, 0] == "abc"
 
 
-@dot_sql_never
 @pytest.mark.notyet(
     ["druid"],
     raises=KeyError,
@@ -320,7 +301,6 @@ def test_cte(alltypes, df):
     tm.assert_frame_equal(result, expected)
 
 
-@dot_sql_never
 def test_bare_minimum(alltypes, df, ftname_raw):
     """Test that a backend that supports dot sql can do the most basic thing."""
 
@@ -328,7 +308,6 @@ def test_bare_minimum(alltypes, df, ftname_raw):
     assert expr.to_pandas().iat[0, 0] == len(df)
 
 
-@dot_sql_never
 def test_embedded_cte(alltypes, ftname_raw):
     sql = f'WITH "x" AS (SELECT * FROM "{ftname_raw}") SELECT * FROM "x"'
     expr = alltypes.sql(sql, dialect="duckdb")
@@ -336,7 +315,6 @@ def test_embedded_cte(alltypes, ftname_raw):
     assert len(result) == 1
 
 
-@dot_sql_never
 @pytest.mark.never(["exasol"], raises=ExaQueryError, reason="backend requires aliasing")
 @pytest.mark.never(
     ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"

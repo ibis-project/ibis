@@ -68,7 +68,7 @@ class IbisDataFrame:
         return len(self._table.columns)
 
     def column_names(self):
-        return self._table.columns
+        return list(self._table.columns)
 
     def get_column(self, i: int) -> IbisColumn:
         name = self._table.columns[i]

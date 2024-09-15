@@ -144,7 +144,6 @@ Ibis supports 20+ backends:
 - [Apache PySpark](https://ibis-project.org/backends/pyspark/)
 - [BigQuery](https://ibis-project.org/backends/bigquery/)
 - [ClickHouse](https://ibis-project.org/backends/clickhouse/)
-- [Dask](https://ibis-project.org/backends/dask/)
 - [DuckDB](https://ibis-project.org/backends/duckdb/)
 - [Exasol](https://ibis-project.org/backends/exasol)
 - [MySQL](https://ibis-project.org/backends/mysql/)
@@ -167,7 +166,7 @@ Ibis broadly supports two types of backend:
 1. SQL-generating backends
 2. DataFrame-generating backends
 
-![Ibis backend types](https://raw.githubusercontent.com/ibis-project/ibis/main/docs/images/backends.png)
+![Ibis backend types](./docs/images/backends.png)
 
 ## Portability
 

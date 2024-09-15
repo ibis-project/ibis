@@ -1366,7 +1366,7 @@ class Scalar(Value):
             return parent.to_expr().aggregate(self)
         else:
             raise com.RelationError(
-                f"The scalar expression {self} cannot be converted to a "
+                "The scalar expression cannot be converted to a "
                 "table expression because it involves multiple base table "
                 "references"
             )
@@ -1380,7 +1380,7 @@ class Scalar(Value):
 
 @public
 class Column(Value, _FixedTextJupyterMixin):
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None

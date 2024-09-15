@@ -334,5 +334,5 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_access_kudu_table(kudu_table):
-    assert kudu_table.columns == ["a"]
+    assert kudu_table.columns == ("a",)
     assert kudu_table["a"].type() == dt.string

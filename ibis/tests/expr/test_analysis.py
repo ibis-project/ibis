@@ -186,12 +186,12 @@ def test_filter_self_join():
 
 def test_is_ancestor_analytic():
     x = ibis.table(ibis.schema([("col", "int32")]), "x")
-    with_filter_col = x.select(x.columns + [ibis.null().name("filter")])
+    with_filter_col = x.select(*x.columns, ibis.null().name("filter"))
     filtered = with_filter_col.filter(with_filter_col["filter"].isnull())
-    subquery = filtered.select(filtered.columns)
+    subquery = filtered.select(*filtered.columns)
 
     with_analytic = subquery.select(
-        subquery.columns + [subquery.count().name("analytic")]
+        *subquery.columns, subquery.count().name("analytic")
     )
 
     assert not subquery.op().equals(with_analytic.op())

@@ -12,14 +12,12 @@ no_python_udfs = mark.notimpl(
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "druid",
         "exasol",
         "impala",
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "trino",
         "risingwave",
     ]
