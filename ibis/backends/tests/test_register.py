@@ -479,11 +479,6 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     [
         "flink",
         "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
         "trino",
     ]
 )
