@@ -1323,7 +1323,6 @@ def test_day_of_week_column_group_by(
         .rename(columns={"timestamp_col": "day_of_week_result"})
     )
 
-    # FIXME(#1536): Pandas backend should use query.schema().apply_to
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 

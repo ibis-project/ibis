@@ -194,15 +194,6 @@ oracle = [
   "pandas",
   "rich",
 ]
-pandas = [
-  "regex",
-  "packaging",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
-]
 polars = [
   "polars",
   "packaging",
@@ -313,7 +304,6 @@ filterwarnings = [
   # pandas 1.5.x
   "ignore:iteritems is deprecated and will be removed in a future version:FutureWarning",
   'ignore:Passing unit-less datetime64 dtype to \.astype is deprecated:FutureWarning',
-  'ignore:The default value of numeric_only in DataFrameGroupBy\.sum is deprecated:FutureWarning',
   # numpy
   "ignore:Creating an ndarray from ragged nested sequences:",
   'ignore:`np\.bool` is a deprecated alias for the builtin `bool`:DeprecationWarning',
@@ -321,10 +311,7 @@ filterwarnings = [
   'ignore:In the future `np\.bool` will be defined as the corresponding NumPy scalar:FutureWarning',
   # pandas by way of polars when comparing arrays
   'ignore:The truth value of an empty array is ambiguous\.:DeprecationWarning',
-  # druid
-  'ignore:Dialect druid.rest will not make use of SQL compilation caching:',
   # ibis
-  'ignore:`(Base)?Backend.database` is deprecated:FutureWarning',
   'ignore:`StructValue\.destructure` is deprecated as of v10\.0; use lift or unpack instead:FutureWarning',
   # spark
   "ignore:distutils Version classes are deprecated:DeprecationWarning",
@@ -347,7 +334,7 @@ filterwarnings = [
   "ignore:the imp module is deprecated in favour of importlib:DeprecationWarning",
   # pytest raises a syntax error when encountering this from *any* module, including third party modules
   "ignore:invalid escape sequence:DeprecationWarning",
-  # geopandas raises usr warning on geometry column
+  # geopandas raises user warning on geometry column
   "ignore:Geometry is in a geographic CRS",
   # `is_sparse` deprecation was addressed in pyarrow 13.0.0 (see https://github.com/apache/arrow/pull/35366),
   # but flink requires apache-beam<2.49, which caps its pyarrow dependency (see https://github.com/apache/beam/blob/v2.48.0/sdks/python/setup.py#L144)
@@ -366,8 +353,6 @@ filterwarnings = [
   "ignore:Passing a BlockManager to DataFrame is deprecated:DeprecationWarning",
   # snowpark logging warnings
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
-  # dask and pandas backend deprecation
-  'ignore:The (dask|pandas) backend is slated for removal in 10\.0:DeprecationWarning',
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

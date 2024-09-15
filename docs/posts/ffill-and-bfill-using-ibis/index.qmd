@@ -30,7 +30,7 @@ This was heavily inspired by Gil Forsyth's writeup on ffill and bfill on the
 ### Setup
 
 First, we want to make some mock data.
-To demonstrate this technique in a non-pandas backend, we will use the DuckDB backend.
+To demonstrate this technique we will use the DuckDB backend.
 
 Our data will have measurements by date, and these measurements will be grouped by an event id.
 We will then save this data to `data.parquet` so we can register that parquet file as a table in our DuckDB connector.
