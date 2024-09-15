@@ -13,7 +13,7 @@ from urllib.parse import unquote_plus
 import pymysql
 import sqlglot as sg
 import sqlglot.expressions as sge
-from pymysql.constants.ER import NO_SUCH_TABLE
+from pymysql.constants import ER
 from pymysql.err import ProgrammingError
 
 import ibis
@@ -224,12 +224,10 @@ class Backend(SQLBackend, CanCreateDatabase):
         ).sql(self.dialect)
 
         with self.begin() as cur:
-            query = sge.Describe(this=table).sql(self.dialect)
-
             try:
-                cur.execute(query)
+                cur.execute(sge.Describe(this=table).sql(self.dialect))
             except ProgrammingError as e:
-                if e.args[0] == NO_SUCH_TABLE:
+                if e.args[0] == ER.NO_SUCH_TABLE:
                     raise com.TableNotFound(name) from e
             else:
                 result = cur.fetchall()
@@ -481,7 +479,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                 cur.fetchall()
         except pymysql.err.ProgrammingError as e:
             err_code, _ = e.args
-            if err_code == NO_SUCH_TABLE:
+            if err_code == ER.NO_SUCH_TABLE:
                 return False
             raise
         else:
