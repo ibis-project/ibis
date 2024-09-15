@@ -447,10 +447,8 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
 @pytest.mark.never(
     [
         "duckdb",
-        "pandas",
         "polars",
         "bigquery",
-        "dask",
         "clickhouse",
         "datafusion",
         "snowflake",
@@ -497,19 +495,8 @@ def ft_data(data_dir):
     return table.slice(0, nrows)
 
 
+@pytest.mark.notyet(["flink"])
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
-    ]
-)
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
 
