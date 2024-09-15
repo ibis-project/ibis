@@ -11,8 +11,8 @@ import re
 import sys
 import urllib.parse
 import urllib.request
-from io import BytesIO
 import weakref
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
