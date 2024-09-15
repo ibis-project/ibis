@@ -82,7 +82,7 @@ def test_array_slice_scalar(con, start, stop):
 
 @pytest.mark.parametrize("index", [1, 3, 4, 11, -11])
 def test_array_index(t, df, index):
-    expr = t[t.array_int[index].name("indexed")]
+    expr = t.select(t.array_int[index].name("indexed"))
     result = expr.execute()
 
     expected = pd.DataFrame(

@@ -18,7 +18,7 @@ def test_union(union, snapshot):
 
 def test_union_project_column(union_all, snapshot):
     # select a column, get a subquery
-    expr = union_all[[union_all.key]]
+    expr = union_all.select(union_all.key)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
@@ -35,14 +35,14 @@ def test_table_difference(difference, snapshot):
 
 def test_intersect_project_column(intersect, snapshot):
     # select a column, get a subquery
-    expr = intersect[[intersect.key]]
+    expr = intersect.select(intersect.key)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
 
 def test_difference_project_column(difference, snapshot):
     # select a column, get a subquery
-    expr = difference[[difference.key]]
+    expr = difference.select(difference.key)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
 
@@ -50,14 +50,14 @@ def test_difference_project_column(difference, snapshot):
 def test_table_distinct(con, snapshot):
     t = con.table("functional_alltypes")
 
-    expr = t[t.string_col, t.int_col].distinct()
+    expr = t.select(t.string_col, t.int_col).distinct()
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
 
 def test_column_distinct(con, snapshot):
     t = con.table("functional_alltypes")
-    expr = t[t.string_col].distinct()
+    expr = t.select(t.string_col).distinct()
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
@@ -66,7 +66,7 @@ def test_count_distinct(con, snapshot):
     t = con.table("functional_alltypes")
 
     metric = t.int_col.nunique().name("nunique")
-    expr = t[t.bigint_col > 0].group_by("string_col").aggregate([metric])
+    expr = t.filter(t.bigint_col > 0).group_by("string_col").aggregate([metric])
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot)
 
@@ -96,8 +96,8 @@ def test_pushdown_with_or(snapshot):
         ],
         "functional_alltypes",
     )
-    subset = t[(t.double_col > 3.14) & t.string_col.contains("foo")]
-    expr = subset[(subset.int_col - 1 == 0) | (subset.float_col <= 1.34)]
+    subset = t.filter((t.double_col > 3.14) & t.string_col.contains("foo"))
+    expr = subset.filter((subset.int_col - 1 == 0) | (subset.float_col <= 1.34))
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -117,7 +117,7 @@ def test_having_size(snapshot):
 
 def test_having_from_filter(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], "t")
-    filt = t[t.b == "m"]
+    filt = t.filter(t.b == "m")
     gb = filt.group_by(filt.b)
     having = gb.having(filt.a.max() == 2)
     expr = having.aggregate(filt.a.sum().name("sum"))
@@ -128,16 +128,16 @@ def test_having_from_filter(snapshot):
 
 def test_simple_agg_filter(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], name="my_table")
-    filt = t[t.a < 100]
-    expr = filt[filt.a == filt.a.max()]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a == filt.a.max())
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_agg_and_non_agg_filter(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], name="my_table")
-    filt = t[t.a < 100]
-    expr = filt[filt.a == filt.a.max()]
-    expr = expr[expr.b == "a"]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a == filt.a.max())
+    expr = expr.filter(expr.b == "a")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -145,8 +145,8 @@ def test_agg_filter(snapshot):
     t = ibis.table([("a", "int64"), ("b", "int64")], name="my_table")
     t = t.mutate(b2=t.b * 2)
     t = t[["a", "b2"]]
-    filt = t[t.a < 100]
-    expr = filt[filt.a == filt.a.max().name("blah")]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a == filt.a.max().name("blah"))
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -154,8 +154,8 @@ def test_agg_filter_with_alias(snapshot):
     t = ibis.table([("a", "int64"), ("b", "int64")], name="my_table")
     t = t.mutate(b2=t.b * 2)
     t = t[["a", "b2"]]
-    filt = t[t.a < 100]
-    expr = filt[filt.a.name("A") == filt.a.max().name("blah")]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a.name("A") == filt.a.max().name("blah"))
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -169,7 +169,7 @@ def test_table_drop_with_filter(snapshot):
 
     right = ibis.table([("b", "string")], name="s")
     joined = left.join(right, left.b == right.b)
-    joined = joined[left.a]
+    joined = joined.select(left.a)
     expr = joined.filter(joined.a < 1.0)
     snapshot.assert_match(to_sql(expr), "out.sql")
     assert_decompile_roundtrip(expr, snapshot, eq=schemas_eq)
@@ -196,11 +196,10 @@ def test_subquery_where_location(snapshot):
         ],
         name="alltypes",
     )
-    param = ibis.param("timestamp").name("my_param")
+    param = ibis.param("timestamp")
     expr = (
-        t[["float_col", "timestamp_col", "int_col", "string_col"]][
-            lambda t: t.timestamp_col < param
-        ]
+        t.select("float_col", "timestamp_col", "int_col", "string_col")
+        .filter(lambda t: t.timestamp_col < param)
         .group_by("string_col")
         .aggregate(foo=lambda t: t.float_col.sum())
         .foo.count()

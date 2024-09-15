@@ -169,7 +169,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: run doctests
-        run: just ci-doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+        run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
+
+      - name: check for dead fixtures
+        run: poetry run pytest --dead-fixtures -m 'not flink'
 
       - name: upload code coverage
         if: success()

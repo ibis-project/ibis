@@ -19,14 +19,14 @@ Without selectors this becomes quite verbose and tedious to write:
 >>> t = ibis.table(dict(a="int", b="string", c="array<int>", abcd="float"))
 >>> expr = t.select([t[c] for c in t.columns if t[c].type().is_numeric()])
 >>> expr.columns
-['a', 'abcd']
+('a', 'abcd')
 
 Compare that to the [`numeric`](#ibis.selectors.numeric) selector:
 
 >>> import ibis.selectors as s
 >>> expr = t.select(s.numeric())
 >>> expr.columns
-['a', 'abcd']
+('a', 'abcd')
 
 When there are multiple properties to check it gets worse:
 
@@ -39,13 +39,13 @@ When there are multiple properties to check it gets worse:
 ...     ]
 ... )
 >>> expr.columns
-['a', 'b', 'abcd']
+('a', 'b', 'abcd')
 
 Using a composition of selectors this is much less tiresome:
 
 >>> expr = t.select((s.numeric() | s.of_type("string")) & s.contains(("a", "b", "cd")))
 >>> expr.columns
-['a', 'b', 'abcd']
+('a', 'b', 'abcd')
 """
 
 from __future__ import annotations
@@ -70,6 +70,20 @@ from ibis.common.deferred import Deferred, Resolver
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.selectors import All, Any, Expandable, Selector
 from ibis.common.typing import VarTuple  # noqa: TCH001
+
+
+def __getattr__(name):
+    if name == "c":
+        util.warn_deprecated(
+            "c", instead="use `ibis.selectors.cols` instead", as_of="9.5"
+        )
+        return cols
+    elif name == "r":
+        util.warn_deprecated(
+            "r", instead="use `ibis.selectors.index` instead", as_of="9.5"
+        )
+        return index
+    raise AttributeError(name)
 
 
 class Where(Selector):
@@ -98,7 +112,7 @@ def where(predicate: Callable[[ir.Value], bool]) -> Selector:
     >>> t = ibis.table(dict(a="float32"), name="t")
     >>> expr = t.select(s.where(lambda col: col.get_name() == "a"))
     >>> expr.columns
-    ['a']
+    ('a',)
 
     """
     return Where(predicate)
@@ -114,10 +128,10 @@ def numeric() -> Selector:
     >>> import ibis.selectors as s
     >>> t = ibis.table(dict(a="int", b="string", c="array<string>"), name="t")
     >>> t.columns
-    ['a', 'b', 'c']
+    ('a', 'b', 'c')
     >>> expr = t.select(s.numeric())  # `a` has integer type, so it's numeric
     >>> expr.columns
-    ['a']
+    ('a',)
 
     See Also
     --------
@@ -154,13 +168,13 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
     >>> t = ibis.table(dict(name="string", siblings="array<string>", parents="array<int64>"))
     >>> expr = t.select(s.of_type(dt.Array(dt.string)))
     >>> expr.columns
-    ['siblings']
+    ('siblings',)
 
     Strings are also accepted
 
     >>> expr = t.select(s.of_type("array<string>"))
     >>> expr.columns
-    ['siblings']
+    ('siblings',)
 
     Abstract/unparametrized types may also be specified by their string name
     (e.g. "integer" for any integer type), or by passing in a `DataType` class
@@ -171,7 +185,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
     >>> expr1.equals(expr2)
     True
     >>> expr2.columns
-    ['siblings', 'parents']
+    ('siblings', 'parents')
 
     See Also
     --------
@@ -233,7 +247,7 @@ def startswith(prefixes: str | tuple[str, ...]) -> Selector:
     >>> t = ibis.table(dict(apples="int", oranges="float", bananas="bool"), name="t")
     >>> expr = t.select(s.startswith(("a", "b")))
     >>> expr.columns
-    ['apples', 'bananas']
+    ('apples', 'bananas')
 
     See Also
     --------
@@ -305,14 +319,14 @@ def contains(
     ... )
     >>> expr = t.select(s.contains(("a", "b")))
     >>> expr.columns
-    ['a', 'b', 'ab']
+    ('a', 'b', 'ab')
 
     Select columns that contain all of `"a"` and `"b"`, that is, both `"a"` and
     `"b"` must be in each column's name to match.
 
     >>> expr = t.select(s.contains(("a", "b"), how=all))
     >>> expr.columns
-    ['ab']
+    ('ab',)
 
     See Also
     --------
@@ -345,7 +359,7 @@ def matches(regex: str | re.Pattern) -> Selector:
     >>> t = ibis.table(dict(ab="string", abd="int", be="array<string>"))
     >>> expr = t.select(s.matches(r"ab+"))
     >>> expr.columns
-    ['ab', 'abd']
+    ('ab', 'abd')
 
     See Also
     --------
@@ -381,8 +395,27 @@ class Cols(Selector):
 
 
 @public
-def c(*names: str | ir.Column) -> Selector:
-    """Select specific column names."""
+def cols(*names: str | ir.Column) -> Selector:
+    """Select specific column names.
+
+    Parameters
+    ----------
+    names
+        The column names to select
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table({"a": "int", "b": "int", "c": "int"})
+    >>> expr = t.select(s.cols("a", "b"))
+    >>> expr.columns
+    ('a', 'b')
+
+    See Also
+    --------
+    [`index`](#ibis.selectors.cols)
+    """
     names = frozenset(col if isinstance(col, str) else col.get_name() for col in names)
     return Cols(names)
 
@@ -605,7 +638,7 @@ class Slice(Concrete):
     step: int | None = None
 
 
-class ColumnSlice(Selector):
+class ColumnIndex(Selector):
     key: str | int | Slice | VarTuple[int | str]
 
     @staticmethod
@@ -639,15 +672,48 @@ class ColumnSlice(Selector):
         return frozenset(iterable)
 
 
-class Sliceable(Singleton):
+class Indexable(Singleton):
     def __getitem__(self, key: str | int | slice | Iterable[int | str]):
         if isinstance(key, slice):
             key = Slice(key.start, key.stop, key.step)
-        return ColumnSlice(key)
+        return ColumnIndex(key)
 
 
-r = Sliceable()
-"""Ranges of columns."""
+index = Indexable()
+"""Select columns by index.
+
+Examples
+--------
+>>> import ibis
+>>> import ibis.selectors as s
+>>> t = ibis.table(
+...     {"a": "int", "b": "int", "c": "int", "d": "int", "e": "int"}
+... )
+
+Select one column by numeric index:
+>>> expr = t.select(s.index[0])
+>>> expr.columns
+['a']
+
+Select multiple columns by numeric index:
+>>> expr = t.select(s.index[[0, 1]])
+>>> expr.columns
+['a', 'b']
+
+Select a slice of columns by numeric index:
+>>> expr = t.select(s.index[1:4])
+>>> expr.columns
+['b', 'c', 'd']
+
+Select a slice of columns by name:
+>>> expr = t.select(s.index["b":"d"])
+>>> expr.columns
+['b', 'c', 'd']
+
+See Also
+--------
+[`cols`](#ibis.selectors.cols)
+"""
 
 
 class First(Singleton, Selector):
@@ -713,9 +779,9 @@ def _to_selector(
     if isinstance(obj, Selector):
         return obj
     elif isinstance(obj, ir.Column):
-        return c(obj.get_name())
+        return cols(obj.get_name())
     elif isinstance(obj, str):
-        return c(obj)
+        return cols(obj)
     elif isinstance(obj, Expandable):
         raise exc.IbisInputError(
             f"Cannot compose {obj.__class__.__name__} with other selectors"

@@ -55,7 +55,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
-        ops.Mode,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,
@@ -86,7 +85,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.LPad: "lpad",
         ops.RPad: "rpad",
         ops.StringAscii: "ascii",
-        ops.Strip: "trim",
+        ops.Mode: "stats_mode",
     }
 
     @staticmethod
@@ -489,6 +488,12 @@ class OracleCompiler(SQLGlotCompiler):
                 f"Only 'day' part is supported for date delta in the {self.dialect} backend"
             )
         return left - right
+
+    def visit_Strip(self, op, *, arg):
+        # Oracle's `TRIM` only accepts a single character to trim off, unlike
+        # Oracle's `RTRIM` and `LTRIM` which accept a set of characters to
+        # remove.
+        return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
 
 compiler = OracleCompiler()

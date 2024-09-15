@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 
     import ibis.expr.schema as sch
     import ibis.expr.types as ir
+    from ibis.formats.pandas import PandasData
     from ibis.formats.pyarrow import PyArrowData
 
 
@@ -1261,20 +1262,31 @@ class Value(Expr):
 @public
 class Scalar(Value):
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Scalar:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_scalar(table[0][0], self.type())
+        return data_mapper.convert_scalar(
+            table[0][0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> Any:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
-        return PandasData.convert_scalar(
-            df, self.type() if schema is None else schema[df.columns[0]]
+        return data_mapper.convert_scalar(
+            df, self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> Any:
@@ -1342,16 +1354,19 @@ class Scalar(Value):
         >>> isinstance(lit, ir.Table)
         True
         """
-        parents = self.op().relations
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable({self.get_name(): self}).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().aggregate(self)
         else:
             raise com.RelationError(
-                f"The scalar expression {self} cannot be converted to a "
+                "The scalar expression cannot be converted to a "
                 "table expression because it involves multiple base table "
                 "references"
             )
@@ -1365,7 +1380,7 @@ class Scalar(Value):
 
 @public
 class Column(Value, _FixedTextJupyterMixin):
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None
@@ -1437,17 +1452,28 @@ class Column(Value, _FixedTextJupyterMixin):
         )
 
     def __pyarrow_result__(
-        self, table: pa.Table, data_mapper: type[PyArrowData] | None = None
+        self,
+        table: pa.Table,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PyArrowData] | None = None,
     ) -> pa.Array | pa.ChunkedArray:
         if data_mapper is None:
             from ibis.formats.pyarrow import PyArrowData as data_mapper
 
-        return data_mapper.convert_column(table[0], self.type())
+        return data_mapper.convert_column(
+            table[0], self.type() if schema is None else schema.types[0]
+        )
 
     def __pandas_result__(
-        self, df: pd.DataFrame, *, schema: sch.Schema | None = None
+        self,
+        df: pd.DataFrame,
+        *,
+        schema: sch.Schema | None = None,
+        data_mapper: type[PandasData] | None = None,
     ) -> pd.Series:
-        from ibis.formats.pandas import PandasData
+        if data_mapper is None:
+            from ibis.formats.pandas import PandasData as data_mapper
 
         assert (
             len(df.columns) == 1
@@ -1460,9 +1486,8 @@ class Column(Value, _FixedTextJupyterMixin):
         # df.loc[:, column_name] returns the special GeoSeries object.
         #
         # this bug is fixed in later versions of geopandas
-        (column,) = df.columns
-        return PandasData.convert_column(
-            df.loc[:, column], self.type() if schema is None else schema[column]
+        return data_mapper.convert_column(
+            df.loc[:, df.columns[0]], self.type() if schema is None else schema.types[0]
         )
 
     def __polars_result__(self, df: pl.DataFrame) -> pl.Series:
@@ -1521,11 +1546,13 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> expr.equals(expected)
         True
         """
-        parents = self.op().relations
-        values = {self.get_name(): self}
+        from ibis.expr.types.relations import unwrap_alias
 
-        if len(parents) == 0:
-            return ops.DummyTable(values).to_expr()
+        op = self.op()
+        parents = op.relations
+
+        if not parents:
+            return ops.DummyTable({op.name: unwrap_alias(op)}).to_expr()
         elif len(parents) == 1:
             (parent,) = parents
             return parent.to_expr().select(self)
@@ -1603,11 +1630,11 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t = ibis.examples.penguins.fetch()
         >>> t.body_mass_g.approx_nunique()
         ┌────┐
-        │ 94 │
+        │ 92 │
         └────┘
         >>> t.body_mass_g.approx_nunique(where=t.species == "Adelie")
         ┌────┐
-        │ 55 │
+        │ 61 │
         └────┘
         """
         return ops.ApproxCountDistinct(
@@ -1972,20 +1999,72 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def topk(self, k: int, by: ir.Value | None = None) -> ir.Table:
+    def topk(
+        self, k: int, by: ir.Value | None = None, *, name: str | None = None
+    ) -> ir.Table:
         """Return a "top k" expression.
+
+        Computes a Table containing the top `k` values by a certain metric
+        (defaults to count).
 
         Parameters
         ----------
         k
-            Return this number of rows
+            The number of rows to return.
         by
-            An expression. Defaults to `count`.
+            The metric to compute "top" by. Defaults to `count`.
+        name
+            The name to use for the metric column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
         Table
-            A top-k expression
+            The top `k` values.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.diamonds.fetch()
+
+        Compute the top 3 diamond colors by frequency:
+
+        >>> t.color.topk(3)
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ color  ┃ CountStar(diamonds) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ int64               │
+        ├────────┼─────────────────────┤
+        │ G      │               11292 │
+        │ E      │                9797 │
+        │ F      │                9542 │
+        └────────┴─────────────────────┘
+
+        Compute the top 3 diamond colors by mean price:
+
+        >>> t.color.topk(3, by=t.price.mean())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ color  ┃ Mean(price) ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ float64     │
+        ├────────┼─────────────┤
+        │ J      │ 5323.818020 │
+        │ I      │ 5091.874954 │
+        │ H      │ 4486.669196 │
+        └────────┴─────────────┘
+
+        Compute the top 2 diamond colors by max carat:
+
+        >>> t.color.topk(2, by=t.carat.max(), name="max_carat")
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ color  ┃ max_carat ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ string │ float64   │
+        ├────────┼───────────┤
+        │ J      │      5.01 │
+        │ H      │      4.13 │
+        └────────┴───────────┘
         """
         from ibis.expr.types.relations import bind
 
@@ -2000,6 +2079,9 @@ class Column(Value, _FixedTextJupyterMixin):
             by = lambda t: t.count()
 
         (metric,) = bind(table, by)
+
+        if name is not None:
+            metric = metric.name(name)
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
@@ -2073,33 +2155,28 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def value_counts(self) -> ir.Table:
+    def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table.
+
+        Parameters
+        ----------
+        name
+            The name to use for the frequency column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
         Table
-            Frequency table expression
+            The frequency table.
 
         Examples
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"chars": char} for char in "aabcddd")
-        >>> t
-        ┏━━━━━━━━┓
-        ┃ chars  ┃
-        ┡━━━━━━━━┩
-        │ string │
-        ├────────┤
-        │ a      │
-        │ a      │
-        │ b      │
-        │ c      │
-        │ d      │
-        │ d      │
-        │ d      │
-        └────────┘
+        >>> t = ibis.memtable({"chars": ["a", "a", "b", "c", "c", "c", "d", "d", "d", "d"]})
+
+        Compute the count of each unique value in "chars", ordered by "chars":
+
         >>> t.chars.value_counts().order_by("chars")
         ┏━━━━━━━━┳━━━━━━━━━━━━━┓
         ┃ chars  ┃ chars_count ┃
@@ -2108,13 +2185,30 @@ class Column(Value, _FixedTextJupyterMixin):
         ├────────┼─────────────┤
         │ a      │           2 │
         │ b      │           1 │
-        │ c      │           1 │
-        │ d      │           3 │
+        │ c      │           3 │
+        │ d      │           4 │
         └────────┴─────────────┘
+
+        Compute the count of each unique value in "chars" as a column named
+        "freq", ordered by "freq":
+
+        >>> t.chars.value_counts(name="freq").order_by("freq")
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ chars  ┃ freq  ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ string │ int64 │
+        ├────────┼───────┤
+        │ b      │     1 │
+        │ a      │     2 │
+        │ c      │     3 │
+        │ d      │     4 │
+        └────────┴───────┘
         """
-        name = self.get_name()
-        metric = _.count().name(f"{name}_count")
-        return self.as_table().group_by(name).aggregate(metric)
+        colname = self.get_name()
+        if name is None:
+            name = f"{colname}_count"
+        t = self.as_table()
+        return t.group_by(t[colname]).aggregate(t.count().name(name))
 
     def first(
         self,

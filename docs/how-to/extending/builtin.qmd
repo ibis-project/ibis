@@ -79,7 +79,7 @@ rest of the library:
 pkgs = ibis.read_parquet(
    "https://storage.googleapis.com/ibis-tutorial-data/pypi/2024-04-24/packages.parquet"
 )
-pandas_ish = pkgs[jw_sim(pkgs.name, "pandas") >= 0.9]
+pandas_ish = pkgs.filter(jw_sim(pkgs.name, "pandas") >= 0.9)
 pandas_ish
 ```
 

@@ -13,7 +13,7 @@ jobs:
       cancel-in-progress: true
     if: github.event.label.name == 'docs-preview'
     steps:
-      - uses: actions/create-github-app-token@v1.10.3
+      - uses: actions/create-github-app-token@v1.11.0
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -69,6 +69,12 @@ jobs:
               echo "- [${file}](${PREVIEW_URL}/${link%.qmd})"
             done
           } | tee /tmp/comment
+
+      - name: restore cache of the previously rendered notebooks
+        uses: actions/cache/restore@v4
+        with:
+          key: docs-${{ github.event.pull_request.base.sha }}
+          path: docs/**/.jupyter_cache
 
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-build-all

@@ -88,16 +88,18 @@ def test_adapt_scalar_array_results(con, alltypes):
 def test_interactive_repr_call_failure(con):
     t = con.table("lineitem").limit(100000)
 
-    t = t[t, t.l_receiptdate.cast("timestamp").name("date")]
+    t = t.select(t, t.l_receiptdate.cast("timestamp").name("date"))
 
     keys = [t.date.year().name("year"), "l_linestatus"]
     filt = t.l_linestatus.isin(["F"])
-    expr = t[filt].group_by(keys).aggregate(t.l_extendedprice.mean().name("avg_px"))
+    expr = (
+        t.filter(filt).group_by(keys).aggregate(t.l_extendedprice.mean().name("avg_px"))
+    )
 
     w2 = ibis.trailing_window(9, group_by=expr.l_linestatus, order_by=expr.year)
 
     metric = expr["avg_px"].mean().over(w2)
-    enriched = expr[expr, metric]
+    enriched = expr.select(expr, metric)
     with config.option_context("interactive", True):
         repr(enriched)
 
@@ -190,13 +192,6 @@ def test_attr_name_conflict(temp_parquet_table, temp_parquet_table2):
     assert left.join(right, ["id"]) is not None
     assert left.join(right, ["id", "name"]) is not None
     assert left.join(right, ["id", "files"]) is not None
-
-
-@pytest.fixture
-def con2(env):
-    return ibis.impala.connect(
-        host=env.impala_host, port=env.impala_port, auth_mechanism=env.auth_mechanism
-    )
 
 
 def test_day_of_week(con):

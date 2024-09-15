@@ -13,7 +13,7 @@ FROM web_sales ws1 ,
      date_dim ,
      customer_address ,
      web_site
-WHERE d_date BETWEEN '1999-02-01' AND cast('1999-04-02' AS date)
+WHERE d_date BETWEEN cast('1999-02-01' as date) AND cast('1999-04-02' AS date)
   AND ws1.ws_ship_date_sk = d_date_sk
   AND ws1.ws_ship_addr_sk = ca_address_sk
   AND ca_state = 'IL'

@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 T = TypeVar("T", covariant=True)
+S = TypeVar("S", bound=T, covariant=True)
 U = TypeVar("U", covariant=True)
 K = TypeVar("K")
 V = TypeVar("V")
@@ -702,3 +703,47 @@ def chunks(n: int, *, chunk_size: int) -> Iterator[tuple[int, int]]:
     [(0, 4), (4, 8), (8, 10)]
     """
     return ((start, min(start + chunk_size, n)) for start in range(0, n, chunk_size))
+
+
+def get_subclasses(obj: type[T]) -> Iterator[type[S]]:
+    """Recursively compute all subclasses of `obj`.
+
+    ::: {.callout-note}
+    ## The resulting iterator does **not** include the input type object.
+    :::
+
+    Parameters
+    ----------
+    obj
+        Any type object
+
+    Examples
+    --------
+    >>> class Base: ...
+    >>> class Subclass1(Base): ...
+    >>> class Subclass2(Base): ...
+    >>> class TransitiveSubclass(Subclass2): ...
+
+    Everything inherits `Base` (directly or transitively)
+
+    >>> list(get_subclasses(Base))
+    [<class 'ibis.util.Subclass1'>, <class 'ibis.util.Subclass2'>, <class 'ibis.util.TransitiveSubclass'>]
+
+    Nothing inherits from `Subclass1`
+
+    >>> list(get_subclasses(Subclass1))
+    []
+
+    Only `TransitiveSubclass` inherits from `Subclass2`
+
+    >>> list(get_subclasses(Subclass2))
+    [<class 'ibis.util.TransitiveSubclass'>]
+
+    Nothing inherits from `TransitiveSubclass`
+
+    >>> list(get_subclasses(TransitiveSubclass))
+    []
+    """
+    for child_class in obj.__subclasses__():
+        yield child_class
+        yield from get_subclasses(child_class)

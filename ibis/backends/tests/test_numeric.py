@@ -246,13 +246,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
-                "dask": decimal.Decimal("1.1"),
                 "exasol": decimal.Decimal("1"),
                 "duckdb": decimal.Decimal("1.1"),
                 "impala": decimal.Decimal("1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1"),
                 "mssql": decimal.Decimal("1"),
@@ -295,11 +293,9 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "mysql": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal("1.1"),
-                "dask": decimal.Decimal("1.1"),
                 "mssql": decimal.Decimal("1.1"),
                 "druid": decimal.Decimal("1.1"),
                 "datafusion": decimal.Decimal("1.1"),
@@ -328,10 +324,8 @@ def test_numeric_literal(con, backend, expr, expected_types):
             {
                 "bigquery": decimal.Decimal("1.1"),
                 "sqlite": decimal.Decimal("1.1"),
-                "dask": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
                 "risingwave": decimal.Decimal("1.1"),
-                "pandas": decimal.Decimal("1.1"),
                 "pyspark": decimal.Decimal("1.1"),
                 "clickhouse": decimal.Decimal(
                     "1.10000000000000003193790845333396190208"
@@ -386,8 +380,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("Infinity"),
                 "postgres": decimal.Decimal("Infinity"),
                 "risingwave": decimal.Decimal("Infinity"),
-                "pandas": decimal.Decimal("Infinity"),
-                "dask": decimal.Decimal("Infinity"),
                 "pyspark": decimal.Decimal("Infinity"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
@@ -451,8 +443,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": decimal.Decimal("-Infinity"),
                 "postgres": decimal.Decimal("-Infinity"),
                 "risingwave": decimal.Decimal("-Infinity"),
-                "pandas": decimal.Decimal("-Infinity"),
-                "dask": decimal.Decimal("-Infinity"),
                 "pyspark": decimal.Decimal("-Infinity"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
@@ -517,8 +507,6 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": None,
                 "postgres": float("nan"),
                 "risingwave": float("nan"),
-                "pandas": decimal.Decimal("NaN"),
-                "dask": decimal.Decimal("NaN"),
                 "pyspark": decimal.Decimal("NaN"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
@@ -1290,14 +1278,13 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
 @pytest.mark.notyet(
-    ["duckdb", "sqlite"],
-    raises=AssertionError,
-    reason="returns NULL when dividing by zero",
+    ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
 @pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
     expr = alltypes[column] / denominator
     result = expr.name("tmp").execute()
@@ -1308,7 +1295,7 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result.astype("float64"), expected)
 
 
-@pytest.mark.notimpl(["dask", "pandas", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -1382,16 +1369,14 @@ def test_histogram(con, alltypes):
     hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
-    assert vc.tolist() == vc_np.tolist()
-    assert (
-        con.execute(
-            ibis.memtable({"value": range(100)})
-            .select(bin=_.value.histogram(10))
-            .value_counts()
-            .bin_count.nunique()
-        )
-        == 1
+    expr = (
+        ibis.memtable({"value": range(100)})
+        .select(bin=_.value.histogram(10))
+        .value_counts()
+        .bin_count.nunique()
     )
+    assert vc.tolist() == vc_np.tolist()
+    assert con.execute(expr) == 1
 
 
 @pytest.mark.parametrize("const", ["pi", "e"])

@@ -24,7 +24,7 @@ grouped = t.group_by("species").aggregate(count=ibis._.count())
 grouped = grouped.mutate(row_number=ibis.row_number().over()).select(
     "row_number",
     (
-        ~s.c("row_number") & s.all()
+        ~s.cols("row_number") & s.all()
     ),  # see https://github.com/ibis-project/ibis/issues/6803
 )
 grouped

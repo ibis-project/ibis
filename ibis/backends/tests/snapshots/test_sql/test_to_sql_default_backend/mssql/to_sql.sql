@@ -1,5 +1,5 @@
 SELECT
-  COUNT(*) AS [CountStar()]
+  COUNT_BIG(*) AS [CountStar()]
 FROM (
   SELECT
     [t0].[b]

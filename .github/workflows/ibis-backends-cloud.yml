@@ -80,7 +80,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v1.10.3
+      - uses: actions/create-github-app-token@v1.11.0
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -107,7 +107,7 @@ jobs:
         run: poetry add snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }}"
+        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
 
       - uses: extractions/setup-just@v2
         env:

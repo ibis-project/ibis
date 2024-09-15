@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import collections.abc
+import contextlib
 import functools
 import glob
 import importlib.metadata
@@ -221,7 +222,7 @@ class _FileIOHandler:
             table = pa.Table.from_batches(reader, schema=arrow_schema)
 
         return expr.__pyarrow_result__(
-            table.rename_columns(table_expr.columns).cast(arrow_schema)
+            table.rename_columns(list(table_expr.columns)).cast(arrow_schema)
         )
 
     @util.experimental
@@ -1110,14 +1111,32 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         if self.supports_python_udfs:
             raise NotImplementedError(self.name)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        return name in self.list_tables()
+
     def _register_in_memory_tables(self, expr: ir.Expr) -> None:
         for memtable in expr.op().find(ops.InMemoryTable):
-            self._register_in_memory_table(memtable)
+            if not self._in_memory_table_exists(memtable.name):
+                self._register_in_memory_table(memtable)
+                weakref.finalize(
+                    memtable, self._finalize_in_memory_table, memtable.name
+                )
 
-    def _register_in_memory_table(self, op: ops.InMemoryTable):
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         if self.supports_in_memory_tables:
             raise NotImplementedError(
                 f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
+            )
+
+    def _finalize_in_memory_table(self, name: str) -> None:
+        """Wrap `_finalize_memtable` to suppress exceptions."""
+        with contextlib.suppress(Exception):
+            self._finalize_memtable(name)
+
+    def _finalize_memtable(self, name: str) -> None:
+        if self.supports_in_memory_tables:
+            raise NotImplementedError(
+                f"{self.name} must implement `_finalize_memtable` to support in-memory tables"
             )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
@@ -1494,19 +1513,25 @@ def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
         if len(value) == 1:
             kwargs[name] = value[0]
 
+    # Merge explicit kwargs with query string, explicit kwargs
+    # taking precedence
+    kwargs.update(orig_kwargs)
+
     if scheme == "file":
         path = parsed.netloc + parsed.path
-        # Merge explicit kwargs with query string, explicit kwargs
-        # taking precedence
-        kwargs.update(orig_kwargs)
         if path.endswith(".duckdb"):
             return ibis.duckdb.connect(path, **kwargs)
         elif path.endswith((".sqlite", ".db")):
             return ibis.sqlite.connect(path, **kwargs)
-        elif path.endswith((".parquet", ".csv", ".csv.gz")):
-            # Load parquet/csv/csv.gz files with duckdb by default
+        elif path.endswith((".csv", ".csv.gz")):
+            # Load csv/csv.gz files with duckdb by default
             con = ibis.duckdb.connect(**kwargs)
-            con.register(path)
+            con.read_csv(path)
+            return con
+        elif path.endswith(".parquet"):
+            # Load parquet files with duckdb by default
+            con = ibis.duckdb.connect(**kwargs)
+            con.read_parquet(path)
             return con
         else:
             raise ValueError(f"Don't know how to connect to {resource!r}")

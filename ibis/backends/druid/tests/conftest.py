@@ -8,7 +8,6 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import chain, repeat
 from typing import TYPE_CHECKING, Any
 
-import pytest
 from requests import Session
 
 import ibis
@@ -148,8 +147,3 @@ class TestConf(ServiceBackendTest):
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw):
         return ibis.connect(DRUID_URL, **kw)
-
-
-@pytest.fixture(scope="session")
-def con(data_dir, tmp_path_factory, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

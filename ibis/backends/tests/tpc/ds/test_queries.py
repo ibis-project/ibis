@@ -1,8 +1,7 @@
 from __future__ import annotations
 
 import calendar as cal
-from operator import itemgetter
-from pathlib import Path
+from operator import ge, itemgetter, lt
 
 import pytest
 
@@ -1238,9 +1237,71 @@ def test_22(inventory, date_dim, item):
 
 
 @tpc_test("ds")
-@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
-def test_23(inventory, date_dim, item):
-    raise NotImplementedError()
+def test_23(store_sales, date_dim, item, customer, catalog_sales, web_sales):
+    frequent_ss_items = (
+        store_sales.join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .join(
+            item.mutate(itemdesc=_.i_item_desc[:30]),
+            [("ss_item_sk", "i_item_sk")],
+        )
+        .filter(_.d_year.isin((2000, 2000 + 1, 2000 + 2, 2000 + 3)))
+        .group_by(_.itemdesc, item_sk=_.i_item_sk, solddate=_.d_date)
+        .having(_.count() > 4)
+        .agg(cnt=_.count())
+    )
+    max_store_sales = (
+        store_sales.join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .join(date_dim, [("ss_sold_date_sk", "d_date_sk")])
+        .filter(_.d_year.isin((2000, 2000 + 1, 2000 + 2, 2000 + 3)))
+        .group_by(_.c_customer_sk)
+        .agg(csales=(_.ss_quantity * _.ss_sales_price).sum())
+        .agg(tpcds_cmax=_.csales.max())
+    )
+    best_ss_customer = (
+        store_sales.join(customer, [("ss_customer_sk", "c_customer_sk")])
+        .cross_join(max_store_sales)
+        .group_by(_.c_customer_sk)
+        .having(
+            (_.ss_quantity * _.ss_sales_price).sum() > (50 / 100.0) * _.tpcds_cmax.max()
+        )
+        .agg(ssales=(_.ss_quantity * _.ss_sales_price).sum())
+    )
+
+    def total_sales(
+        sales, *, bill_customer_sk, sold_date_sk, item_sk, quantity, list_price
+    ):
+        return (
+            sales.join(customer, [(bill_customer_sk, "c_customer_sk")])
+            .join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .join(frequent_ss_items, [(item_sk, "item_sk")])
+            .join(best_ss_customer, [(bill_customer_sk, "c_customer_sk")])
+            .filter(_.d_year == 2000, _.d_moy == 2)
+            .group_by(_.c_last_name, _.c_first_name)
+            .agg(sales=(quantity * list_price).sum())
+        )
+
+    return (
+        total_sales(
+            catalog_sales,
+            bill_customer_sk=_.cs_bill_customer_sk,
+            sold_date_sk=_.cs_sold_date_sk,
+            item_sk=_.cs_item_sk,
+            quantity=_.cs_quantity,
+            list_price=_.cs_list_price,
+        )
+        .union(
+            total_sales(
+                web_sales,
+                bill_customer_sk=_.ws_bill_customer_sk,
+                sold_date_sk=_.ws_sold_date_sk,
+                item_sk=_.ws_item_sk,
+                quantity=_.ws_quantity,
+                list_price=_.ws_list_price,
+            )
+        )
+        .order_by(s.across(s.all(), _.asc(nulls_first=True)))
+        .limit(100)
+    )
 
 
 @tpc_test("ds", result_is_empty=True)
@@ -1280,7 +1341,7 @@ def test_24(store_sales, store_returns, store, item, customer, customer_address)
         .group_by(_.c_last_name, _.c_first_name, _.s_store_name)
         .having(_.netpaid.sum() > ssales.netpaid.mean().as_scalar() * 0.05)
         .agg(paid=_.netpaid.sum())
-        .order_by(~s.c("paid"))
+        .order_by(~s.cols("paid"))
     )
 
 
@@ -1436,17 +1497,17 @@ def test_28(store_sales):
 def test_29(store_sales, store_returns, catalog_sales, date_dim, store, item):
     d1 = (
         date_dim.filter(_.d_moy == 9, _.d_year == 1999)
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d1_date_sk="d_date_sk")
     )
     d2 = (
         date_dim.filter(_.d_moy.between(9, 9 + 3), _.d_year == 1999)
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d2_date_sk="d_date_sk")
     )
     d3 = (
         date_dim.filter(_.d_year.isin((1999, 1999 + 1, 1999 + 2)))
-        .drop(~s.c("d_date_sk"))
+        .drop(~s.cols("d_date_sk"))
         .rename(d3_date_sk="d_date_sk")
     )
     return (
@@ -1803,7 +1864,7 @@ def test_35(
         .relocate("cd_dep_employed_count", before="cnt2")
         .relocate("cd_dep_college_count", before="cnt3")
         .order_by(
-            s.across(s.startswith("cd_") | s.c("ca_state"), _.asc(nulls_first=True))
+            s.across(s.startswith("cd_") | s.cols("ca_state"), _.asc(nulls_first=True))
         )
         .limit(100)
     )
@@ -1833,7 +1894,7 @@ def test_36(store_sales, date_dim, item, store):
             g_category=lit(0),
             g_class=lit(0),
         )
-        .relocate(s.c("i_category", "i_class"), after="gross_margin")
+        .relocate(s.cols("i_category", "i_class"), after="gross_margin")
     )
     return (
         results.select(
@@ -1912,11 +1973,6 @@ def test_37(item, inventory, date_dim, catalog_sales):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["clickhouse"],
-    raises=AssertionError,
-    reason="clickhouse returns an incorrect result for this query",
-)
 def test_38(store_sales, catalog_sales, web_sales, date_dim, customer):
     dates = date_dim.filter(_.d_month_seq.between(1200, 1200 + 11))
     columns = "c_last_name", "c_first_name", "d_date"
@@ -1979,7 +2035,9 @@ def test_39(inventory, item, warehouse, date_dim):
         )
         .order_by(
             s.across(
-                s.c("wsk1", "isk1", "dmoy1", "mean1", "cov1", "d_moy", "mean", "cov"),
+                s.cols(
+                    "wsk1", "isk1", "dmoy1", "mean1", "cov1", "d_moy", "mean", "cov"
+                ),
                 _.asc(nulls_first=True),
             )
         )
@@ -2113,7 +2171,7 @@ def test_42(date_dim, store_sales, item):
         .join(item.filter(_.i_manager_id == 1), [("ss_item_sk", "i_item_sk")])
         .group_by(_.d_year, _.i_category_id, _.i_category)
         .agg(total_sales=_.ss_ext_sales_price.sum())
-        .order_by(_.total_sales.desc(), ~s.c("total_sales"))
+        .order_by(_.total_sales.desc(), ~s.cols("total_sales"))
         .limit(100)
     )
 
@@ -2212,7 +2270,7 @@ def test_45(web_sales, customer, customer_address, date_dim, item):
         )
         .group_by(_.ca_zip, _.ca_city)
         .agg(total_web_sales=_.ws_sales_price.sum())
-        .order_by(~s.c("total_web_sales"))
+        .order_by(~s.cols("total_web_sales"))
         .limit(100)
     )
 
@@ -2262,7 +2320,7 @@ def test_46(
             _.amt,
             _.profit,
         )
-        .order_by(s.across(~s.c("amt", "profit"), _.asc(nulls_first=True)))
+        .order_by(s.across(~s.cols("amt", "profit"), _.asc(nulls_first=True)))
         .limit(100)
     )
 
@@ -2290,7 +2348,7 @@ def test_47(item, store_sales, date_dim, store):
         .mutate(
             avg_monthly_sales=_.sum_sales.mean().over(
                 # TODO: add support for selectors in window over specification
-                # group_by=~s.c("sum_sales", "d_moy")
+                # group_by=~s.cols("sum_sales", "d_moy")
                 group_by=(
                     _.i_category,
                     _.i_brand,
@@ -2910,7 +2968,9 @@ def test_57(item, catalog_sales, date_dim, call_center):
             )
             > 0.1,
         )
-        .order_by((_.sum_sales - _.avg_monthly_sales).asc(nulls_first=True), s.r[1:10])
+        .order_by(
+            (_.sum_sales - _.avg_monthly_sales).asc(nulls_first=True), s.index[1:10]
+        )
         .limit(100)
     )
 
@@ -3213,6 +3273,200 @@ def test_63(item, store_sales, date_dim, store):
     )
 
 
+@tpc_test("ds", result_is_empty=True)
+def test_64(
+    catalog_sales,
+    catalog_returns,
+    store_sales,
+    store_returns,
+    date_dim,
+    store,
+    customer,
+    customer_demographics,
+    promotion,
+    household_demographics,
+    customer_address,
+    income_band,
+    item,
+):
+    cs_ui = (
+        catalog_sales.join(
+            catalog_returns,
+            [
+                _.cs_item_sk == catalog_returns.cr_item_sk,
+                _.cs_order_number == catalog_returns.cr_order_number,
+            ],
+        )
+        .group_by(_.cs_item_sk)
+        .having(
+            _.cs_ext_list_price.sum()
+            > (
+                2
+                * (_.cr_refunded_cash + _.cr_reversed_charge + _.cr_store_credit).sum()
+            )
+        )
+        .agg(
+            sale=_.cs_ext_list_price.sum(),
+            refund=(
+                _.cr_refunded_cash + _.cr_reversed_charge + _.cr_store_credit
+            ).sum(),
+        )
+    )
+
+    d1 = date_dim.mutate(syear=_.d_year)
+    d2 = date_dim.view().mutate(fsyear=_.d_year)
+    d3 = date_dim.view().mutate(s2year=_.d_year)
+
+    cd1 = customer_demographics
+    cd2 = customer_demographics.view()
+
+    hd1 = household_demographics
+    hd2 = household_demographics.view()
+
+    ad1 = customer_address
+    ad2 = customer_address.view()
+
+    ib1 = income_band
+    ib2 = income_band.view()
+
+    cross_sales = (
+        store_sales.join(
+            store_returns,
+            [("ss_item_sk", "sr_item_sk"), ("ss_ticket_number", "sr_ticket_number")],
+        )
+        .join(cs_ui, _.ss_item_sk == cs_ui.cs_item_sk)
+        .join(customer, _.ss_customer_sk == customer.c_customer_sk)
+        .join(d1, _.ss_sold_date_sk == d1.d_date_sk)
+        .join(d2, _.c_first_sales_date_sk == d2.d_date_sk)
+        .join(d3, _.c_first_shipto_date_sk == d3.d_date_sk)
+        .join(store, _.ss_store_sk == store.s_store_sk)
+        .join(cd1, _.ss_cdemo_sk == cd1.cd_demo_sk)
+        .join(
+            cd2,
+            [
+                _.c_current_cdemo_sk == cd2.cd_demo_sk,
+                _.cd_marital_status != cd2.cd_marital_status,
+            ],
+        )
+        .join(promotion, _.ss_promo_sk == promotion.p_promo_sk)
+        .join(hd1, _.ss_hdemo_sk == hd1.hd_demo_sk)
+        .join(hd2, _.c_current_hdemo_sk == hd2.hd_demo_sk)
+        .join(ad1, _.ss_addr_sk == ad1.ca_address_sk)
+        .join(ad2, _.c_current_addr_sk == ad2.ca_address_sk)
+        .join(ib1, hd1.hd_income_band_sk == ib1.ib_income_band_sk)
+        .join(ib2, hd2.hd_income_band_sk == ib2.ib_income_band_sk)
+        .join(
+            item,
+            [
+                _.ss_item_sk == item.i_item_sk,
+                item.i_color.isin(
+                    ["purple", "burlywood", "indian", "spring", "floral", "medium"]
+                ),
+                item.i_current_price.between(64, 74),
+                item.i_current_price.between(65, 79),
+            ],
+        )
+        .group_by(
+            product_name=_.i_product_name,
+            item_sk=_.i_item_sk,
+            store_zip=_.s_zip,
+            store_name=_.s_store_name,
+            b_street_number=ad1.ca_street_number,
+            b_street_name=ad1.ca_street_name,
+            b_city=ad1.ca_city,
+            b_zip=ad1.ca_zip,
+            c_street_number=ad2.ca_street_number,
+            c_street_name=ad2.ca_street_name,
+            c_city=ad2.ca_city,
+            c_zip=ad2.ca_zip,
+            syear=_.syear,
+            fsyear=_.fsyear,
+            s2year=_.s2year,
+        )
+        .agg(
+            cnt=_.count(),
+            s1=_.ss_wholesale_cost.sum(),
+            s2=_.ss_list_price.sum(),
+            s3=_.ss_coupon_amt.sum(),
+        )
+    )
+
+    cs1 = cross_sales
+    cs2 = cross_sales.view()
+
+    expr = (
+        cs1.join(
+            cs2,
+            [
+                ("item_sk", "item_sk"),
+                _.syear == 1999,
+                cs2.syear == 2000,
+                cs2.cnt <= _.cnt,
+                _.store_name == cs2.store_name,
+                _.store_zip == cs2.store_zip,
+            ],
+        )
+        .order_by(cs1.product_name, cs1.store_name, cs2.cnt, cs1.s1, cs2.s2)
+        .select(
+            _.product_name,
+            _.store_name,
+            _.store_zip,
+            _.b_street_number,
+            _.b_street_name,
+            _.b_city,
+            _.b_zip,
+            _.c_street_number,
+            _.c_street_name,
+            _.c_city,
+            _.c_zip,
+            cs2.syear,
+            cs2.cnt,
+            cs1syear=cs1.syear,
+            cs1cnt=cs1.cnt,
+            s11=cs1.s1,
+            s21=cs1.s2,
+            s31=cs1.s3,
+            s12=cs2.s1,
+            s22=cs2.s2,
+            s32=cs2.s3,
+        )
+        .relocate(cs2.syear, cs2.cnt, after="s32")
+    )
+
+    return expr
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_65(store, item, store_sales, date_dim):
+    sa = (
+        store_sales.join(
+            date_dim.filter(_.d_month_seq.between(1176, 1176 + 11)),
+            [("ss_sold_date_sk", "d_date_sk")],
+        )
+        .group_by(_.ss_store_sk, _.ss_item_sk)
+        .agg(revenue=_.ss_sales_price.sum())
+    )
+    sb = sa.group_by(_.ss_store_sk).agg(ave=_.revenue.mean())
+    sc = sa.view()
+    return (
+        sb.join(sc, ["ss_store_sk", sc.revenue <= 0.1 * sb.ave])
+        .join(store, [("ss_store_sk", "s_store_sk")])
+        .join(item, [("ss_item_sk", "i_item_sk")])
+        .select(
+            _.s_store_name,
+            _.i_item_desc,
+            sc.revenue,
+            _.i_current_price,
+            _.i_wholesale_cost,
+            _.i_brand,
+        )
+        .order_by(
+            _.s_store_name.asc(nulls_first=True), _.i_item_desc.asc(nulls_first=True)
+        )
+        .limit(100)
+    )
+
+
 @tpc_test("ds")
 @pytest.mark.notyet(
     ["clickhouse"],
@@ -3230,11 +3484,12 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
             )
             .join(date_dim, sales[f"{ns}_sold_date_sk"] == date_dim.d_date_sk)
             .join(time_dim, sales[f"{ns}_sold_time_sk"] == time_dim.t_time_sk)
-            .join(ship_mode, sales[f"{ns}_ship_mode_sk"] == ship_mode.sm_ship_mode_sk)[
-                (_.d_year == 2001)
-                & (_.t_time.between(30838, 30838 + 28800))
-                & (_.sm_carrier.isin(["DHL", "BARIAN"]))
-            ]
+            .join(ship_mode, sales[f"{ns}_ship_mode_sk"] == ship_mode.sm_ship_mode_sk)
+            .filter(
+                (_.d_year == 2001),
+                (_.t_time.between(30838, 30838 + 28800)),
+                (_.sm_carrier.isin(["DHL", "BARIAN"])),
+            )
             .group_by(
                 "w_warehouse_name",
                 "w_warehouse_sq_ft",
@@ -3313,6 +3568,12 @@ def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
         .order_by(_.w_warehouse_name.asc(nulls_first=True))
         .limit(100)
     )
+
+
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+@tpc_test("ds")
+def test_67(store_sales, date_dim, store, item):
+    raise NotImplementedError()
 
 
 @tpc_test("ds")
@@ -4257,6 +4518,73 @@ def test_79(store_sales, date_dim, store, household_demographics, customer):
     )
 
 
+@tpc_test("ds")
+@pytest.mark.xfail(raises=NotImplementedError, reason="requires rollup")
+def test_80(
+    store_sales,
+    store_returns,
+    store,
+    catalog_sales,
+    catalog_returns,
+    catalog_page,
+    web_sales,
+    web_returns,
+    web_site,
+    date_dim,
+    item,
+    promotion,
+):
+    raise NotImplementedError()
+
+
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="correlated subqueries don't exist in clickhouse",
+)
+@tpc_test("ds")
+def test_81(catalog_returns, date_dim, customer_address, customer):
+    customer_total_return = (
+        catalog_returns.join(date_dim, [("cr_returned_date_sk", "d_date_sk")])
+        .join(customer_address, [("cr_returning_addr_sk", "ca_address_sk")])
+        .filter(_.d_year == 2000)
+        .group_by(ctr_customer_sk=_.cr_returning_customer_sk, ctr_state=_.ca_state)
+        .agg(ctr_total_return=_.cr_return_amt_inc_tax.sum())
+    )
+    ctr2 = customer_total_return.view()
+    return (
+        customer_total_return.join(customer, [("ctr_customer_sk", "c_customer_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            lambda ctr1: ctr1.ctr_total_return
+            > (
+                ctr2.filter(ctr1.ctr_state == _.ctr_state).ctr_total_return.mean() * 1.2
+            ).as_scalar(),
+            _.ca_state == "GA",
+        )
+        .select(
+            _.c_customer_id,
+            _.c_salutation,
+            _.c_first_name,
+            _.c_last_name,
+            _.ca_street_number,
+            _.ca_street_name,
+            _.ca_street_type,
+            _.ca_suite_number,
+            _.ca_city,
+            _.ca_county,
+            _.ca_state,
+            _.ca_zip,
+            _.ca_country,
+            _.ca_gmt_offset,
+            _.ca_location_type,
+            _.ctr_total_return,
+        )
+        .order_by(s.all())
+        .limit(100)
+    )
+
+
 @tpc_test("ds", result_is_empty=True)
 def test_82(item, inventory, date_dim, store_sales):
     return (
@@ -4272,6 +4600,58 @@ def test_82(item, inventory, date_dim, store_sales):
         .select(_.i_item_id, _.i_item_desc, _.i_current_price)
         .distinct()
         .order_by(_.i_item_id)
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_83(store_returns, item, date_dim, catalog_returns, web_returns):
+    def items(returns, *, prefix):
+        dates = tuple(map(date, ("2000-06-30", "2000-09-27", "2000-11-17")))
+        return (
+            returns.join(item, [(f"{prefix}_item_sk", "i_item_sk")])
+            .join(
+                date_dim.filter(
+                    _.d_date.isin(
+                        date_dim.filter(
+                            _.d_week_seq.isin(
+                                date_dim.filter(_.d_date.isin(dates)).d_week_seq
+                            )
+                        ).d_date
+                    )
+                ),
+                [(f"{prefix}_returned_date_sk", "d_date_sk")],
+            )
+            .group_by(item_id=_.i_item_id)
+            .agg(_[f"{prefix}_return_quantity"].sum().name(f"{prefix}_item_qty"))
+        )
+
+    sr_items = items(store_returns, prefix="sr")
+    return (
+        sr_items.join(items(catalog_returns, prefix="cr"), "item_id")
+        .join(items(web_returns, prefix="wr"), "item_id")
+        .select(
+            sr_items.item_id,
+            sr_item_qty=_.sr_item_qty,
+            sr_dev=(_.sr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            cr_item_qty=_.cr_item_qty,
+            cr_dev=(_.cr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            wr_item_qty=_.wr_item_qty,
+            wr_dev=(_.wr_item_qty * 1.0000)
+            / (_.sr_item_qty + _.cr_item_qty + _.wr_item_qty)
+            / 3.0000
+            * 100,
+            average=(_.sr_item_qty + _.cr_item_qty + _.wr_item_qty) / 3.0,
+        )
+        .order_by(
+            sr_items.item_id.asc(nulls_first=True), _.sr_item_qty.asc(nulls_first=True)
+        )
         .limit(100)
     )
 
@@ -4309,6 +4689,161 @@ def test_84(
         )
         .order_by(_.customer_id.asc(nulls_first=True))
         .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_85(
+    web_sales,
+    web_returns,
+    web_page,
+    customer_demographics,
+    customer_address,
+    date_dim,
+    reason,
+):
+    cd1 = customer_demographics
+    cd2 = customer_demographics.view()
+    return (
+        web_sales.join(
+            web_returns,
+            [("ws_item_sk", "wr_item_sk"), ("ws_order_number", "wr_order_number")],
+        )
+        .join(web_page, [("ws_web_page_sk", "wp_web_page_sk")])
+        .join(cd1, [("wr_refunded_cdemo_sk", "cd_demo_sk")])
+        .join(cd2, [("wr_returning_cdemo_sk", "cd_demo_sk")])
+        .join(customer_address, [("wr_refunded_addr_sk", "ca_address_sk")])
+        .join(date_dim, [("ws_sold_date_sk", "d_date_sk")])
+        .join(reason, [("wr_reason_sk", "r_reason_sk")])
+        .filter(
+            _.d_year == 2000,
+            (
+                (cd1.cd_marital_status == "M")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "Advanced Degree")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & (_.ws_sales_price.between(100.00, 150.00))
+            )
+            | (
+                (cd1.cd_marital_status == "S")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "College")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & (_.ws_sales_price.between(50.00, 100.00))
+            )
+            | (
+                (cd1.cd_marital_status == "W")
+                & (cd1.cd_marital_status == cd2.cd_marital_status)
+                & (cd1.cd_education_status == "2 yr Degree")
+                & (cd1.cd_education_status == cd2.cd_education_status)
+                & _.ws_sales_price.between(150.00, 200.00)
+            ),
+            (
+                (_.ca_country == "United States")
+                & _.ca_state.isin(["IN", "OH", "NJ"])
+                & _.ws_net_profit.between(100, 200)
+            )
+            | (
+                (_.ca_country == "United States")
+                & _.ca_state.isin(["WI", "CT", "KY"])
+                & _.ws_net_profit.between(150, 300)
+            )
+            | (
+                (_.ca_country == "United States")
+                & _.ca_state.isin(["LA", "IA", "AR"])
+                & _.ws_net_profit.between(50, 250)
+            ),
+        )
+        .group_by(_.r_reason_desc)
+        .agg(
+            avg1=_.ws_quantity.mean(),
+            avg2=_.wr_refunded_cash.mean(),
+            avg3=_.wr_fee.mean(),
+        )
+        .select(s.startswith("avg"), short_reason_desc=_.r_reason_desc[:20])
+        .relocate(_.short_reason_desc)
+        .order_by(s.all())
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+@pytest.mark.notyet(
+    ["trino"],
+    raises=TrinoUserError,
+    reason="doesn't support grouping function in order_by",
+)
+@pytest.mark.notimpl(
+    ["snowflake", "duckdb", "datafusion", "clickhouse"],
+    raises=NotImplementedError,
+    reason="requires rollup",
+)
+def test_86(web_sales, date_dim, item):
+    raise NotImplementedError()
+
+
+@tpc_test("ds")
+def test_87(store_sales, date_dim, customer, catalog_sales, web_sales):
+    def cust(sales, sold_date_sk, customer_sk):
+        return (
+            sales.join(date_dim, [(sold_date_sk, "d_date_sk")])
+            .join(customer, [(customer_sk, "c_customer_sk")])
+            .filter(_.d_month_seq.between(1200, 1200 + 11))
+            .select(_.c_last_name, _.c_first_name, _.d_date)
+            .distinct()
+        )
+
+    return ibis.difference(
+        cust(
+            store_sales,
+            sold_date_sk="ss_sold_date_sk",
+            customer_sk="ss_customer_sk",
+        ),
+        cust(
+            catalog_sales,
+            sold_date_sk="cs_sold_date_sk",
+            customer_sk="cs_bill_customer_sk",
+        ),
+        cust(
+            web_sales,
+            sold_date_sk="ws_sold_date_sk",
+            customer_sk="ws_bill_customer_sk",
+        ),
+    ).agg(num_cool=_.count())
+
+
+@tpc_test("ds")
+def test_88(store_sales, household_demographics, time_dim, store):
+    def s(hour, fn, minute):
+        if fn is ge:
+            name = f"h{hour:d}_{minute:d}_to_{hour + 1:d}"
+        else:
+            name = f"h{hour:d}_to_{hour:d}_{minute:d}"
+
+        return (
+            store_sales.join(household_demographics, [("ss_hdemo_sk", "hd_demo_sk")])
+            .join(time_dim, [("ss_sold_time_sk", "t_time_sk")])
+            .join(store, [("ss_store_sk", "s_store_sk")])
+            .filter(
+                _.t_hour == hour,
+                fn(_.t_minute, minute),
+                ((_.hd_dep_count == 4) & (_.hd_vehicle_count <= 4 + 2))
+                | ((_.hd_dep_count == 2) & (_.hd_vehicle_count <= 2 + 2))
+                | ((_.hd_dep_count == 0) & (_.hd_vehicle_count <= 0 + 2)),
+                _.s_store_name == "ese",
+            )
+            .agg(_.count().name(name))
+        )
+
+    return (
+        s(8, ge, 30)
+        .cross_join(s(9, lt, 30))
+        .cross_join(s(9, ge, 30))
+        .cross_join(s(10, lt, 30))
+        .cross_join(s(10, ge, 30))
+        .cross_join(s(11, lt, 30))
+        .cross_join(s(11, ge, 30))
+        .cross_join(s(12, lt, 30))
     )
 
 
@@ -4354,9 +4889,85 @@ def test_89(item, store_sales, date_dim, store):
         .order_by(
             _.sum_sales - _.avg_monthly_sales,
             _.s_store_name,
-            s.r[:9] & ~s.c("s_store_name"),
+            s.index[:9] & ~s.cols("s_store_name"),
         )
     ).limit(100)
+
+
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=ArrowNotImplementedError,
+    reason="Unsupported cast from double to null using function cast_null",
+)
+@tpc_test("ds")
+def test_90(web_sales, household_demographics, time_dim, web_page):
+    def am_pm(*, hour: int, name: str):
+        return (
+            web_sales.join(
+                household_demographics,
+                [("ws_ship_hdemo_sk", "hd_demo_sk")],
+            )
+            .join(time_dim, [("ws_sold_time_sk", "t_time_sk")])
+            .join(web_page, [("ws_web_page_sk", "wp_web_page_sk")])
+            .filter(
+                _.t_hour.between(hour, hour + 1),
+                _.hd_dep_count == 6,
+                _.wp_char_count.between(5000, 5200),
+            )
+            .agg(_.count().name(name))
+        )
+
+    return (
+        am_pm(hour=8, name="amc")
+        .cross_join(am_pm(hour=19, name="pmc"))
+        .select(
+            am_pm_ratio=_.amc.cast("decimal(15, 4)")
+            / _.pmc.cast("decimal(15, 4)").nullif(0),
+        )
+        .order_by(_.am_pm_ratio)
+        .limit(100)
+    )
+
+
+@tpc_test("ds", result_is_empty=True)
+def test_91(
+    call_center,
+    catalog_returns,
+    date_dim,
+    customer,
+    customer_address,
+    customer_demographics,
+    household_demographics,
+):
+    return (
+        call_center.join(catalog_returns, [("cc_call_center_sk", "cr_call_center_sk")])
+        .join(date_dim, [("cr_returned_date_sk", "d_date_sk")])
+        .join(customer, [("cr_returning_customer_sk", "c_customer_sk")])
+        .join(customer_demographics, [("c_current_cdemo_sk", "cd_demo_sk")])
+        .join(household_demographics, [("c_current_hdemo_sk", "hd_demo_sk")])
+        .join(customer_address, [("c_current_addr_sk", "ca_address_sk")])
+        .filter(
+            _.d_year == 1998,
+            _.d_moy == 11,
+            ((_.cd_marital_status == "M") & (_.cd_education_status == "Unknown"))
+            | (
+                (_.cd_marital_status == "M")
+                & (_.cd_education_status == "Advanced Degree")
+            ),
+            _.hd_buy_potential.like("Unknown%"),
+            _.ca_gmt_offset == -7,
+        )
+        .group_by(
+            Call_Center=_.cc_call_center_id,
+            Call_Center_Name=_.cc_name,
+            Manager=_.cc_manager,
+            ms=_.cd_marital_status,
+            es=_.cd_education_status,
+        )
+        .agg(Returns_Loss=_.cr_net_loss.sum())
+        .drop("ms", "es")
+        .order_by(_.Returns_Loss.desc())
+    )
 
 
 @pytest.mark.notyet(
@@ -4462,6 +5073,40 @@ def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
                 _.ws_ext_ship_cost.sum().name("total shipping cost"),
                 _.ws_net_profit.sum().name("total net profit"),
             ],
+        )
+        .order_by(_[0])
+        .limit(100)
+    )
+
+
+@tpc_test("ds")
+def test_95(web_sales, date_dim, customer_address, web_site, web_returns):
+    ws1 = web_sales.view()
+    ws2 = web_sales.view()
+    ws_wh = ws1.join(
+        ws2, ["ws_order_number", ws1.ws_warehouse_sk != ws2.ws_warehouse_sk]
+    ).select(ws1.ws_order_number, wh1=ws1.ws_warehouse_sk, wh2=ws2.ws_warehouse_sk)
+    return (
+        web_sales.join(date_dim, [("ws_ship_date_sk", "d_date_sk")])
+        .join(customer_address, [("ws_ship_addr_sk", "ca_address_sk")])
+        .join(web_site, [("ws_web_site_sk", "web_site_sk")])
+        .filter(
+            _.d_date.between(date("1999-02-01"), date("1999-04-02")),
+            _.ca_state == "IL",
+            _.web_company_name == "pri",
+            _.ws_order_number.isin(ws_wh.ws_order_number),
+            _.ws_order_number.isin(
+                web_returns.join(
+                    ws_wh, [("wr_order_number", "ws_order_number")]
+                ).wr_order_number
+            ),
+        )
+        .agg(
+            [
+                _.ws_order_number.nunique().name("order count"),
+                _.ws_ext_ship_cost.sum().name("total shipping cost"),
+                _.ws_net_profit.sum().name("total net profit"),
+            ]
         )
         .order_by(_[0])
         .limit(100)
@@ -4605,7 +5250,6 @@ def test_99(catalog_sales, warehouse, ship_mode, call_center, date_dim):
     )
 
 
-@pytest.mark.xfail(raises=AssertionError, reason="not all queries are implemented yet")
 def test_all_queries_are_written():
     variables = globals()
     numbers = range(1, 100)
@@ -4616,12 +5260,5 @@ def test_all_queries_are_written():
         if f"test_{query_number:02d}" in variables:
             query_numbers.remove(query_number)
 
-    file_size = (
-        lambda qn: Path(__file__)
-        .parents[1]
-        .joinpath("queries", "duckdb", "ds", f"{qn:d}.sql")
-        .stat()
-        .st_size
-    )
-    remaining_queries = sorted(query_numbers, key=file_size)
+    remaining_queries = sorted(query_numbers)
     assert remaining_queries == []

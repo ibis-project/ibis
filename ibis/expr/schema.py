@@ -16,6 +16,9 @@ from ibis.util import indent
 if TYPE_CHECKING:
     from typing import TypeAlias
 
+    import sqlglot as sg
+    import sqlglot.expressions as sge
+
 
 class Schema(Concrete, Coercible, MapSet):
     """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
@@ -225,6 +228,74 @@ class Schema(Concrete, Coercible, MapSet):
 
         """
         return self.names[i]
+
+    def to_sqlglot(self, dialect: str | sg.Dialect) -> list[sge.ColumnDef]:
+        """Convert the schema to a list of SQL column definitions.
+
+        Parameters
+        ----------
+        dialect
+            The SQL dialect to use.
+
+        Returns
+        -------
+        list[sqlglot.expressions.ColumnDef]
+            A list of SQL column definitions.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> sch = ibis.schema({"a": "int", "b": "!string"})
+        >>> sch
+        ibis.Schema {
+          a  int64
+          b  !string
+        }
+        >>> columns = sch.to_sqlglot(dialect="duckdb")
+        >>> columns
+        [ColumnDef(
+          this=Identifier(this=a, quoted=True),
+          kind=DataType(this=Type.BIGINT)), ColumnDef(
+          this=Identifier(this=b, quoted=True),
+          kind=DataType(this=Type.VARCHAR),
+          constraints=[
+            ColumnConstraint(
+              kind=NotNullColumnConstraint())])]
+
+        One use case for this method is to embed its output into a SQLGlot
+        `CREATE TABLE` expression.
+
+        >>> import sqlglot as sg
+        >>> import sqlglot.expressions as sge
+        >>> table = sg.table("t", quoted=True)
+        >>> ct = sge.Create(
+        ...     kind="TABLE",
+        ...     this=sge.Schema(
+        ...         this=table,
+        ...         expressions=columns,
+        ...     ),
+        ... )
+        >>> ct.sql(dialect="duckdb")
+        'CREATE TABLE "t" ("a" BIGINT, "b" TEXT NOT NULL)'
+        """
+        import sqlglot as sg
+        import sqlglot.expressions as sge
+
+        from ibis.backends.sql.datatypes import TYPE_MAPPERS as type_mappers
+
+        type_mapper = type_mappers[dialect]
+        return [
+            sge.ColumnDef(
+                this=sg.to_identifier(name, quoted=True),
+                kind=type_mapper.from_ibis(dtype),
+                constraints=(
+                    None
+                    if dtype.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for name, dtype in self.items()
+        ]
 
 
 SchemaLike: TypeAlias = Union[

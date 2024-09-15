@@ -143,8 +143,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> import ibis
         >>> client = ibis.clickhouse.connect()
         >>> client
-        <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-
+        <ibis.backends.clickhouse.Backend object at 0x...>
         """
         if settings is None:
             settings = {}
@@ -674,13 +673,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         this = sge.Schema(
             this=sg.table(name, db=database, quoted=self.compiler.quoted),
-            expressions=[
-                sge.ColumnDef(
-                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                )
-                for name, typ in (schema or obj.schema()).items()
-            ],
+            expressions=(schema or obj.schema()).to_sqlglot(self.dialect),
         )
         properties = [
             # the engine cannot be quoted, since clickhouse won't allow e.g.,
@@ -779,3 +772,23 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        name = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
+        try:
+            # DESCRIBE TABLE $TABLE FORMAT NULL is the fastest way to check
+            # table existence in clickhouse; FORMAT NULL produces no data which
+            # is ideal since we don't care about the output for existence
+            # checking
+            #
+            # Other methods compared were
+            # 1. SELECT 1 FROM $TABLE LIMIT 0
+            # 2. SHOW TABLES LIKE $TABLE LIMIT 1
+            #
+            # if the table exists nothing is returned and there's no error
+            # otherwise there's an error
+            self.con.raw_query(f"DESCRIBE {name} FORMAT NULL")
+        except cc.driver.exceptions.DatabaseError:
+            return False
+        else:
+            return True

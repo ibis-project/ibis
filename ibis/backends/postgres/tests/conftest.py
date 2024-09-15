@@ -96,11 +96,3 @@ def gdf(geotable):
 @pytest.fixture(scope="module")
 def intervals(con):
     return con.table("intervals")
-
-
-@pytest.fixture
-def translate():
-    from ibis.backends.postgres import Backend
-
-    context = Backend.compiler.make_context()
-    return lambda expr: Backend.compiler.translator_class(expr, context).get_result()

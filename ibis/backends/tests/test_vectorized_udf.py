@@ -6,7 +6,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-from ibis.backends.conftest import is_older_than
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
 np = pytest.importorskip("numpy")
@@ -55,11 +54,7 @@ def create_add_one_udf(result_formatter, id):
         return result_formatter(add_one(s))
 
     yield param(add_one_legacy, id=f"add_one_legacy_{id}")
-    yield param(
-        add_one_udf,
-        marks=[pytest.mark.notimpl(["pandas", "dask"])],
-        id=f"add_one_modern_{id}",
-    )
+    yield param(add_one_udf, id=f"add_one_modern_{id}")
 
 
 add_one_udfs = [
@@ -331,15 +326,10 @@ def test_reduction_udf_array_return_type(udf_backend, udf_alltypes, udf_df):
     udf_backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notyet(
-    ["pandas"],
-    condition=is_older_than("pandas", "2.0.0"),
-    reason="FutureWarning: Not prepending group keys to the result index of transform-like apply",
-)
 def test_reduction_udf_on_empty_data(udf_backend, udf_alltypes):
     """Test that summarization can handle empty data."""
     # First filter down to zero rows
-    t = udf_alltypes[udf_alltypes["int_col"] > np.inf]
+    t = udf_alltypes.filter(udf_alltypes["int_col"] > np.inf)
     result = t.group_by("year").aggregate(mean=calc_mean(t["int_col"])).execute()
     expected = pd.DataFrame({"year": [], "mean": []})
     # We check that the result is an empty DataFrame,
@@ -622,7 +612,6 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 
 @pytest.mark.parametrize("udf", demean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
-@pytest.mark.notimpl(["dask"], strict=False)
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = ibis.window(preceding=None, following=None, group_by="year")
 

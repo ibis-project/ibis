@@ -28,7 +28,7 @@ def test_join_no_predicates_for_impala(con, join_type, snapshot):
     t1 = con.table("star1")
     t2 = con.table("star2")
 
-    joined = getattr(t1, join_type)(t2)[[t1]]
+    joined = getattr(t1, join_type)(t2).select(t1)
     result = ibis.to_sql(joined, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
@@ -76,8 +76,8 @@ def test_nested_join_multiple_ctes(snapshot):
     movies = ibis.table(dict(movieid="int64", title="string"), name="movies")
 
     expr = ratings.timestamp.cast("timestamp")
-    ratings2 = ratings["userid", "movieid", "rating", expr.name("datetime")]
-    joined2 = ratings2.join(movies, ["movieid"])[ratings2, movies["title"]]
+    ratings2 = ratings.select("userid", "movieid", "rating", expr.name("datetime"))
+    joined2 = ratings2.join(movies, ["movieid"]).select(ratings2, movies["title"])
     joined3 = joined2.filter([joined2.userid == 118205, joined2.datetime.year() > 2001])
     top_user_old_movie_ids = joined3.filter(
         [joined3.userid == 118205, joined3.datetime.year() < 2009]
@@ -85,7 +85,7 @@ def test_nested_join_multiple_ctes(snapshot):
     # projection from a filter was hiding an insidious bug, so we're disabling
     # that for now see issue #1295
     cond = joined3.movieid.isin(top_user_old_movie_ids.movieid)
-    result = joined3[cond]
+    result = joined3.filter(cond)
     compiled_result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(compiled_result, "out.sql")
 
@@ -109,7 +109,7 @@ def test_join_with_nested_or_condition(snapshot):
     t2 = t1.view()
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) | (t1.b != t2.a)])
-    expr = joined[t1]
+    expr = joined.select(t1)
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
@@ -119,7 +119,7 @@ def test_join_with_nested_xor_condition(snapshot):
     t2 = t1.view()
 
     joined = t1.join(t2, [t1.a == t2.a, (t1.a != t2.b) ^ (t1.b != t2.a)])
-    expr = joined[t1]
+    expr = joined.select(t1)
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
@@ -128,7 +128,7 @@ def test_join_with_nested_xor_condition(snapshot):
 def test_is_parens(method, snapshot):
     t = ibis.table([("a", "string"), ("b", "string")], "table")
     func = operator.methodcaller(method)
-    expr = t[func(t.a) == func(t.b)]
+    expr = t.filter(func(t.a) == func(t.b))
 
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
@@ -136,7 +136,7 @@ def test_is_parens(method, snapshot):
 
 def test_is_parens_identical_to(snapshot):
     t = ibis.table([("a", "string"), ("b", "string")], "table")
-    expr = t[t.a.identical_to(None) == t.b.identical_to(None)]
+    expr = t.filter(t.a.identical_to(None) == t.b.identical_to(None))
 
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
@@ -147,37 +147,37 @@ def test_join_aliasing(snapshot):
         [("a", "int64"), ("b", "int64"), ("c", "int64")], name="test_table"
     )
     test = test.mutate(d=test.a + 20)
-    test2 = test[test.d, test.c]
+    test2 = test.select(test.d, test.c)
     idx = (test2.d / 15).cast("int64").name("idx")
     test3 = test2.group_by([test2.d, idx, test2.c]).aggregate(row_count=test2.count())
     test3_totals = test3.group_by(test3.d).aggregate(total=test3.row_count.sum())
-    test4 = test3.join(test3_totals, test3.d == test3_totals.d)[
+    test4 = test3.join(test3_totals, test3.d == test3_totals.d).select(
         test3, test3_totals.total
-    ]
-    test5 = test4[test4.row_count < test4.total / 2]
+    )
+    test5 = test4.filter(test4.row_count < test4.total / 2)
     agg = (
         test.group_by([test.d, test.b])
         .aggregate(count=test.count(), unique=test.c.nunique())
         .view()
     )
-    result = agg.join(test5, agg.d == test5.d)[agg, test5.total]
+    result = agg.join(test5, agg.d == test5.d).select(agg, test5.total)
     result = ibis.to_sql(result, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
 def test_multiple_filters(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], name="t0")
-    filt = t[t.a < 100]
-    expr = filt[filt.a == filt.a.max()]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a == filt.a.max())
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
 
 def test_multiple_filters2(snapshot):
     t = ibis.table([("a", "int64"), ("b", "string")], name="t0")
-    filt = t[t.a < 100]
-    expr = filt[filt.a == filt.a.max()]
-    expr = expr[expr.b == "a"]
+    filt = t.filter(t.a < 100)
+    expr = filt.filter(filt.a == filt.a.max())
+    expr = expr.filter(expr.b == "a")
     result = ibis.to_sql(expr, dialect="impala")
     snapshot.assert_match(result, "out.sql")
 
@@ -250,7 +250,8 @@ def tpch(region, nation, customer, orders):
     return (
         region.join(nation, region.r_regionkey == nation.n_regionkey)
         .join(customer, customer.c_nationkey == nation.n_nationkey)
-        .join(orders, orders.o_custkey == customer.c_custkey)[fields_of_interest]
+        .join(orders, orders.o_custkey == customer.c_custkey)
+        .select(fields_of_interest)
     )
 
 
@@ -259,18 +260,20 @@ def test_join_key_name(tpch, snapshot):
 
     pre_sizes = tpch.group_by(year).size()
     t2 = tpch.view()
-    conditional_avg = t2[t2.region == tpch.region].o_totalprice.mean().name("mean")
+    conditional_avg = (
+        t2.filter(t2.region == tpch.region).o_totalprice.mean().name("mean")
+    )
     amount_filter = tpch.o_totalprice > conditional_avg
-    post_sizes = tpch[amount_filter].group_by(year).size()
+    post_sizes = tpch.filter(amount_filter).group_by(year).size()
 
     percent = (post_sizes[1] / pre_sizes[1].cast("double")).name("fraction")
 
-    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
+    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year).select(
         pre_sizes.year,
         pre_sizes[1].name("pre_count"),
         post_sizes[1].name("post_count"),
         percent,
-    ]
+    )
     result = ibis.impala.compile(expr)
     snapshot.assert_match(result, "out.sql")
 
@@ -281,11 +284,11 @@ def test_join_key_name2(tpch, snapshot):
     pre_sizes = tpch.group_by(year).size()
     post_sizes = tpch.group_by(year).size().view()
 
-    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year)[
+    expr = pre_sizes.join(post_sizes, pre_sizes.year == post_sizes.year).select(
         pre_sizes.year,
         pre_sizes[1].name("pre_count"),
         post_sizes[1].name("post_count"),
-    ]
+    )
     result = ibis.impala.compile(expr)
     snapshot.assert_match(result, "out.sql")
 

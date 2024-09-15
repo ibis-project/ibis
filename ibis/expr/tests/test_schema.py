@@ -159,12 +159,6 @@ def test_nullable_output():
     assert "baz  !boolean" not in sch_str
 
 
-@pytest.fixture
-def df():
-    pd = pytest.importorskip("pandas")
-    return pd.DataFrame({"A": pd.Series([1], dtype="int8"), "b": ["x"]})
-
-
 def test_api_accepts_schema_objects():
     s1 = sch.schema(dict(a="int", b="str"))
     s2 = sch.schema(s1)
@@ -446,10 +440,9 @@ def test_schema_from_to_numpy_dtypes():
     assert restored_dtypes == expected_dtypes
 
 
-def test_schema_from_to_pandas_dask_dtypes():
+def test_schema_from_to_pandas_dtypes():
     np = pytest.importorskip("numpy")
     pd = pytest.importorskip("pandas")
-
     pandas_schema = pd.Series(
         [
             ("a", np.dtype("int64")),

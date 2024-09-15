@@ -270,9 +270,7 @@ def test_connect_local_file(out_method, extension, tmp_path):
     df = pd.DataFrame({"a": [1, 2, 3]})
     path = tmp_path / f"out.{extension}"
     getattr(df, out_method)(path)
-    with pytest.warns(FutureWarning, match="v9.1"):
-        # ibis.connect uses con.register
-        con = ibis.connect(path)
+    con = ibis.connect(path)
     t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
@@ -417,3 +415,12 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
+
+
+def test_memtable_doesnt_leak(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    name = "memtable_doesnt_leak"
+    assert name not in con.list_tables()
+    df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
+    assert name not in con.list_tables()
+    assert len(df) == 3

@@ -49,10 +49,11 @@ sense.
 We can exclude `year` from the normalization using another selector:
 
 ```{python}
-t.mutate(s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std()))
+t.mutate(s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std()))
 ```
 
-`c` is short for "column" and the `~` means "negate". Combining those we get "not the year column"!
+`cols` selects one or more columns, and the `~` means "negate". Combining those
+we get "every column except for 'year'"!
 
 Pretty neat right?
 
@@ -65,7 +66,7 @@ With selectors, all you need to do is slap a `.group_by("species")` onto `t`:
 
 ```{python}
 t.group_by("species").mutate(
-    s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+    s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std())
 )
 ```
 
@@ -81,7 +82,7 @@ Grouped min/max normalization? Easy:
 
 ```{python}
 t.group_by("species").mutate(
-    s.across(s.numeric() & ~s.c("year"), (_ - _.min()) / (_.max() - _.min()))
+    s.across(s.numeric() & ~s.cols("year"), (_ - _.min()) / (_.max() - _.min()))
 )
 ```
 
@@ -107,7 +108,7 @@ What if I want to compute multiple things? Heck yeah!
 ```{python}
 t.group_by("sex").mutate(
     s.across(
-        s.numeric() & ~s.c("year"),
+        s.numeric() & ~s.cols("year"),
         dict(centered=_ - _.mean(), zscore=(_ - _.mean()) / _.std()),
     )
 ).select("sex", s.endswith(("_centered", "_zscore")))
@@ -144,14 +145,14 @@ t.select(s.startswith("bill")).mutate(
 We've seen lots of mutate use, but selectors also work with `.agg`:
 
 ```{python}
-t.group_by("year").agg(s.across(s.numeric() & ~s.c("year"), _.mean())).order_by("year")
+t.group_by("year").agg(s.across(s.numeric() & ~s.cols("year"), _.mean())).order_by("year")
 ```
 
 Naturally, selectors work in grouping keys too, for even more convenience:
 
 ```{python}
-t.group_by(~s.numeric() | s.c("year")).mutate(
-    s.across(s.numeric() & ~s.c("year"), dict(centered=_ - _.mean(), std=_.std()))
+t.group_by(~s.numeric() | s.cols("year")).mutate(
+    s.across(s.numeric() & ~s.cols("year"), dict(centered=_ - _.mean(), std=_.std()))
 ).select("species", s.endswith(("_centered", "_std")))
 ```
 

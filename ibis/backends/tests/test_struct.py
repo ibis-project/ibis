@@ -29,7 +29,6 @@ pytestmark = [
 ]
 
 
-@pytest.mark.notimpl(["dask"])
 @pytest.mark.parametrize(
     ("field", "expected"),
     [
@@ -56,7 +55,6 @@ def test_single_field(struct, field, expected):
     tm.assert_series_equal(result.field, pd.Series(expected, name="field"))
 
 
-@pytest.mark.notimpl(["dask"])
 def test_all_fields(struct, struct_df):
     result = struct.abc.execute()
     expected = struct_df.abc
@@ -120,7 +118,7 @@ def test_collect_into_struct(alltypes):
 
     t = alltypes
     expr = (
-        t[_.string_col.isin(("0", "1"))]
+        t.filter(_.string_col.isin(("0", "1")))
         .group_by(group="string_col")
         .agg(
             val=lambda t: ibis.struct(
@@ -245,12 +243,6 @@ def test_keyword_fields(con, nullable):
     ["polars"],
     raises=PolarsColumnNotFoundError,
     reason="doesn't seem to support IN-style subqueries on structs",
-)
-@pytest.mark.notimpl(
-    # https://github.com/pandas-dev/pandas/issues/58909
-    ["pandas", "dask"],
-    raises=TypeError,
-    reason="unhashable type: 'dict'",
 )
 @pytest.mark.xfail_version(
     pyspark=["pyspark<3.5"],

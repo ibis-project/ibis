@@ -25,13 +25,9 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  ibisCore310 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python310; };
-  ibisCore311 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python311; };
-  ibisCore312 = pkgs.callPackage ./ibis-core.nix { python3 = pkgs.python312; };
-
-  ibisLocal310 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python310; };
-  ibisLocal311 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python311; };
-  ibisLocal312 = pkgs.callPackage ./ibis-local.nix { python3 = pkgs.python312; };
+  ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
+  ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
+  ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
 
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;

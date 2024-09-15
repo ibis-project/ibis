@@ -1,8 +1,8 @@
 
-SELECT SUBSTRING(r_reason_desc,1,20) ,
+SELECT SUBSTRING(r_reason_desc,1,20) short_reason_desc,
        avg(ws_quantity) avg1,
        avg(wr_refunded_cash) avg2,
-       avg(wr_fee)
+       avg(wr_fee) avg3
 FROM web_sales,
      web_returns,
      web_page,

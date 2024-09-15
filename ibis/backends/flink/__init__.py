@@ -66,9 +66,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         >>> import ibis
         >>> from pyflink.table import EnvironmentSettings, TableEnvironment
         >>> table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
-        >>> ibis.flink.connect(table_env)
-        <ibis.backends.flink.Backend at 0x...>
-
+        >>> ibis.flink.connect(table_env)  # doctest: +ELLIPSIS
+        <ibis.backends.flink.Backend object at 0x...>
         """
         self._table_env = table_env
 

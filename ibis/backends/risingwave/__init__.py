@@ -78,34 +78,36 @@ class Backend(PostgresBackend):
         Examples
         --------
         >>> import os
-        >>> import getpass
         >>> import ibis
         >>> host = os.environ.get("IBIS_TEST_RISINGWAVE_HOST", "localhost")
-        >>> user = os.environ.get("IBIS_TEST_RISINGWAVE_USER", getpass.getuser())
-        >>> password = os.environ.get("IBIS_TEST_RISINGWAVE_PASSWORD")
+        >>> user = os.environ.get("IBIS_TEST_RISINGWAVE_USER", "root")
+        >>> password = os.environ.get("IBIS_TEST_RISINGWAVE_PASSWORD", "")
         >>> database = os.environ.get("IBIS_TEST_RISINGWAVE_DATABASE", "dev")
-        >>> con = connect(database=database, host=host, user=user, password=password)
+        >>> con = ibis.risingwave.connect(
+        ...     database=database,
+        ...     host=host,
+        ...     user=user,
+        ...     password=password,
+        ...     port=4566,
+        ... )
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
-        RisingWaveTable[table]
-          name: functional_alltypes
-          schema:
-            id : int32
-            bool_col : boolean
-            tinyint_col : int16
-            smallint_col : int16
-            int_col : int32
-            bigint_col : int64
-            float_col : float32
-            double_col : float64
-            date_string_col : string
-            string_col : string
-            timestamp_col : timestamp
-            year : int32
-            month : int32
-
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float32
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(6)
+          year            int32
+          month           int32
         """
 
         self.con = psycopg2.connect(
@@ -195,11 +197,9 @@ class Backend(PostgresBackend):
                 f"Creating temp tables is not supported by {self.name}"
             )
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -209,26 +209,18 @@ class Backend(PostgresBackend):
         else:
             query = None
 
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         if connector_properties is None:
             create_stmt = sge.Create(
@@ -251,26 +243,39 @@ class Backend(PostgresBackend):
         this = sg.table(name, db=database, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table, expression=query).sql(self.dialect)
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
+                    self.dialect
+                )
                 cur.execute(insert_stmt)
 
             if overwrite:
                 self.drop_table(name, database=database, force=True)
                 cur.execute(
-                    f"ALTER TABLE {table.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        import psycopg2.errors
+
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
+
+        try:
+            with self.begin() as cur:
+                cur.execute(sql)
+                cur.fetchall()
+        except psycopg2.errors.InternalError:
+            return False
+        else:
+            return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
@@ -280,42 +285,26 @@ class Backend(PostgresBackend):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        name = op.name
+        quoted = self.compiler.quoted
 
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(
-                    this=sg.to_identifier(name, quoted=quoted), expressions=column_defs
-                ),
-            )
-            create_stmt_sql = create_stmt.sql(self.dialect)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(
+                this=sg.to_identifier(name, quoted=quoted),
+                expressions=schema.to_sqlglot(self.dialect),
+            ),
+        )
+        create_stmt_sql = create_stmt.sql(self.dialect)
 
-            df = op.data.to_frame()
-            data = df.itertuples(index=False)
-            sql = self._build_insert_template(
-                name, schema=schema, columns=True, placeholder="%s"
-            )
-            with self.begin() as cur:
-                cur.execute(create_stmt_sql)
-                extras.execute_batch(cur, sql, data, 128)
+        df = op.data.to_frame()
+        data = df.itertuples(index=False)
+        sql = self._build_insert_template(
+            name, schema=schema, columns=True, placeholder="%s"
+        )
+        with self.begin() as cur:
+            cur.execute(create_stmt_sql)
+            extras.execute_batch(cur, sql, data, 128)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
@@ -442,21 +431,8 @@ class Backend(PostgresBackend):
         Table
             Table expression
         """
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=self.compiler.quoted),
-                kind=self.compiler.type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in schema.items()
-        ]
-
         table = sg.table(name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        target = sge.Schema(this=table, expressions=schema.to_sqlglot(self.dialect))
 
         create_stmt = sge.Create(
             kind="SOURCE",

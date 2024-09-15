@@ -85,7 +85,9 @@ def test_existing_sql_udf(con_for_udf, test_database, table):
     """Test creating ibis UDF object based on existing UDF in the database."""
     # Create ibis UDF objects referring to UDFs already created in the database
     custom_length_udf = con_for_udf.function("custom_len", database=test_database)
-    result_obj = table[table, custom_length_udf(table["user_name"]).name("custom_len")]
+    result_obj = table.select(
+        table, custom_length_udf(table["user_name"]).name("custom_len")
+    )
     result = result_obj.execute()
     assert result["custom_len"].sum() == result["name_length"].sum()
 
@@ -93,7 +95,9 @@ def test_existing_sql_udf(con_for_udf, test_database, table):
 def test_existing_plpython_udf(con_for_udf, test_database, table):
     # Create ibis UDF objects referring to UDFs already created in the database
     py_length_udf = con_for_udf.function("pylen", database=test_database)
-    result_obj = table[table, py_length_udf(table["user_name"]).name("custom_len")]
+    result_obj = table.select(
+        table, py_length_udf(table["user_name"]).name("custom_len")
+    )
     result = result_obj.execute()
     assert result["custom_len"].sum() == result["name_length"].sum()
 

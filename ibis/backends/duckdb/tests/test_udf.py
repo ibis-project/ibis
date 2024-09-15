@@ -73,7 +73,8 @@ def favg(x: float, where: bool = True) -> float: ...
 def test_builtin_agg(con, func):
     import ibis
 
-    raw_data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
+    start, stop = 1, 11
+    raw_data = list(map(float, range(start, stop)))
     data = ibis.memtable({"a": raw_data})
     expr = func(data.a)
 
