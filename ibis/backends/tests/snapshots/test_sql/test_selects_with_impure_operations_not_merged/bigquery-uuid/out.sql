@@ -6,7 +6,7 @@ SELECT
 FROM (
   SELECT
     `t0`.`x`,
-    generate_uuid() AS `y`,
-    generate_uuid() AS `z`
+    GENERATE_UUID() AS `y`,
+    GENERATE_UUID() AS `z`
   FROM `t` AS `t0`
 ) AS `t1`

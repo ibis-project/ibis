@@ -1003,15 +1003,13 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 )
 def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
-    obj = obj()
-    t = con.create_table(table_name, obj)
+    t = con.create_table(table_name, obj())
 
-    result = pa.table({"a": ["a"], "b": [1]})
-    assert table_name in con.list_tables()
-
-    assert result.equals(t.to_pyarrow())
-
-    con.drop_table(table_name, force=True)
+    try:
+        assert table_name in con.list_tables()
+        assert pa.table({"a": ["a"], "b": [1]}).equals(t.to_pyarrow())
+    finally:
+        con.drop_table(table_name, force=True)
 
 
 def test_default_backend_option(con, monkeypatch):
