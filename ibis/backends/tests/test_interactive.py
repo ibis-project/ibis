@@ -16,6 +16,7 @@ from __future__ import annotations
 import pytest
 
 import ibis
+import ibis.common.exceptions as exc
 from ibis import config
 
 
@@ -89,3 +90,18 @@ def test_isin_rule_suppressed_exception_repr_not_fail(table):
     expr = table.filter(bool_clause)["string_col"].value_counts()
 
     repr(expr)
+
+
+def test_no_recursion_error(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+
+    a = ibis.memtable({"a": [1]})
+    b = ibis.memtable({"b": [1]})
+
+    expr = a.count() + b.count()
+
+    with pytest.raises(
+        exc.RelationError, match="The scalar expression cannot be converted"
+    ):
+        repr(expr)
