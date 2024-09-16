@@ -21,6 +21,10 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 
+class TableNotFound(Exception):
+    """Exception to raise when a table cannot be found."""
+
+
 class IbisError(Exception):
     """IbisError."""
 

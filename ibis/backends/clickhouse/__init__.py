@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import glob
+import re
 from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
@@ -14,6 +15,7 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
+from clickhouse_connect.driver.exceptions import DatabaseError
 from clickhouse_connect.driver.external import ExternalData
 
 import ibis
@@ -510,8 +512,13 @@ class Backend(SQLBackend, CanCreateDatabase):
                 "`catalog` namespaces are not supported by clickhouse"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
-        with self._safe_raw_sql(query) as results:
-            names, types, *_ = results.result_columns
+        try:
+            with self._safe_raw_sql(query) as results:
+                names, types, *_ = results.result_columns
+        except DatabaseError as e:
+            if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
+                raise com.TableNotFound(table_name) from e
+
         return sch.Schema(
             dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
         )

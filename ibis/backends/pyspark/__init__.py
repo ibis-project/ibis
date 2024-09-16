@@ -11,6 +11,13 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
+
+try:
+    from pyspark.errors.exceptions.base import AnalysisException  # PySpark 3.5+
+except ImportError:
+    from pyspark.sql.utils import AnalysisException  # PySpark 3.3
+
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -542,7 +549,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
         with self._active_catalog_database(catalog, db):
-            df = self._session.table(table_name)
+            try:
+                df = self._session.table(table_name)
+            except AnalysisException as e:
+                if not self._session.catalog.tableExists(table_name):
+                    raise com.TableNotFound(table_name) from e
+                raise
+
             struct = PySparkType.to_ibis(df.schema)
 
         return sch.Schema(struct)
