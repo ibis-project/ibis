@@ -222,6 +222,18 @@ t.name.lower().contains("darth").sum()
 ```
 :::
 
+## And yes...
+
+![](./images/competing_standards.png)
+
+::: {.notes}
+First, I refuse to submit to nihilism that things can ever get better.
+
+Second I don't think there are actually very many proposed _standards_ for DataFrame APIs.
+
+There is the some work (https://data-apis.org/dataframe-api/draft/) but largely
+each engine makes it's own API and says "USE THIS".
+:::
 
 ## Ibis is _only_ an interface
 
