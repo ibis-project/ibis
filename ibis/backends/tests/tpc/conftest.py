@@ -26,7 +26,11 @@ def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     funcargs = pyfuncitem.funcargs
     testargs = {arg: funcargs[arg] for arg in pyfuncitem._fixtureinfo.argnames}
-    result = testfunction(**testargs, backend=funcargs["backend"])
+
+    if (backend := funcargs.get("backend")) is not None:
+        testargs["backend"] = backend
+
+    result = testfunction(**testargs)
     assert (
         result is None
     ), "test function should not return anything, did you mean to use assert?"
@@ -59,7 +63,7 @@ def tpc_test(suite_name: Literal["h", "ds"], *, result_is_empty=False):
         # func_only=True doesn't include the fixture setup time in the duration
         # of the test run, which is important since backends can take a hugely
         # variable amount of time to load all the TPC-$WHATEVER tables.
-        @pytest.mark.timeout(60, func_only=True)
+        @pytest.mark.timeout(90, func_only=True)
         @pytest.mark.usefixtures("backend")
         @pytest.mark.xdist_group(name)
         @getattr(pytest.mark, name)

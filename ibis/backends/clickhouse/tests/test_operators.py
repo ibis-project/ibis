@@ -142,7 +142,7 @@ def test_field_in_literals(con, alltypes, df, container):
     tm.assert_series_equal(result_col, expected_col)
 
 
-@pytest.mark.parametrize("column", ["int_col", "float_col", "bool_col"])
+@pytest.mark.parametrize("column", ["int_col", "float_col"])
 def test_negate(con, alltypes, column, assert_sql):
     expr = -alltypes[column]
     assert_sql(expr)

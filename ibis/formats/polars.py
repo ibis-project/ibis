@@ -43,7 +43,7 @@ class PolarsType(TypeMapper):
         """Convert a polars type to an ibis type."""
 
         base_type = typ.base_type()
-        if base_type is pl.Categorical:
+        if base_type in (pl.Categorical, pl.Enum):
             return dt.String(nullable=nullable)
         elif base_type is pl.Decimal:
             return dt.Decimal(
@@ -165,9 +165,6 @@ class PolarsData(DataMapper):
     @classmethod
     def convert_table(cls, df: pl.DataFrame, schema: Schema) -> pl.DataFrame:
         pl_schema = PolarsSchema.from_ibis(schema)
-
-        if tuple(df.columns) != tuple(schema.names):
-            df = df.rename(dict(zip(df.columns, schema.names)))
 
         if df.schema == pl_schema:
             return df

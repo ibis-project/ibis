@@ -61,5 +61,5 @@ pytest.importorskip("pins")
 )
 def test_load_examples(con, example, columns):
     t = getattr(ibis.examples, example).fetch(backend=con)
-    assert t.columns == columns
+    assert t.columns == tuple(columns)
     assert t.count().execute() > 0

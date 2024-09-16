@@ -27,10 +27,7 @@ from ibis.backends.tests.errors import (
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
 
-limit = [
-    # limit not implemented for pandas-family backends
-    param(42, id="limit", marks=pytest.mark.notimpl(["dask", "pandas"])),
-]
+limit = [param(42, id="limit")]
 
 no_limit = [param(None, id="nolimit")]
 
@@ -138,7 +135,7 @@ def test_column_to_pyarrow_table_schema(awards_players):
     assert array.type == pa.string() or array.type == pa.large_string()
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -153,7 +150,7 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask", "datafusion", "flink"])
+@pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
     ["clickhouse"],
     raises=AssertionError,
@@ -170,7 +167,6 @@ def test_column_pyarrow_batch_chunk_size(awards_players):
         util.consume(batch_reader)
 
 
-@pytest.mark.notimpl(["pandas", "dask"])
 @pytest.mark.notimpl(
     ["sqlite"],
     raises=pa.ArrowException,
@@ -265,13 +261,11 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
     [
         "bigquery",
         "clickhouse",
-        "dask",
         "datafusion",
         "impala",
         "mssql",
         "mysql",
         "oracle",
-        "pandas",
         "polars",
         "postgres",
         "risingwave",
@@ -296,15 +290,17 @@ def test_roundtrip_partitioned_parquet(tmp_path, con, backend, awards_players):
 
     # Reingest and compare schema
     reingest = con.read_parquet(outparquet / "*" / "*")
-    reingest = reingest.cast({"yearID": "int64"})
 
     # avoid type comparison to appease duckdb: as of 0.8.0 it returns large_string
-    assert reingest.schema().names == awards_players.schema().names
+    assert reingest.schema().keys() == awards_players.schema().keys()
 
     reingest = reingest.order_by(["yearID", "playerID", "awardID", "lgID"])
     awards_players = awards_players.order_by(["yearID", "playerID", "awardID", "lgID"])
 
-    backend.assert_frame_equal(reingest.to_pandas(), awards_players.to_pandas())
+    # reorder columns to match the partitioning
+    backend.assert_frame_equal(
+        reingest.to_pandas(), awards_players[reingest.columns].to_pandas()
+    )
 
 
 @pytest.mark.parametrize("ftype", ["csv", "parquet"])
@@ -414,7 +410,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "snowflake",
         "sqlite",
         "bigquery",
-        "dask",
         "trino",
         "exasol",
         "druid",
@@ -423,7 +418,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     reason="read_delta not yet implemented",
 )
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
-@pytest.mark.notyet(["mssql", "pandas"], raises=PyDeltaTableError)
+@pytest.mark.notyet(["mssql"], raises=PyDeltaTableError)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
@@ -470,10 +465,6 @@ def test_arrow_timestamp_with_time_zone(alltypes):
 @pytest.mark.notimpl(["druid", "flink"])
 @pytest.mark.notimpl(
     ["impala"], raises=AttributeError, reason="missing `fetchmany` on the cursor"
-)
-@pytest.mark.xfail_version(
-    duckdb=["numpy>=2; platform_system == 'Windows'"],
-    reason="torch on windows doesn't seem to expose the _ARRAY_API symbol",
 )
 def test_to_torch(alltypes):
     import ibis.selectors as s

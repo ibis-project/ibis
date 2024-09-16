@@ -24,6 +24,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     p,
     replace,
+    split_select_distinct_with_order_by,
 )
 from ibis.common.deferred import var
 
@@ -69,6 +70,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         rewrite_rows_range_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
     copy_func_args = True
 
     UNSUPPORTED_OPS = (
@@ -87,14 +89,12 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Covariance,
         ops.CountDistinctStar,
         ops.DateDiff,
-        ops.EndsWith,
         ops.IntervalAdd,
         ops.IntervalSubtract,
         ops.IntervalMultiply,
         ops.IntervalFloorDivide,
         ops.IsInf,
         ops.IsNan,
-        ops.LPad,
         ops.Levenshtein,
         ops.Map,
         ops.Median,
@@ -105,8 +105,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.RegexSearch,
         ops.RegexSplit,
         ops.RowID,
-        ops.RPad,
-        ops.StartsWith,
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
@@ -479,9 +477,11 @@ class MSSQLCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
         return sge.Min(this=arg)
 
-    def visit_Select(self, op, *, parent, selections, predicates, qualified, sort_keys):
+    def visit_Select(
+        self, op, *, parent, selections, predicates, qualified, sort_keys, distinct
+    ):
         # if we've constructed a useless projection return the parent relation
-        if not (selections or predicates or qualified or sort_keys):
+        if not (selections or predicates or qualified or sort_keys or distinct):
             return parent
 
         result = parent
@@ -500,6 +500,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         if sort_keys:
             result = result.order_by(*sort_keys, copy=False)
 
+        if distinct:
+            result = result.distinct()
+
         return result
 
     def visit_TimestampAdd(self, op, *, left, right):
@@ -514,6 +517,32 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
+
+    def visit_StartsWith(self, op, *, arg, start):
+        return arg.like(self.f.concat(start, "%"))
+
+    def visit_EndsWith(self, op, *, arg, end):
+        return arg.like(self.f.concat("%", end))
+
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.left(
+                self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
+                length,
+            ),
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.left(
+                self.f.concat(arg, self.f.replicate(pad, length - self.f.length(arg))),
+                length,
+            ),
+        )
 
 
 compiler = MSSQLCompiler()

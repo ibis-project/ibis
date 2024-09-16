@@ -4,7 +4,6 @@ import contextlib
 import importlib
 import importlib.metadata
 import itertools
-import operator
 from functools import cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -12,10 +11,8 @@ from typing import TYPE_CHECKING, Any
 import _pytest
 import pytest
 from packaging.requirements import Requirement
-from packaging.version import parse as vparse
 
 import ibis
-import ibis.common.exceptions as com
 from ibis import util
 from ibis.backends import (
     CanCreateCatalog,
@@ -27,23 +24,8 @@ from ibis.conftest import WINDOWS
 from ibis.util import promote_tuple
 
 if TYPE_CHECKING:
+    from ibis.backends import BaseBackend
     from ibis.backends.tests.base import BackendTest
-
-
-def compare_versions(module_name, given_version, op):
-    try:
-        current_version = importlib.metadata.version(module_name)
-        return op(vparse(current_version), vparse(given_version))
-    except importlib.metadata.PackageNotFoundError:
-        return False
-
-
-def is_newer_than(module_name, given_version):
-    return compare_versions(module_name, given_version, operator.gt)
-
-
-def is_older_than(module_name, given_version):
-    return compare_versions(module_name, given_version, operator.lt)
 
 
 TEST_TABLES = {
@@ -312,6 +294,14 @@ def pytest_runtest_call(item):
     if not backend:
         # Check item path to see if test is in backend-specific folder
         backend = set(_get_backend_names()).intersection(item.path.parts)
+    if not backend:
+        # Check if this is one of the uninstantiated backend class fixture
+        # used for signature checking
+        backend = [
+            backend.name
+            for key, backend in item.funcargs.items()
+            if key.endswith("backend_cls")
+        ]
 
     if not backend:
         return
@@ -391,6 +381,22 @@ def pytest_runtest_call(item):
             item.add_marker(pytest.mark.xfail(reason=reason, **kwargs))
 
 
+def _get_backend_cls(backend_str: str):
+    """Convert a backend string to the test class for the backend."""
+    backend_mod = importlib.import_module(f"ibis.backends.{backend_str}")
+    return backend_mod.Backend
+
+
+@pytest.fixture(params=_get_backends_to_test(), scope="session")
+def backend_cls(request) -> BaseBackend:
+    """Return the uninstantiated backend class, unconnected.
+
+    This is used for signature checking and nothing should be executed."""
+
+    cls = _get_backend_cls(request.param)
+    return cls
+
+
 @pytest.fixture(params=_get_backends_to_test(), scope="session")
 def backend(request, data_dir, tmp_path_factory, worker_id) -> BackendTest:
     """Return an instance of BackendTest, loaded with data."""
@@ -462,7 +468,7 @@ def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(discard=("dask", "pandas")),
+    params=_get_backends_to_test(),
     scope="session",
 )
 def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
@@ -477,19 +483,13 @@ def ddl_con(ddl_backend):
 
 
 @pytest.fixture(
-    params=_get_backends_to_test(keep=("dask", "pandas", "pyspark")),
+    params=_get_backends_to_test(keep=("pyspark",)),
     scope="session",
 )
 def udf_backend(request, data_dir, tmp_path_factory, worker_id):
     """Runs the UDF-supporting backends."""
     cls = _get_backend_conf(request.param)
     return cls.load_data(data_dir, tmp_path_factory, worker_id)
-
-
-@pytest.fixture(scope="session")
-def udf_con(udf_backend):
-    """Instance of Client, already connected to the db (if applies)."""
-    return udf_backend.connection
 
 
 @pytest.fixture(scope="session")
@@ -508,11 +508,6 @@ def struct(backend):
 
 
 @pytest.fixture(scope="session")
-def sorted_alltypes(alltypes):
-    return alltypes.order_by("id")
-
-
-@pytest.fixture(scope="session")
 def udf_alltypes(udf_backend):
     return udf_backend.functional_alltypes
 
@@ -525,11 +520,6 @@ def batting(backend):
 @pytest.fixture(scope="session")
 def awards_players(backend):
     return backend.awards_players
-
-
-@pytest.fixture
-def analytic_alltypes(alltypes):
-    return alltypes
 
 
 @pytest.fixture(scope="session")
@@ -560,13 +550,6 @@ def batting_df(batting):
 @pytest.fixture(scope="session")
 def awards_players_df(awards_players):
     return awards_players.execute(limit=None)
-
-
-@pytest.fixture(scope="session")
-def geo_df(geo):
-    if geo is not None:
-        return geo.execute(limit=None)
-    return None
 
 
 @pytest.fixture
@@ -621,30 +604,6 @@ def temp_view(ddl_con):
     yield name
     with contextlib.suppress(NotImplementedError):
         ddl_con.drop_view(name, force=True)
-
-
-@pytest.fixture
-def alternate_current_database(ddl_con, ddl_backend):
-    """Create a temporary database and yield its name. Drops the created
-    database upon completion.
-
-    Parameters
-    ----------
-    ddl_con : ibis.backends.Client
-
-    Yields
-    ------
-    str
-    """
-    name = util.gen_name("database")
-    try:
-        ddl_con.create_database(name)
-    except AttributeError:
-        pytest.skip(f"{ddl_backend.name()} doesn't have a `create_database` method.")
-    yield name
-
-    with contextlib.suppress(com.UnsupportedOperationError):
-        ddl_con.drop_database(name, force=True)
 
 
 @pytest.fixture

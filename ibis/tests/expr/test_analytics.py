@@ -17,6 +17,7 @@ import pytest
 
 import ibis
 import ibis.expr.types as ir
+from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.tests.expr.mocks import MockBackend
 from ibis.tests.util import assert_equal
@@ -44,7 +45,7 @@ def test_category_project(alltypes):
     t = alltypes
 
     tier = t.double_col.bucket([0, 50, 100]).name("tier")
-    expr = t[tier, t]
+    expr = t.select(tier, t)
 
     assert isinstance(expr.tier, ir.IntegerColumn)
 
@@ -99,7 +100,7 @@ def test_histogram(alltypes):
 def test_topk_analysis_bug(airlines):
     # GH #398
     dests = ["ORD", "JFK", "SFO"]
-    t = airlines[airlines.dest.isin(dests)]
+    t = airlines.filter(airlines.dest.isin(dests))
     filtered = t.semi_join(t.origin.topk(10, by=t.arrdelay.mean()), "origin")
     assert filtered is not None
 
@@ -110,3 +111,15 @@ def test_topk_function_late_bind(airlines):
     expr2 = airlines.dest.topk(5, by=airlines.arrdelay.mean())
 
     assert_equal(expr1, expr2)
+
+
+def test_topk_name(airlines):
+    expr1 = airlines.dest.topk(5, name="mycol")
+    expr2 = airlines.dest.topk(5, by=_.count().name("mycol"))
+    assert expr1.columns == ("dest", "mycol")
+    assert_equal(expr1, expr2)
+
+    expr3 = airlines.dest.topk(5, by=_.arrdelay.mean(), name="mycol")
+    expr4 = airlines.dest.topk(5, by=_.arrdelay.mean().name("mycol"))
+    assert expr3.columns == ("dest", "mycol")
+    assert_equal(expr3, expr4)

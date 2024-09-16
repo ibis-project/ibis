@@ -70,7 +70,7 @@ class Deferred(Slotted, Immutable, Final):
 
     Parameters
     ----------
-    deferred
+    obj
         The deferred object to provide syntax sugar for.
     repr
         An optional fixed string to use when repr-ing the deferred expression,

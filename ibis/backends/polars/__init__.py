@@ -13,15 +13,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import BaseBackend, NoUrl
-from ibis.backends.pandas.rewrites import (
-    bind_unbound_table,
-    replace_parameter,
-    rewrite_join,
-)
 from ibis.backends.polars.compiler import translate
+from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
 from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.expr.rewrites import lower_stringslice
+from ibis.expr.rewrites import lower_stringslice, replace_parameter
 from ibis.formats.polars import PolarsSchema
 from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
@@ -51,6 +47,25 @@ class Backend(BaseBackend, NoUrl):
         tables
             An optional mapping of string table names to polars LazyFrames.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> import polars as pl
+        >>> ibis.options.interactive = True
+        >>> lazy_frame = pl.LazyFrame(
+        ...     {"name": ["Jimmy", "Keith"], "band": ["Led Zeppelin", "Stones"]}
+        ... )
+        >>> con = ibis.polars.connect(tables={"band_members": lazy_frame})
+        >>> t = con.table("band_members")
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ name   ┃ band         ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ string │ string       │
+        ├────────┼──────────────┤
+        │ Jimmy  │ Led Zeppelin │
+        │ Keith  │ Stones       │
+        └────────┴──────────────┘
         """
         if tables is not None and not isinstance(tables, Mapping):
             raise TypeError("Input to ibis.polars.connect must be a mapping")
@@ -72,8 +87,21 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str) -> ir.Table:
-        schema = sch.infer(self._tables[name])
+        table = self._tables.get(name)
+        if table is None:
+            raise com.TableNotFound(name)
+
+        schema = sch.infer(table)
         return ops.DatabaseTable(name, schema, self).to_expr()
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        return name in self._tables
+
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        self._add_table(op.name, op.data.to_polars(op.schema).lazy())
+
+    def _finalize_memtable(self, name: str) -> None:
+        self.drop_table(name, force=True)
 
     @deprecated(
         as_of="9.1",
@@ -147,10 +175,6 @@ class Backend(BaseBackend, NoUrl):
             obj = obj.lazy()
         self._tables[name] = obj
         self._context.register(name, obj)
-
-    def _remove_table(self, name: str) -> None:
-        del self._tables[name]
-        self._context.unregister(name)
 
     def sql(
         self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
@@ -407,6 +431,7 @@ class Backend(BaseBackend, NoUrl):
     def drop_table(self, name: str, *, force: bool = False) -> None:
         if name in self._tables:
             del self._tables[name]
+            self._context.unregister(name)
         elif not force:
             raise com.IbisError(f"Table {name!r} does not exist")
 
@@ -469,12 +494,20 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ) -> pl.DataFrame:
-        lf = self.compile(expr, params=params, **kwargs)
+        self._run_pre_execute_hooks(expr)
+        table_expr = expr.as_table()
+        lf = self.compile(table_expr, params=params, **kwargs)
         if limit == "default":
             limit = ibis.options.sql.default_limit
         if limit is not None:
             lf = lf.limit(limit)
-        return lf.collect(streaming=streaming)
+        df = lf.collect(streaming=streaming)
+        # XXX: Polars sometimes returns data with the incorrect column names.
+        # For now we catch this case and rename them here if needed.
+        expected_cols = tuple(table_expr.columns)
+        if tuple(df.columns) != expected_cols:
+            df = df.rename(dict(zip(df.columns, expected_cols)))
+        return df
 
     def execute(
         self,
@@ -522,15 +555,12 @@ class Backend(BaseBackend, NoUrl):
         streaming: bool = False,
         **kwargs: Any,
     ):
+        from ibis.formats.pyarrow import PyArrowData
+
         df = self._to_dataframe(
             expr, params=params, limit=limit, streaming=streaming, **kwargs
         )
-        table = df.to_arrow()
-        if isinstance(expr, (ir.Table, ir.Value)):
-            schema = expr.as_table().schema().to_pyarrow()
-            return table.rename_columns(schema.names).cast(schema)
-        else:
-            raise com.IbisError(f"Cannot execute expression of type: {type(expr)}")
+        return PyArrowData.convert_table(df.to_arrow(), expr.as_table().schema())
 
     def to_pyarrow(
         self,
@@ -555,11 +585,11 @@ class Backend(BaseBackend, NoUrl):
         table = self._to_pyarrow_table(expr, params=params, limit=limit, **kwargs)
         return table.to_reader(chunk_size)
 
-    def _load_into_cache(self, name, expr):
-        self.create_table(name, self.compile(expr).cache())
+    def _create_cached_table(self, name, expr):
+        return self.create_table(name, self.compile(expr).cache())
 
-    def _clean_up_cached_table(self, name):
-        self._remove_table(name)
+    def _drop_cached_table(self, name):
+        self.drop_table(name, force=True)
 
 
 @lazy_singledispatch

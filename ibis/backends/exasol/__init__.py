@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import atexit
 import contextlib
 import datetime
 import re
@@ -42,7 +41,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     compiler = sc.exasol.compiler
     supports_temporary_tables = False
     supports_create_or_replace = False
-    supports_in_memory_tables = False
     supports_python_udfs = False
 
     @property
@@ -83,6 +81,33 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
 
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_EXASOL_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_EXASOL_USER", "sys")
+        >>> password = os.environ.get("IBIS_TEST_EXASOL_PASSWORD", "exasol")
+        >>> schema = os.environ.get("IBIS_TEST_EXASOL_DATABASE", "EXASOL")
+        >>> con = ibis.exasol.connect(schema=schema, host=host, user=user, password=password)
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float64
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(3)
+          year            int32
+          month           int32
         """
         if kwargs.pop("quote_ident", None) is not None:
             raise com.UnsupportedArgumentError(
@@ -199,7 +224,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
-        return self._get_schema_using_query(
+        query = (
             sg.select(STAR)
             .from_(
                 sg.table(
@@ -211,6 +236,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             )
             .sql(self.dialect)
         )
+        try:
+            return self._get_schema_using_query(query)
+        except pyexasol.exceptions.ExaQueryError as e:
+            if not self.con.meta.table_exists(table_name):
+                raise com.TableNotFound(table_name) from e
+            raise
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
@@ -245,6 +276,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             finally:
                 self.con.execute(drop_view)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        return self.con.meta.table_exists(name)
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
@@ -253,56 +287,39 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                 f"got null typed columns: {null_columns}"
             )
 
-        # only register if we haven't already done so
-        if (name := op.name) not in self.list_tables():
-            quoted = self.compiler.quoted
-            column_defs = [
-                sg.exp.ColumnDef(
-                    this=sg.to_identifier(colname, quoted=quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                    constraints=(
-                        None
-                        if typ.nullable
-                        else [
-                            sg.exp.ColumnConstraint(
-                                kind=sg.exp.NotNullColumnConstraint()
-                            )
-                        ]
-                    ),
-                )
-                for colname, typ in schema.items()
-            ]
+        quoted = self.compiler.quoted
+        name = op.name
 
-            ident = sg.to_identifier(name, quoted=quoted)
-            create_stmt = sg.exp.Create(
-                kind="TABLE",
-                this=sg.exp.Schema(this=ident, expressions=column_defs),
-            )
-            create_stmt_sql = create_stmt.sql(self.name)
+        ident = sg.to_identifier(name, quoted=quoted)
+        create_stmt = sg.exp.Create(
+            kind="TABLE",
+            this=sg.exp.Schema(this=ident, expressions=schema.to_sqlglot(self.dialect)),
+        )
+        create_stmt_sql = create_stmt.sql(self.name)
 
-            df = op.data.to_frame()
-            data = df.itertuples(index=False, name=None)
+        df = op.data.to_frame()
+        data = df.itertuples(index=False, name=None)
 
-            def process_item(item: Any):
-                """Handle inserting timestamps with timezones."""
-                if isinstance(item, datetime.datetime):
-                    if item.tzinfo is not None:
-                        item = item.tz_convert("UTC").tz_localize(None)
-                    return item.isoformat(sep=" ", timespec="milliseconds")
-                return item
+        def process_item(item: Any):
+            """Handle inserting timestamps with timezones."""
+            if isinstance(item, datetime.datetime):
+                if item.tzinfo is not None:
+                    item = item.tz_convert("UTC").tz_localize(None)
+                return item.isoformat(sep=" ", timespec="milliseconds")
+            return item
 
-            rows = (tuple(map(process_item, row)) for row in data)
-            with self._safe_raw_sql(create_stmt_sql):
-                if not df.empty:
-                    self.con.ext.insert_multi(name, rows)
+        rows = (tuple(map(process_item, row)) for row in data)
+        with self._safe_raw_sql(create_stmt_sql):
+            if not df.empty:
+                self.con.ext.insert_multi(name, rows)
 
-            atexit.register(self._clean_up_tmp_table, ident)
-
-    def _clean_up_tmp_table(self, ident: sge.Identifier) -> None:
-        with self._safe_raw_sql(
-            sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
-        ):
+    def _clean_up_tmp_table(self, name: str) -> None:
+        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
+        sql = sge.Drop(kind="TABLE", this=ident, exists=True, cascade=True)
+        with self._safe_raw_sql(sql):
             pass
+
+    _finalize_memtable = _clean_up_tmp_table
 
     def create_table(
         self,
@@ -352,11 +369,9 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         quoted = self.compiler.quoted
 
-        temp_memtable_view = None
         if obj is not None:
             if not isinstance(obj, ir.Expr):
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             else:
                 table = obj
 
@@ -366,27 +381,18 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         else:
             query = None
 
-        type_mapper = self.compiler.type_mapper
-        column_defs = [
-            sge.ColumnDef(
-                this=sg.to_identifier(colname, quoted=quoted),
-                kind=type_mapper.from_ibis(typ),
-                constraints=(
-                    None
-                    if typ.nullable
-                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
-                ),
-            )
-            for colname, typ in (schema or table.schema()).items()
-        ]
-
         if overwrite:
             temp_name = util.gen_name(f"{self.name}_table")
         else:
             temp_name = name
 
-        table = sg.table(temp_name, catalog=database, quoted=quoted)
-        target = sge.Schema(this=table, expressions=column_defs)
+        if not schema:
+            schema = table.schema()
+
+        table_expr = sg.table(temp_name, catalog=database, quoted=quoted)
+        target = sge.Schema(
+            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
+        )
 
         create_stmt = sge.Create(kind="TABLE", this=target)
 
@@ -394,7 +400,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         with self._safe_raw_sql(create_stmt):
             if query is not None:
                 self.con.execute(
-                    sge.Insert(this=table, expression=query).sql(self.name)
+                    sge.Insert(this=table_expr, expression=query).sql(self.name)
                 )
 
             if overwrite:
@@ -402,14 +408,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.name)
                 )
                 self.con.execute(
-                    f"RENAME TABLE {table.sql(self.name)} TO {this.sql(self.name)}"
+                    f"RENAME TABLE {table_expr.sql(self.name)} TO {this.sql(self.name)}"
                 )
 
         if schema is None:
-            # Clean up temporary memtable if we've created one
-            # for in-memory reads
-            if temp_memtable_view is not None:
-                self.drop_table(temp_memtable_view)
             return self.table(name, database=database)
 
         # preserve the input schema if it was provided

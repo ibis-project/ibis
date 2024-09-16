@@ -122,9 +122,9 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibisCore310 ibisCore311 ibisCore312 ibisLocal310 ibisLocal311 ibisLocal312;
+        inherit (pkgs) ibis310 ibis311 ibis312;
 
-        default = pkgs.ibisCore312;
+        default = pkgs.ibis312;
 
         inherit (pkgs) update-lock-files check-release-notes-spelling;
       };
@@ -134,9 +134,7 @@
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
 
-        # move back to 3.12 when dask-expr is supported or the dask backend is
-        # removed
-        default = ibis310;
+        default = ibis312;
 
         preCommit = pkgs.mkShell {
           name = "preCommit";

@@ -29,9 +29,8 @@ def test_version(backend):
         "polars",
         "clickhouse",
         "sqlite",
-        "dask",
+        "datafusion",
         "exasol",
-        "pandas",
         "druid",
         "oracle",
         "bigquery",
@@ -41,11 +40,6 @@ def test_version(backend):
     ],
     reason="backend does not support catalogs",
     raises=AttributeError,
-)
-@pytest.mark.notimpl(
-    ["datafusion"],
-    raises=NotImplementedError,
-    reason="current_catalog isn't implemented",
 )
 @pytest.mark.xfail_version(pyspark=["pyspark<3.4"])
 def test_catalog_consistency(backend, con):

@@ -11,10 +11,6 @@ ds = pytest.importorskip("pyarrow.dataset")
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -27,15 +23,12 @@ def test_persist_expression(backend, alltypes):
     )
     persisted_table = non_persisted_table.cache()
     backend.assert_frame_equal(
-        non_persisted_table.to_pandas(), persisted_table.to_pandas()
+        non_persisted_table.order_by("id").to_pandas(),
+        persisted_table.order_by("id").to_pandas(),
     )
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -48,16 +41,13 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
     )
     with non_cached_table.cache() as cached_table:
         backend.assert_frame_equal(
-            non_cached_table.to_pandas(), cached_table.to_pandas()
+            non_cached_table.order_by("id").to_pandas(),
+            cached_table.order_by("id").to_pandas(),
         )
-    assert non_cached_table.op() not in con._query_cache.cache
+    assert non_cached_table.op() not in con._cache_op_to_entry
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @pytest.mark.never(
     ["risingwave"],
     raises=com.UnsupportedOperationError,
@@ -81,7 +71,10 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     op = non_cached_table.op()
     cached_table = non_cached_table.cache()
 
-    backend.assert_frame_equal(non_cached_table.to_pandas(), cached_table.to_pandas())
+    backend.assert_frame_equal(
+        non_cached_table.order_by("id").to_pandas(),
+        cached_table.order_by("id").to_pandas(),
+    )
 
     name = cached_table.op().name
     nested_cached_table = non_cached_table.cache()
@@ -89,25 +82,21 @@ def test_persist_expression_multiple_refs(backend, con, alltypes):
     # cached tables are identical and reusing the same op
     assert cached_table.op() is nested_cached_table.op()
     # table is cached
-    assert op in con._query_cache.cache
+    assert op in con._cache_op_to_entry
 
     # deleting the first reference, leaves table in cache
     del nested_cached_table
-    assert op in con._query_cache.cache
+    assert op in con._cache_op_to_entry
 
     # deleting the last reference, releases table from cache
     del cached_table
-    assert op not in con._query_cache.cache
+    assert op not in con._cache_op_to_entry
 
     # assert that table has been dropped
     assert name not in con.tables
 
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
-@mark.never(
-    ["mssql"],
-    reason="mssql supports support temporary tables through naming conventions",
-)
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.never(
     ["risingwave"],
@@ -143,7 +132,7 @@ def test_persist_expression_release(con, alltypes):
     cached_table = non_cached_table.cache()
     cached_table.release()
 
-    assert non_cached_table.op() not in con._query_cache.cache
+    assert non_cached_table.op() not in con._cache_op_to_entry
 
     # a second release does not hurt
     cached_table.release()

@@ -17,6 +17,7 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
+from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -41,6 +42,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
 
@@ -370,10 +372,12 @@ class PostgresCompiler(SQLGlotCompiler):
             )
         )
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
@@ -716,7 +720,14 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -724,10 +735,9 @@ class PostgresCompiler(SQLGlotCompiler):
 
         parent_alias = parent.alias_or_name
 
-        opname = op.column.name
         parent_schema = op.parent.schema
-        overlaps_with_parent = opname in parent_schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in parent_schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         selcols = []
 

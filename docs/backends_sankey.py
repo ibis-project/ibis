@@ -42,7 +42,7 @@ backend_categories = {
         "SQLite",
         "Trino",
     ],
-    list(category_colors.keys())[2]: ["Dask", "pandas", "Polars"],
+    list(category_colors.keys())[2]: ["Polars"],
 }
 
 nodes, links = [], []

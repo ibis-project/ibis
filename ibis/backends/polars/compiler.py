@@ -9,11 +9,14 @@ from functools import partial, reduce, singledispatch
 from math import isnan
 
 import polars as pl
+import sqlglot as sg
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.polars.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.sql.compilers.base import STAR
+from ibis.backends.sql.dialects import Polars
 from ibis.expr.operations.udf import InputType
 from ibis.formats.polars import PolarsType
 from ibis.util import gen_name
@@ -59,19 +62,14 @@ def table(op, **_):
 
 @translate.register(ops.DummyTable)
 def dummy_table(op, **kw):
-    selections = [translate(arg, **kw) for name, arg in op.values.items()]
+    selections = [translate(arg, **kw).alias(name) for name, arg in op.values.items()]
     return pl.DataFrame().lazy().select(selections)
 
 
 @translate.register(ops.InMemoryTable)
-def in_memory_table(op, **_):
-    return op.data.to_polars(op.schema).lazy()
-
-
-@translate.register(ops.Alias)
-def alias(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.alias(op.name)
+def in_memory_table(op, *, ctx, **_):
+    sql = sg.select(STAR).from_(sg.to_identifier(op.name, quoted=True)).sql(Polars)
+    return ctx.execute(sql, eager=False)
 
 
 def _make_duration(value, dtype):
@@ -1005,7 +1003,10 @@ def array_collect(op, in_group_by=False, **kw):
     if op.order_by:
         keys = [translate(k.expr, **kw).filter(predicate) for k in op.order_by]
         descending = [k.descending for k in op.order_by]
-        arg = arg.sort_by(keys, descending=descending)
+        arg = arg.sort_by(keys, descending=descending, nulls_last=True)
+
+    if op.distinct:
+        arg = arg.unique(maintain_order=op.order_by is not None)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756
@@ -1014,7 +1015,14 @@ def array_collect(op, in_group_by=False, **kw):
 
 @translate.register(ops.ArrayFlatten)
 def array_flatten(op, **kw):
-    return pl.concat_list(translate(op.arg, **kw))
+    result = translate(op.arg, **kw)
+    return (
+        pl.when(result.is_null())
+        .then(None)
+        .when(result.list.len() == 0)
+        .then([])
+        .otherwise(result.flatten())
+    )
 
 
 _date_methods = {

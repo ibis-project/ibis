@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
+from string import whitespace
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -96,7 +97,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.IsInf: "isInfinite",
         ops.IsNan: "isNaN",
         ops.IsNull: "isNull",
-        ops.LStrip: "trimLeft",
         ops.Ln: "log",
         ops.Log10: "log10",
         ops.MapKeys: "mapKeys",
@@ -106,7 +106,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Median: "quantileExactExclusive",
         ops.NotNull: "isNotNull",
         ops.NullIf: "nullIf",
-        ops.RStrip: "trimRight",
         ops.RegexReplace: "replaceRegexpAll",
         ops.RowNumber: "row_number",
         ops.StartsWith: "startsWith",
@@ -114,7 +113,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.Strftime: "formatDateTime",
         ops.StringLength: "length",
         ops.StringReplace: "replaceAll",
-        ops.Strip: "trimBoth",
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
@@ -164,11 +162,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        start = self._add_parens(op.start, start)
+        start = self._add_parens(start)
         start_correct = self.if_(start < 0, start, start + 1)
 
         if stop is not None:
-            stop = self._add_parens(op.stop, stop)
+            stop = self._add_parens(stop)
 
             length = self.if_(
                 stop < 0,
@@ -477,6 +475,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_StringContains(self, op, haystack, needle):
         return self.f.position(haystack, needle) > 0
 
+    def visit_Strip(self, op, *, arg):
+        return sge.Trim(
+            this=arg, position="BOTH", expression=sge.Literal.string(whitespace)
+        )
+
     def visit_DayOfWeekIndex(self, op, *, arg):
         weekdays = len(calendar.day_name)
         return (((self.f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays
@@ -608,12 +611,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
             )
-        return self.agg.groupArray(arg, where=where, order_by=order_by)
+        func = self.agg.groupUniqArray if distinct else self.agg.groupArray
+        return func(arg, where=where, order_by=order_by)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:
@@ -685,7 +689,14 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -697,9 +708,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         selcols = []
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         if offset is not None:
             if overlaps_with_parent:

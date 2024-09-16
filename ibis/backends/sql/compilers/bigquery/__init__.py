@@ -22,6 +22,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 
@@ -113,6 +114,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_rank,
         *SQLGlotCompiler.rewrites,
     )
+    post_rewrites = (split_select_distinct_with_order_by,)
 
     supports_qualify = True
 
@@ -477,16 +479,24 @@ class BigQueryCompiler(SQLGlotCompiler):
             return self.f.parse_timestamp(format_str, arg, timezone)
         return self.f.parse_datetime(format_str, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
-        if where is not None and include_null:
-            raise com.UnsupportedOperationError(
-                "Combining `include_null=True` and `where` is not supported "
-                "by bigquery"
-            )
-        out = self.agg.array_agg(arg, where=where, order_by=order_by)
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
+        if where is not None:
+            if include_null:
+                raise com.UnsupportedOperationError(
+                    "Combining `include_null=True` and `where` is not supported by bigquery"
+                )
+            if distinct:
+                raise com.UnsupportedOperationError(
+                    "Combining `distinct=True` and `where` is not supported by bigquery"
+                )
+            arg = compiler.if_(where, arg, NULL)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
+        if order_by:
+            arg = sge.Order(this=arg, expressions=order_by)
         if not include_null:
-            out = sge.IgnoreNulls(this=out)
-        return out
+            arg = sge.IgnoreNulls(this=arg)
+        return self.f.array_agg(arg)
 
     def _neg_idx_to_pos(self, arg, idx):
         return self.if_(idx < 0, self.f.array_length(arg) + idx, idx)
@@ -516,15 +526,6 @@ class BigQueryCompiler(SQLGlotCompiler):
 
     def visit_StringContains(self, op, *, haystack, needle):
         return self.f.strpos(haystack, needle) > 0
-
-    def visti_StringFind(self, op, *, arg, substr, start, end):
-        if start is not None:
-            raise NotImplementedError(
-                "`start` not implemented for BigQuery string find"
-            )
-        if end is not None:
-            raise NotImplementedError("`end` not implemented for BigQuery string find")
-        return self.f.strpos(arg, substr)
 
     def visit_TimestampFromYMDHMS(
         self, op, *, year, month, day, hours, minutes, seconds
@@ -1015,7 +1016,14 @@ class BigQueryCompiler(SQLGlotCompiler):
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -1027,9 +1035,8 @@ class BigQueryCompiler(SQLGlotCompiler):
 
         table = sg.to_identifier(parent.alias_or_name, quoted=quoted)
 
-        opname = op.column.name
-        overlaps_with_parent = opname in op.parent.schema
-        computed_column = column_alias.as_(opname, quoted=quoted)
+        overlaps_with_parent = column_name in op.parent.schema
+        computed_column = column_alias.as_(column_name, quoted=quoted)
 
         # replace the existing column if the unnested column hasn't been
         # renamed

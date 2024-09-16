@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  docs:
+  test:
     runs-on: ubuntu-latest
     steps:
       - name: install nix
@@ -39,11 +39,44 @@ jobs:
         # that for extensions
         run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: install nix
+        uses: cachix/install-nix-action@v27
+        with:
+          extra_nix_config: |
+            access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
+
+      - name: setup cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: ibis
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          extraPullNames: nix-community,poetry2nix
+
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: restore cache of the previously rendered notebooks
+        uses: actions/cache/restore@v4
+        with:
+          # https://docs.github.com/en/webhooks/webhook-events-and-payloads#push
+          # > The SHA of the most recent commit on ref before the push.
+          key: docs-${{ github.event.before }}
+          path: docs/**/.jupyter_cache
+
       - name: build api docs
         run: nix develop --ignore-environment -c just docs-apigen --verbose
 
       - name: build docs
         run: nix develop --ignore-environment --keep HOME -c just docs-render
+
+      - name: cache rendered notebooks
+        uses: actions/cache/save@v4
+        with:
+          key: docs-${{ github.sha }}
+          path: docs/**/.jupyter_cache
 
       - name: build jupyterlite
         run: nix develop --ignore-environment --keep HOME -c just build-jupyterlite

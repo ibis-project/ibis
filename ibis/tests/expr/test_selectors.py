@@ -29,6 +29,13 @@ def t():
     )
 
 
+@pytest.mark.parametrize("name,sol", [("c", s.cols), ("r", s.index)])
+def test_deprecated(name, sol):
+    with pytest.warns(FutureWarning):
+        res = getattr(s, name)
+    assert res is sol
+
+
 @pytest.mark.parametrize(
     "sel",
     [s.where(lambda _: False), s.startswith("X"), s.endswith("🙂")],
@@ -159,13 +166,13 @@ def zscore(c):
     "expr_func",
     [
         lambda t: t.select(
-            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+            s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std())
         ),
-        lambda t: t.select(s.across(s.numeric() & ~s.c("year"), zscore)),
+        lambda t: t.select(s.across(s.numeric() & ~s.cols("year"), zscore)),
         lambda t: t.select(
-            s.across(s.numeric() & ~s.c(t.year), (_ - _.mean()) / _.std())
+            s.across(s.numeric() & ~s.cols(t.year), (_ - _.mean()) / _.std())
         ),
-        lambda t: t.select(s.across(s.numeric() & ~s.c(t.year), zscore)),
+        lambda t: t.select(s.across(s.numeric() & ~s.cols(t.year), zscore)),
     ],
     ids=["deferred", "func", "deferred-column-ref", "func-column-ref"],
 )
@@ -184,9 +191,9 @@ def test_across_select(penguins, expr_func):
     "expr_func",
     [
         lambda t: t.mutate(
-            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+            s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std())
         ),
-        lambda t: t.mutate(s.across(s.numeric() & ~s.c("year"), zscore)),
+        lambda t: t.mutate(s.across(s.numeric() & ~s.cols("year"), zscore)),
     ],
     ids=["deferred", "func"],
 )
@@ -204,8 +211,8 @@ def test_across_mutate(penguins, expr_func):
 @pytest.mark.parametrize(
     "expr_func",
     [
-        lambda t: t.agg(s.across(s.numeric() & ~s.c("year"), _.mean())),
-        lambda t: t.agg(s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())),
+        lambda t: t.agg(s.across(s.numeric() & ~s.cols("year"), _.mean())),
+        lambda t: t.agg(s.across(s.numeric() & ~s.cols("year"), lambda c: c.mean())),
     ],
     ids=["deferred", "func"],
 )
@@ -224,10 +231,10 @@ def test_across_agg(penguins, expr_func):
     "expr_func",
     [
         lambda t: t.group_by("species").select(
-            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+            s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std())
         ),
         lambda t: t.group_by("species").select(
-            s.across(s.numeric() & ~s.c("year"), zscore)
+            s.across(s.numeric() & ~s.cols("year"), zscore)
         ),
     ],
     ids=["deferred", "func"],
@@ -247,10 +254,10 @@ def test_across_group_by_select(penguins, expr_func):
     "expr_func",
     [
         lambda t: t.group_by("species").mutate(
-            s.across(s.numeric() & ~s.c("year"), (_ - _.mean()) / _.std())
+            s.across(s.numeric() & ~s.cols("year"), (_ - _.mean()) / _.std())
         ),
         lambda t: t.group_by("species").mutate(
-            s.across(s.numeric() & ~s.c("year"), zscore)
+            s.across(s.numeric() & ~s.cols("year"), zscore)
         ),
     ],
     ids=["deferred", "func"],
@@ -270,10 +277,10 @@ def test_across_group_by_mutate(penguins, expr_func):
     "expr_func",
     [
         lambda t: t.group_by("species").agg(
-            s.across(s.numeric() & ~s.c("year"), _.mean())
+            s.across(s.numeric() & ~s.cols("year"), _.mean())
         ),
         lambda t: t.group_by("species").agg(
-            s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())
+            s.across(s.numeric() & ~s.cols("year"), lambda c: c.mean())
         ),
     ],
     ids=["deferred", "func"],
@@ -293,10 +300,10 @@ def test_across_group_by_agg(penguins, expr_func):
     "expr_func",
     [
         lambda t: t.group_by(~s.numeric()).agg(
-            s.across(s.numeric() & ~s.c("year"), _.mean())
+            s.across(s.numeric() & ~s.cols("year"), _.mean())
         ),
         lambda t: t.group_by(~s.numeric()).agg(
-            s.across(s.numeric() & ~s.c("year"), lambda c: c.mean())
+            s.across(s.numeric() & ~s.cols("year"), lambda c: c.mean())
         ),
     ],
     ids=["deferred", "func"],
@@ -325,7 +332,7 @@ def test_across_str(penguins):
 
 
 def test_if_all(penguins):
-    expr = penguins.filter(s.if_all(s.numeric() & ~s.c("year"), _ > 5))
+    expr = penguins.filter(s.if_all(s.numeric() & ~s.cols("year"), _ > 5))
     expected = penguins.filter(
         (_.bill_length_mm > 5)
         & (_.bill_depth_mm > 5)
@@ -336,7 +343,7 @@ def test_if_all(penguins):
 
 
 def test_if_any(penguins):
-    expr = penguins.filter(s.if_any(s.numeric() & ~s.c("year"), _ > 5))
+    expr = penguins.filter(s.if_any(s.numeric() & ~s.cols("year"), _ > 5))
     expected = penguins.filter(
         (_.bill_length_mm > 5)
         | (_.bill_depth_mm > 5)
@@ -346,24 +353,24 @@ def test_if_any(penguins):
     assert expr.equals(expected)
 
 
-def test_negate_range(penguins):
-    assert penguins.select(~s.r[3:]).equals(penguins[[0, 1, 2]])
+def test_index_negate(penguins):
+    assert penguins.select(~s.index[3:]).equals(penguins[[0, 1, 2]])
 
 
-def test_string_range_start(penguins):
-    assert penguins.select(s.r["island":5]).equals(
+def test_index_slice_string_start(penguins):
+    assert penguins.select(s.index["island":5]).equals(
         penguins.select(penguins.columns[penguins.columns.index("island") : 5])
     )
 
 
-def test_string_range_end(penguins):
-    assert penguins.select(s.r[:"island"]).equals(
+def test_index_slice_string_end(penguins):
+    assert penguins.select(s.index[:"island"]).equals(
         penguins.select(penguins.columns[: penguins.columns.index("island") + 1])
     )
 
 
-def test_string_element(penguins):
-    assert penguins.select(~s.r["island"]).equals(
+def test_index_string(penguins):
+    assert penguins.select(~s.index["island"]).equals(
         penguins.select([c for c in penguins.columns if c != "island"])
     )
 
@@ -383,10 +390,12 @@ def test_all(penguins):
 @pytest.mark.parametrize(
     ("seq", "expected"),
     [
-        param(~s.r[[3, 4, 5]], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_list"),
-        param(~s.r[3, 4, 5], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_tuple"),
-        param(s.r["island", "year"], ("island", "year"), id="string_tuple"),
-        param(s.r[["island", "year"]], ("island", "year"), id="string_list"),
+        param(
+            ~s.index[[3, 4, 5]], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_list"
+        ),
+        param(~s.index[3, 4, 5], sorted(set(range(8)) - {3, 4, 5}), id="neg_int_tuple"),
+        param(s.index["island", "year"], ("island", "year"), id="string_tuple"),
+        param(s.index[["island", "year"]], ("island", "year"), id="string_list"),
         param(iter(["island", "year"]), ("island", "year"), id="mixed_iterable"),
     ],
 )
@@ -397,7 +406,7 @@ def test_sequence(penguins, seq, expected):
 def test_names_callable(penguins):
     expr = penguins.select(
         s.across(
-            s.numeric() & ~s.c("year"),
+            s.numeric() & ~s.cols("year"),
             func=dict(cast=_.cast("float32")),
             names=lambda col, fn: f"{fn}({col})",
         )
@@ -416,7 +425,7 @@ def test_names_callable(penguins):
 def test_names_format_string(penguins):
     expr = penguins.select(
         s.across(
-            s.numeric() & ~s.c("year"),
+            s.numeric() & ~s.cols("year"),
             func=dict(cast=_.cast("float32")),
             names="{fn}({col})",
         )
@@ -433,7 +442,7 @@ def test_names_format_string(penguins):
 
 
 def test_all_of(penguins):
-    expr = penguins.select(s.all_of(s.numeric(), ~s.c("year")))
+    expr = penguins.select(s.all_of(s.numeric(), ~s.cols("year")))
     expected = penguins.select(
         "bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"
     )
@@ -448,7 +457,7 @@ def test_all_of_string_list(penguins):
 
 
 def test_any_of(penguins):
-    expr = penguins.select(s.any_of(s.startswith("bill"), s.c("year")))
+    expr = penguins.select(s.any_of(s.startswith("bill"), s.cols("year")))
     expected = penguins.select("bill_length_mm", "bill_depth_mm", "year")
     assert expr.equals(expected)
 
@@ -461,22 +470,22 @@ def test_any_of_string_list(penguins):
     assert expr.equals(expected)
 
 
-def test_c_error_on_misspelled_column(penguins):
+def test_cols_error_on_misspelled_column(penguins):
     match = "Columns .+ are not present"
 
-    sel = s.c("inland")
+    sel = s.cols("inland")
     with pytest.raises(exc.IbisInputError, match=match):
         penguins.select(sel)
 
-    sel = s.any_of(s.c("inland"), s.c("island"))
+    sel = s.any_of(s.cols("inland"), s.cols("island"))
     with pytest.raises(exc.IbisInputError, match=match):
         penguins.select(sel)
 
-    sel = s.any_of(s.c("island"), s.c("inland"))
+    sel = s.any_of(s.cols("island"), s.cols("inland"))
     with pytest.raises(exc.IbisInputError, match=match):
         penguins.select(sel)
 
-    sel = s.any_of(s.c("island", "inland"))
+    sel = s.any_of(s.cols("island", "inland"))
     with pytest.raises(exc.IbisInputError, match=match):
         penguins.select(sel)
 
@@ -497,19 +506,19 @@ def test_order_by_with_selectors(penguins):
 
 
 def test_window_function_group_by(penguins):
-    expr = penguins.species.count().over(group_by=s.c("island"))
+    expr = penguins.species.count().over(group_by=s.cols("island"))
     assert expr.equals(penguins.species.count().over(group_by=penguins.island))
 
 
 def test_window_function_order_by(penguins):
-    expr = penguins.island.count().over(order_by=s.c("species"))
+    expr = penguins.island.count().over(order_by=s.cols("species"))
     assert expr.equals(penguins.island.count().over(order_by=penguins.species))
 
 
 def test_window_function_group_by_order_by(penguins):
     expr = penguins.species.count().over(
-        group_by=s.c("island"),
-        order_by=s.c("year") | (~s.c("island", "species") & s.of_type("str")),
+        group_by=s.cols("island"),
+        order_by=s.cols("year") | (~s.cols("island", "species") & s.of_type("str")),
     )
     assert expr.equals(
         penguins.species.count().over(
@@ -528,4 +537,38 @@ def test_methods(penguins):
 
     selector = s.across(s.all(), ibis.null(_.type()))
     bound = selector.expand(penguins)
-    assert [col.get_name() for col in bound] == penguins.columns
+    assert [col.get_name() for col in bound] == list(penguins.columns)
+
+
+@pytest.mark.parametrize("sel", [s.none(), s.cols(), []])
+def test_none_selector(penguins, sel):
+    sel = s._to_selector(sel)
+
+    assert not sel.expand(penguins)
+    assert not sel.expand_names(penguins)
+
+    assert list((sel | s.cols("year")).expand_names(penguins)) == ["year"]
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(sel)
+
+    with pytest.raises(exc.IbisError):
+        penguins.select(sel & s.cols("year"))
+
+    assert penguins.select(sel | s.cols("year")).equals(penguins.select("year"))
+
+
+def test_invalid_composition():
+    left = s.across(s.all(), _ + 1)
+    right = s.none()
+    with pytest.raises(TypeError):
+        left & right
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.any_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.all_of(left)
+
+    with pytest.raises(exc.IbisInputError, match="Cannot compose"):
+        s.across(left, _ + 1)

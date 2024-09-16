@@ -129,7 +129,7 @@ def test_sql_query_limits(alltypes):
 def test_embedded_identifier_quoting(alltypes):
     t = alltypes
 
-    expr = t[[(t.double_col * 2).name("double(fun)")]]["double(fun)"].sum()
+    expr = t.select((t.double_col * 2).name("double(fun)"))["double(fun)"].sum()
     expr.execute()
 
 
@@ -375,7 +375,18 @@ def test_from_url(con):
     )
 
 
-def test_invalid_port(con):
+def test_from_url_with_kwargs(con):
+    # since explicit kwargs take precedence, this passes, because we're passing
+    # `database` explicitly, even though our connection string says to use a
+    # random database
+    database = ibis.util.gen_name("clickhouse_database")
+    assert ibis.connect(
+        f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{CLICKHOUSE_PORT}/{database}",
+        database=IBIS_TEST_CLICKHOUSE_DB,
+    )
+
+
+def test_invalid_port():
     port = 9999
     url = f"clickhouse://{CLICKHOUSE_USER}:{CLICKHOUSE_PASS}@{CLICKHOUSE_HOST}:{port}/{IBIS_TEST_CLICKHOUSE_DB}"
     with pytest.raises(cc.driver.exceptions.DatabaseError):

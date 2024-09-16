@@ -151,11 +151,11 @@ def test_projection_fusion_only_peeks_at_immediate_parent(snapshot):
         ("val", "int64"),
     ]
     table = ibis.table(schema, name="unbound_table")
-    table = table[table.PARTITIONTIME < ibis.date("2017-01-01")]
+    table = table.filter(table.PARTITIONTIME < ibis.date("2017-01-01"))
     table = table.mutate(file_date=table.file_date.cast("date"))
-    table = table[table.file_date < ibis.date("2017-01-01")]
+    table = table.filter(table.file_date < ibis.date("2017-01-01"))
     table = table.mutate(XYZ=table.val * 2)
-    expr = table.join(table.view())[table]
+    expr = table.join(table.view()).select(table)
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -276,7 +276,7 @@ def test_large_compile():
     for _ in range(num_joins):  # noqa: F402
         table = table.mutate(dummy=ibis.literal(""))
         table_ = table.view()
-        table = table.left_join(table_, ["dummy"])[[table_]]
+        table = table.left_join(table_, ["dummy"]).select(table_)
 
     start = time.time()
     table.compile()
@@ -417,9 +417,9 @@ def test_divide_by_zero(alltypes, op, snapshot):
 
 
 def test_identical_to(alltypes, snapshot):
-    expr = alltypes[
+    expr = alltypes.filter(
         _.string_col.identical_to("a") & _.date_string_col.identical_to("b")
-    ]
+    )
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import glob
+import re
 from contextlib import closing
 from functools import partial
 from typing import TYPE_CHECKING, Any, Literal
@@ -14,6 +15,7 @@ import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 import toolz
+from clickhouse_connect.driver.exceptions import DatabaseError
 from clickhouse_connect.driver.external import ExternalData
 
 import ibis
@@ -143,8 +145,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> import ibis
         >>> client = ibis.clickhouse.connect()
         >>> client
-        <ibis.clickhouse.client.ClickhouseClient object at 0x...>
-
+        <ibis.backends.clickhouse.Backend object at 0x...>
         """
         if settings is None:
             settings = {}
@@ -511,8 +512,13 @@ class Backend(SQLBackend, CanCreateDatabase):
                 "`catalog` namespaces are not supported by clickhouse"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
-        with self._safe_raw_sql(query) as results:
-            names, types, *_ = results.result_columns
+        try:
+            with self._safe_raw_sql(query) as results:
+                names, types, *_ = results.result_columns
+        except DatabaseError as e:
+            if re.search(r"\bUNKNOWN_TABLE\b", str(e)):
+                raise com.TableNotFound(table_name) from e
+
         return sch.Schema(
             dict(zip(names, map(self.compiler.type_mapper.from_string, types)))
         )
@@ -673,14 +679,8 @@ class Backend(SQLBackend, CanCreateDatabase):
             obj = ibis.memtable(obj, schema=schema)
 
         this = sge.Schema(
-            this=sg.table(name, db=database),
-            expressions=[
-                sge.ColumnDef(
-                    this=sg.to_identifier(name, quoted=self.compiler.quoted),
-                    kind=self.compiler.type_mapper.from_ibis(typ),
-                )
-                for name, typ in (schema or obj.schema()).items()
-            ],
+            this=sg.table(name, db=database, quoted=self.compiler.quoted),
+            expressions=(schema or obj.schema()).to_sqlglot(self.dialect),
         )
         properties = [
             # the engine cannot be quoted, since clickhouse won't allow e.g.,
@@ -779,3 +779,23 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
+
+    def _in_memory_table_exists(self, name: str) -> bool:
+        name = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
+        try:
+            # DESCRIBE TABLE $TABLE FORMAT NULL is the fastest way to check
+            # table existence in clickhouse; FORMAT NULL produces no data which
+            # is ideal since we don't care about the output for existence
+            # checking
+            #
+            # Other methods compared were
+            # 1. SELECT 1 FROM $TABLE LIMIT 0
+            # 2. SHOW TABLES LIKE $TABLE LIMIT 1
+            #
+            # if the table exists nothing is returned and there's no error
+            # otherwise there's an error
+            self.con.raw_query(f"DESCRIBE {name} FORMAT NULL")
+        except cc.driver.exceptions.DatabaseError:
+            return False
+        else:
+            return True

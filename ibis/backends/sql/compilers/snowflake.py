@@ -424,13 +424,7 @@ $$""",
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         # https://docs.snowflake.com/en/sql-reference/functions/regexp_substr
-        return sge.RegexpExtract(
-            this=arg,
-            expression=pattern,
-            position=sge.convert(1),
-            group=index,
-            parameters=sge.convert("ce"),
-        )
+        return self.f.anon.regexp_substr(arg, pattern, 1, 1, "ce", index)
 
     def visit_ArrayZip(self, op, *, arg):
         return self.if_(
@@ -458,14 +452,21 @@ $$""",
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def _array_collect(self, *, arg, where, order_by, include_null):
+    def _array_collect(self, *, arg, where, order_by, include_null, distinct=False):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the snowflake backend"
             )
+        if where is not None and distinct:
+            raise com.UnsupportedOperationError(
+                "Combining `distinct=True` and `where` is not supported by snowflake"
+            )
 
         if where is not None:
             arg = self.if_(where, arg, NULL)
+
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
 
         out = self.f.array_agg(arg)
 
@@ -474,9 +475,13 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         return self._array_collect(
-            arg=arg, where=where, order_by=order_by, include_null=include_null
+            arg=arg,
+            where=where,
+            order_by=order_by,
+            include_null=include_null,
+            distinct=distinct,
         )
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
@@ -761,12 +766,11 @@ $$""",
         self, op, *, parent, fraction: float, method: str, seed: int | None, **_
     ):
         sample = sge.TableSample(
-            this=parent,
             method="bernoulli" if method == "row" else "system",
             percent=sge.convert(fraction * 100.0),
             seed=None if seed is None else sge.convert(seed),
         )
-        return sg.select(STAR).from_(sample)
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArrayMap(self, op, *, arg, param, body):
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
@@ -811,7 +815,14 @@ $$""",
         return sg.select(column).from_(parent)
 
     def visit_TableUnnest(
-        self, op, *, parent, column, offset: str | None, keep_empty: bool
+        self,
+        op,
+        *,
+        parent,
+        column,
+        column_name: str,
+        offset: str | None,
+        keep_empty: bool,
     ):
         quoted = self.quoted
 
@@ -826,12 +837,10 @@ $$""",
 
         selcols = []
 
-        opcol = op.column
-        opname = opcol.name
-        overlaps_with_parent = opname in op.parent.schema
+        overlaps_with_parent = column_name in op.parent.schema
         computed_column = self.cast(
-            self.f.nullif(column_alias, null_sentinel), opcol.dtype.value_type
-        ).as_(opname, quoted=quoted)
+            self.f.nullif(column_alias, null_sentinel), op.column.dtype.value_type
+        ).as_(column_name, quoted=quoted)
 
         if overlaps_with_parent:
             selcols.append(

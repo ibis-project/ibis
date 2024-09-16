@@ -27,7 +27,12 @@ pd = pytest.importorskip("pandas")
 
 pytestmark = [
     pytest.mark.notimpl(
-        ["druid"], raises=(com.OperationNotDefinedError, PyDruidProgrammingError)
+        ["druid"],
+        raises=(
+            com.OperationNotDefinedError,
+            com.TableNotFound,
+            PyDruidProgrammingError,
+        ),
     )
 ]
 
@@ -152,10 +157,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t: pandas_ntile(t.float_col, 7),
             id="ntile",
             marks=[
-                pytest.mark.notimpl(
-                    ["dask", "pandas", "polars"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(
                     ["impala"],
                     raises=AssertionError,
@@ -195,11 +197,9 @@ with pytest.warns(FutureWarning, match="v9.0"):
             ),
             id="nth",
             marks=[
-                pytest.mark.notimpl(["pandas"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
-                pytest.mark.notimpl(["dask"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
             ],
@@ -599,7 +599,6 @@ def test_grouped_unbounded_window(
     ],
 )
 @pytest.mark.notimpl(["snowflake"], raises=AssertionError)
-@pytest.mark.notimpl(["dask"], raises=AssertionError)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
@@ -610,7 +609,7 @@ def test_grouped_unbounded_window(
 def test_simple_ungrouped_unbound_following_window(
     backend, alltypes, ibis_method, pandas_fn
 ):
-    t = alltypes[alltypes.double_col < 50].order_by("id")
+    t = alltypes.filter(alltypes.double_col < 50).order_by("id")
     df = t.execute()
 
     w = ibis.window(rows=(0, None), order_by=t.id)
@@ -634,9 +633,8 @@ def test_simple_ungrouped_unbound_following_window(
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
-@pytest.mark.xfail_version(datafusion=["datafusion==35"])
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
-    t = alltypes[alltypes.double_col < 50].order_by("id")
+    t = alltypes.filter(alltypes.double_col < 50).order_by("id")
     w = ibis.window(rows=(0, None), order_by=ibis.null())
     expr = t.double_col.sum().over(w).name("double_col")
     # hard to reproduce this in pandas, so just test that it actually executes
@@ -677,9 +675,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             True,
             id="unordered-ntile",
             marks=[
-                pytest.mark.notimpl(
-                    ["pandas", "dask"], raises=com.OperationNotDefinedError
-                ),
                 pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
@@ -921,11 +916,6 @@ def test_ungrouped_unbounded_window(
     ["mysql"],
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="Feature is not yet implemented: window frame in `RANGE` mode is not supported yet",
 )
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:

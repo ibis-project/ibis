@@ -11,6 +11,13 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
+
+try:
+    from pyspark.errors.exceptions.base import AnalysisException  # PySpark 3.5+
+except ImportError:
+    from pyspark.sql.utils import AnalysisException  # PySpark 3.3
+
+
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -411,10 +418,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             self._session.udf.register(f"unwrap_json_{typ.__name__}", unwrap_json(typ))
         self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
+    def _in_memory_table_exists(self, name: str) -> bool:
+        sql = f"SHOW TABLES IN {self.current_database} LIKE '{name}'"
+        return bool(self._session.sql(sql).count())
+
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
-        df.createOrReplaceTempView(op.name)
+        df.createTempView(op.name)
+
+    def _finalize_memtable(self, name: str) -> None:
+        self._session.catalog.dropTempView(name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
@@ -535,7 +549,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
         with self._active_catalog_database(catalog, db):
-            df = self._session.table(table_name)
+            try:
+                df = self._session.table(table_name)
+            except AnalysisException as e:
+                if not self._session.catalog.tableExists(table_name):
+                    raise com.TableNotFound(table_name) from e
+                raise
+
             struct = PySparkType.to_ibis(df.schema)
 
         return sch.Schema(struct)
@@ -594,13 +614,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        temp_memtable_view = None
         if obj is not None:
             if isinstance(obj, ir.Expr):
                 table = obj
             else:
                 table = ibis.memtable(obj)
-                temp_memtable_view = table.op().name
             query = self.compile(table)
             mode = "overwrite" if overwrite else "error"
             with self._active_catalog_database(catalog, db):
@@ -614,11 +632,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 self._session.catalog.createTable(name, schema=schema, format=format)
         else:
             raise com.IbisError("The schema or obj parameter is required")
-
-        # Clean up temporary memtable if we've created one
-        # for in-memory reads
-        if temp_memtable_view is not None:
-            self.drop_table(temp_memtable_view)
 
         return self.table(name, database=(catalog, db))
 
@@ -704,7 +717,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
         return self.raw_sql(f"ANALYZE TABLE {table} COMPUTE STATISTICS{maybe_noscan}")
 
-    def _load_into_cache(self, name, expr):
+    def _create_cached_table(self, name, expr):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
@@ -712,8 +725,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
+        return self.table(name)
 
-    def _clean_up_cached_table(self, name):
+    def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
         assert t.is_cached

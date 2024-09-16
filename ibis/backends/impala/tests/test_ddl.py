@@ -159,19 +159,21 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
 
     t = con.table(temp_table, database=db)
 
-    to_insert = expr[
+    to_insert = expr.select(
         expr.tinyint_col, expr.smallint_col.name("int_col"), expr.string_col
-    ]
+    )
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[
+    to_insert = expr.select(
         expr.tinyint_col,
         expr.smallint_col.cast("int32").name("int_col"),
         expr.string_col,
-    ]
+    )
     t.insert(to_insert.limit(10))
 
-    to_insert = expr[expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col]
+    to_insert = expr.select(
+        expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col
+    )
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
@@ -296,7 +298,7 @@ def test_query_delimited_file_directory(con, test_data_dir, temp_table):
     table = con.delimited_file(hdfs_path, schema, name=temp_table, delimiter=",")
 
     expr = (
-        table[table.bar > 0]
+        table.filter(table.bar > 0)
         .group_by("foo")
         .aggregate(
             [
@@ -332,5 +334,5 @@ def test_varchar_char_support(temp_char_table):
 
 
 def test_access_kudu_table(kudu_table):
-    assert kudu_table.columns == ["a"]
+    assert kudu_table.columns == ("a",)
     assert kudu_table["a"].type() == dt.string

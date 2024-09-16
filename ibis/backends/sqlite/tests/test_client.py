@@ -88,3 +88,10 @@ def test_has_operation(con):
     assert con.has_operation(ops.Sample)
     # Handled by visit_* method
     assert con.has_operation(ops.Cast)
+
+
+def test_list_temp_tables_by_default(con):
+    name = ibis.util.gen_name("sqlite_temp_table")
+    con.create_table(name, schema={"a": "int"}, temp=True)
+    assert name in con.list_tables(database="temp")
+    assert name in con.list_tables()

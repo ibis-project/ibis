@@ -17,7 +17,7 @@ def test_rewrite_join_projection_without_other_ops(con):
     table2 = con.table("star2")
     table3 = con.table("star3")
 
-    filtered = table[table["f"] > 0]
+    filtered = table.filter(table["f"] > 0)
 
     pred1 = table["foo_id"] == table2["foo_id"]
     pred2 = filtered["bar_id"] == table3["bar_id"]
@@ -25,7 +25,7 @@ def test_rewrite_join_projection_without_other_ops(con):
     j1 = filtered.left_join(table2, [pred1])
     j2 = j1.inner_join(table3, [pred2])
     # Project out the desired fields
-    view = j2[[filtered, table2["value1"], table3["value2"]]]
+    view = j2.select(filtered, table2["value1"], table3["value2"])
 
     with join_tables(j2) as (r1, r2, r3):
         # Construct the thing we expect to obtain
@@ -90,11 +90,11 @@ def test_filter_on_projected_field(con):
         .join(orders, orders.o_custkey == customer.c_custkey)
     )
 
-    tpch = all_join[fields_of_interest]
+    tpch = all_join.select(*fields_of_interest)
 
     # Correlated subquery, yikes!
     t2 = tpch.view()
-    conditional_avg = t2[(t2.region == tpch.region)].amount.mean()
+    conditional_avg = t2.filter(t2.region == tpch.region).amount.mean()
 
     # `amount` is part of the projection above as an aliased field
     amount_filter = tpch.amount > conditional_avg
@@ -116,7 +116,7 @@ def test_join_predicate_from_derived_raises():
     table2 = ibis.table([("key", "string"), ("value", "double")], "bar_table")
 
     filter_pred = table["f"] > 0
-    table3 = table[filter_pred]
+    table3 = table.filter(filter_pred)
 
     with pytest.raises(com.IntegrityError, match="they belong to another relation"):
         # TODO(kszucs): could be smarter actually and rewrite the predicate
@@ -153,8 +153,8 @@ def test_filter_self_join():
         metrics={"total": purchases.amount.sum()},
     )
 
-    left = agged[agged.kind == "foo"]
-    right = agged[agged.kind == "bar"]
+    left = agged.filter(agged.kind == "foo")
+    right = agged.filter(agged.kind == "bar")
     assert left.op() == ops.Filter(
         parent=agged,
         predicates=[agged.kind == "foo"],
@@ -186,11 +186,13 @@ def test_filter_self_join():
 
 def test_is_ancestor_analytic():
     x = ibis.table(ibis.schema([("col", "int32")]), "x")
-    with_filter_col = x[x.columns + [ibis.null().name("filter")]]
-    filtered = with_filter_col[with_filter_col["filter"].isnull()]
-    subquery = filtered[filtered.columns]
+    with_filter_col = x.select(*x.columns, ibis.null().name("filter"))
+    filtered = with_filter_col.filter(with_filter_col["filter"].isnull())
+    subquery = filtered.select(*filtered.columns)
 
-    with_analytic = subquery[subquery.columns + [subquery.count().name("analytic")]]
+    with_analytic = subquery.select(
+        *subquery.columns, subquery.count().name("analytic")
+    )
 
     assert not subquery.op().equals(with_analytic.op())
 
@@ -252,10 +254,10 @@ def test_select_filter_mutate_fusion():
 
     t = ibis.table(ibis.schema([("col", "float32")]), "t")
 
-    t1 = t[["col"]]
+    t1 = t.select("col")
     assert t1.op() == ops.Project(parent=t, values={"col": t.col})
 
-    t2 = t1[t1["col"].isnan()]
+    t2 = t1.filter(t1["col"].isnan())
     assert t2.op() == ops.Filter(parent=t1, predicates=[t1.col.isnan()])
 
     t3 = t2.mutate(col=t2["col"].cast("int32"))

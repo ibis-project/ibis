@@ -270,9 +270,7 @@ def test_connect_local_file(out_method, extension, tmp_path):
     df = pd.DataFrame({"a": [1, 2, 3]})
     path = tmp_path / f"out.{extension}"
     getattr(df, out_method)(path)
-    with pytest.warns(FutureWarning, match="v9.1"):
-        # ibis.connect uses con.register
-        con = ibis.connect(path)
+    con = ibis.connect(path)
     t = next(iter(con.tables.values()))
     assert not t.head().execute().empty
 
@@ -324,6 +322,20 @@ def test_connect_named_in_memory_db():
 
     default_memory_db = ibis.duckdb.connect()
     assert "ork" not in default_memory_db.tables
+
+
+@pytest.mark.parametrize(
+    "database_file",
+    [
+        "with spaces.ddb",
+        "space catalog.duckdb.db",
+    ],
+)
+def test_create_table_quoting(database_file, tmp_path):
+    conn = ibis.duckdb.connect(tmp_path / database_file)
+    t = conn.create_table("t", {"a": [0, 1, 2]})
+    result = set(conn.execute(t.a))
+    assert result == {0, 1, 2}
 
 
 @pytest.mark.parametrize(
@@ -403,3 +415,12 @@ lat,lon,geom
     path.write_bytes(data)
     t = con.read_csv(path, all_varchar=all_varchar, **input)
     assert t.schema()["geom"].is_geospatial()
+
+
+def test_memtable_doesnt_leak(con, monkeypatch):
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    name = "memtable_doesnt_leak"
+    assert name not in con.list_tables()
+    df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
+    assert name not in con.list_tables()
+    assert len(df) == 3

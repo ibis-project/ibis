@@ -11,9 +11,9 @@ WITH sr_items AS
         WHERE d_week_seq IN
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date IN ('2000-06-30',
-                              '2000-09-27',
-                              '2000-11-17')))
+             WHERE d_date IN (DATE '2000-06-30',
+                              DATE '2000-09-27',
+                              DATE '2000-11-17')))
      AND sr_returned_date_sk = d_date_sk
    GROUP BY i_item_id),
      cr_items AS
@@ -29,9 +29,9 @@ WITH sr_items AS
         WHERE d_week_seq IN
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date IN ('2000-06-30',
-                              '2000-09-27',
-                              '2000-11-17')))
+             WHERE d_date IN (DATE '2000-06-30',
+                              DATE '2000-09-27',
+                              DATE '2000-11-17')))
      AND cr_returned_date_sk = d_date_sk
    GROUP BY i_item_id),
      wr_items AS
@@ -47,9 +47,9 @@ WITH sr_items AS
         WHERE d_week_seq IN
             (SELECT d_week_seq
              FROM date_dim
-             WHERE d_date IN ('2000-06-30',
-                              '2000-09-27',
-                              '2000-11-17')))
+             WHERE d_date IN (DATE '2000-06-30',
+                              DATE '2000-09-27',
+                              DATE '2000-11-17')))
      AND wr_returned_date_sk = d_date_sk
    GROUP BY i_item_id)
 SELECT sr_items.item_id ,
