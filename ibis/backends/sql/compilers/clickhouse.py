@@ -162,11 +162,11 @@ class ClickHouseCompiler(SQLGlotCompiler):
         return self.f.arrayFlatten(self.f.arrayMap(func, self.f.range(times)))
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
-        start = self._add_parens(op.start, start)
+        start = self._add_parens(start)
         start_correct = self.if_(start < 0, start, start + 1)
 
         if stop is not None:
-            stop = self._add_parens(op.stop, stop)
+            stop = self._add_parens(stop)
 
             length = self.if_(
                 stop < 0,
@@ -621,12 +621,13 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op: ops.ArrayZip, *, arg, **_: Any) -> str:
         return self.f.arrayZip(*arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the clickhouse backend"
             )
-        return self.agg.groupArray(arg, where=where, order_by=order_by)
+        func = self.agg.groupUniqArray if distinct else self.agg.groupArray
+        return func(arg, where=where, order_by=order_by)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if include_null:

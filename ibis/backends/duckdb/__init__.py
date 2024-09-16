@@ -302,7 +302,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         try:
             result = self.con.sql(query)
         except duckdb.CatalogException:
-            raise exc.IbisError(f"Table not found: {table_name!r}")
+            raise exc.TableNotFound(table_name)
         else:
             meta = result.fetch_arrow_table()
 
@@ -393,9 +393,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         Examples
         --------
         >>> import ibis
-        >>> ibis.duckdb.connect("database.ddb", threads=4, memory_limit="1GB")
-        <ibis.backends.duckdb.Backend object at ...>
-
+        >>> ibis.duckdb.connect(threads=4, memory_limit="1GB")  # doctest: +ELLIPSIS
+        <ibis.backends.duckdb.Backend object at 0x...>
         """
         if not isinstance(database, Path) and not database.startswith(
             ("md:", "motherduck:", ":memory:")
@@ -1037,9 +1036,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         >>> con.create_database("my_database")
         >>> con.list_tables(database="my_database")
         []
-        >>> with con.begin() as c:
-        ...     c.exec_driver_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
-        <...>
+        >>> con.raw_sql("CREATE TABLE my_database.baz (a INTEGER)")  # doctest: +ELLIPSIS
+        <duckdb.duckdb.DuckDBPyConnection object at 0x...>
         >>> con.list_tables(database="my_database")
         ['baz']
 
@@ -1312,6 +1310,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         --------
         >>> import ibis
         >>> import fsspec
+        >>> ibis.options.interactive = True
         >>> gcs = fsspec.filesystem("gcs")
         >>> con = ibis.duckdb.connect()
         >>> con.register_filesystem(gcs)
@@ -1319,10 +1318,16 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         ...     "gcs://ibis-examples/data/band_members.csv.gz",
         ...     table_name="band_members",
         ... )
-        DatabaseTable: band_members
-          name string
-          band string
-
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━┓
+        ┃ name   ┃ band    ┃
+        ┡━━━━━━━━╇━━━━━━━━━┩
+        │ string │ string  │
+        ├────────┼─────────┤
+        │ Mick   │ Stones  │
+        │ John   │ Beatles │
+        │ Paul   │ Beatles │
+        └────────┴─────────┘
         """
         self.con.register_filesystem(filesystem)
 

@@ -11,6 +11,7 @@ from google.cloud import bigquery as bq
 from google.cloud import bigquery_storage_v1 as bqstorage
 
 import ibis
+import ibis.common.exceptions as exc
 
 
 def test_repeated_project_name(project_id, credentials):
@@ -230,7 +231,7 @@ def test_client_with_regional_endpoints(project_id, credentials, dataset_id):
     )
 
     # Fails because dataset not in Tokyo.
-    with pytest.raises(gexc.NotFound, match=dataset_id):
+    with pytest.raises(exc.TableNotFound, match=dataset_id):
         tokyo_con.table(f"{dataset_id}.functional_alltypes")
 
     # Succeeds because dataset is in Tokyo.

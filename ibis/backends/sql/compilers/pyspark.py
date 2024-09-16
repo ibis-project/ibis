@@ -432,12 +432,16 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.concat_ws(sep, arg)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the pyspark backend"
             )
-        return self.agg.array_agg(arg, where=where, order_by=order_by)
+        if where:
+            arg = self.if_(where, arg, NULL)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
+        return self.agg.array_agg(arg, order_by=order_by)
 
     def visit_StringFind(self, op, *, arg, substr, start, end):
         if end is not None:

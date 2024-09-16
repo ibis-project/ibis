@@ -303,7 +303,7 @@ def test_insert(con):
             }
         ],
     )
-    assert t.columns == ["ID", "NAME", "SCORE_1", "SCORE_2", "SCORE_3", "AGE"]
+    assert t.columns == ("ID", "NAME", "SCORE_1", "SCORE_2", "SCORE_3", "AGE")
     assert t.count().execute() == 1
 
 

@@ -137,7 +137,7 @@ def test_create_and_drop_table(con, temp_table, params):
 
     con.drop_table(temp_table, **params)
 
-    with pytest.raises(com.IbisError):
+    with pytest.raises(com.TableNotFound, match=temp_table):
         con.table(temp_table, **params)
 
 

@@ -538,6 +538,8 @@ $$ {defn["source"]} $$"""
         catalog: str | None = None,
         database: str | None = None,
     ) -> Iterable[tuple[str, dt.DataType]]:
+        import snowflake.connector
+
         # this will always show temp tables with the same name as a non-temp
         # table first
         #
@@ -548,8 +550,25 @@ $$ {defn["source"]} $$"""
         table = sg.table(
             table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
-        with self._safe_raw_sql(sge.Describe(kind="TABLE", this=table)) as cur:
-            result = cur.fetchall()
+        query = sge.Describe(kind="TABLE", this=table)
+
+        try:
+            with self._safe_raw_sql(query) as cur:
+                result = cur.fetchall()
+        except snowflake.connector.errors.ProgrammingError as e:
+            # apparently sqlstate codes are "standard", in the same way that
+            # SQL is standard, because sqlstate codes are part of the SQL
+            # standard
+            #
+            # Nowhere does this exist in Snowflake's documentation but this
+            # exists in MariaDB's docs and matches the SQLSTATE error code
+            #
+            # https://mariadb.com/kb/en/sqlstate/
+            # https://mariadb.com/kb/en/mariadb-error-code-reference/
+            # and the least helpful version: https://docs.snowflake.com/en/developer-guide/snowflake-scripting/exceptions#handling-an-exception
+            if e.sqlstate == "42S02":
+                raise com.TableNotFound(table.sql(self.dialect)) from e
+            raise
 
         type_mapper = self.compiler.type_mapper
         return sch.Schema(

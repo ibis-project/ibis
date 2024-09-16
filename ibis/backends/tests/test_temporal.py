@@ -16,7 +16,6 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.backends import _get_backend_names
-from ibis.backends.conftest import is_older_than
 from ibis.backends.tests.errors import (
     ArrowInvalid,
     ClickHouseDatabaseError,
@@ -122,7 +121,7 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     raises=com.OperationNotDefinedError,
     reason="backend doesn't appear to support this operation directly",
 )
-def test_extract_iso_year(backend, con, alltypes, df, transform):
+def test_extract_iso_year(backend, alltypes, df, transform):
     value = transform(alltypes.timestamp_col)
     name = "iso_year"
     expr = value.iso_year().name(name)
@@ -243,11 +242,6 @@ def test_timestamp_extract_milliseconds(backend, alltypes, df):
     raises=GoogleBadRequest,
     reason="UNIX_SECONDS does not support DATETIME arguments",
 )
-@pytest.mark.notimpl(
-    ["dask", "pandas"],
-    raises=AssertionError,
-    condition=is_older_than("pandas", "2.0.0"),
-)
 def test_timestamp_extract_epoch_seconds(backend, alltypes, df):
     expr = alltypes.timestamp_col.epoch_seconds().name("tmp")
     result = expr.execute()
@@ -275,62 +269,22 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
 @pytest.mark.parametrize(
     ("ibis_unit", "pandas_unit"),
     [
-        param(
-            "Y",
-            "Y",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "Q",
-            "Q",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "M",
-            "M",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
-        param(
-            "D",
-            "D",
-            marks=[
-                pytest.mark.notimpl(
-                    ["polars"],
-                    raises=AssertionError,
-                    reason="numpy array are different",
-                ),
-            ],
-        ),
+        param("Y", "Y", id="year"),
+        param("Q", "Q", id="quarter"),
+        param("M", "M", id="month"),
         param(
             "W",
             "W",
             marks=[
                 pytest.mark.notimpl(["mysql"], raises=com.UnsupportedOperationError),
                 pytest.mark.notimpl(
-                    ["polars", "flink"],
+                    ["flink"],
                     raises=AssertionError,
                     reason="implemented, but doesn't match other backends",
                 ),
             ],
         ),
+        param("D", "D"),
         param(
             "h",
             "h",
@@ -427,7 +381,7 @@ def test_timestamp_truncate(backend, alltypes, df, ibis_unit, pandas_unit):
         expected = dtns.floor(pandas_unit)
 
     result = expr.execute()
-    expected = backend.default_series_rename(expected)
+    expected = backend.default_series_rename(expected).astype(result.dtype)
 
     backend.assert_series_equal(result, expected)
 
@@ -477,11 +431,6 @@ def test_date_truncate(backend, alltypes, df, unit):
                     raises=TypeError,
                     reason="duration() got an unexpected keyword argument 'years'",
                 ),
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `add`.",
-                ),
                 sqlite_without_ymd_intervals,
             ],
         ),
@@ -491,11 +440,6 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `add`.",
-                ),
                 pytest.mark.notimpl(
                     ["polars"],
                     raises=TypeError,
@@ -514,13 +458,12 @@ def test_date_truncate(backend, alltypes, df, unit):
             pd.offsets.DateOffset,
             # TODO - DateOffset - #2553
             marks=[
-                pytest.mark.notimpl(
-                    ["dask"],
-                    raises=ValueError,
-                    reason="Metadata inference failed in `add`.",
-                ),
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
+                pytest.mark.notyet(
+                    ["trino"],
+                    raises=com.UnsupportedOperationError,
+                    reason="week not implemented",
+                ),
                 pytest.mark.notyet(
                     ["flink"],
                     raises=Py4JJavaError,
@@ -966,30 +909,9 @@ def test_timestamp_comparison_filter(backend, con, alltypes, df, func_name):
     backend.assert_frame_equal(result, expected)
 
 
-no_mixed_timestamp_comparisons = [
-    pytest.mark.notimpl(
-        ["dask"],
-        raises=ValueError,
-        reason="Metadata inference failed in `gt`.",
-    ),
-    pytest.mark.notimpl(
-        ["pandas"],
-        raises=TypeError,
-        reason="Invalid comparison between dtype=datetime64[ns, UTC] and datetime",
-    ),
-]
-
-
 @pytest.mark.parametrize(
     "func_name",
-    [
-        param("gt", marks=no_mixed_timestamp_comparisons),
-        param("ge", marks=no_mixed_timestamp_comparisons),
-        param("lt", marks=no_mixed_timestamp_comparisons),
-        param("le", marks=no_mixed_timestamp_comparisons),
-        "eq",
-        "ne",
-    ],
+    ["gt", "ge", "lt", "le", "eq", "ne"],
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
@@ -1239,15 +1161,7 @@ def test_integer_to_timestamp(backend, con, unit):
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "pandas",
-        "clickhouse",
-        "sqlite",
-        "datafusion",
-        "mssql",
-        "druid",
-    ],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -1318,15 +1232,7 @@ def test_string_to_timestamp(alltypes, fmt):
     ],
 )
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "pandas",
-        "clickhouse",
-        "sqlite",
-        "datafusion",
-        "mssql",
-        "druid",
-    ],
+    ["clickhouse", "sqlite", "datafusion", "mssql", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
@@ -1417,7 +1323,6 @@ def test_day_of_week_column_group_by(
         .rename(columns={"timestamp_col": "day_of_week_result"})
     )
 
-    # FIXME(#1536): Pandas backend should use query.schema().apply_to
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
@@ -1465,9 +1370,7 @@ DATE_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notimpl(
-    ["pandas", "dask", "exasol", "druid"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 def test_date_literal(con, backend):
     expr = ibis.date(2022, 2, 4)
     result = con.execute(expr)
@@ -1493,7 +1396,7 @@ TIMESTAMP_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "pyspark", "mysql", "exasol", "oracle"],
+    ["pyspark", "mysql", "exasol", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
@@ -1510,8 +1413,7 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "mysql", "dask", "pyspark", "exasol"],
-    raises=com.OperationNotDefinedError,
+    ["mysql", "pyspark", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
@@ -1571,7 +1473,7 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["pandas", "datafusion", "dask", "pyspark", "polars", "mysql", "oracle"],
+    ["datafusion", "pyspark", "polars", "mysql", "oracle"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1696,9 +1598,7 @@ def test_interval_literal(con, backend):
         assert con.execute(expr.typeof()) == INTERVAL_BACKEND_TYPES[backend_name]
 
 
-@pytest.mark.notimpl(
-    ["pandas", "dask", "exasol", "druid"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["exasol", "druid"], raises=com.OperationNotDefinedError)
 def test_date_column_from_ymd(backend, con, alltypes, df):
     c = alltypes.timestamp_col
     expr = ibis.date(c.year(), c.month(), c.day())
@@ -1710,8 +1610,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["pandas", "dask", "pyspark", "mysql", "exasol"],
-    raises=com.OperationNotDefinedError,
+    ["pyspark", "mysql", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
@@ -1963,9 +1862,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     assert result == expected
 
 
-@pytest.mark.notimpl(
-    ["dask", "datafusion", "druid", "pandas"], raises=com.OperationNotDefinedError
-)
+@pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("start", "end", "unit", "expected"),
     [
@@ -2024,7 +1921,7 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    ["dask", "impala", "mysql", "pandas", "pyspark", "sqlite", "trino", "druid"],
+    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2126,18 +2023,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 
 
 @pytest.mark.notimpl(
-    [
-        "dask",
-        "datafusion",
-        "impala",
-        "mysql",
-        "oracle",
-        "pandas",
-        "pyspark",
-        "sqlite",
-        "trino",
-        "druid",
-    ],
+    ["datafusion", "impala", "mysql", "oracle", "pyspark", "sqlite", "trino", "druid"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(
@@ -2163,7 +2049,7 @@ def test_timestamp_bucket_offset(backend, offset_mins):
     backend.assert_series_equal(res, sol)
 
 
-_NO_SQLGLOT_DIALECT = ("pandas", "dask", "flink", "polars")
+_NO_SQLGLOT_DIALECT = ("flink", "polars")
 no_sqlglot_dialect = sorted(
     param(backend, marks=pytest.mark.xfail) for backend in _NO_SQLGLOT_DIALECT
 )
@@ -2232,12 +2118,6 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.notyet(
-                    ["pandas", "dask"],
-                    condition=is_older_than("pandas", "2.0.0"),
-                    raises=ValueError,
-                    reason="Out of bounds nanosecond timestamp: 9999-01-02 00:00:00",
-                ),
             ],
             id="large",
         ),
@@ -2251,12 +2131,6 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
-                pytest.mark.notyet(
-                    ["pandas", "dask"],
-                    condition=is_older_than("pandas", "2.0.0"),
-                    raises=ValueError,
-                    reason="Out of bounds nanosecond timestamp: 1-07-17 00:00:00",
-                ),
             ],
         ),
         param(
@@ -2285,8 +2159,7 @@ def test_date_scalar(con, value, func):
 
 
 @pytest.mark.notyet(
-    ["dask", "datafusion", "pandas", "druid", "exasol"],
-    raises=com.OperationNotDefinedError,
+    ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_simple_unix_date_offset(con):
     d = ibis.date("2023-04-07")

@@ -248,7 +248,7 @@ class Join(Table):
     def join(
         self,
         right,
-        predicates: Any,
+        predicates: Any = (),
         how: JoinKind = "inner",
         *,
         lname: str = "",

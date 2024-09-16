@@ -667,7 +667,7 @@ def test_where_with_timestamp(snapshot):
 
 def test_filter_with_analytic(snapshot):
     x = ibis.table(ibis.schema([("col", "int32")]), "x")
-    with_filter_col = x.select(x.columns + [ibis.null().name("filter")])
+    with_filter_col = x.select(*x.columns, ibis.null().name("filter"))
     filtered = with_filter_col.filter(with_filter_col["filter"].isnull())
     subquery = filtered.select(filtered.columns)
 

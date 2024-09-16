@@ -14,7 +14,7 @@ import sqlglot as sg
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.backends.pandas.rewrites import PandasAsofJoin, PandasJoin, PandasRename
+from ibis.backends.polars.rewrites import PandasAsofJoin, PandasJoin, PandasRename
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.dialects import Polars
 from ibis.expr.operations.udf import InputType
@@ -1003,7 +1003,10 @@ def array_collect(op, in_group_by=False, **kw):
     if op.order_by:
         keys = [translate(k.expr, **kw).filter(predicate) for k in op.order_by]
         descending = [k.descending for k in op.order_by]
-        arg = arg.sort_by(keys, descending=descending)
+        arg = arg.sort_by(keys, descending=descending, nulls_last=True)
+
+    if op.distinct:
+        arg = arg.unique(maintain_order=op.order_by is not None)
 
     # Polars' behavior changes for `implode` within a `group_by` currently.
     # See https://github.com/pola-rs/polars/issues/16756

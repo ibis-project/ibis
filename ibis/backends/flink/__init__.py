@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import re
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -66,9 +67,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         >>> import ibis
         >>> from pyflink.table import EnvironmentSettings, TableEnvironment
         >>> table_env = TableEnvironment.create(EnvironmentSettings.in_streaming_mode())
-        >>> ibis.flink.connect(table_env)
-        <ibis.backends.flink.Backend at 0x...>
-
+        >>> ibis.flink.connect(table_env)  # doctest: +ELLIPSIS
+        <ibis.backends.flink.Backend object at 0x...>
         """
         self._table_env = table_env
 
@@ -303,7 +303,21 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         qualified_name = sg.table(table_name, db=catalog, catalog=database).sql(
             self.name
         )
-        table = self._table_env.from_path(qualified_name)
+        try:
+            table = self._table_env.from_path(qualified_name)
+        except Py4JJavaError as e:
+            # This seems too msg specific but not sure what a good work around is
+            #
+            # Flink doesn't have a way to check whether a table exists other
+            # than to all tables and check potentially every element in the list
+            if re.search(
+                "table .+ was not found",
+                str(e.java_exception.toString()),
+                flags=re.IGNORECASE,
+            ):
+                raise exc.TableNotFound(table_name) from e
+            raise
+
         pyflink_schema = table.get_schema()
 
         return sch.Schema.from_pyarrow(

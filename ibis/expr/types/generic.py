@@ -1022,6 +1022,7 @@ class Value(Expr):
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
+        distinct: bool = False,
     ) -> ir.ArrayScalar:
         """Aggregate this expression's elements into an array.
 
@@ -1039,19 +1040,22 @@ class Value(Expr):
         include_null
             Whether to include null values when performing this aggregation. Set
             to `True` to include nulls in the result.
+        distinct
+            Whether to collect only distinct elements.
 
         Returns
         -------
         ArrayScalar
-            Collected array
+            An array of all the collected elements.
 
         Examples
         --------
         Basic collect usage
 
         >>> import ibis
+        >>> from ibis import _
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"key": list("aaabb"), "value": [1, 2, 3, 4, 5]})
+        >>> t = ibis.memtable({"key": list("aaabb"), "value": [1, 1, 2, 3, 5]})
         >>> t
         ┏━━━━━━━━┳━━━━━━━┓
         ┃ key    ┃ value ┃
@@ -1059,40 +1063,37 @@ class Value(Expr):
         │ string │ int64 │
         ├────────┼───────┤
         │ a      │     1 │
+        │ a      │     1 │
         │ a      │     2 │
-        │ a      │     3 │
-        │ b      │     4 │
+        │ b      │     3 │
         │ b      │     5 │
         └────────┴───────┘
-        >>> t.value.collect()
-        ┌────────────────┐
-        │ [1, 2, ... +3] │
-        └────────────────┘
-        >>> type(t.value.collect())
-        <class 'ibis.expr.types.arrays.ArrayScalar'>
 
-        Collect elements per group
+        Collect all elements into an array scalar:
 
-        >>> t.group_by("key").agg(v=lambda t: t.value.collect()).order_by("key")
+        >>> t.value.collect().to_pandas()
+        [1, 1, 2, 3, 5]
+
+        Collect only unique elements:
+
+        >>> t.value.collect(distinct=True).to_pandas()  # doctest: +SKIP
+        [1, 2, 3, 5]
+
+        Collect elements in a specified order:
+
+        >>> t.value.collect(order_by=_.value.desc()).to_pandas()
+        [5, 3, 2, 1, 1]
+
+        Collect elements per group, filtering out values <= 1:
+
+        >>> t.group_by("key").agg(v=t.value.collect(where=_.value > 1)).order_by("key")
         ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ key    ┃ v                    ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
         │ string │ array<int64>         │
         ├────────┼──────────────────────┤
-        │ a      │ [1, 2, ... +1]       │
-        │ b      │ [4, 5]               │
-        └────────┴──────────────────────┘
-
-        Collect elements per group using a filter
-
-        >>> t.group_by("key").agg(v=lambda t: t.value.collect(where=t.value > 1)).order_by("key")
-        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ key    ┃ v                    ┃
-        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string │ array<int64>         │
-        ├────────┼──────────────────────┤
-        │ a      │ [2, 3]               │
-        │ b      │ [4, 5]               │
+        │ a      │ [2]                  │
+        │ b      │ [3, 5]               │
         └────────┴──────────────────────┘
         """
         return ops.ArrayCollect(
@@ -1100,6 +1101,7 @@ class Value(Expr):
             where=self._bind_to_parent_table(where),
             order_by=self._bind_order_by(order_by),
             include_null=include_null,
+            distinct=distinct,
         ).to_expr()
 
     def identical_to(self, other: Value) -> ir.BooleanValue:
@@ -1366,7 +1368,7 @@ class Scalar(Value):
             return parent.to_expr().aggregate(self)
         else:
             raise com.RelationError(
-                f"The scalar expression {self} cannot be converted to a "
+                "The scalar expression cannot be converted to a "
                 "table expression because it involves multiple base table "
                 "references"
             )
@@ -1380,7 +1382,7 @@ class Scalar(Value):
 
 @public
 class Column(Value, _FixedTextJupyterMixin):
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None

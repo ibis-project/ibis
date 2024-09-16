@@ -586,20 +586,24 @@ class FlinkCompiler(SQLGlotCompiler):
     def visit_StructColumn(self, op, *, names, values):
         return self.cast(sge.Struct(expressions=list(values)), op.dtype)
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if order_by:
             raise com.UnsupportedOperationError(
                 "ordering of order-sensitive aggregations via `order_by` is "
                 "not supported for this backend"
             )
-        # the only way to get filtering *and* respecting nulls is to use
-        # `FILTER` syntax, but it's broken in various ways for other aggregates
-        out = self.f.array_agg(arg)
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
+        out = self.f.array_agg(arg)
         if where is not None:
             out = sge.Filter(this=out, expression=sge.Where(this=where))
+        if distinct:
+            # TODO: Flink supposedly supports `ARRAY_AGG(DISTINCT ...)`, but it
+            # doesn't work with filtering (either `include_null=False` or
+            # additional filtering). Their `array_distinct` function does maintain
+            # ordering though, so we can use it here.
+            out = self.f.array_distinct(out)
         return out
 
     def visit_Strip(self, op, *, arg):

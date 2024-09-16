@@ -13,15 +13,11 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis.backends import BaseBackend, NoUrl
-from ibis.backends.pandas.rewrites import (
-    bind_unbound_table,
-    replace_parameter,
-    rewrite_join,
-)
 from ibis.backends.polars.compiler import translate
+from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
 from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
-from ibis.expr.rewrites import lower_stringslice
+from ibis.expr.rewrites import lower_stringslice, replace_parameter
 from ibis.formats.polars import PolarsSchema
 from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
@@ -51,6 +47,25 @@ class Backend(BaseBackend, NoUrl):
         tables
             An optional mapping of string table names to polars LazyFrames.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> import polars as pl
+        >>> ibis.options.interactive = True
+        >>> lazy_frame = pl.LazyFrame(
+        ...     {"name": ["Jimmy", "Keith"], "band": ["Led Zeppelin", "Stones"]}
+        ... )
+        >>> con = ibis.polars.connect(tables={"band_members": lazy_frame})
+        >>> t = con.table("band_members")
+        >>> t
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ name   ┃ band         ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ string │ string       │
+        ├────────┼──────────────┤
+        │ Jimmy  │ Led Zeppelin │
+        │ Keith  │ Stones       │
+        └────────┴──────────────┘
         """
         if tables is not None and not isinstance(tables, Mapping):
             raise TypeError("Input to ibis.polars.connect must be a mapping")
@@ -72,7 +87,11 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str) -> ir.Table:
-        schema = sch.infer(self._tables[name])
+        table = self._tables.get(name)
+        if table is None:
+            raise com.TableNotFound(name)
+
+        schema = sch.infer(table)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def _in_memory_table_exists(self, name: str) -> bool:

@@ -176,7 +176,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     info.
     """
 
-    # Higher than numpy & dask objects
+    # Higher than numpy objects
     __array_priority__ = 20
 
     __array_ufunc__ = None
@@ -413,7 +413,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Columns not present in the input schema will be passed through unchanged
 
         >>> t.columns
-        ['species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year']
+        ('species', 'island', 'bill_length_mm', 'bill_depth_mm', 'flipper_length_mm', 'body_mass_g', 'sex', 'year')
         >>> expr = t.cast({"body_mass_g": "float64", "bill_length_mm": "int"})
         >>> expr.select(*cols).head()
         ┏━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
@@ -674,8 +674,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             limit, offset = util.slice_to_limit_offset(what, self.count())
             return self.limit(limit, offset=offset)
 
+        columns = self.columns
         args = [
-            self.columns[arg] if isinstance(arg, int) else arg
+            columns[arg] if isinstance(arg, int) else arg
             for arg in util.promote_list(what)
         ]
         if util.all_of(args, str):
@@ -765,8 +766,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.columns
 
     @property
-    def columns(self) -> list[str]:
-        """The list of column names in this table.
+    def columns(self) -> tuple[str, ...]:
+        """Return a [](`tuple`) of column names in this table.
 
         Examples
         --------
@@ -774,16 +775,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> ibis.options.interactive = True
         >>> t = ibis.examples.penguins.fetch()
         >>> t.columns
-        ['species',
+        ('species',
          'island',
          'bill_length_mm',
          'bill_depth_mm',
          'flipper_length_mm',
          'body_mass_g',
          'sex',
-         'year']
+         'year')
         """
-        return list(self.schema().names)
+        return self._arg.schema.names
 
     def schema(self) -> sch.Schema:
         """Return the [Schema](./schemas.qmd#ibis.expr.schema.Schema) for this table.
@@ -3262,7 +3263,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ …       │ …         │              … │             … │                 … │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
         >>> expr.columns
-        ['species',
+        ('species',
          'island',
          'bill_length_mm',
          'bill_depth_mm',
@@ -3273,7 +3274,7 @@ class Table(Expr, _FixedTextJupyterMixin):
          'bill_length_mm_right',
          'bill_depth_mm_right',
          'flipper_length_mm_right',
-         'body_mass_g_right']
+         'body_mass_g_right')
         >>> expr.count()
         ┌─────┐
         │ 344 │

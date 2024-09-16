@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pyarrow as pa
-import pyarrow.dataset as ds
 import pytest
 
 import ibis
@@ -25,26 +24,25 @@ def test_read_parquet(conn, data_dir):
 
 def test_register_table(conn):
     tab = pa.table({"x": [1, 2, 3]})
-    with pytest.warns(FutureWarning, match="v9.1"):
-        conn.register(tab, "my_table")
+    conn.create_table("my_table", tab)
     assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_pandas(conn):
     df = pd.DataFrame({"x": [1, 2, 3]})
-    with pytest.warns(FutureWarning, match="v9.1"):
-        conn.register(df, "my_table")
-        assert conn.table("my_table").x.sum().execute() == 6
+    conn.create_table("my_table", df)
+    assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_batches(conn):
     batch = pa.record_batch([pa.array([1, 2, 3])], names=["x"])
-    with pytest.warns(FutureWarning, match="v9.1"):
-        conn.register(batch, "my_table")
-        assert conn.table("my_table").x.sum().execute() == 6
+    conn.create_table("my_table", batch)
+    assert conn.table("my_table").x.sum().execute() == 6
 
 
 def test_register_dataset(conn):
+    import pyarrow.dataset as ds
+
     tab = pa.table({"x": [1, 2, 3]})
     dataset = ds.InMemoryDataset(tab)
     with pytest.warns(FutureWarning, match="v9.1"):
@@ -56,12 +54,3 @@ def test_create_table_with_uppercase_name(conn):
     tab = pa.table({"x": [1, 2, 3]})
     conn.create_table("MY_TABLE", tab)
     assert conn.table("MY_TABLE").x.sum().execute() == 6
-
-
-def test_raise_create_temp_table(conn):
-    tab = pa.table({"x": [1, 2, 3]})
-    with pytest.raises(
-        NotImplementedError,
-        match="DataFusion does not support temporary tables",
-    ):
-        conn.create_table("my_temp_table", tab, temp=True)

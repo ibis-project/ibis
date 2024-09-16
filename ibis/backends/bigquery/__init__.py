@@ -174,8 +174,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         table_ref = bq.TableReference(self._session_dataset, name)
 
         try:
-            self.client.get_table(table_ref)
-        except google.api_core.exceptions.NotFound:
+            self._get_table(table_ref)
+        except com.TableNotFound:
             return False
         else:
             return True
@@ -619,12 +619,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
         project, dataset = self._parse_project_and_dataset(database)
 
-        bq_table = self.client.get_table(
-            bq.TableReference(
-                bq.DatasetReference(project=project, dataset_id=dataset),
-                table.name,
-            )
+        table_ref = bq.TableReference(
+            bq.DatasetReference(project=project, dataset_id=dataset),
+            table.name,
         )
+        bq_table = self._get_table(table_ref)
 
         node = ops.DatabaseTable(
             table.name,
@@ -635,6 +634,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         )
         table_expr = node.to_expr()
         return rename_partitioned_column(table_expr, bq_table, self.partition_column)
+
+    def _get_table(self, table_ref: bq.TableReference):
+        try:
+            return self.client.get_table(table_ref)
+        except google.api_core.exceptions.NotFound as e:
+            raise com.TableNotFound(str(table_ref)) from e
 
     def _make_session(self) -> tuple[str, str]:
         if (client := getattr(self, "client", None)) is not None:
@@ -867,8 +872,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             ),
             name,
         )
+
+        table = self._get_table(table_ref)
+
         return schema_from_bigquery_table(
-            self.client.get_table(table_ref),
+            table,
             # https://cloud.google.com/bigquery/docs/querying-wildcard-tables#filtering_selected_tables_using_table_suffix
             wildcard=name[-1] == "*",
         )

@@ -81,6 +81,33 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         kwargs
             Additional keyword arguments passed to `pyexasol.connect`.
 
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> host = os.environ.get("IBIS_TEST_EXASOL_HOST", "localhost")
+        >>> user = os.environ.get("IBIS_TEST_EXASOL_USER", "sys")
+        >>> password = os.environ.get("IBIS_TEST_EXASOL_PASSWORD", "exasol")
+        >>> schema = os.environ.get("IBIS_TEST_EXASOL_DATABASE", "EXASOL")
+        >>> con = ibis.exasol.connect(schema=schema, host=host, user=user, password=password)
+        >>> con.list_tables()  # doctest: +ELLIPSIS
+        [...]
+        >>> t = con.table("functional_alltypes")
+        >>> t
+        DatabaseTable: functional_alltypes
+          id              int32
+          bool_col        boolean
+          tinyint_col     int16
+          smallint_col    int16
+          int_col         int32
+          bigint_col      int64
+          float_col       float64
+          double_col      float64
+          date_string_col string
+          string_col      string
+          timestamp_col   timestamp(3)
+          year            int32
+          month           int32
         """
         if kwargs.pop("quote_ident", None) is not None:
             raise com.UnsupportedArgumentError(
@@ -197,7 +224,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
-        return self._get_schema_using_query(
+        query = (
             sg.select(STAR)
             .from_(
                 sg.table(
@@ -209,6 +236,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             )
             .sql(self.dialect)
         )
+        try:
+            return self._get_schema_using_query(query)
+        except pyexasol.exceptions.ExaQueryError as e:
+            if not self.con.meta.table_exists(table_name):
+                raise com.TableNotFound(table_name) from e
+            raise
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd

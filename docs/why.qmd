@@ -324,7 +324,6 @@ use Ibis with other tools over time.
 Ibis already works with other Python dataframes like:
 
 - [pandas](https://github.com/pandas-dev/pandas)
-- [Dask](https://github.com/dask/dask)
 - [Polars](https://github.com/pola-rs/polars)
 
 Ibis already works well with visualization libraries like:
