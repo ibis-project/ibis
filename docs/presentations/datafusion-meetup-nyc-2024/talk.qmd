@@ -1,5 +1,9 @@
 ---
 title: "Dataframe Interfaces are a nightmare"
+title-slide-attributes:
+  data-background-image: ./images/patrick.png
+  data-background-size: 50%
+  data-background-opacity: "0.25"
 author: Gil Forsyth
 date: "2024-09-14"
 execute:
@@ -10,7 +14,7 @@ format:
     footer: <https://ibis-project.org/presentations/datafusion-meetup-nyc-2024/talk>
 ---
 
-## Who?
+## Who? {background-image=./images/patrick.png background-size='50%' background-opacity='.25'}
 
 :::: {.columns}
 
@@ -141,12 +145,16 @@ SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
 * DataFrame interface
 * Pretty cool
 * Independently governed
+* Started by Wes McKinney
 :::
 
 
 ::: {.column width="50%"}
-![](../../logo.svg){fig-align="center"}
+::: {.r-stack}
+![](../../logo.svg){.fragment .fade-in-then-out}
 
+![](./images/patrick.png){.fragment}
+:::
 :::
 ::::
 
