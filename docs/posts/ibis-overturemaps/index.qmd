@@ -8,8 +8,6 @@ categories:
   - overturemaps
   - lonboard
   - geospatial
-execute:
-  freeze: false
 ---
 
 With the release of `DuckDB 1.1.0`, now we have support for reading GeoParquet
@@ -34,7 +32,9 @@ $ pip install 'ibis-framework[duckdb,geospatial]' lonboard overturemaps
 ## Motivation
 
 Overture Maps offers a variety of datasets to query, but we thought that it would
-be interesting to see in a plot the entire power lines infrastructure of most of the USA (excluding territories and Alaska for simplicity of the bounding box).
+be interesting to see some plots related to the power infrastructure. We'll look
+into power plants, and power lines of most of the USA (excluding territories and
+Alaska for simplicity of the bounding box).
 
 ## Download data
 
@@ -117,28 +117,69 @@ and see what kind of `class` we have in there.
           )
 ```
 
-Looks like we have `power_lines` and `minor_lines`, so we can plot them both.
+Looks like we have `plants`, `power_lines` and `minor_lines`, so we can make get some nice maps.
 
 ```{python}
+plants = usa_infra.filter(_.subtype=="power", usa_infra["class"]=="plant")
 power_lines = usa_infra.filter(_.subtype=="power", usa_infra["class"]=="power_line")
 minor_lines = usa_infra.filter(_.subtype=="power", usa_infra["class"]=="minor_line")
 ```
+
 
 ## Plotting
 
 **Note: maybe here explain why lonboard ?**
 
-```{python}
-import lonboard
+::: {.callout-note}
+You can try this in your machine, for the purpose the blog file size, we will show
+screenshots of the visualization
+:::
 
-# lonboard warns you about no CRS exists on data, I'm filtering this warning because in this case we are on CRS WGS84
-import warnings
-warnings.filterwarnings('ignore')
+```python
+import lonboard
+from lonboard.basemap import CartoBasemap # to choose color of basemap
 ```
 
-```{python}
+Let's visualize the `power plants`
+
+```python
+lonboard.viz(plants,
+            scatterplot_kwargs={"get_fill_color": "red"},
+            polygon_kwargs={"get_fill_color": "red"},
+            map_kwargs={"basemap_style": CartoBasemap.Positron,
+            "view_state": {"longitude": -100, "latitude": 36, "zoom": 3}
+            })
+```
+
+![Power plants in the USA](usa-power-plants.png)
+
+If you are visualizing this in your machine, you can zoom in and see some of the
+geometry where the plants are located. But as an example, we can plot in a small
+area of California:
+
+```python
+plants_CA = plants.filter(_.bbox.xmin.between(-118.6, -117.9),
+           _.bbox.ymin.between(34.5, 35.3))[_.names.primary, _.geometry]
+```
+
+```python
+lonboard.viz(plants_CA,
+            scatterplot_kwargs={"get_fill_color": "red"},
+            polygon_kwargs={"get_fill_color": "red"},
+            map_kwargs={"basemap_style": CartoBasemap.Positron,
+            })
+```
+
+![Power plants near Lancaster CA](ca-power-plants.png)
+
+We can also visualize together the `power_lines` and the `minor_lines` by doing:
+
+
+```python
 lonboard.viz([minor_lines, power_lines])
 ```
+
+![Minor and Power lines of USA](usa-power-and-minor-lines.png)
 
 and that's how you can visualize ~7 million points from the comfort of
 your laptop.
