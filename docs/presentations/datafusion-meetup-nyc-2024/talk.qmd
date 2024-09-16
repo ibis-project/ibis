@@ -48,6 +48,12 @@ format:
 - ML something-something?
 :::
 
+::: {.notes}
+ML something-something is used as a catchall because the job titles are varied
+and tend to mean wildly different things, but it is not a disparagement of ML
+jobs.
+:::
+
 ## Who here uses...
 
 ::: {.incremental}
