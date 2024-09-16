@@ -382,7 +382,7 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
             results = cur.fetchall()
 
         if not results:
-            raise exc.IbisError(f"Table not found: {name!r}")
+            raise exc.TableNotFound(name)
 
         type_mapper = self.compiler.type_mapper
         fields = {

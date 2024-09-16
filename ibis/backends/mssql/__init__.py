@@ -278,7 +278,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
 
         if not meta:
             fqn = sg.table(name, db=database, catalog=catalog).sql(self.dialect)
-            raise com.IbisError(f"Table not found: {fqn}")
+            raise com.TableNotFound(fqn)
 
         mapping = {}
         for (

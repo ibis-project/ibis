@@ -1,0 +1,398 @@
+---
+title: "Dataframe Interfaces are a nightmare"
+title-slide-attributes:
+  data-background-image: ./images/patrick.png
+  data-background-size: 50%
+  data-background-opacity: "0.25"
+author: Gil Forsyth
+date: "2024-09-14"
+execute:
+  echo: true
+format:
+  revealjs:
+    theme: [default, custom.scss]
+    footer: <https://ibis-project.org/presentations/datafusion-meetup-nyc-2024/talk>
+---
+
+## Who? {background-image=./images/patrick.png background-size='50%' background-opacity='.25'}
+
+:::: {.columns}
+
+::: {.column width="40%"}
+### Me
+
+- Gil Forsyth
+- Ibis project
+- Xonsh
+- Voltron Data
+- Recovering academic
+:::
+
+::: {.column width="60%"}
+### Where
+
+- {{< fa brands github >}} [`@gforsyth`](https://github.com/gforsyth)
+- {{< fa brands mastodon >}} [`@gforsyth@fosstodon.org`](https://fosstodon.org/@gforsyth)
+:::
+
+::::
+
+# Show of hands
+
+## Who here is a...
+
+::: {.incremental}
+- Data analyst / Data scientist?
+- Data engineer?
+- Software engineer?
+- ML something-something?
+:::
+
+## Who here uses...
+
+::: {.incremental}
+- Rust?
+- Python?
+- SQL?
+- R?
+- KDB+ Q?
+:::
+
+# So you want to design a Python Dataframe API?
+
+## Python/pandas terminology or SQL terminology?
+
+::: {.incremental}
+- `order_by` or `orderby` or `sort` or `sort_by` or `sortby`?
+- `group_by` or `groupby` or `partition` or `partition_by` or `partitionby`?
+:::
+
+::: {.fragment}
+::: {.r-fit-text}
+_please_ only choose one
+:::
+:::
+
+## Python/pandas semantics or SQL semantics?
+
+
+::: {.incremental}
+- 0-indexing or 1-indexing?
+- Do `rpad` and `lpad` also `trim`?
+- Is _implicit ordering_ guaranteed everywhere?
+- Are multi-indexes a good idea? (No)
+:::
+
+# So you want to design a SQL dialect?
+
+## (SQL) Questions with no (single) answer
+
+::: {.incremental}
+- Does a week start on Sunday or Monday?
+- Are the days of a week 0-indexed or 1-indexed?
+- Do nulls sort ascending, or descending, or always first, or always last?
+- Given a function to compute $log_b(x)$, is the function signature:
+  - `log(b, x)`?
+  - `log(x, b)`?
+:::
+
+## SQL ain't standard
+
+#### Which is (a small part of) why asking "How many Star Wars characters have 'Darth' in their name" looks like this:
+::: {.fragment}
+::: {.r-fit-text}
+```sql
+SELECT SUM(CAST(CONTAINS(LOWER("t0"."name"), 'darth') AS INT)) FROM "starwars"
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(strpos(LOWER(`t0`.`name`), 'darth') > 0 AS INT64)) FROM `starwars`
+```
+
+<br>
+
+```sql
+SELECT SUM(IIF(CONTAINS(LOWER([t0].[name]), 'darth'), 1, 0)) FROM [starwars]
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
+```
+:::
+:::
+
+## SQL ain't standard
+
+<br>
+
+![](./images/sql_is_really_difficult_at_first.png){fig-align="center"}
+
+# Wait, what is this talk about?
+
+## We built a dataframe interface!
+
+### Ibis
+
+:::: {.columns}
+
+::: {.column width="50%"}
+* Open-source (Apache 2.0)
+* Pure Python
+* DataFrame interface
+* Pretty cool
+* Independently governed
+* Started by Wes McKinney
+:::
+
+
+::: {.column width="50%"}
+::: {.r-stack}
+![](../../logo.svg){.fragment .fade-in-then-out}
+
+![](./images/patrick.png){.fragment}
+:::
+:::
+::::
+
+## (Some) Answers to the DataFrame questions
+
+
+::: {.r-stack}
+![](images/orderby_sortby.png){.fragment}
+
+![](images/deprecate_sortby.png){.fragment}
+
+![](images/deprecate_groupby.png){.fragment}
+
+![](images/python_padding.png){.fragment}
+:::
+
+## Because remember what happened to SQL?
+
+(It was bad)
+
+::: {.fragment}
+::: {.r-fit-text}
+```sql
+SELECT SUM(CAST(CONTAINS(LOWER("t0"."name"), 'darth') AS INT)) FROM "starwars"
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(strpos(LOWER(`t0`.`name`), 'darth') > 0 AS INT64)) FROM `starwars`
+```
+
+<br>
+
+```sql
+SELECT SUM(IIF(CONTAINS(LOWER([t0].[name]), 'darth'), 1, 0)) FROM [starwars]
+```
+
+<br>
+
+```sql
+SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
+```
+:::
+:::
+
+## We're trying to stop this ^[May not be perfectly idiomatic, but I tried my best.]:
+
+::: {.fragment}
+```python
+df["name"].str.to_lowercase().str.contains("darth").sum()
+```
+<br>
+```python
+df["name"].str.lower().str.contains("darth").sum()
+```
+<br>
+```python
+expr = f.find_in_set(literal("darth"), f.lower(col("name")))
+df.aggregate([expr], [f.sum(expr)])
+```
+<br>
+```python
+t.name.lower().contains("darth").sum()
+```
+:::
+
+
+## Ibis is _only_ an interface
+
+* Not an engine
+* We don't compute anything
+
+# Demo Time
+
+## Why use Ibis?
+
+Gives you flexibility
+
+It's a pretty good API (no really!)
+
+## Try it out
+
+```
+pip install 'ibis-framework[datafusion]'
+```
+
+```
+conda install -c conda-forge ibis-datafusion
+```
+
+
+
+- <https://ibis-project.org/tutorials/browser/repl>
+
+- <https://ibis-project.org>
+
+
+# Questions
+
+## Shouldn't we all copy the `pandas` API?
+
+### No.
+
+pandas is a good tool, provided:
+
+- your data fit in memory (implicitly ordered)
+- you want eager execution
+
+::: aside
+See: Apache Arrow and the “10 Things I Hate About pandas”
+
+<https://wesmckinney.com/blog/apache-arrow-pandas-internals/>
+:::
+
+## Demo code (for reference)
+
+::: {.panel-tabset}
+
+### Pandas PyPI
+
+```python
+import glob
+import os
+
+import pandas as pd
+
+
+def main():
+    df = pd.read_parquet(
+        min(glob.glob("/home/gil/databog/parquet/pypi/*.parquet"), key=os.path.getsize),
+        columns=["path", "uploaded_on", "project_name"],
+    )
+    df = df[
+        df.path.str.contains(
+            r"\.(?:asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"
+        )
+        & ~df.path.str.contains(r"(?:(?:^|/)test(?:|s|ing)|/site-packages/)")
+    ]
+    return (
+        df.assign(
+            month=df.uploaded_on.dt.to_period("M").dt.to_timestamp(),
+            ext=df.path.str.extract(r"\.([a-z0-9]+)$", 0)
+            .iloc[:, 0]
+            .str.replace(r"cxx|cpp|cc|c|hpp|h", "C/C++", regex=True)
+            .str.replace("^f.*$", "Fortran", regex=True)
+            .str.replace("rs", "Rust")
+            .str.replace("go", "Go")
+            .str.replace("asm", "Assembly"),
+        )
+        .groupby(["month", "ext"])
+        .project_name.nunique()
+        .rename("project_count")
+        .reset_index()
+        .sort_values(["month", "project_count"], ascending=False)
+    )
+
+```
+
+### Ibis+Datafusion PyPI
+
+```python
+import glob
+import os.path
+
+import ibis
+from ibis import _
+
+con = ibis.datafusion.connect()
+
+expr = (
+    con.read_parquet(
+        min(glob.glob("/home/gil/databog/parquet/pypi/*.parquet"), key=os.path.getsize)
+    )
+    .filter(
+        [
+            _.path.re_search(
+                r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"
+            ),
+            ~_.path.re_search(r"(^|/)test(|s|ing)"),
+            ~_.path.contains("/site-packages/"),
+        ]
+    )
+    .group_by(
+        month=_.uploaded_on.truncate("M"),
+        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1)
+        .re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+        .re_replace("^f.*$", "Fortran")
+        .replace("rs", "Rust")
+        .replace("go", "Go")
+        .replace("asm", "Assembly")
+        .nullif(""),
+    )
+    .aggregate(project_count=_.project_name.nunique())
+    .drop_null("ext")
+    .order_by([_.month.desc(), _.project_count.desc()])
+)
+```
+
+### Ibis+Datafusion PyPI (full)
+
+```python
+import ibis
+from ibis import _
+
+con = ibis.datafusion.connect()
+
+expr = (
+    con.read_parquet("/home/gil/databog/parquet/pypi/*.parquet")
+    .filter(
+        [
+            _.path.re_search(
+                r"\.(asm|c|cc|cpp|cxx|h|hpp|rs|[Ff][0-9]{0,2}(?:or)?|go)$"
+            ),
+            ~_.path.re_search(r"(^|/)test(|s|ing)"),
+            ~_.path.contains("/site-packages/"),
+        ]
+    )
+    .group_by(
+        month=_.uploaded_on.truncate("M"),
+        ext=_.path.re_extract(r"\.([a-z0-9]+)$", 1)
+        .re_replace(r"cxx|cpp|cc|c|hpp|h", "C/C++")
+        .re_replace("^f.*$", "Fortran")
+        .replace("rs", "Rust")
+        .replace("go", "Go")
+        .replace("asm", "Assembly")
+        .nullif(""),
+    )
+    .aggregate(project_count=_.project_name.nunique())
+    .drop_null("ext")
+    .order_by([_.month.desc(), _.project_count.desc()])
+)
+
+```
+
+:::
+
+
+## Data sources
+
+PyPI dataset: Instructions for downloading the (large) dataset from [Seth M. Larson](https://sethmlarson.dev/security-developer-in-residence-weekly-report-18#downloading-the-file-metadata-dataset)

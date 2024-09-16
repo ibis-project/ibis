@@ -233,7 +233,7 @@ class Backend(SQLBackend, UrlFromPath):
         cur.execute(sql)
         rows = cur.fetchall()
         if not rows:
-            raise com.IbisError(f"Table not found: {table_name!r}")
+            raise com.TableNotFound(table_name)
 
         table_info = {name: (typ, not notnull) for name, typ, notnull in rows}
 
