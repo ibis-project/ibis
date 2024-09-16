@@ -8,6 +8,8 @@ categories:
   - overturemaps
   - lonboard
   - geospatial
+execute:
+  freeze: false
 ---
 
 With the release of `DuckDB 1.1.0`, now we have support for reading GeoParquet
