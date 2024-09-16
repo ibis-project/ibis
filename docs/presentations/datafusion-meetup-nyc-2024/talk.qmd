@@ -289,6 +289,41 @@ See: Apache Arrow and the “10 Things I Hate About pandas”
 <https://wesmckinney.com/blog/apache-arrow-pandas-internals/>
 :::
 
+## What other backends does Ibis support?
+
+
+:::: {.columns}
+
+::: {.column width="33%"}
+
+- BigQuery
+- ClickHouse
+- DataFusion
+- Druid
+- DuckDB
+- Exasol
+:::
+
+::: {.column width="33%"}
+- Flink
+- Impala
+- MSSQL
+- MySQL
+- Oracle
+- Polars
+:::
+
+
+::: {.column width="33%"}
+- Postgres
+- Spark
+- Risingwave
+- Snowflake
+- SQLite
+- Trino
+:::
+::::
+
 ## Demo code (for reference)
 
 ::: {.panel-tabset}
