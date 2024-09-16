@@ -224,7 +224,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         catalog: str | None = None,
         database: str | None = None,
     ) -> sch.Schema:
-        return self._get_schema_using_query(
+        query = (
             sg.select(STAR)
             .from_(
                 sg.table(
@@ -236,6 +236,12 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             )
             .sql(self.dialect)
         )
+        try:
+            return self._get_schema_using_query(query)
+        except pyexasol.exceptions.ExaQueryError as e:
+            if not self.con.meta.table_exists(table_name):
+                raise com.TableNotFound(table_name) from e
+            raise
 
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd

@@ -156,10 +156,12 @@ class DuckDBCompiler(SQLGlotCompiler):
             self.f.coalesce(self.f.list_indexof(arg, other), 0),
         )
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_ArrayIndex(self, op, *, arg, index):

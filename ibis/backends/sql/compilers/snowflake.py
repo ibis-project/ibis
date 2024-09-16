@@ -452,14 +452,21 @@ $$""",
         timestamp_units_to_scale = {"s": 0, "ms": 3, "us": 6, "ns": 9}
         return self.f.to_timestamp(arg, timestamp_units_to_scale[unit.short])
 
-    def _array_collect(self, *, arg, where, order_by, include_null):
+    def _array_collect(self, *, arg, where, order_by, include_null, distinct=False):
         if include_null:
             raise com.UnsupportedOperationError(
                 "`include_null=True` is not supported by the snowflake backend"
             )
+        if where is not None and distinct:
+            raise com.UnsupportedOperationError(
+                "Combining `distinct=True` and `where` is not supported by snowflake"
+            )
 
         if where is not None:
             arg = self.if_(where, arg, NULL)
+
+        if distinct:
+            arg = sge.Distinct(expressions=[arg])
 
         out = self.f.array_agg(arg)
 
@@ -468,9 +475,13 @@ $$""",
 
         return out
 
-    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null):
+    def visit_ArrayCollect(self, op, *, arg, where, order_by, include_null, distinct):
         return self._array_collect(
-            arg=arg, where=where, order_by=order_by, include_null=include_null
+            arg=arg,
+            where=where,
+            order_by=order_by,
+            include_null=include_null,
+            distinct=distinct,
         )
 
     def visit_First(self, op, *, arg, where, order_by, include_null):

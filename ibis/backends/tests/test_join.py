@@ -9,7 +9,6 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.schema as sch
-from ibis.backends.tests.errors import PyDruidProgrammingError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -271,7 +270,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(["druid"], raises=com.TableNotFound)
 @pytest.mark.parametrize(
     ("how", "nrows", "gen_right", "keys"),
     [

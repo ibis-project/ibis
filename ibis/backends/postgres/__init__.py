@@ -546,7 +546,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
             rows = cur.fetchall()
 
         if not rows:
-            raise com.IbisError(f"Table not found: {name!r}")
+            raise com.TableNotFound(name)
 
         return sch.Schema(
             {

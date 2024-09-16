@@ -87,7 +87,11 @@ class Backend(BaseBackend, NoUrl):
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str) -> ir.Table:
-        schema = sch.infer(self._tables[name])
+        table = self._tables.get(name)
+        if table is None:
+            raise com.TableNotFound(name)
+
+        schema = sch.infer(table)
         return ops.DatabaseTable(name, schema, self).to_expr()
 
     def _in_memory_table_exists(self, name: str) -> bool:
