@@ -5,7 +5,7 @@ title-slide-attributes:
   data-background-size: 50%
   data-background-opacity: "0.25"
 author: Gil Forsyth
-date: "2024-09-14"
+date: "2024-09-17"
 execute:
   echo: true
 format:
