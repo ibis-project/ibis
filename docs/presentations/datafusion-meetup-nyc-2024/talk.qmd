@@ -37,6 +37,10 @@ format:
 
 ::::
 
+## Link to slides
+
+![](./images/datafusion-meetup-slides.png){fig-align="center"}
+
 # Show of hands
 
 ## Who here is a...
