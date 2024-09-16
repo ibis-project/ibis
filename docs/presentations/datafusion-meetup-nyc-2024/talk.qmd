@@ -375,7 +375,6 @@ def main():
         .reset_index()
         .sort_values(["month", "project_count"], ascending=False)
     )
-
 ```
 
 ### Ibis+Datafusion PyPI
@@ -451,7 +450,6 @@ expr = (
     .drop_null("ext")
     .order_by([_.month.desc(), _.project_count.desc()])
 )
-
 ```
 
 :::
