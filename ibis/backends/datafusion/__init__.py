@@ -340,6 +340,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         else:
             database = catalog.database()
 
+        if table_name not in database.names():
+            raise com.TableNotFound(table_name)
+
         table = database.table(table_name)
         return sch.schema(table.schema)
 

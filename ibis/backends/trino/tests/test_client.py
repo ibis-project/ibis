@@ -164,7 +164,7 @@ def test_table_access_database_schema(con):
     t = con.table("region", database=("tpch", "sf1"))
     assert t.count().execute()
 
-    with pytest.raises(exc.IbisError, match='Table not found: tpch."tpch.sf1".region'):
+    with pytest.raises(exc.TableNotFound, match=r".*region"):
         con.table("region", database=("tpch", "tpch.sf1"))
 
     with pytest.raises(exc.IbisError, match="Overspecified table hierarchy provided"):

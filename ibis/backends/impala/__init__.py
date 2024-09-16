@@ -383,14 +383,18 @@ class Backend(SQLBackend):
             Ibis schema
 
         """
-        query = sge.Describe(
-            this=sg.table(
-                table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
-            )
+        table = sg.table(
+            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
         )
 
+        with contextlib.closing(self.con.cursor()) as cur:
+            if not cur.table_exists(table_name, database_name=database or catalog):
+                raise com.TableNotFound(table.sql(self.dialect))
+
+        query = sge.Describe(this=table)
         with self._safe_raw_sql(query) as cur:
             meta = fetchall(cur)
+
         return sch.Schema.from_tuples(
             zip(meta["name"], meta["type"].map(self.compiler.type_mapper.from_string))
         )

@@ -19,7 +19,6 @@ import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     GoogleBadRequest,
-    ImpalaHiveServer2Error,
     MySQLOperationalError,
     PolarsComputeError,
     PsycoPg2IndeterminateDatatype,
@@ -64,7 +63,7 @@ pytestmark = [
         raises=(
             com.UnsupportedBackendType,
             com.OperationNotDefinedError,
-            ImpalaHiveServer2Error,
+            com.TableNotFound,
         ),
     ),
     pytest.mark.notimpl(["druid", "oracle"], raises=Exception),
