@@ -15,16 +15,16 @@ execute:
 With the release of `DuckDB 1.1.0`, now we have support for reading GeoParquet
 files! With this exciting update we can query rich datasets from Overture Maps using python via Ibis with the performance of `DuckDB`.
 
-But the good news don't stop there, since `Ibis 9.2`, `lonboard` can plot data directly from an `Ibis` table, adding more simplicity and speed to your geospatial analysis.
+But the good news doesn't stop there, since `Ibis 9.2`, `lonboard` can plot data directly from an `Ibis` table, adding more simplicity and speed to your geospatial analysis.
 
 Let’s dive into how these tools come together.
 
 ## Installation
 
-Install Ibis with the dependencies needed to work with geospatial data using DuckDB. To be able to read geoparquet files the duckdb version should be `>=1.1.0`.
+Install Ibis with the dependencies needed to work with geospatial data using DuckDB. To be able to read GeoParquet files the DuckDB version should be `>=1.1.0`.
 
 ::: {.callout-note}
-At the moment duckdb 1.1.0 has a bug that prevents us from querying and writing the data to parquet using Ibis and DuckDB, so we are installing the `overturemaps` CLI to get the data.
+At the moment DuckDB 1.1.0 has a bug that prevents us from querying and writing the data to parquet using Ibis and DuckDB, so we are installing the `overturemaps` CLI to get the data.
 :::
 
 ```bash
@@ -33,9 +33,9 @@ $ pip install 'ibis-framework[duckdb,geospatial]' lonboard overturemaps
 
 ## Motivation
 
-Overture Maps offers a variety of datasets to query, but we thought that it would
-be interesting to see some plots related to the power infrastructure. We'll look
-into power plants, and power lines of most of the USA (excluding territories and
+Overture Maps offers a variety of datasets to query. Let's create
+some plots related to U.S. power infrastructure. We'll look
+into power plants and power lines for the lower 48 states (excluding Hawaii and
 Alaska for simplicity of the bounding box).
 
 ## Download data
@@ -70,8 +70,8 @@ expr = t.filter(_.bbox.xmin > -125.0, _.bbox.ymin > 24.8,
 ```
 
 ::: {.callout-note}
-If you inspect expr, you can see that the filters and projections get pushed down
-meaning you only bring the data that you asked for.
+If you inspect expr, you can see that the filters and projections get pushed down,
+meaning you only download the data that you asked for.
 :::
 
 ```python
@@ -172,7 +172,7 @@ lonboard.viz(plants_CA,
             })
 ```
 
-![Power plants near Lancaster CA](ca-power-plants.png)
+![Power plants near Lancaster, CA](ca-power-plants.png)
 
 We can also visualize together the `power_lines` and the `minor_lines` by doing:
 
@@ -197,7 +197,7 @@ Note: I got the ~7M by adding the number of points in power_lines and minor_line
 
 With Ibis and DuckDB working with geospatial data has never been easier or faster.
 We saw how to query a dataset from Overture Maps with the simplicity of Python and
-the performance of DuckDB. Last but not least, we saw how simple and quick lonboard
+the performance of DuckDB. Last but not least, we saw how simple and quick Lonboard
 got us from query-to-plot. Together, these libraries make exploring and handling
 geospatial data a breeze.
 
