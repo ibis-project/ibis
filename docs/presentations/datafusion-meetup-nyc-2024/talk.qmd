@@ -98,7 +98,7 @@ _please_ only choose one
 
 ## SQL ain't standard
 
-#### Which is (a small part of) why asking "How many Star Wars characters have 'Darth' in their name" looks like this:
+#### Which is why, when you ask: `How many Star Wars characters have 'Darth' in their name?`
 ::: {.fragment}
 ::: {.r-fit-text}
 ```sql
@@ -123,6 +123,13 @@ SELECT SUM(IIF(CONTAINS(LOWER([t0].[name]), 'darth'), 1, 0)) FROM [starwars]
 SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
 ```
 :::
+:::
+
+
+::: {.notes}
+Datafusion, BigQuery, MSSQL, Postgres
+
+Datatype names, function names, quoting behavior, whether bools exist
 :::
 
 ## SQL ain't standard
