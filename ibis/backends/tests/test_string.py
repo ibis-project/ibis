@@ -1079,55 +1079,69 @@ def string_temp_table(backend, con):
         ),
         param(
             lambda t: t.string_col.rpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="right", fillchar="-"),
+            lambda t: t.str.pad(4, side="right", fillchar="-"),
             id="rpad",
             marks=[
                 pytest.mark.notyet(
-                    ["flink", "oracle"],
+                    ["oracle"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 2 so padding is off",
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 4, len(Éé) == 4",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
+                ),
+            ],
+        ),
+        param(
+            lambda t: t.string_col.rpad(8, "-"),
+            lambda t: t.str.pad(8, side="right", fillchar="-"),
+            id="rpad_gt",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["mssql", "polars"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Python style padding, e.g. doesn't trim strings to pad-length",
-                ),
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="Can use rightPadUTF8 instead",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
             ],
         ),
         param(
             lambda t: t.string_col.lpad(4, "-"),
-            lambda t: t.str[:4].str.pad(4, side="left", fillchar="-"),
-            id="lpad",
+            lambda t: t.str.pad(4, side="left", fillchar="-"),
+            id="lpad_lt",
             marks=[
                 pytest.mark.notyet(
-                    ["flink", "oracle"],
+                    ["oracle"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 2 so padding is off",
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Treats len(🐍) == 4, len(Éé) == 4",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
+                ),
+            ],
+        ),
+        param(
+            lambda t: t.string_col.lpad(8, "-"),
+            lambda t: t.str.pad(8, side="left", fillchar="-"),
+            id="lpad_gt",
+            marks=[
+                pytest.mark.notyet(
+                    ["oracle"],
+                    raises=AssertionError,
+                    reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["mssql", "polars"],
+                    ["impala", "mysql"],
                     raises=AssertionError,
-                    reason="Python style padding, e.g. doesn't trim strings to pad-length",
-                ),
-                pytest.mark.notyet(
-                    ["clickhouse"],
-                    raises=AssertionError,
-                    reason="Can use leftPadUTF8 instead",
+                    reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
             ],
         ),
@@ -1279,7 +1293,9 @@ def string_temp_table(backend, con):
         ),
     ],
 )
-def test_string_methods_no_regex(string_temp_table, backend, result_mut, expected_func):
+def test_string_methods_accents_and_emoji(
+    string_temp_table, backend, result_mut, expected_func
+):
     """
     ┏━━━━━━━━━━━━┓
     ┃ string_col ┃
@@ -1296,6 +1312,87 @@ def test_string_methods_no_regex(string_temp_table, backend, result_mut, expecte
     └────────────┘
     """
     t = string_temp_table
+    series = t.order_by(t.index_col).string_col.name("tmp").to_pandas()
+
+    expr = t.mutate(string_col=result_mut).order_by(t.index_col)
+    result = expr.string_col.name("tmp").to_pandas()
+
+    expected = expected_func(series)
+
+    backend.assert_series_equal(result, expected)
+
+
+@pytest.fixture(scope="session")
+def string_temp_table_no_complications(backend, con):
+    better_strings = pd.DataFrame(
+        {
+            "string_col": [
+                "AbC\t",
+                "\n123\n   ",
+                "abc, 123",
+                "123",
+                "aBc",
+            ],
+            "index_col": [0, 1, 2, 3, 4],
+        }
+    )
+
+    temp_table_name = gen_name("strings")
+    temp = backend.name() not in ["exasol", "impala", "pyspark", "risingwave", "trino"]
+    if backend.name() == "datafusion":
+        temp = None
+    if backend.name() == "druid":
+        yield "I HATE DRUID"
+    else:
+        t = con.create_table(temp_table_name, better_strings, temp=temp)
+        yield t
+        con.drop_table(temp_table_name, force=True)
+
+
+@pytest.mark.never(["druid"], reason="can't create tables")
+@pytest.mark.parametrize(
+    "result_mut, expected_func",
+    [
+        param(
+            lambda t: t.string_col.rpad(4, "-"),
+            lambda t: t.str.pad(4, side="right", fillchar="-"),
+            id="rpad_lt",
+        ),
+        param(
+            lambda t: t.string_col.rpad(8, "-"),
+            lambda t: t.str.pad(8, side="right", fillchar="-"),
+            id="rpad_gt",
+        ),
+        param(
+            lambda t: t.string_col.lpad(4, "-"),
+            lambda t: t.str.pad(4, side="left", fillchar="-"),
+            id="lpad_lt",
+        ),
+        param(
+            lambda t: t.string_col.lpad(8, "-"),
+            lambda t: t.str.pad(8, side="left", fillchar="-"),
+            id="lpad_gt",
+        ),
+    ],
+)
+def test_string_methods_no_accents_and_no_emoji(
+    string_temp_table_no_complications, backend, result_mut, expected_func
+):
+    """
+    ┏━━━━━━━━━━━━┓
+    ┃ string_col ┃
+    ┡━━━━━━━━━━━━┩
+    │ string     │
+    ├────────────┤
+    │ AbC\t      │
+    │ \n123\n    │
+    │ abc, 123   │
+    │ 123        │
+    │ aBc        │
+    └────────────┘
+    """
+    # TODO: figure out a better organization for this
+    t = string_temp_table_no_complications
     series = t.order_by(t.index_col).string_col.name("tmp").to_pandas()
 
     expr = t.mutate(string_col=result_mut).order_by(t.index_col)

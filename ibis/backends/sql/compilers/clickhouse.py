@@ -480,6 +480,16 @@ class ClickHouseCompiler(SQLGlotCompiler):
             this=arg, position="BOTH", expression=sge.Literal.string(whitespace)
         )
 
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.f.leftPadUTF8(
+            arg, self.f.greatest(self.f.lengthUTF8(arg), length), pad
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.f.rightPadUTF8(
+            arg, self.f.greatest(self.f.lengthUTF8(arg), length), pad
+        )
+
     def visit_DayOfWeekIndex(self, op, *, arg):
         weekdays = len(calendar.day_name)
         return (((self.f.toDayOfWeek(arg) - 1) % weekdays) + weekdays) % weekdays

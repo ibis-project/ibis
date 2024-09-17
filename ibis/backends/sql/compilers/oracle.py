@@ -82,8 +82,6 @@ class OracleCompiler(SQLGlotCompiler):
         ops.BitXor: "bit_xor_agg",
         ops.BitwiseAnd: "bitand",
         ops.Hash: "ora_hash",
-        ops.LPad: "lpad",
-        ops.RPad: "rpad",
         ops.StringAscii: "ascii",
         ops.Mode: "stats_mode",
     }
@@ -274,6 +272,12 @@ class OracleCompiler(SQLGlotCompiler):
 
     def visit_StringJoin(self, op, *, arg, sep):
         return self.f.concat(*toolz.interpose(sep, arg))
+
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.f.lpad(arg, self.f.greatest(self.f.length(arg), length), pad)
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.f.rpad(arg, self.f.greatest(self.f.length(arg), length), pad)
 
     ## Aggregate stuff
 
