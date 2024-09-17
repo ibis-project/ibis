@@ -82,7 +82,7 @@ marks = {
     "insert": pytest.param(
         SQLBackend,
         "insert",
-        marks=pytest.mark.notyet(["clickhouse", "flink", "impala", "sqlite"]),
+        marks=pytest.mark.notyet(["clickhouse", "flink", "impala"]),
     ),
     "list_databases": pytest.param(
         CanCreateDatabase,
@@ -132,9 +132,7 @@ marks = {
         marks=pytest.mark.notyet(
             [
                 "clickhouse",
-                "datafusion",
                 "druid",
-                "duckdb",
                 "exasol",
                 "mssql",
                 "mysql",
@@ -143,7 +141,6 @@ marks = {
                 "postgres",
                 "risingwave",
                 "snowflake",
-                "sqlite",
                 "trino",
                 "pyspark",
             ]
