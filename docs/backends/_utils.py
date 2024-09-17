@@ -40,8 +40,6 @@ def find_member_with_docstring(member):
             if base not in resolved_bases:
                 resolved_bases.append(base)
 
-    # Remove `CanCreateSchema` and `CanListSchema` since they are deprecated
-    # and we don't want to document their existence.
     filtered_bases = filter(lambda x: "schema" not in x.name.lower(), resolved_bases)
     for base in filtered_bases:
         try:

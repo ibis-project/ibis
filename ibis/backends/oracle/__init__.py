@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanListDatabase, CanListSchema
+from ibis.backends import CanListDatabase
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import NULL, STAR, C
 
@@ -75,7 +75,7 @@ def metadata_row_to_type(
     return typ
 
 
-class Backend(SQLBackend, CanListDatabase, CanListSchema):
+class Backend(SQLBackend, CanListDatabase):
     name = "oracle"
     compiler = sc.oracle.compiler
 
