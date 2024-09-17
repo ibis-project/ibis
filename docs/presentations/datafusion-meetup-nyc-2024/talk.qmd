@@ -262,14 +262,35 @@ each engine makes it's own API and says "USE THIS".
 
 * Not an engine
 * We don't compute anything
+* We work with a _lot_ of engines
 
 # Demo Time
 
+## Why use DataFusion?
+
+* It's _fast_
+* It's _flexible_
+* Interface agnostic (SQL, Substrait, Dataframe API)
+
+
+You should choose the _engine_ that suits your problem.
+
 ## Why use Ibis?
 
-Gives you flexibility
+* It's flexible
+* It's a pretty good API (no really!)
+* Engine agnostic
 
-It's a pretty good API (no really!)
+You should choose the _interface_ that suits your problem.^[If your problem involves a bunch of complex DDL, for instance, don't use Ibis]
+
+## The interface is not the engine is not the interface
+
+
+::: {.incremental}
+- Don't let the _engine_ dictate the _interface_
+- Don't let the _interface_ dictate the _engine_
+:::
+
 
 ## Try it out
 
