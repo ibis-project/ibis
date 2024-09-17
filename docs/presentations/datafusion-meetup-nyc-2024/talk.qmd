@@ -5,7 +5,7 @@ title-slide-attributes:
   data-background-size: 50%
   data-background-opacity: "0.25"
 author: Gil Forsyth
-date: "2024-09-14"
+date: "2024-09-17"
 execute:
   echo: true
 format:
@@ -37,6 +37,10 @@ format:
 
 ::::
 
+## Link to slides
+
+![](./images/datafusion-meetup-slides.png){fig-align="center"}
+
 # Show of hands
 
 ## Who here is a...
@@ -48,19 +52,25 @@ format:
 - ML something-something?
 :::
 
+::: {.notes}
+ML something-something is used as a catchall because the job titles are varied
+and tend to mean wildly different things, but it is not a disparagement of ML
+jobs.
+:::
+
 ## Who here uses...
 
 ::: {.incremental}
-- Rust?
-- Python?
-- SQL?
-- R?
-- KDB+ Q?
+- 🦀Rust?
+- 🐍Python?
+- 🤖SQL?
+- 🇷R?
+- 🧨KDB+ Q?
 :::
 
 # So you want to design a Python Dataframe API?
 
-## Python/pandas terminology or SQL terminology?
+## Python🐍/pandas🐼 terminology or SQL🤖 terminology?
 
 ::: {.incremental}
 - `order_by` or `orderby` or `sort` or `sort_by` or `sortby`?
@@ -69,11 +79,17 @@ format:
 
 ::: {.fragment}
 ::: {.r-fit-text}
-_please_ only choose one
+🙏_please_ only choose one🙏
 :::
 :::
 
-## Python/pandas semantics or SQL semantics?
+::: {.fragment}
+::: {.r-fit-text}
+when in doubt, copy `dplyr`
+:::
+:::
+
+## Python🐍/pandas🐼 semantics or SQL🤖 semantics?
 
 
 ::: {.incremental}
@@ -98,7 +114,7 @@ _please_ only choose one
 
 ## SQL ain't standard
 
-#### Which is (a small part of) why asking "How many Star Wars characters have 'Darth' in their name" looks like this:
+#### Which is why, when you ask: `How many Star Wars characters have 'Darth' in their name?`
 ::: {.fragment}
 ::: {.r-fit-text}
 ```sql
@@ -123,6 +139,13 @@ SELECT SUM(IIF(CONTAINS(LOWER([t0].[name]), 'darth'), 1, 0)) FROM [starwars]
 SELECT SUM(CAST(STRPOS(LOWER("t0"."name"), 'darth') > 0 AS INT)) FROM "starwars"
 ```
 :::
+:::
+
+
+::: {.notes}
+Datafusion, BigQuery, MSSQL, Postgres
+
+Datatype names, function names, quoting behavior, whether bools exist
 :::
 
 ## SQL ain't standard
@@ -222,19 +245,52 @@ t.name.lower().contains("darth").sum()
 ```
 :::
 
+## And yes...
+
+![](./images/competing_standards.png)
+
+::: {.notes}
+First, I refuse to submit to nihilism that things can ever get better.
+
+Second I don't think there are actually very many proposed _standards_ for DataFrame APIs.
+
+There is the some work (https://data-apis.org/dataframe-api/draft/) but largely
+each engine makes it's own API and says "USE THIS".
+:::
 
 ## Ibis is _only_ an interface
 
 * Not an engine
 * We don't compute anything
+* We work with a _lot_ of engines
 
 # Demo Time
 
+## Why use DataFusion?
+
+* It's _fast_
+* It's _flexible_
+* Interface agnostic (SQL, Substrait, Dataframe API)
+
+
+You should choose the _engine_ that suits your problem.
+
 ## Why use Ibis?
 
-Gives you flexibility
+* It's flexible
+* It's a pretty good API (no really!)
+* Engine agnostic
 
-It's a pretty good API (no really!)
+You should choose the _interface_ that suits your problem.^[If your problem involves a bunch of complex DDL, for instance, don't use Ibis]
+
+## The interface is not the engine is not the interface
+
+
+::: {.incremental}
+- Don't let the _engine_ dictate the _interface_
+- Don't let the _interface_ dictate the _engine_
+:::
+
 
 ## Try it out
 
@@ -269,6 +325,45 @@ See: Apache Arrow and the “10 Things I Hate About pandas”
 
 <https://wesmckinney.com/blog/apache-arrow-pandas-internals/>
 :::
+
+## What other backends does Ibis support?
+
+
+:::: {.columns}
+
+::: {.column width="33%"}
+
+- BigQuery
+- ClickHouse
+- DataFusion
+- Druid
+- DuckDB
+- Exasol
+:::
+
+::: {.column width="33%"}
+- Flink
+- Impala
+- MSSQL
+- MySQL
+- Oracle
+- Polars
+:::
+
+
+::: {.column width="33%"}
+- Postgres
+- Spark
+- Risingwave
+- Snowflake
+- SQLite
+- Trino
+:::
+::::
+
+## Should I use Ibis _instead_ of `X`?
+
+Nope. You should use Ibis _with_ `X`.
 
 ## Demo code (for reference)
 
@@ -311,10 +406,9 @@ def main():
         .reset_index()
         .sort_values(["month", "project_count"], ascending=False)
     )
-
 ```
 
-### Ibis+Datafusion PyPI
+### Ibis+DataFusion PyPI
 
 ```python
 import glob
@@ -354,7 +448,7 @@ expr = (
 )
 ```
 
-### Ibis+Datafusion PyPI (full)
+### Ibis+DataFusion PyPI (full)
 
 ```python
 import ibis
@@ -387,7 +481,6 @@ expr = (
     .drop_null("ext")
     .order_by([_.month.desc(), _.project_count.desc()])
 )
-
 ```
 
 :::
