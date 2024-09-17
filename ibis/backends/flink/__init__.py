@@ -371,6 +371,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
         """Execute an expression."""
+        self._verify_in_memory_tables_are_unique(expr)
         self._register_udfs(expr)
 
         table_expr = expr.as_table()

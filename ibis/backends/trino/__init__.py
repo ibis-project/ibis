@@ -551,21 +551,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
         df = TrinoPandasData.convert_table(df, schema)
         return df
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
-
-        try:
-            with self.begin() as cur:
-                cur.execute(sql)
-                cur.fetchall()
-        except trino.exceptions.TrinoUserError as e:
-            if e.error_name == "TABLE_NOT_FOUND":
-                return False
-            raise
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:

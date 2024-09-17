@@ -446,10 +446,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             self._session.udf.register(f"unwrap_json_{typ.__name__}", unwrap_json(typ))
         self._session.udf.register("unwrap_json_float", unwrap_json_float)
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        sql = f"SHOW TABLES IN {self.current_database} LIKE '{name}'"
-        return bool(self._session.sql(sql).count())
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)

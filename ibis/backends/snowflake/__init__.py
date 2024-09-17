@@ -663,25 +663,6 @@ $$ {defn["source"]} $$"""
 
         return self._filter_with_like(tables + views, like=like)
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        import snowflake.connector
-
-        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
-
-        try:
-            with self.con.cursor() as cur:
-                cur.execute(sql).fetchall()
-        except snowflake.connector.errors.ProgrammingError as e:
-            # this cryptic error message is the only generic and reliable way
-            # to tell if the error means "table not found for any reason"
-            # otherwise, we need to reraise the exception
-            if e.sqlstate == "42S02":
-                return False
-            raise
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 

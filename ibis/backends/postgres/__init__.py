@@ -89,21 +89,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
 
         return self.connect(**kwargs)
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        import psycopg2.errors
-
-        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        sql = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
-
-        try:
-            with self.begin() as cur:
-                cur.execute(sql)
-                cur.fetchall()
-        except psycopg2.errors.UndefinedTable:
-            return False
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         from psycopg2.extras import execute_batch
 

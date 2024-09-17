@@ -345,18 +345,6 @@ class Backend(SQLBackend, UrlFromPath):
 
         return sge.Create(kind="TABLE", this=target)
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        ident = sg.to_identifier(name, quoted=self.compiler.quoted)
-        query = sg.select(sge.convert(1)).from_(ident).limit(0).sql(self.dialect)
-        try:
-            with self.begin() as cur:
-                cur.execute(query)
-                cur.fetchall()
-        except sqlite3.OperationalError:
-            return False
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         table = sg.table(op.name, quoted=self.compiler.quoted, catalog="temp")
         create_stmt = self._generate_create_table(table, op.schema).sql(self.name)

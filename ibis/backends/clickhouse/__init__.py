@@ -265,7 +265,9 @@ class Backend(SQLBackend, CanCreateDatabase):
     def _collect_in_memory_tables(
         self, expr: ir.Table | None, external_tables: Mapping | None = None
     ):
-        memtables = {op.name: op for op in expr.op().find(ops.InMemoryTable)}
+        memtables = {
+            op.name: op for op in self._verify_in_memory_tables_are_unique(expr)
+        }
         externals = toolz.valmap(_to_memtable, external_tables or {})
         return toolz.merge(memtables, externals)
 
@@ -779,23 +781,3 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src, external_tables=external_tables):
             pass
         return self.table(name, database=database)
-
-    def _in_memory_table_exists(self, name: str) -> bool:
-        name = sg.table(name, quoted=self.compiler.quoted).sql(self.dialect)
-        try:
-            # DESCRIBE TABLE $TABLE FORMAT NULL is the fastest way to check
-            # table existence in clickhouse; FORMAT NULL produces no data which
-            # is ideal since we don't care about the output for existence
-            # checking
-            #
-            # Other methods compared were
-            # 1. SELECT 1 FROM $TABLE LIMIT 0
-            # 2. SHOW TABLES LIKE $TABLE LIMIT 1
-            #
-            # if the table exists nothing is returned and there's no error
-            # otherwise there's an error
-            self.con.raw_query(f"DESCRIBE {name} FORMAT NULL")
-        except cc.driver.exceptions.DatabaseError:
-            return False
-        else:
-            return True

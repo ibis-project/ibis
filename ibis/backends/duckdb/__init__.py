@@ -1606,15 +1606,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             }
         )
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        try:
-            # this handles both tables and views
-            self.con.table(name)
-        except (duckdb.CatalogException, duckdb.InvalidInputException):
-            return False
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         self.con.register(op.name, op.data.to_pyarrow(op.schema))
 

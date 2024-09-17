@@ -477,23 +477,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        name = sg.to_identifier(name, quoted=self.compiler.quoted).sql(self.dialect)
-        # just return the single field with column names; no need to bring back
-        # everything if the command succeeds
-        sql = f"SHOW COLUMNS FROM {name} LIKE 'Field'"
-        try:
-            with self.begin() as cur:
-                cur.execute(sql)
-                cur.fetchall()
-        except MySQLdb.ProgrammingError as e:
-            err_code, _ = e.args
-            if err_code == ER.NO_SUCH_TABLE:
-                return False
-            raise
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:

@@ -408,15 +408,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             f"please call one of {msg} directly"
         )
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        db = self.con.catalog().database()
-        try:
-            db.table(name)
-        except Exception:  # noqa: BLE001 because DataFusion has nothing better
-            return False
-        else:
-            return True
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         # self.con.register_table is broken, so we do this roundabout thing
         # of constructing a datafusion DataFrame, which has a side effect
