@@ -1586,7 +1586,9 @@ def test_grouped_case(backend, con):
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
-    ["datafusion"], raises=Exception, reason="not supported in datafusion"
+    ["datafusion"],
+    raises=BaseException,
+    reason="because pyo3 panic exception is raised",
 )
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
