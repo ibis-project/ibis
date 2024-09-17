@@ -61,16 +61,16 @@ jobs.
 ## Who here uses...
 
 ::: {.incremental}
-- Rust?
-- Python?
-- SQL?
-- R?
-- KDB+ Q?
+- 🦀Rust?
+- 🐍Python?
+- 🤖SQL?
+- 🇷R?
+- 🧨KDB+ Q?
 :::
 
 # So you want to design a Python Dataframe API?
 
-## Python/pandas terminology or SQL terminology?
+## Python🐍/pandas🐼 terminology or SQL🤖 terminology?
 
 ::: {.incremental}
 - `order_by` or `orderby` or `sort` or `sort_by` or `sortby`?
@@ -79,11 +79,17 @@ jobs.
 
 ::: {.fragment}
 ::: {.r-fit-text}
-_please_ only choose one
+🙏_please_ only choose one🙏
 :::
 :::
 
-## Python/pandas semantics or SQL semantics?
+::: {.fragment}
+::: {.r-fit-text}
+when in doubt, copy `dplyr`
+:::
+:::
+
+## Python🐍/pandas🐼 semantics or SQL🤖 semantics?
 
 
 ::: {.incremental}
