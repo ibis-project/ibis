@@ -1,5 +1,5 @@
 ---
-title: "Dataframe Interfaces are a nightmare"
+title: "Designing Interfaces is hard"
 title-slide-attributes:
   data-background-image: ./images/patrick.png
   data-background-size: 50%
