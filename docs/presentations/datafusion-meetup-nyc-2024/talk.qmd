@@ -361,6 +361,10 @@ See: Apache Arrow and the “10 Things I Hate About pandas”
 :::
 ::::
 
+## Should I use Ibis _instead_ of `X`?
+
+Nope. You should use Ibis _with_ `X`.
+
 ## Demo code (for reference)
 
 ::: {.panel-tabset}
@@ -404,7 +408,7 @@ def main():
     )
 ```
 
-### Ibis+Datafusion PyPI
+### Ibis+DataFusion PyPI
 
 ```python
 import glob
@@ -444,7 +448,7 @@ expr = (
 )
 ```
 
-### Ibis+Datafusion PyPI (full)
+### Ibis+DataFusion PyPI (full)
 
 ```python
 import ibis
