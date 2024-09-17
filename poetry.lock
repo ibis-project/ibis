@@ -1341,16 +1341,17 @@ tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
 name = "datafusion"
-version = "40.1.0"
+version = "41.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-40.1.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:983b5b89a3aaaf2789f0423564cc24dbe5eb3f4f0a7daa8e87b35ce4d2920d6b"},
-    {file = "datafusion-40.1.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be44d24971e73d324a3f41503bb091f48d171d50d1d2415b469ca5e3953b5a0e"},
-    {file = "datafusion-40.1.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:fd8c3689e9d195a9603a00e399b995a6343587d0763358f2eee65b85d5f56a37"},
-    {file = "datafusion-40.1.0-cp38-abi3-win_amd64.whl", hash = "sha256:2960871ce31ee489ef3b210e77c4048278e9ee873517eff9f46ca52c82eb166d"},
-    {file = "datafusion-40.1.0.tar.gz", hash = "sha256:7c7cfd2bcf491adcf6580f0ff5882ca9fc658dbdab30802ad46889e417965cc6"},
+    {file = "datafusion-41.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4b484035765a4f239737d6313af3cc3822448dfa86738ec44db02dfc4e08057f"},
+    {file = "datafusion-41.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:fe324048a63bf462d49cca3b046821fcb546cdab3a13b1fe860aab038c4e4ad4"},
+    {file = "datafusion-41.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b7c6987ad20b238a555fac09851f2329cd8b7e829de98446159ea27a172a5f1f"},
+    {file = "datafusion-41.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:a10179610c8d211d215ff3533bbd8f5faf3b47b00c0e8371ca9656e98c420380"},
+    {file = "datafusion-41.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:a862f6667979a367c30ae58d8770bba044bab09d1da9012ee37cb3bb86fccdf2"},
+    {file = "datafusion-41.0.0.tar.gz", hash = "sha256:b2124bcd976520a8dbcb456c200f2cb8b1343285e9329fe757aa628bbd0b08f7"},
 ]
 
 [package.dependencies]
@@ -7893,4 +7894,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "c3905989eab1b3ab585b029a685e38ac6fa10febb022f15f3b1aea5e449e23fd"
+content-hash = "82384564308f7be107e844339bbcaaf90643f677702f39cf19231f121d2bc7f5"
