@@ -674,8 +674,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(name, database=database)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
-    ) -> None:
+        self,
+        name: str,
+        database: str | None = None,
+    ):
         """Delete all rows from a table.
 
         Parameters
@@ -684,14 +686,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             Table name
         database
             Database name
-        schema
-            Schema name
 
         """
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #
         # however datafusion as of 34.0.0 doesn't implement DELETE DML yet
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         ident = sg.table(name, db=db, catalog=catalog).sql(self.dialect)
