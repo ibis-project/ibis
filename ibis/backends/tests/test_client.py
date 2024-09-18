@@ -999,6 +999,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 )
 def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
+    table_name = gen_name(table_name)
     t = con.create_table(table_name, obj())
 
     try:
