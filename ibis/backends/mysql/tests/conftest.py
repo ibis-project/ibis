@@ -29,7 +29,7 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "mysql"
-    deps = ("pymysql",)
+    deps = ("MySQLdb",)
 
     @property
     def test_files(self) -> Iterable[Path]:
