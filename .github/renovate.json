@@ -79,6 +79,10 @@
       "addLabels": ["pyspark"]
     },
     {
+      "matchPackagePatterns": ["risingwave"],
+      "addLabels": ["risingwave"]
+    },
+    {
       "matchPackagePatterns": ["snowflake-connector-python"],
       "addLabels": ["snowflake"]
     },
