@@ -3,16 +3,24 @@ from __future__ import annotations
 import inspect
 from functools import partial
 
-from pymysql.constants import FIELD_TYPE
+from MySQLdb.constants import FIELD_TYPE, FLAG
 
 import ibis.expr.datatypes as dt
 
-# binary character set
-# used to distinguish blob binary vs blob text
-MY_CHARSET_BIN = 63
+TEXT_TYPES = (
+    FIELD_TYPE.BIT,
+    FIELD_TYPE.BLOB,
+    FIELD_TYPE.LONG_BLOB,
+    FIELD_TYPE.MEDIUM_BLOB,
+    FIELD_TYPE.STRING,
+    FIELD_TYPE.TINY_BLOB,
+    FIELD_TYPE.VAR_STRING,
+    FIELD_TYPE.VARCHAR,
+    FIELD_TYPE.GEOMETRY,
+)
 
 
-def _type_from_cursor_info(descr, field) -> dt.DataType:
+def _type_from_cursor_info(*, flags, type_code, field_length, scale) -> dt.DataType:
     """Construct an ibis type from MySQL field descr and field result metadata.
 
     This method is complex because the MySQL protocol is complex.
@@ -24,19 +32,14 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
     strings, because the protocol does not appear to preserve the logical
     type, only the physical type.
     """
-    from pymysql.connections import TEXT_TYPES
-
-    _, type_code, _, _, field_length, scale, _ = descr
-    flags = _FieldFlags(field.flags)
+    flags = _FieldFlags(flags)
     typename = _type_codes.get(type_code)
     if typename is None:
         raise NotImplementedError(f"MySQL type code {type_code:d} is not supported")
 
     if typename in ("DECIMAL", "NEWDECIMAL"):
         precision = _decimal_length_to_precision(
-            length=field_length,
-            scale=scale,
-            is_unsigned=flags.is_unsigned,
+            length=field_length, scale=scale, is_unsigned=flags.is_unsigned
         )
         typ = partial(_type_mapping[typename], precision=precision, scale=scale)
     elif typename == "BIT":
@@ -54,8 +57,7 @@ def _type_from_cursor_info(descr, field) -> dt.DataType:
         # sets are limited to strings
         typ = dt.Array(dt.string)
     elif type_code in TEXT_TYPES:
-        # binary text
-        if field.charsetnr == MY_CHARSET_BIN:
+        if flags.is_binary:
             typ = dt.Binary
         else:
             typ = dt.String
@@ -115,11 +117,6 @@ class _FieldFlags:
     is a primary key or not.
     """
 
-    UNSIGNED = 1 << 5
-    TIMESTAMP = 1 << 10
-    SET = 1 << 11
-    NUM = 1 << 15
-
     __slots__ = ("value",)
 
     def __init__(self, value: int) -> None:
@@ -127,16 +124,20 @@ class _FieldFlags:
 
     @property
     def is_unsigned(self) -> bool:
-        return (self.UNSIGNED & self.value) != 0
+        return (FLAG.UNSIGNED & self.value) != 0
 
     @property
     def is_timestamp(self) -> bool:
-        return (self.TIMESTAMP & self.value) != 0
+        return (FLAG.TIMESTAMP & self.value) != 0
 
     @property
     def is_set(self) -> bool:
-        return (self.SET & self.value) != 0
+        return (FLAG.SET & self.value) != 0
 
     @property
     def is_num(self) -> bool:
-        return (self.NUM & self.value) != 0
+        return (FLAG.NUM & self.value) != 0
+
+    @property
+    def is_binary(self) -> bool:
+        return (FLAG.BINARY & self.value) != 0

@@ -3826,6 +3826,24 @@ files = [
 ]
 
 [[package]]
+name = "mysqlclient"
+version = "2.2.4"
+description = "Python interface to MySQL"
+optional = true
+python-versions = ">=3.8"
+files = [
+    {file = "mysqlclient-2.2.4-cp310-cp310-win_amd64.whl", hash = "sha256:ac44777eab0a66c14cb0d38965572f762e193ec2e5c0723bcd11319cc5b693c5"},
+    {file = "mysqlclient-2.2.4-cp311-cp311-win_amd64.whl", hash = "sha256:329e4eec086a2336fe3541f1ce095d87a6f169d1cc8ba7b04ac68bcb234c9711"},
+    {file = "mysqlclient-2.2.4-cp312-cp312-win_amd64.whl", hash = "sha256:e1ebe3f41d152d7cb7c265349fdb7f1eca86ccb0ca24a90036cde48e00ceb2ab"},
+    {file = "mysqlclient-2.2.4-cp38-cp38-win_amd64.whl", hash = "sha256:3c318755e06df599338dad7625f884b8a71fcf322a9939ef78c9b3db93e1de7a"},
+    {file = "mysqlclient-2.2.4-cp39-cp39-win_amd64.whl", hash = "sha256:9d4c015480c4a6b2b1602eccd9846103fc70606244788d04aa14b31c4bd1f0e2"},
+    {file = "mysqlclient-2.2.4-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:d43987bb9626096a302ca6ddcdd81feaeca65ced1d5fe892a6a66b808326aa54"},
+    {file = "mysqlclient-2.2.4-pp38-pypy38_pp73-win_amd64.whl", hash = "sha256:4e80dcad884dd6e14949ac6daf769123223a52a6805345608bf49cdaf7bc8b3a"},
+    {file = "mysqlclient-2.2.4-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:9d3310295cb682232cadc28abd172f406c718b9ada41d2371259098ae37779d3"},
+    {file = "mysqlclient-2.2.4.tar.gz", hash = "sha256:33bc9fb3464e7d7c10b1eaf7336c5ff8f2a3d3b88bab432116ad2490beb3bf41"},
+]
+
+[[package]]
 name = "narwhals"
 version = "1.8.1"
 description = "Extremely lightweight compatibility layer between dataframe libraries"
@@ -5261,21 +5279,6 @@ crypto = ["cryptography (>=3.4.0)"]
 dev = ["coverage[toml] (==5.0.4)", "cryptography (>=3.4.0)", "pre-commit", "pytest (>=6.0.0,<7.0.0)", "sphinx", "sphinx-rtd-theme", "zope.interface"]
 docs = ["sphinx", "sphinx-rtd-theme", "zope.interface"]
 tests = ["coverage[toml] (==5.0.4)", "pytest (>=6.0.0,<7.0.0)"]
-
-[[package]]
-name = "pymysql"
-version = "1.1.1"
-description = "Pure Python MySQL Driver"
-optional = true
-python-versions = ">=3.7"
-files = [
-    {file = "PyMySQL-1.1.1-py3-none-any.whl", hash = "sha256:4de15da4c61dc132f4fb9ab763063e693d521a80fd0e87943b9a453dd4c19d6c"},
-    {file = "pymysql-1.1.1.tar.gz", hash = "sha256:e127611aaf2b417403c60bf4dc570124aeb4a57f5f37b8e95ae399a42f904cd0"},
-]
-
-[package.extras]
-ed25519 = ["PyNaCl (>=1.4.0)"]
-rsa = ["cryptography"]
 
 [[package]]
 name = "pyodbc"
@@ -7880,7 +7883,7 @@ flink = ["numpy", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
 geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 impala = ["impyla", "numpy", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
 mssql = ["numpy", "pandas", "pyarrow", "pyarrow-hotfix", "pyodbc", "rich"]
-mysql = ["numpy", "pandas", "pyarrow", "pyarrow-hotfix", "pymysql", "rich"]
+mysql = ["mysqlclient", "numpy", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
 oracle = ["numpy", "oracledb", "packaging", "pandas", "pyarrow", "pyarrow-hotfix", "rich"]
 polars = ["numpy", "packaging", "pandas", "polars", "pyarrow", "pyarrow-hotfix", "rich"]
 postgres = ["numpy", "pandas", "psycopg2", "pyarrow", "pyarrow-hotfix", "rich"]
@@ -7894,4 +7897,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "82384564308f7be107e844339bbcaaf90643f677702f39cf19231f121d2bc7f5"
+content-hash = "7acc0d4effb3c7f5476d41411f0a84982ab618fde1912ff6a32092b5c14787bf"

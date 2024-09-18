@@ -33,7 +33,7 @@ dependencies:
   - pyarrow-hotfix >=0.4
   - pydata-google-auth
   - pydruid >=0.6.5
-  - pymysql >=1
+  - mysqlclient >=2.2.4
   - pyodbc >=4.0.39
   - pyspark >=3
   - python >=3.10

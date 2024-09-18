@@ -141,6 +141,7 @@ jobs:
               - polars
             sys-deps:
               - libgeos-dev
+              - default-libmysqlclient-dev
           - name: postgres
             title: PostgreSQL
             extras:
@@ -271,6 +272,7 @@ jobs:
                 - mysql
               sys-deps:
                 - libgeos-dev
+                - default-libmysqlclient-dev
           - os: windows-latest
             backend:
               name: clickhouse
