@@ -130,7 +130,6 @@ marks = {
         marks=pytest.mark.notyet(
             [
                 "polars",
-                "snowflake",
             ]
         ),
     ),
