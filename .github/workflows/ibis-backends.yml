@@ -123,6 +123,7 @@ jobs:
               - sqlite
           - name: datafusion
             title: DataFusion
+            serial: true
             extras:
               - datafusion
           - name: polars
