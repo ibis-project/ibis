@@ -82,6 +82,11 @@ def test_cross_db(tmpdir):
     assert t1_from_con2.schema() == t2.schema()
     assert t1_from_con2.execute().equals(t2.execute())
 
+    foo_t1_from_con2 = con2.table("t1", database="test1.foo")
+
+    assert foo_t1_from_con2.schema() == t2.schema()
+    assert foo_t1_from_con2.execute().equals(t2.execute())
+
 
 def test_attach_detach(tmpdir):
     path1 = str(tmpdir.join("test1.ddb"))
