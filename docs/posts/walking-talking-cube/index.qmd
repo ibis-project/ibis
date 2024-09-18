@@ -158,7 +158,7 @@ doing and why? The purpose of this blog post is to demonstrate generating
 synthetic data that can look realistic. We achieve this by building in
 randomness (e.g. a random walk can be used to simulate stock prices) and also by
 using that randomness to inform the generation of non-numeric synthetic data
-(e.g. the ticker symbol of a stock). 
+(e.g. the ticker symbol of a stock).
 
 ### Faking it
 
