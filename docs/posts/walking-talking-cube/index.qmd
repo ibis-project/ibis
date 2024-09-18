@@ -152,13 +152,13 @@ c
 
 ## Talking
 
-We've made our cube and we've made it walk, but now we want to make it talk. At
-this point, you might be questioning the utility of this blog post -- what are we
-doing and why? The purpose of this blog post is to demonstrate generating
-synthetic data that can look realistic. We achieve this by building in
-randomness (e.g. a random walk can be used to simulate stock prices) and also by
-using that randomness to inform the generation of non-numeric synthetic data
-(e.g. the ticker symbol of a stock).
+We've made our random cube and we've made it walk, but now we want to make it
+talk. At this point, you might be questioning the utility of this blog post --
+what are we doing and why? The purpose is to demonstrate generating synthetic
+data that can look realistic. We achieve this by building in randomness (e.g. a
+random walk can be used to simulate stock prices) and also by using that
+randomness to inform the generation of non-numeric synthetic data (e.g. the
+ticker symbol of a stock).
 
 ### Faking it
 
@@ -272,12 +272,12 @@ faked
 ```
 
 And now we have a "realistic" dataset of fake reviews matching our desired
-schema. You can apply this to match the schema and expected distributions of
+schema. You can adjust this to match the schema and expected distributions of
 your own data and scale it up as needed.
 
 ### GenAI/LLMs
 
-The names and locations from faker are bland and unrealistic. The comments are
+The names and locations from Faker are bland and unrealistic. The comments are
 nonsensical. ~~And most importantly, we haven't filled our quota for blogs
 mentioning AI.~~ You could [use language models in Ibis UDFs to generate more
 realistic synthetic data](../lms-for-data/index.qmd). In a future blog post, we
@@ -285,13 +285,13 @@ will use "open source" language models to do this locally for free.
 
 ## Next steps
 
-If you've followed along, you have a `synthetic.ddb` file with a few tables:
+If you've followed along, you have a `synthetic.ddb` file with a couple tables:
 
 ```{python}
 con.list_tables()
 ```
 
-We'll estimate the size of data we generated:
+We can estimate the size of data generated:
 
 ```{python}
 import os
@@ -300,5 +300,5 @@ size_in_mbs = os.path.getsize("synthetic.ddb") / (1024 * 1024)
 print(f"synthetic.ddb: {size_in_mbs:.2f} MBs")
 ```
 
-While this isn't much data, hopefully you can build on this to generate
-realistic synthetic data at any scale for any use case.
+You can build from here to generate realistic synthetic data at any scale for
+any use case.
