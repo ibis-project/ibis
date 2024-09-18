@@ -220,6 +220,7 @@ quartodoc:
           contents:
             - name: Table
               package: ibis.expr.types.relations
+              include_inherited: true
             - name: GroupedTable
               package: ibis.expr.types.groupby
             - name: read_csv

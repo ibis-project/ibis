@@ -1710,11 +1710,6 @@ def test_insert_into_table_missing_columns(con, temp_table):
     reason="memtables are assembled every time",
 )
 @pytest.mark.notyet(
-    ["mysql"],
-    raises=AssertionError,
-    reason="can't execute SQL inside of a finalizer without breaking everything",
-)
-@pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
 )
 def test_memtable_cleanup(con):

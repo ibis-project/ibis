@@ -9,6 +9,15 @@ app_id = os.environ["ALGOLIA_APP_ID"]
 index_name = os.environ["ALGOLIA_INDEX"]
 
 
+ONE_WAY_SYNONYMS = {
+    # A list of search terms that have (historically) not returned results
+    # that we can map to existing search terms that we know are good
+    "md5": ["hashbytes"],
+    "fetchdf": ["to_pandas", "to_polars", "to_pyarrow"],
+    "unique": ["distinct"],
+}
+
+
 def main():
     client = SearchClient.create(app_id, api_key)
     index = client.init_index(index_name)
@@ -29,6 +38,16 @@ def main():
     }
 
     index.set_settings(override_default_settings)
+
+    for input_, synonyms in ONE_WAY_SYNONYMS.items():
+        index.save_synonym(
+            {
+                "objectID": input_,
+                "type": "oneWaySynonym",
+                "input": input_,
+                "synonyms": synonyms,
+            }
+        )
 
 
 if __name__ == "__main__":

@@ -67,7 +67,7 @@
       "addLabels": ["druid"]
     },
     {
-      "matchPackagePatterns": ["pymysql", "mariadb"],
+      "matchPackagePatterns": ["mysqlclient", "mariadb"],
       "addLabels": ["mysql"]
     },
     {
@@ -77,6 +77,10 @@
     {
       "matchPackagePatterns": ["pyspark"],
       "addLabels": ["pyspark"]
+    },
+    {
+      "matchPackagePatterns": ["risingwave"],
+      "addLabels": ["risingwave"]
     },
     {
       "matchPackagePatterns": ["snowflake-connector-python"],

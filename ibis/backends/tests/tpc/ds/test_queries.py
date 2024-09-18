@@ -9,11 +9,7 @@ import ibis
 from ibis import _, coalesce, cumulative_window, date, ifelse, null, rank, union
 from ibis import literal as lit
 from ibis import selectors as s
-from ibis.backends.tests.errors import (
-    ArrowNotImplementedError,
-    ClickHouseDatabaseError,
-    TrinoUserError,
-)
+from ibis.backends.tests.errors import ClickHouseDatabaseError, TrinoUserError
 from ibis.backends.tests.tpc.conftest import tpc_test
 from ibis.common.exceptions import OperationNotDefinedError
 
@@ -1416,7 +1412,6 @@ def test_26(catalog_sales, customer_demographics, date_dim, item, promotion):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], reason="Failed to plan")
 def test_27(store_sales, customer_demographics, date_dim, store, item):
     results = (
         store_sales.join(customer_demographics, [("ss_cdemo_sk", "cd_demo_sk")])
@@ -1999,11 +1994,6 @@ def test_38(store_sales, catalog_sales, web_sales, date_dim, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=ArrowNotImplementedError,
-    reason="Unsupported cast from double to null using function cast_null",
-)
 def test_39(inventory, item, warehouse, date_dim):
     inv = (
         inventory.join(item, [("inv_item_sk", "i_item_sk")])
@@ -4894,11 +4884,6 @@ def test_89(item, store_sales, date_dim, store):
     ).limit(100)
 
 
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=ArrowNotImplementedError,
-    reason="Unsupported cast from double to null using function cast_null",
-)
 @tpc_test("ds")
 def test_90(web_sales, household_demographics, time_dim, web_page):
     def am_pm(*, hour: int, name: str):

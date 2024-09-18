@@ -6,8 +6,7 @@ import ibis
 
 
 @pytest.mark.xfail_version(pyspark=["pyspark<3.4"], reason="no catalog support")
-def test_catalog_db_args(con, monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", con)
+def test_catalog_db_args(con):
     t = ibis.memtable({"epoch": [1712848119, 1712848121, 1712848155]})
 
     assert con.current_catalog == "spark_catalog"
@@ -40,8 +39,7 @@ def test_catalog_db_args(con, monkeypatch):
     assert con.current_database == "ibis_testing"
 
 
-def test_create_table_no_catalog(con, monkeypatch):
-    monkeypatch.setattr(ibis.options, "default_backend", con)
+def test_create_table_no_catalog(con):
     t = ibis.memtable({"epoch": [1712848119, 1712848121, 1712848155]})
 
     assert con.current_database != "default"
