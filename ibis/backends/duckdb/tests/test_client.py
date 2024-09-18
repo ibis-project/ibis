@@ -78,7 +78,7 @@ def test_cross_db(tmpdir):
 
     con2.attach(path1, name="test1", read_only=True)
 
-    t1_from_con2 = con2.table("t1", database="test1")
+    t1_from_con2 = con2.table("t1", database="test1.main")
     assert t1_from_con2.schema() == t2.schema()
     assert t1_from_con2.execute().equals(t2.execute())
 
