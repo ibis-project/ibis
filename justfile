@@ -135,6 +135,23 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
         git -C "${outdir}" checkout "{{ rev }}"
     fi
 
+# download the iceberg jar used for testing pyspark and iceberg integration
+download-iceberg-jar pyspark scala="2.12" iceberg="1.5.2":
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    runner=(python)
+
+    if [ -n "${CI}" ]; then
+        runner=(poetry run python)
+    fi
+    pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
+    pushd "${pyspark}/jars"
+    jar="iceberg-spark-runtime-{{ pyspark }}_{{ scala }}-{{ iceberg }}.jar"
+    url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"
+    curl -qSsL -o "${jar}" "${url}"
+    ls "${jar}"
+
 # start backends using docker compose; no arguments starts all backends
 up *backends:
     docker compose up --build --wait {{ backends }}
