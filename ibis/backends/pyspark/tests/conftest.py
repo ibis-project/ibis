@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
+from packaging.version import parse as vparse
 
 import ibis
 from ibis import util
@@ -144,7 +145,11 @@ class TestConf(BackendTest):
         # converted as local time to UTC with microsecond resolution.
         # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
 
+        import pyspark
         from pyspark.sql import SparkSession
+
+        pyspark_version = vparse(pyspark.__version__)
+        pyspark_minor_version = f"{pyspark_version.major:d}.{pyspark_version.minor:d}"
 
         config = (
             SparkSession.builder.appName("ibis_testing")
@@ -169,12 +174,13 @@ class TestConf(BackendTest):
             .config("spark.ui.showConsoleProgress", False)
             .config("spark.sql.execution.arrow.pyspark.enabled", False)
             .config("spark.sql.streaming.schemaInference", True)
-        )
-
-        config = (
-            config.config(
+            .config(
                 "spark.sql.extensions",
                 "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
+            )
+            .config(
+                "spark.jars.packages",
+                f"org.apache.iceberg:iceberg-spark-runtime-{pyspark_minor_version}_2.12:1.5.2",
             )
             .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
             .config("spark.sql.catalog.local.type", "hadoop")

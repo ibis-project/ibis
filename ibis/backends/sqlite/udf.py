@@ -258,12 +258,12 @@ def _ibis_string_ascii(string):
 
 @udf
 def _ibis_rpad(string, width, pad):
-    return string.ljust(width, pad)[:width]
+    return string.ljust(width, pad)
 
 
 @udf
 def _ibis_lpad(string, width, pad):
-    return string.rjust(width, pad)[:width]
+    return string.rjust(width, pad)
 
 
 @udf

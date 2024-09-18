@@ -688,6 +688,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             "deprecated and will be removed in version 10.0. Please use "
             "`Table.select` or `Table.filter` instead.",
             FutureWarning,
+            stacklevel=2,
         )
         values = self.bind(args)
 

@@ -421,7 +421,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         # self.con.register_table is broken, so we do this roundabout thing
         # of constructing a datafusion DataFrame, which has a side effect
         # of registering the table
-        self.con.from_arrow_table(op.data.to_pyarrow(op.schema), op.name)
+        self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -757,14 +757,14 @@ def _polars(source, table_name, _conn, overwrite: bool = False):
 def _pyarrow_table(source, table_name, _conn, overwrite: bool = False):
     tmp_name = gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
-        _conn.con.from_arrow_table(source, name=tmp_name)
+        _conn.con.from_arrow(source, name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatchReader")
 def _pyarrow_rbr(source, table_name, _conn, overwrite: bool = False):
     tmp_name = gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
-        _conn.con.from_arrow_table(source.read_all(), name=tmp_name)
+        _conn.con.from_arrow(source.read_all(), name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatch")

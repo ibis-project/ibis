@@ -57,7 +57,6 @@ MYSQL_TYPES = [
     param("bit(17)", dt.int32, id="bit_17"),
     param("bit(33)", dt.int64, id="bit_33"),
     # mariadb doesn't have a distinct json type
-    param("json", dt.string, id="json"),
     param("enum('small', 'medium', 'large')", dt.string, id="enum"),
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
@@ -93,8 +92,9 @@ def test_get_schema_from_query(con, mysql_type, expected_type):
 @pytest.mark.parametrize(
     ("mysql_type", "get_schema_expected_type", "table_expected_type"),
     [
-        param("inet6", dt.string, dt.inet, id="inet"),
-        param("uuid", dt.string, dt.uuid, id="uuid"),
+        param("json", dt.binary, dt.string, id="json"),
+        param("inet6", dt.binary, dt.inet, id="inet"),
+        param("uuid", dt.binary, dt.uuid, id="uuid"),
     ],
 )
 def test_get_schema_from_query_special_cases(

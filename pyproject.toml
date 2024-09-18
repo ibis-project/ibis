@@ -55,7 +55,7 @@ clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "numpy",
   "pandas",
 ] }
-datafusion = { version = ">=0.6,<41", optional = true }
+datafusion = { version = ">=0.6,<42", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.8.1,<1.2", optional = true }
@@ -74,7 +74,7 @@ psycopg2 = { version = ">=2.8.4,<3", optional = true }
 pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
 pydruid = { version = ">=0.6.7,<1", optional = true }
 pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
-pymysql = { version = ">=1,<2", optional = true }
+mysqlclient = { version = ">=2.2.4,<3", optional = true }
 pyodbc = { version = ">=4.0.39,<6", optional = true }
 pyspark = { version = ">=3.3.3,<4", optional = true }
 # used to support posix regexen in the pandas and sqlite backends
@@ -184,7 +184,7 @@ exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 flink = ["pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 impala = ["impyla", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-mysql = ["pymysql", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+mysql = ["mysqlclient", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
 oracle = [
   "oracledb",
   "packaging",
