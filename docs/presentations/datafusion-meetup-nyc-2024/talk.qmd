@@ -369,6 +369,24 @@ Nope. You should use Ibis _with_ `X`.
 
 ::: {.panel-tabset}
 
+### IMDB Top 10
+
+```python
+import ibis
+
+con = ibis.datafusion.connect()
+ibis.set_backend(con)
+
+ratings = ibis.examples.imdb_title_ratings.fetch()
+basics = ibis.examples.imdb_title_basics.fetch()
+
+basics.filter(basics.titleType == "movie", basics.isAdult == 0).join(
+    ratings, "tconst"
+).filter(ratings.numVotes > 100_000).order_by(ratings.averageRating.desc()).select(
+    "primaryTitle", "averageRating"
+).limit(10)
+```
+
 ### Pandas PyPI
 
 ```python
