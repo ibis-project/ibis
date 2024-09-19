@@ -120,7 +120,13 @@ The simplest way to authenticate with the BigQuery backend is to use [Google's `
 Once you have `gcloud` installed, you can authenticate to BigQuery (and other Google Cloud services) by running
 
 ```sh
-gcloud auth login
+gcloud auth login --update-adc
+```
+
+You will also likely want to configure a default project:
+
+```sh
+gcloud config set core/project <project_id>
 ```
 
 For any authentication problems, or information on other ways of authenticating,
