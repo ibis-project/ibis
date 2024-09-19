@@ -1309,6 +1309,18 @@ def test_random(con):
     assert 0 <= result <= 1
 
 
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="function random() does not exist",
+)
+def test_random_different_per_row(alltypes):
+    result = alltypes.select("int_col", rand_col=ibis.random()).execute()
+    assert result.rand_col.nunique() > 1
+
+
 @pytest.mark.parametrize(
     ("ibis_func", "pandas_func"),
     [
