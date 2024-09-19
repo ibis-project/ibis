@@ -1403,9 +1403,6 @@ def test_18(
         )
         .group_by(rollup(_.i_item_id, _.ca_country, _.ca_state, _.ca_county))
         .agg(
-            # TODO: could use s.c here but it would be in the order of the
-            # source table, not the user's requested order in s.c, we should
-            # fix that
             agg1=_.cs_quantity.cast("decimal(12, 2)").mean(),
             agg2=_.cs_list_price.cast("decimal(12, 2)").mean(),
             agg3=_.cs_coupon_amt.cast("decimal(12, 2)").mean(),
@@ -1516,7 +1513,8 @@ def test_22(inventory, date_dim, item):
         .group_by(rollup(_.i_product_name, _.i_brand, _.i_class, _.i_category))
         .agg(qoh=_.inv_quantity_on_hand.mean())
         .order_by(
-            _.qoh.asc(nulls_first=True), s.across(~s.c("qoh"), _.asc(nulls_first=True))
+            _.qoh.asc(nulls_first=True),
+            s.across(~s.cols("qoh"), _.asc(nulls_first=True)),
         )
         .limit(100)
     )
@@ -4993,7 +4991,7 @@ def test_80(
         )
         .group_by(rollup(_.channel, _.id))
         .agg(sales=_.sales.sum(), returns_=_.returns_.sum(), profit=_.profit.sum())
-        .mutate(s.across(s.c("channel", "id"), _.nullif("")))
+        .mutate(s.across(s.cols("channel", "id"), _.nullif("")))
         .order_by(_.channel.asc(nulls_first=True), _.id.asc(nulls_first=True))
         .limit(100)
     )
