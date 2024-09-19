@@ -249,27 +249,15 @@ docs-api-preview:
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
 
-# build an ibis_framework wheel that works with pyodide
-build-ibis-for-pyodide:
+# build jupyterlite
+build-jupyterlite:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # TODO(cpcloud): remove when:
-    # 1. pyarrow release contains pyodide
-    # 2. ibis supports this version of pyarrow
-    rm -rf dist/
-    poetry add 'pyarrow>=10.0.1' --allow-prereleases
-    poetry build --format wheel
-    git checkout poetry.lock pyproject.toml
-    jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
-        --arg ibis dist/*.whl \
+    # TODO(cpcloud): remove when duckdb is distributed with pyodide
+    jq '{"PipliteAddon": {"piplite_urls": [$duckdb]}}' -nM \
         --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp312-cp312-pyodide_2024_0_wasm32.whl" \
         > docs/jupyter_lite_config.json
-
-# build the jupyterlite deployment
-build-jupyterlite: build-ibis-for-pyodide
-    #!/usr/bin/env bash
-    set -euo pipefail
 
     mkdir -p docs/_output/jupyterlite
     jupyter lite build \
