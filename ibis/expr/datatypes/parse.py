@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import ast
-import functools
 import re
+from functools import lru_cache, partial
 from operator import methodcaller
 
 import parsy
@@ -50,7 +50,7 @@ FIELD = parsy.regex("[a-zA-Z_0-9]+") | parsy.string("")
 
 
 @public
-@functools.lru_cache(maxsize=100)
+@lru_cache(maxsize=100)
 def parse(
     text: str, default_decimal_parameters: tuple[int | None, int | None] = (None, None)
 ) -> dt.DataType:
@@ -88,12 +88,15 @@ def parse(
     geotype = spaceless_string("geography", "geometry")
 
     srid_geotype = SEMICOLON.then(parsy.seq(srid=NUMBER.skip(COLON), geotype=geotype))
+    geotype_srid = COLON.then(parsy.seq(geotype=geotype, srid=SEMICOLON.then(NUMBER)))
     geotype_part = COLON.then(parsy.seq(geotype=geotype))
     srid_part = SEMICOLON.then(parsy.seq(srid=NUMBER))
 
     def geotype_parser(typ: type[dt.DataType]) -> dt.DataType:
         return spaceless_string(typ.__name__.lower()).then(
-            (srid_geotype | geotype_part | srid_part).optional(dict()).combine_dict(typ)
+            (srid_geotype | geotype_srid | geotype_part | srid_part)
+            .optional(dict())
+            .combine_dict(typ)
         )
 
     primitive = (
@@ -116,15 +119,25 @@ def parse(
             "time",
             "date",
             "null",
-        ).map(functools.partial(getattr, dt))
-        | spaceless_string("bytes").result(dt.binary)
-        | geotype.map(dt.GeoSpatial)
+        ).map(partial(getattr, dt))
         | geotype_parser(dt.LineString)
         | geotype_parser(dt.Polygon)
         | geotype_parser(dt.Point)
         | geotype_parser(dt.MultiLineString)
         | geotype_parser(dt.MultiPolygon)
         | geotype_parser(dt.MultiPoint)
+        | spaceless_string("bytes").result(dt.binary)
+        | spaceless_string("geospatial:geography").then(
+            srid_part.optional(dict()).combine_dict(
+                partial(dt.GeoSpatial, geotype="geography")
+            )
+        )
+        | spaceless_string("geospatial:geometry").then(
+            srid_part.optional(dict()).combine_dict(
+                partial(dt.GeoSpatial, geotype="geometry")
+            )
+        )
+        | geotype.map(dt.GeoSpatial)
     )
 
     varchar_or_char = (
@@ -201,7 +214,7 @@ def parse(
         | map
         | struct
         | spaceless_string("jsonb", "json", "uuid", "macaddr", "inet").map(
-            functools.partial(getattr, dt)
+            partial(getattr, dt)
         )
         | spaceless_string("int").result(dt.int64)
         | spaceless_string("str").result(dt.string)
