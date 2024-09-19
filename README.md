@@ -218,3 +218,7 @@ Ibis is an open source project and welcomes contributions from anyone in the com
 Join our community by interacting on GitHub or chatting with us on [Zulip](https://ibis-project.zulipchat.com/).
 
 For more information visit https://ibis-project.org/.
+
+## Governance
+
+The Ibis project is an [independently governed](https://github.com/ibis-project/governance/blob/main/governance.md) open source community project to build and maintain the portable Python dataframe library. Ibis has contributors across a range of data companies and institutions.
