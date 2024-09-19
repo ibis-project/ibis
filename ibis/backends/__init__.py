@@ -1427,44 +1427,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
         return pq.read_table(paths, **kwargs)
 
-    def _cached(self, expr: ir.Table):
-        """Cache the provided expression.
-
-        All subsequent operations on the returned expression will be performed on the cached data.
-
-        Parameters
-        ----------
-        expr
-            Table expression to cache
-
-        Returns
-        -------
-        Expr
-            Cached table
-
-        """
-        op = expr.op()
-        if (result := self._query_cache.get(op)) is None:
-            result = self._query_cache.store(expr)
-        return ir.CachedTable(result)
-
-    def _release_cached(self, expr: ir.CachedTable) -> None:
-        """Releases the provided cached expression.
-
-        Parameters
-        ----------
-        expr
-            Cached expression to release
-
-        """
-        self._query_cache.release(expr.op().name)
-
-    def _load_into_cache(self, name, expr):
-        raise NotImplementedError(self.name)
-
-    def _clean_up_cached_table(self, name):
-        raise NotImplementedError(self.name)
-
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed
         if dialect is None:
