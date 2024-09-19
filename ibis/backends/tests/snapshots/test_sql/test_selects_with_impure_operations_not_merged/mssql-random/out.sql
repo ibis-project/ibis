@@ -6,7 +6,7 @@ SELECT
 FROM (
   SELECT
     [t0].[x],
-    RAND() AS [y],
-    RAND() AS [z]
+    RAND(CHECKSUM(NEWID())) AS [y],
+    RAND(CHECKSUM(NEWID())) AS [z]
   FROM [t] AS [t0]
 ) AS [t1]
