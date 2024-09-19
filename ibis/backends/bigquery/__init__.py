@@ -520,6 +520,10 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if isinstance(dataset, sge.Table):
+            if (sg_cat := dataset.args["catalog"]) is not None:
+                sg_cat.args["quoted"] = False
+            if (sg_db := dataset.args["db"]) is not None:
+                sg_db.args["quoted"] = False
             dataset = dataset.sql(self.dialect)
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
@@ -614,10 +618,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             else:
                 db = table.db
 
-        database = (
-            sg.table(None, db=db, catalog=catalog, quoted=False).sql(dialect=self.name)
-            or None
-        )
+        database = sg.table(None, db=db, catalog=catalog, quoted=False) or None
 
         project, dataset = self._parse_project_and_dataset(database)
 
