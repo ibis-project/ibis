@@ -14,3 +14,13 @@ execution engines.
 * Impala's `LTRIM` and `RTRIM` functions accept a _set_ of whitespace (or other)
   characters to remove from the left-, and right-hand-side sides of the input
   string, but the `TRIM` function only removes _spaces_.
+
+## ClickHouse
+
+* [ClickHouse's random number generating
+  functions](https://clickhouse.com/docs/en/sql-reference/functions/random-functions)
+  are considered in [common subexpression
+  elimination](https://en.wikipedia.org/wiki/Common_subexpression_elimination),
+  so to get two unique random numbers, users must defeat that optimization.
+  This is done by passing **any** argument to those functions. It's left as an
+  exercise for the reader to figure out how to generate two unique inputs.
