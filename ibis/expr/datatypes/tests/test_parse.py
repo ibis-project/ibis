@@ -266,7 +266,6 @@ def test_parse_null():
 
 
 # corresponds to its.all_dtypes() but without:
-# - geospacial types, the string representation is different from what the parser expects
 # - struct types, the generated struct field names contain special characters
 
 field_names = st.text(
@@ -286,6 +285,7 @@ roundtrippable_dtypes = st.deferred(
         | its.struct_dtypes(names=field_names)
         | its.array_dtypes(roundtrippable_dtypes)
         | its.map_dtypes(roundtrippable_dtypes, roundtrippable_dtypes)
+        | its.geospatial_dtypes()
     )
 )
 
