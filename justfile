@@ -249,15 +249,22 @@ docs-api-preview:
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
 
-# build jupyterlite
-build-jupyterlite:
+# build an ibis_framework wheel that works with pyodide
+build-ibis-for-pyodide:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    # TODO(cpcloud): remove when duckdb is distributed with pyodide
-    jq '{"PipliteAddon": {"piplite_urls": [$duckdb]}}' -nM \
+    rm -rf dist/
+    poetry build --format wheel
+    jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
+        --arg ibis dist/*.whl \
         --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp312-cp312-pyodide_2024_0_wasm32.whl" \
         > docs/jupyter_lite_config.json
+
+# build the jupyterlite deployment
+build-jupyterlite: build-ibis-for-pyodide
+    #!/usr/bin/env bash
+    set -euo pipefail
 
     mkdir -p docs/_output/jupyterlite
     jupyter lite build \
