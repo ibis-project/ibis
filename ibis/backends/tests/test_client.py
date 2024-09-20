@@ -999,6 +999,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
 )
 def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
+    table_name = gen_name(table_name)
     t = con.create_table(table_name, obj())
 
     try:
@@ -1374,33 +1375,6 @@ def test_create_database(con_create_database):
     assert database not in con_create_database.list_databases()
 
 
-def test_list_schema_warns(con_list_schema):
-    with pytest.warns(FutureWarning):
-        con_list_schema.list_schemas()
-
-
-@pytest.mark.never(
-    [
-        "clickhouse",
-        "mysql",
-        "pyspark",
-        "flink",
-    ],
-    reason="No schema methods",
-)
-def test_create_schema(con_create_database):
-    schema = gen_name("test_create_schema")
-    with pytest.warns(FutureWarning):
-        con_create_database.create_schema(schema)
-    with pytest.warns(FutureWarning):
-        assert schema in con_create_database.list_schemas()
-        schema = schema.lower()
-    with pytest.warns(FutureWarning):
-        con_create_database.drop_schema(schema)
-    with pytest.warns(FutureWarning):
-        assert schema not in con_create_database.list_schemas()
-
-
 def test_list_databases(con_create_database):
     databases = con_create_database.list_databases()
     assert len(databases) == len(set(databases))
@@ -1708,11 +1682,6 @@ def test_insert_into_table_missing_columns(con, temp_table):
     ["clickhouse", "flink"],
     raises=AssertionError,
     reason="memtables are assembled every time",
-)
-@pytest.mark.notyet(
-    ["mysql"],
-    raises=AssertionError,
-    reason="can't execute SQL inside of a finalizer without breaking everything",
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False

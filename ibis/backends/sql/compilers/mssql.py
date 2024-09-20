@@ -171,6 +171,12 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_RandomUUID(self, op, **_):
         return self.f.newid()
 
+    def visit_RandomScalar(self, op, **_):
+        # By default RAND() will generate the same value for all calls within a
+        # query. The standard way to work around this is to pass in a unique
+        # value per call, which `CHECKSUM(NEWID())` provides.
+        return self.f.rand(self.f.checksum(self.f.newid()))
+
     def visit_StringLength(self, op, *, arg):
         """The MSSQL LEN function doesn't count trailing spaces.
 
@@ -528,7 +534,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.if_(
             length <= self.f.length(arg),
             arg,
-            self.f.left(
+            self.f.right(
                 self.f.concat(self.f.replicate(pad, length - self.f.length(arg)), arg),
                 length,
             ),

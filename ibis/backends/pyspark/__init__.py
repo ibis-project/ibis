@@ -11,13 +11,6 @@ import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
 from pyspark import SparkConf
-
-try:
-    from pyspark.errors.exceptions.base import AnalysisException  # PySpark 3.5+
-except ImportError:
-    from pyspark.sql.utils import AnalysisException  # PySpark 3.3
-
-
 from pyspark.sql import SparkSession
 from pyspark.sql.types import BooleanType, DoubleType, LongType, StringType
 
@@ -38,9 +31,9 @@ from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
 
 try:
-    from pyspark.errors import ParseException as PySparkParseException
+    from pyspark.errors import AnalysisException, ParseException
 except ImportError:
-    from pyspark.sql.utils import ParseException as PySparkParseException
+    from pyspark.sql.utils import AnalysisException, ParseException
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -53,8 +46,9 @@ if TYPE_CHECKING:
 
     from ibis.expr.api import Watermark
 
-PYSPARK_LT_34 = vparse(pyspark.__version__) < vparse("3.4")
-PYSPARK_LT_35 = vparse(pyspark.__version__) < vparse("3.5")
+PYSPARK_VERSION = vparse(pyspark.__version__)
+PYSPARK_LT_34 = PYSPARK_VERSION < vparse("3.4")
+PYSPARK_LT_35 = PYSPARK_VERSION < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
 
@@ -279,55 +273,89 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         #
         # We attempt to use the Unity-specific Spark SQL to set CATALOG and DATABASE
         # and if that causes a parser exception we fall back to using the catalog API.
+        v = self.compiler.v
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+        catalog_api = self._session.catalog
+
         try:
             if catalog is not None:
+                catalog_sql = sge.Use(
+                    kind=v.CATALOG, this=sg.to_identifier(catalog, quoted=quoted)
+                ).sql(dialect)
+
                 try:
-                    catalog_sql = sg.to_identifier(catalog).sql(self.dialect)
-                    self.raw_sql(f"USE CATALOG {catalog_sql}")
-                except PySparkParseException:
-                    self._session.catalog.setCurrentCatalog(catalog)
+                    self.raw_sql(catalog_sql)
+                except ParseException:
+                    catalog_api.setCurrentCatalog(catalog)
+
+            db_sql = sge.Use(
+                kind=v.DATABASE, this=sg.to_identifier(db, quoted=quoted)
+            ).sql(dialect)
+
             try:
-                db_sql = sg.to_identifier(db).sql(self.dialect)
-                self.raw_sql(f"USE DATABASE {db_sql}")
-            except PySparkParseException:
-                self._session.catalog.setCurrentDatabase(db)
+                self.raw_sql(db_sql)
+            except ParseException:
+                catalog_api.setCurrentDatabase(db)
             yield
         finally:
             if catalog is not None:
+                catalog_sql = sge.Use(
+                    kind=v.CATALOG,
+                    this=sg.to_identifier(current_catalog, quoted=quoted),
+                ).sql(dialect)
                 try:
-                    catalog_sql = sg.to_identifier(current_catalog).sql(self.dialect)
-                    self.raw_sql(f"USE CATALOG {catalog_sql}")
-                except PySparkParseException:
-                    self._session.catalog.setCurrentCatalog(current_catalog)
+                    self.raw_sql(catalog_sql)
+                except ParseException:
+                    catalog_api.setCurrentCatalog(current_catalog)
+
+            db_sql = sge.Use(
+                kind=v.DATABASE, this=sg.to_identifier(current_db, quoted=quoted)
+            ).sql(dialect)
+
             try:
-                db_sql = sg.to_identifier(current_db).sql(self.dialect)
-                self.raw_sql(f"USE DATABASE {db_sql}")
-            except PySparkParseException:
-                self._session.catalog.setCurrentDatabase(current_db)
+                self.raw_sql(db_sql)
+            except ParseException:
+                catalog_api.setCurrentDatabase(current_db)
 
     @contextlib.contextmanager
     def _active_catalog(self, name: str | None):
         if name is None or PYSPARK_LT_34:
             yield
             return
+
         prev_catalog = self.current_catalog
         prev_database = self.current_database
+
+        v = self.compiler.v
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
+        catalog_sql = sge.Use(
+            kind=v.CATALOG, this=sg.to_identifier(name, quoted=quoted)
+        ).sql(dialect)
+        catalog_api = self._session.catalog
+
         try:
             try:
-                catalog_sql = sg.to_identifier(name).sql(self.dialect)
-                self.raw_sql(f"USE CATALOG {catalog_sql};")
-            except PySparkParseException:
-                self._session.catalog.setCurrentCatalog(name)
+                self.raw_sql(catalog_sql)
+            except ParseException:
+                catalog_api.setCurrentCatalog(name)
             yield
         finally:
+            catalog_sql = sge.Use(
+                kind=v.CATALOG, this=sg.to_identifier(prev_catalog, quoted=quoted)
+            ).sql(dialect)
+            db_sql = sge.Use(
+                kind=v.DATABASE, this=sg.to_identifier(prev_database, quoted=quoted)
+            ).sql(dialect)
+
             try:
-                catalog_sql = sg.to_identifier(prev_catalog).sql(self.dialect)
-                db_sql = sg.to_identifier(prev_database).sql(self.dialect)
-                self.raw_sql(f"USE CATALOG {catalog_sql};")
-                self.raw_sql(f"USE DATABASE {db_sql};")
-            except PySparkParseException:
-                self._session.catalog.setCurrentCatalog(prev_catalog)
-                self._session.catalog.setCurrentDatabase(prev_database)
+                self.raw_sql(catalog_sql)
+                self.raw_sql(db_sql)
+            except ParseException:
+                catalog_api.setCurrentCatalog(prev_catalog)
+                catalog_api.setCurrentDatabase(prev_database)
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
@@ -491,7 +519,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         sql = sge.Create(
             kind="DATABASE",
             exist=force,
-            this=sg.to_identifier(name),
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
             properties=properties,
         )
         with self._active_catalog(catalog):
@@ -515,7 +543,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         """
         sql = sge.Drop(
-            kind="DATABASE", exist=force, this=sg.to_identifier(name), cascade=force
+            kind="DATABASE",
+            exist=force,
+            this=sg.to_identifier(name, quoted=self.compiler.quoted),
+            cascade=force,
         )
         with self._active_catalog(catalog):
             with self._safe_raw_sql(sql):

@@ -34,6 +34,16 @@ def test_list_tables(con):
     tables = con.list_tables(like="functional_alltypes")
     assert set(tables) == {"functional_alltypes", "functional_alltypes_parted"}
 
+    pypi_tables = [
+        "external",
+        "native",
+    ]
+
+    assert con.list_tables()
+
+    assert con.list_tables(database="ibis-gbq.pypi") == pypi_tables
+    assert con.list_tables(database=("ibis-gbq", "pypi")) == pypi_tables
+
 
 def test_current_catalog(con):
     assert con.current_catalog == con.billing_project
@@ -384,22 +394,6 @@ def test_create_table_with_options(con):
         assert t.execute().empty
     finally:
         con.drop_table(name)
-
-
-def test_list_tables_schema_warning_refactor(con):
-    pypi_tables = [
-        "external",
-        "native",
-    ]
-
-    assert con.list_tables()
-
-    # Warn but succeed for schema list
-    with pytest.raises(FutureWarning):
-        assert con.list_tables(schema="pypi") == pypi_tables
-
-    assert con.list_tables(database="ibis-gbq.pypi") == pypi_tables
-    assert con.list_tables(database=("ibis-gbq", "pypi")) == pypi_tables
 
 
 def test_create_temp_table_from_scratch(project_id, dataset_id):

@@ -25,47 +25,7 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
 
 
-class _DatabaseSchemaHandler:
-    """Temporary mixin collecting several helper functions and code snippets.
-
-    Help to 'gracefully' deprecate the use of `schema` as a hierarchical term.
-    """
-
-    @staticmethod
-    def _warn_schema():
-        util.warn_deprecated(
-            name="schema",
-            as_of="9.0",
-            removed_in="10.0",
-            instead="Use the `database` kwarg with one of the following patterns:"
-            '\ndatabase="database"'
-            '\ndatabase=("catalog", "database")'
-            '\ndatabase="catalog.database"',
-            # TODO: add option for namespace object
-        )
-
-    def _warn_and_create_table_loc(self, database=None, schema=None):
-        if schema is not None:
-            self._warn_schema()
-
-        if database is not None and schema is not None:
-            if isinstance(database, str):
-                table_loc = f"{database}.{schema}"
-            elif isinstance(database, tuple):
-                table_loc = database + schema
-        elif schema is not None:
-            table_loc = schema
-        elif database is not None:
-            table_loc = database
-        else:
-            table_loc = None
-
-        table_loc = self._to_sqlglot_table(table_loc)
-
-        return table_loc
-
-
-class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
+class SQLBackend(BaseBackend):
     compiler: ClassVar[SQLGlotCompiler]
     name: ClassVar[str]
 
@@ -109,7 +69,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
     def table(
         self,
         name: str,
-        schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> ir.Table:
         """Construct a table expression.
@@ -118,8 +77,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         ----------
         name
             Table name
-        schema
-            [deprecated] Schema name
         database
             Database name
 
@@ -129,7 +86,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             Table expression
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or None
         database = table_loc.db or None
@@ -218,10 +175,9 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         obj: ir.Table,
         *,
         database: str | None = None,
-        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         src = sge.Create(
@@ -240,10 +196,9 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         name: str,
         *,
         database: str | None = None,
-        schema: str | None = None,
         force: bool = False,
     ) -> None:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         src = sge.Drop(
@@ -281,7 +236,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
-        table_loc = self._warn_and_create_table_loc(database, None)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         drop_stmt = sg.exp.Drop(
@@ -358,7 +313,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         self,
         table_name: str,
         obj: pd.DataFrame | ir.Table | list | dict,
-        schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -381,8 +335,6 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
-        schema
-            [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
 
@@ -393,7 +345,7 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             If `True` then replace existing contents of table
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         if overwrite:
@@ -485,7 +437,9 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
         ).sql(self.dialect)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self,
+        name: str,
+        database: str | None = None,
     ) -> None:
         """Delete all rows from a table.
 
@@ -509,11 +463,10 @@ class SQLBackend(BaseBackend, _DatabaseSchemaHandler):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-        schema
-            [deprecated] Schema name
+
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         ident = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted).sql(

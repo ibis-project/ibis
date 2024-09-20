@@ -568,6 +568,20 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
+    def visit_LPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(self.f.repeat(pad, length - self.f.length(arg)), arg),
+        )
+
+    def visit_RPad(self, op, *, arg, length, pad):
+        return self.if_(
+            length <= self.f.length(arg),
+            arg,
+            self.f.concat(arg, self.f.repeat(pad, length - self.f.length(arg))),
+        )
+
     def visit_StringSlice(self, op, *, arg, start, end):
         if start is not None:
             start += 1

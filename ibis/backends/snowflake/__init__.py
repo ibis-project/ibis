@@ -27,7 +27,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
+from ibis.backends import CanCreateCatalog, CanCreateDatabase
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
@@ -137,7 +137,7 @@ return count !== 0 ? true : null;""",
 }
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
     name = "snowflake"
     compiler = sc.snowflake.compiler
     supports_python_udfs = True
@@ -619,7 +619,6 @@ $$ {defn["source"]} $$"""
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
-        schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
 
@@ -644,10 +643,8 @@ $$ {defn["source"]} $$"""
             To specify a table in a separate Snowflake catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
-        schema
-            [deprecated] The schema inside `database` to perform the list against.
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         tables_query = "SHOW TABLES"
         views_query = "SHOW VIEWS"
@@ -1181,7 +1178,6 @@ $$ {defn["source"]} $$"""
         self,
         table_name: str,
         obj: pd.DataFrame | ir.Table | list | dict,
-        schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -1202,8 +1198,6 @@ $$ {defn["source"]} $$"""
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
-        schema
-            [deprecated] The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
 
@@ -1214,7 +1208,7 @@ $$ {defn["source"]} $$"""
             If `True` then replace existing contents of table
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         if not isinstance(obj, ir.Table):

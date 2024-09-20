@@ -21,7 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema, CanListCatalog
+from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C, ColGen, F
 from ibis.util import deprecated
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     name = "postgres"
     compiler = sc.postgres.compiler
     supports_python_udfs = True
@@ -457,12 +457,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, CanCreateSchema):
     def list_tables(
         self,
         like: str | None = None,
-        schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
         """List the tables in the database."""
 
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         database = self.current_database
         if table_loc is not None:

@@ -123,6 +123,7 @@ jobs:
               - sqlite
           - name: datafusion
             title: DataFusion
+            serial: true
             extras:
               - datafusion
           - name: polars
@@ -140,6 +141,7 @@ jobs:
               - polars
             sys-deps:
               - libgeos-dev
+              - default-libmysqlclient-dev
           - name: postgres
             title: PostgreSQL
             extras:
@@ -270,6 +272,7 @@ jobs:
                 - mysql
               sys-deps:
                 - libgeos-dev
+                - default-libmysqlclient-dev
           - os: windows-latest
             backend:
               name: clickhouse
@@ -650,7 +653,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.pyspark-version }} ubuntu-latest python-${{ matrix.python-version }}
+    name: PySpark ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -658,16 +661,19 @@ jobs:
         include:
           - python-version: "3.10"
             pyspark-version: "3.3.3"
+            pyspark-minor-version: "3.3"
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
           - python-version: "3.11"
-            pyspark-version: "3.5"
+            pyspark-version: "3.5.2"
+            pyspark-minor-version: "3.5"
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
           - python-version: "3.12"
-            pyspark-version: "3.5"
+            pyspark-version: "3.5.2"
+            pyspark-minor-version: "3.5"
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
@@ -722,8 +728,7 @@ jobs:
 
       - name: install iceberg
         shell: bash
-        if: matrix.pyspark-version == '3.5'
-        run: pushd "$(poetry run python -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")/jars" && curl -LO https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-3.5_2.12/1.5.2/iceberg-spark-runtime-3.5_2.12-1.5.2.jar
+        run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }}
 
       - name: run tests
         run: just ci-check -m pyspark

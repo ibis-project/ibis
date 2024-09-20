@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, NoUrl
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
@@ -69,7 +69,7 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
         return dtype.copy(nullable=True)
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, NoUrl):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
     name = "datafusion"
     supports_arrays = True
     compiler = sc.datafusion.compiler
@@ -470,7 +470,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         # self.con.register_table is broken, so we do this roundabout thing
         # of constructing a datafusion DataFrame, which has a side effect
         # of registering the table
-        self.con.from_arrow_table(op.data.to_pyarrow(op.schema), op.name)
+        self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
@@ -723,8 +723,10 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
         return self.table(name, database=database)
 
     def truncate_table(
-        self, name: str, database: str | None = None, schema: str | None = None
-    ) -> None:
+        self,
+        name: str,
+        database: str | None = None,
+    ):
         """Delete all rows from a table.
 
         Parameters
@@ -733,14 +735,12 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema, 
             Table name
         database
             Database name
-        schema
-            Schema name
 
         """
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #
         # however datafusion as of 34.0.0 doesn't implement DELETE DML yet
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         ident = sg.table(name, db=db, catalog=catalog).sql(self.dialect)
@@ -806,14 +806,14 @@ def _polars(source, table_name, _conn, overwrite: bool = False):
 def _pyarrow_table(source, table_name, _conn, overwrite: bool = False):
     tmp_name = gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
-        _conn.con.from_arrow_table(source, name=tmp_name)
+        _conn.con.from_arrow(source, name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatchReader")
 def _pyarrow_rbr(source, table_name, _conn, overwrite: bool = False):
     tmp_name = gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
-        _conn.con.from_arrow_table(source.read_all(), name=tmp_name)
+        _conn.con.from_arrow(source.read_all(), name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatch")

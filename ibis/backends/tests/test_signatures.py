@@ -82,7 +82,7 @@ marks = {
     "insert": pytest.param(
         SQLBackend,
         "insert",
-        marks=pytest.mark.notyet(["clickhouse", "flink", "impala", "sqlite"]),
+        marks=pytest.mark.notyet(["clickhouse", "flink", "impala"]),
     ),
     "list_databases": pytest.param(
         CanCreateDatabase,
@@ -102,9 +102,7 @@ marks = {
     "list_tables": pytest.param(
         BaseBackend,
         "list_tables",
-        marks=pytest.mark.notyet(
-            ["flink", "mysql", "oracle", "postgres", "risingwave"]
-        ),
+        marks=pytest.mark.notyet(["flink"]),
     ),
     "read_csv": pytest.param(
         BaseBackend,
@@ -131,21 +129,7 @@ marks = {
         "table",
         marks=pytest.mark.notyet(
             [
-                "clickhouse",
-                "datafusion",
-                "druid",
-                "duckdb",
-                "exasol",
-                "mssql",
-                "mysql",
-                "oracle",
                 "polars",
-                "postgres",
-                "risingwave",
-                "snowflake",
-                "sqlite",
-                "trino",
-                "pyspark",
             ]
         ),
     ),
@@ -153,11 +137,6 @@ marks = {
         BaseBackend,
         "to_parquet_dir",
         marks=pytest.mark.notyet(["pyspark"]),
-    ),
-    "truncate_table": pytest.param(
-        SQLBackend,
-        "truncate_table",
-        marks=pytest.mark.notyet(["clickhouse", "impala"]),
     ),
 }
 

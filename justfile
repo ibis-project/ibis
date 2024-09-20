@@ -135,6 +135,23 @@ download-data owner="ibis-project" repo="testing-data" rev="master":
         git -C "${outdir}" checkout "{{ rev }}"
     fi
 
+# download the iceberg jar used for testing pyspark and iceberg integration
+download-iceberg-jar pyspark scala="2.12" iceberg="1.5.2":
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    runner=(python)
+
+    if [ -n "${CI}" ]; then
+        runner=(poetry run python)
+    fi
+    pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
+    pushd "${pyspark}/jars"
+    jar="iceberg-spark-runtime-{{ pyspark }}_{{ scala }}-{{ iceberg }}.jar"
+    url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"
+    curl -qSsL -o "${jar}" "${url}"
+    ls "${jar}"
+
 # start backends using docker compose; no arguments starts all backends
 up *backends:
     docker compose up --build --wait {{ backends }}
@@ -232,33 +249,24 @@ docs-api-preview:
 docs-deploy:
     quarto publish --no-prompt --no-browser --no-render netlify docs
 
-# build an ibis_framework wheel that works with pyodide
-build-ibis-for-pyodide:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    # TODO(cpcloud): remove when:
-    # 1. pyarrow release contains pyodide
-    # 2. ibis supports this version of pyarrow
-    rm -rf dist/
-    poetry add 'pyarrow>=10.0.1' --allow-prereleases
-    poetry build --format wheel
-    git checkout poetry.lock pyproject.toml
-    jq '{"PipliteAddon": {"piplite_urls": [$ibis, $duckdb]}}' -nM \
-        --arg ibis dist/*.whl \
-        --arg duckdb "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
-        > docs/jupyter_lite_config.json
-
-# build the jupyterlite deployment
-build-jupyterlite: build-ibis-for-pyodide
+# build jupyterlite repl
+build-jupyterlite:
     #!/usr/bin/env bash
     set -euo pipefail
 
     mkdir -p docs/_output/jupyterlite
+
+    rm -rf dist/
+    poetry-dynamic-versioning
+    ibis_dev_version="$(poetry version | cut -d ' ' -f2)"
+    poetry build --format wheel
+    git checkout pyproject.toml ibis/__init__.py
+
     jupyter lite build \
         --debug \
         --no-libarchive \
-        --config docs/jupyter_lite_config.json \
+        --piplite-wheels "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
+        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
