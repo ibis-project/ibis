@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import abc
 import os
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from unittest import mock
 
@@ -9,28 +11,37 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
-from packaging.version import parse as vparse
 
 import ibis
 from ibis import util
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.pyspark import Backend
 from ibis.backends.pyspark.datatypes import PySparkSchema
-from ibis.backends.tests.base import BackendTest
+from ibis.backends.tests.base import BackendTest, ServiceBackendTest
 from ibis.backends.tests.data import json_types, topk, win
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from collections.abc import Iterable
+
+
+REMOTE = os.environ.get("SPARK_REMOTE")
 
 
 def set_pyspark_database(con, database):
     con._session.catalog.setCurrentDatabase(database)
 
 
-class TestConf(BackendTest):
+class BaseSparkTestConf(abc.ABC):
     deps = ("pyspark",)
 
+    @property
+    @abc.abstractmethod
+    def parquet_dir(self) -> str:
+        """Directory containing Parquet files."""
+
     def _load_data(self, **_: Any) -> None:
+        import pyspark.sql.functions as F
+        import pyspark.sql.types as pt
         from pyspark.sql import Row
 
         s = self.connection._session
@@ -39,7 +50,7 @@ class TestConf(BackendTest):
         sort_cols = {"functional_alltypes": "id"}
 
         for name in TEST_TABLES:
-            path = str(self.data_dir / "parquet" / f"{name}.parquet")
+            path = os.path.join(self.parquet_dir, f"{name}.parquet")
             t = s.read.parquet(path).repartition(num_partitions)
             if (sort_col := sort_cols.get(name)) is not None:
                 t = t.sort(sort_col)
@@ -138,246 +149,236 @@ class TestConf(BackendTest):
         s.createDataFrame(win).createOrReplaceTempView("win")
         s.createDataFrame(topk.to_pandas()).createOrReplaceTempView("topk")
 
-    @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
-        # Spark internally stores timestamps as UTC values, and timestamp
-        # data that is brought in without a specified time zone is
-        # converted as local time to UTC with microsecond resolution.
-        # https://spark.apache.org/docs/latest/sql-pyspark-pandas-with-arrow.html#timestamp-with-time-zone-semantics
-
-        import pyspark
-        from pyspark.sql import SparkSession
-
-        pyspark_version = vparse(pyspark.__version__)
-        pyspark_minor_version = f"{pyspark_version.major:d}.{pyspark_version.minor:d}"
-
-        config = (
-            SparkSession.builder.appName("ibis_testing")
-            .master("local[1]")
-            .config("spark.cores.max", 1)
-            .config("spark.default.parallelism", 1)
-            .config("spark.driver.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.dynamicAllocation.enabled", False)
-            .config("spark.executor.extraJavaOptions", "-Duser.timezone=GMT")
-            .config("spark.executor.heartbeatInterval", "3600s")
-            .config("spark.executor.instances", 1)
-            .config("spark.network.timeout", "4200s")
-            .config("spark.rdd.compress", False)
-            .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer")
-            .config("spark.shuffle.compress", False)
-            .config("spark.shuffle.spill.compress", False)
-            .config("spark.sql.legacy.timeParserPolicy", "LEGACY")
-            .config("spark.sql.session.timeZone", "UTC")
-            .config("spark.sql.shuffle.partitions", 1)
-            .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
-            .config("spark.ui.enabled", False)
-            .config("spark.ui.showConsoleProgress", False)
-            .config("spark.sql.execution.arrow.pyspark.enabled", False)
-            .config("spark.sql.streaming.schemaInference", True)
-            .config(
-                "spark.sql.extensions",
-                "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions",
-            )
-            .config(
-                "spark.jars.packages",
-                f"org.apache.iceberg:iceberg-spark-runtime-{pyspark_minor_version}_2.12:1.5.2",
-            )
-            .config("spark.sql.catalog.local", "org.apache.iceberg.spark.SparkCatalog")
-            .config("spark.sql.catalog.local.type", "hadoop")
-            .config("spark.sql.catalog.local.warehouse", "icehouse")
+        s.range(0, 10).withColumn("str_col", F.lit("value")).createTempView(
+            "basic_table"
         )
 
-        try:
-            from delta.pip_utils import configure_spark_with_delta_pip
-        except ImportError:
-            configure_spark_with_delta_pip = lambda cfg: cfg
-        else:
-            config = config.config(
-                "spark.sql.catalog.spark_catalog",
-                "org.apache.spark.sql.delta.catalog.DeltaCatalog",
-            ).config("spark.sql.extensions", "io.delta.sql.DeltaSparkSessionExtension")
+        df_nulls = s.createDataFrame(
+            [
+                ["k1", np.nan, "Alfred", None],
+                ["k1", 3.0, None, "joker"],
+                ["k2", 27.0, "Batman", "batmobile"],
+                ["k2", None, "Catwoman", "motorcycle"],
+            ],
+            ["key", "age", "user", "toy"],
+        )
+        df_nulls.createTempView("null_table")
 
-        spark = configure_spark_with_delta_pip(config).getOrCreate()
-        return ibis.pyspark.connect(spark, **kw)
+        df_dates = s.createDataFrame(
+            [["2018-01-02"], ["2018-01-03"], ["2018-01-04"]], ["date_str"]
+        )
+        df_dates.createTempView("date_table")
 
+        df_time_indexed = con._session.createDataFrame(
+            [
+                [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 1, 1.0],
+                [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 2, 2.0],
+                [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 1, 3.0],
+                [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 2, 4.0],
+                [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 1, 5.0],
+                [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 2, 6.0],
+                [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 1, 7.0],
+                [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 2, 8.0],
+            ],
+            ["time", "key", "value"],
+        )
 
-class TestConfForStreaming(BackendTest):
-    deps = ("pyspark",)
+        df_time_indexed.createTempView("time_indexed_table")
 
-    def _load_data(self, **_: Any) -> None:
-        s = self.connection._session
-        num_partitions = 4
-
-        watermark_cols = {"functional_alltypes": "timestamp_col"}
-
-        for name, schema in TEST_TABLES.items():
-            path = str(self.data_dir / "directory" / "parquet" / name)
-            t = (
-                s.readStream.schema(PySparkSchema.from_ibis(schema))
-                .parquet(path)
-                .repartition(num_partitions)
+        if REMOTE is None:
+            # TODO(cpcloud): understand why this doesn't work with spark connect
+            df_interval = s.createDataFrame(
+                [
+                    [
+                        timedelta(days=10),
+                        timedelta(hours=10),
+                        timedelta(minutes=10),
+                        timedelta(seconds=10),
+                    ]
+                ],
+                pt.StructType(
+                    [
+                        pt.StructField(
+                            "interval_day",
+                            pt.DayTimeIntervalType(
+                                pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY
+                            ),
+                        ),
+                        pt.StructField(
+                            "interval_hour",
+                            pt.DayTimeIntervalType(
+                                pt.DayTimeIntervalType.HOUR, pt.DayTimeIntervalType.HOUR
+                            ),
+                        ),
+                        pt.StructField(
+                            "interval_minute",
+                            pt.DayTimeIntervalType(
+                                pt.DayTimeIntervalType.MINUTE,
+                                pt.DayTimeIntervalType.MINUTE,
+                            ),
+                        ),
+                        pt.StructField(
+                            "interval_second",
+                            pt.DayTimeIntervalType(
+                                pt.DayTimeIntervalType.SECOND,
+                                pt.DayTimeIntervalType.SECOND,
+                            ),
+                        ),
+                    ]
+                ),
             )
-            if (watermark_col := watermark_cols.get(name)) is not None:
-                t = t.withWatermark(watermark_col, "10 seconds")
-            t.createOrReplaceTempView(name)
 
-    @classmethod
-    def load_data(
-        cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
-    ) -> BackendTest:
-        """Load testdata from `data_dir`."""
-        # handling for multi-processes pytest
+            df_interval.createTempView("interval_table")
 
-        # get the temp directory shared by all workers
-        root_tmp_dir = tmpdir.getbasetemp() / "streaming"
-        if worker_id != "master":
-            root_tmp_dir = root_tmp_dir.parent
 
-        fn = root_tmp_dir / cls.name()
-        with FileLock(f"{fn}.lock"):
-            cls.skip_if_missing_deps()
+if REMOTE is not None:
 
-            inst = cls(data_dir=data_dir, tmpdir=tmpdir, worker_id=worker_id, **kw)
+    class TestConf(BaseSparkTestConf, ServiceBackendTest):
+        data_volume = "/data"
+        service_name = "spark-connect"
 
-            if inst.stateful:
-                inst.stateful_load(fn, **kw)
+        @property
+        def parquet_dir(self) -> Path:
+            return self.data_volume
+
+        @property
+        def test_files(self) -> Iterable[Path]:
+            return self.data_dir.joinpath("parquet").glob("*.parquet")
+
+        @staticmethod
+        def connect(*, tmpdir, worker_id, **kw):
+            from pyspark.sql import SparkSession
+
+            spark = (
+                SparkSession.builder.appName("ibis_testing")
+                .remote(REMOTE)
+                .getOrCreate()
+            )
+            return ibis.pyspark.connect(spark, **kw)
+
+    @pytest.fixture(scope="session")
+    def con_streaming(data_dir, tmp_path_factory, worker_id):
+        pytest.skip("Streaming tests are not supported in remote mode")
+
+    def write_to_memory(self, expr, table_name):
+        assert self.mode == "batch"
+        raise NotImplementedError
+else:
+
+    class TestConf(BackendTest):
+        @property
+        def parquet_dir(self) -> Path:
+            return str(self.data_dir / "parquet")
+
+        @staticmethod
+        def connect(*, tmpdir, worker_id, **kw):
+            from pyspark.sql import SparkSession
+
+            config = SparkSession.builder.appName("ibis_testing")
+
+            # load from properties file, yuck
+            with Path(os.environ["SPARK_CONFIG"]).open(mode="r") as config_file:
+                for line in config_file:
+                    config = config.config(*map(str.strip, line.strip().split("=", 1)))
+
+            try:
+                from delta.pip_utils import configure_spark_with_delta_pip
+            except ImportError:
+                configure_spark_with_delta_pip = lambda cfg: cfg
             else:
-                inst.stateless_load(**kw)
-            inst.postload(tmpdir=tmpdir, worker_id=worker_id, **kw)
-            return inst
+                config = config.config(
+                    "spark.sql.catalog.spark_catalog",
+                    "org.apache.spark.sql.delta.catalog.DeltaCatalog",
+                ).config(
+                    "spark.sql.extensions",
+                    "io.delta.sql.DeltaSparkSessionExtension",
+                )
 
-    @staticmethod
-    def connect(*, tmpdir, worker_id, **kw):
-        from pyspark.sql import SparkSession
+            spark = configure_spark_with_delta_pip(config).getOrCreate()
+            return ibis.pyspark.connect(spark, **kw)
 
-        # SparkContext is shared globally; only one SparkContext should be active
-        # per JVM. We need to create a new SparkSession for streaming tests but
-        # this session shares the same SparkContext.
-        spark = SparkSession.getActiveSession().newSession()
-        con = ibis.pyspark.connect(spark, mode="streaming", **kw)
-        return con
+    class TestConfForStreaming(BackendTest):
+        deps = ("pyspark",)
+
+        def _load_data(self, **_: Any) -> None:
+            s = self.connection._session
+            num_partitions = 4
+
+            watermark_cols = {"functional_alltypes": "timestamp_col"}
+
+            for name, schema in TEST_TABLES.items():
+                path = self.data_dir / "parquet" / f"{name}.parquet"
+                t = (
+                    s.readStream.schema(PySparkSchema.from_ibis(schema))
+                    .parquet(path)
+                    .repartition(num_partitions)
+                )
+                if (watermark_col := watermark_cols.get(name)) is not None:
+                    t = t.withWatermark(watermark_col, "10 seconds")
+                t.createOrReplaceTempView(name)
+
+        @classmethod
+        def load_data(
+            cls, data_dir: Path, tmpdir: Path, worker_id: str, **kw: Any
+        ) -> BackendTest:
+            """Load testdata from `data_dir`."""
+            # handling for multi-processes pytest
+
+            # get the temp directory shared by all workers
+            root_tmp_dir = tmpdir.getbasetemp() / "streaming"
+            if worker_id != "master":
+                root_tmp_dir = root_tmp_dir.parent
+
+            fn = root_tmp_dir / cls.name()
+            with FileLock(f"{fn}.lock"):
+                cls.skip_if_missing_deps()
+
+                inst = cls(data_dir=data_dir, tmpdir=tmpdir, worker_id=worker_id, **kw)
+
+                if inst.stateful:
+                    inst.stateful_load(fn, **kw)
+                else:
+                    inst.stateless_load(**kw)
+                inst.postload(tmpdir=tmpdir, worker_id=worker_id, **kw)
+                return inst
+
+        @staticmethod
+        def connect(*, tmpdir, worker_id, **kw):
+            from pyspark.sql import SparkSession
+
+            # SparkContext is shared globally; only one SparkContext should be active
+            # per JVM. We need to create a new SparkSession for streaming tests but
+            # this session shares the same SparkContext.
+            spark = SparkSession.getActiveSession().newSession()
+            con = ibis.pyspark.connect(spark, mode="streaming", **kw)
+            return con
+
+    @pytest.fixture(scope="session")
+    def con_streaming(data_dir, tmp_path_factory, worker_id):
+        backend_test = TestConfForStreaming.load_data(
+            data_dir, tmp_path_factory, worker_id
+        )
+        return backend_test.connection
+
+    @pytest.fixture(autouse=True, scope="function")
+    def stop_active_jobs(con_streaming):
+        yield
+        for sq in con_streaming._session.streams.active:
+            sq.stop()
+            sq.awaitTermination()
+
+    def write_to_memory(self, expr, table_name):
+        assert self.mode == "streaming"
+        df = self._session.sql(expr.compile())
+        df.writeStream.format("memory").queryName(table_name).start()
 
 
 @pytest.fixture(scope="session")
 def con(data_dir, tmp_path_factory, worker_id):
-    import pyspark.sql.functions as F
-    import pyspark.sql.types as pt
-
     backend_test = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
     con = backend_test.connection
 
-    df = con._session.range(0, 10)
-    df = df.withColumn("str_col", F.lit("value"))
-    df.createTempView("basic_table")
-
-    df_nulls = con._session.createDataFrame(
-        [
-            ["k1", np.nan, "Alfred", None],
-            ["k1", 3.0, None, "joker"],
-            ["k2", 27.0, "Batman", "batmobile"],
-            ["k2", None, "Catwoman", "motorcycle"],
-        ],
-        ["key", "age", "user", "toy"],
-    )
-    df_nulls.createTempView("null_table")
-
-    df_dates = con._session.createDataFrame(
-        [["2018-01-02"], ["2018-01-03"], ["2018-01-04"]], ["date_str"]
-    )
-    df_dates.createTempView("date_table")
-
-    df_arrays = con._session.createDataFrame(
-        [
-            ["k1", [1, 2, 3], ["a"]],
-            ["k2", [4, 5], ["test1", "test2", "test3"]],
-            ["k3", [6], ["w", "x", "y", "z"]],
-            ["k1", [], ["cat", "dog"]],
-            ["k1", [7, 8], []],
-        ],
-        ["key", "array_int", "array_str"],
-    )
-    df_arrays.createTempView("array_table")
-
-    df_time_indexed = con._session.createDataFrame(
-        [
-            [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 1, 1.0],
-            [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 2, 2.0],
-            [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 1, 3.0],
-            [datetime(2017, 1, 2, 6, tzinfo=timezone.utc), 2, 4.0],
-            [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 1, 5.0],
-            [datetime(2017, 1, 2, 7, tzinfo=timezone.utc), 2, 6.0],
-            [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 1, 7.0],
-            [datetime(2017, 1, 4, 8, tzinfo=timezone.utc), 2, 8.0],
-        ],
-        ["time", "key", "value"],
-    )
-
-    df_time_indexed.createTempView("time_indexed_table")
-
-    df_interval = con._session.createDataFrame(
-        [
-            [
-                timedelta(days=10),
-                timedelta(hours=10),
-                timedelta(minutes=10),
-                timedelta(seconds=10),
-            ]
-        ],
-        pt.StructType(
-            [
-                pt.StructField(
-                    "interval_day",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.DAY
-                    ),
-                ),
-                pt.StructField(
-                    "interval_hour",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.HOUR, pt.DayTimeIntervalType.HOUR
-                    ),
-                ),
-                pt.StructField(
-                    "interval_minute",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.MINUTE, pt.DayTimeIntervalType.MINUTE
-                    ),
-                ),
-                pt.StructField(
-                    "interval_second",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.SECOND, pt.DayTimeIntervalType.SECOND
-                    ),
-                ),
-            ]
-        ),
-    )
-
-    df_interval.createTempView("interval_table")
-
-    df_interval_invalid = con._session.createDataFrame(
-        [[timedelta(days=10, hours=10, minutes=10, seconds=10)]],
-        pt.StructType(
-            [
-                pt.StructField(
-                    "interval_day_hour",
-                    pt.DayTimeIntervalType(
-                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.HOUR
-                    ),
-                )
-            ]
-        ),
-    )
-
-    df_interval_invalid.createTempView("invalid_interval_table")
-
     return con
-
-
-@pytest.fixture(scope="session")
-def con_streaming(data_dir, tmp_path_factory, worker_id):
-    backend_test = TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
-    return backend_test.connection
 
 
 class IbisWindow:
@@ -388,12 +389,7 @@ class IbisWindow:
     def get_windows(self):
         # Return a list of Ibis windows
         return [
-            ibis.window(
-                preceding=w[0],
-                following=w[1],
-                order_by="time",
-                group_by="key",
-            )
+            ibis.window(preceding=w[0], following=w[1], order_by="time", group_by="key")
             for w in self.windows
         ]
 
@@ -438,21 +434,6 @@ def temp_table_db(con, temp_database):
 def default_session_fixture():
     with mock.patch.object(Backend, "write_to_memory", write_to_memory, create=True):
         yield
-
-
-def write_to_memory(self, expr, table_name):
-    if self.mode == "batch":
-        raise NotImplementedError
-    df = self._session.sql(expr.compile())
-    df.writeStream.format("memory").queryName(table_name).start()
-
-
-@pytest.fixture(autouse=True, scope="function")
-def stop_active_jobs(con_streaming):
-    yield
-    for sq in con_streaming._session.streams.active:
-        sq.stop()
-        sq.awaitTermination()
 
 
 @pytest.fixture
