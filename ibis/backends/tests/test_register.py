@@ -567,7 +567,9 @@ DIAMONDS_COLUMN_TYPES = {
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     if con.name in ("trino", "impala"):
         # TODO: remove after trino and impala have efficient insertion
-        pytest.skip("Both Impala and Trino lack efficient data insertion methods from Python.")
+        pytest.skip(
+            "Both Impala and Trino lack efficient data insertion methods from Python."
+        )
     fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
         if con.name in (
