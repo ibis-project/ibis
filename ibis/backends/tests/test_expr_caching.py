@@ -10,6 +10,13 @@ from ibis.conftest import IS_SPARK_REMOTE
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
 
+pytestmark = [
+    mark.notyet(
+        ["databricks"],
+        reason="Databricks does not support temporary tables, even though they allow the syntax",
+    )
+]
+
 
 @mark.notimpl(["datafusion", "flink", "impala", "trino", "druid"])
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")

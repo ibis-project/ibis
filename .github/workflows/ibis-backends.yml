@@ -455,6 +455,11 @@ jobs:
       - name: install poetry
         run: pip install 'poetry==1.8.3'
 
+      - name: remove databricks arrow and numpy upper bounds
+        run: |
+          poetry remove --lock databricks-sql-connector
+          poetry update --lock numpy pyarrow --only main
+
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
 
@@ -499,8 +504,7 @@ jobs:
 
       - name: check that no untracked files were produced
         shell: bash
-        run: |
-          ! git status --porcelain | tee /dev/stderr | grep .
+        run: git checkout poetry.lock pyproject.toml && ! git status --porcelain | tee /dev/stderr | grep .
 
       - name: upload code coverage
         if: success()
@@ -608,7 +612,7 @@ jobs:
 
         # these require a version of pandas that min versions are not compatible with
       - name: remove incompatible deps
-        run: poetry remove --lock lonboard deltalake
+        run: poetry remove --lock lonboard deltalake databricks-sql-connector
 
       - name: install minimum versions of required deps
         run: |
@@ -712,7 +716,7 @@ jobs:
         # it requires a version of pandas that pyspark is not compatible with
       - name: remove lonboard
         if: matrix.pyspark-minor-version == '3.3'
-        run: poetry remove --lock lonboard
+        run: poetry remove --lock lonboard databricks-sql-connector
 
       - name: install pyspark-specific dependencies
         run: poetry add --lock ${{ join(matrix.deps, ' ') }}

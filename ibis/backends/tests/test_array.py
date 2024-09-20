@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    DatabricksServerOperationError,
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
@@ -447,6 +448,11 @@ def test_array_slice(backend, start, stop):
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
                 ),
+                pytest.mark.notyet(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="nulls come back as NaN",
+                ),
             ],
             id="nulls",
         ),
@@ -499,6 +505,11 @@ def test_array_map(con, input, output, func):
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="nans instead of nulls",
                 ),
             ],
             id="nulls",
@@ -790,6 +801,9 @@ def test_array_remove(con, input, expected):
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
                 ),
+                pytest.mark.notimpl(
+                    ["databricks"], raises=AssertionError, reason="nulls are nans"
+                ),
             ],
         ),
         param(
@@ -866,6 +880,9 @@ def test_array_sort(con, data):
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"], raises=AssertionError, reason="nulls are nans"
                 ),
             ],
         ),
@@ -1042,6 +1059,12 @@ def test_zip_null(con, fn):
     ["pyspark"],
     reason="pyspark doesn't seem to support field selection on explode",
     raises=PySparkAnalysisException,
+)
+@pytest.mark.notimpl(
+    ["databricks"],
+    reason="databricks supports about 4 ways to explode, and "
+    "sqlglot doesn't implement the one that would enable this operation",
+    raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
