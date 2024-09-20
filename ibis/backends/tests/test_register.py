@@ -418,6 +418,12 @@ def test_register_garbage(con, monkeypatch):
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
+    if con.name in ("trino", "impala"):
+        # TODO: remove after trino and impala have efficient insertion
+        pytest.skip(
+            "Both Impala and Trino lack efficient data insertion methods from Python."
+        )
+
     fname = Path(fname)
     fname = Path(data_dir) / "parquet" / fname.name
     table = pq.read_table(fname)
@@ -465,6 +471,12 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
 def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
     pytest.importorskip("pyarrow.parquet")
     fsspec = pytest.importorskip("fsspec")
+
+    if con.name in ("trino", "impala"):
+        # TODO: remove after trino and impala have efficient insertion
+        pytest.skip(
+            "Both Impala and Trino lack efficient data insertion methods from Python."
+        )
 
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name

@@ -10,7 +10,6 @@ import keyword
 import re
 import sys
 import urllib.parse
-import urllib.request
 import weakref
 from io import BytesIO
 from pathlib import Path
@@ -1272,10 +1271,15 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
+    @util.experimental
     def read_parquet(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current backend.
+
+        This function reads a Parquet file and registers it as a table in the current
+        backend. Note that for Impala and Trino backends, the performance
+        may be suboptimal.
 
         Parameters
         ----------
