@@ -176,7 +176,7 @@ def test_glorious_length_function_hack(con, string):
     assert result == len(string)
 
 
-def test_list_tables_schema_warning_refactor(con):
+def test_list_tables(con):
     assert set(con.list_tables()) >= {
         "astronauts",
         "awards_players",
@@ -187,12 +187,6 @@ def test_list_tables_schema_warning_refactor(con):
     }
 
     restore_tables = ["restorefile", "restorefilegroup", "restorehistory"]
-
-    with pytest.warns(FutureWarning):
-        assert (
-            con.list_tables(database="msdb", schema="dbo", like="restore")
-            == restore_tables
-        )
 
     assert con.list_tables(database="msdb.dbo", like="restore") == restore_tables
     assert con.list_tables(database=("msdb", "dbo"), like="restore") == restore_tables

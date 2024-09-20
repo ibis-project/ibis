@@ -26,7 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema, UrlFromPath
+from ibis.backends import CanCreateDatabase, UrlFromPath
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C
@@ -70,7 +70,7 @@ class _Settings:
         return repr(self.con.sql("from duckdb_settings()"))
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     name = "duckdb"
     compiler = sc.duckdb.compiler
 
@@ -232,17 +232,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
 
         return self.table(name, database=(catalog, database))
 
-    def table(
-        self, name: str, schema: str | None = None, database: str | None = None
-    ) -> ir.Table:
+    def table(self, name: str, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
         ----------
         name
             Table name
-        schema
-            [deprecated] Schema name
         database
             Database name
 
@@ -252,7 +248,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             Table expression
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         # TODO: set these to better defaults
         catalog = table_loc.catalog or None
@@ -987,7 +983,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
-        schema: str | None = None,
     ) -> list[str]:
         """List tables and views.
 
@@ -1015,8 +1010,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
             To specify a table in a separate catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
-        schema
-            [deprecated] Schema name. If not passed, uses the current schema.
 
         Returns
         -------
@@ -1042,7 +1035,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema, UrlFromPath):
         ['baz']
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog
         database = table_loc.db or self.current_database

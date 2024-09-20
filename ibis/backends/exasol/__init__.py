@@ -18,7 +18,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema
+from ibis.backends import CanCreateDatabase
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 _VARCHAR_REGEX = re.compile(r"^((VAR)?CHAR(?:\(\d+\)))?(?:\s+.+)?$")
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateDatabase):
     name = "exasol"
     compiler = sc.exasol.compiler
     supports_temporary_tables = False

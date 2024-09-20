@@ -313,7 +313,6 @@ class Backend(SQLBackend, CanCreateDatabase):
     def list_tables(
         self,
         like: str | None = None,
-        schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -333,27 +332,11 @@ class Backend(SQLBackend, CanCreateDatabase):
         ----------
         like
             A pattern to use for listing tables.
-        schema
-            [deprecated] The schema to perform the list against.
         database
             Database to list tables from. Default behavior is to show tables in
             the current database (`self.current_database`).
         """
-        if schema is not None:
-            self._warn_schema()
-
-        if schema is not None and database is not None:
-            raise ValueError(
-                "Using both the `schema` and `database` kwargs is not supported. "
-                "`schema` is deprecated and will be removed in Ibis 10.0"
-                "\nUse the `database` kwarg with one of the following patterns:"
-                '\ndatabase="database"'
-                '\ndatabase=("catalog", "database")'
-                '\ndatabase="catalog.database"',
-            )
-        elif schema is not None:
-            table_loc = schema
-        elif database is not None:
+        if database is not None:
             table_loc = database
         else:
             table_loc = self.current_database

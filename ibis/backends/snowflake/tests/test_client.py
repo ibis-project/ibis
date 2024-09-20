@@ -355,7 +355,7 @@ def test_struct_of_json(con):
     assert all(value == raw for value in result.to_pylist())
 
 
-def test_list_tables_schema_warning_refactor(con):
+def test_list_tables(con):
     assert {
         "ASTRONAUTS",
         "AWARDS_PLAYERS",
@@ -372,14 +372,6 @@ def test_list_tables_schema_warning_refactor(con):
         "TABLE_PRIVILEGES",
         "TABLE_STORAGE_METRICS",
     ]
-
-    with pytest.warns(FutureWarning):
-        assert (
-            con.list_tables(
-                database="IBIS_TESTING", schema="INFORMATION_SCHEMA", like="TABLE"
-            )
-            == like_table
-        )
 
     assert (
         con.list_tables(database="IBIS_TESTING.INFORMATION_SCHEMA", like="TABLE")

@@ -560,13 +560,8 @@ class Backend(SQLBackend, UrlFromPath):
         obj: ir.Table,
         *,
         database: str | None = None,
-        schema: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        # schema was never used here, but warn for consistency
-        if schema is not None:
-            self._warn_schema()
-
         view = sg.table(name, catalog=database, quoted=self.compiler.quoted)
 
         stmts = []
