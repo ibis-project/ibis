@@ -19,6 +19,9 @@ pytestmark = [
         ["pyspark"],
         condition=IS_SPARK_REMOTE,
         raises=PySparkPythonException,
+        # TODO(cpcloud): this API is deprecated in 10.0.0, no use copypasting a
+        # bunch of markers just for two passing tests
+        strict=False,
         reason="remote udfs not yet tested due to environment complexities",
     ),
 ]
