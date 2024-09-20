@@ -1231,6 +1231,10 @@ class FlinkType(SqlglotType):
         )
 
 
+class DatabricksType(SqlglotType):
+    dialect = "databricks"
+
+
 TYPE_MAPPERS = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}
