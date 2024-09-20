@@ -17,7 +17,6 @@ from ibis import util
 from ibis.backends import (
     CanCreateCatalog,
     CanCreateDatabase,
-    CanListSchema,
     _get_backend_names,
 )
 from ibis.conftest import WINDOWS
@@ -422,14 +421,6 @@ def backend_no_data(request, data_dir, tmp_path_factory, worker_id):
 def con_no_data(backend_no_data):
     """Return an Ibis backend instance, with no data loaded."""
     return backend_no_data.connection
-
-
-@pytest.fixture(scope="session")
-def con_list_schema(con):
-    if isinstance(con, CanListSchema):
-        return con
-    else:
-        pytest.skip(f"{con.name} backend cannot create schemas")
 
 
 @pytest.fixture(scope="session")

@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, CanCreateSchema
+from ibis.backends import CanCreateCatalog, CanCreateDatabase
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
@@ -75,7 +75,7 @@ def datetimeoffset_to_datetime(value):
 # Databases: sys.schemas
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
     name = "mssql"
     compiler = sc.mssql.compiler
     supports_create_or_replace = False
@@ -527,7 +527,6 @@ GO"""
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
-        schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
 
@@ -552,10 +551,9 @@ GO"""
             To specify a table in a separate catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
-        schema
-            [deprecated] The schema inside `database` to perform the list against.
+
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         sql = (

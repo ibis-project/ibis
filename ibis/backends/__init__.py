@@ -744,44 +744,6 @@ class CanCreateDatabase(CanListDatabase):
         """
 
 
-# TODO: remove this for 10.0
-class CanListSchema:
-    @util.deprecated(
-        instead="Use `list_databases` instead`", as_of="9.0", removed_in="10.0"
-    )
-    def list_schemas(
-        self, like: str | None = None, database: str | None = None
-    ) -> list[str]:
-        return self.list_databases(like=like, catalog=database)
-
-    @property
-    @util.deprecated(
-        instead="Use `Backend.current_database` instead.",
-        as_of="9.0",
-        removed_in="10.0",
-    )
-    def current_schema(self) -> str:
-        return self.current_database
-
-
-class CanCreateSchema(CanListSchema):
-    @util.deprecated(
-        instead="Use `create_database` instead", as_of="9.0", removed_in="10.0"
-    )
-    def create_schema(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        self.create_database(name=name, catalog=database, force=force)
-
-    @util.deprecated(
-        instead="Use `drop_database` instead", as_of="9.0", removed_in="10.0"
-    )
-    def drop_schema(
-        self, name: str, database: str | None = None, force: bool = False
-    ) -> None:
-        self.drop_database(name=name, catalog=database, force=force)
-
-
 class CacheEntry(NamedTuple):
     orig_op: ops.Relation
     cached_op_ref: weakref.ref[ops.Relation]

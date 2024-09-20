@@ -1375,33 +1375,6 @@ def test_create_database(con_create_database):
     assert database not in con_create_database.list_databases()
 
 
-def test_list_schema_warns(con_list_schema):
-    with pytest.warns(FutureWarning):
-        con_list_schema.list_schemas()
-
-
-@pytest.mark.never(
-    [
-        "clickhouse",
-        "mysql",
-        "pyspark",
-        "flink",
-    ],
-    reason="No schema methods",
-)
-def test_create_schema(con_create_database):
-    schema = gen_name("test_create_schema")
-    with pytest.warns(FutureWarning):
-        con_create_database.create_schema(schema)
-    with pytest.warns(FutureWarning):
-        assert schema in con_create_database.list_schemas()
-        schema = schema.lower()
-    with pytest.warns(FutureWarning):
-        con_create_database.drop_schema(schema)
-    with pytest.warns(FutureWarning):
-        assert schema not in con_create_database.list_schemas()
-
-
 def test_list_databases(con_create_database):
     databases = con_create_database.list_databases()
     assert len(databases) == len(set(databases))
