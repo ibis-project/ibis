@@ -666,7 +666,6 @@ jobs:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
             tag: local
-            SPARK_REMOTE: ""
           - python-version: "3.11"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
@@ -674,7 +673,6 @@ jobs:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
             tag: local
-            SPARK_REMOTE: ""
           - python-version: "3.12"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
@@ -683,7 +681,6 @@ jobs:
               - "'numpy@>1.24'"
               - setuptools
             tag: local
-            SPARK_REMOTE: ""
           - python-version: "3.12"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
@@ -705,7 +702,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: start services
-        if: ${{ matrix.tag == 'remote' }}
+        if: matrix.tag == 'remote'
         run: just up spark-connect
 
       - name: download backend data
@@ -747,10 +744,15 @@ jobs:
         shell: bash
         run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }}
 
-      - name: run tests
+      - name: run spark connect tests
+        if: matrix.tag == 'remote'
         run: just ci-check -m pyspark
         env:
           SPARK_REMOTE: ${{ matrix.SPARK_REMOTE }}
+
+      - name: run spark tests
+        if: matrix.tag == 'local'
+        run: just ci-check -m pyspark
 
       - name: check that no untracked files were produced
         shell: bash
