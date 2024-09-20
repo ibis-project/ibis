@@ -8,7 +8,6 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-import ibis.common.exceptions as exc
 from ibis import udf
 from ibis.backends.oracle.tests.conftest import (
     ORACLE_HOST,
@@ -67,14 +66,8 @@ def test_builtin_agg_udf(con):
     tm.assert_frame_equal(result, expected, check_dtype=False)
 
 
-def test_list_tables_schema_warning_refactor(con):
+def test_list_tables(con):
     assert con.list_tables()
-
-    with pytest.raises(exc.IbisInputError):
-        con.list_tables(database="not none", schema="not none")
-
-    with pytest.warns(FutureWarning):
-        assert con.list_tables(schema="SYS", like="EXU8OPT") == ["EXU8OPT"]
 
     assert con.list_tables(database="SYS", like="EXU8OPT") == ["EXU8OPT"]
 

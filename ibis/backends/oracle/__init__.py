@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanListDatabase, CanListSchema
+from ibis.backends import CanListDatabase
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import NULL, STAR, C
 
@@ -75,7 +75,7 @@ def metadata_row_to_type(
     return typ
 
 
-class Backend(SQLBackend, CanListDatabase, CanListSchema):
+class Backend(SQLBackend, CanListDatabase):
     name = "oracle"
     compiler = sc.oracle.compiler
 
@@ -270,7 +270,6 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
     def list_tables(
         self,
         like: str | None = None,
-        schema: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
         """List the tables in the database.
@@ -290,31 +289,17 @@ class Backend(SQLBackend, CanListDatabase, CanListSchema):
         ----------
         like
             A pattern to use for listing tables.
-        schema
-            [deprecated] The schema to perform the list against.
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
 
 
         """
-        if schema is not None and database is not None:
-            raise exc.IbisInputError(
-                "Using both the `schema` and `database` kwargs is not supported. "
-                "`schema` is deprecated and will be removed in Ibis 10.0"
-                "\nUse the `database` kwarg with one of the following patterns:"
-                '\ndatabase="database"'
-                '\ndatabase=("catalog", "database")'
-                '\ndatabase="catalog.database"',
-            )
-        if schema is not None:
-            # TODO: remove _warn_schema when the schema kwarg is removed
-            self._warn_schema()
-            table_loc = schema
-        elif database is not None:
+        if database is not None:
             table_loc = database
         else:
             table_loc = self.con.username.upper()
+
         table_loc = self._to_sqlglot_table(table_loc)
 
         # Deeply frustrating here where if we call `convert` on `table_loc`,
