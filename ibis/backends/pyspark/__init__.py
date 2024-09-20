@@ -31,9 +31,9 @@ from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
 
 try:
-    from pyspark.errors import AnalysisException, ParseException
+    from pyspark.errors import ParseException
 except ImportError:
-    from pyspark.sql.utils import AnalysisException, ParseException
+    from pyspark.sql.utils import ParseException
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -579,15 +579,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
+        session = self._session
         with self._active_catalog_database(catalog, db):
             try:
-                df = self._session.table(table_name)
-            except AnalysisException as e:
-                if not self._session.catalog.tableExists(table_name):
+                df = session.table(table_name)
+                # this is intentionally included in the try block because when
+                # using spark connect, the table-not-found exception coming
+                # from the server will *NOT* be raised until the schema
+                # property is accessed
+                struct = PySparkType.to_ibis(df.schema)
+            except Exception as e:
+                if not session.catalog.tableExists(table_name):
                     raise com.TableNotFound(table_name) from e
                 raise
-
-            struct = PySparkType.to_ibis(df.schema)
 
         return sch.Schema(struct)
 
