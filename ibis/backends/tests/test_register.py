@@ -475,12 +475,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     assert table.count().execute() == nrows * ntables
 
 
-@pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-    ]
-)
+@pytest.mark.notyet(["flink"])
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError)
