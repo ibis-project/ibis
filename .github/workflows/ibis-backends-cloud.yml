@@ -102,6 +102,12 @@ jobs:
       - name: install poetry
         run: pip install 'poetry==1.8.3'
 
+      - name: remove databricks arrow and numpy upper bounds
+        if: matrix.backend.name != 'databricks'
+        run: |
+          poetry remove --lock databricks-sql-connector
+          poetry update --lock numpy pyarrow --only main
+
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
         run: poetry add snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
@@ -119,6 +125,19 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: setup databricks credentials
+        if: matrix.backend.name == 'databricks'
+        run: |
+          {
+            echo "DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH}"
+            echo "DATABRICKS_SERVER_HOSTNAME=${DATABRICKS_SERVER_HOSTNAME}"
+            echo "DATABRICKS_TOKEN=${DATABRICKS_TOKEN}"
+          } >> "$GITHUB_ENV"
+        env:
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
