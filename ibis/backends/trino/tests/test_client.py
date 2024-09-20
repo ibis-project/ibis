@@ -171,7 +171,7 @@ def test_table_access_database_schema(con):
         con.table("region", database="system.tpch.sf1")
 
 
-def test_list_tables_schema_warning_refactor(con):
+def test_list_tables(con):
     tpch_tables = [
         "customer",
         "lineitem",
@@ -184,14 +184,6 @@ def test_list_tables_schema_warning_refactor(con):
     ]
 
     assert con.list_tables()
-
-    # Error if user mixes tuple inputs and string inputs for database and schema
-    with pytest.raises(FutureWarning):
-        with pytest.raises(exc.IbisInputError):
-            con.list_tables(database=("tuple", "ohstuff"), schema="str")
-
-    with pytest.warns(FutureWarning):
-        assert con.list_tables(database="tpch", schema="sf1") == tpch_tables
 
     assert con.list_tables(database="tpch.sf1") == tpch_tables
     assert con.list_tables(database=("tpch", "sf1")) == tpch_tables

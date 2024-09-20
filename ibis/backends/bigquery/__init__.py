@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanCreateSchema
+from ibis.backends import CanCreateDatabase
 from ibis.backends.bigquery.client import (
     bigquery_param,
     parse_project_and_dataset,
@@ -155,7 +155,7 @@ def _postprocess_arrow(
     return table_or_batch.rename_columns(names)
 
 
-class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
+class Backend(SQLBackend, CanCreateDatabase):
     name = "bigquery"
     compiler = sc.bigquery.compiler
     supports_python_udfs = False
@@ -520,6 +520,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
 
     def _parse_project_and_dataset(self, dataset) -> tuple[str, str]:
         if isinstance(dataset, sge.Table):
+            if (sg_cat := dataset.args["catalog"]) is not None:
+                sg_cat.args["quoted"] = False
+            if (sg_db := dataset.args["db"]) is not None:
+                sg_db.args["quoted"] = False
             dataset = dataset.sql(self.dialect)
         if not dataset and not self.dataset:
             raise ValueError("Unable to determine BigQuery dataset.")
@@ -582,9 +586,11 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self.raw_sql(stmt.sql(self.name))
 
     def table(
-        self, name: str, database: str | None = None, schema: str | None = None
+        self,
+        name: str,
+        database: str | None = None,
     ) -> ir.Table:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         table = sg.parse_one(f"`{name}`", into=sge.Table, read=self.name)
 
         # Bigquery, unlike other backends, had existing support for specifying
@@ -612,10 +618,7 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             else:
                 db = table.db
 
-        database = (
-            sg.table(None, db=db, catalog=catalog, quoted=False).sql(dialect=self.name)
-            or None
-        )
+        database = sg.table(None, db=db, catalog=catalog, quoted=False) or None
 
         project, dataset = self._parse_project_and_dataset(database)
 
@@ -722,7 +725,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self,
         table_name: str,
         obj: pd.DataFrame | ir.Table | list | dict,
-        schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
     ):
@@ -734,15 +736,13 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
-        schema
-            The name of the schema that the table is located in
         database
             Name of the attached database that the table is located in.
         overwrite
             If `True` then replace existing contents of table
 
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
         if catalog is None:
             catalog = self.current_catalog
@@ -896,7 +896,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
-        schema: str | None = None,
     ) -> list[str]:
         """List the tables in the database.
 
@@ -924,10 +923,8 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
             To specify a table in a separate BigQuery dataset, you can pass in the
             dataset and project as a string `"dataset.project"`, or as a tuple of
             strings `(dataset, project)`.
-        schema
-            [deprecated] The schema (dataset) inside `database` to perform the list against.
         """
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
 
         project, dataset = self._parse_project_and_dataset(table_loc)
         dataset_ref = bq.DatasetReference(project, dataset)
@@ -1090,11 +1087,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self,
         name: str,
         *,
-        schema: str | None = None,
         database: tuple[str | str] | str | None = None,
         force: bool = False,
     ) -> None:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
         stmt = sge.Drop(
             kind="TABLE",
@@ -1112,11 +1108,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         name: str,
         obj: ir.Table,
         *,
-        schema: str | None = None,
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         stmt = sge.Create(
@@ -1137,11 +1132,10 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
         self,
         name: str,
         *,
-        schema: str | None = None,
         database: str | None = None,
         force: bool = False,
     ) -> None:
-        table_loc = self._warn_and_create_table_loc(database, schema)
+        table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         stmt = sge.Drop(
@@ -1168,32 +1162,6 @@ class Backend(SQLBackend, CanCreateDatabase, CanCreateSchema):
     @contextlib.contextmanager
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
-
-    # TODO: remove when the schema kwarg is removed
-    def _warn_and_create_table_loc(self, database=None, schema=None):
-        if schema is not None:
-            self._warn_schema()
-        if database is not None and schema is not None:
-            if isinstance(database, str):
-                table_loc = f"{database}.{schema}"
-            elif isinstance(database, tuple):
-                table_loc = database + schema
-        elif schema is not None:
-            table_loc = schema
-        elif database is not None:
-            table_loc = database
-        else:
-            table_loc = None
-
-        table_loc = self._to_sqlglot_table(table_loc)
-
-        if table_loc is not None:
-            if (sg_cat := table_loc.args["catalog"]) is not None:
-                sg_cat.args["quoted"] = False
-            if (sg_db := table_loc.args["db"]) is not None:
-                sg_db.args["quoted"] = False
-
-        return table_loc
 
 
 def compile(expr, params=None, **kwargs):

@@ -67,13 +67,13 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: generate api docs
-        run: nix develop --ignore-environment -c just docs-apigen --verbose
+        run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose
 
       - name: build docs
-        run: nix develop --ignore-environment --keep HOME -c just docs-render
+        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just docs-render
 
       - name: build jupyterlite
-        run: nix develop --ignore-environment --keep HOME -c just build-jupyterlite
+        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just build-jupyterlite
 
       - name: check that all frozen computations were done before push
         run: git diff --exit-code --stat

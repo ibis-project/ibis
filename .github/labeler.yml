@@ -1,0 +1,103 @@
+# backends
+bigquery:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/bigquery/**"
+
+clickhouse:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/clickhouse/**"
+
+datafusion:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/datafusion/**"
+
+druid:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/druid/**"
+
+duckdb:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/duckdb/**"
+
+exasol:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/exasol/**"
+
+flink:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/flink/**"
+
+impala:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/impala/**"
+
+mssql:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/mssql/**"
+
+mysql:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/mysql/**"
+
+oracle:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/oracle/**"
+
+polars:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/polars/**"
+
+postgres:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/postgres/**"
+
+pyspark:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/pyspark/**"
+
+risingwave:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/risingwave/**"
+
+snowflake:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/snowflake/**"
+
+sqlite:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/sqlite/**"
+
+trino:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/trino/**"
+
+# miscellaneous labels
+tests:
+  - changed-files:
+      - any-glob-to-any-file: "**/tests/**"
+
+nix:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.nix"
+      - any-glob-to-any-file: "poetry.lock"
+
+datatypes:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/expr/datatypes/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file: ".github/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.nix"
+      - any-glob-to-any-file: "poetry.lock"
+      - any-glob-to-any-file: "flake.lock"
+      - any-glob-to-any-file: "requirements-dev.txt"
+      - any-glob-to-any-file: "conda/*.yml"
+
+docs:
+  - changed-files:
+      - any-glob-to-any-file: "**/*.qmd"
+      - any-glob-to-any-file: "**/*.md"
