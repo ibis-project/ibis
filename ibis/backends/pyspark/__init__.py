@@ -756,7 +756,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
-        t.createOrReplaceTempView(name)
+        t.createTempView(name)
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
@@ -765,7 +765,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
-        assert t.is_cached
         t.unpersist()
         assert not t.is_cached
 

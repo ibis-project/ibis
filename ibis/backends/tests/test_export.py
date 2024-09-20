@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import IS_SPARK_REMOTE
 
 pd = pytest.importorskip("pandas")
 pa = pytest.importorskip("pyarrow")
@@ -215,6 +216,8 @@ def test_table_to_parquet_dir(tmp_path, backend, awards_players):
     outparquet_dir = tmp_path / "out"
 
     if backend.name() == "pyspark":
+        if IS_SPARK_REMOTE:
+            pytest.skip("writes to remote output directory")
         # pyspark already writes more than one file
         awards_players.to_parquet_dir(outparquet_dir)
     else:

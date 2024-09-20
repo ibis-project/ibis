@@ -19,12 +19,10 @@ from ibis.backends.pyspark import Backend
 from ibis.backends.pyspark.datatypes import PySparkSchema
 from ibis.backends.tests.base import BackendTest, ServiceBackendTest
 from ibis.backends.tests.data import json_types, topk, win
+from ibis.conftest import IS_SPARK_REMOTE, SPARK_REMOTE
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-
-
-REMOTE = os.environ.get("SPARK_REMOTE")
 
 
 def set_pyspark_database(con, database):
@@ -185,7 +183,7 @@ class BaseSparkTestConf(abc.ABC):
 
         df_time_indexed.createTempView("time_indexed_table")
 
-        if REMOTE is None:
+        if not IS_SPARK_REMOTE:
             # TODO(cpcloud): understand why this doesn't work with spark connect
             df_interval = s.createDataFrame(
                 [
@@ -231,7 +229,7 @@ class BaseSparkTestConf(abc.ABC):
             df_interval.createTempView("interval_table")
 
 
-if REMOTE is not None:
+if IS_SPARK_REMOTE:
 
     class TestConf(BaseSparkTestConf, ServiceBackendTest):
         data_volume = "/data"
@@ -251,7 +249,7 @@ if REMOTE is not None:
 
             spark = (
                 SparkSession.builder.appName("ibis_testing")
-                .remote(REMOTE)
+                .remote(SPARK_REMOTE)
                 .getOrCreate()
             )
             return ibis.pyspark.connect(spark, **kw)

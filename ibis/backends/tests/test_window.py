@@ -18,8 +18,10 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
+    PySparkPythonException,
     SnowflakeProgrammingError,
 )
+from ibis.conftest import IS_SPARK_REMOTE
 from ibis.legacy.udf.vectorized import analytic, reduction
 
 np = pytest.importorskip("numpy")
@@ -368,6 +370,12 @@ def test_grouped_bounded_expanding_window(
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkPythonException,
+                    reason="remote udfs not yet tested due to environment complexities",
+                ),
             ],
         ),
     ],
@@ -550,6 +558,12 @@ def test_grouped_bounded_preceding_window(
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkPythonException,
+                    reason="remote udfs not yet tested due to environment complexities",
+                ),
             ],
         ),
     ],
@@ -708,6 +722,12 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkPythonException,
+                    reason="remote udfs not yet tested due to environment complexities",
+                ),
             ],
         ),
         param(
@@ -735,6 +755,12 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "flink",
                     ],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkPythonException,
+                    reason="remote udfs not yet tested due to environment complexities",
                 ),
             ],
         ),

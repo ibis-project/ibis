@@ -665,12 +665,14 @@ jobs:
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
+            SPARK_REMOTE: ""
           - python-version: "3.11"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
+            SPARK_REMOTE: ""
           - python-version: "3.12"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
@@ -678,6 +680,13 @@ jobs:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
               - setuptools
+            SPARK_REMOTE: ""
+          - python-version: "3.12"
+            pyspark-version: "3.5.2"
+            pyspark-minor-version: "3.5"
+            deps:
+              - setuptools
+            SPARK_REMOTE: "sc://localhost:15002"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -732,6 +741,8 @@ jobs:
 
       - name: run tests
         run: just ci-check -m pyspark
+        env:
+          SPARK_REMOTE: ${{ matrix.SPARK_REMOTE }}
 
       - name: check that no untracked files were produced
         shell: bash

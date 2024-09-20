@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -443,7 +444,13 @@ def test_array_slice(backend, start, stop):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                )
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
             ],
             id="nulls",
         ),
@@ -454,11 +461,6 @@ def test_array_slice(backend, start, stop):
     "func",
     [lambda x: x + 1, partial(lambda x, y: x + y, y=1), ibis._ + 1],
     ids=["lambda", "partial", "deferred"],
-)
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="TODO(Kexiang): seems a bug",
 )
 def test_array_map(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
@@ -683,6 +685,14 @@ def test_array_remove(con, input, expected):
             {"a": [[1, 3, 3], [], [42, 42], [], [None], None]},
             [{3, 1}, set(), {42}, set(), {None}, None],
             id="null",
+            marks=[
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
+            ],
         ),
         param(
             {"a": [[1, 3, 3], [], [42, 42], [], None]},
@@ -753,6 +763,12 @@ def test_array_sort(con, data):
                     ["datafusion"],
                     raises=AssertionError,
                     reason="DataFusion transforms null elements to NAN",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
                 ),
             ],
         ),

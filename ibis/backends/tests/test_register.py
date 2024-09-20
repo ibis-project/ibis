@@ -12,13 +12,20 @@ from pytest import param
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.tests.errors import PySparkAnalysisException
+from ibis.conftest import IS_SPARK_REMOTE
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
     import pyarrow as pa
 
-pytestmark = pytest.mark.notimpl(["druid", "exasol", "oracle"])
+pytestmark = [
+    pytest.mark.notimpl(["druid", "exasol", "oracle"]),
+    pytest.mark.notyet(
+        ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkAnalysisException
+    ),
+]
 
 
 @contextlib.contextmanager
