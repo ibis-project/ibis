@@ -313,7 +313,7 @@ else:
             watermark_cols = {"functional_alltypes": "timestamp_col"}
 
             for name, schema in TEST_TABLES.items():
-                path = str(self.data_dir / "parquet" / f"{name}.parquet")
+                path = str(self.data_dir / "directory" / "parquet" / name)
                 t = (
                     s.readStream.schema(PySparkSchema.from_ibis(schema))
                     .parquet(path)
