@@ -30,8 +30,6 @@ def set_pyspark_database(con, database):
 
 
 class BaseSparkTestConf(abc.ABC):
-    deps = ("pyspark",)
-
     @property
     @abc.abstractmethod
     def parquet_dir(self) -> str:
@@ -232,11 +230,12 @@ class BaseSparkTestConf(abc.ABC):
 if IS_SPARK_REMOTE:
 
     class TestConf(BaseSparkTestConf, ServiceBackendTest):
+        deps = ("pyspark",)
         data_volume = "/data"
         service_name = "spark-connect"
 
         @property
-        def parquet_dir(self) -> Path:
+        def parquet_dir(self) -> str:
             return self.data_volume
 
         @property
@@ -263,9 +262,11 @@ if IS_SPARK_REMOTE:
         raise NotImplementedError
 else:
 
-    class TestConf(BackendTest):
+    class TestConf(BaseSparkTestConf, BackendTest):
+        deps = ("pyspark",)
+
         @property
-        def parquet_dir(self) -> Path:
+        def parquet_dir(self) -> str:
             return str(self.data_dir / "parquet")
 
         @staticmethod
@@ -305,7 +306,7 @@ else:
             watermark_cols = {"functional_alltypes": "timestamp_col"}
 
             for name, schema in TEST_TABLES.items():
-                path = self.data_dir / "parquet" / f"{name}.parquet"
+                path = str(self.data_dir / "parquet" / f"{name}.parquet")
                 t = (
                     s.readStream.schema(PySparkSchema.from_ibis(schema))
                     .parquet(path)
