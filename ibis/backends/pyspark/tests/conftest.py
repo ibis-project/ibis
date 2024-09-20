@@ -281,7 +281,7 @@ else:
                     "SPARK_CONFIG",
                     Path(ibis.__file__)
                     .parents[1]
-                    .joinpath("docker", "spark", "conf.properties"),
+                    .joinpath("docker", "spark-connect", "conf.properties"),
                 )
             ).open(mode="r") as config_file:
                 for line in config_file:
