@@ -276,7 +276,14 @@ else:
             config = SparkSession.builder.appName("ibis_testing")
 
             # load from properties file, yuck
-            with Path(os.environ["SPARK_CONFIG"]).open(mode="r") as config_file:
+            with Path(
+                os.environ.get(
+                    "SPARK_CONFIG",
+                    Path(ibis.__file__)
+                    .parents[1]
+                    .joinpath("docker", "spark", "conf.properties"),
+                )
+            ).open(mode="r") as config_file:
                 for line in config_file:
                     config = config.config(*map(str.strip, line.strip().split("=", 1)))
 
