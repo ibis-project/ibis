@@ -603,6 +603,7 @@ services:
     volumes:
       - spark-connect:/data
       - $PWD/docker/spark-connect/conf.properties:/opt/bitnami/spark/conf/spark-defaults.conf:ro
+      - $PWD/docker/spark-connect/log4j2.properties:/opt/bitnami/spark/conf/log4j2.properties:ro
     restart: on-failure
     networks:
       - spark-connect

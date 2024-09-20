@@ -169,7 +169,7 @@ class BaseSparkTestConf(abc.ABC):
         )
         df_dates.createTempView("date_table")
 
-        df_time_indexed = con._session.createDataFrame(
+        df_time_indexed = s.createDataFrame(
             [
                 [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 1, 1.0],
                 [datetime(2017, 1, 2, 5, tzinfo=timezone.utc), 2, 2.0],
