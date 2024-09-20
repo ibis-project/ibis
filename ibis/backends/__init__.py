@@ -1308,10 +1308,15 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             f"{cls.name} backend has not implemented `has_operation` API"
         )
 
+    @util.experimental
     def read_csv(
         self, path: str | Path, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current backend.
+
+        This function reads a CSV file and registers it as a table in the current
+        backend. Note that for Impala and Trino backends, CSV read performance
+        may be suboptimal.
 
         Parameters
         ----------
