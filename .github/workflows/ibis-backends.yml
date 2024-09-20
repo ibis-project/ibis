@@ -653,7 +653,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
+    name: PySpark ${{ matrix.tag }} ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -665,6 +665,7 @@ jobs:
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
+            tag: local
             SPARK_REMOTE: ""
           - python-version: "3.11"
             pyspark-version: "3.5.2"
@@ -672,6 +673,7 @@ jobs:
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
+            tag: local
             SPARK_REMOTE: ""
           - python-version: "3.12"
             pyspark-version: "3.5.2"
@@ -680,12 +682,14 @@ jobs:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
               - setuptools
+            tag: local
             SPARK_REMOTE: ""
           - python-version: "3.12"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
             deps:
               - setuptools
+            tag: remote
             SPARK_REMOTE: "sc://localhost:15002"
     steps:
       - name: checkout
@@ -699,6 +703,10 @@ jobs:
       - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: start services
+        if: ${{ matrix.tag == 'remote' }}
+        run: just up spark-connect
 
       - name: download backend data
         run: just download-data
