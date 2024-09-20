@@ -18,9 +18,12 @@ from urllib.parse import urlencode
 lines = """
 %pip install numpy pandas tzdata
 import pyodide_js, pathlib, js
-await pyodide_js.loadPackage("https://storage.googleapis.com/ibis-wasm-wheels/pyarrow-16.0.0.dev2661%2Bg9bddb87fd-cp311-cp311-emscripten_3_1_46_wasm32.whl")
-pathlib.Path("penguins.csv").write_text(await (await js.fetch("https://storage.googleapis.com/ibis-tutorial-data/penguins.csv")).text())
-del pyodide_js, pathlib, js
+wheel_url = "https://storage.googleapis.com/ibis-wasm-wheels/pyarrow-17.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl"
+await pyodide_js.loadPackage(wheel_url)
+penguins_csv_url = "https://storage.googleapis.com/ibis-tutorial-data/penguins.csv"
+penguins_text = await (await js.fetch(penguins_csv_url)).text()
+pathlib.Path("penguins.csv").write_text(penguins_text)
+del pyodide_js, pathlib, js, wheel_url, penguins_csv_url, penguins_text
 %clear
 %pip install 'ibis-framework[duckdb]'
 from ibis.interactive import *
