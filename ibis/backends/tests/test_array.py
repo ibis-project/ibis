@@ -170,6 +170,17 @@ def test_array_radd_concat(con):
     assert np.array_equal(result, expected)
 
 
+@pytest.mark.parametrize("op", [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat_scalar(con, op):
+    raw_left = [1, 2, 3]
+    raw_right = [3, 4]
+    left = ibis.literal(raw_left)
+    right = ibis.literal(raw_right)
+    expr = op(left, right)
+    result = con.execute(expr)
+    assert result == op(raw_left, raw_right)
+
+
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
