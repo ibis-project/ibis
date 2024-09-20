@@ -56,7 +56,9 @@ marks = {
                 "snowflake",
                 "sqlite",
                 "trino",
-            ]
+                "databricks",
+            ],
+            reason="SQL backends all have an additional `pretty` argument for formatting the generated SQL",
         ),
     ),
     "create_database": pytest.param(

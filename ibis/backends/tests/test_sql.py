@@ -171,10 +171,13 @@ def test_union_aliasing(backend_name, snapshot):
         ),
         param(
             ibis.uuid(),
-            marks=pytest.mark.notimpl(
-                ["exasol", "risingwave", "druid", "oracle", "pyspark"],
-                raises=exc.OperationNotDefinedError,
-            ),
+            marks=[
+                pytest.mark.notimpl(
+                    ["exasol", "risingwave", "druid", "oracle"],
+                    raises=exc.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(["pyspark"], raises=exc.UnsupportedOperationError),
+            ],
             id="uuid",
         ),
     ],

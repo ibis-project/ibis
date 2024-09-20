@@ -25,6 +25,7 @@ UUID_BACKEND_TYPE = {
     "snowflake": "VARCHAR",
     "sqlite": "text",
     "trino": "uuid",
+    "databricks": "string",
 }
 
 
@@ -42,9 +43,10 @@ def test_uuid_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
+    ["druid", "exasol", "oracle", "polars", "risingwave"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["pyspark"], raises=com.UnsupportedOperationError)
 @pytest.mark.never(
     ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
 )
@@ -55,9 +57,10 @@ def test_uuid_function(con):
 
 
 @pytest.mark.notimpl(
-    ["druid", "exasol", "oracle", "polars", "pyspark", "risingwave"],
+    ["druid", "exasol", "oracle", "polars", "risingwave"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notimpl(["pyspark"], raises=com.UnsupportedOperationError)
 def test_uuid_unique_each_row(con):
     expr = (
         con.tables.functional_alltypes.mutate(uuid=ibis.uuid()).limit(2).uuid.nunique()
