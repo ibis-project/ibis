@@ -12,6 +12,7 @@ from google.cloud import bigquery_storage_v1 as bqstorage
 
 import ibis
 import ibis.common.exceptions as exc
+from ibis.util import gen_name
 
 
 def test_repeated_project_name(project_id, credentials):
@@ -246,5 +247,12 @@ def test_create_table_from_memtable_needs_quotes(project_id, dataset_id, credent
         project_id=project_id, dataset_id=dataset_id, credentials=credentials
     )
 
-    con.create_table("region-table", schema=dict(its_always="str", quoting="int"))
-    con.drop_table("region-table")
+    name = gen_name("region-table")
+    schema = dict(its_always="str", quoting="int")
+
+    t = con.create_table(name, schema=schema)
+
+    try:
+        assert t.schema() == ibis.schema(schema)
+    finally:
+        con.drop_table(name)
