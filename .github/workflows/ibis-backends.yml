@@ -442,10 +442,6 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - name: show docker compose version
-        if: matrix.backend.services != null
-        run: docker compose version
-
       - name: start services
         if: matrix.backend.services != null
         run: just up ${{ join(matrix.backend.services, ' ') }}
