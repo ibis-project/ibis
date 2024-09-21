@@ -944,6 +944,24 @@ class BigQueryType(SqlglotType):
                 f"Current geotype: {dtype.geotype}, Current srid: {dtype.srid}"
             )
 
+    @classmethod
+    def _from_ibis_Struct(cls, dtype: dt.Struct) -> sge.DataType:
+        fields = [
+            sge.ColumnDef(
+                # always quote struct fields to allow reserved words as field names
+                this=sg.to_identifier(name, quoted=True),
+                # Bigquery supports embeddable nulls
+                kind=cls.from_ibis(field),
+                constraints=(
+                    None
+                    if field.nullable
+                    else [sge.ColumnConstraint(kind=sge.NotNullColumnConstraint())]
+                ),
+            )
+            for name, field in dtype.items()
+        ]
+        return sge.DataType(this=typecode.STRUCT, expressions=fields, nested=True)
+
 
 class BigQueryUDFType(BigQueryType):
     @classmethod

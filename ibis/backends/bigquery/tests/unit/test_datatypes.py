@@ -25,6 +25,11 @@ from ibis.backends.bigquery.datatypes import BigQueryType
         param(dt.Array(dt.int64), "ARRAY<INT64>", id="array<int64>"),
         param(dt.Array(dt.string), "ARRAY<STRING>", id="array<string>"),
         param(
+            dt.Struct({"a": dt.String(nullable=False)}),
+            "STRUCT<`a` STRING NOT NULL>",
+            id="struct<a: !string>",
+        ),
+        param(
             dt.Struct.from_tuples(
                 [("a", dt.int64), ("b", dt.string), ("c", dt.Array(dt.string))]
             ),
