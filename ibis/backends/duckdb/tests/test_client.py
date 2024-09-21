@@ -293,8 +293,8 @@ def test_list_tables(con):
 
     icecream_table = ["ice_cream"]
 
-    assert con.list_tables(database="shops") == icecream_table
-    assert con.list_tables(database=("shops",)) == icecream_table
+    assert con.ddl.list_tables(database="shops") == icecream_table
+    assert con.ddl.list_tables(database=("shops",)) == icecream_table
 
 
 def test_settings_repr():
@@ -416,7 +416,7 @@ lat,lon,geom
 def test_memtable_doesnt_leak(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     name = "memtable_doesnt_leak"
-    assert name not in con.list_tables()
+    assert name not in con.ddl.list_tables()
     df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
-    assert name not in con.list_tables()
+    assert name not in con.ddl.list_tables()
     assert len(df) == 3

@@ -325,7 +325,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         (not used for temporary views)
         """
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog
         # temporary tables and views are in a separate postgres schema
@@ -406,7 +406,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     ) -> list[str]:
         """List temporary views."""
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog
         # temporary tables and views are in a separate postgres table_schema that
@@ -434,7 +434,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or self.current_catalog
         database = table_loc.db or self.current_database

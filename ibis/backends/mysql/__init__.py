@@ -329,7 +329,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     ) -> list[str]:
         """Generic method to list objects like tables or views."""
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         ## having an issue as it seem mysql doesn't have a self.current_catalog
         ## not clear to me why, my guess is it doesn't support catalogs but unclear

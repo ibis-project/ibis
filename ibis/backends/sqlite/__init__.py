@@ -178,7 +178,7 @@ class Backend(SQLBackend, UrlFromPath):
     ) -> list[str]:
         """Generic method to list objects like tables or views."""
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         # sqlite doesn't support catalogs as far as I can tell
         # all temp tables are in the "temp" sqlite schema
@@ -247,7 +247,7 @@ class Backend(SQLBackend, UrlFromPath):
     ) -> list[str]:
         """List tables and views."""
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         database = self.current_database
         if table_loc is not None:

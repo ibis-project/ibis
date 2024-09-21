@@ -1003,7 +1003,7 @@ def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     t = con.create_table(table_name, obj())
 
     try:
-        assert table_name in con.list_tables()
+        assert table_name in con.ddl.list_tables()
         assert pa.table({"a": ["a"], "b": [1]}).equals(t.to_pyarrow())
     finally:
         con.drop_table(table_name, force=True)

@@ -93,5 +93,5 @@ def test_has_operation(con):
 def test_list_temp_tables_by_default(con):
     name = ibis.util.gen_name("sqlite_temp_table")
     con.create_table(name, schema={"a": "int"}, temp=True)
-    assert name in con.list_tables(database="temp")
-    assert name in con.list_tables()
+    assert name in con.ddl.list_temp_tables(database="temp")
+    assert name in con.tables()

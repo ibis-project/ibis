@@ -999,7 +999,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     ) -> list[str]:
         """Generic method to list objects like tables or views."""
 
-        table_loc = self._warn_and_create_table_loc(database)
+        table_loc = self._to_sqlglot_table(database)
 
         catalog = table_loc.catalog or ("temp" if is_temp else self.current_catalog)
         database = table_loc.db or self.current_database
@@ -1052,7 +1052,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self._list_objects(like, database, "VIEW", is_temp=True)
 
-    @deprecated(as_of="10.0", instead="use the con.tables")
+    # @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
