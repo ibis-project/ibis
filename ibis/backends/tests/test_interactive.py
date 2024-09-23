@@ -105,3 +105,22 @@ def test_no_recursion_error(con, monkeypatch):
         exc.RelationError, match="The scalar expression cannot be converted"
     ):
         repr(expr)
+
+
+@pytest.mark.notimpl(
+    ["impala", "flink", "pyspark"],
+    reason="backend calls `execute` as part of pyarrow conversion",
+)
+def test_scalar_uses_pyarrow(con, table, monkeypatch, mocker):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+
+    execute_spy = mocker.spy(con, "execute")
+    to_pyarrow_spy = mocker.spy(con, "to_pyarrow")
+
+    repr(table.limit(1).string_col)
+
+    # pyarrow does get called
+    to_pyarrow_spy.assert_called_once()
+
+    # execute doesn't get called
+    execute_spy.assert_not_called()
