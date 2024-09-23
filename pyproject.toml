@@ -125,7 +125,7 @@ altair = { version = ">=5.0.1,<6", python = ">=3.10,<3.13" }
 # pin griffe until https://github.com/ibis-project/ibis/pull/9865 is addressed
 griffe = { version = "<1", python = ">=3.10,<3.13" }
 ipykernel = { version = ">=6.25.1,<7", python = ">=3.10,<3.13" }
-itables = { version = ">=1.6.3,<2.2", python = ">=3.10,<3.13" }
+itables = { version = ">=1.6.3,<2.3", python = ">=3.10,<3.13" }
 nbclient = { version = ">=0.8.0,<1", python = ">=3.10,<3.13" }
 plotly = { version = ">=5.16.1,<6", python = ">=3.10,<3.13" }
 plotnine = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }

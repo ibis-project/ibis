@@ -2727,13 +2727,13 @@ arrow = ">=0.15.0"
 
 [[package]]
 name = "itables"
-version = "2.1.5"
+version = "2.2.1"
 description = "Pandas and Polar DataFrames as interactive DataTables"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "itables-2.1.5-py3-none-any.whl", hash = "sha256:842e7e31f3f6ea5e4a085d189dcb6ee38e20c0750e4322a31eccb895e5a00a76"},
-    {file = "itables-2.1.5.tar.gz", hash = "sha256:ed96c98cdd91a91c004c1a0150d572a6b1021a1311bc94e8bfa2e68ba42d44fb"},
+    {file = "itables-2.2.1-py3-none-any.whl", hash = "sha256:6d66eeb6cd19b10a2458c5de5913d34785e709bf2dcb85e6652546f541274581"},
+    {file = "itables-2.2.1.tar.gz", hash = "sha256:96fcb51ece4afc546f7682b2bc094d5aa9cb2cea0568edb5cd7e51e41f7275b7"},
 ]
 
 [package.dependencies]
@@ -2742,11 +2742,13 @@ numpy = "*"
 pandas = "*"
 
 [package.extras]
-all = ["matplotlib", "polars", "pyarrow", "pytz", "world-bank-data"]
+all = ["anywidget", "matplotlib", "polars", "pyarrow", "pytz", "traitlets", "world-bank-data"]
+dev = ["anywidget", "ipykernel", "jupyterlab", "jupytext", "matplotlib", "nbconvert", "polars", "pyarrow", "pytest", "pytest-cov", "pytz", "requests", "shiny", "traitlets", "watchfiles", "world-bank-data"]
 polars = ["polars", "pyarrow"]
 samples = ["pytz", "world-bank-data"]
 style = ["matplotlib"]
-test = ["ipykernel", "jupytext", "matplotlib", "nbconvert", "polars", "pyarrow", "pytest", "pytest-cov", "pytz", "requests", "shiny", "world-bank-data"]
+test = ["anywidget", "ipykernel", "jupytext", "matplotlib", "nbconvert", "polars", "pyarrow", "pytest", "pytest-cov", "pytz", "requests", "shiny", "traitlets", "world-bank-data"]
+widget = ["anywidget", "traitlets"]
 
 [[package]]
 name = "jaraco-classes"
@@ -7917,4 +7919,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "3a61ef75272dd8c592f94823bba3865b7ef5f53ec8bd3ba0263dff7ec9de07ee"
+content-hash = "33c56e8ced59cb731699d9ae515d503f113d8e6a885d5eb5687c4b40a369327b"
