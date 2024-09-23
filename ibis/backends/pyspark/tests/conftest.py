@@ -287,6 +287,24 @@ else:
                 for line in config_file:
                     config = config.config(*map(str.strip, line.strip().split("=", 1)))
 
+            config = (
+                config.config("spark.cores.max", "1")
+                .config("spark.default.parallelism", "1")
+                .config("spark.dynamicAllocation.enabled", "false")
+                .config("spark.executor.heartbeatInterval", "3600s")
+                .config("spark.executor.instances", "1")
+                .config("spark.network.timeout", "4200s")
+                .config("spark.rdd.compress", "false")
+                .config(
+                    "spark.serializer", "org.apache.spark.serializer.KryoSerializer"
+                )
+                .config("spark.shuffle.compress", "false")
+                .config("spark.shuffle.spill.compress", "false")
+                .config("spark.sql.execution.arrow.pyspark.enabled", "false")
+                .config("spark.sql.shuffle.partitions", "1")
+                .config("spark.storage.blockManagerSlaveTimeoutMs", "4200s")
+            )
+
             try:
                 from delta.pip_utils import configure_spark_with_delta_pip
             except ImportError:
