@@ -59,10 +59,9 @@ def temp_db(con, temp_base):
 
 
 def test_create_database_with_location(con, temp_db):
-    base = os.path.dirname(temp_db)
     name = os.path.basename(temp_db)
     con.create_database(name, path=temp_db)
-    assert os.path.exists(base)
+    assert name in con.list_databases()
 
 
 def test_drop_table_not_exist(con):

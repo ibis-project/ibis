@@ -33,10 +33,12 @@ from ibis.backends.tests.errors import (
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
+    PySparkConnectGrpcException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
 from ibis.common.annotations import ValidationError
+from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -743,6 +745,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["bigquery", "snowflake", "sqlite", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkConnectGrpcException,
+                    reason="arrow conversion breaks",
+                ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["duckdb"],
@@ -791,6 +799,12 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["oracle"],
                     raises=com.OperationNotDefinedError,
                     reason="Some wonkiness in sqlglot generation.",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=PySparkConnectGrpcException,
+                    reason="arrow conversion breaks",
                 ),
             ],
         ),
@@ -1691,6 +1705,7 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 @pytest.mark.notyet(
     ["pyspark"],
     reason="PySpark doesn't handle big timestamps",
+    condition=not IS_SPARK_REMOTE,
     raises=pd.errors.OutOfBoundsDatetime,
 )
 @pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
@@ -1753,7 +1768,9 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 @pytest.mark.notimpl(
     ["clickhouse"], reason="returns incorrect results", raises=AssertionError
 )
-@pytest.mark.notimpl(["pyspark"], raises=pd.errors.OutOfBoundsDatetime)
+@pytest.mark.notimpl(
+    ["pyspark"], condition=not IS_SPARK_REMOTE, raises=pd.errors.OutOfBoundsDatetime
+)
 @pytest.mark.notimpl(["polars"], raises=AssertionError, reason="returns NaT")
 @pytest.mark.notyet(
     ["flink"],

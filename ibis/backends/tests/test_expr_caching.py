@@ -5,6 +5,7 @@ from pytest import mark
 
 import ibis
 import ibis.common.exceptions as com
+from ibis.conftest import IS_SPARK_REMOTE
 
 pa = pytest.importorskip("pyarrow")
 ds = pytest.importorskip("pyarrow.dataset")
@@ -56,6 +57,7 @@ def test_persist_expression_contextmanager(backend, con, alltypes):
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @mark.notyet(
     ["pyspark"],
+    condition=not IS_SPARK_REMOTE,
     raises=AssertionError,
     reason=(
         "PySpark holds on to `cached_table` in the stack frame of an internal function. "

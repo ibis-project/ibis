@@ -27,7 +27,6 @@ except ImportError:
         None
     )
 
-
 try:
     from pyexasol.exceptions import ExaQueryError
 except ImportError:
@@ -47,11 +46,21 @@ except ImportError:
 
 try:
     # PySpark 3.5.0
-    from pyspark.errors.exceptions.captured import (
+    from pyspark.errors.exceptions.base import (
+        AnalysisException as PySparkAnalysisException,
+    )
+    from pyspark.errors.exceptions.base import (
         ArithmeticException as PySparkArithmeticException,
     )
+    from pyspark.errors.exceptions.base import ParseException as PySparkParseException
+    from pyspark.errors.exceptions.base import PythonException as PySparkPythonException
+    from pyspark.errors.exceptions.connect import (
+        SparkConnectGrpcException as PySparkConnectGrpcException,
+    )
 except ImportError:
-    PySparkArithmeticException = None
+    PySparkParseException = PySparkAnalysisException = PySparkArithmeticException = (
+        PySparkPythonException
+    ) = PySparkConnectGrpcException = None
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
@@ -103,6 +112,7 @@ except ImportError:
     TrinoUserError = None
 
 try:
+    from psycopg2.errors import ArraySubscriptError as PsycoPg2ArraySubscriptError
     from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero
     from psycopg2.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
     from psycopg2.errors import InternalError_ as PsycoPg2InternalError
@@ -118,7 +128,7 @@ except ImportError:
         PsycoPg2InvalidTextRepresentation
     ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = (
         PsycoPg2OperationalError
-    ) = PsycoPg2UndefinedObject = None
+    ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = None
 
 try:
     from MySQLdb import NotSupportedError as MySQLNotSupportedError

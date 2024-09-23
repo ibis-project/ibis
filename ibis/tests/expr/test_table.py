@@ -1315,7 +1315,7 @@ def test_join_invalid_expr_type(con):
     invalid_right = left.foo_id
     join_key = ["bar_id"]
 
-    with pytest.raises(TypeError):
+    with pytest.raises(com.IbisTypeError):
         left.inner_join(invalid_right, join_key)
 
 

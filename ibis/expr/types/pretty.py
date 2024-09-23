@@ -291,7 +291,7 @@ def _to_rich_scalar(
 ) -> Pretty:
     value = format_values(
         expr.type(),
-        [expr.execute()],
+        [expr.to_pyarrow().as_py()],
         max_length=max_length or ibis.options.repr.interactive.max_length,
         max_string=max_string or ibis.options.repr.interactive.max_string,
         max_depth=max_depth or ibis.options.repr.interactive.max_depth,
