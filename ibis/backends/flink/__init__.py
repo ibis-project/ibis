@@ -375,7 +375,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
                 f"{self.name} cannot yet reliably handle `null` typed columns; "
                 f"got null typed columns: {null_columns}"
             )
-        self.create_view(op.name, op.data.to_frame(), temp=True)
+        self.create_view(op.name, op.data.to_frame(), schema=op.schema, temp=True)
 
     def _finalize_memtable(self, name: str) -> None:
         self.drop_view(name, temp=True, force=True)
