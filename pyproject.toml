@@ -295,6 +295,7 @@ filterwarnings = [
   "error",
   # pyspark uses a deprecated pandas API
   "ignore:is_datetime64tz_dtype is deprecated and will be removed in a future version:DeprecationWarning",
+  "ignore:is_categorical_dtype is deprecated .+:DeprecationWarning",
   # pyspark and impala leave sockets open
   "ignore:Exception ignored in:",
   # pandas

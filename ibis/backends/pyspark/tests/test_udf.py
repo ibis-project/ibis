@@ -5,6 +5,7 @@ import pytest
 
 import ibis
 from ibis.backends.pyspark import PYSPARK_LT_35
+from ibis.conftest import IS_SPARK_REMOTE
 
 pytest.importorskip("pyspark")
 
@@ -46,6 +47,10 @@ def test_python_udf(t, df):
 
 
 @pytest.mark.xfail(PYSPARK_LT_35, reason="pyarrow UDFs require PySpark 3.5+")
+@pytest.mark.xfail(
+    IS_SPARK_REMOTE,
+    reason="pyarrow UDFs aren't tested with spark remote due to environment setup complexities",
+)
 def test_pyarrow_udf(t, df):
     result = t.mutate(repeated=pyarrow_repeat(t.str_col, 2)).execute()
     expected = df.assign(repeated=df.str_col * 2)

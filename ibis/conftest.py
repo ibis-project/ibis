@@ -17,6 +17,8 @@ MACOS = platform.system() == "Darwin"
 WINDOWS = platform.system() == "Windows"
 ARM64 = platform.machine() in ("arm64", "aarch64")
 CI = os.environ.get("CI") is not None
+SPARK_REMOTE = os.environ.get("SPARK_REMOTE")
+IS_SPARK_REMOTE = bool(SPARK_REMOTE)
 
 
 @pytest.fixture(autouse=True)
