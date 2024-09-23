@@ -119,8 +119,8 @@ def test_scalar_uses_pyarrow(con, table, monkeypatch, mocker):
 
     repr(table.limit(1).string_col)
 
-    # execute doesn't get called
-    execute_spy.assert_not_called()
-
     # pyarrow does get called
     to_pyarrow_spy.assert_called_once()
+
+    # execute doesn't get called
+    execute_spy.assert_not_called()
