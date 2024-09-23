@@ -179,7 +179,6 @@ __all__ = (
     "union",
     "uuid",
     "watermark",
-    "where",
     "window",
 )
 
@@ -2362,27 +2361,6 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
     elif not condition.type().is_boolean():
         condition = condition.cast("bool")
     return condition.ifelse(true_expr, false_expr)
-
-
-@util.deprecated(instead="use `ibis.ifelse` instead", as_of="7.0")
-def where(cond, true_expr, false_expr) -> ir.Value:
-    """Construct a ternary conditional expression.
-
-    Parameters
-    ----------
-    cond
-        Boolean conditional expression
-    true_expr
-        Expression to return if `cond` evaluates to `True`
-    false_expr
-        Expression to return if `cond` evaluates to `False` or `NULL`
-
-    Returns
-    -------
-    Value : ir.Value
-        The value of `true_expr` if `arg` is `True` else `false_expr`
-    """
-    return ifelse(cond, true_expr, false_expr)
 
 
 @deferrable
