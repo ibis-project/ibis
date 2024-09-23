@@ -301,14 +301,6 @@ class Value(Expr):
         """
         return ops.Coalesce((self, *args)).to_expr()
 
-    @deprecated(as_of="8.0.0", instead="use ibis.greatest(self, rest...) instead")
-    def greatest(self, *args: ir.Value) -> ir.Value:
-        return ops.Greatest((self, *args)).to_expr()
-
-    @deprecated(as_of="8.0.0", instead="use ibis.least(self, rest...) instead")
-    def least(self, *args: ir.Value) -> ir.Value:
-        return ops.Least((self, *args)).to_expr()
-
     def typeof(self) -> ir.StringValue:
         """Return the string name of the datatype of self.
 
