@@ -32,8 +32,14 @@ from ibis.util import deprecated
 
 try:
     from pyspark.errors import ParseException
+    from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 except ImportError:
     from pyspark.sql.utils import ParseException
+
+    # Use a dummy class for when spark connect is not available
+    class SparkConnectGrpcException(Exception):
+        pass
+
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -186,13 +192,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # Databricks Serverless compute only supports limited properties
         # and any attempt to set unsupported properties will result in an error.
         # https://docs.databricks.com/en/spark/conf.html
-        try:
-            from pyspark.errors.exceptions.connect import SparkConnectGrpcException
-        except ImportError:
-            # Use a dummy class for when spark connect is not available
-            class SparkConnectGrpcException(Exception):
-                pass
-
         with contextlib.suppress(SparkConnectGrpcException):
             self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
@@ -456,7 +455,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df.createTempView(op.name)
 
     def _finalize_memtable(self, name: str) -> None:
-        self.drop_view(name, force=True)
+        """No-op, otherwise a deadlock can occur when using Spark Connect."""
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:

@@ -1686,6 +1686,11 @@ def test_insert_into_table_missing_columns(con, temp_table):
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
 )
+@pytest.mark.notyet(
+    ["pyspark"],
+    raises=AssertionError,
+    reason="likely, but not guaranteed deadlock when using spark connect",
+)
 def test_memtable_cleanup(con):
     name = ibis.util.gen_name("temp_memtable")
     t = ibis.memtable({"a": [1, 2, 3], "b": list("def")}, name=name)
