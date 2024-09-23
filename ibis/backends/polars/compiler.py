@@ -819,6 +819,24 @@ def distinct(op, **kw):
     return table.unique()
 
 
+@translate.register(ops.Sample)
+def sample(op, **kw):
+    if op.seed is not None:
+        raise com.UnsupportedOperationError(
+            "`Table.sample` with a random seed is unsupported"
+        )
+    table = translate(op.parent, **kw)
+    # Disable predicate pushdown since `t.filter(...).sample(...)` could have
+    # different statistical or performance characteristics than
+    # `t.sample(...).filter(...)`. Same for slice pushdown.
+    return table.map_batches(
+        lambda df: df.sample(fraction=op.fraction),
+        predicate_pushdown=False,
+        slice_pushdown=False,
+        streamable=True,
+    )
+
+
 @translate.register(ops.CountStar)
 def count_star(op, **kw):
     if (where := op.where) is not None:
