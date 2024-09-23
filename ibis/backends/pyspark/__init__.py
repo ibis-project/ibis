@@ -456,7 +456,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df.createTempView(op.name)
 
     def _finalize_memtable(self, name: str) -> None:
-        self._session.catalog.dropTempView(name)
+        self.drop_view(name, force=True)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
