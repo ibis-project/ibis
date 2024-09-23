@@ -1295,12 +1295,8 @@ def test_divide_by_zero(backend, alltypes, df, column, denominator):
     backend.assert_series_equal(result.astype("float64"), expected)
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
+    ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
 )
 def test_random(con):
     expr = ibis.random()
@@ -1309,12 +1305,8 @@ def test_random(con):
     assert 0 <= result <= 1
 
 
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
+    ["polars", "druid", "risingwave"], raises=com.OperationNotDefinedError
 )
 def test_random_different_per_row(alltypes):
     result = alltypes.select("int_col", rand_col=ibis.random()).execute()
