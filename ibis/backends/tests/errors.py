@@ -103,6 +103,7 @@ except ImportError:
     TrinoUserError = None
 
 try:
+    from psycopg2.errors import ArraySubscriptError as PsycoPg2ArraySubscriptError
     from psycopg2.errors import DivisionByZero as PsycoPg2DivisionByZero
     from psycopg2.errors import IndeterminateDatatype as PsycoPg2IndeterminateDatatype
     from psycopg2.errors import InternalError_ as PsycoPg2InternalError
@@ -118,7 +119,7 @@ except ImportError:
         PsycoPg2InvalidTextRepresentation
     ) = PsycoPg2DivisionByZero = PsycoPg2InternalError = PsycoPg2ProgrammingError = (
         PsycoPg2OperationalError
-    ) = PsycoPg2UndefinedObject = None
+    ) = PsycoPg2UndefinedObject = PsycoPg2ArraySubscriptError = None
 
 try:
     from MySQLdb import NotSupportedError as MySQLNotSupportedError
