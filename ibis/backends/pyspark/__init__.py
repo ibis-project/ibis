@@ -456,6 +456,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def _finalize_memtable(self, name: str) -> None:
         """No-op, otherwise a deadlock can occur when using Spark Connect."""
+        if isinstance(session := self._session, pyspark.sql.SparkSession):
+            session.catalog.dropTempView(name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:

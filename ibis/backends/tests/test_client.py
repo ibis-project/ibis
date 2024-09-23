@@ -35,6 +35,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
+from ibis.conftest import IS_SPARK_REMOTE
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -1688,8 +1689,9 @@ def test_insert_into_table_missing_columns(con, temp_table):
 )
 @pytest.mark.notyet(
     ["pyspark"],
+    condition=IS_SPARK_REMOTE,
     raises=AssertionError,
-    reason="likely, but not guaranteed deadlock when using spark connect",
+    reason="likely deadlock when using spark connect",
 )
 def test_memtable_cleanup(con):
     name = ibis.util.gen_name("temp_memtable")
