@@ -93,7 +93,6 @@ __all__ = (
     "literal",
     "map",
     "memtable",
-    "negate",
     "now",
     "ntile",
     "null",
@@ -2188,27 +2187,6 @@ def _timestamp_range(
         stop=normalize_datetime(stop) if isinstance(stop, str) else stop,
         step=step,
     ).to_expr()
-
-
-def _wrap_deprecated(fn, prefix=""):
-    """Deprecate the top-level geo function."""
-
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if isinstance(self, Deferred):
-            method = getattr(self, fn.__name__)
-            return method(*args, **kwargs)
-        return fn(self, *args, **kwargs)
-
-    wrapper.__module__ = "ibis.expr.api"
-    wrapper.__qualname__ = wrapper.__name__ = prefix + fn.__name__
-    dec = util.deprecated(
-        instead=f"use the `{fn.__qualname__}` method instead", as_of="7.0"
-    )
-    return dec(wrapper)
-
-
-negate = _wrap_deprecated(ir.NumericValue.negate)
 
 
 @deferrable
