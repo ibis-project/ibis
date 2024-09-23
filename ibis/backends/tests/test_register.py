@@ -478,6 +478,18 @@ def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch
             "Both Impala and Trino lack efficient data insertion methods from Python."
         )
 
+    if con.name in (
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "duckdb",
+        "polars",
+        "snowflake",
+    ):
+        # Hard skipping this as it may cause weird transaction errors in some
+        # backends (DuckDB) in certain scenarios.
+        pytest.skip(f"{con.name} implements its own `read_parquet`")
+
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name
     mock_calls = []
