@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import polars as pl
 
@@ -492,6 +492,7 @@ class Backend(BaseBackend, NoUrl):
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
+        engine: Literal["cpu", "gpu"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
     ) -> pl.DataFrame:
         self._run_pre_execute_hooks(expr)
@@ -501,7 +502,7 @@ class Backend(BaseBackend, NoUrl):
             limit = ibis.options.sql.default_limit
         if limit is not None:
             lf = lf.limit(limit)
-        df = lf.collect(streaming=streaming)
+        df = lf.collect(streaming=streaming, engine=engine)
         # XXX: Polars sometimes returns data with the incorrect column names.
         # For now we catch this case and rename them here if needed.
         expected_cols = tuple(table_expr.columns)
@@ -515,10 +516,16 @@ class Backend(BaseBackend, NoUrl):
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
+        engine: Literal["cpu", "gpu"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
     ):
         df = self._to_dataframe(
-            expr, params=params, limit=limit, streaming=streaming, **kwargs
+            expr,
+            params=params,
+            limit=limit,
+            streaming=streaming,
+            engine=engine,
+            **kwargs,
         )
         if isinstance(expr, (ir.Table, ir.Scalar)):
             return expr.__pandas_result__(df.to_pandas())
@@ -540,10 +547,16 @@ class Backend(BaseBackend, NoUrl):
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
+        engine: Literal["cpu", "gpu"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
     ):
         df = self._to_dataframe(
-            expr, params=params, limit=limit, streaming=streaming, **kwargs
+            expr,
+            params=params,
+            limit=limit,
+            streaming=streaming,
+            engine=engine,
+            **kwargs,
         )
         return expr.__polars_result__(df)
 
@@ -553,12 +566,18 @@ class Backend(BaseBackend, NoUrl):
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
+        engine: Literal["cpu", "gpu"] | pl.GPUEngine = "cpu",
         **kwargs: Any,
     ):
         from ibis.formats.pyarrow import PyArrowData
 
         df = self._to_dataframe(
-            expr, params=params, limit=limit, streaming=streaming, **kwargs
+            expr,
+            params=params,
+            limit=limit,
+            streaming=streaming,
+            engine=engine,
+            **kwargs,
         )
         return PyArrowData.convert_table(df.to_arrow(), expr.as_table().schema())
 
