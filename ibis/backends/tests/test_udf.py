@@ -6,7 +6,8 @@ from pytest import mark, param
 
 import ibis.common.exceptions as com
 from ibis import _, udf
-from ibis.backends.tests.errors import Py4JJavaError
+from ibis.backends.tests.errors import Py4JJavaError, PySparkPythonException
+from ibis.conftest import IS_SPARK_REMOTE
 
 no_python_udfs = mark.notimpl(
     [
@@ -150,6 +151,12 @@ def add_one_pyarrow(s: int) -> int:  # s is series, int is the element type
     ["postgres"],
     raises=NotImplementedError,
     reason="postgres only supports Python-native UDFs",
+)
+@mark.notyet(
+    ["pyspark"],
+    condition=IS_SPARK_REMOTE,
+    raises=PySparkPythonException,
+    reason="remote udfs not yet tested due to environment complexities",
 )
 @mark.parametrize(
     "add_one",

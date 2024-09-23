@@ -26,9 +26,11 @@ from ibis.backends.tests.errors import (
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
+    PySparkPythonException,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import IS_SPARK_REMOTE
 from ibis.legacy.udf.vectorized import reduction
 
 np = pytest.importorskip("numpy")
@@ -72,6 +74,12 @@ aggregate_test_params = [
                 ["sqlite", "mysql"],
                 reason="no udf support",
                 raises=com.OperationNotDefinedError,
+            ),
+            pytest.mark.notyet(
+                ["pyspark"],
+                condition=IS_SPARK_REMOTE,
+                raises=PySparkPythonException,
+                reason="remote udfs not yet tested due to environment complexities",
             ),
         ],
     ),
@@ -211,14 +219,9 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
     ],
     raises=com.OperationNotDefinedError,
 )
-@pytest.mark.notimpl(
+@pytest.mark.notyet(
     ["pyspark"],
-    raises=NotImplementedError,
-    reason=(
-        "Invalid  return type with grouped aggregate Pandas UDFs: "
-        "StructType([StructField('mean', DoubleType(), True), "
-        "StructField('std', DoubleType(), True)]) is not supported"
-    ),
+    raises=(PySparkPythonException, NotImplementedError),
 )
 def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     """Tests .aggregate() on a multi-key group_by with a reduction
@@ -1426,7 +1429,7 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
 
 
 @pytest.mark.parametrize(
-    "agg_fn", [lambda s: list(s), lambda s: np.array(s)], ids=lambda obj: obj.__name__
+    "agg_fn", [lambda s: list(s), lambda s: np.array(s)], ids=["list", "ndarray"]
 )
 @pytest.mark.notimpl(
     [
@@ -1449,6 +1452,12 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
         "flink",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    condition=IS_SPARK_REMOTE,
+    raises=PySparkPythonException,
+    reason="remote udfs not yet tested due to environment complexities",
 )
 def test_aggregate_list_like(backend, alltypes, df, agg_fn):
     """Tests .aggregate() where the result of an aggregation is a list-like.
@@ -1491,6 +1500,12 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "flink",
     ],
     raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notyet(
+    ["pyspark"],
+    condition=IS_SPARK_REMOTE,
+    raises=PySparkPythonException,
+    reason="remote udfs not yet tested due to environment complexities",
 )
 def test_aggregate_mixed_udf(backend, alltypes, df):
     """Tests .aggregate() with multiple aggregations with mixed result types.

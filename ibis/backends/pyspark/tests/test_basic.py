@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from datetime import timedelta
+
 import pandas as pd
 import pandas.testing as tm
+import pyspark.sql.types as pt
 import pytest
 from pytest import param
 
@@ -116,7 +119,22 @@ def test_alias_after_select(t, df):
 
 
 def test_interval_columns_invalid(con):
-    msg = r"DayTimeIntervalType\(0, 1\) couldn't be converted to Interval"
+    df_interval_invalid = con._session.createDataFrame(
+        [[timedelta(days=10, hours=10, minutes=10, seconds=10)]],
+        pt.StructType(
+            [
+                pt.StructField(
+                    "interval_day_hour",
+                    pt.DayTimeIntervalType(
+                        pt.DayTimeIntervalType.DAY, pt.DayTimeIntervalType.SECOND
+                    ),
+                )
+            ]
+        ),
+    )
+
+    df_interval_invalid.createTempView("invalid_interval_table")
+    msg = r"DayTimeIntervalType.+ couldn't be converted to Interval"
     with pytest.raises(IbisTypeError, match=msg):
         con.table("invalid_interval_table")
 

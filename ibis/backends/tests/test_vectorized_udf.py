@@ -6,12 +6,25 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import PySparkPythonException
+from ibis.conftest import IS_SPARK_REMOTE
 from ibis.legacy.udf.vectorized import analytic, elementwise, reduction
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
-pytestmark = pytest.mark.notimpl(["druid", "oracle", "risingwave"])
+pytestmark = [
+    pytest.mark.notimpl(["druid", "oracle", "risingwave"]),
+    pytest.mark.notyet(
+        ["pyspark"],
+        condition=IS_SPARK_REMOTE,
+        raises=PySparkPythonException,
+        # TODO(cpcloud): this API is deprecated in 10.0.0, no use copypasting a
+        # bunch of markers just for two passing tests
+        strict=False,
+        reason="remote udfs not yet tested due to environment complexities",
+    ),
+]
 
 
 def _format_udf_return_type(func, result_formatter):

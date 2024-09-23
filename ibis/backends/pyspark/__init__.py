@@ -31,9 +31,15 @@ from ibis.legacy.udf.vectorized import _coerce_to_series
 from ibis.util import deprecated
 
 try:
-    from pyspark.errors import AnalysisException, ParseException
+    from pyspark.errors import ParseException
+    from pyspark.errors.exceptions.connect import SparkConnectGrpcException
 except ImportError:
-    from pyspark.sql.utils import AnalysisException, ParseException
+    from pyspark.sql.utils import ParseException
+
+    # Use a dummy class for when spark connect is not available
+    class SparkConnectGrpcException(Exception):
+        pass
+
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
@@ -186,13 +192,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         # Databricks Serverless compute only supports limited properties
         # and any attempt to set unsupported properties will result in an error.
         # https://docs.databricks.com/en/spark/conf.html
-        try:
-            from pyspark.errors.exceptions.connect import SparkConnectGrpcException
-        except ImportError:
-            # Use a dummy class for when spark connect is not available
-            class SparkConnectGrpcException(Exception):
-                pass
-
         with contextlib.suppress(SparkConnectGrpcException):
             self._session.conf.set("spark.sql.mapKeyDedupPolicy", "LAST_WIN")
 
@@ -456,7 +455,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         df.createTempView(op.name)
 
     def _finalize_memtable(self, name: str) -> None:
-        self._session.catalog.dropTempView(name)
+        """No-op, otherwise a deadlock can occur when using Spark Connect."""
+        if isinstance(session := self._session, pyspark.sql.SparkSession):
+            session.catalog.dropTempView(name)
 
     @contextlib.contextmanager
     def _safe_raw_sql(self, query: str) -> Any:
@@ -579,15 +580,19 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         table_loc = self._to_sqlglot_table((catalog, database))
         catalog, db = self._to_catalog_db_tuple(table_loc)
+        session = self._session
         with self._active_catalog_database(catalog, db):
             try:
-                df = self._session.table(table_name)
-            except AnalysisException as e:
-                if not self._session.catalog.tableExists(table_name):
+                df = session.table(table_name)
+                # this is intentionally included in the try block because when
+                # using spark connect, the table-not-found exception coming
+                # from the server will *NOT* be raised until the schema
+                # property is accessed
+                struct = PySparkType.to_ibis(df.schema)
+            except Exception as e:
+                if not session.catalog.tableExists(table_name):
                     raise com.TableNotFound(table_name) from e
                 raise
-
-            struct = PySparkType.to_ibis(df.schema)
 
         return sch.Schema(struct)
 
@@ -752,7 +757,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         query = self.compile(expr)
         t = self._session.sql(query).cache()
         assert t.is_cached
-        t.createOrReplaceTempView(name)
+        t.createTempView(name)
         # store the underlying spark dataframe so we can release memory when
         # asked to, instead of when the session ends
         self._cached_dataframes[name] = t
@@ -761,7 +766,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _drop_cached_table(self, name):
         self._session.catalog.dropTempView(name)
         t = self._cached_dataframes.pop(name)
-        assert t.is_cached
         t.unpersist()
         assert not t.is_cached
 

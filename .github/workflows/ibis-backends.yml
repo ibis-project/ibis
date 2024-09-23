@@ -442,13 +442,9 @@ jobs:
       - name: download backend data
         run: just download-data
 
-      - name: show docker compose version
-        if: matrix.backend.services != null
-        run: docker compose version
-
       - name: start services
         if: matrix.backend.services != null
-        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+        run: just up ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
         uses: actions/setup-python@v5
@@ -600,7 +596,7 @@ jobs:
 
       - name: start services
         if: matrix.backend.services != null
-        run: docker compose up --wait ${{ join(matrix.backend.services, ' ') }}
+        run: just up ${{ join(matrix.backend.services, ' ') }}
 
       - name: install python
         uses: actions/setup-python@v5
@@ -653,7 +649,7 @@ jobs:
         run: docker compose logs
 
   test_pyspark:
-    name: PySpark ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
+    name: PySpark ${{ matrix.tag }} ${{ matrix.pyspark-minor-version }} ubuntu-latest python-${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -665,12 +661,14 @@ jobs:
             deps:
               - "'pandas@<2'"
               - "'numpy@<1.24'"
+            tag: local
           - python-version: "3.11"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
             deps:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
+            tag: local
           - python-version: "3.12"
             pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
@@ -678,6 +676,14 @@ jobs:
               - "'pandas@>2'"
               - "'numpy@>1.24'"
               - setuptools
+            tag: local
+          - python-version: "3.12"
+            pyspark-version: "3.5.2"
+            pyspark-minor-version: "3.5"
+            deps:
+              - setuptools
+            tag: remote
+            SPARK_REMOTE: "sc://localhost:15002"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -690,6 +696,10 @@ jobs:
       - uses: extractions/setup-just@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: start services
+        if: matrix.tag == 'remote'
+        run: just up spark-connect
 
       - name: download backend data
         run: just download-data
@@ -730,7 +740,14 @@ jobs:
         shell: bash
         run: just download-iceberg-jar ${{ matrix.pyspark-minor-version }}
 
-      - name: run tests
+      - name: run spark connect tests
+        if: matrix.tag == 'remote'
+        run: just ci-check -m pyspark
+        env:
+          SPARK_REMOTE: ${{ matrix.SPARK_REMOTE }}
+
+      - name: run spark tests
+        if: matrix.tag == 'local'
         run: just ci-check -m pyspark
 
       - name: check that no untracked files were produced
