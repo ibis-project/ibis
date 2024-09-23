@@ -188,7 +188,8 @@ def test_join_with_pandas(batting, awards_players):
     batting_filt = batting.filter(lambda t: t.yearID < 1900)
     awards_players_filt = awards_players.filter(lambda t: t.yearID < 1900).execute()
     assert isinstance(awards_players_filt, pd.DataFrame)
-    expr = batting_filt.join(awards_players_filt, "yearID")
+    t = ibis.memtable(awards_players_filt)
+    expr = batting_filt.join(t, "yearID")
     df = expr.execute()
     assert df.yearID.nunique() == 7
 
@@ -206,7 +207,9 @@ def test_join_with_pandas_non_null_typed_columns(batting, awards_players):
 
     assert sch.infer(awards_players_filt) == sch.Schema(dict(yearID="int"))
     assert isinstance(awards_players_filt, pd.DataFrame)
-    expr = batting_filt.join(awards_players_filt, "yearID")
+
+    t = ibis.memtable(awards_players_filt)
+    expr = batting_filt.join(t, "yearID")
     df = expr.execute()
     assert df.yearID.nunique() == 7
 
