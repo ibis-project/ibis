@@ -17,9 +17,12 @@ class RisingWaveCompiler(PostgresCompiler):
     dialect = RisingWave
     type_mapper = RisingWaveType
 
+    LOWERED_OPS = {ops.Sample: None}
+
     UNSUPPORTED_OPS = (
         ops.Arbitrary,
         ops.Mode,
+        ops.RandomScalar,
         ops.RandomUUID,
         ops.MultiQuantile,
         ops.ApproxMultiQuantile,

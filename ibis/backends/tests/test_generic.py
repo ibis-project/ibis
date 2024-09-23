@@ -569,11 +569,10 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["polars", "druid"])
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
+    ["polars", "druid", "risingwave"],
+    raises=com.OperationNotDefinedError,
+    reason="random not supported",
 )
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
@@ -2125,12 +2124,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
-)
+@pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     "method",
     [
@@ -2159,12 +2153,7 @@ def test_sample(backend, method):
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
-)
+@pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
