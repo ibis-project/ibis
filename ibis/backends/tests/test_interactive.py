@@ -107,6 +107,10 @@ def test_no_recursion_error(con, monkeypatch):
         repr(expr)
 
 
+@pytest.mark.notimpl(
+    ["impala", "flink", "pyspark"],
+    reason="backend calls `execute` as part of pyarrow conversion",
+)
 def test_scalar_uses_pyarrow(con, table, monkeypatch, mocker):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
