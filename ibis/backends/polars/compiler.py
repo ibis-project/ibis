@@ -1021,7 +1021,11 @@ def array_flatten(op, **kw):
         .then(None)
         .when(result.list.len() == 0)
         .then([])
-        .otherwise(result.flatten())
+        # polars doesn't have an efficient API (yet?) for removing one level of
+        # nesting from an array so we use elementwise evaluation
+        #
+        # https://github.com/ibis-project/ibis/issues/10135
+        .otherwise(result.list.eval(pl.element().flatten()))
     )
 
 

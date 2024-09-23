@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
+    PsycoPg2ArraySubscriptError,
     PsycoPg2IndeterminateDatatype,
     PsycoPg2InternalError,
     PsycoPg2ProgrammingError,
@@ -1006,6 +1007,11 @@ def flatten_data():
                     reason="Arrays are never nullable",
                     raises=AssertionError,
                 ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    reason="flattened empty arrays incorrectly insert a null",
+                    raises=AssertionError,
+                ),
             ],
         ),
     ],
@@ -1557,3 +1563,19 @@ def test_array_agg_bool(con, data, agg, baseline_func):
     result = [x if pd.notna(x) else None for x in result]
     expected = [baseline_func(x) for x in df.x]
     assert result == expected
+
+
+@pytest.mark.notyet(
+    ["postgres"],
+    raises=PsycoPg2ArraySubscriptError,
+    reason="all dimensions must match in size",
+)
+@pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)
+def test_flatten(con):
+    t = ibis.memtable(
+        [{"arr": [[1, 5, 7], [3, 4]]}], schema={"arr": "array<array<int64>>"}
+    )
+    expr = t.arr.flatten().name("result")
+    result = con.execute(expr)
+    expected = pd.Series([[1, 5, 7, 3, 4]], name="result")
+    tm.assert_series_equal(result, expected)
