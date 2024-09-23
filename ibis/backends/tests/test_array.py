@@ -1571,6 +1571,9 @@ def test_array_agg_bool(con, data, agg, baseline_func):
     reason="all dimensions must match in size",
 )
 @pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["bigquery"], raises=TypeError, reason="nested arrays aren't supported"
+)
 def test_flatten(con):
     t = ibis.memtable(
         [{"arr": [[1, 5, 7], [3, 4]]}], schema={"arr": "array<array<int64>>"}
