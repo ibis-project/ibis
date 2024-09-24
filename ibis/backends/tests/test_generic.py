@@ -2141,14 +2141,16 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         ),
     ],
 )
+@pytest.mark.parametrize("subquery", [True, False])
 @pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
-def test_sample(backend, method):
-    t = backend.functional_alltypes.filter(_.int_col >= 2)
+def test_sample(backend, method, alltypes, subquery):
+    if subquery:
+        alltypes = alltypes.filter(_.int_col >= 2)
 
-    total_rows = t.count().execute()
-    empty = t.limit(1).execute().iloc[:0]
+    total_rows = alltypes.count().execute()
+    empty = alltypes.limit(1).execute().iloc[:0]
 
-    df = t.sample(0.1, method=method).execute()
+    df = alltypes.sample(0.1, method=method).execute()
     assert len(df) <= total_rows
     backend.assert_frame_equal(empty, df.iloc[:0])
 

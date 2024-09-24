@@ -23,6 +23,7 @@ from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    lower_sample,
     split_select_distinct_with_order_by,
 )
 from ibis.util import gen_name
@@ -54,7 +55,7 @@ class TrinoCompiler(SQLGlotCompiler):
     )
 
     LOWERED_OPS = {
-        ops.Sample: None,
+        ops.Sample: lower_sample(supports_seed=False),
     }
 
     SIMPLE_OPS = {
@@ -106,20 +107,6 @@ class TrinoCompiler(SQLGlotCompiler):
         ):
             return None
         return spec
-
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        if seed is not None:
-            raise com.UnsupportedOperationError(
-                "`Table.sample` with a random seed is unsupported"
-            )
-        sample = sge.TableSample(
-            method="bernoulli" if method == "row" else "system",
-            percent=sge.convert(fraction * 100.0),
-            seed=None if seed is None else sge.convert(seed),
-        )
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":

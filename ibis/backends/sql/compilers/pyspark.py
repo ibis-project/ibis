@@ -18,6 +18,7 @@ from ibis.backends.sql.dialects import PySpark
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
+    lower_sample,
     p,
     split_select_distinct_with_order_by,
 )
@@ -65,7 +66,7 @@ class PySparkCompiler(SQLGlotCompiler):
     )
 
     LOWERED_OPS = {
-        ops.Sample: None,
+        ops.Sample: lower_sample(supports_seed=False),
     }
 
     SIMPLE_OPS = {
@@ -332,16 +333,6 @@ class PySparkCompiler(SQLGlotCompiler):
         unit = op.step.dtype.resolution
         zero = sge.Interval(this=sge.convert(0), unit=unit)
         return self._build_sequence(start, stop, step, zero)
-
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        if seed is not None:
-            raise com.UnsupportedOperationError(
-                "PySpark backend does not support sampling with seed."
-            )
-        sample = sge.TableSample(percent=sge.convert(int(fraction * 100.0)))
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:

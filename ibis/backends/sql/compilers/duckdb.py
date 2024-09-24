@@ -14,6 +14,7 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
+from ibis.backends.sql.rewrites import lower_sample
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     supports_qualify = True
 
     LOWERED_OPS = {
-        ops.Sample: None,
+        ops.Sample: lower_sample(),
         ops.StringSlice: None,
     }
 
@@ -170,18 +171,6 @@ class DuckDBCompiler(SQLGlotCompiler):
     def visit_ArrayRepeat(self, op, *, arg, times):
         func = sge.Lambda(this=arg, expressions=[sg.to_identifier("_")])
         return self.f.flatten(self.f.list_apply(self.f.range(times), func))
-
-    # TODO(kszucs): this could be moved to the base SQLGlotCompiler
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        sample = sge.TableSample(
-            method="bernoulli" if method == "row" else "system",
-            percent=sge.convert(fraction * 100.0),
-            seed=None if seed is None else sge.convert(seed),
-        )
-
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArraySlice(self, op, *, arg, start, stop):
         arg_length = self.f.len(arg)
