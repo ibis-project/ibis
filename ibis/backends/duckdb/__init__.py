@@ -1052,7 +1052,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self._list_objects(like, database, "VIEW", is_temp=True)
 
-    # @deprecated(as_of="10.0", instead="use the con.tables")
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
