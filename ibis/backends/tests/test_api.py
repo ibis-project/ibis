@@ -201,9 +201,8 @@ def test_list_temp_tables(ddl_con):
 
 
 @pytest.mark.never(
-    "datafusion", reason="datafusion does not support temporary views on sql"
+    ["datafusion", "mysql", "clickhouse"], reason="does not support temporary views"
 )
-@pytest.mark.never("mysql", reason="mysql does not support temporary views")
 def test_list_temp_views(ddl_con):
     # TODO: replace raw_sql with create_temp
 

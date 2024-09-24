@@ -193,8 +193,8 @@ def test_get_schema_using_query(con, query, expected_schema):
 
 
 def test_list_tables_database(con):
-    tables = con.list_tables()
-    tables2 = con.list_tables(database=con.current_database)
+    tables = con.ddl.list_tables()
+    tables2 = con.ddl.list_tables(database=con.current_database)
     # some overlap, but not necessarily identical because
     # a database may have temporary tables added/removed between list_tables
     # calls
@@ -216,7 +216,7 @@ def tmpcon(worker_id):
 
 
 def test_list_tables_empty_database(tmpcon):
-    assert not tmpcon.list_tables()
+    assert not tmpcon.ddl.list_tables()
 
 
 @pytest.mark.parametrize("temp", [True, False], ids=["temp", "no_temp"])
@@ -453,3 +453,25 @@ def test_query_cache(con, method_name):
         method(settings={"ooze_query_cash": True})
 
     assert result == expected
+
+
+def test_list_materialized_views(con):
+    con.create_table(
+        "my_table",
+        {"id": [1, 2, 3], "val": ["a", "b", "c"]},
+        schema=ibis.schema({"id": "!int", "val": "!str"}),
+        overwrite=True,
+    )
+
+    # drop mat view if exists, then create
+    # handles materialized views as tables for dropping purposes
+    con.raw_sql("""DROP TABLE IF EXISTS mat_view_example""")
+    # it doesn't like both statements in one
+    con.raw_sql(
+        """CREATE MATERIALIZED VIEW mat_view_example ENGINE=MergeTree() ORDER BY id AS SELECT * FROM my_table"""
+    )
+
+    assert "mat_view_example" in con.ddl.list_materialized_views()
+    assert "mat_view_example" not in con.ddl.list_views()
+    assert "mat_view_example" not in con.ddl.list_tables()
+    assert "mat_view_example" not in con.ddl.list_temp_tables()

@@ -30,6 +30,7 @@ from ibis.backends import BaseBackend, CanCreateDatabase
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping
@@ -206,37 +207,110 @@ class Backend(SQLBackend, CanCreateDatabase):
             databases = []
         return self._filter_with_like(databases, like)
 
-    def list_tables(
-        self, like: str | None = None, database: str | None = None
+    def _list_query_constructor(self, col: str, where_predicates: list) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col)
+            .from_(sg.table("tables", db="system"))
+            .where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+        is_temp: bool = False,
     ) -> list[str]:
-        """List the tables in the database.
+        """Generic method to list objects like tables or views."""
 
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
+        table_loc = self._to_sqlglot_table(database)
 
-        query = sg.select(C.name).from_(sg.table("tables", db="system"))
+        # when is_temp=True the table is in memory and no database is assigned
+        database = table_loc.db or ("" if is_temp else self.current_database)
+        col = "name"
 
-        if database is None:
-            database = self.compiler.f.currentDatabase()
+        if object_type == "Table":  # we have to check is not a view or mat view
+            where_predicates = [
+                C.database.eq(sge.convert(database)),
+                C.engine.isin("View", "MaterializedView").not_(),
+                C.is_temporary.eq(int(is_temp)),
+            ]
         else:
-            database = sge.convert(database)
+            where_predicates = [
+                C.database.eq(sge.convert(database)),
+                C.engine.eq(object_type),
+                C.is_temporary.eq(int(is_temp)),
+            ]
 
-        query = query.where(C.database.eq(database).or_(C.is_temporary))
-
-        with self._safe_raw_sql(query) as result:
+        sql = self._list_query_constructor(col, where_predicates)
+        with self._safe_raw_sql(sql) as result:
             results = result.result_columns
 
         if results:
             (tables,) = results
         else:
             tables = []
+
         return self._filter_with_like(tables, like)
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "Table")
+
+    def _list_temp_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary tables."""
+
+        return self._list_objects(like, database, "Table", is_temp=True)
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "View")
+
+    def _list_materialized_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "MaterializedView")
+
+    @deprecated(as_of="10.0", instead="use the con.tables")
+    def list_tables(
+        self, like: str | None = None, database: str | None = None
+    ) -> list[str]:
+        table_loc = self._to_sqlglot_table(database)
+
+        database = self.current_database
+        if table_loc is not None:
+            database = table_loc.db or database
+
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_temp_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
+            | set(self._list_materialized_views(like=like, database=database))
+        )
+
+        return tables_and_views
 
     def _normalize_external_tables(self, external_tables=None) -> ExternalData | None:
         """Merge registered external tables with any new external tables."""

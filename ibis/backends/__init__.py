@@ -69,6 +69,7 @@ class TablesAccessor(collections.abc.Mapping):
             "list_views",
             "list_temp_views",
             "list_foreign_tables",
+            "list_materialized_views",
         ]
         tables = []
         for method_name in list_methods:
@@ -249,6 +250,12 @@ class DDLAccessor:
 
         self._raise_if_not_implemented("_list_temp_views")
         return self._backend._list_temp_views(like=like, database=database)
+
+    def list_materialized_views(
+        self, like: str | None = None, database: tuple[str, str] | str | None = None
+    ) -> list[str]:
+        self._raise_if_not_implemented("_list_materialized_views")
+        return self._backend._list_materialized_views(like=like, database=database)
 
     def list_foreign_tables(
         self, like: str | None = None, database: tuple[str, str] | str | None = None
