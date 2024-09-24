@@ -293,7 +293,7 @@ class SQLGlotCompiler(abc.ABC):
     LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
         ops.Bucket: lower_bucket,
         ops.Capitalize: lower_capitalize,
-        ops.Sample: lower_sample(supports_methods=()),
+        ops.Sample: lower_sample(supported_methods=()),
         ops.StringSlice: lower_stringslice,
     }
     """A mapping from an operation class to either a rewrite rule for rewriting that

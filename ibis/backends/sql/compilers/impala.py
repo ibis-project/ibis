@@ -10,7 +10,7 @@ from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.dialects import Impala
-from ibis.backends.sql.rewrites import rewrite_empty_order_by_window
+from ibis.backends.sql.rewrites import lower_sample, rewrite_empty_order_by_window
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -22,6 +22,12 @@ class ImpalaCompiler(SQLGlotCompiler):
         rewrite_empty_order_by_window,
         *SQLGlotCompiler.rewrites,
     )
+
+    LOWERED_OPS = {
+        ops.Sample: lower_sample(
+            supported_methods=("block",), physical_tables_only=True
+        ),
+    }
 
     UNSUPPORTED_OPS = (
         ops.ArgMax,
