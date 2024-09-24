@@ -928,6 +928,9 @@ def test_self_join_memory_table(backend, con, monkeypatch):
         param(
             lambda: ds.dataset(pa.table({"a": ["a"], "b": [1]})),
             "df_arrow_dataset",
+            marks=[
+                pytest.mark.notimpl(["polars"]),
+            ],
             id="pyarrow dataset",
         ),
         param(lambda: pd.DataFrame({"a": ["a"], "b": [1]}), "df_pandas", id="pandas"),
