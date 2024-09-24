@@ -9,11 +9,12 @@ app_id = os.environ["ALGOLIA_APP_ID"]
 index_name = os.environ["ALGOLIA_INDEX"]
 
 
+# A list of search terms that have (historically) not returned results
+# that we can map to existing search terms that we know are good
 ONE_WAY_SYNONYMS = {
-    # A list of search terms that have (historically) not returned results
-    # that we can map to existing search terms that we know are good
-    "md5": ["hashbytes"],
     "fetchdf": ["to_pandas", "to_polars", "to_pyarrow"],
+    "md5": ["hashbytes"],
+    "strptime": ["as_timestamp"],
     "unique": ["distinct"],
 }
 
