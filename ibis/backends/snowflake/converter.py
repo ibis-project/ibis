@@ -97,3 +97,9 @@ class SnowflakePyArrowData(PyArrowData):
 
             return pa.ExtensionArray.from_storage(PYARROW_JSON_TYPE, column)
         return super().convert_column(column, dtype)
+
+    @classmethod
+    def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
+        if dtype.is_json() or dtype.is_array() or dtype.is_map() or dtype.is_struct():
+            return pa.ExtensionScalar.from_storage(PYARROW_JSON_TYPE, scalar)
+        return super().convert_scalar(scalar, dtype)
