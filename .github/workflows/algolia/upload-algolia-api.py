@@ -22,6 +22,10 @@ API_QMDS = [
     "docs/reference/expression-strings.qmd",
     "docs/reference/expression-tables.qmd",
     "docs/reference/expression-temporal.qmd",
+    "docs/reference/scalar-udfs.qmd",
+    "docs/reference/aggregate-udfs.qmd",
+    "docs/reference/schemas.qmd",
+    "docs/reference/datatypes.qmd",
 ]
 
 
