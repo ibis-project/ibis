@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
@@ -349,7 +349,7 @@ class PyArrowTableProxy(TableProxy):
 
 
 class PyArrowDatasetProxy(TableProxy):
-    __slots__ = ("obj", "__dict__")
+    __slots__ = ("obj",)
     obj: V
 
     def __init__(self, obj: V):
@@ -362,30 +362,42 @@ class PyArrowDatasetProxy(TableProxy):
     def __hash__(self):
         return hash(self.obj)
 
-    @cached_property
-    def _cache(self):
-        return self.obj.to_table()
-
     def to_frame(self) -> pd.DataFrame:
-        """Convert this input to a pandas DataFrame."""
-        return self._cache.to_pandas()
+        raise com.UnsupportedOperationError(
+            """You are trying to use a PyArrow Dataset with a backend
+            that will require materializing the entire dataset in local
+            memory.
+
+            If you would like to materialize this dataset, please construct the
+            memtable directly by running `ibis.memtable(my_dataset.to_table())`
+            """
+        )
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
-        """Convert this input to a PyArrow Table."""
-        return self._cache
+        raise com.UnsupportedOperationError(
+            """You are trying to use a PyArrow Dataset with a backend
+            that will require materializing the entire dataset in local
+            memory.
 
-    def to_pyarrow_lazy(self, schema: Schema) -> ds.Dataset:
+            If you would like to materialize this dataset, please construct the
+            memtable directly by running `ibis.memtable(my_dataset.to_table())`
+            """
+        )
+
+    def to_pyarrow_dataset(self, schema: Schema) -> ds.Dataset:
         """Return the dataset object itself.
 
         Use with backends that can perform pushdowns into dataset objects.
         """
         return self.obj
 
-    def to_polars(self, schema: Schema) -> pl.DataFrame:
-        """Convert this input to a Polars DataFrame."""
-        import polars as pl
+    def to_polars(self, schema: Schema) -> pa.Table:
+        raise com.UnsupportedOperationError(
+            """You are trying to use a PyArrow Dataset with a backend
+            that will require materializing the entire dataset in local
+            memory.
 
-        from ibis.formats.polars import PolarsData
-
-        df = pl.from_arrow(self._cache)
-        return PolarsData.convert_table(df, schema)
+            If you would like to materialize this dataset, please construct the
+            memtable directly by running `ibis.memtable(my_dataset.to_table())`
+            """
+        )

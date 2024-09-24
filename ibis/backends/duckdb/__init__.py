@@ -1609,8 +1609,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        if hasattr(op.data, "to_pyarrow_lazy"):
-            self.con.register(op.name, op.data.to_pyarrow_lazy(op.schema))
+        if hasattr(op.data, "to_pyarrow_dataset"):
+            self.con.register(op.name, op.data.to_pyarrow_dataset(op.schema))
         else:
             self.con.register(op.name, op.data.to_pyarrow(op.schema))
 
