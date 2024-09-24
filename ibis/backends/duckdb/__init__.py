@@ -1286,10 +1286,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         ...     )  # doctest: +ELLIPSIS
         <...>
         >>> con = ibis.connect("duckdb://")
-        >>> con.list_tables()
+        >>> con.tables()
         []
         >>> con.attach_sqlite("/tmp/attach_sqlite.db")
-        >>> con.list_tables()
+        >>> con.tables()
         ['t']
 
         """

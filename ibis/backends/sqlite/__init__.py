@@ -487,7 +487,7 @@ class Backend(SQLBackend, UrlFromPath):
         >>> con1 = ibis.sqlite.connect("/tmp/original.db")
         >>> con2 = ibis.sqlite.connect("/tmp/new.db")
         >>> con1.attach("new", "/tmp/new.db")
-        >>> con1.list_tables(database="new")
+        >>> con1.tables(database="new")
         []
         """
         with self.begin() as cur:

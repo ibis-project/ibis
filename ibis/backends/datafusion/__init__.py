@@ -99,7 +99,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         ...     "diamonds": "ci/ibis-testing-data/csv/diamonds.csv",
         ... }
         >>> con = ibis.datafusion.connect(config)
-        >>> con.list_tables()
+        >>> con.tables()
         ['astronauts', 'diamonds']
         >>> con.table("diamonds")
         DatabaseTable: diamonds

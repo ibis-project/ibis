@@ -125,7 +125,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
         >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
         >>> con = ibis.mysql.connect(database=database, host=host, user=user, password=password)
-        >>> con.list_tables()  # doctest: +ELLIPSIS
+        >>> con.tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t

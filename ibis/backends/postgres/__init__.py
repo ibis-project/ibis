@@ -230,7 +230,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD", "postgres")
         >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
         >>> con = ibis.postgres.connect(database=database, host=host, user=user, password=password)
-        >>> con.list_tables()  # doctest: +ELLIPSIS
+        >>> con.tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
