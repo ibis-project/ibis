@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import EMPTY
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -383,7 +385,45 @@ class ArrayValue(Value):
         """
         return ops.ArrayStringJoin(self, sep=sep).to_expr()
 
-    def map(self, func: Deferred | Callable[[ir.Value], ir.Value]) -> ir.ArrayValue:
+    def _construct_array_func_inputs(self, func):
+        if isinstance(func, Deferred):
+            name = "_"
+            index = None
+            resolve = func.resolve
+        elif callable(func):
+            names = (
+                key
+                for key, value in inspect.signature(func).parameters.items()
+                # arg is already bound
+                if value.default is EMPTY
+            )
+            name = next(names)
+            index = next(names, None)
+            resolve = func
+        else:
+            raise TypeError(
+                f"function must be a Deferred or Callable, got `{type(func).__name__}`"
+            )
+
+        shape = self.op().shape
+        parameter = ops.Argument(name=name, shape=shape, dtype=self.type().value_type)
+
+        kwargs = {name: parameter.to_expr()}
+
+        if index is not None:
+            index_arg = ops.Argument(name=index, shape=shape, dtype=dt.int64)
+            kwargs[index] = index_arg.to_expr()
+            index = index_arg
+
+        body = resolve(**kwargs)
+        return parameter, index, body
+
+    def map(
+        self,
+        func: Deferred
+        | Callable[[ir.Value], ir.Value]
+        | Callable[[ir.Value, ir.Value], ir.Value],
+    ) -> ir.ArrayValue:
         """Apply a `func` or `Deferred` to each element of this array expression.
 
         Parameters
@@ -467,26 +507,28 @@ class ArrayValue(Value):
         │ [6]                    │
         │ []                     │
         └────────────────────────┘
-        """
-        if isinstance(func, Deferred):
-            name = "_"
-            resolve = func.resolve
-        elif callable(func):
-            name = next(iter(inspect.signature(func).parameters.keys()))
-            resolve = func
-        else:
-            raise TypeError(
-                f"`func` must be a Deferred or Callable, got `{type(func).__name__}`"
-            )
 
-        parameter = ops.Argument(
-            name=name, shape=self.op().shape, dtype=self.type().value_type
-        )
-        body = resolve(parameter.to_expr())
-        return ops.ArrayMap(self, param=parameter.param, body=body).to_expr()
+        You can optionally include a second index argument in map function
+
+        >>> t.a.map(lambda x, i: i % 2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Modulus(i, 2)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>               │
+        ├────────────────────────────┤
+        │ [0, 1, ... +1]             │
+        │ [0]                        │
+        │ []                         │
+        └────────────────────────────┘
+        """
+        param, index, body = self._construct_array_func_inputs(func)
+        return ops.ArrayMap(self, param=param, index=index, body=body).to_expr()
 
     def filter(
-        self, predicate: Deferred | Callable[[ir.Value], bool | ir.BooleanValue]
+        self,
+        predicate: Deferred
+        | Callable[[ir.Value], bool | ir.BooleanValue]
+        | Callable[[ir.Value, ir.IntegerValue], bool | ir.BooleanValue],
     ) -> ir.ArrayValue:
         """Filter array elements using `predicate` function or `Deferred`.
 
@@ -571,24 +613,22 @@ class ArrayValue(Value):
         │ [4]                           │
         │ []                            │
         └───────────────────────────────┘
+
+        You can optionally include a second index argument in the predicate function
+
+        >>> t.a.filter(lambda x, i: i % 4 == 0)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Equals(Modulus(i, 4), 0)) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                             │
+        ├──────────────────────────────────────────┤
+        │ [1]                                      │
+        │ [4]                                      │
+        │ []                                       │
+        └──────────────────────────────────────────┘
         """
-        if isinstance(predicate, Deferred):
-            name = "_"
-            resolve = predicate.resolve
-        elif callable(predicate):
-            name = next(iter(inspect.signature(predicate).parameters.keys()))
-            resolve = predicate
-        else:
-            raise TypeError(
-                f"`predicate` must be a Deferred or Callable, got `{type(predicate).__name__}`"
-            )
-        parameter = ops.Argument(
-            name=name,
-            shape=self.op().shape,
-            dtype=self.type().value_type,
-        )
-        body = resolve(parameter.to_expr())
-        return ops.ArrayFilter(self, param=parameter.param, body=body).to_expr()
+        param, index, body = self._construct_array_func_inputs(predicate)
+        return ops.ArrayFilter(self, param=param, index=index, body=body).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
         """Return whether the array contains `other`.

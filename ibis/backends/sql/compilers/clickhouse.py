@@ -597,13 +597,29 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.arrayStringConcat(arg, sep)
 
-    def visit_ArrayMap(self, op, *, arg, param, body):
-        func = sge.Lambda(this=body, expressions=[param])
-        return self.f.arrayMap(func, arg)
+    def visit_ArrayMap(self, op, *, arg, param, body, index):
+        expressions = [param]
+        args = [arg]
 
-    def visit_ArrayFilter(self, op, *, arg, param, body):
-        func = sge.Lambda(this=body, expressions=[param])
-        return self.f.arrayFilter(func, arg)
+        if index is not None:
+            expressions.append(index)
+            args.append(self.f.range(0, self.f.length(arg)))
+
+        func = sge.Lambda(this=body, expressions=expressions)
+
+        return self.f.arrayMap(func, *args)
+
+    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        expressions = [param]
+        args = [arg]
+
+        if index is not None:
+            expressions.append(index)
+            args.append(self.f.range(0, self.f.length(arg)))
+
+        func = sge.Lambda(this=body, expressions=expressions)
+
+        return self.f.arrayFilter(func, *args)
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))

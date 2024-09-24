@@ -156,11 +156,39 @@ class TrinoCompiler(SQLGlotCompiler):
 
         return self.f.slice(arg, start + 1, stop - start)
 
-    def visit_ArrayMap(self, op, *, arg, param, body):
-        return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+    def visit_ArrayMap(self, op, *, arg, param, body, index):
+        if index is None:
+            return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+        else:
+            return self.f.zip_with(
+                arg,
+                self.f.sequence(0, self.f.cardinality(arg) - 1),
+                sge.Lambda(this=body, expressions=[param, index]),
+            )
 
-    def visit_ArrayFilter(self, op, *, arg, param, body):
-        return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
+    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        if index is None:
+            return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
+        else:
+            placeholder = sg.to_identifier("__trino_filter__")
+            index = sg.to_identifier(index)
+            return self.f.filter(
+                self.f.zip_with(
+                    arg,
+                    # users are limited to 10_000 elements here because it
+                    # seems like trino won't ever actually address the limit
+                    self.f.sequence(0, self.f.cardinality(arg) - 1),
+                    sge.Lambda(
+                        # semantics are: arg if predicate(arg, index) else null
+                        this=self.if_(body, param, NULL),
+                        expressions=[param, index],
+                    ),
+                ),
+                # then, filter out elements that are null
+                sge.Lambda(
+                    this=placeholder.is_(sg.not_(NULL)), expressions=[placeholder]
+                ),
+            )
 
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(

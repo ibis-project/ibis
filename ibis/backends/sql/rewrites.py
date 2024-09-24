@@ -634,3 +634,16 @@ def lower_sample(
         return _
 
     return lower
+
+
+@replace(p.ArrayMap | p.ArrayFilter)
+def subtract_one_from_index_argument(_, **kwargs):
+    # no index argument, so do nothing
+    if _.index is None:
+        return _
+
+    @replace(y @ p.Argument(name=_.index.name))
+    def argument_replacer(_, y, **kwargs):
+        return ops.Subtract(y, 1)
+
+    return _.copy(body=_.body.replace(argument_replacer))
