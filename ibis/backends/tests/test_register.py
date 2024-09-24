@@ -614,3 +614,73 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
         }
     )
     assert table.count().execute() == num_diamonds
+
+
+@pytest.mark.parametrize(
+    ("skip_rows", "new_column_names", "delimiter", "include_columns"),
+    [
+        param(True, True, False, False, id="skip_rows_with_column_names"),
+        param(False, False, False, True, id="include_columns"),
+        param(False, False, True, False, id="delimiter"),
+    ],
+)
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.never(
+    [
+        "duckdb",
+        "polars",
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+        "pyspark",
+    ],
+    reason="backend implements its own read_csv",
+)
+@pytest.mark.notimpl(["mssql"], raises=PyODBCProgrammingError)
+@pytest.mark.notimpl(["mysql"], raises=MySQLOperationalError)
+def test_read_csv_pyarrow_options(
+    con, tmp_path, ft_data, skip_rows, new_column_names, delimiter, include_columns
+):
+    pc = pytest.importorskip("pyarrow.csv")
+
+    if con.name in (
+        "duckdb",
+        "polars",
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+        "pyspark",
+    ):
+        pytest.skip(f"{con.name} implements its own `read_parquet`")
+
+    column_names = ft_data.column_names
+    num_rows = ft_data.num_rows
+    fname = "tmp.csv"
+    pc.write_csv(ft_data, tmp_path / fname)
+
+    options = {}
+    if skip_rows:
+        options["skip_rows"] = 2
+        num_rows = num_rows - options["skip_rows"] + 1
+    if new_column_names:
+        column_names = [f"col_{i}" for i in range(ft_data.num_columns)]
+        options["column_names"] = column_names
+    if delimiter:
+        new_delimiter = "*"
+        options["delimiter"] = new_delimiter
+        pc.write_csv(
+            ft_data, tmp_path / fname, pc.WriteOptions(delimiter=new_delimiter)
+        )
+    if include_columns:
+        # try to include all types here
+        # pick the first 12 columns
+        column_names = column_names[:12]
+        options["include_columns"] = column_names
+
+    table = con.read_csv(tmp_path / fname, **options)
+
+    assert set(table.columns) == set(column_names)
+    assert table.count().execute() == num_rows

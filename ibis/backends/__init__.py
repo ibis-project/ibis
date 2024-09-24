@@ -1277,8 +1277,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         """Register a CSV file as a table in the current backend.
 
         This function reads a CSV file and registers it as a table in the current
-        backend. Note that for Impala and Trino backends, CSV read performance
-        may be suboptimal.
+        backend. Note that for Impala and Trino backends, the performance may be suboptimal.
 
         Parameters
         ----------
@@ -1289,6 +1288,11 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             a sequentially generated name.
         **kwargs
             Additional keyword arguments passed to the backend loading function.
+            Common options are skip_rows, column_names, delimiter, and include_columns.
+            More details could be found:
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ReadOptions.html
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ParseOptions.html
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ConvertOptions.html
 
         Returns
         -------
@@ -1317,6 +1321,11 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
         >>> table = con.read_csv("s3://bucket/path/to/file.csv")
 
+        Read csv file with custom pyarrow options:
+
+        >>> table = con.read_csv(
+        ...     "path/to/file.csv", delimiter=",", include_columns=["col1", "col3"]
+        ... )
         """
         pa = self._import_pyarrow()
         import pyarrow.csv as pcsv
@@ -1342,7 +1351,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         read_options = pcsv.ReadOptions(**read_options_args)
         parse_options = pcsv.ParseOptions(**parse_options_args)
         convert_options = pcsv.ConvertOptions(**convert_options_args)
-        if memory_pool:
+        if not memory_pool:
             memory_pool = pa.default_memory_pool()
 
         path = str(path)
