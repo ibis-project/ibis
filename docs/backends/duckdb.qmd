@@ -171,13 +171,13 @@ pip install 'ibis-framework[geospatial]'
 ## `conda`
 
 ```bash
-conda install -c conda-forge geopandas 'shapely>=2,<3'
+conda install -c conda-forge ibis-framework geopandas 'shapely>=2,<3'
 ```
 
 ## `mamba`
 
 ```bash
-mamba install -c conda-forge geopandas 'shapely>=2,<3'
+mamba install -c conda-forge ibis-framework geopandas 'shapely>=2,<3'
 ```
 
 :::
