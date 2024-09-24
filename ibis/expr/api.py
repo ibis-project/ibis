@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    import pyarrow.dataset as ds
 
     from ibis.expr.schema import SchemaLike
 
@@ -477,6 +478,23 @@ def _memtable_from_pyarrow_table(
         name=name if name is not None else util.gen_name("pyarrow_memtable"),
         schema=sch.infer(data) if schema is None else schema,
         data=PyArrowTableProxy(data),
+    ).to_expr()
+
+
+@_memtable.register("pyarrow.dataset.Dataset")
+def _memtable_from_pyarrow_dataset(
+    data: ds.Dataset,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    from ibis.formats.pyarrow import PyArrowDatasetProxy
+
+    return ops.InMemoryTable(
+        name=name if name is not None else util.gen_name("pyarrow_memtable"),
+        schema=Schema.from_pyarrow(data.schema),
+        data=PyArrowDatasetProxy(data),
     ).to_expr()
 
 

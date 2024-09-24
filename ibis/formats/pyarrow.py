@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -12,7 +13,11 @@ from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    import pandas as pd
     import polars as pl
+    import pyarrow.dataset as ds
+
+    from ibis.util import V
 
 
 _from_pyarrow_types = {
@@ -340,4 +345,47 @@ class PyArrowTableProxy(TableProxy):
         from ibis.formats.polars import PolarsData
 
         df = pl.from_arrow(self.obj)
+        return PolarsData.convert_table(df, schema)
+
+
+class PyArrowDatasetProxy(TableProxy):
+    __slots__ = ("obj", "__dict__")
+    obj: V
+
+    def __init__(self, obj: V):
+        self.obj = obj
+
+    def __len__(self):
+        return self.obj.count_rows()
+
+    # pyarrow datasets are hashable, so we override the hash from TableProxy
+    def __hash__(self):
+        return hash(self.obj)
+
+    @cached_property
+    def _cache(self):
+        return self.obj.to_table()
+
+    def to_frame(self) -> pd.DataFrame:
+        """Convert this input to a pandas DataFrame."""
+        return self._cache.to_pandas()
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        """Convert this input to a PyArrow Table."""
+        return self._cache
+
+    def to_pyarrow_lazy(self, schema: Schema) -> ds.Dataset:
+        """Return the dataset object itself.
+
+        Use with backends that can perform pushdowns into dataset objects.
+        """
+        return self.obj
+
+    def to_polars(self, schema: Schema) -> pl.DataFrame:
+        """Convert this input to a Polars DataFrame."""
+        import polars as pl
+
+        from ibis.formats.polars import PolarsData
+
+        df = pl.from_arrow(self._cache)
         return PolarsData.convert_table(df, schema)
