@@ -22,6 +22,7 @@ from ibis.backends.sql.dialects import MSSQL
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
+    lower_sample,
     p,
     replace,
     split_select_distinct_with_order_by,
@@ -72,6 +73,12 @@ class MSSQLCompiler(SQLGlotCompiler):
     )
     post_rewrites = (split_select_distinct_with_order_by,)
     copy_func_args = True
+
+    LOWERED_OPS = {
+        ops.Sample: lower_sample(
+            supported_methods=("block",), physical_tables_only=True
+        ),
+    }
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,

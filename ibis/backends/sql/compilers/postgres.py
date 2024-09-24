@@ -17,7 +17,7 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
+from ibis.backends.sql.rewrites import lower_sample, split_select_distinct_with_order_by
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -49,6 +49,8 @@ class PostgresCompiler(SQLGlotCompiler):
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
     NEG_INF = sge.Literal.number("'-Inf'::double precision")
+
+    LOWERED_OPS = {ops.Sample: lower_sample(physical_tables_only=True)}
 
     UNSUPPORTED_OPS = (
         ops.RowID,

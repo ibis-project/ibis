@@ -2141,7 +2141,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
         ),
     ],
 )
-@pytest.mark.parametrize("subquery", [True, False])
+@pytest.mark.parametrize("subquery", [True, False], ids=["subquery", "table"])
 @pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
 def test_sample(backend, method, alltypes, subquery):
     if subquery:
@@ -2175,7 +2175,6 @@ def test_sample_memtable(con, backend):
         "mysql",
         "oracle",
         "polars",
-        "postgres",
         "risingwave",
         "sqlite",
         "trino",

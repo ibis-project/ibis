@@ -22,6 +22,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    lower_sample,
     split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
@@ -117,6 +118,14 @@ class BigQueryCompiler(SQLGlotCompiler):
     post_rewrites = (split_select_distinct_with_order_by,)
 
     supports_qualify = True
+
+    LOWERED_OPS = {
+        ops.Sample: lower_sample(
+            supported_methods=("block",),
+            supports_seed=False,
+            physical_tables_only=True,
+        ),
+    }
 
     UNSUPPORTED_OPS = (
         ops.DateDiff,

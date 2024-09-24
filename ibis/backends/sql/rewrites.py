@@ -593,7 +593,7 @@ def lower_capitalize(_, **kwargs):
 
 
 def lower_sample(
-    supports_methods=("row", "block"),
+    supported_methods=("row", "block"),
     supports_seed=True,
     physical_tables_only=False,
 ):
@@ -605,7 +605,7 @@ def lower_sample(
 
     Parameters
     ----------
-    supports_methods
+    supported_methods
         The sampling methods supported by the backend's native TABLESAMPLE operation.
     supports_seed
         Whether the backend's native TABLESAMPLE supports setting a `seed`.
@@ -616,7 +616,7 @@ def lower_sample(
     @replace(p.Sample)
     def lower(_, **kwargs):
         if (
-            (_.method not in supports_methods)
+            _.method not in supported_methods
             or (_.seed is not None and not supports_seed)
             or (
                 physical_tables_only

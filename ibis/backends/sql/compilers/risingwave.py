@@ -26,6 +26,7 @@ class RisingWaveCompiler(PostgresCompiler):
         ops.RandomUUID,
         ops.MultiQuantile,
         ops.ApproxMultiQuantile,
+        ops.Sample,
         *(
             op
             for op in ALL_OPERATIONS

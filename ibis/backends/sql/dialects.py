@@ -307,11 +307,22 @@ class Flink(Hive):
         STRING_ESCAPES = ["'"]
 
 
+def tablesample_percent_to_int(self, expr):
+    """Impala's TABLESAMPLE only supports integer percentages."""
+    expr = expr.copy()
+    expr.args["percent"] = sge.convert(round(float(expr.args["percent"].this)))
+    return self.tablesample_sql(expr)
+
+
 class Impala(Hive):
     NULL_ORDERING = "nulls_are_large"
     REGEXP_EXTRACT_DEFAULT_GROUP = 0
+    TABLESAMPLE_SIZE_IS_PERCENT = True
+    ALIAS_POST_TABLESAMPLE = False
 
     class Generator(Hive.Generator):
+        TABLESAMPLE_WITH_METHOD = True
+
         TRANSFORMS = Hive.Generator.TRANSFORMS.copy() | {
             sge.ApproxDistinct: rename_func("ndv"),
             sge.IsNan: rename_func("is_nan"),
@@ -319,6 +330,7 @@ class Impala(Hive):
             sge.DayOfWeek: rename_func("dayofweek"),
             sge.Interval: lambda self, e: _interval(self, e, quote_arg=False),
             sge.CurrentDate: rename_func("current_date"),
+            sge.TableSample: tablesample_percent_to_int,
         }
 
 

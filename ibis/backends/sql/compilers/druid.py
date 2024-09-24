@@ -65,6 +65,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.TypeOf,
         ops.Unnest,
         ops.Variance,
+        ops.Sample,
     )
 
     SIMPLE_OPS = {
