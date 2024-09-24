@@ -293,7 +293,7 @@ class SQLGlotCompiler(abc.ABC):
     LOWERED_OPS: dict[type[ops.Node], pats.Replace | None] = {
         ops.Bucket: lower_bucket,
         ops.Capitalize: lower_capitalize,
-        ops.Sample: lower_sample,
+        ops.Sample: lower_sample(supports_methods=()),
         ops.StringSlice: lower_stringslice,
     }
     """A mapping from an operation class to either a rewrite rule for rewriting that
@@ -1447,6 +1447,23 @@ class SQLGlotCompiler(abc.ABC):
             distinct=distinct,
             copy=False,
         )
+
+    def visit_Sample(
+        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
+    ):
+        sample = sge.TableSample(
+            method="bernoulli" if method == "row" else "system",
+            percent=sge.convert(fraction * 100.0),
+            seed=None if seed is None else sge.convert(seed),
+        )
+        # sample was changed to be owned by the table being sampled in 25.17.0
+        #
+        # this is a small workaround for backwards compatibility
+        if "this" in sample.__class__.arg_types:
+            sample.args["this"] = parent
+        else:
+            parent.args["sample"] = sample
+        return sg.select(STAR).from_(parent)
 
     def visit_Limit(self, op, *, parent, n, offset):
         # push limit/offset into subqueries

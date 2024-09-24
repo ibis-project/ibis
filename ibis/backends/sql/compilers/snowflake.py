@@ -29,6 +29,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_row_number,
     lower_log2,
     lower_log10,
+    lower_sample,
     rewrite_empty_order_by_window,
 )
 
@@ -59,7 +60,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
     LOWERED_OPS = {
         ops.Log2: lower_log2,
         ops.Log10: lower_log10,
-        ops.Sample: None,
+        ops.Sample: lower_sample(),
     }
 
     UNSUPPORTED_OPS = (
@@ -761,16 +762,6 @@ $$""",
             )
             .subquery()
         )
-
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        sample = sge.TableSample(
-            method="bernoulli" if method == "row" else "system",
-            percent=sge.convert(fraction * 100.0),
-            seed=None if seed is None else sge.convert(seed),
-        )
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
 
     def visit_ArrayMap(self, op, *, arg, param, body):
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
