@@ -76,7 +76,7 @@ class TablesAccessor(collections.abc.Mapping):
             tables.extend(
                 self._execute_if_exists(method_name, database=database, like=like)
             )
-        return list(set(tables))
+        return tables
 
     def __call__(self, database=None, like=None):
         return self._gather_tables(database, like)
