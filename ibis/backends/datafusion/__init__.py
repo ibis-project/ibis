@@ -300,6 +300,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             sg.select(col)
             .from_(sg.table("tables", db="information_schema"))
             .where(*where_predicates)
+            .order_by("table_name")  # in datafusion we ordered the tables
         ).sql(self.name)
 
         return sg_query
