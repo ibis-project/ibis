@@ -304,9 +304,7 @@ class PyArrowData(DataMapper):
             except pa.ArrowNotImplementedError:
                 # pyarrow doesn't support some scalar casts that are supported
                 # when using arrays or tables
-                return pa.array([scalar.as_py()], type=scalar_type).cast(desired_type)[
-                    0
-                ]
+                return pa.scalar(scalar.as_py(), type=scalar_type).cast(desired_type)
         else:
             return scalar
 
