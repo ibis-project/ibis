@@ -431,6 +431,10 @@ class ArrayValue(Value):
         func
             Function or `Deferred` to apply to each element of this array.
 
+            Callables must accept one or two arguments. If there are two
+            arguments, the second argument is the **zero**-based index of each
+            element of the array.
+
         Returns
         -------
         ArrayValue
@@ -535,7 +539,11 @@ class ArrayValue(Value):
         Parameters
         ----------
         predicate
-            Function or `Deferred` to use to filter array elements
+            Function or `Deferred` to use to filter array elements.
+
+            Callables must accept one or two arguments. If there are two
+            arguments, the second argument is the **zero**-based index of each
+            element of the array.
 
         Returns
         -------
