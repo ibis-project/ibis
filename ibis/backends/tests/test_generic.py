@@ -2125,22 +2125,7 @@ def test_dynamic_table_slice_with_computed_offset(backend):
 
 
 @pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
-@pytest.mark.parametrize(
-    "method",
-    [
-        "row",
-        param(
-            "block",
-            marks=[
-                pytest.mark.notimpl(
-                    ["snowflake"],
-                    raises=SnowflakeProgrammingError,
-                    reason="SAMPLE clause on views only supports row wise sampling without seed.",
-                )
-            ],
-        ),
-    ],
-)
+@pytest.mark.parametrize("method", ["row", "block"])
 @pytest.mark.parametrize("subquery", [True, False], ids=["subquery", "table"])
 @pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
 def test_sample(backend, method, alltypes, subquery):
