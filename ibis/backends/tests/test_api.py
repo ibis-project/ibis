@@ -136,3 +136,8 @@ def test_unbind(alltypes, expr_fn):
 
     assert "Unbound" not in repr(expr)
     assert "Unbound" in repr(expr.unbind())
+
+
+def test_get_backend(con, alltypes):
+    assert alltypes.get_backend() is con
+    assert alltypes.id.min().get_backend() is con
