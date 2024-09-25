@@ -27,6 +27,7 @@ pytestmark = [
     ),
 ]
 
+
 @contextlib.contextmanager
 def pushd(new_dir):
     previous_dir = os.getcwd()

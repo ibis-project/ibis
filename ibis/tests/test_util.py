@@ -4,11 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from ibis.util import (
-    PseudoHashable,
-    flatten_iterable,
-    import_object,
-)
+from ibis.util import PseudoHashable, flatten_iterable, import_object
 
 
 @pytest.mark.parametrize(
@@ -53,8 +49,6 @@ def test_import_object():
 
     with pytest.raises(ImportError):
         import_object("collections.this_attribute_doesnt_exist")
-
-
 
 
 # TODO(kszucs): add tests for promote_list and promote_tuple

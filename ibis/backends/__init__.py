@@ -1325,10 +1325,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
         >>> table = con.read_parquet("gs://bucket-name/path/to/file.parquet")
 
-        Read from HTTPS URL
-
-        >>> table = con.read_parquet("https://example.com/data/file.parquet")
-
         Read with a custom table name
 
         >>> table = con.read_parquet("s3://bucket/data.parquet", table_name="my_table")
@@ -1345,11 +1341,11 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         ... )
         >>> table = con.read_parquet("s3://bucket/data.parquet", filesystem=s3_fs)
 
-        Read from URL
+        Read from HTTPS URL
 
         >>> import fsspec
         >>> from io import BytesIO
-        >>> url = "https://https://{storage_service}/{path_to_file}/xxx.parquet"
+        >>> url = "https://example.com/data/file.parquet"
         >>> credentials = {}
         >>> f = fsspec.open(url, **credentials).open()
         >>> reader = BytesIO(f.read())
