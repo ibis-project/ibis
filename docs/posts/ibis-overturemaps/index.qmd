@@ -24,12 +24,11 @@ Let’s dive into how these tools come together.
 
 ## Installation
 
-First make sure you have `duckdb=1.1.1`, then install Ibis with the dependencies
-needed to work with geospatial data using DuckDB. To be able to read GeoParquet
-files the DuckDB version should be `>=1.1.1`.
+First make sure you have `duckdb>=1.1.1`, then install Ibis with the dependencies
+needed to work with geospatial data using DuckDB.
 
 ```bash
-$ pip install duckdb==1.1.1
+$ pip install 'duckdb>=1.1.1'
 $ pip install 'ibis-framework[duckdb,geospatial]' lonboard
 ```
 
@@ -50,14 +49,14 @@ simplicity of the bounding box).
 
 First we import Ibis, its [deferred expression object](https://ibis-project.org/reference/expression-generic.html#ibis.expr.api.deferred) `_` ,
 and we use our default backend, DuckDB:
-```{python}
+```python
 import ibis
 from ibis import _
 
 con = ibis.get_backend() # default duckdb backend
 ```
 
-With Ibis and DuckDB we be more specific about the data we want thanks to the
+With Ibis and DuckDB we can be more specific about the data we want thanks to the
 filter push down. For example, if we want to select only a few columns and
 look only at the power infrastructure when can do this as follow.
 
@@ -94,25 +93,25 @@ beautiful maps.
 ## Data exploration
 
 To explore the data interactively we turn on the interactive mode:
-```{python}
+```python
 ibis.options.interactive = True
 ```
 
-```{python}
+```python
 usa_power_infra = con.read_parquet("power-infra-usa.geoparquet")
 usa_power_infra
 ```
 
 Let's quickly rename the `class` column, since this is a reserved word and causes
-conflicts when using the deferred operator
+conflicts when using the deferred operator:
 
-```{python}
+```python
 usa_power_infra = usa_power_infra.rename(infra_class="class")
 ```
 
 We take a look at the different classes of infrastructure under the subtype power:
 
-```{python}
+```python
 usa_power_infra.infra_class.value_counts().order_by(
     ibis.desc("infra_class_count")
 ).preview(max_rows=15)
@@ -120,7 +119,7 @@ usa_power_infra.infra_class.value_counts().order_by(
 
 Looks like we have `plant`, `power_line` and `minor_line` among others.
 
-```{python}
+```python
 plants = usa_power_infra.filter(_.infra_class=="plant")
 power_lines = usa_power_infra.filter(_.infra_class=="power_line")
 minor_lines = usa_power_infra.filter(_.infra_class=="minor_line")
