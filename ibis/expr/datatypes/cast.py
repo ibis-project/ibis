@@ -116,7 +116,8 @@ def castable(source: dt.DataType, target: dt.DataType, value: Any = None) -> boo
         )
     elif target.is_struct():
         return source.is_struct() and all(
-            castable(source[field], target[field]) for field in target.names
+            field in source and castable(source[field], target[field])
+            for field in target.names
         )
     elif target.is_geospatial():
         return source.is_geospatial() or source.is_array()
