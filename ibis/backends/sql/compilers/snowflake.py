@@ -31,7 +31,31 @@ from ibis.backends.sql.rewrites import (
     lower_log10,
     lower_sample,
     rewrite_empty_order_by_window,
+    x,
 )
+from ibis.common.patterns import replace
+from ibis.expr.rewrites import p
+
+
+@replace(p.ArrayMap | p.ArrayFilter)
+def multiple_args_to_zipped_struct_field_access(_, **kwargs):
+    # no index argument, so do nothing
+    if _.index is None:
+        return _
+
+    param = _.param.name
+
+    @replace(x @ p.Argument(name=param))
+    def argument_replacer(_, x, **kwargs):
+        return ops.StructField(x.copy(dtype=dt.Struct({"$1": _.dtype})), "$1")
+
+    @replace(x @ p.Argument(name=_.index.name))
+    def index_replacer(_, x, **kwargs):
+        return ops.StructField(
+            x.copy(name=param, dtype=dt.Struct({"$2": _.dtype})), "$2"
+        )
+
+    return _.copy(body=_.body.replace(argument_replacer | index_replacer))
 
 
 class SnowflakeFuncGen(FuncGen):
@@ -54,6 +78,7 @@ class SnowflakeCompiler(SQLGlotCompiler):
         exclude_unsupported_window_frame_from_row_number,
         exclude_unsupported_window_frame_from_ops,
         rewrite_empty_order_by_window,
+        multiple_args_to_zipped_struct_field_access,
         *SQLGlotCompiler.rewrites,
     )
 
@@ -768,23 +793,49 @@ $$""",
             .subquery()
         )
 
-    def visit_ArrayMap(self, op, *, arg, param, body):
+    def visit_Sample(
+        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
+    ):
+        sample = sge.TableSample(
+            method="bernoulli" if method == "row" else "system",
+            percent=sge.convert(fraction * 100.0),
+            seed=None if seed is None else sge.convert(seed),
+        )
+        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
+
+    def visit_ArrayMap(self, op, *, arg, param, body, index):
+        if index is not None:
+            arg = self.f.arrays_zip(
+                arg, self.f.array_generate_range(0, self.f.array_size(arg))
+            )
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
 
-    def visit_ArrayFilter(self, op, *, arg, param, body):
-        return self.f.filter(
-            arg,
-            sge.Lambda(
-                this=sg.and_(
-                    body,
-                    # necessary otherwise null values are treated as JSON nulls
-                    # instead of SQL NULLs
-                    self.cast(sg.to_identifier(param), op.dtype.value_type).is_(
-                        sg.not_(NULL)
-                    ),
+    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        if index is not None:
+            arg = self.f.arrays_zip(
+                arg, self.f.array_generate_range(0, self.f.array_size(arg))
+            )
+            null_filter_arg = self.f.get(param, "$1")
+            # extract the field we care about
+            placeholder = sg.to_identifier("__ibis_snowflake_arg__")
+            post_process = lambda arg: self.f.transform(
+                arg,
+                sge.Lambda(
+                    this=self.f.get(placeholder, "$1"), expressions=[placeholder]
                 ),
-                expressions=[param],
-            ),
+            )
+        else:
+            null_filter_arg = param
+            post_process = lambda arg: arg
+
+        # null_filter is necessary otherwise null values are treated as JSON
+        # nulls instead of SQL NULLs
+        null_filter = self.cast(null_filter_arg, op.dtype.value_type).is_(sg.not_(NULL))
+
+        return post_process(
+            self.f.filter(
+                arg, sge.Lambda(this=sg.and_(body, null_filter), expressions=[param])
+            )
         )
 
     def visit_JoinLink(self, op, *, how, table, predicates):

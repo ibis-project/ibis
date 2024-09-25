@@ -476,6 +476,59 @@ def test_array_map(con, input, output, func):
 
 @builtin_array
 @pytest.mark.notimpl(
+    ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="TODO(Kexiang): seems a bug",
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2, None, 5], [5]]},
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="BigQuery doesn't support arrays with null elements",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
+            ],
+            id="nulls",
+        ),
+        param({"a": [[1, 2], [4]]}, {"a": [[2, 4], [5]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.parametrize(
+    "func",
+    [lambda x, i: x + 1 + i, partial(lambda x, y, i: x + y + i, y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_map_with_index(con, input, output, func):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.Series(output["a"])
+
+    expr = t.select(a=t.a.map(func))
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(
     ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(
@@ -510,6 +563,52 @@ def test_array_map(con, input, output, func):
     ids=["lambda", "partial", "deferred"],
 )
 def test_array_filter(con, input, output, predicate):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.Series(output["a"])
+
+    expr = t.select(a=t.a.filter(predicate))
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
+        param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
+@pytest.mark.parametrize(
+    "predicate",
+    [lambda x, i: x + (i - i) > 1, partial(lambda x, y, i: x > y + (i * 0), y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_filter_with_index(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 

@@ -381,16 +381,25 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op, *, arg):
         return self.cast(self.f.arrays_zip(*arg), op.dtype)
 
-    def visit_ArrayMap(self, op, *, arg, body, param):
-        param = sge.Identifier(this=param)
-        func = sge.Lambda(this=body, expressions=[param])
+    def visit_ArrayMap(self, op, *, arg, body, param, index):
+        expressions = [param]
+
+        if index is not None:
+            expressions.append(index)
+
+        func = sge.Lambda(this=body, expressions=expressions)
         return self.f.transform(arg, func)
 
-    def visit_ArrayFilter(self, op, *, arg, body, param):
-        param = sge.Identifier(this=param)
-        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=[param])
+    def visit_ArrayFilter(self, op, *, arg, body, param, index):
+        expressions = [param]
+
+        if index is not None:
+            expressions.append(index)
+
+        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=expressions)
         transform = self.f.transform(arg, func)
-        func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=[param])
+
+        func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=expressions)
         return self.f.filter(transform, func)
 
     def visit_ArrayIndex(self, op, *, arg, index):
