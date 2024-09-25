@@ -123,7 +123,6 @@ aggregate_test_params = [
 ]
 
 argidx_not_grouped_marks = [
-    "datafusion",
     "impala",
     "mysql",
     "mssql",
@@ -411,7 +410,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         "impala",
                         "mysql",
-                        "datafusion",
                         "mssql",
                         "druid",
                         "oracle",
@@ -431,7 +429,6 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     [
                         "impala",
                         "mysql",
-                        "datafusion",
                         "mssql",
                         "druid",
                         "oracle",
@@ -691,7 +688,6 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
 
 @pytest.mark.notimpl(
     [
-        "datafusion",
         "druid",
         "exasol",
         "flink",
