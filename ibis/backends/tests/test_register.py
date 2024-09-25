@@ -4,6 +4,7 @@ import contextlib
 import csv
 import gzip
 import os
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -441,76 +442,6 @@ def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     assert table.count().execute()
 
 
-# test reading a Parquet file from a URL request for backends using pyarrow
-# that do not have their own implementation
-@pytest.mark.parametrize(
-    ("url", "in_table_name"),
-    [
-        ("http://example.com/functional_alltypes.parquet", "http_table"),
-        ("sftp://example.com/path/to/functional_alltypes.parquet", "sftp_table"),
-    ],
-)
-@pytest.mark.never(
-    [
-        "duckdb",
-        "polars",
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "snowflake",
-    ],
-    reason="backend implements its own read_parquet",
-)
-@pytest.mark.notyet(["flink"])
-@pytest.mark.notimpl(
-    [
-        "druid",
-        "pyspark",
-    ]
-)
-def test_read_parquet_url_request(con, url, data_dir, in_table_name, monkeypatch):
-    pytest.importorskip("pyarrow.parquet")
-    fsspec = pytest.importorskip("fsspec")
-
-    if con.name in ("trino", "impala"):
-        # TODO: remove after trino and impala have efficient insertion
-        pytest.skip(
-            "Both Impala and Trino lack efficient data insertion methods from Python."
-        )
-
-    if con.name in (
-        "bigquery",
-        "clickhouse",
-        "datafusion",
-        "duckdb",
-        "polars",
-        "snowflake",
-    ):
-        # Hard skipping this as it may cause weird transaction errors in some
-        # backends (DuckDB) in certain scenarios.
-        pytest.skip(f"{con.name} implements its own `read_parquet`")
-
-    fname = Path("functional_alltypes.parquet")
-    fname = Path(data_dir) / "parquet" / fname.name
-    mock_calls = []
-
-    original_fsspec_open = fsspec.open
-
-    def mock_fsspec_open(path, *args, **kwargs):
-        mock_calls.append((path, args, kwargs))
-        return original_fsspec_open(fname, "rb")
-
-    monkeypatch.setattr("fsspec.open", mock_fsspec_open)
-
-    table = con.read_parquet(url, in_table_name)
-
-    assert len(mock_calls) == 1
-    assert table.count().execute()
-
-    if in_table_name is not None:
-        assert table.op().name == in_table_name
-
-
 @pytest.fixture(scope="module")
 def ft_data(data_dir):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -535,6 +466,30 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     table = con.read_parquet(tmp_path / f"*.{ext}")
 
     assert table.count().execute() == nrows * ntables
+
+
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.never(
+    [
+        "duckdb",
+        "polars",
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+        "pyspark",
+    ],
+    reason="backend implements its own read_parquet",
+)
+def test_read_parquet_bytesio(con, ft_data):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    bytes_io = BytesIO()
+    pq.write_table(ft_data, bytes_io)
+    bytes_io.seek(0)
+    table = con.read_parquet(bytes_io)
+    assert table.count().execute() == ft_data.num_rows
 
 
 @pytest.mark.notyet(

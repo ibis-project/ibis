@@ -11,7 +11,6 @@ import re
 import sys
 import urllib.parse
 import weakref
-from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
@@ -24,6 +23,7 @@ from ibis import util
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from io import BytesIO
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -1273,7 +1273,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @util.experimental
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path | BytesIO, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current backend.
 
@@ -1284,8 +1284,8 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         Parameters
         ----------
         path
-            The data source. May be a path to a file, an iterable of files,
-            or directory of parquet files.
+            The data source. May be a path to a file, glob pattern to match Parquet files,
+            directory of parquet files, or BytseIO.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
@@ -1293,14 +1293,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Additional keyword arguments passed to the pyarrow loading function.
             See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.read_table.html
             for more information.
-
-            When reading data from cloud storage (such as Amazon S3 or Google Cloud Storage),
-            credentials can be provided via the `filesystem` argument by creating an appropriate
-            filesystem object (e.g., `pyarrow.fs.S3FileSystem`).
-
-            For URLs with credentials, `fsspec` is used to handle authentication and file access.
-            Pass the credentials using the `credentials` keyword argument. `fsspec` will use these
-            credentials to manage access to the remote files.
 
         Returns
         -------
@@ -1353,45 +1345,29 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         ... )
         >>> table = con.read_parquet("s3://bucket/data.parquet", filesystem=s3_fs)
 
-        Read from HTTPS URL with authentication tokens
+        Read from URL
 
-        >>> table = con.read_parquet(
-        ...     "https://example.com/data/file.parquet",
-        ...     credentials={"headers": {"Authorization": "Bearer YOUR_TOKEN"}},
-        ... )
-
+        >>> import fsspec
+        >>> from io import BytesIO
+        >>> url = "https://https://{storage_service}/{path_to_file}/xxx.parquet"
+        >>> credentials = {}
+        >>> f = fsspec.open(url, **credentials).open()
+        >>> reader = BytesIO(f.read())
+        >>> table = con.read_parquet(reader)
+        >>> reader.close()
+        >>> f.close()
         """
-
-        table = self._get_pyarrow_table_from_path(path, **kwargs)
-        table_name = table_name or util.gen_name("read_parquet")
-        self.create_table(table_name, table)
-        return self.table(table_name)
-
-    def _get_pyarrow_table_from_path(self, path: str | Path, **kwargs) -> pa.Table:
         import pyarrow.parquet as pq
 
-        path = str(path)
-        # handle url
-        if util.is_url(path):
-            import fsspec
+        table_name = table_name or util.gen_name("read_parquet")
+        paths = list(glob.glob(str(path)))
+        if paths:
+            table = pq.read_table(paths, **kwargs)
+        else:
+            table = pq.read_table(path, **kwargs)
 
-            credentials = kwargs.pop("credentials", {})
-            with fsspec.open(path, **credentials) as f:
-                with BytesIO(f.read()) as reader:
-                    return pq.read_table(reader)
-
-        # handle fsspec compatible url
-        if util.is_fsspec_url(path):
-            return pq.read_table(path, **kwargs)
-
-        # Handle local file paths or patterns
-        paths = glob.glob(path)
-        if not paths:
-            raise ValueError(f"No files found matching pattern: {path!r}")
-        elif len(paths) == 1:
-            paths = paths[0]
-
-        return pq.read_table(paths, **kwargs)
+        self.create_table(table_name, table)
+        return self.table(table_name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed

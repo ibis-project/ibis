@@ -8,8 +8,6 @@ from ibis.util import (
     PseudoHashable,
     flatten_iterable,
     import_object,
-    is_fsspec_url,
-    is_url,
 )
 
 
@@ -57,63 +55,6 @@ def test_import_object():
         import_object("collections.this_attribute_doesnt_exist")
 
 
-@pytest.mark.parametrize(
-    ("url", "expected"),
-    [
-        ("http://example.com", True),  # Valid http URL
-        ("https://example.com", True),  # Valid https URL
-        ("ftp://example.com", True),  # Valid ftp URL
-        ("sftp://example.com", True),  # Valid sftp URL
-        ("ws://example.com", True),  # Valid WebSocket URL
-        ("wss://example.com", True),  # Valid WebSocket Secure URL
-        ("file:///home/user/file.txt", True),  # Valid file URL
-        ("mailto:example@example.com", False),  # Invalid URL with non-supported scheme
-        ("http://localhost:8000", True),  # Valid URL with port
-        ("ftp://192.168.1.1", True),  # Valid URL with IP address
-        ("https://example.com/path/to/resource", True),  # Valid URL with path
-        ("http://user:pass@example.com", True),  # Valid URL with credentials
-        ("ftp://example.com/resource", True),  # Valid FTP URL with resource
-        ("telnet://example.com", True),  # Valid Telnet URL
-        ("git://example.com/repo.git", True),  # Valid Git URL
-        ("sip://example.com", True),  # Valid SIP URL
-        ("sips://example.com", True),  # Valid SIPS URL
-        ("invalid://example.com", False),  # Invalid URL with unknown scheme
-    ],
-)
-def test_is_url(url, expected):
-    assert is_url(url) == expected
-
-
-@pytest.mark.parametrize(
-    ("url", "expected"),
-    [
-        ("s3://bucket/path/to/file", True),  # Valid fsspec URL
-        ("ftp://example.com/file.txt", True),  # Valid fsspec URL
-        ("gs://bucket/path/to/file", True),  # Valid fsspec URL
-        ("http://example.com/file.txt", False),  # Invalid URL (HTTP)
-        ("https://example.com/file.txt", False),  # Invalid URL (HTTPS)
-        ("file://localhost/path/to/file", True),  # Valid fsspec URL
-        ("mailto:user@example.com", False),  # Invalid URL
-        (
-            "ftp://user:pass@example.com/path/to/file",
-            True,
-        ),  # Valid fsspec URL with credentials
-        ("ftp://example.com", True),  # Valid fsspec URL without file
-        ("", False),  # Empty string (invalid URL)
-        ("invalid://path/to/file", True),  # Invalid scheme but valid format
-        ("http://localhost:8000", False),  # Invalid URL (HTTP with port)
-        (
-            "https://192.168.1.1/path/to/file",
-            False,
-        ),  # Invalid URL (HTTPS with IP address)
-        (
-            "file:/path/to/file",
-            False,
-        ),  # Invalid URL (missing double slashes after file:)
-    ],
-)
-def test_is_fsspec_url(url, expected):
-    assert is_fsspec_url(url) == expected
 
 
 # TODO(kszucs): add tests for promote_list and promote_tuple

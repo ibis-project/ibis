@@ -18,12 +18,6 @@ import uuid
 import warnings
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
-from urllib.parse import (
-    urlparse,
-    uses_netloc,
-    uses_params,
-    uses_relative,
-)
 from uuid import uuid4
 
 import toolz
@@ -48,10 +42,6 @@ V = TypeVar("V")
 VERTICAL_ELLIPSIS = "\u22ee"
 # https://www.compart.com/en/unicode/U+2026
 HORIZONTAL_ELLIPSIS = "\u2026"
-
-_VALID_URLS = set(uses_relative + uses_netloc + uses_params)
-_VALID_URLS.discard("")
-_RFC_3986_PATTERN = re.compile(r"^[A-Za-z][A-Za-z0-9+\-+.]*://")
 
 
 def guid() -> str:
@@ -494,42 +484,6 @@ def import_object(qualname: str) -> Any:
         return getattr(mod, name)
     except AttributeError:
         raise ImportError(f"cannot import name {name!r} from {mod_name!r}") from None
-
-
-def is_url(url: str) -> bool:
-    """Check to see if a URL has a valid protocol.
-
-    Parameters
-    ----------
-    url : str
-        The URL to be checked.
-
-    Returns
-    -------
-    bool
-        True if the URL has a valid protocol, False otherwise
-
-    """
-
-    return urlparse(url).scheme in _VALID_URLS
-
-
-def is_fsspec_url(url: str) -> bool:
-    """Check if the given URL looks like something fsspec can handle.
-
-    Parameters
-    ----------
-    url : str
-        The URL string to be checked.
-
-    Returns
-    -------
-    bool
-        True if the URL is likely compatible with fsspec, False otherwise.
-    """
-    return bool(_RFC_3986_PATTERN.match(url)) and not url.startswith(
-        ("http://", "https://")
-    )
 
 
 def normalize_filename(source: str | Path) -> str:
