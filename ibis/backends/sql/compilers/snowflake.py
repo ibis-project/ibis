@@ -60,7 +60,12 @@ class SnowflakeCompiler(SQLGlotCompiler):
     LOWERED_OPS = {
         ops.Log2: lower_log2,
         ops.Log10: lower_log10,
-        ops.Sample: lower_sample(),
+        # Snowflake's TABLESAMPLE _can_ work on subqueries, but only by row and without
+        # a seed. This is effectively the same as `t.filter(random() <= fraction)`, and
+        # using TABLESAMPLE here would almost certainly have no benefit over the filter
+        # version in the optimized physical plan. To avoid a special case just for
+        # snowflake, we only use TABLESAMPLE on physical tables.
+        ops.Sample: lower_sample(physical_tables_only=True),
     }
 
     UNSUPPORTED_OPS = (
