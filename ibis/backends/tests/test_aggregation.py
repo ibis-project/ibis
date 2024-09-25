@@ -691,6 +691,40 @@ def test_first_last_ordered(alltypes, method, filtered, include_null):
 
 @pytest.mark.notimpl(
     [
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.parametrize("method", ["argmin", "argmax"])
+@pytest.mark.parametrize("filtered", [True, False], ids=["filtered", "unfiltered"])
+@pytest.mark.parametrize("null_result", [True, False], ids=["null", "non-null"])
+def test_argmin_argmax(alltypes, method, filtered, null_result):
+    t = alltypes.mutate(by_col=_.int_col.nullif(0).nullif(9), val_col=10 * _.int_col)
+
+    if filtered:
+        where = _.int_col != (1 if method == "argmin" else 8)
+        sol = 20 if method == "argmin" else 70
+    else:
+        where = None
+        sol = 10 if method == "argmin" else 80
+
+    if null_result:
+        t = t.mutate(val_col=_.val_col.nullif(sol))
+
+    expr = getattr(t.val_col, method)("by_col", where=where)
+    res = expr.execute()
+    assert pd.isna(res) if null_result else res == sol
+
+
+@pytest.mark.notimpl(
+    [
         "impala",
         "mysql",
         "mssql",

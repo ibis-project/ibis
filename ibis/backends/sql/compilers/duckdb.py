@@ -543,6 +543,14 @@ class DuckDBCompiler(SQLGlotCompiler):
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last(arg, where=where, order_by=order_by)
 
+    def visit_ArgMin(self, op, *, arg, key, where):
+        return self.agg.first(arg, where=where, order_by=[sge.Ordered(this=key)])
+
+    def visit_ArgMax(self, op, *, arg, key, where):
+        return self.agg.first(
+            arg, where=where, order_by=[sge.Ordered(this=key, desc=True)]
+        )
+
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
         funcname = f"percentile_{suffix}"

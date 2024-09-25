@@ -62,8 +62,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.ApproxCountDistinct: "uniqHLL12",
         ops.ApproxMedian: "median",
         ops.Arbitrary: "any",
-        ops.ArgMax: "argMax",
-        ops.ArgMin: "argMin",
         ops.ArrayContains: "has",
         ops.ArrayFlatten: "arrayFlatten",
         ops.ArrayIntersect: "arrayIntersect",
@@ -672,6 +670,18 @@ class ClickHouseCompiler(SQLGlotCompiler):
                 "`include_null=True` is not supported by the clickhouse backend"
             )
         return self.agg.anyLast(arg, where=where, order_by=order_by)
+
+    def visit_ArgMin(self, op, *, arg, key, where):
+        return sge.Dot(
+            this=self.agg.argMin(self.f.tuple(arg), key, where=where),
+            expression=sge.convert(1),
+        )
+
+    def visit_ArgMax(self, op, *, arg, key, where):
+        return sge.Dot(
+            this=self.agg.argMax(self.f.tuple(arg), key, where=where),
+            expression=sge.convert(1),
+        )
 
     def visit_CountDistinctStar(
         self, op: ops.CountDistinctStar, *, where, **_: Any

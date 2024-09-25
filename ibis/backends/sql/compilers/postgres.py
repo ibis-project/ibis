@@ -192,23 +192,21 @@ class PostgresCompiler(SQLGlotCompiler):
             expr = sge.Filter(this=expr, expression=sge.Where(this=where))
         return expr
 
-    def visit_ArgMinMax(self, op, *, arg, key, where, desc: bool):
-        conditions = [arg.is_(sg.not_(NULL)), key.is_(sg.not_(NULL))]
-
-        if where is not None:
-            conditions.append(where)
+    def _argminmax(self, op, *, arg, key, where, desc: bool):
+        cond = key.is_(sg.not_(NULL))
+        where = cond if where is None else sge.And(this=cond, expression=where)
 
         agg = self.agg.array_agg(
             sge.Ordered(this=sge.Order(this=arg, expressions=[key]), desc=desc),
-            where=sg.and_(*conditions),
+            where=where,
         )
         return sge.paren(agg, copy=False)[0]
 
     def visit_ArgMin(self, op, *, arg, key, where):
-        return self.visit_ArgMinMax(op, arg=arg, key=key, where=where, desc=False)
+        return self._argminmax(op, arg=arg, key=key, where=where, desc=False)
 
     def visit_ArgMax(self, op, *, arg, key, where):
-        return self.visit_ArgMinMax(op, arg=arg, key=key, where=where, desc=True)
+        return self._argminmax(op, arg=arg, key=key, where=where, desc=True)
 
     def visit_Sum(self, op, *, arg, where):
         arg = (
