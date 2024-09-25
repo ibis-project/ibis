@@ -508,7 +508,7 @@ class ArrayValue(Value):
         │ []                     │
         └────────────────────────┘
 
-        You can optionally include a second index argument in map function
+        You can optionally include a second index argument in the mapped function
 
         >>> t.a.map(lambda x, i: i % 2)
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓

@@ -637,7 +637,7 @@ def lower_sample(
 
 
 @replace(p.ArrayMap | p.ArrayFilter)
-def subtract_one_from_index_argument(_, **kwargs):
+def subtract_one_from_array_map_filter_index(_, **kwargs):
     # no index argument, so do nothing
     if _.index is None:
         return _
