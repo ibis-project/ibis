@@ -162,7 +162,13 @@ def test_union_aliasing(backend_name, snapshot):
 @pytest.mark.parametrize(
     "value",
     [
-        param(ibis.random(), id="random"),
+        param(
+            ibis.random(),
+            marks=pytest.mark.notimpl(
+                ["risingwave", "druid"], raises=exc.OperationNotDefinedError
+            ),
+            id="random",
+        ),
         param(
             ibis.uuid(),
             marks=pytest.mark.notimpl(
@@ -225,8 +231,31 @@ def test_mixed_qualified_and_unqualified_predicates(backend_name, snapshot):
 
 @pytest.mark.parametrize("backend_name", _get_backends_to_test())
 @pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+@pytest.mark.notimpl(
+    ["druid", "risingwave"],
+    raises=exc.OperationNotDefinedError,
+    reason="random not supported",
+)
 def test_rewrite_context(snapshot, backend_name):
     table = ibis.memtable({"test": [1, 2, 3, 4, 5]}, name="test")
     expr = table.select(new_col=ibis.ntile(2).over(order_by=ibis.random())).limit(10)
     result = ibis.to_sql(expr, dialect=backend_name)
     snapshot.assert_match(result, "out.sql")
+
+
+@pytest.mark.parametrize("subquery", [False, True], ids=["subquery", "table"])
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+@pytest.mark.notimpl(
+    ["druid", "risingwave"],
+    raises=exc.OperationNotDefinedError,
+    reason="sample not supported",
+)
+def test_sample(backend_name, snapshot, subquery):
+    t = ibis.table({"x": "int64", "y": "int64"}, name="test")
+    if subquery:
+        t = t.filter(t.x > 10)
+    block = ibis.to_sql(t.sample(0.5, method="block"), dialect=backend_name)
+    row = ibis.to_sql(t.sample(0.5, method="row"), dialect=backend_name)
+    snapshot.assert_match(block, "block.sql")
+    snapshot.assert_match(row, "row.sql")

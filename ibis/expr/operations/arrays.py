@@ -11,7 +11,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.core import Unary, Value
+from ibis.expr.operations.core import Argument, Unary, Value
 
 
 @public
@@ -95,7 +95,9 @@ class ArrayMap(Value):
 
     arg: Value[dt.Array]
     body: Value
-    param: str
+
+    param: Argument
+    index: Argument | None
 
     shape = rlz.shape_like("arg")
 
@@ -110,7 +112,9 @@ class ArrayFilter(Value):
 
     arg: Value[dt.Array]
     body: Value[dt.Boolean]
-    param: str
+
+    param: Argument
+    index: Argument | None
 
     shape = rlz.shape_like("arg")
     dtype = rlz.dtype_like("arg")

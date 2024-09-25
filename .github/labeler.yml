@@ -79,7 +79,6 @@ tests:
 nix:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
-      - any-glob-to-any-file: "poetry.lock"
 
 datatypes:
   - changed-files:

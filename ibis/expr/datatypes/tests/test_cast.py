@@ -101,3 +101,21 @@ def test_implicitly_castable_int_to_bool(value):
 )
 def test_implicitly_uncastable_values(source, target, value):
     assert not source.castable(target, value=value)
+
+
+def test_struct_different_fields():
+    x = dt.Struct({"x": dt.int32})
+    x2 = dt.Struct({"x": dt.int64})
+    y = dt.Struct({"y": dt.int32})
+    xy = dt.Struct({"x": dt.int32, "y": dt.int32})
+
+    # Can upcast int32 to int64, but not other way
+    assert x.castable(x2)
+    assert not x2.castable(x)
+    # Can remove a field, but not add one
+    assert xy.castable(x)
+    assert not x.castable(xy)
+
+    # Missing fields entirely from each other
+    assert not x.castable(y)
+    assert not y.castable(x)

@@ -22,6 +22,7 @@ from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_rank,
     exclude_unsupported_window_frame_from_row_number,
+    lower_sample,
     split_select_distinct_with_order_by,
 )
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
@@ -117,6 +118,14 @@ class BigQueryCompiler(SQLGlotCompiler):
     post_rewrites = (split_select_distinct_with_order_by,)
 
     supports_qualify = True
+
+    LOWERED_OPS = {
+        ops.Sample: lower_sample(
+            supported_methods=("block",),
+            supports_seed=False,
+            physical_tables_only=True,
+        ),
+    }
 
     UNSUPPORTED_OPS = (
         ops.DateDiff,
@@ -765,13 +774,17 @@ class BigQueryCompiler(SQLGlotCompiler):
         array = self.f.array_reverse(self.f.array_agg(arg))
         return array[self.f.safe_offset(0)]
 
-    def visit_ArrayFilter(self, op, *, arg, body, param):
+    def visit_ArrayFilter(self, op, *, arg, body, param, index):
         return self.f.array(
-            sg.select(param).from_(self._unnest(arg, as_=param)).where(body)
+            sg.select(param)
+            .from_(self._unnest(arg, as_=param, offset=index))
+            .where(body)
         )
 
-    def visit_ArrayMap(self, op, *, arg, body, param):
-        return self.f.array(sg.select(body).from_(self._unnest(arg, as_=param)))
+    def visit_ArrayMap(self, op, *, arg, body, param, index):
+        return self.f.array(
+            sg.select(body).from_(self._unnest(arg, as_=param, offset=index))
+        )
 
     def visit_ArrayZip(self, op, *, arg):
         lengths = [self.f.array_length(arr) - 1 for arr in arg]

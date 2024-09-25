@@ -18,6 +18,7 @@ from ibis.backends.sql.dialects import PySpark
 from ibis.backends.sql.rewrites import (
     FirstValue,
     LastValue,
+    lower_sample,
     p,
     split_select_distinct_with_order_by,
 )
@@ -65,7 +66,7 @@ class PySparkCompiler(SQLGlotCompiler):
     )
 
     LOWERED_OPS = {
-        ops.Sample: None,
+        ops.Sample: lower_sample(supports_seed=False),
     }
 
     SIMPLE_OPS = {
@@ -333,16 +334,6 @@ class PySparkCompiler(SQLGlotCompiler):
         zero = sge.Interval(this=sge.convert(0), unit=unit)
         return self._build_sequence(start, stop, step, zero)
 
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        if seed is not None:
-            raise com.UnsupportedOperationError(
-                "PySpark backend does not support sampling with seed."
-            )
-        sample = sge.TableSample(percent=sge.convert(int(fraction * 100.0)))
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
-
     def visit_WindowBoundary(self, op, *, value, preceding):
         if isinstance(op.value, ops.Literal) and op.value.value == 0:
             value = "CURRENT ROW"
@@ -390,16 +381,25 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_ArrayZip(self, op, *, arg):
         return self.cast(self.f.arrays_zip(*arg), op.dtype)
 
-    def visit_ArrayMap(self, op, *, arg, body, param):
-        param = sge.Identifier(this=param)
-        func = sge.Lambda(this=body, expressions=[param])
+    def visit_ArrayMap(self, op, *, arg, body, param, index):
+        expressions = [param]
+
+        if index is not None:
+            expressions.append(index)
+
+        func = sge.Lambda(this=body, expressions=expressions)
         return self.f.transform(arg, func)
 
-    def visit_ArrayFilter(self, op, *, arg, body, param):
-        param = sge.Identifier(this=param)
-        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=[param])
+    def visit_ArrayFilter(self, op, *, arg, body, param, index):
+        expressions = [param]
+
+        if index is not None:
+            expressions.append(index)
+
+        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=expressions)
         transform = self.f.transform(arg, func)
-        func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=[param])
+
+        func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=expressions)
         return self.f.filter(transform, func)
 
     def visit_ArrayIndex(self, op, *, arg, index):

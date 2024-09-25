@@ -8,6 +8,8 @@ import pytest
 from packaging.version import parse as vparse
 
 import ibis.expr.types as ir
+from ibis.backends.tests.errors import PySparkPythonException
+from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -109,6 +111,12 @@ def test_json_array(backend, json_t):
 )
 @pytest.mark.notimpl(["risingwave"])
 @pytest.mark.notyet(["flink"], reason="should work but doesn't deserialize JSON")
+@pytest.mark.notyet(
+    ["pyspark"],
+    condition=IS_SPARK_REMOTE,
+    raises=PySparkPythonException,
+    reason="environment issues",
+)
 @pytest.mark.parametrize(
     ("typ", "expected_data"),
     [

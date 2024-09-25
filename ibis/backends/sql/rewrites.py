@@ -592,14 +592,58 @@ def lower_capitalize(_, **kwargs):
     return ops.StringConcat((first, rest))
 
 
-@replace(p.Sample)
-def lower_sample(_, **kwargs):
-    """Rewrite Sample as `t.filter(random() <= fraction)`.
+def lower_sample(
+    supported_methods=("row", "block"),
+    supports_seed=True,
+    physical_tables_only=False,
+):
+    """Create a rewrite rule for lowering Sample.
 
-    Errors as unsupported if a `seed` is specified.
+    If the `Sample` operation matches the specified criteria, it will compile
+    to the backend's `TABLESAMPLE` operation, otherwise it will fallback to
+    `t.filter(ibis.random() <= fraction)`.
+
+    Parameters
+    ----------
+    supported_methods
+        The sampling methods supported by the backend's native TABLESAMPLE operation.
+    supports_seed
+        Whether the backend's native TABLESAMPLE supports setting a `seed`.
+    physical_tables_only
+        If true, only sampling on physical tables will compile to a `TABLESAMPLE`.
     """
-    if _.seed is not None:
-        raise com.UnsupportedOperationError(
-            "`Table.sample` with a random seed is unsupported"
-        )
-    return ops.Filter(_.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),))
+
+    @replace(p.Sample)
+    def lower(_, **kwargs):
+        if (
+            _.method not in supported_methods
+            or (_.seed is not None and not supports_seed)
+            or (
+                physical_tables_only
+                and not isinstance(_.parent, (ops.DatabaseTable, ops.UnboundTable))
+            )
+        ):
+            # TABLESAMPLE not supported in this context, lower to `t.filter(random() <= fraction)`
+            if _.seed is not None:
+                raise com.UnsupportedOperationError(
+                    "`Table.sample` with a random seed is unsupported for this backend"
+                )
+            return ops.Filter(
+                _.parent, (ops.LessEqual(ops.RandomScalar(), _.fraction),)
+            )
+        return _
+
+    return lower
+
+
+@replace(p.ArrayMap | p.ArrayFilter)
+def subtract_one_from_array_map_filter_index(_, **kwargs):
+    # no index argument, so do nothing
+    if _.index is None:
+        return _
+
+    @replace(y @ p.Argument(name=_.index.name))
+    def argument_replacer(_, y, **kwargs):
+        return ops.Subtract(y, 1)
+
+    return _.copy(body=_.body.replace(argument_replacer))

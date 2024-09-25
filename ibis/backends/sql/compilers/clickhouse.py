@@ -377,21 +377,35 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_TimestampTruncate(self, op, *, arg, unit):
         if (short := unit.short) == "W":
-            func = "toMonday"
+            funcname = "toMonday"
         else:
-            func = f"toStartOf{unit.singular.capitalize()}"
+            funcname = f"toStartOf{unit.singular.capitalize()}"
 
-        if short in ("s", "ms", "us", "ns"):
-            arg = self.f.toDateTime64(arg, op.arg.dtype.scale or 0)
-        return self.f[func](arg)
+        func = self.f[funcname]
+
+        if short in ("Y", "Q", "M", "W", "D"):
+            # these units return `Date` so we have to cast back to the
+            # corresponding Ibis type
+            return self.cast(func(arg), op.dtype)
+        elif short in ("s", "ms", "us", "ns"):
+            return func(self.f.toDateTime64(arg, op.arg.dtype.scale or 0))
+        else:
+            assert short in ("h", "m"), short
+            return func(arg)
 
     visit_TimeTruncate = visit_TimestampTruncate
 
     def visit_DateTruncate(self, op, *, arg, unit):
-        if unit.short == "W":
+        if unit.short == "D":
+            # no op because truncating a date to a date has no effect
+            return arg
+        elif unit.short == "W":
             func = "toMonday"
         else:
             func = f"toStartOf{unit.singular.capitalize()}"
+
+        # no cast needed here because all of the allowed units return `Date`
+        # values
         return self.f[func](arg)
 
     def visit_TimestampBucket(self, op, *, arg, interval, offset):
@@ -597,13 +611,29 @@ class ClickHouseCompiler(SQLGlotCompiler):
     def visit_ArrayStringJoin(self, op, *, arg, sep):
         return self.f.arrayStringConcat(arg, sep)
 
-    def visit_ArrayMap(self, op, *, arg, param, body):
-        func = sge.Lambda(this=body, expressions=[param])
-        return self.f.arrayMap(func, arg)
+    def visit_ArrayMap(self, op, *, arg, param, body, index):
+        expressions = [param]
+        args = [arg]
 
-    def visit_ArrayFilter(self, op, *, arg, param, body):
-        func = sge.Lambda(this=body, expressions=[param])
-        return self.f.arrayFilter(func, arg)
+        if index is not None:
+            expressions.append(index)
+            args.append(self.f.range(0, self.f.length(arg)))
+
+        func = sge.Lambda(this=body, expressions=expressions)
+
+        return self.f.arrayMap(func, *args)
+
+    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        expressions = [param]
+        args = [arg]
+
+        if index is not None:
+            expressions.append(index)
+            args.append(self.f.range(0, self.f.length(arg)))
+
+        func = sge.Lambda(this=body, expressions=expressions)
+
+        return self.f.arrayFilter(func, *args)
 
     def visit_ArrayRemove(self, op, *, arg, other):
         x = sg.to_identifier(util.gen_name("x"))

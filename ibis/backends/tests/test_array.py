@@ -21,6 +21,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
+    PsycoPg2ArraySubscriptError,
     PsycoPg2IndeterminateDatatype,
     PsycoPg2InternalError,
     PsycoPg2ProgrammingError,
@@ -30,6 +31,7 @@ from ibis.backends.tests.errors import (
     TrinoUserError,
 )
 from ibis.common.collections import frozendict
+from ibis.conftest import IS_SPARK_REMOTE
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -167,6 +169,17 @@ def test_array_radd_concat(con):
     expected = np.array([1, 2])
 
     assert np.array_equal(result, expected)
+
+
+@pytest.mark.parametrize("op", [lambda x, y: x + y, lambda x, y: y + x])
+def test_array_concat_scalar(con, op):
+    raw_left = [1, 2, 3]
+    raw_right = [3, 4]
+    left = ibis.literal(raw_left)
+    right = ibis.literal(raw_right)
+    expr = op(left, right)
+    result = con.execute(expr)
+    assert result == op(raw_left, raw_right)
 
 
 def test_array_length(con):
@@ -431,7 +444,13 @@ def test_array_slice(backend, start, stop):
                     ["bigquery"],
                     raises=GoogleBadRequest,
                     reason="BigQuery doesn't support arrays with null elements",
-                )
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
             ],
             id="nulls",
         ),
@@ -443,12 +462,60 @@ def test_array_slice(backend, start, stop):
     [lambda x: x + 1, partial(lambda x, y: x + y, y=1), ibis._ + 1],
     ids=["lambda", "partial", "deferred"],
 )
+def test_array_map(con, input, output, func):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.Series(output["a"])
+
+    expr = t.select(a=t.a.map(func))
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars", "sqlite"], raises=com.OperationNotDefinedError
+)
 @pytest.mark.notimpl(
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
-def test_array_map(con, input, output, func):
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2, None, 5], [5]]},
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="BigQuery doesn't support arrays with null elements",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
+            ],
+            id="nulls",
+        ),
+        param({"a": [[1, 2], [4]]}, {"a": [[2, 4], [5]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.parametrize(
+    "func",
+    [lambda x, i: x + 1 + i, partial(lambda x, y, i: x + y + i, y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_map_with_index(con, input, output, func):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
@@ -496,6 +563,52 @@ def test_array_map(con, input, output, func):
     ids=["lambda", "partial", "deferred"],
 )
 def test_array_filter(con, input, output, predicate):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.Series(output["a"])
+
+    expr = t.select(a=t.a.filter(predicate))
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, 2], [4]]},
+            {"a": [[2], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
+        param({"a": [[1, 2], [4]]}, {"a": [[2], [4]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
+@pytest.mark.parametrize(
+    "predicate",
+    [lambda x, i: x + (i - i) > 1, partial(lambda x, y, i: x > y + (i * 0), y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_filter_with_index(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
     expected = pd.Series(output["a"])
 
@@ -671,6 +784,14 @@ def test_array_remove(con, input, expected):
             {"a": [[1, 3, 3], [], [42, 42], [], [None], None]},
             [{3, 1}, set(), {42}, set(), {None}, None],
             id="null",
+            marks=[
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
+                ),
+            ],
         ),
         param(
             {"a": [[1, 3, 3], [], [42, 42], [], None]},
@@ -741,6 +862,12 @@ def test_array_sort(con, data):
                     ["datafusion"],
                     raises=AssertionError,
                     reason="DataFusion transforms null elements to NAN",
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    condition=IS_SPARK_REMOTE,
+                    raises=AssertionError,
+                    reason="somehow, transformed results are different types",
                 ),
             ],
         ),
@@ -1004,6 +1131,11 @@ def flatten_data():
                 pytest.mark.notyet(
                     ["clickhouse"],
                     reason="Arrays are never nullable",
+                    raises=AssertionError,
+                ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    reason="flattened empty arrays incorrectly insert a null",
                     raises=AssertionError,
                 ),
             ],
@@ -1557,3 +1689,22 @@ def test_array_agg_bool(con, data, agg, baseline_func):
     result = [x if pd.notna(x) else None for x in result]
     expected = [baseline_func(x) for x in df.x]
     assert result == expected
+
+
+@pytest.mark.notyet(
+    ["postgres"],
+    raises=PsycoPg2ArraySubscriptError,
+    reason="all dimensions must match in size",
+)
+@pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(
+    ["bigquery"], raises=TypeError, reason="nested arrays aren't supported"
+)
+def test_flatten(con):
+    t = ibis.memtable(
+        [{"arr": [[1, 5, 7], [3, 4]]}], schema={"arr": "array<array<int64>>"}
+    )
+    expr = t.arr.flatten().name("result")
+    result = con.execute(expr)
+    expected = pd.Series([[1, 5, 7, 3, 4]], name="result")
+    tm.assert_series_equal(result, expected)

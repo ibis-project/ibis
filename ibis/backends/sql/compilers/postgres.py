@@ -17,7 +17,11 @@ import ibis.expr.rules as rlz
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import PostgresType
 from ibis.backends.sql.dialects import Postgres
-from ibis.backends.sql.rewrites import split_select_distinct_with_order_by
+from ibis.backends.sql.rewrites import (
+    lower_sample,
+    split_select_distinct_with_order_by,
+    subtract_one_from_array_map_filter_index,
+)
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
 
@@ -42,6 +46,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
+    rewrites = (subtract_one_from_array_map_filter_index, *SQLGlotCompiler.rewrites)
     post_rewrites = (split_select_distinct_with_order_by,)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
@@ -49,6 +54,8 @@ class PostgresCompiler(SQLGlotCompiler):
     NAN = sge.Literal.number("'NaN'::double precision")
     POS_INF = sge.Literal.number("'Inf'::double precision")
     NEG_INF = sge.Literal.number("'-Inf'::double precision")
+
+    LOWERED_OPS = {ops.Sample: lower_sample(physical_tables_only=True)}
 
     UNSUPPORTED_OPS = (
         ops.RowID,
@@ -321,16 +328,27 @@ class PostgresCompiler(SQLGlotCompiler):
             expression=self.f.array(self.cast(other, arg_dtype.value_type)),
         )
 
-    def visit_ArrayFilter(self, op, *, arg, body, param):
+    def visit_ArrayFilter(self, op, *, arg, body, param, index):
+        if index is None:
+            alias = param
+        else:
+            alias = sge.TableAlias(this=sg.to_identifier("_"), columns=[param])
+
         return self.f.array(
             sg.select(sg.column(param, quoted=self.quoted))
-            .from_(sge.Unnest(expressions=[arg], alias=param))
+            .from_(sge.Unnest(expressions=[arg], alias=alias, offset=index))
             .where(body)
         )
 
-    def visit_ArrayMap(self, op, *, arg, body, param):
+    def visit_ArrayMap(self, op, *, arg, body, param, index):
+        if index is None:
+            alias = param
+        else:
+            alias = sge.TableAlias(this=sg.to_identifier("_"), columns=[param])
         return self.f.array(
-            sg.select(body).from_(sge.Unnest(expressions=[arg], alias=param))
+            sg.select(body).from_(
+                sge.Unnest(expressions=[arg], alias=alias, offset=index)
+            )
         )
 
     def visit_ArrayPosition(self, op, *, arg, other):

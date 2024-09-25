@@ -1224,12 +1224,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         method
             The sampling method to use. The default is "row", which includes
             each row with a probability of `fraction`. If method is "block",
-            some backends may instead perform sampling a fraction of blocks of
-            rows (where "block" is a backend dependent definition). This is
-            identical to "row" for backends lacking a blockwise sampling
-            implementation. For those coming from SQL, "row" and "block"
-            correspond to "bernoulli" and "system" respectively in a
-            TABLESAMPLE clause.
+            some backends may instead sample a fraction of blocks of rows
+            (where "block" is a backend dependent definition), which may be
+            significantly more efficient (at the cost of a less statistically
+            random sample). This is identical to "row" for backends lacking a
+            blockwise sampling implementation. For those coming from SQL, "row"
+            and "block" correspond to "bernoulli" and "system" respectively in
+            a TABLESAMPLE clause.
         seed
             An optional random seed to use, for repeatable sampling. The range
             of possible seed values is backend specific (most support at least

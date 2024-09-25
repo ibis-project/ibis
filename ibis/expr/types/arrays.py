@@ -5,7 +5,9 @@ from typing import TYPE_CHECKING
 
 from public import public
 
+import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
+from ibis.common.annotations import EMPTY
 from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
@@ -383,13 +385,55 @@ class ArrayValue(Value):
         """
         return ops.ArrayStringJoin(self, sep=sep).to_expr()
 
-    def map(self, func: Deferred | Callable[[ir.Value], ir.Value]) -> ir.ArrayValue:
+    def _construct_array_func_inputs(self, func):
+        if isinstance(func, Deferred):
+            name = "_"
+            index = None
+            resolve = func.resolve
+        elif callable(func):
+            names = (
+                key
+                for key, value in inspect.signature(func).parameters.items()
+                # arg is already bound
+                if value.default is EMPTY
+            )
+            name = next(names)
+            index = next(names, None)
+            resolve = func
+        else:
+            raise TypeError(
+                f"function must be a Deferred or Callable, got `{type(func).__name__}`"
+            )
+
+        shape = self.op().shape
+        parameter = ops.Argument(name=name, shape=shape, dtype=self.type().value_type)
+
+        kwargs = {name: parameter.to_expr()}
+
+        if index is not None:
+            index_arg = ops.Argument(name=index, shape=shape, dtype=dt.int64)
+            kwargs[index] = index_arg.to_expr()
+            index = index_arg
+
+        body = resolve(**kwargs)
+        return parameter, index, body
+
+    def map(
+        self,
+        func: Deferred
+        | Callable[[ir.Value], ir.Value]
+        | Callable[[ir.Value, ir.Value], ir.Value],
+    ) -> ir.ArrayValue:
         """Apply a `func` or `Deferred` to each element of this array expression.
 
         Parameters
         ----------
         func
             Function or `Deferred` to apply to each element of this array.
+
+            Callables must accept one or two arguments. If there are two
+            arguments, the second argument is the **zero**-based index of each
+            element of the array.
 
         Returns
         -------
@@ -416,84 +460,90 @@ class ArrayValue(Value):
         The most succinct way to use `map` is with `Deferred` expressions:
 
         >>> t.a.map((_ + 100).cast("float"))
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Cast(Add(_, 100), float64)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<float64>                          │
-        ├─────────────────────────────────────────┤
-        │ [101.0, None, ... +1]                   │
-        │ [104.0]                                 │
-        │ []                                      │
-        └─────────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Cast(Add(_, 100), float64), _) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<float64>                             │
+        ├────────────────────────────────────────────┤
+        │ [101.0, None, ... +1]                      │
+        │ [104.0]                                    │
+        │ []                                         │
+        └────────────────────────────────────────────┘
 
         You can also use `map` with a lambda function:
 
         >>> t.a.map(lambda x: (x + 100).cast("float"))
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Cast(Add(x, 100), float64)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<float64>                          │
-        ├─────────────────────────────────────────┤
-        │ [101.0, None, ... +1]                   │
-        │ [104.0]                                 │
-        │ []                                      │
-        └─────────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Cast(Add(x, 100), float64), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<float64>                             │
+        ├────────────────────────────────────────────┤
+        │ [101.0, None, ... +1]                      │
+        │ [104.0]                                    │
+        │ []                                         │
+        └────────────────────────────────────────────┘
 
         `.map()` also supports more complex callables like `functools.partial`
-        and lambdas with closures
+        and `lambda`s with closures
 
         >>> from functools import partial
         >>> def add(x, y):
         ...     return x + y
         >>> add2 = partial(add, y=2)
         >>> t.a.map(add2)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Add(x, 2)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>           │
-        ├────────────────────────┤
-        │ [3, None, ... +1]      │
-        │ [6]                    │
-        │ []                     │
-        └────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(x, 2), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>              │
+        ├───────────────────────────┤
+        │ [3, None, ... +1]         │
+        │ [6]                       │
+        │ []                        │
+        └───────────────────────────┘
         >>> y = 2
         >>> t.a.map(lambda x: x + y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayMap(a, Add(x, 2)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>           │
-        ├────────────────────────┤
-        │ [3, None, ... +1]      │
-        │ [6]                    │
-        │ []                     │
-        └────────────────────────┘
-        """
-        if isinstance(func, Deferred):
-            name = "_"
-            resolve = func.resolve
-        elif callable(func):
-            name = next(iter(inspect.signature(func).parameters.keys()))
-            resolve = func
-        else:
-            raise TypeError(
-                f"`func` must be a Deferred or Callable, got `{type(func).__name__}`"
-            )
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Add(x, 2), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>              │
+        ├───────────────────────────┤
+        │ [3, None, ... +1]         │
+        │ [6]                       │
+        │ []                        │
+        └───────────────────────────┘
 
-        parameter = ops.Argument(
-            name=name, shape=self.op().shape, dtype=self.type().value_type
-        )
-        body = resolve(parameter.to_expr())
-        return ops.ArrayMap(self, param=parameter.param, body=body).to_expr()
+        You can optionally include a second index argument in the mapped function
+
+        >>> t.a.map(lambda x, i: i % 2)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayMap(a, Modulus(i, 2), x, i) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [0, 1, ... +1]                   │
+        │ [0]                              │
+        │ []                               │
+        └──────────────────────────────────┘
+        """
+        param, index, body = self._construct_array_func_inputs(func)
+        return ops.ArrayMap(self, param=param, index=index, body=body).to_expr()
 
     def filter(
-        self, predicate: Deferred | Callable[[ir.Value], bool | ir.BooleanValue]
+        self,
+        predicate: Deferred
+        | Callable[[ir.Value], bool | ir.BooleanValue]
+        | Callable[[ir.Value, ir.IntegerValue], bool | ir.BooleanValue],
     ) -> ir.ArrayValue:
         """Filter array elements using `predicate` function or `Deferred`.
 
         Parameters
         ----------
         predicate
-            Function or `Deferred` to use to filter array elements
+            Function or `Deferred` to use to filter array elements.
+
+            Callables must accept one or two arguments. If there are two
+            arguments, the second argument is the **zero**-based index of each
+            element of the array.
 
         Returns
         -------
@@ -520,75 +570,73 @@ class ArrayValue(Value):
         The most succinct way to use `filter` is with `Deferred` expressions:
 
         >>> t.a.filter(_ > 1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(_, 1)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                  │
-        ├───────────────────────────────┤
-        │ [2]                           │
-        │ [4]                           │
-        │ []                            │
-        └───────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(_, 1), _) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [2]                              │
+        │ [4]                              │
+        │ []                               │
+        └──────────────────────────────────┘
 
-        You can also use `map` with a lambda function:
+        You can also use `filter` with a lambda function:
 
         >>> t.a.filter(lambda x: x > 1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(x, 1)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                  │
-        ├───────────────────────────────┤
-        │ [2]                           │
-        │ [4]                           │
-        │ []                            │
-        └───────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [2]                              │
+        │ [4]                              │
+        │ []                               │
+        └──────────────────────────────────┘
 
         `.filter()` also supports more complex callables like `functools.partial`
-        and lambdas with closures
+        and `lambda`s with closures
 
         >>> from functools import partial
         >>> def gt(x, y):
         ...     return x > y
         >>> gt1 = partial(gt, y=1)
         >>> t.a.filter(gt1)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(x, 1)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                  │
-        ├───────────────────────────────┤
-        │ [2]                           │
-        │ [4]                           │
-        │ []                            │
-        └───────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [2]                              │
+        │ [4]                              │
+        │ []                               │
+        └──────────────────────────────────┘
         >>> y = 1
         >>> t.a.filter(lambda x: x > y)
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ ArrayFilter(a, Greater(x, 1)) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ array<int64>                  │
-        ├───────────────────────────────┤
-        │ [2]                           │
-        │ [4]                           │
-        │ []                            │
-        └───────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Greater(x, 1), x) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                     │
+        ├──────────────────────────────────┤
+        │ [2]                              │
+        │ [4]                              │
+        │ []                               │
+        └──────────────────────────────────┘
+
+        You can optionally include a second index argument in the predicate function
+
+        >>> t.a.filter(lambda x, i: i % 4 == 0)
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ArrayFilter(a, Equals(Modulus(i, 4), 0), x, i) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ array<int64>                                   │
+        ├────────────────────────────────────────────────┤
+        │ [1]                                            │
+        │ [4]                                            │
+        │ []                                             │
+        └────────────────────────────────────────────────┘
         """
-        if isinstance(predicate, Deferred):
-            name = "_"
-            resolve = predicate.resolve
-        elif callable(predicate):
-            name = next(iter(inspect.signature(predicate).parameters.keys()))
-            resolve = predicate
-        else:
-            raise TypeError(
-                f"`predicate` must be a Deferred or Callable, got `{type(predicate).__name__}`"
-            )
-        parameter = ops.Argument(
-            name=name,
-            shape=self.op().shape,
-            dtype=self.type().value_type,
-        )
-        body = resolve(parameter.to_expr())
-        return ops.ArrayFilter(self, param=parameter.param, body=body).to_expr()
+        param, index, body = self._construct_array_func_inputs(predicate)
+        return ops.ArrayFilter(self, param=param, index=index, body=body).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:
         """Return whether the array contains `other`.

@@ -23,6 +23,7 @@ from ibis.backends.sql.datatypes import TrinoType
 from ibis.backends.sql.dialects import Trino
 from ibis.backends.sql.rewrites import (
     exclude_unsupported_window_frame_from_ops,
+    lower_sample,
     split_select_distinct_with_order_by,
 )
 from ibis.util import gen_name
@@ -54,7 +55,7 @@ class TrinoCompiler(SQLGlotCompiler):
     )
 
     LOWERED_OPS = {
-        ops.Sample: None,
+        ops.Sample: lower_sample(supports_seed=False),
     }
 
     SIMPLE_OPS = {
@@ -107,20 +108,6 @@ class TrinoCompiler(SQLGlotCompiler):
             return None
         return spec
 
-    def visit_Sample(
-        self, op, *, parent, fraction: float, method: str, seed: int | None, **_
-    ):
-        if seed is not None:
-            raise com.UnsupportedOperationError(
-                "`Table.sample` with a random seed is unsupported"
-            )
-        sample = sge.TableSample(
-            method="bernoulli" if method == "row" else "system",
-            percent=sge.convert(fraction * 100.0),
-            seed=None if seed is None else sge.convert(seed),
-        )
-        return self._make_sample_backwards_compatible(sample=sample, parent=parent)
-
     def visit_Correlation(self, op, *, left, right, how, where):
         if how == "sample":
             raise com.UnsupportedOperationError(
@@ -169,11 +156,39 @@ class TrinoCompiler(SQLGlotCompiler):
 
         return self.f.slice(arg, start + 1, stop - start)
 
-    def visit_ArrayMap(self, op, *, arg, param, body):
-        return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+    def visit_ArrayMap(self, op, *, arg, param, body, index):
+        if index is None:
+            return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
+        else:
+            return self.f.zip_with(
+                arg,
+                self.f.sequence(0, self.f.cardinality(arg) - 1),
+                sge.Lambda(this=body, expressions=[param, index]),
+            )
 
-    def visit_ArrayFilter(self, op, *, arg, param, body):
-        return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
+    def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        if index is None:
+            return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
+        else:
+            placeholder = sg.to_identifier("__trino_filter__")
+            index = sg.to_identifier(index)
+            return self.f.filter(
+                self.f.zip_with(
+                    arg,
+                    # users are limited to 10_000 elements here because it
+                    # seems like trino won't ever actually address the limit
+                    self.f.sequence(0, self.f.cardinality(arg) - 1),
+                    sge.Lambda(
+                        # semantics are: arg if predicate(arg, index) else null
+                        this=self.if_(body, param, NULL),
+                        expressions=[param, index],
+                    ),
+                ),
+                # then, filter out elements that are null
+                sge.Lambda(
+                    this=placeholder.is_(sg.not_(NULL)), expressions=[placeholder]
+                ),
+            )
 
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(

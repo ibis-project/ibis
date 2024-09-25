@@ -81,58 +81,6 @@ __all__ = (
     "dtype",
     "e",
     "following",
-    "geo_area",
-    "geo_as_binary",
-    "geo_as_ewkb",
-    "geo_as_ewkt",
-    "geo_as_text",
-    "geo_azimuth",
-    "geo_buffer",
-    "geo_centroid",
-    "geo_contains",
-    "geo_contains_properly",
-    "geo_covered_by",
-    "geo_covers",
-    "geo_crosses",
-    "geo_d_fully_within",
-    "geo_d_within",
-    "geo_difference",
-    "geo_disjoint",
-    "geo_distance",
-    "geo_end_point",
-    "geo_envelope",
-    "geo_equals",
-    "geo_geometry_n",
-    "geo_geometry_type",
-    "geo_intersection",
-    "geo_intersects",
-    "geo_is_valid",
-    "geo_length",
-    "geo_line_locate_point",
-    "geo_line_merge",
-    "geo_line_substring",
-    "geo_max_distance",
-    "geo_n_points",
-    "geo_n_rings",
-    "geo_ordering_equals",
-    "geo_overlaps",
-    "geo_perimeter",
-    "geo_point",
-    "geo_point_n",
-    "geo_simplify",
-    "geo_srid",
-    "geo_start_point",
-    "geo_touches",
-    "geo_transform",
-    "geo_unary_union",
-    "geo_union",
-    "geo_within",
-    "geo_x",
-    "geo_x_max",
-    "geo_x_min",
-    "geo_y",
-    "geo_y_max",
-    "geo_y_min",
     "get_backend",
     "greatest",
     "ifelse",
@@ -145,7 +93,6 @@ __all__ = (
     "literal",
     "map",
     "memtable",
-    "negate",
     "now",
     "ntile",
     "null",
@@ -179,7 +126,6 @@ __all__ = (
     "union",
     "uuid",
     "watermark",
-    "where",
     "window",
 )
 
@@ -2243,80 +2189,6 @@ def _timestamp_range(
     ).to_expr()
 
 
-def _wrap_deprecated(fn, prefix=""):
-    """Deprecate the top-level geo function."""
-
-    @functools.wraps(fn)
-    def wrapper(self, *args, **kwargs):
-        if isinstance(self, Deferred):
-            method = getattr(self, fn.__name__)
-            return method(*args, **kwargs)
-        return fn(self, *args, **kwargs)
-
-    wrapper.__module__ = "ibis.expr.api"
-    wrapper.__qualname__ = wrapper.__name__ = prefix + fn.__name__
-    dec = util.deprecated(
-        instead=f"use the `{fn.__qualname__}` method instead", as_of="7.0"
-    )
-    return dec(wrapper)
-
-
-geo_area = _wrap_deprecated(ir.GeoSpatialValue.area, "geo_")
-geo_as_binary = _wrap_deprecated(ir.GeoSpatialValue.as_binary, "geo_")
-geo_as_ewkb = _wrap_deprecated(ir.GeoSpatialValue.as_ewkb, "geo_")
-geo_as_ewkt = _wrap_deprecated(ir.GeoSpatialValue.as_ewkt, "geo_")
-geo_as_text = _wrap_deprecated(ir.GeoSpatialValue.as_text, "geo_")
-geo_azimuth = _wrap_deprecated(ir.GeoSpatialValue.azimuth, "geo_")
-geo_buffer = _wrap_deprecated(ir.GeoSpatialValue.buffer, "geo_")
-geo_centroid = _wrap_deprecated(ir.GeoSpatialValue.centroid, "geo_")
-geo_contains = _wrap_deprecated(ir.GeoSpatialValue.contains, "geo_")
-geo_contains_properly = _wrap_deprecated(ir.GeoSpatialValue.contains_properly, "geo_")
-geo_covers = _wrap_deprecated(ir.GeoSpatialValue.covers, "geo_")
-geo_covered_by = _wrap_deprecated(ir.GeoSpatialValue.covered_by, "geo_")
-geo_crosses = _wrap_deprecated(ir.GeoSpatialValue.crosses, "geo_")
-geo_d_fully_within = _wrap_deprecated(ir.GeoSpatialValue.d_fully_within, "geo_")
-geo_difference = _wrap_deprecated(ir.GeoSpatialValue.difference, "geo_")
-geo_disjoint = _wrap_deprecated(ir.GeoSpatialValue.disjoint, "geo_")
-geo_distance = _wrap_deprecated(ir.GeoSpatialValue.distance, "geo_")
-geo_d_within = _wrap_deprecated(ir.GeoSpatialValue.d_within, "geo_")
-geo_end_point = _wrap_deprecated(ir.GeoSpatialValue.end_point, "geo_")
-geo_envelope = _wrap_deprecated(ir.GeoSpatialValue.envelope, "geo_")
-geo_equals = _wrap_deprecated(ir.GeoSpatialValue.geo_equals, "geo_")
-geo_geometry_n = _wrap_deprecated(ir.GeoSpatialValue.geometry_n, "geo_")
-geo_geometry_type = _wrap_deprecated(ir.GeoSpatialValue.geometry_type, "geo_")
-geo_intersection = _wrap_deprecated(ir.GeoSpatialValue.intersection, "geo_")
-geo_intersects = _wrap_deprecated(ir.GeoSpatialValue.intersects, "geo_")
-geo_is_valid = _wrap_deprecated(ir.GeoSpatialValue.is_valid, "geo_")
-geo_line_locate_point = _wrap_deprecated(ir.GeoSpatialValue.line_locate_point, "geo_")
-geo_line_merge = _wrap_deprecated(ir.GeoSpatialValue.line_merge, "geo_")
-geo_line_substring = _wrap_deprecated(ir.GeoSpatialValue.line_substring, "geo_")
-geo_length = _wrap_deprecated(ir.GeoSpatialValue.length, "geo_")
-geo_max_distance = _wrap_deprecated(ir.GeoSpatialValue.max_distance, "geo_")
-geo_n_points = _wrap_deprecated(ir.GeoSpatialValue.n_points, "geo_")
-geo_n_rings = _wrap_deprecated(ir.GeoSpatialValue.n_rings, "geo_")
-geo_ordering_equals = _wrap_deprecated(ir.GeoSpatialValue.ordering_equals, "geo_")
-geo_overlaps = _wrap_deprecated(ir.GeoSpatialValue.overlaps, "geo_")
-geo_perimeter = _wrap_deprecated(ir.GeoSpatialValue.perimeter, "geo_")
-geo_point = _wrap_deprecated(ir.NumericValue.point, "geo_")
-geo_point_n = _wrap_deprecated(ir.GeoSpatialValue.point_n, "geo_")
-geo_set_srid = _wrap_deprecated(ir.GeoSpatialValue.set_srid, "geo_")
-geo_simplify = _wrap_deprecated(ir.GeoSpatialValue.simplify, "geo_")
-geo_srid = _wrap_deprecated(ir.GeoSpatialValue.srid, "geo_")
-geo_start_point = _wrap_deprecated(ir.GeoSpatialValue.start_point, "geo_")
-geo_touches = _wrap_deprecated(ir.GeoSpatialValue.touches, "geo_")
-geo_transform = _wrap_deprecated(ir.GeoSpatialValue.transform, "geo_")
-geo_union = _wrap_deprecated(ir.GeoSpatialValue.union, "geo_")
-geo_within = _wrap_deprecated(ir.GeoSpatialValue.within, "geo_")
-geo_x = _wrap_deprecated(ir.GeoSpatialValue.x, "geo_")
-geo_x_max = _wrap_deprecated(ir.GeoSpatialValue.x_max, "geo_")
-geo_x_min = _wrap_deprecated(ir.GeoSpatialValue.x_min, "geo_")
-geo_y = _wrap_deprecated(ir.GeoSpatialValue.y, "geo_")
-geo_y_max = _wrap_deprecated(ir.GeoSpatialValue.y_max, "geo_")
-geo_y_min = _wrap_deprecated(ir.GeoSpatialValue.y_min, "geo_")
-geo_unary_union = _wrap_deprecated(ir.GeoSpatialColumn.unary_union, "geo_")
-negate = _wrap_deprecated(ir.NumericValue.negate)
-
-
 @deferrable
 def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
     """Construct a ternary conditional expression.
@@ -2362,27 +2234,6 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
     elif not condition.type().is_boolean():
         condition = condition.cast("bool")
     return condition.ifelse(true_expr, false_expr)
-
-
-@util.deprecated(instead="use `ibis.ifelse` instead", as_of="7.0")
-def where(cond, true_expr, false_expr) -> ir.Value:
-    """Construct a ternary conditional expression.
-
-    Parameters
-    ----------
-    cond
-        Boolean conditional expression
-    true_expr
-        Expression to return if `cond` evaluates to `True`
-    false_expr
-        Expression to return if `cond` evaluates to `False` or `NULL`
-
-    Returns
-    -------
-    Value : ir.Value
-        The value of `true_expr` if `arg` is `True` else `false_expr`
-    """
-    return ifelse(cond, true_expr, false_expr)
 
 
 @deferrable

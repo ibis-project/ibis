@@ -21,7 +21,7 @@ class DruidCompiler(SQLGlotCompiler):
 
     agg = AggGen(supports_filter=True)
 
-    LOWERED_OPS = {ops.Capitalize: None}
+    LOWERED_OPS = {ops.Capitalize: None, ops.Sample: None}
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,
@@ -47,6 +47,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.IsInf,
         ops.Levenshtein,
         ops.Median,
+        ops.RandomScalar,
         ops.RandomUUID,
         ops.RegexReplace,
         ops.RegexSplit,
@@ -64,6 +65,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.TypeOf,
         ops.Unnest,
         ops.Variance,
+        ops.Sample,
     )
 
     SIMPLE_OPS = {

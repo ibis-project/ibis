@@ -492,3 +492,19 @@ def test_udf_in_array_filter(alltypes):
     expr = alltypes.int_col.collect().filter(lambda x: my_eq(x, 1))
     result = expr.execute()
     assert set(result) == {1}
+
+
+def test_timestamp_to_start_of_week(con):
+    pytest.importorskip("pyarrow")
+
+    expr = ibis.timestamp("2024-02-03 00:00:00").truncate("W")
+    result = con.to_pyarrow(expr).as_py()
+    assert result == datetime(2024, 1, 29, 0, 0, 0)
+
+
+def test_date_to_start_of_day(con):
+    pytest.importorskip("pyarrow")
+
+    expr = ibis.date("2024-02-03")
+    expr1 = expr.truncate("D")
+    assert con.to_pyarrow(expr1) == con.to_pyarrow(expr)

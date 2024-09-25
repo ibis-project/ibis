@@ -569,11 +569,10 @@ def test_order_by(backend, alltypes, df, key, df_kwargs):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["polars", "druid"])
 @pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
+    ["polars", "druid", "risingwave"],
+    raises=com.OperationNotDefinedError,
+    reason="random not supported",
 )
 def test_order_by_random(alltypes):
     expr = alltypes.filter(_.id < 100).order_by(ibis.random()).limit(5)
@@ -2125,46 +2124,23 @@ def test_dynamic_table_slice_with_computed_offset(backend):
     backend.assert_frame_equal(result, expected)
 
 
-@pytest.mark.notimpl(["druid", "polars"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
-)
-@pytest.mark.parametrize(
-    "method",
-    [
-        "row",
-        param(
-            "block",
-            marks=[
-                pytest.mark.notimpl(
-                    ["snowflake"],
-                    raises=SnowflakeProgrammingError,
-                    reason="SAMPLE clause on views only supports row wise sampling without seed.",
-                )
-            ],
-        ),
-    ],
-)
+@pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
+@pytest.mark.parametrize("method", ["row", "block"])
+@pytest.mark.parametrize("subquery", [True, False], ids=["subquery", "table"])
 @pytest.mark.xfail_version(pyspark=["sqlglot==25.17.0"])
-def test_sample(backend, method):
-    t = backend.functional_alltypes.filter(_.int_col >= 2)
+def test_sample(backend, method, alltypes, subquery):
+    if subquery:
+        alltypes = alltypes.filter(_.int_col >= 2)
 
-    total_rows = t.count().execute()
-    empty = t.limit(1).execute().iloc[:0]
+    total_rows = alltypes.count().execute()
+    empty = alltypes.limit(1).execute().iloc[:0]
 
-    df = t.sample(0.1, method=method).execute()
+    df = alltypes.sample(0.1, method=method).execute()
     assert len(df) <= total_rows
     backend.assert_frame_equal(empty, df.iloc[:0])
 
 
-@pytest.mark.notimpl(["druid", "polars"])
-@pytest.mark.notimpl(
-    ["risingwave"],
-    raises=PsycoPg2InternalError,
-    reason="function random() does not exist",
-)
+@pytest.mark.notimpl(["druid", "risingwave"], raises=com.OperationNotDefinedError)
 def test_sample_memtable(con, backend):
     df = pd.DataFrame({"x": [1, 2, 3, 4]})
     res = con.execute(ibis.memtable(df).sample(0.5))
@@ -2184,7 +2160,6 @@ def test_sample_memtable(con, backend):
         "mysql",
         "oracle",
         "polars",
-        "postgres",
         "risingwave",
         "sqlite",
         "trino",

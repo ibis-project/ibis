@@ -14,20 +14,24 @@ index_name = os.environ["ALGOLIA_INDEX"]
 
 
 # These are QMD files generated with help from Quartodoc.
-API_QMDS = [
-    "docs/reference/expression-collections.qmd",
-    "docs/reference/expression-generic.qmd",
-    "docs/reference/expression-geospatial.qmd",
-    "docs/reference/expression-numeric.qmd",
-    "docs/reference/expression-strings.qmd",
-    "docs/reference/expression-tables.qmd",
-    "docs/reference/expression-temporal.qmd",
+EXCLUDE_API_QMDS = [
+    "docs/reference/cursed_knowledge.qmd",  # not quartodoc generated
+    "docs/reference/BackendTest.qmd",  # test infrastructure documentation
+    "docs/reference/ServiceBackendTest.qmd",  # test infrastructure documentation
+    "docs/reference/SQL.qmd",  # esoterica
+    "docs/reference/index.qmd",  # just the index
 ]
 
+# Grab all QMD files in `docs/reference` that aren't explicitly excluded
+API_QMDS = list(set(glob.glob("docs/reference/*.qmd")).difference(EXCLUDE_API_QMDS))
 
 HORRID_REGEX = re.compile(r"\|\s*\[(\w+)\]\((#[\w.]+)\)\s*\|\s*(.*?)\s*\|")
 # Given | [method](some-anchor) | some multiword description |
 # this regex extracts ("method", "some-anchor", "some multiword description")
+
+FUNCTION_REGEX = re.compile(r"\s#{1} (\w+) \{ (#[^\}]+) \}")
+# Looks for # func_name { #func-anchor }
+# and extracts ("func_name", "#func-anchor")
 
 
 def _grab_qmd_methods(lines):
@@ -54,7 +58,8 @@ def _create_api_record_from_method_line(base_url, method):
     # for e.g. `reference/expression-collections.html` we want to grab "Collections"
     section = (
         base_url.removesuffix(".html")
-        .removeprefix("reference/expression-")
+        .removeprefix("reference/")
+        .removeprefix("expression-")
         .capitalize()
     )
     name, anchor, desc = re.match(HORRID_REGEX, method).groups()
@@ -68,6 +73,59 @@ def _create_api_record_from_method_line(base_url, method):
     }
     if desc:
         record["text"] = desc
+
+    return record
+
+
+def _grab_qmd_functions(lines):
+    """Quartodoc generated files have top-level function headers that look like.
+
+          # connect { #ibis.connect }
+
+         `ibis.connect(resource, **kwargs)`
+
+          Connect to `resource`, inferring the backend automatically.
+
+    or similar. These don't get scraped by `quarto` (yet) because it doesn't
+    know about `quartodoc`.
+
+    We grab the functions using a regex, then grab the text between that
+    function line and the next `#` sign and take that as the "content" of the
+    record. This is a rough heuristic, but it works better than the previous
+    nothing.
+    """
+    # Strip out echo directive to avoid false early stop
+    lines = lines.replace("#| echo: false", "")
+    topics = re.findall(FUNCTION_REGEX, lines)
+
+    for topic in topics:
+        func_name, anchor = topic
+        # Find the first newline _after_ the matching function header
+        start = lines.find(r"\n", lines.find(f"# {func_name} {{ {anchor} }}"))
+        end = lines.find("#", start)
+        text_blob = lines[start:end]
+        yield func_name, anchor, text_blob
+        lines = lines[end:]
+
+
+def _create_api_record_from_scraped_function(base_url, func_name, anchor, text_blob):
+    # for e.g. `reference/expression-collections.html` we want to grab "Collections"
+    section = (
+        base_url.removesuffix(".html")
+        .removeprefix("reference/")
+        .removeprefix("expression-")
+        .capitalize()
+    )
+    record = {
+        "objectID": f"{base_url}{anchor}",
+        "href": f"{base_url}{anchor}",
+        "title": func_name,
+        "backend": "core",
+        "core": 1,
+        "crumbs": ["Expression API", "API", f"{section} expression"],
+    }
+    if text_blob:
+        record["text"] = text_blob
 
     return record
 
@@ -105,7 +163,7 @@ def main():
         # For each QMD file, get the table-section of the methods, anchors, and descriptions
         print(f"Scraping {qmd} for API methods...")  # noqa:T201
         with open(qmd) as f:
-            methods = _grab_qmd_methods(f.read())
+            methods = _grab_qmd_methods(lines := f.read())
 
         # Massage the QMD filename into the expected URL that prepends the anchor
         # so we end up eventually with something like
@@ -115,6 +173,15 @@ def main():
         # Generate a dictionary for each row of the method table
         _creator = partial(_create_api_record_from_method_line, base_url)
         records += list(map(_creator, methods))
+
+        # Now that we've scraped out the methods, also scrape any top-level functions
+        print(f"Scraping {qmd} for API functions...")  # noqa:T201
+        for func_name, anchor, textblob in _grab_qmd_functions(lines):
+            record = _create_api_record_from_scraped_function(
+                base_url, func_name, anchor, textblob
+            )
+            assert isinstance(record, dict)
+            records.append(record)
 
     # This saves the list of records to Algolia
     # If the object IDs are new (which typically should be) this adds a new
