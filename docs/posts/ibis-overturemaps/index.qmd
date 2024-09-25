@@ -1,0 +1,217 @@
+---
+title: "From query to plot: Exploring GeoParquet Overture Maps with Ibis, DuckDB, and Lonboard"
+author: Naty Clementi and Kyle Barron
+date: 2024-09-25
+categories:
+  - blog
+  - duckdb
+  - overturemaps
+  - lonboard
+  - geospatial
+execute:
+  freeze: false
+---
+
+With the release of `DuckDB 1.1.1`, now we have support for reading GeoParquet
+files! With this exciting update we can query rich datasets from Overture Maps
+using python via Ibis with the performance of `DuckDB`.
+
+But the good news doesn't stop there, since `Ibis 9.2`, `lonboard` can plot data
+directly from an `Ibis` table, adding more simplicity and speed to your
+geospatial analysis.
+
+Let’s dive into how these tools come together.
+
+## Installation
+
+First make sure you have `duckdb>=1.1.1`, then install Ibis with the dependencies
+needed to work with geospatial data using DuckDB.
+
+```bash
+$ pip install 'duckdb>=1.1.1'
+$ pip install 'ibis-framework[duckdb,geospatial]' lonboard
+```
+
+## Motivation
+
+Overture Maps is an open-source initiative that provides high-quality,
+interoperable map data by integrating contributions from leading companies and
+open data sources to support a wide range of applications.
+
+Overture Maps offers a variety of datasets to query. For example, there is plenty
+of information about power infrastructure.
+
+Let's create some plots of the U.S. power infrastructure. We'll look into power
+plants and power lines for the lower 48 states (excluding Hawaii and Alaska for
+simplicity of the bounding box).
+
+## Download data
+
+First we import Ibis, its [deferred expression object](https://ibis-project.org/reference/expression-generic.html#ibis.expr.api.deferred) `_` ,
+and we use our default backend, DuckDB:
+```python
+import ibis
+from ibis import _
+
+con = ibis.get_backend() # default duckdb backend
+```
+
+With Ibis and DuckDB we can be more specific about the data we want thanks to the
+filter push down. For example, if we want to select only a few columns and
+look only at the power infrastructure when can do this as follow.
+
+
+```python
+# look into type infrastructure
+url = (
+    "s3://overturemaps-us-west-2/release/2024-07-22.0/theme=base/type=infrastructure/*"
+)
+t = con.read_parquet(url, table_name="infra-usa")
+
+# filter for USA bounding box, subtype="power", and selecting only few columns
+expr = t.filter(
+    _.bbox.xmin > -125.0,
+    _.bbox.ymin > 24.8,
+    _.bbox.xmax < -65.8,
+    _.bbox.ymax < 49.2,
+    _.subtype == "power",
+).select(["names", "geometry", "bbox", "class", "sources", "source_tags"])
+```
+
+::: {.callout-note}
+If you inspect expr, you can see that the filters and projections get pushed down,
+meaning you only download the data that you asked for.
+:::
+
+```python
+con.to_parquet(expr, "power-infra-usa.geoparquet")
+```
+
+Now that we have the data lets explore it in Ibis interactive mode and make some
+beautiful maps.
+
+## Data exploration
+
+To explore the data interactively we turn on the interactive mode:
+```python
+ibis.options.interactive = True
+```
+
+```python
+usa_power_infra = con.read_parquet("power-infra-usa.geoparquet")
+usa_power_infra
+```
+
+Let's quickly rename the `class` column, since this is a reserved word and causes
+conflicts when using the deferred operator:
+
+```python
+usa_power_infra = usa_power_infra.rename(infra_class="class")
+```
+
+We take a look at the different classes of infrastructure under the subtype power:
+
+```python
+usa_power_infra.infra_class.value_counts().order_by(
+    ibis.desc("infra_class_count")
+).preview(max_rows=15)
+```
+
+Looks like we have `plant`, `power_line` and `minor_line` among others.
+
+```python
+plants = usa_power_infra.filter(_.infra_class=="plant")
+power_lines = usa_power_infra.filter(_.infra_class=="power_line")
+minor_lines = usa_power_infra.filter(_.infra_class=="minor_line")
+```
+
+
+## Plotting with Lonboard
+
+Lonboard is a Python plotting library optimized for efficient visualizations
+of large geospatial data. It integrates well with Ibis and DuckDB, making
+interactive plotting scalable.
+
+::: {.callout-note}
+You can try this in your machine, for the purpose the blog file size, we will show
+screenshots of the visualization
+:::
+
+```python
+import lonboard
+from lonboard.basemap import CartoBasemap # to choose color of basemap
+```
+
+Let's visualize the `power plants`
+
+```python
+lonboard.viz(
+    plants,
+    scatterplot_kwargs={"get_fill_color": "red"},
+    polygon_kwargs={"get_fill_color": "red"},
+    map_kwargs={
+        "basemap_style": CartoBasemap.Positron,
+        "view_state": {"longitude": -100, "latitude": 36, "zoom": 3},
+    },
+)
+```
+
+![Power plants in the USA](usa-power-plants.png)
+
+If you are visualizing this in your machine, you can zoom in and see some of the
+geometry where the plants are located. As an example, we can plot in a small
+area of California:
+
+```python
+plants_CA = plants.filter(
+    _.bbox.xmin.between(-118.6, -117.9), _.bbox.ymin.between(34.5, 35.3)
+).select(_.names.primary, _.geometry)
+```
+
+```python
+lonboard.viz(
+    plants_CA,
+    scatterplot_kwargs={"get_fill_color": "red"},
+    polygon_kwargs={"get_fill_color": "red"},
+    map_kwargs={
+        "basemap_style": CartoBasemap.Positron,
+    },
+)
+```
+
+![Power plants near Lancaster, CA](ca-power-plants.png)
+
+We can also visualize together the `power_lines` and the `minor_lines` by doing:
+
+```python
+lonboard.viz([minor_lines, power_lines])
+```
+
+![Minor and Power lines of USA](usa-power-and-minor-lines.png)
+
+and that's how you can visualize ~7 million coordinates from the comfort of
+your laptop.
+
+```python
+>>> power_lines.geometry.n_points().sum()
+5329836
+>>> minor_lines.geometry.n_points().sum()
+1430042
+```
+
+With Ibis and DuckDB working with geospatial data has never been easier or faster.
+We saw how to query a dataset from Overture Maps with the simplicity of Python and
+the performance of DuckDB. Last but not least, we saw how simple and quick Lonboard
+got us from query-to-plot. Together, these libraries make exploring and handling
+geospatial data a breeze.
+
+
+## Resources
+- [Ibis Docs](https://ibis-project.org/)
+- [Lonboard Docs](https://developmentseed.org/lonboard/latest/)
+- [DuckDB spatial extension](https://duckdb.org/docs/extensions/spatial.html)
+- [DuckDB spatial functions docs](https://github.com/duckdb/duckdb_spatial/blob/main/docs/functions.md)
+
+Chat with us on Zulip:
+
+- [Ibis Zulip Chat](https://ibis-project.zulipchat.com/)
