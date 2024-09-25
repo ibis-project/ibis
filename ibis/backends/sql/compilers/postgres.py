@@ -20,7 +20,7 @@ from ibis.backends.sql.dialects import Postgres
 from ibis.backends.sql.rewrites import (
     lower_sample,
     split_select_distinct_with_order_by,
-    subtract_one_from_index_argument,
+    subtract_one_from_array_map_filter_index,
 )
 from ibis.common.exceptions import InvalidDecoratorError
 from ibis.util import gen_name
@@ -46,7 +46,7 @@ class PostgresCompiler(SQLGlotCompiler):
 
     dialect = Postgres
     type_mapper = PostgresType
-    rewrites = (subtract_one_from_index_argument, *SQLGlotCompiler.rewrites)
+    rewrites = (subtract_one_from_array_map_filter_index, *SQLGlotCompiler.rewrites)
     post_rewrites = (split_select_distinct_with_order_by,)
 
     agg = AggGen(supports_filter=True, supports_order_by=True)

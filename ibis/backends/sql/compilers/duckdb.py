@@ -14,7 +14,10 @@ import ibis.expr.operations as ops
 from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, AggGen, SQLGlotCompiler
 from ibis.backends.sql.datatypes import DuckDBType
-from ibis.backends.sql.rewrites import lower_sample, subtract_one_from_index_argument
+from ibis.backends.sql.rewrites import (
+    lower_sample,
+    subtract_one_from_array_map_filter_index,
+)
 from ibis.util import gen_name
 
 if TYPE_CHECKING:
@@ -42,7 +45,7 @@ class DuckDBCompiler(SQLGlotCompiler):
     type_mapper = DuckDBType
 
     agg = AggGen(supports_filter=True, supports_order_by=True)
-    rewrites = (subtract_one_from_index_argument, *SQLGlotCompiler.rewrites)
+    rewrites = (subtract_one_from_array_map_filter_index, *SQLGlotCompiler.rewrites)
 
     supports_qualify = True
 
