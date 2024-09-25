@@ -32,8 +32,6 @@ class ExasolCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
-        ops.ArgMax,
-        ops.ArgMin,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayFlatten,

@@ -70,6 +70,8 @@ class PySparkCompiler(SQLGlotCompiler):
     }
 
     SIMPLE_OPS = {
+        ops.ArgMax: "max_by",
+        ops.ArgMin: "min_by",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayFlatten: "flatten",
         ops.ArrayIntersect: "array_intersect",

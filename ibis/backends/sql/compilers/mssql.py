@@ -82,8 +82,6 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,
-        ops.ArgMax,
-        ops.ArgMin,
         ops.Array,
         ops.ArrayDistinct,
         ops.ArrayFlatten,

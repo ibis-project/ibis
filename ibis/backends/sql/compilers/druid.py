@@ -25,8 +25,6 @@ class DruidCompiler(SQLGlotCompiler):
 
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,
-        ops.ArgMax,
-        ops.ArgMin,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayFlatten,
