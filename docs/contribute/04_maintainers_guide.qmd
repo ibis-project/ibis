@@ -11,16 +11,17 @@ Dependency updates are automated using [Mend Renovate](https://www.mend.io/renov
 
 ### poetry
 
-Occasionally you may need to lock [`poetry`](https://python-poetry.org) dependencies. Edit `pyproject.toml` as needed, then run:
+Occasionally you may need to lock [`poetry`](https://python-poetry.org)
+dependencies. Edit `pyproject.toml` as needed, then run:
 
 ```sh
-poetry lock --no-update
-poetry export --extras all --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+just check-poetry
 ```
 
-The second step updates `requirements-dev.txt` for developers using `pip`.
+This will update the lockfile and also update `requirements-dev.txt` for
+developers using `pip`.
 
-## Adding examples
+## Adding entries to `ibis.examples`
 
 If you're not a maintainer, please open an issue asking us to add your example.
 
