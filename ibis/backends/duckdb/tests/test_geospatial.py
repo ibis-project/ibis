@@ -12,6 +12,7 @@ from pytest import param
 import ibis
 from ibis.conftest import LINUX, MACOS, SANDBOXED
 
+duckdb = pytest.importorskip("duckdb")
 gpd = pytest.importorskip("geopandas")
 gtm = pytest.importorskip("geopandas.testing")
 shapely = pytest.importorskip("shapely")
@@ -185,8 +186,11 @@ def test_geospatial_start_point(lines, lines_gdf):
             methodcaller("union_all"),
             marks=pytest.mark.xfail(
                 condition=(
-                    vparse(gpd.__version__) < vparse("1")
-                    or vparse(shapely.__version__) >= vparse("2.0.5")
+                    vparse(duckdb.__version__) < vparse("1.1.1")
+                    and (
+                        vparse(gpd.__version__) < vparse("1")
+                        or vparse(shapely.__version__) >= vparse("2.0.5")
+                    )
                 ),
                 raises=(AttributeError, AssertionError),
                 reason="union_all doesn't exist; shapely 2.0.5 results in a different value for union_all",
