@@ -203,15 +203,16 @@ class Value(Expr):
         """
         op = ops.Cast(self, to=target_type)
 
-        if op.to == self.type():
-            # noop case if passed type is the same
-            return self
+        to = op.to
+        dtype = self.type()
 
-        if op.to.is_geospatial() and not self.type().is_binary():
-            from_geotype = self.type().geotype or "geometry"
-            to_geotype = op.to.geotype
-            if from_geotype == to_geotype:
-                return self
+        if to == dtype or (
+            to.is_geospatial()
+            and dtype.is_geospatial()
+            and (dtype.geotype or "geometry") == to.geotype
+        ):
+            # no-op case if passed type is the same
+            return self
 
         return op.to_expr()
 

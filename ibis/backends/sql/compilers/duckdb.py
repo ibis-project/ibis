@@ -410,13 +410,17 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.f[func](*args)
 
     def visit_Cast(self, op, *, arg, to):
+        dtype = op.arg.dtype
         if to.is_interval():
             func = self.f[f"to_{_INTERVAL_SUFFIXES[to.unit.short]}"]
             return func(sg.cast(arg, to=self.type_mapper.from_ibis(dt.int32)))
-        elif to.is_timestamp() and op.arg.dtype.is_integer():
+        elif to.is_timestamp() and dtype.is_integer():
             return self.f.to_timestamp(arg)
-        elif to.is_geospatial() and op.arg.dtype.is_binary():
-            return self.f.st_geomfromwkb(arg)
+        elif to.is_geospatial():
+            if dtype.is_binary():
+                return self.f.st_geomfromwkb(arg)
+            elif dtype.is_string():
+                return self.f.st_geomfromtext(arg)
 
         return self.cast(arg, to)
 

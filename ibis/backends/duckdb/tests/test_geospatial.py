@@ -385,3 +385,12 @@ def test_load_spatial_casting(ext_dir):
 
     assert geo_expr.type().is_geospatial()
     assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
+
+
+def test_geom_from_string(con):
+    value = ibis.literal("POINT (1 2)")
+    assert value.type().is_string()
+
+    expr = value.cast("geometry")
+    result = con.execute(expr)
+    assert result == shapely.from_wkt("POINT (1 2)")
