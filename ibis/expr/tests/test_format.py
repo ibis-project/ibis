@@ -472,22 +472,11 @@ def test_default_format_implementation(snapshot):
 
 def test_arbitrary_traversables_are_supported(snapshot):
     class MyNode(Traversable):
-        __slots__ = ("obj", "children")
-        __argnames__ = ("obj", "children")
-
-        def __init__(self, obj, children):
-            self.obj = obj.op()
-            self.children = tuple(child.op() for child in children)
-
-        @property
-        def __args__(self):
-            return self.obj, self.children
-
-        def __hash__(self):
-            return hash((self.__class__, self.obj, self.children))
+        obj: Traversable
+        children: tuple[Traversable, ...]
 
     t = ibis.table([("a", "int64")], name="t")
-    node = MyNode(t.a, [t.a, t.a + 1])
+    node = MyNode(t.a.op(), [t.a.op(), (t.a + 1).op()])
     result = pretty(node)
 
     snapshot.assert_match(result, "repr.txt")

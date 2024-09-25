@@ -7,6 +7,7 @@ import re
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from koerce import replace
 
 import ibis
 import ibis.common.exceptions as com
@@ -22,7 +23,6 @@ from ibis.backends.sql.rewrites import (
     p,
     split_select_distinct_with_order_by,
 )
-from ibis.common.patterns import replace
 from ibis.config import options
 from ibis.expr.operations.udf import InputType
 from ibis.util import gen_name

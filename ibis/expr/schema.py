@@ -4,13 +4,13 @@ from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, Union
 
+from koerce import attribute
+
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.exceptions import InputTypeError, IntegrityError
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     import sqlglot.expressions as sge
 
 
-class Schema(Concrete, Coercible, MapSet):
+class Schema(Concrete, MapSet):
     """An ordered mapping of str -> [datatype](./datatypes.qmd), used to hold a [Table](./expression-tables.qmd#ibis.expr.tables.Table)'s schema."""
 
     fields: FrozenOrderedDict[str, dt.DataType]

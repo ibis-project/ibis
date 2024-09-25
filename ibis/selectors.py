@@ -58,6 +58,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from functools import reduce
 from typing import Optional, Union
 
+from koerce import Annotable, Builder, Deferred, resolve
 from public import public
 
 import ibis.common.exceptions as exc
@@ -65,9 +66,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.collections import frozendict  # noqa: TCH001
-from ibis.common.deferred import Deferred, Resolver
-from ibis.common.grounds import Concrete, Singleton
 from ibis.common.selectors import All, Any, Expandable, Selector
 from ibis.common.typing import VarTuple  # noqa: TCH001
 
@@ -420,12 +418,12 @@ def cols(*names: str | ir.Column) -> Selector:
     return Cols(names)
 
 
-class Across(Concrete, Expandable):
+class Across(Expandable):
     selector: Selector
     funcs: Union[
-        Resolver,
+        Builder,
         Callable[[ir.Value], ir.Value],
-        frozendict[Optional[str], Union[Resolver, Callable[[ir.Value], ir.Value]]],
+        dict[Optional[str], Union[Builder, Callable[[ir.Value], ir.Value]]],
     ]
     names: Union[str, Callable[[str, Optional[str]], str]]
 
@@ -436,8 +434,8 @@ class Across(Concrete, Expandable):
         cols = self.selector.expand(table)
         for func_name, func in self.funcs.items():
             for orig_col in cols:
-                if isinstance(func, Resolver):
-                    col = func.resolve({"_": orig_col})
+                if isinstance(func, Builder):
+                    col = resolve(func, _=orig_col)
                 else:
                     col = func(orig_col)
 
@@ -518,16 +516,16 @@ def across(
     return Across(selector=selector, funcs=funcs, names=names)
 
 
-class IfAnyAll(Concrete, Expandable):
+class IfAnyAll(Expandable):
     selector: Selector
-    predicate: Union[Resolver, Callable[[ir.Value], ir.BooleanValue]]
+    predicate: Union[Builder, Callable[[ir.Value], ir.BooleanValue]]
     summarizer: Callable[[ir.BooleanValue, ir.BooleanValue], ir.BooleanValue]
 
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         func = self.predicate
 
-        if isinstance(func, Resolver):
-            fn = lambda col, func=func: func.resolve({"_": col})
+        if isinstance(func, Builder):
+            fn = lambda col, func=func: resolve(func, _=col)
         else:
             fn = func
 
@@ -630,7 +628,7 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
 
 
-class Slice(Concrete):
+class Slice(Annotable, immutable=True):
     """Hashable and smaller-scoped slice object versus the builtin one."""
 
     start: int | str | None = None
@@ -672,7 +670,7 @@ class ColumnIndex(Selector):
         return frozenset(iterable)
 
 
-class Indexable(Singleton):
+class Indexable(Annotable, immutable=True):
     def __getitem__(self, key: str | int | slice | Iterable[int | str]):
         if isinstance(key, slice):
             key = Slice(key.start, key.stop, key.step)
@@ -716,7 +714,7 @@ See Also
 """
 
 
-class First(Singleton, Selector):
+class First(Selector):
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         return [table[0]]
 
@@ -730,7 +728,7 @@ def first() -> Selector:
     return First()
 
 
-class Last(Singleton, Selector):
+class Last(Selector):
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         return [table[-1]]
 
@@ -744,7 +742,7 @@ def last() -> Selector:
     return Last()
 
 
-class AllColumns(Singleton, Selector):
+class AllColumns(Selector):
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         return list(map(table.__getitem__, table.columns))
 
@@ -758,7 +756,7 @@ def all() -> Selector:
     return AllColumns()
 
 
-class NoColumns(Singleton, Selector):
+class NoColumns(Selector):
     def expand(self, table: ir.Table) -> Sequence[ir.Value]:
         return []
 

@@ -1640,7 +1640,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper
         input_types = [
-            type_mapper.to_string(param.annotation.pattern.dtype)
+            # TODO(kszucs): the data type of the input parameters should be
+            # retrieved differently rather than relying on the validator
+            # in the signature
+            type_mapper.to_string(param.pattern.func.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
         output_type = type_mapper.to_string(udf_node.dtype)

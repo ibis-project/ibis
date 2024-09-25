@@ -5,12 +5,11 @@ from __future__ import annotations
 import operator
 from typing import Annotated, Optional
 
+from koerce import As, Object, attribute
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
-from ibis.common.patterns import As, Attrs
 from ibis.common.temporal import DateUnit, IntervalUnit, TimestampUnit, TimeUnit
 from ibis.expr.operations.core import Binary, Scalar, Unary, Value
 from ibis.expr.operations.logical import Between
@@ -263,8 +262,8 @@ class TimestampFromUNIX(Value):
     shape = rlz.shape_like("arg")
 
 
-TimeInterval = Annotated[dt.Interval, Attrs(unit=As(TimeUnit))]
-DateInterval = Annotated[dt.Interval, Attrs(unit=As(DateUnit))]
+TimeInterval = Annotated[dt.Interval, Object(dt.Interval, unit=As(TimeUnit))]
+DateInterval = Annotated[dt.Interval, Object(dt.Interval, unit=As(DateUnit))]
 
 
 @public

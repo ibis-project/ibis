@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Optional
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Unary, Value
 

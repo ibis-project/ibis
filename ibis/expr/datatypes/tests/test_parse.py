@@ -9,7 +9,7 @@ import pytest
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 
 @pytest.mark.parametrize(

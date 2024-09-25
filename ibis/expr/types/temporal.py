@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
 
+from koerce import annotated
 from public import public
 
 import ibis
@@ -9,7 +10,6 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
-from ibis.common.annotations import annotated
 from ibis.common.temporal import IntervalUnit
 from ibis.expr.types.core import _binop
 from ibis.expr.types.generic import Column, Scalar, Value

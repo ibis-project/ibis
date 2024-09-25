@@ -1,14 +1,15 @@
 from __future__ import annotations
 
 import pytest
+from koerce import resolve
 
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
+from ibis.common.grounds import ValidationError
 
 
 @pytest.fixture
@@ -142,7 +143,7 @@ def test_udf_deferred(dec, table):
     expr = myfunc(_.a)
     assert isinstance(expr, Deferred)
     assert repr(expr) == "myfunc(_.a)"
-    assert expr.resolve(table).equals(myfunc(table.a))
+    assert resolve(expr, _=table).equals(myfunc(table.a))
 
 
 def test_builtin_scalar_noargs():

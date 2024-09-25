@@ -3,10 +3,10 @@ from __future__ import annotations
 import inspect
 from typing import TYPE_CHECKING
 
+from koerce import Deferred, deferrable, resolve
 from public import public
 
 import ibis.expr.operations as ops
-from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
@@ -470,10 +470,8 @@ class ArrayValue(Value):
         """
         if isinstance(func, Deferred):
             name = "_"
-            resolve = func.resolve
         elif callable(func):
             name = next(iter(inspect.signature(func).parameters.keys()))
-            resolve = func
         else:
             raise TypeError(
                 f"`func` must be a Deferred or Callable, got `{type(func).__name__}`"
@@ -482,7 +480,11 @@ class ArrayValue(Value):
         parameter = ops.Argument(
             name=name, shape=self.op().shape, dtype=self.type().value_type
         )
-        body = resolve(parameter.to_expr())
+        if isinstance(func, Deferred):
+            body = resolve(func, _=parameter.to_expr())
+        else:
+            body = func(parameter.to_expr())
+
         return ops.ArrayMap(self, param=parameter.param, body=body).to_expr()
 
     def filter(
@@ -574,20 +576,23 @@ class ArrayValue(Value):
         """
         if isinstance(predicate, Deferred):
             name = "_"
-            resolve = predicate.resolve
         elif callable(predicate):
             name = next(iter(inspect.signature(predicate).parameters.keys()))
-            resolve = predicate
         else:
             raise TypeError(
                 f"`predicate` must be a Deferred or Callable, got `{type(predicate).__name__}`"
             )
+
         parameter = ops.Argument(
             name=name,
             shape=self.op().shape,
             dtype=self.type().value_type,
         )
-        body = resolve(parameter.to_expr())
+        if isinstance(predicate, Deferred):
+            body = resolve(predicate, _=parameter.to_expr())
+        else:
+            body = predicate(parameter.to_expr())
+
         return ops.ArrayFilter(self, param=parameter.param, body=body).to_expr()
 
     def contains(self, other: ir.Value) -> ir.BooleanValue:

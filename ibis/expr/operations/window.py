@@ -12,7 +12,6 @@ import ibis.common.exceptions as com
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.patterns import CoercionError
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.analytic import Analytic  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
@@ -60,7 +59,7 @@ class WindowBoundary(Value[T, S]):
         elif isinstance(arg, Value):
             return cls(arg, preceding=False)
         else:
-            raise CoercionError(f"Invalid window boundary type: {type(arg)}")
+            raise ValueError(f"Invalid window boundary type: {type(arg)}")
 
 
 @public

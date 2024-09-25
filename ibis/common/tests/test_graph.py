@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
+from typing import Any
 
 import pytest
+from koerce import Eq, If, Is, Object, TupleOf, _, argument, pattern
 
 from ibis.common.collections import frozendict
 from ibis.common.graph import (
@@ -18,37 +20,20 @@ from ibis.common.graph import (
     dfs_while,
     traverse,
 )
-from ibis.common.grounds import Annotable, Concrete
-from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _, pattern
 
 
 class MyNode(Node):
-    __match_args__ = ("name", "children")
-    __slots__ = ("name", "children")
+    name: str
+    children: tuple[Any, ...]
 
-    def __init__(self, name, children):
-        self.name = name
-        self.children = children
+    # def __hash__(self):
+    #     return hash((self.__class__, self.name))
 
-    @property
-    def __args__(self):
-        return (self.name, self.children)
+    # def __eq__(self, other):
+    #     return self.name == other.name
 
-    @property
-    def __argnames__(self):
-        return ("name", "children")
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.name})"
-
-    def __hash__(self):
-        return hash((self.__class__, self.name))
-
-    def __eq__(self, other):
-        return self.name == other.name
-
-    def copy(self, name=None, children=None):
-        return self.__class__(name or self.name, children or self.children)
+    # def copy(self, name=None, children=None):
+    #     return self.__class__(name or self.name, children or self.children)
 
 
 C = MyNode(name="C", children=[])
@@ -56,7 +41,7 @@ D = MyNode(name="D", children=[])
 E = MyNode(name="E", children=[])
 B = MyNode(name="B", children=[D, E])
 A = MyNode(name="A", children=[B, C])
-F = MyNode(name="F", children=[{C: D, E: None}])
+F = MyNode(name="F", children=[frozendict({C: D, E: None})])
 
 
 def test_bfs():
@@ -106,7 +91,7 @@ def test_toposort_cycle_detection():
     C = MyNode(name="C", children=[])
     A = MyNode(name="A", children=[C])
     B = MyNode(name="B", children=[A])
-    A.children.append(B)
+    A.__init__(name="A", children=(C, B))
 
     # A depends on B which depends on A
     g = Graph(A)
@@ -119,7 +104,7 @@ def test_nested_children():
     b = MyNode(name="b", children=[a])
     c = MyNode(name="c", children=[])
     d = MyNode(name="d", children=[])
-    e = MyNode(name="e", children=[[b, c], {"d": d}])
+    e = MyNode(name="e", children=[(b, c), frozendict(d=d)])
     assert bfs(e) == {
         e: (b, c, d),
         b: (a,),
@@ -151,7 +136,7 @@ def test_traversal_with_filtering_out_root(func):
 
 
 def test_replace_with_filtering_out_root():
-    rule = InstanceOf(MyNode) >> MyNode(name="new", children=[])
+    rule = Is(MyNode) >> MyNode(name="new", children=[])
     result = A.replace(rule, filter=If(lambda x: x.name != "A"))
     assert result == A
 
@@ -189,7 +174,7 @@ def test_replace_doesnt_recreate_unchanged_nodes(kind):
         def replacer(node, children):
             if node is B2:
                 return B3
-            return node.__recreate__(children) if children else node
+            return node.__class__(**children) if children else node
 
     res = C.replace(replacer)
 
@@ -201,24 +186,23 @@ def test_replace_doesnt_recreate_unchanged_nodes(kind):
 
 
 def test_example():
-    class Example(Annotable, Node):
-        def __hash__(self):
-            return hash((self.__class__, self.__args__))
+    class Example(Node):
+        pass
 
     class Literal(Example):
-        value = InstanceOf(object)
+        value = argument(Is(object))
 
     class BoolLiteral(Literal):
-        value = InstanceOf(bool)
+        value = argument(Is(bool))
 
     class And(Example):
-        operands = TupleOf(InstanceOf(BoolLiteral))
+        operands = argument(TupleOf(Is(BoolLiteral)))
 
     class Or(Example):
-        operands = TupleOf(InstanceOf(BoolLiteral))
+        operands = argument(TupleOf(Is(BoolLiteral)))
 
     class Collect(Example):
-        arguments = TupleOf(TupleOf(InstanceOf(Example)) | InstanceOf(Example))
+        arguments = argument(TupleOf(TupleOf(Is(Example)) | Is(Example)))
 
     a = BoolLiteral(True)
     b = BoolLiteral(False)
@@ -242,20 +226,20 @@ def test_example():
     assert graph == expected
 
 
-def test_concrete_with_traversable_children():
-    class Bool(Concrete, Node):
+def test_node_with_traversable_children():
+    class Bool(Node):
         pass
 
     class Value(Bool):
-        value = InstanceOf(bool)
+        value = argument(Is(bool))
 
     class Either(Bool):
-        left = InstanceOf(Bool)
-        right = InstanceOf(Bool)
+        left = argument(Is(Bool))
+        right = argument(Is(Bool))
 
     class All(Bool):
-        arguments = TupleOf(InstanceOf(Bool))
-        strict = InstanceOf(bool)
+        arguments = argument(TupleOf(Is(Bool)))
+        strict = argument(Is(bool))
 
     T, F = Value(True), Value(False)
 
@@ -362,7 +346,7 @@ def test_coerce_finder():
     assert f("1") is True
     assert f(1.0) is False
 
-    f = _coerce_finder(InstanceOf(bool))
+    f = _coerce_finder(Is(bool))
     assert f(True) is True
     assert f(False) is True
     assert f(1) is False
@@ -382,7 +366,7 @@ def test_coerce_replacer():
     assert r(D, {}) == E
     assert r(A, {"name": "A", "children": [B, C]}) == A
 
-    r = _coerce_replacer(InstanceOf(MyNode) >> _.copy(name=_.name.lower()))
+    r = _coerce_replacer(Is(MyNode) >> _.copy(name=_.name.lower()))
     assert r(C, {"name": "C", "children": []}) == MyNode(name="c", children=[])
     assert r(D, {"name": "D", "children": []}) == MyNode(name="d", children=[])
 

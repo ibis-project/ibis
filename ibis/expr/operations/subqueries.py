@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.expr.operations.core import Value
 from ibis.expr.operations.relations import Relation  # noqa: TCH001

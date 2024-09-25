@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
 from ibis.expr.operations import Value
 
 

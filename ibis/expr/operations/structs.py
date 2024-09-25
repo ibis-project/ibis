@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Value
 
@@ -42,7 +42,7 @@ class StructColumn(Value):
 
     def __init__(self, names, values):
         if len(names) != len(values):
-            raise ValidationError(
+            raise ValueError(
                 f"Length of names ({len(names)}) does not match length of "
                 f"values ({len(values)})"
             )

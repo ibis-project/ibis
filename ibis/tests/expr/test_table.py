@@ -14,9 +14,9 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
-from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
 from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
+from ibis.common.grounds import ValidationError
 from ibis.expr import api
 from ibis.expr.rewrites import simplify
 from ibis.expr.tests.test_newrels import join_tables

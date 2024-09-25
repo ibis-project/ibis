@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import ValidationError, attribute
 from ibis.common.exceptions import IbisTypeError
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Binary, Unary, Value
@@ -120,12 +120,12 @@ class Between(Value):
 
     def __init__(self, arg, lower_bound, upper_bound):
         if not rlz.comparable(arg, lower_bound):
-            raise ValidationError(
+            raise ValueError(
                 f"Arguments {rlz.arg_type_error_format(arg)} and "
                 f"{rlz.arg_type_error_format(lower_bound)} are not comparable"
             )
         if not rlz.comparable(arg, upper_bound):
-            raise ValidationError(
+            raise ValueError(
                 f"Arguments {rlz.arg_type_error_format(arg)} and "
                 f"{rlz.arg_type_error_format(upper_bound)} are not comparable"
             )

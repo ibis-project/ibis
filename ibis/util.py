@@ -22,8 +22,6 @@ from uuid import uuid4
 
 import toolz
 
-from ibis.common.typing import Coercible
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
     from numbers import Real
@@ -637,7 +635,7 @@ class Namespace:
         return self._factory(obj)
 
 
-class PseudoHashable(Coercible, Generic[V]):
+class PseudoHashable(Generic[V]):
     """A wrapper that provides a best effort precomputed hash."""
 
     __slots__ = ("obj", "hash")

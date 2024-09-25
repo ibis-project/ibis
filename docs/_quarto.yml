@@ -298,8 +298,6 @@ quartodoc:
               package: ibis.expr.types.generic
             - name: Column
               package: ibis.expr.types.generic
-            - name: Deferred
-              package: ibis.common.deferred
             - name: Scalar
               package: ibis.expr.types.generic
 

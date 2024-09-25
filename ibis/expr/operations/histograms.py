@@ -5,11 +5,11 @@ from __future__ import annotations
 import numbers  # noqa: TCH003
 from typing import Literal
 
+from koerce import attribute
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.common.annotations import ValidationError, attribute
 from ibis.common.typing import VarTuple  # noqa: TCH001
 from ibis.expr.operations.core import Column, Value
 
@@ -33,10 +33,10 @@ class Bucket(Value):
 
     def __init__(self, buckets, include_under, include_over, **kwargs):
         if not buckets:
-            raise ValidationError("Must be at least one bucket edge")
+            raise ValueError("Must be at least one bucket edge")
         elif len(buckets) == 1:
             if not include_under or not include_over:
-                raise ValidationError(
+                raise ValueError(
                     "If one bucket edge provided, must have "
                     "include_under=True and include_over=True"
                 )
