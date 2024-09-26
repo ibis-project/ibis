@@ -2,46 +2,57 @@
 bigquery:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/bigquery/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/bigquery/**"
 
 clickhouse:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/clickhouse/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/clickhouse/**"
 
 datafusion:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/datafusion/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/datafusion/**"
 
 druid:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/druid/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/druid/**"
 
 duckdb:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/duckdb/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/duckdb/**"
 
 exasol:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/exasol/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/exasol/**"
 
 flink:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/flink/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/flink/**"
 
 impala:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/impala/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/impala/**"
 
 mssql:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/mssql/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/mssql/**"
 
 mysql:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/mysql/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/mysql/**"
 
 oracle:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/oracle/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/oracle/**"
 
 polars:
   - changed-files:
@@ -50,26 +61,36 @@ polars:
 postgres:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/postgres/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/postgres/**"
 
 pyspark:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/pyspark/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/pyspark/**"
 
 risingwave:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/risingwave/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/risingwave/**"
 
 snowflake:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/snowflake/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/snowflake/**"
 
 sqlite:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/sqlite/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/sqlite/**"
 
 trino:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/trino/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/trino/**"
+
+sql:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/sql/**"
 
 # miscellaneous labels
 tests:
@@ -79,6 +100,7 @@ tests:
 nix:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
+      - any-glob-to-any-file: "flake.lock"
 
 datatypes:
   - changed-files:
@@ -91,8 +113,8 @@ ci:
 dependencies:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
-      - any-glob-to-any-file: "poetry.lock"
       - any-glob-to-any-file: "flake.lock"
+      - any-glob-to-any-file: "poetry.lock"
       - any-glob-to-any-file: "requirements-dev.txt"
       - any-glob-to-any-file: "conda/*.yml"
 
