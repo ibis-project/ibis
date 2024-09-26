@@ -287,7 +287,7 @@ The names and locations from Faker are bland and unrealistic. The comments are
 nonsensical. ~~And most importantly, we haven't filled our quota for blogs
 mentioning AI.~~ You could [use language models in Ibis UDFs to generate more
 realistic synthetic data](../lms-for-data/index.qmd). We could use "open source"
-language models to do this locally for free, an excercise left to the reader.
+language models to do this locally for free, an exercise left to the reader.
 
 ## Next steps
 
