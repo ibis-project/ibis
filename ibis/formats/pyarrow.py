@@ -358,6 +358,9 @@ directly by running `ibis.memtable(my_dataset.to_table())`."""
     __slots__ = ("obj",)
     obj: V
 
+    def __init__(self, obj: V) -> None:
+        self.obj = obj
+
     # pyarrow datasets are hashable, so we override the hash from TableProxy
     def __hash__(self):
         return hash(self.obj)
