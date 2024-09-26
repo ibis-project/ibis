@@ -6,6 +6,7 @@ import re
 import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from itertools import chain
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -18,13 +19,15 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 from ibis import util
+from ibis.common.collections import frozendict
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.selectors import Expandable, Selector
 from ibis.expr.rewrites import DerefMap
 from ibis.expr.types.core import Expr, _FixedTextJupyterMixin
 from ibis.expr.types.generic import Value, literal
+from ibis.expr.types.groupby import Cube, GroupingSets, Rollup
 from ibis.expr.types.temporal import TimestampColumn
-from ibis.util import deprecated
+from ibis.util import deprecated, flatten_iterable
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -872,9 +875,35 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.groupby import GroupedTable
 
+        def partition_groups(*by, **key_exprs):
+            grouping_sets = []
+            rollups = []
+            cubes = []
+            groups = []
+            for b in by:
+                if isinstance(b, Rollup):
+                    rollups.append(b.expand(self))
+                elif isinstance(b, Cube):
+                    cubes.append(b.expand(self))
+                elif isinstance(b, GroupingSets):
+                    grouping_sets.append(b.expand(self))
+                else:
+                    groups.extend(self.bind(b))
+
+            groups.extend(self.bind(**key_exprs))
+            return groups, grouping_sets, rollups, cubes
+
         by = tuple(v for v in by if v is not None)
-        groups = self.bind(*by, **key_exprs)
-        return GroupedTable(self, groups)
+        groups, grouping_sets, rollups, cubes = partition_groups(*by, **key_exprs)
+        if not (groups or grouping_sets or rollups or cubes):
+            raise com.IbisInputError("No grouping keys provided")
+        return GroupedTable(
+            self,
+            groupings=groups,
+            grouping_sets=grouping_sets,
+            rollups=rollups,
+            cubes=cubes,
+        )
 
     # TODO(kszucs): shouldn't this be ibis.rowid() instead not bound to a specific table?
     def rowid(self) -> ir.IntegerValue:
@@ -922,6 +951,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         metrics: Sequence[ir.Scalar] | None = (),
         by: Sequence[ir.Value] | None = (),
         having: Sequence[ir.BooleanValue] | None = (),
+        grouping_sets=(),
+        rollups=(),
+        cubes=(),
         **kwargs: ir.Value,
     ) -> Table:
         """Aggregate a table with a given set of reductions grouping by `by`.
@@ -941,6 +973,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             ::: {.callout-warning}
             ## Expressions like `x is None` return `bool` and **will not** generate a SQL comparison to `NULL`
             :::
+        grouping_sets
+            Grouping sets
+        rollups
+            Rollups
+        cubes
+            Cubes
         kwargs
             Named aggregate expressions
 
@@ -1010,8 +1048,29 @@ class Table(Expr, _FixedTextJupyterMixin):
                 else:
                     metrics[metric.name] = metric
 
-        # construct the aggregate node
-        agg = ops.Aggregate(node, groups, metrics).to_expr()
+        keys = frozendict(
+            toolz.unique(
+                chain(
+                    groups.items(),
+                    (
+                        (g.op().name, g.op())
+                        for g in flatten_iterable(
+                            chain(*grouping_sets, *rollups, *cubes)
+                        )
+                    ),
+                ),
+            )
+        )
+
+        agg = ops.Aggregate(
+            node,
+            groups=groups,
+            metrics=metrics,
+            keys=keys,
+            grouping_sets=grouping_sets,
+            rollups=rollups,
+            cubes=cubes,
+        ).to_expr()
 
         if having:
             # apply the having clause
@@ -2988,10 +3047,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 | ir.BooleanColumn
                 | Literal[True]
                 | Literal[False]
-                | tuple[
-                    str | ir.Column | ir.Deferred,
-                    str | ir.Column | ir.Deferred,
-                ]
+                | tuple[str | ir.Column | Deferred, str | ir.Column | Deferred]
             ]
         ) = (),
         how: JoinKind = "inner",
