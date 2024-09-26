@@ -239,8 +239,7 @@ class scalar(_UDF):
         >>> expr = hamming("duck", "luck")
         >>> con = ibis.connect("duckdb://")
         >>> con.execute(expr)
-        np.int64(1)
-
+        1
         """
         return _wrap(
             cls._make_wrapper,
