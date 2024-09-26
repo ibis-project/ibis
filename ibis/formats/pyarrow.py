@@ -355,9 +355,6 @@ class PyArrowDatasetProxy(TableProxy):
     def __init__(self, obj: V):
         self.obj = obj
 
-    def __len__(self):
-        return self.obj.count_rows()
-
     # pyarrow datasets are hashable, so we override the hash from TableProxy
     def __hash__(self):
         return hash(self.obj)
