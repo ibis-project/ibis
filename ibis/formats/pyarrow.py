@@ -9,6 +9,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
+from ibis.util import V
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -330,7 +331,7 @@ class PyArrowData(DataMapper):
             return table
 
 
-class PyArrowTableProxy(TableProxy):
+class PyArrowTableProxy(TableProxy[V]):
     def to_frame(self):
         return self.obj.to_pandas()
 
@@ -346,13 +347,16 @@ class PyArrowTableProxy(TableProxy):
         return PolarsData.convert_table(df, schema)
 
 
-class PyArrowDatasetProxy(TableProxy):
+class PyArrowDatasetProxy(TableProxy[V]):
     ERROR_MESSAGE = """\
 You are trying to use a PyArrow Dataset with a backend that will require
 materializing the entire dataset in local memory.
 
 If you would like to materialize this dataset, please construct the memtable
 directly by running `ibis.memtable(my_dataset.to_table())`."""
+
+    __slots__ = ("obj",)
+    obj: V
 
     # pyarrow datasets are hashable, so we override the hash from TableProxy
     def __hash__(self):
