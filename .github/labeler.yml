@@ -79,6 +79,7 @@ tests:
 nix:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
+      - any-glob-to-any-file: "flake.lock"
 
 datatypes:
   - changed-files:
@@ -91,8 +92,8 @@ ci:
 dependencies:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
-      - any-glob-to-any-file: "poetry.lock"
       - any-glob-to-any-file: "flake.lock"
+      - any-glob-to-any-file: "poetry.lock"
       - any-glob-to-any-file: "requirements-dev.txt"
       - any-glob-to-any-file: "conda/*.yml"
 
