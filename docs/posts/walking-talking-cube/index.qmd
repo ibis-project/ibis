@@ -1,0 +1,310 @@
+---
+title: "Taking a random cube for a walk and making it talk"
+author: "Cody Peterson"
+date: "2024-09-26"
+image: thumbnail.png
+categories:
+    - blog
+    - duckdb
+    - udfs
+---
+
+***Synthetic data with Ibis, DuckDB, Python UDFs, and Faker.***
+
+To follow along, install the required libraries:
+
+```bash
+pip install 'ibis-framework[duckdb]' faker plotly
+```
+
+## A random cube
+
+We'll generate a random cube of data with Ibis (default DuckDB backend) and
+visualize it as a 3D line plot:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show me the code!"
+import ibis  # <1>
+import ibis.selectors as s
+import plotly.express as px  # <1>
+
+ibis.options.interactive = True  # <2>
+ibis.options.repr.interactive.max_rows = 5  # <2>
+
+con = ibis.connect("duckdb://synthetic.ddb")  # <3>
+
+if "source" in con.list_tables():
+    t = con.table("source")  # <4>
+else:
+    lookback = ibis.interval(days=1)  # <5>
+    step = ibis.interval(seconds=1)  # <5>
+
+    t = (
+        (
+            ibis.range(  # <6>
+                ibis.now() - lookback,
+                ibis.now(),
+                step=step,
+            )  # <6>
+            .unnest()  # <7>
+            .name("timestamp")  # <8>
+            .as_table()  # <9>
+        )
+        .mutate(
+            index=(ibis.row_number().over(order_by="timestamp")),  # <10>
+            **{col: 2 * (ibis.random() - 0.5) for col in ["a", "b", "c"]},  # <11>
+        )
+        .mutate(color=ibis._["index"].histogram(nbins=8))  # <12>
+        .drop("index")  # <13>
+        .relocate("timestamp", "color")  # <14>
+        .order_by("timestamp")  # <15>
+    )
+
+    t = con.create_table("source", t.to_pyarrow())  # <16>
+
+c = px.line_3d(  # <17>
+    t,
+    x="a",
+    y="b",
+    z="c",
+    color="color",
+    hover_data=["timestamp"],
+)  # <17>
+c
+```
+
+1. Import the necessary libraries.
+2. Enable interactive mode for Ibis.
+3. Connect to an on-disk DuckDB database.
+4. Load the table if it already exists.
+5. Define the time range and step for the data.
+6. Create the array of timestamps.
+7. Unnest the array to a column.
+8. Name the column "timestamp".
+9. Convert the column into a table.
+10. Create a monotonically increasing index column.
+11. Create three columns of random numbers.
+12. Create a color column based on the index (help visualize the time series).
+13. Drop the index column.
+14. Rearrange the columns.
+15. Order the table by timestamp.
+16. Store the table in the on-disk database.
+17. Create a 3D line plot of the data.
+
+## Walking
+
+We have a random cube of data:
+
+```{python}
+t
+```
+
+But we need to make it [walk](https://en.wikipedia.org/wiki/Random_walk). We'll
+use a window function to calculate the cumulative sum of each column:
+
+::: {.panel-tabset}
+
+## Without column selectors
+
+```{python}
+window = ibis.window(order_by="timestamp", preceding=None, following=0)
+walked = t.select(
+    "timestamp",
+    "color",
+    a=t["a"].sum().over(window),
+    b=t["b"].sum().over(window),
+    c=t["c"].sum().over(window),
+).order_by("timestamp")
+walked
+```
+
+## With column selectors
+
+```{python}
+window = ibis.window(order_by="timestamp", preceding=None, following=0)
+walked = t.select(
+    "timestamp",
+    "color",
+    s.across(
+        s.c("a", "b", "c"),  # <1>
+        ibis._.sum().over(window),  # <2>
+    ),
+).order_by("timestamp")
+walked
+```
+
+1. Alternatively, you can use `s.of_type(float)` to select all float columns.
+2. Use the `ibis._` selector to reference a deferred column expression.
+
+:::
+
+While the first few rows may look similar to the cube, the 3D line plot does
+not:
+
+```{python}
+#| code-fold: true
+#| code-summary: "Show me the code!"
+c = px.line_3d(
+    walked,
+    x="a",
+    y="b",
+    z="c",
+    color="color",
+    hover_data=["timestamp"],
+)
+c
+```
+
+## Talking
+
+We've made our random cube and we've made it walk, but now we want to make it
+talk. At this point, you might be questioning the utility of this blog post --
+what are we doing and why? The purpose is to demonstrate generating synthetic
+data that can look realistic. We achieve this by building in randomness (e.g. a
+random walk can be used to simulate stock prices) and also by using that
+randomness to inform the generation of non-numeric synthetic data (e.g. the
+ticker symbol of a stock).
+
+### Faking it
+
+Let's demonstrate this concept by pretending we have an application where users
+can review a location they're at. The user's name, comment, location, and device
+info are stored in our database for their review at a given timestamp.
+
+[Faker](https://github.com/joke2k/faker) is a commonly used Python library for
+generating fake data. We'll use it to generate fake names, comments, locations,
+and device info for our reviews:
+
+```{python}
+from faker import Faker
+
+fake = Faker()
+
+res = (
+    fake.name(),
+    fake.sentence(),
+    fake.location_on_land(),
+    fake.user_agent(),
+    fake.ipv4(),
+)
+res
+```
+
+We can use our random numbers to influence the fake data generation in a Python
+UDF:
+
+```{python}
+#| echo: false
+#| code-fold: true
+con.raw_sql("set enable_progress_bar = false;");
+```
+
+```{python}
+# | code-fold: true
+# | code-summary: "Show me the code!"
+import ibis.expr.datatypes as dt
+
+from datetime import datetime, timedelta
+
+ibis.options.repr.interactive.max_length = 5
+
+record_schema = dt.Struct(
+    {
+        "timestamp": datetime,
+        "name": str,
+        "comment": str,
+        "location": list[str],
+        "device": dt.Struct(
+            {
+                "browser": str,
+                "ip": str,
+            }
+        ),
+    }
+)
+
+
+@ibis.udf.scalar.python
+def faked_batch(
+    timestamp: datetime,
+    a: float,
+    b: float,
+    c: float,
+    batch_size: int = 8,
+) -> dt.Array(record_schema):
+    """
+    Generate records of fake data.
+    """
+    value = (a + b + c) / 3
+
+    res = [
+        {
+            "timestamp": timestamp + timedelta(seconds=0.1 * i),
+            "name": fake.name() if value >= 0.5 else fake.first_name(),
+            "comment": fake.sentence(),
+            "location": fake.location_on_land(),
+            "device": {
+                "browser": fake.user_agent(),
+                "ip": fake.ipv4() if value >= 0 else fake.ipv6(),
+            },
+        }
+        for i in range(batch_size)
+    ]
+
+    return res
+
+
+if "faked" in con.list_tables():
+    faked = con.table("faked")
+else:
+    faked = (
+        t.mutate(
+            faked=faked_batch(t["timestamp"], t["a"], t["b"], t["c"]),
+        )
+        .select(
+            "a",
+            "b",
+            "c",
+            ibis._["faked"].unnest(),
+        )
+        .unpack("faked")
+        .drop("a", "b", "c")
+    )
+
+    faked = con.create_table("faked", faked)
+
+faked
+```
+
+And now we have a "realistic" dataset of fake reviews matching our desired
+schema. You can adjust this to match the schema and expected distributions of
+your own data and scale it up as needed.
+
+### GenAI/LLMs
+
+The names and locations from Faker are bland and unrealistic. The comments are
+nonsensical. ~~And most importantly, we haven't filled our quota for blogs
+mentioning AI.~~ You could [use language models in Ibis UDFs to generate more
+realistic synthetic data](../lms-for-data/index.qmd). We could use "open source"
+language models to do this locally for free, an exercise left to the reader.
+
+## Next steps
+
+If you've followed along, you have a `synthetic.ddb` file with a couple tables:
+
+```{python}
+con.list_tables()
+```
+
+We can estimate the size of data generated:
+
+```{python}
+import os
+
+size_in_mbs = os.path.getsize("synthetic.ddb") / (1024 * 1024)
+print(f"synthetic.ddb: {size_in_mbs:.2f} MBs")
+```
+
+You can build from here to generate realistic synthetic data at any scale for
+any use case.
