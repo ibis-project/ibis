@@ -17,8 +17,6 @@ if TYPE_CHECKING:
     import polars as pl
     import pyarrow.dataset as ds
 
-    from ibis.util import V
-
 
 _from_pyarrow_types = {
     pa.int8(): dt.Int8,
@@ -349,37 +347,22 @@ class PyArrowTableProxy(TableProxy):
 
 
 class PyArrowDatasetProxy(TableProxy):
-    __slots__ = ("obj",)
-    obj: V
+    ERROR_MESSAGE = """\
+You are trying to use a PyArrow Dataset with a backend that will require
+materializing the entire dataset in local memory.
 
-    def __init__(self, obj: V):
-        self.obj = obj
+If you would like to materialize this dataset, please construct the memtable
+directly by running `ibis.memtable(my_dataset.to_table())`."""
 
     # pyarrow datasets are hashable, so we override the hash from TableProxy
     def __hash__(self):
         return hash(self.obj)
 
     def to_frame(self) -> pd.DataFrame:
-        raise com.UnsupportedOperationError(
-            """You are trying to use a PyArrow Dataset with a backend
-            that will require materializing the entire dataset in local
-            memory.
-
-            If you would like to materialize this dataset, please construct the
-            memtable directly by running `ibis.memtable(my_dataset.to_table())`
-            """
-        )
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
 
     def to_pyarrow(self, schema: Schema) -> pa.Table:
-        raise com.UnsupportedOperationError(
-            """You are trying to use a PyArrow Dataset with a backend
-            that will require materializing the entire dataset in local
-            memory.
-
-            If you would like to materialize this dataset, please construct the
-            memtable directly by running `ibis.memtable(my_dataset.to_table())`
-            """
-        )
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
 
     def to_pyarrow_dataset(self, schema: Schema) -> ds.Dataset:
         """Return the dataset object itself.
@@ -389,12 +372,4 @@ class PyArrowDatasetProxy(TableProxy):
         return self.obj
 
     def to_polars(self, schema: Schema) -> pa.Table:
-        raise com.UnsupportedOperationError(
-            """You are trying to use a PyArrow Dataset with a backend
-            that will require materializing the entire dataset in local
-            memory.
-
-            If you would like to materialize this dataset, please construct the
-            memtable directly by running `ibis.memtable(my_dataset.to_table())`
-            """
-        )
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
