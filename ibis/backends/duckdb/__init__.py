@@ -1609,10 +1609,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             return True
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        if hasattr(op.data, "to_pyarrow_dataset"):
-            self.con.register(op.name, op.data.to_pyarrow_dataset(op.schema))
-        else:
-            self.con.register(op.name, op.data.to_pyarrow(op.schema))
+        data = op.data
+        schema = op.schema
+
+        try:
+            obj = data.to_pyarrow_dataset(schema)
+        except AttributeError:
+            obj = data.to_pyarrow(schema)
+
+        self.con.register(op.name, obj)
 
     def _finalize_memtable(self, name: str) -> None:
         # if we don't aggressively unregister tables duckdb will keep a
