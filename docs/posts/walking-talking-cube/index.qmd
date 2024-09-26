@@ -1,7 +1,7 @@
 ---
 title: "Taking a random cube for a walk and making it talk"
 author: "Cody Peterson"
-date: "2024-09-24"
+date: "2024-09-26"
 image: thumbnail.png
 categories:
     - blog
@@ -10,6 +10,12 @@ categories:
 ---
 
 ***Synthetic data with Ibis, DuckDB, Python UDFs, and Faker.***
+
+To follow along, install the required libraries:
+
+```bash
+pip install 'ibis-framework[duckdb]' faker plotly
+```
 
 ## A random cube
 
@@ -280,8 +286,8 @@ your own data and scale it up as needed.
 The names and locations from Faker are bland and unrealistic. The comments are
 nonsensical. ~~And most importantly, we haven't filled our quota for blogs
 mentioning AI.~~ You could [use language models in Ibis UDFs to generate more
-realistic synthetic data](../lms-for-data/index.qmd). In a future blog post, we
-will use "open source" language models to do this locally for free.
+realistic synthetic data](../lms-for-data/index.qmd). We could use "open source"
+language models to do this locally for free, an excercise left to the reader.
 
 ## Next steps
 
