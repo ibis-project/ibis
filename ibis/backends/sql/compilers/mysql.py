@@ -65,8 +65,6 @@ class MySQLCompiler(SQLGlotCompiler):
     NEG_INF = POS_INF
     UNSUPPORTED_OPS = (
         ops.ApproxMedian,
-        ops.ArgMax,
-        ops.ArgMin,
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,

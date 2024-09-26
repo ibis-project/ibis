@@ -69,8 +69,6 @@ class FlinkCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.AnalyticVectorizedUDF,
         ops.ApproxMedian,
-        ops.ArgMax,
-        ops.ArgMin,
         ops.ArrayFlatten,
         ops.ArrayStringJoin,
         ops.Correlation,

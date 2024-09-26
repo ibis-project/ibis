@@ -30,8 +30,6 @@ class DataFusionCompiler(SQLGlotCompiler):
     post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
-        ops.ArgMax,
-        ops.ArgMin,
         ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayMap,
@@ -456,6 +454,14 @@ class DataFusionCompiler(SQLGlotCompiler):
             cond = arg.is_(sg.not_(NULL, copy=False))
             where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
+
+    def visit_ArgMin(self, op, *, arg, key, where):
+        return self.agg.first_value(arg, where=where, order_by=[sge.Ordered(this=key)])
+
+    def visit_ArgMax(self, op, *, arg, key, where):
+        return self.agg.first_value(
+            arg, where=where, order_by=[sge.Ordered(this=key, desc=True)]
+        )
 
     def visit_Aggregate(self, op, *, parent, groups, metrics):
         """Support `GROUP BY` expressions in `SELECT` since DataFusion does not."""

@@ -306,8 +306,6 @@ class SQLGlotCompiler(abc.ABC):
         ops.All: "bool_and",
         ops.Any: "bool_or",
         ops.ApproxCountDistinct: "approx_distinct",
-        ops.ArgMax: "max_by",
-        ops.ArgMin: "min_by",
         ops.ArrayContains: "array_contains",
         ops.ArrayFlatten: "flatten",
         ops.ArrayLength: "array_size",

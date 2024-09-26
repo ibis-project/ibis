@@ -1766,6 +1766,9 @@ class Column(Value, _FixedTextJupyterMixin):
     def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
 
+        If more than one value maximizes `key`, the returned value is backend
+        specific. The result may be `NULL`.
+
         Parameters
         ----------
         key
@@ -1800,6 +1803,9 @@ class Column(Value, _FixedTextJupyterMixin):
 
     def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that minimizes `key`.
+
+        If more than one value minimizes `key`, the returned value is backend
+        specific. The result may be `NULL`.
 
         Parameters
         ----------

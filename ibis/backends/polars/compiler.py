@@ -1256,20 +1256,15 @@ def execute_hash(op, **kw):
 
 
 def _arg_min_max(op, func, **kw):
-    key = op.key
-    arg = op.arg
+    key = translate(op.key, **kw)
+    arg = translate(op.arg, **kw)
 
-    if (op_where := op.where) is not None:
-        key = ops.IfElse(op_where, key, None)
-        arg = ops.IfElse(op_where, arg, None)
+    if op.where is not None:
+        where = translate(op.where, **kw)
+        arg = arg.filter(where)
+        key = key.filter(where)
 
-    translate_arg = translate(arg, **kw)
-    translate_key = translate(key, **kw)
-
-    not_null_mask = translate_arg.is_not_null() & translate_key.is_not_null()
-    return translate_arg.filter(not_null_mask).get(
-        func(translate_key.filter(not_null_mask))
-    )
+    return arg.get(func(key))
 
 
 @translate.register(ops.ArgMax)

@@ -206,12 +206,7 @@ class SQLiteCompiler(SQLGlotCompiler):
         return self._visit_arg_reduction("max", *args, **kwargs)
 
     def _visit_arg_reduction(self, func, op, *, arg, key, where):
-        cond = arg.is_(sg.not_(NULL))
-
-        if op.where is not None:
-            cond = sg.and_(cond, where)
-
-        agg = self.agg[func](key, where=cond)
+        agg = self.agg[func](key, where=where)
         return self.f.anon.json_extract(self.f.json_array(arg, agg), "$[0]")
 
     def visit_UnwrapJSONString(self, op, *, arg):

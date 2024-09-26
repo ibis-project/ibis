@@ -51,8 +51,6 @@ class OracleCompiler(SQLGlotCompiler):
     }
 
     UNSUPPORTED_OPS = (
-        ops.ArgMax,
-        ops.ArgMin,
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,

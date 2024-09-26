@@ -200,6 +200,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
         ops.ExtractHost: "net.host",
+        ops.ArgMin: "min_by",
+        ops.ArgMax: "max_by",
     }
 
     def to_sqlglot(
