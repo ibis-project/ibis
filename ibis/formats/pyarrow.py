@@ -5,14 +5,18 @@ from typing import TYPE_CHECKING, Any
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
 
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis.expr.schema import Schema
 from ibis.formats import DataMapper, SchemaMapper, TableProxy, TypeMapper
+from ibis.util import V
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    import pandas as pd
     import polars as pl
+    import pyarrow.dataset as ds
 
 
 _from_pyarrow_types = {
@@ -327,7 +331,7 @@ class PyArrowData(DataMapper):
             return table
 
 
-class PyArrowTableProxy(TableProxy):
+class PyArrowTableProxy(TableProxy[V]):
     def to_frame(self):
         return self.obj.to_pandas()
 
@@ -341,3 +345,38 @@ class PyArrowTableProxy(TableProxy):
 
         df = pl.from_arrow(self.obj)
         return PolarsData.convert_table(df, schema)
+
+
+class PyArrowDatasetProxy(TableProxy[V]):
+    ERROR_MESSAGE = """\
+You are trying to use a PyArrow Dataset with a backend that will require
+materializing the entire dataset in local memory.
+
+If you would like to materialize this dataset, please construct the memtable
+directly by running `ibis.memtable(my_dataset.to_table())`."""
+
+    __slots__ = ("obj",)
+    obj: V
+
+    def __init__(self, obj: V) -> None:
+        self.obj = obj
+
+    # pyarrow datasets are hashable, so we override the hash from TableProxy
+    def __hash__(self):
+        return hash(self.obj)
+
+    def to_frame(self) -> pd.DataFrame:
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
+
+    def to_pyarrow(self, schema: Schema) -> pa.Table:
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
+
+    def to_pyarrow_dataset(self, schema: Schema) -> ds.Dataset:
+        """Return the dataset object itself.
+
+        Use with backends that can perform pushdowns into dataset objects.
+        """
+        return self.obj
+
+    def to_polars(self, schema: Schema) -> pa.Table:
+        raise com.UnsupportedOperationError(self.ERROR_MESSAGE)
