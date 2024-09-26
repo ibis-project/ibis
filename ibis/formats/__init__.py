@@ -239,9 +239,6 @@ class TableProxy(PseudoHashable[T]):
         data_repr = indent(repr(self.obj), spaces=2)
         return f"{self.__class__.__name__}:\n{data_repr}"
 
-    def __len__(self) -> int:
-        return len(self.obj)
-
     @abstractmethod
     def to_frame(self) -> pd.DataFrame:  # pragma: no cover
         """Convert this input to a pandas DataFrame."""
