@@ -234,10 +234,10 @@ def test_list_tables(con):
         "event",
         "func",
     }
-    assert con.list_tables()
+    assert con.tables
 
-    assert mysql_tables.issubset(con.list_tables(database="mysql"))
-    assert mysql_tables.issubset(con.list_tables(database=("mysql",)))
+    assert mysql_tables.issubset(con.ddl.list_tables(database="mysql"))
+    assert mysql_tables.issubset(con.ddl.list_tables(database=("mysql",)))
 
 
 def test_invalid_port():

@@ -289,12 +289,12 @@ def test_list_tables(con):
         "diamonds",
         "functional_alltypes",
         "win",
-    }.issubset(con.list_tables())
+    }.issubset(con.tables)
 
     icecream_table = ["ice_cream"]
 
-    assert con.list_tables(database="shops") == icecream_table
-    assert con.list_tables(database=("shops",)) == icecream_table
+    assert con.ddl.list_tables(database="shops") == icecream_table
+    assert con.ddl.list_tables(database=("shops",)) == icecream_table
 
 
 def test_settings_repr():
@@ -308,16 +308,16 @@ def test_connect_named_in_memory_db():
     con_named_db = ibis.duckdb.connect(":memory:mydb")
 
     con_named_db.create_table("ork", schema=ibis.schema(dict(bork="int32")))
-    assert "ork" in con_named_db.list_tables()
+    assert "ork" in con_named_db.tables
 
     con_named_db_2 = ibis.duckdb.connect(":memory:mydb")
-    assert "ork" in con_named_db_2.list_tables()
+    assert "ork" in con_named_db_2.tables
 
     unnamed_memory_db = ibis.duckdb.connect(":memory:")
-    assert "ork" not in unnamed_memory_db.list_tables()
+    assert "ork" not in unnamed_memory_db.tables
 
     default_memory_db = ibis.duckdb.connect()
-    assert "ork" not in default_memory_db.list_tables()
+    assert "ork" not in default_memory_db.tables
 
 
 @pytest.mark.parametrize(
@@ -416,7 +416,7 @@ lat,lon,geom
 def test_memtable_doesnt_leak(con, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     name = "memtable_doesnt_leak"
-    assert name not in con.list_tables()
+    assert name not in con.ddl.list_tables()
     df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
-    assert name not in con.list_tables()
+    assert name not in con.ddl.list_tables()
     assert len(df) == 3

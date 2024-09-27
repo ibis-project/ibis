@@ -23,7 +23,8 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
+from ibis.backends.sql.compilers.base import C, ColGen, F
+from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -229,7 +230,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         >>> password = os.environ.get("IBIS_TEST_POSTGRES_PASSWORD", "postgres")
         >>> database = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
         >>> con = ibis.postgres.connect(database=database, host=host, user=user, password=password)
-        >>> con.list_tables()  # doctest: +ELLIPSIS
+        >>> con.tables()  # doctest: +ELLIPSIS
         [...]
         >>> t = con.table("functional_alltypes")
         >>> t
@@ -299,86 +300,182 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             return res[0]
         return res
 
+    def _list_query_constructor(
+        self, col: str, where_predicates: list, tov: str
+    ) -> str:
+        """Helper function to construct sqlglot queries for _list_* methods."""
+
+        sg_query = (
+            sg.select(col)
+            .from_(sg.table(tov, db="information_schema"))
+            .where(*where_predicates)
+        ).sql(self.name)
+
+        return sg_query
+
+    def _list_objects(
+        self,
+        like: str | None,
+        database: tuple[str, str] | str | None,
+        object_type: str,
+        is_temp: bool = False,
+    ) -> list[str]:
+        """Generic method to list objects like tables, temporary tables or views.
+
+        (not used for temporary views)
+        """
+
+        table_loc = self._to_sqlglot_table(database)
+
+        catalog = table_loc.catalog or self.current_catalog
+        # temporary tables and views are in a separate postgres schema
+        # that are of the form pg_temp_* where * is a number
+        database = table_loc.db or ("pg_temp_%" if is_temp else self.current_database)
+        col = "table_name"
+
+        where_predicates = [
+            C.table_catalog.eq(sge.convert(catalog)),
+            C.table_schema.like(sge.convert(database))
+            if is_temp
+            else C.table_schema.eq(sge.convert(database)),
+            C.table_type.eq(object_type),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates, tov="tables")
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def _list_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List physical tables."""
+
+        return self._list_objects(like, database, "BASE TABLE")
+
+    def _list_temp_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary tables."""
+
+        # Avoid the problem of having temp views showing on the
+        # when listing table_type "LOCAL TEMPORARY" in information schema table
+
+        temp_tables_and_views = set(
+            self._list_objects(like, database, "LOCAL TEMPORARY", is_temp=True)
+        )
+        temp_views_only = set(self._list_temp_views(like, database))
+
+        # I don't like this ^ but I the only other way I found of doing it is
+        # looking into pg_class where relkind is 'r'
+        # and relnamespace is in the pg_namespace table where we can search for
+        # nspname like 'pg_temp_%' (this involves two different tables, not sure is a good idea)
+        # the sql is
+        # SELECT
+        #     relname AS table_name
+        # FROM
+        #     pg_class
+        # WHERE
+        #     relkind = 'r'  -- 'r' stands for ordinary tables
+        #     AND relnamespace IN (
+        #         SELECT oid
+        #         FROM pg_namespace
+        #         WHERE nspname LIKE 'pg_temp_%'
+        #     );
+
+        return list(temp_tables_and_views - temp_views_only)
+
+    def _list_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List views."""
+
+        return self._list_objects(like, database, "VIEW")
+
+    def _list_temp_views(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        """List temporary views."""
+
+        table_loc = self._to_sqlglot_table(database)
+
+        catalog = table_loc.catalog or self.current_catalog
+        # temporary tables and views are in a separate postgres table_schema that
+        # are of the form pg_temp_* where * is a number
+        database = table_loc.db or "pg_temp_%"
+        col = "table_name"
+
+        # information_schema.views doesn't have a table_type to check
+        # we guarantee it's a temp view because the table_schema is pg_temp_* and
+        # we are checking only for views
+        where_predicates = [
+            C.table_catalog.eq(sge.convert(catalog)),
+            C.table_schema.like(sge.convert(database)),
+        ]
+
+        sql = self._list_query_constructor(col, where_predicates, tov="views")
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    def _list_foreign_tables(
+        self,
+        like: str | None = None,
+        database: tuple[str, str] | str | None = None,
+    ) -> list[str]:
+        table_loc = self._to_sqlglot_table(database)
+
+        catalog = table_loc.catalog or self.current_catalog
+        database = table_loc.db or self.current_database
+
+        col = "foreign_table_name"
+        where_predicates = [
+            C.foreign_table_catalog.eq(sge.convert(catalog)),
+            C.foreign_table_schema.like(sge.convert(database)),
+        ]
+        sql = self._list_query_constructor(
+            col, where_predicates=where_predicates, tov="foreign_tables"
+        )
+
+        with self._safe_raw_sql(sql) as cur:
+            out = cur.fetchall()
+
+        return self._filter_with_like(map(itemgetter(0), out), like)
+
+    @deprecated(as_of="10.0", instead="use the con.tables")
     def list_tables(
         self,
         like: str | None = None,
         database: tuple[str, str] | str | None = None,
     ) -> list[str]:
-        """List the tables in the database.
+        """List the tables in the database."""
 
-        ::: {.callout-note}
-        ## Ibis does not use the word `schema` to refer to database hierarchy.
+        table_loc = self._to_sqlglot_table(database)
 
-        A collection of tables is referred to as a `database`.
-        A collection of `database` is referred to as a `catalog`.
+        database = self.current_database
+        if table_loc is not None:
+            database = table_loc.db or database
 
-        These terms are mapped onto the corresponding features in each
-        backend (where available), regardless of whether the backend itself
-        uses the same terminology.
-        :::
-
-        Parameters
-        ----------
-        like
-            A pattern to use for listing tables.
-        database
-            Database to list tables from. Default behavior is to show tables in
-            the current database.
-        """
-
-        if database is not None:
-            table_loc = database
-        else:
-            table_loc = (self.current_catalog, self.current_database)
-
-        table_loc = self._to_sqlglot_table(table_loc)
-
-        conditions = [TRUE]
-
-        if (db := table_loc.args["db"]) is not None:
-            db.args["quoted"] = False
-            db = db.sql(dialect=self.name)
-            conditions.append(C.table_schema.eq(sge.convert(db)))
-        if (catalog := table_loc.args["catalog"]) is not None:
-            catalog.args["quoted"] = False
-            catalog = catalog.sql(dialect=self.name)
-            conditions.append(C.table_catalog.eq(sge.convert(catalog)))
-
-        sql = (
-            sg.select("table_name")
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(*conditions)
-            .sql(self.dialect)
+        tables_and_views = list(
+            set(self._list_tables(like=like, database=database))
+            | set(self._list_temp_tables(like=like, database=database))
+            | set(self._list_views(like=like, database=database))
+            | set(self._list_temp_views(like=like, database=database))
+            | set(self._list_foreign_tables(like=like, database=database))
         )
 
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
-
-        # Include temporary tables only if no database has been explicitly specified
-        # to avoid temp tables showing up in all calls to `list_tables`
-        if db == "public":
-            out += self._fetch_temp_tables()
-
-        return self._filter_with_like(map(itemgetter(0), out), like)
-
-    def _fetch_temp_tables(self):
-        # postgres temporary tables are stored in a separate schema
-        # so we need to independently grab them and return them along with
-        # the existing results
-
-        sql = (
-            sg.select("table_name")
-            .from_(sg.table("tables", db="information_schema"))
-            .distinct()
-            .where(C.table_type.eq(sge.convert("LOCAL TEMPORARY")))
-            .sql(self.dialect)
-        )
-
-        with self._safe_raw_sql(sql) as cur:
-            out = cur.fetchall()
-
-        return out
+        return tables_and_views
 
     def list_catalogs(self, like=None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517

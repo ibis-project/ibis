@@ -36,8 +36,8 @@ def test_read_write_external_catalog(con, external_duckdb_file, monkeypatch):
     assert "ext" in con.list_catalogs()
     assert "main" in con.list_databases(catalog="ext")
 
-    assert "starwars" in con.list_tables(database="ext.main")
-    assert "starwars" not in con.list_tables()
+    assert "starwars" in con.ddl.list_tables(database="ext.main")
+    assert "starwars" not in con.ddl.list_tables()
 
     starwars = con.table("starwars", database="ext.main")
     tm.assert_frame_equal(starwars.to_pandas(), starwars_df)
@@ -47,8 +47,8 @@ def test_read_write_external_catalog(con, external_duckdb_file, monkeypatch):
 
     _ = con.create_table("t2", obj=t, database="ext.main")
 
-    assert "t2" in con.list_tables(database="ext.main")
-    assert "t2" not in con.list_tables()
+    assert "t2" in con.ddl.list_tables(database="ext.main")
+    assert "t2" not in con.ddl.list_tables()
 
     table = con.table("t2", database="ext.main")
 
@@ -60,8 +60,8 @@ def test_read_write_external_catalog(con, external_duckdb_file, monkeypatch):
 
     _ = con.create_table("t2", obj=t_overwrite, database="ext.main", overwrite=True)
 
-    assert "t2" in con.list_tables(database="ext.main")
-    assert "t2" not in con.list_tables()
+    assert "t2" in con.ddl.list_tables(database="ext.main")
+    assert "t2" not in con.ddl.list_tables()
 
     table = con.table("t2", database="ext.main")
 

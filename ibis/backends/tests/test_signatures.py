@@ -10,6 +10,7 @@ from ibis.backends import (
     CanCreateDatabase,
     CanListCatalog,
     CanListDatabase,
+    DDLAccessor,
 )
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.signature.typecheck import compatible
@@ -100,7 +101,7 @@ marks = {
         ),
     ),
     "list_tables": pytest.param(
-        BaseBackend,
+        DDLAccessor,  # Replacing BaseBackend with DDLAccessor
         "list_tables",
         marks=pytest.mark.notyet(["flink"]),
     ),

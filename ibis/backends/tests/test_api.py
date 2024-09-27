@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import contextlib
+
 import pytest
+import sqlglot as sg
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis.expr.types as ir
 from ibis.backends.conftest import TEST_TABLES
+from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.tests.errors import PyDruidProgrammingError
 
 
@@ -53,9 +58,9 @@ def test_catalog_consistency(backend, con):
         assert current_catalog in catalogs
 
 
-def test_list_tables(con):
-    tables = con.list_tables()
-    assert isinstance(tables, list)
+def test_con_tables(con):
+    tables = con.tables
+
     # only table that is guaranteed to be in all backends
     key = "functional_alltypes"
     assert key in tables or key.upper() in tables
@@ -76,7 +81,7 @@ def test_tables_accessor_mapping(con):
     # temporary might pop into existence in parallel test runs, in between the
     # first `list_tables` call and the second, so we check that there's a
     # non-empty intersection
-    assert TEST_TABLES.keys() & set(map(str.lower, con.list_tables()))
+    assert TEST_TABLES.keys() & set(map(str.lower, con.ddl.list_tables()))
     assert TEST_TABLES.keys() & set(map(str.lower, con.tables))
 
 
@@ -136,3 +141,82 @@ def test_unbind(alltypes, expr_fn):
 
     assert "Unbound" not in repr(expr)
     assert "Unbound" in repr(expr.unbind())
+
+
+def test_list_tables(ddl_con):
+    # should check only physical tables
+    table_name = "functional_alltypes"
+    tables = ddl_con.ddl.list_tables()
+    assert isinstance(tables, list)
+    assert table_name in tables
+
+    assert table_name not in ddl_con.ddl.list_views()
+
+    # not all backends have list_temp_tables
+    with contextlib.suppress(NotImplementedError):
+        assert table_name not in ddl_con.ddl.list_temp_tables()
+
+    # not all backends have list_temp_views
+    with contextlib.suppress(NotImplementedError):
+        assert table_name not in ddl_con.ddl.list_temp_views()
+
+
+def test_list_views(ddl_con, temp_view):
+    # temp_view: view name
+    expr = ddl_con.table("functional_alltypes")
+    ddl_con.create_view(temp_view, expr)
+
+    views = ddl_con.ddl.list_views()
+
+    assert isinstance(views, list)
+    assert temp_view in views
+    assert temp_view not in ddl_con.ddl.list_tables()
+
+    # not all backends have list_temp_tables
+    with contextlib.suppress(NotImplementedError):
+        assert temp_view not in ddl_con.ddl.list_temp_tables()
+
+    # not all backends have list_temp_views
+    with contextlib.suppress(NotImplementedError):
+        assert temp_view not in ddl_con.ddl.list_temp_views()
+
+
+@pytest.mark.never(
+    "datafusion", reason="datafusion does not support temporary views on sql"
+)
+def test_list_temp_tables(ddl_con):
+    expr = ddl_con.table("functional_alltypes")
+    temp_table_name = "all_types_temp"
+    ddl_con.create_table(temp_table_name, expr, temp=True)
+    temp_tables = ddl_con.ddl.list_temp_tables()
+
+    assert isinstance(temp_tables, list)
+    assert temp_table_name in temp_tables
+    assert temp_table_name not in ddl_con.ddl.list_views()
+    assert temp_table_name not in ddl_con.ddl.list_tables()
+
+    # not all backends have list_temp_views
+    with contextlib.suppress(NotImplementedError):
+        assert temp_table_name not in ddl_con.ddl.list_temp_views()
+
+
+@pytest.mark.never(
+    ["datafusion", "mysql", "clickhouse"], reason="does not support temporary views"
+)
+def test_list_temp_views(ddl_con):
+    # TODO: replace raw_sql with create_temp
+
+    temp_view = sge.Create(
+        this=sg.table("temp_view_example"),
+        kind="VIEW",
+        expression=sg.select(STAR).from_(sg.table("functional_alltypes")),
+        properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
+    )
+    ddl_con.raw_sql(temp_view.sql(ddl_con.dialect))
+    temporary_views = ddl_con.ddl.list_temp_views()
+
+    assert isinstance(temporary_views, list)
+    assert "temp_view_example" in temporary_views
+    assert "temp_view_example" not in ddl_con.ddl.list_tables()
+    assert "temp_view_example" not in ddl_con.ddl.list_views()
+    assert "temp_view_example" not in ddl_con.ddl.list_temp_tables()

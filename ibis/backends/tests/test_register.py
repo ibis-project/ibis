@@ -108,7 +108,7 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
         with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(fname, table_name=in_table_name)
 
-    assert any(out_table_name in t for t in con.list_tables())
+    assert any(out_table_name in t for t in con.tables)
     if con.name != "datafusion":
         table.count().execute()
 
@@ -225,7 +225,7 @@ def test_register_parquet(
         with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
 
-        assert any(out_table_name in t for t in con.list_tables())
+        assert any(out_table_name in t for t in con.tables)
 
     if con.name != "datafusion":
         table.count().execute()
@@ -270,7 +270,7 @@ def test_register_iterator_parquet(
                 table_name=None,
             )
 
-    assert any("ibis_read_parquet" in t for t in con.list_tables())
+    assert any("ibis_read_parquet" in t for t in con.tables)
     assert table.count().execute()
 
 

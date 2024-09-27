@@ -19,13 +19,13 @@ def test_attach_file(tmp_path):
 
     client = ibis.sqlite.connect()
 
-    assert not client.list_tables()
+    assert not client.tables()
 
     client.attach("baz", Path(dbpath))
     client.attach("bar", dbpath)
 
-    foo_tables = client.list_tables(database="baz")
-    bar_tables = client.list_tables(database="bar")
+    foo_tables = client.ddl.list_tables(database="baz")
+    bar_tables = client.ddl.list_tables(database="bar")
 
     assert foo_tables == ["test"]
     assert foo_tables == bar_tables
@@ -93,5 +93,5 @@ def test_has_operation(con):
 def test_list_temp_tables_by_default(con):
     name = ibis.util.gen_name("sqlite_temp_table")
     con.create_table(name, schema={"a": "int"}, temp=True)
-    assert name in con.list_tables(database="temp")
-    assert name in con.list_tables()
+    assert name in con.ddl.list_temp_tables(database="temp")
+    assert name in con.tables()

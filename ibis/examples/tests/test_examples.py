@@ -84,7 +84,7 @@ def test_non_example():
 def test_backend_arg():
     con = ibis.duckdb.connect()
     t = ibis.examples.penguins.fetch(backend=con)
-    assert t.get_name() in con.list_tables()
+    assert t.get_name() in con.tables
 
 
 @pytest.mark.duckdb

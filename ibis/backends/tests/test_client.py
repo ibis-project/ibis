@@ -325,7 +325,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
 
     con_no_data.reconnect()
     # verify table no longer exist after reconnect
-    assert temp_table not in con_no_data.list_tables()
+    assert temp_table not in con_no_data.tables
 
 
 @mark.notimpl(
@@ -388,7 +388,7 @@ def test_nullable_input_output(con, temp_table):
 def test_create_drop_view(ddl_con, temp_view):
     # setup
     table_name = "functional_alltypes"
-    tables = ddl_con.list_tables()
+    tables = ddl_con.tables
 
     if table_name in tables or (table_name := table_name.upper()) in tables:
         expr = ddl_con.table(table_name)
@@ -400,7 +400,7 @@ def test_create_drop_view(ddl_con, temp_view):
     # create a new view
     ddl_con.create_view(temp_view, expr)
     # check if the view was created
-    assert temp_view in ddl_con.list_tables()
+    assert temp_view in ddl_con.ddl.list_views()
 
     t_expr = ddl_con.table(table_name)
     v_expr = ddl_con.table(temp_view)
@@ -443,7 +443,7 @@ def employee_data_1_temp_table(backend, con, test_employee_schema):
     _create_temp_table_with_schema(
         backend, con, temp_table_name, test_employee_schema, data=test_employee_data_1
     )
-    assert temp_table_name in con.list_tables()
+    assert temp_table_name in con.tables
     yield temp_table_name
     con.drop_table(temp_table_name, force=True)
 
@@ -698,7 +698,7 @@ def test_unsigned_integer_type(con, temp_table):
         schema=ibis.schema(dict(a="uint8", b="uint16", c="uint32", d="uint64")),
         overwrite=True,
     )
-    assert temp_table in con.list_tables()
+    assert temp_table in con.tables
 
 
 @pytest.mark.backend
@@ -1005,7 +1005,7 @@ def test_create_table_in_memory(con, obj, table_name, monkeypatch):
     t = con.create_table(table_name, obj())
 
     try:
-        assert table_name in con.list_tables()
+        assert table_name in con.ddl.list_tables()
         assert pa.table({"a": ["a"], "b": [1]}).equals(t.to_pyarrow())
     finally:
         con.drop_table(table_name, force=True)
