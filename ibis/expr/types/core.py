@@ -375,6 +375,17 @@ class Expr(Immutable, Coercible):
 
         return backends[0]
 
+    def get_backend(self):
+        """Get the current Ibis backend of the expression.
+
+        Returns
+        -------
+        BaseBackend
+            The Ibis backend.
+
+        """
+        return self._find_backend(use_default=True)
+
     def execute(
         self,
         limit: int | str | None = "default",
