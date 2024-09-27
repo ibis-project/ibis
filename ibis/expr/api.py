@@ -199,11 +199,11 @@ def param(type: dt.DataType) -> ir.Scalar:
     ... )
     >>> expr = t.filter(t.date_col >= start).value.sum()
     >>> expr.execute(params={start: date(2013, 1, 1)})
-    np.float64(6.0)
+    6.0
     >>> expr.execute(params={start: date(2013, 1, 2)})
-    np.float64(5.0)
+    5.0
     >>> expr.execute(params={start: date(2013, 1, 3)})
-    np.float64(3.0)
+    3.0
     """
     return ops.ScalarParameter(type).to_expr()
 
