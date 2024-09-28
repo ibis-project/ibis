@@ -23,3 +23,4 @@ jobs:
         uses: DeterminateSystems/update-flake-lock@v24
         with:
           token: ${{ steps.generate-token.outputs.token }}
+          commit-msg: "chore(deps): update `flake.lock`"
