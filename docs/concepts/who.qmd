@@ -34,7 +34,7 @@ Some include:
 - [Microsoft's Magpie
  project](https://www.microsoft.com/en-us/research/project/magpie-2/), built on
  top of Ibis
-- [SuperDuperDB](https://github.com/SuperDuperDB/superduperdb), bringing AI to
+- [Superduper](https://github.com/superduper-io/superduper), bringing AI to
  any backend Ibis supports
 
 Ibis is also contributed to by other companies. You can [look through the full
