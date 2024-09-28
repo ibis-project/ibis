@@ -17,7 +17,7 @@ from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
 from ibis.expr.format import pretty
-from ibis.util import deprecated, experimental
+from ibis.util import experimental
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -168,15 +168,6 @@ class Expr(Immutable, Coercible):
         raise ValueError("The truth value of an Ibis expression is not defined")
 
     __nonzero__ = __bool__
-
-    @deprecated(
-        instead="remove any usage of `has_name`, since it is always `True`",
-        as_of="9.4",
-        removed_in="10.0",
-    )
-    def has_name(self):
-        """Check whether this expression has an explicit name."""
-        return hasattr(self._arg, "name")
 
     def get_name(self):
         """Return the name of this expression."""
