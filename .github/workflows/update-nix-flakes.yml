@@ -1,0 +1,25 @@
+name: update-flake-lock
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0" # once a week
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - uses: actions/create-github-app-token@v1.11.0
+        id: generate-token
+        with:
+          app-id: ${{ secrets.SQUAWK_BOT_APP_ID }}
+          private-key: ${{ secrets.SQUAWK_BOT_APP_PRIVATE_KEY }}
+
+      - name: update flake.lock
+        uses: DeterminateSystems/update-flake-lock@v24
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
