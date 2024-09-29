@@ -24,6 +24,7 @@ jobs:
         with:
           token: ${{ steps.generate-token.outputs.token }}
           commit-msg: "chore(deps): update `flake.lock`"
+          branch: update-flake-lock-action
           pr-title: "chore(deps): update `flake.lock`"
           pr-labels: dependencies,nix
           pr-body: |
