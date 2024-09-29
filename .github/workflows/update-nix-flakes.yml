@@ -2,7 +2,7 @@ name: update-flake-lock
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 0 * * 0" # once a week
+    - cron: "0 0 * * 0" # once a week on Sunday at midnight
 
 jobs:
   lockfile:
@@ -24,3 +24,12 @@ jobs:
         with:
           token: ${{ steps.generate-token.outputs.token }}
           commit-msg: "chore(deps): update `flake.lock`"
+          branch: update-flake-lock-action
+          pr-title: "chore(deps): update `flake.lock`"
+          pr-labels: dependencies,nix
+          pr-body: |
+            Automated `flake.lock` updates.
+
+            ```
+            {{ env.GIT_COMMIT_MESSAGE }}
+            ```
