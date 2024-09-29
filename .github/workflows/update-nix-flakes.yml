@@ -25,5 +25,10 @@ jobs:
           token: ${{ steps.generate-token.outputs.token }}
           commit-msg: "chore(deps): update `flake.lock`"
           pr-title: "chore(deps): update `flake.lock`"
-          pr-body: Automated `flake.lock` updates.
           pr-labels: dependencies,nix
+          pr-body: |
+            Automated `flake.lock` updates.
+
+            ```
+            {{ env.GIT_COMMIT_MESSAGE }}
+            ```
