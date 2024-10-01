@@ -66,7 +66,7 @@ class PolarsType(TypeMapper):
             except AttributeError:  # pragma: no cover
                 time_unit = typ.tu  # pragma: no cover
             return dt.Interval(unit=time_unit, nullable=nullable)
-        elif base_type is pl.List:
+        elif base_type is pl.List or base_type is pl.Array:
             return dt.Array(cls.to_ibis(typ.inner), nullable=nullable)
         elif base_type is pl.Struct:
             return dt.Struct.from_tuples(
