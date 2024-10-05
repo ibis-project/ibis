@@ -582,7 +582,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: install libgeos for shapely
-        if: matrix.backend.name == 'postgres'
         run: |
           sudo apt-get update -y -qq
           sudo apt-get install -qq -y build-essential libgeos-dev
@@ -607,15 +606,15 @@ jobs:
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
+        # these require a version of pandas that min versions are not compatible with
       - name: remove incompatible deps
-        # it requires a version of pandas that min versions are not compatible with
         run: poetry remove lonboard deltalake
 
       - name: install minimum versions of required deps
-        run: poetry add --lock ${{ join(matrix.backend.deps.required, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
+        run: poetry add ${{ join(matrix.backend.deps.required, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install minimum versions of optional deps
-        run: poetry add --lock --optional ${{ join(matrix.backend.deps.optional, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
+        run: poetry add --optional ${{ join(matrix.backend.deps.optional, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: checkout the lock file
         run: git checkout poetry.lock
@@ -656,34 +655,30 @@ jobs:
       matrix:
         include:
           - python-version: "3.10"
-            pyspark-version: "3.3.3"
             pyspark-minor-version: "3.3"
-            deps:
-              - "'pandas@<2'"
-              - "'numpy@<1.24'"
             tag: local
+            deps:
+              - pyspark@3.3.4
+              - pandas@1.5.3
+              - numpy@1.23.5
           - python-version: "3.11"
-            pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
-            deps:
-              - "'pandas@>2'"
-              - "'numpy@>1.24'"
             tag: local
-          - python-version: "3.12"
-            pyspark-version: "3.5.2"
-            pyspark-minor-version: "3.5"
             deps:
-              - "'pandas@>2'"
-              - "'numpy@>1.24'"
-              - setuptools
-            tag: local
+              - delta-spark
           - python-version: "3.12"
-            pyspark-version: "3.5.2"
             pyspark-minor-version: "3.5"
+            tag: local
             deps:
               - setuptools
-            tag: remote
+              - delta-spark
+          - python-version: "3.12"
+            pyspark-minor-version: "3.5"
             SPARK_REMOTE: "sc://localhost:15002"
+            tag: remote
+            deps:
+              - setuptools
+              - delta-spark
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -713,28 +708,16 @@ jobs:
       - name: install poetry
         run: python -m pip install --upgrade pip 'poetry==1.8.3'
 
-      - name: remove lonboard
         # it requires a version of pandas that pyspark is not compatible with
-        run: poetry remove lonboard
+      - name: remove lonboard
+        if: matrix.pyspark-minor-version == '3.3'
+        run: poetry remove --lock lonboard
 
       - name: install exact versions of pyspark, pandas and numpy
-        run: poetry add --lock 'pyspark@${{ matrix.pyspark-version }}' ${{ join(matrix.deps, ' ') }}
-
-      - name: checkout the lock file
-        run: git checkout poetry.lock
-
-      - name: lock with no updates
-        # poetry add is aggressive and will update other dependencies like
-        # numpy and pandas so we keep the pyproject.toml edits and then relock
-        # without updating anything except the requested versions
-        run: poetry lock --no-update
+        run: poetry add --lock ${{ join(matrix.deps, ' ') }}
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "pyspark examples"
-
-      - name: install delta-spark
-        if: matrix.pyspark-version == '3.5'
-        run: poetry run pip install delta-spark
 
       - name: install iceberg
         shell: bash
