@@ -15,7 +15,7 @@ ci:
     - statix
     - taplo
 default_stages:
-  - commit
+  - pre-commit
 repos:
   - repo: https://github.com/rhysd/actionlint
     rev: v1.7.1
