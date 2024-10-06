@@ -403,6 +403,7 @@ Oracle.Generator.TRANSFORMS |= {
         ]
     ),
     sge.GroupConcat: rename_func("listagg"),
+    sge.StrPosition: rename_func("instr"),
 }
 
 # TODO: can delete this after bumping sqlglot version > 20.9.0

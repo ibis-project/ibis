@@ -368,7 +368,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=Py4JJavaError,
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
-                pytest.mark.notyet(["polars"], raises=RuntimeError),
+                pytest.mark.notyet(["polars"], raises=TypeError),
             ],
             id="decimal-big",
         ),
