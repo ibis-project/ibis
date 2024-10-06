@@ -713,7 +713,7 @@ jobs:
         if: matrix.pyspark-minor-version == '3.3'
         run: poetry remove --lock lonboard
 
-      - name: install exact versions of pyspark, pandas and numpy
+      - name: install pyspark-specific dependencies
         run: poetry add --lock ${{ join(matrix.deps, ' ') }}
 
       - name: install ibis
