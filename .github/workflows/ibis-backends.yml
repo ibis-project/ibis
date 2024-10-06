@@ -665,20 +665,20 @@ jobs:
             pyspark-minor-version: "3.5"
             tag: local
             deps:
-              - delta-spark
+              - delta-spark@3.2.1
           - python-version: "3.12"
             pyspark-minor-version: "3.5"
             tag: local
             deps:
-              - setuptools
-              - delta-spark
+              - setuptools@75.1.0
+              - delta-spark@3.2.1
           - python-version: "3.12"
             pyspark-minor-version: "3.5"
             SPARK_REMOTE: "sc://localhost:15002"
             tag: remote
             deps:
-              - setuptools
-              - delta-spark
+              - setuptools@75.1.0
+              - delta-spark@3.2.1
     steps:
       - name: checkout
         uses: actions/checkout@v4
