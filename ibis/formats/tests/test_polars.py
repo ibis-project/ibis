@@ -171,3 +171,7 @@ def test_convert_table():
     )
     assert df.equals(sol)
     assert df.schema == sol.schema
+
+
+def test_array_type():
+    assert PolarsType.to_ibis(pl.Array(pl.Int64, 2)) == dt.Array(dt.int64)
