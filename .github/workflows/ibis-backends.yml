@@ -608,13 +608,14 @@ jobs:
 
         # these require a version of pandas that min versions are not compatible with
       - name: remove incompatible deps
-        run: poetry remove lonboard deltalake
+        run: poetry remove --lock lonboard deltalake
 
       - name: install minimum versions of required deps
-        run: poetry add ${{ join(matrix.backend.deps.required, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
-
-      - name: install minimum versions of optional deps
-        run: poetry add --optional ${{ join(matrix.backend.deps.optional, ' ') }} --python="==${{ steps.install_python.outputs.python-version }}"
+        run: |
+          poetry add --lock \
+            ${{ join(matrix.backend.deps.required, ' ') }} \
+            --python="==${{ steps.install_python.outputs.python-version }}" \
+            --optional ${{ join(matrix.backend.deps.optional, ' ') }}
 
       - name: checkout the lock file
         run: git checkout poetry.lock
