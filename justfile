@@ -154,7 +154,17 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.5.2":
 
 # start backends using docker compose; no arguments starts all backends
 up *backends:
-    docker compose up --build --wait {{ backends }}
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    if [ -n "$CI" ]; then
+        # don't show a big pile of output when running in CI
+        args=(--quiet-pull --no-color)
+    else
+        args=()
+    fi
+
+    docker compose up --build --wait "${args[@]}" {{ backends }}
 
 # stop and remove containers -> clean up dangling volumes -> start backends
 reup *backends:
