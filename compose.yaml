@@ -446,8 +446,7 @@ services:
         - kudu cluster ksck kudu:7051
 
   impala-hive-metastore:
-    image: impala-quickstart_hms
-    build: ./docker/impala/quickstart_hms
+    image: apache/impala:4.4.1-impala_quickstart_hms
     container_name: impala-hive-metastore
     command: hms
     volumes:
@@ -462,7 +461,9 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - nc -z 127.0.0.1 9083 && nc -z impala-hive-metastore 9083 && nc -z impala-hive-metastore.impala 9083
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/9083; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/impala-hive-metastore/9083; exit $$?;'
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/impala-hive-metastore.impala/9083; exit $$?;'
     networks:
       impala:
         aliases:
@@ -470,8 +471,7 @@ services:
           - impala-hive-metastore.impala
 
   statestored:
-    image: impala-statestored
-    build: ./docker/impala/statestored
+    image: apache/impala:4.4.1-statestored
     ports:
       - 25010:25010 # Web debug UI
     command:
@@ -485,18 +485,17 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - nc -z 127.0.0.1 25010
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/25010; exit $$?;'
     networks:
       - impala
 
   catalogd:
+    image: apache/impala:4.4.1-catalogd
     depends_on:
       impala-hive-metastore:
         condition: service_started
       statestored:
         condition: service_healthy
-    image: impala-catalogd
-    build: ./docker/impala/catalogd
     ports:
       - 25020:25020 # Web debug UI
     command:
@@ -515,13 +514,12 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - nc -z 127.0.0.1 25020
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/25020; exit $$?;'
     networks:
       - impala
 
   impala:
-    image: impala-coord_exec
-    build: ./docker/impala/coord_exec
+    image: apache/impala:4.4.1-impalad_coord_exec
     depends_on:
       statestored:
         condition: service_healthy
@@ -538,7 +536,7 @@ services:
       retries: 20
       test:
         - CMD-SHELL
-        - nc -z 127.0.0.1 21050
+        - bash -c 'printf \"GET / HTTP/1.1\n\n\" > /dev/tcp/127.0.0.1/21050; exit $$?;'
     command:
       - -v=1
       - -redirect_stdout_stderr=false
