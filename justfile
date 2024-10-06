@@ -31,7 +31,7 @@ update *deps: check-poetry
     #!/usr/bin/env bash
     set -euo pipefail
 
-    poetry update {{ deps }}
+    poetry update --lock {{ deps }}
     just export-deps
 
 # export locked dependencies
