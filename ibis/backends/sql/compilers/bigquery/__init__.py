@@ -195,6 +195,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.Modulus: "mod",
         ops.RegexReplace: "regexp_replace",
         ops.RegexSearch: "regexp_contains",
+        ops.StringToTime: "parse_time",
         ops.Time: "time",
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
