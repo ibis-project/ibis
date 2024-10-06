@@ -1179,7 +1179,7 @@ def test_integer_to_timestamp(backend, con, unit):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-def test_string_to_timestamp(alltypes, fmt):
+def test_string_as_timestamp(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_timestamp(fmt)).execute()
 
@@ -1250,7 +1250,7 @@ def test_string_to_timestamp(alltypes, fmt):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
-def test_string_to_date(alltypes, fmt):
+def test_string_as_date(alltypes, fmt):
     table = alltypes
     result = table.mutate(date=table.date_string_col.as_date(fmt)).execute()
 
@@ -1258,6 +1258,37 @@ def test_string_to_date(alltypes, fmt):
     # format string assumes that we are using pandas' strftime
     for i, val in enumerate(result["date"]):
         assert val.strftime("%m/%d/%y") == result["date_string_col"][i]
+
+
+@pytest.mark.notyet(
+    [
+        "pyspark",
+        "exasol",
+        "clickhouse",
+        "impala",
+        "mssql",
+        "oracle",
+        "trino",
+        "druid",
+        "datafusion",
+        "flink",
+    ],
+    raises=com.OperationNotDefinedError,
+)
+@pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedOperationError)
+def test_string_as_time(backend, alltypes):
+    fmt = "%H:%M:%S"
+    table = alltypes.mutate(
+        time_string_col=alltypes.timestamp_col.truncate("s").time().cast(str)
+    )
+    expr = table.mutate(time=table.time_string_col.as_time(fmt))
+    result = expr.execute()
+
+    # TEST: do we get the same date out, that we put in?
+    # format string assumes that we are using pandas' strftime
+    backend.assert_series_equal(
+        result["time"], result["timestamp_col"].dt.floor("s").dt.time.rename("time")
+    )
 
 
 @pytest.mark.parametrize(

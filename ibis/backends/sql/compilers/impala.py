@@ -41,6 +41,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.RegexSplit,
         ops.RowID,
         ops.StringSplit,
+        ops.StringToTime,
         ops.StructColumn,
         ops.Time,
         ops.TimeDelta,

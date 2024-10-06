@@ -115,6 +115,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.StringSplit,
         ops.StringToDate,
         ops.StringToTimestamp,
+        ops.StringToTime,
         ops.StructColumn,
         ops.TimestampDiff,
         ops.Unnest,

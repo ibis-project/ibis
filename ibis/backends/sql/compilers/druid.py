@@ -55,6 +55,7 @@ class DruidCompiler(SQLGlotCompiler):
         ops.StringAscii,
         ops.StringSplit,
         ops.StringToDate,
+        ops.StringToTime,
         ops.StringToTimestamp,
         ops.TimeDelta,
         ops.TimestampBucket,
