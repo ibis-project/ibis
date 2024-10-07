@@ -1,4 +1,4 @@
-pkgs: _:
+pkgs: super:
 let
   mkPoetryEnv = { groups, python, extras ? [ "*" ] }: pkgs.poetry2nix.mkPoetryEnv {
     inherit python groups extras;
@@ -15,6 +15,7 @@ let
     inherit python;
     groups = [ "dev" "docs" "test" ];
   };
+  inherit (pkgs) lib stdenv;
 in
 {
   ibisTestingData = pkgs.fetchFromGitHub {
@@ -38,6 +39,12 @@ in
     groups = [ "dev" ];
     extras = [ ];
   };
+
+  duckdb = super.duckdb.overrideAttrs (
+    _: lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux) {
+      doInstallCheck = false;
+    }
+  );
 
   quarto = pkgs.callPackage ./quarto { };
 
