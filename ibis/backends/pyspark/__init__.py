@@ -448,7 +448,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
         df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
-        df.createTempView(op.name)
+        df.createOrReplaceTempView(op.name)
 
     def _finalize_memtable(self, name: str) -> None:
         """No-op, otherwise a deadlock can occur when using Spark Connect."""
