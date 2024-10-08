@@ -736,16 +736,6 @@ GO"""
             namespace=ops.Namespace(catalog=catalog, database=db),
         ).to_expr()
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        # The single character U here means user-defined table
-        # see https://learn.microsoft.com/en-us/sql/relational-databases/system-catalog-views/sys-objects-transact-sql?view=sql-server-ver16
-        sql = sg.select(sg.func("object_id", sge.convert(name), sge.convert("U"))).sql(
-            self.dialect
-        )
-        with self.begin() as cur:
-            [(result,)] = cur.execute(sql).fetchall()
-        return result is not None
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:

@@ -276,9 +276,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             finally:
                 self.con.execute(drop_view)
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        return self.con.meta.table_exists(name)
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:

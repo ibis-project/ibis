@@ -24,7 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanListDatabase
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import NULL, STAR, C
+from ibis.backends.sql.compilers.base import STAR, C
 
 if TYPE_CHECKING:
     from urllib.parse import ParseResult
@@ -506,21 +506,6 @@ class Backend(SQLBackend, CanListDatabase):
                 bind.execute(f"TRUNCATE TABLE {table.sql(self.name)}")
 
         super().drop_table(name, database=(catalog, db), force=force)
-
-    def _in_memory_table_exists(self, name: str) -> bool:
-        sql = (
-            sg.select(NULL)
-            .from_(sg.to_identifier("USER_OBJECTS", quoted=self.compiler.quoted))
-            .where(
-                C.OBJECT_TYPE.eq(sge.convert("TABLE")),
-                C.OBJECT_NAME.eq(sge.convert(name)),
-            )
-            .limit(sge.convert(1))
-            .sql(self.dialect)
-        )
-        with self.begin() as cur:
-            results = cur.execute(sql).fetchall()
-        return bool(results)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema

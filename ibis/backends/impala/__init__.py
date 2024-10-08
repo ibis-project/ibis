@@ -1223,10 +1223,6 @@ class Backend(SQLBackend):
 
         return "\n".join(["Query:", util.indent(query, 2), "", *results.iloc[:, 0]])
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        with contextlib.closing(self.con.cursor()) as cur:
-            return cur.table_exists(name)
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
