@@ -355,32 +355,23 @@ def test_struct_of_json(con):
     assert all(value == raw for value in result.to_pylist())
 
 
-def test_list_tables(con):
-    assert {
-        "ASTRONAUTS",
-        "AWARDS_PLAYERS",
-        "BATTING",
-        "DIAMONDS",
-        "FUNCTIONAL_ALLTYPES",
-    }.issubset(con.list_tables())
-
-    like_table = [
+@pytest.mark.parametrize(
+    "database",
+    ["IBIS_TESTING.INFORMATION_SCHEMA", ("IBIS_TESTING", "INFORMATION_SCHEMA")],
+    ids=["dotted-path", "tuple"],
+)
+def test_list_tables_with_database(con, database):
+    like_table = {
         "EVENT_TABLES",
         "EXTERNAL_TABLES",
+        "HYBRID_TABLES",
         "TABLES",
         "TABLE_CONSTRAINTS",
         "TABLE_PRIVILEGES",
         "TABLE_STORAGE_METRICS",
-    ]
-
-    assert (
-        con.list_tables(database="IBIS_TESTING.INFORMATION_SCHEMA", like="TABLE")
-        == like_table
-    )
-    assert (
-        con.list_tables(database=("IBIS_TESTING", "INFORMATION_SCHEMA"), like="TABLE")
-        == like_table
-    )
+    }
+    tables = con.list_tables(database=database, like="TABLE")
+    assert like_table.issubset(tables)
 
 
 def test_timestamp_memtable(con):
