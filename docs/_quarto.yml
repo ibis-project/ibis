@@ -332,7 +332,7 @@ quartodoc:
             - name: ifelse
               dynamic: true
               signature_name: full
-            - name: case
+            - name: cases
               dynamic: true
               signature_name: full
 

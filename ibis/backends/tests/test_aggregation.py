@@ -611,7 +611,7 @@ def test_first_last(alltypes, method, filtered, include_null):
     # To sanely test this we create a column that is a mix of nulls and a
     # single value (or a single value after filtering is applied).
     if filtered:
-        new = alltypes.int_col.cases([(3, 30), (4, 40)])
+        new = alltypes.int_col.cases((3, 30), (4, 40))
         where = _.int_col == 3
     else:
         new = (alltypes.int_col == 3).ifelse(30, None)
@@ -738,7 +738,7 @@ def test_arbitrary(alltypes, filtered):
     # _something_ we create a column that is a mix of nulls and a single value
     # (or a single value after filtering is applied).
     if filtered:
-        new = alltypes.int_col.cases([(3, 30), (4, 40)])
+        new = alltypes.int_col.cases((3, 30), (4, 40))
         where = _.int_col == 3
     else:
         new = (alltypes.int_col == 3).ifelse(30, None)
@@ -1571,9 +1571,7 @@ def test_aggregate_mixed_udf(backend, alltypes, df):
 
 def test_binds_are_cast(alltypes):
     expr = alltypes.aggregate(
-        high_line_count=(
-            alltypes.string_col.case().when("1-URGENT", 1).else_(0).end().sum()
-        )
+        high_line_count=alltypes.string_col.cases(("1-URGENT", 1), else_=0).sum()
     )
 
     expr.execute()
@@ -1616,7 +1614,7 @@ def test_agg_name_in_output_column(alltypes):
 def test_grouped_case(backend, con):
     table = ibis.memtable({"key": [1, 1, 2, 2], "value": [10, 30, 20, 40]})
 
-    case_expr = ibis.case().when(table.value < 25, table.value).else_(ibis.null()).end()
+    case_expr = ibis.cases((table.value < 25, table.value), else_=ibis.null())
 
     expr = (
         table.group_by(k="key")

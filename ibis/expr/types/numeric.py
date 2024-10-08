@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Literal
 
@@ -1221,13 +1220,7 @@ class IntegerValue(NumericValue):
         │     2 │ c       │
         └───────┴─────────┘
         """
-        return (
-            functools.reduce(
-                lambda stmt, inputs: stmt.when(*inputs), enumerate(labels), self.case()
-            )
-            .else_(nulls)
-            .end()
-        )
+        return self.cases(*enumerate(labels), else_=nulls)
 
 
 @public

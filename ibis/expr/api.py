@@ -41,7 +41,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
-from ibis.util import experimental
+from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
@@ -68,6 +68,7 @@ __all__ = (
     "array",
     "asc",
     "case",
+    "cases",
     "coalesce",
     "connect",
     "cross_join",
@@ -1072,56 +1073,82 @@ def interval(
     return functools.reduce(operator.add, intervals)
 
 
+@deprecated(as_of="10.0.0", instead="use ibis.cases()")
 def case() -> bl.SearchedCaseBuilder:
-    """Begin constructing a case expression.
+    """DEPRECATED: Use `ibis.cases()` instead."""
+    return bl.SearchedCaseBuilder()
 
-    Use the `.when` method on the resulting object followed by `.end` to create a
-    complete case expression.
+
+@deferrable
+def cases(
+    branch: tuple[Any, Any], *branches: tuple[Any, Any], else_: Any | None = None
+) -> ir.Value:
+    """Create a multi-branch if-else expression.
+
+    Equivalent to a SQL `CASE` statement.
+
+    Parameters
+    ----------
+    branch
+        First (`condition`, `result`) pair. Required.
+    branches
+        Additional (`condition`, `result`) pairs. We look through the test
+        values in order and return the result corresponding to the first
+        test value that matches `self`. If none match, we return `else_`.
+    else_
+        Value to return if none of the case conditions evaluate to `True`.
+        Defaults to `NULL`.
 
     Returns
     -------
-    SearchedCaseBuilder
-        A builder object to use for constructing a case expression.
+    Value
+        A value expression
 
     See Also
     --------
-    [`Value.case()`](./expression-generic.qmd#ibis.expr.types.generic.Value.case)
+    [`Value.cases()`](./expression-generic.qmd#ibis.expr.types.generic.Value.cases)
+    [`Value.substitute()`](./expression-generic.qmd#ibis.expr.types.generic.Value.substitute)
 
     Examples
     --------
     >>> import ibis
-    >>> from ibis import _
     >>> ibis.options.interactive = True
-    >>> t = ibis.memtable(
-    ...     {
-    ...         "left": [1, 2, 3, 4],
-    ...         "symbol": ["+", "-", "*", "/"],
-    ...         "right": [5, 6, 7, 8],
-    ...     }
-    ... )
-    >>> t.mutate(
-    ...     result=(
-    ...         ibis.case()
-    ...         .when(_.symbol == "+", _.left + _.right)
-    ...         .when(_.symbol == "-", _.left - _.right)
-    ...         .when(_.symbol == "*", _.left * _.right)
-    ...         .when(_.symbol == "/", _.left / _.right)
-    ...         .end()
-    ...     )
-    ... )
-    ┏━━━━━━━┳━━━━━━━━┳━━━━━━━┳━━━━━━━━━┓
-    ┃ left  ┃ symbol ┃ right ┃ result  ┃
-    ┡━━━━━━━╇━━━━━━━━╇━━━━━━━╇━━━━━━━━━┩
-    │ int64 │ string │ int64 │ float64 │
-    ├───────┼────────┼───────┼─────────┤
-    │     1 │ +      │     5 │     6.0 │
-    │     2 │ -      │     6 │    -4.0 │
-    │     3 │ *      │     7 │    21.0 │
-    │     4 │ /      │     8 │     0.5 │
-    └───────┴────────┴───────┴─────────┘
-
+    >>> v = ibis.memtable({"values": [1, 2, 1, 2, 3, 2, 4]}).values
+    >>> ibis.cases((v == 1, "a"), (v > 2, "b"), else_="unk").name("cases")
+    ┏━━━━━━━━┓
+    ┃ cases  ┃
+    ┡━━━━━━━━┩
+    │ string │
+    ├────────┤
+    │ a      │
+    │ unk    │
+    │ a      │
+    │ unk    │
+    │ b      │
+    │ unk    │
+    │ b      │
+    └────────┘
+    >>> ibis.cases(
+    ...     (v % 2 == 0, "divisible by 2"),
+    ...     (v % 3 == 0, "divisible by 3"),
+    ...     (v % 4 == 0, "shadowed by the 2 case"),
+    ... ).name("cases")
+    ┏━━━━━━━━━━━━━━━━┓
+    ┃ cases          ┃
+    ┡━━━━━━━━━━━━━━━━┩
+    │ string         │
+    ├────────────────┤
+    │ NULL           │
+    │ divisible by 2 │
+    │ NULL           │
+    │ divisible by 2 │
+    │ divisible by 3 │
+    │ divisible by 2 │
+    │ divisible by 2 │
+    └────────────────┘
     """
-    return bl.SearchedCaseBuilder()
+    cases, results = zip(branch, *branches)
+    return ops.SearchedCase(cases=cases, results=results, default=else_).to_expr()
 
 
 def now() -> ir.TimestampScalar:

@@ -382,12 +382,11 @@ def test_case_where(backend, alltypes, df):
     table = alltypes
     table = table.mutate(
         new_col=(
-            ibis.case()
-            .when(table["int_col"] == 1, 20)
-            .when(table["int_col"] == 0, 10)
-            .else_(0)
-            .end()
-            .cast("int64")
+            ibis.cases(
+                (table["int_col"] == 1, 20),
+                (table["int_col"] == 0, 10),
+                else_=0,
+            ).cast("int64")
         )
     )
 
@@ -420,9 +419,7 @@ def test_select_filter_mutate(backend, alltypes, df):
 
     # Prepare the float_col so that filter must execute
     # before the cast to get the correct result.
-    t = t.mutate(
-        float_col=ibis.case().when(t["bool_col"], t["float_col"]).else_(np.nan).end()
-    )
+    t = t.mutate(float_col=ibis.cases((t["bool_col"], t["float_col"]), else_=np.nan))
 
     # Actual test
     t = t.select(t.columns)
@@ -2348,7 +2345,9 @@ def test_union_generates_predictable_aliases(con):
     assert len(df) == 2
 
 
-@pytest.mark.parametrize("id_cols", [s.none(), [], s.cols()])
+@pytest.mark.parametrize(
+    "id_cols", [s.none(), [], s.cols()], ids=["none", "empty", "cols"]
+)
 def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", con)
     data = pd.DataFrame(
@@ -2360,13 +2359,11 @@ def test_pivot_wider_empty_id_columns(con, backend, id_cols, monkeypatch):
     )
     t = ibis.memtable(data)
     expr = t.mutate(
-        outcome=(
-            ibis.case()
-            .when((_["actual"] == 0) & (_["prediction"] == 0), "TN")
-            .when((_["actual"] == 0) & (_["prediction"] == 1), "FP")
-            .when((_["actual"] == 1) & (_["prediction"] == 0), "FN")
-            .when((_["actual"] == 1) & (_["prediction"] == 1), "TP")
-            .end()
+        outcome=ibis.cases(
+            ((_.actual == 0) & (_.prediction == 0), "TN"),
+            ((_.actual == 0) & (_.prediction == 1), "FP"),
+            ((_.actual == 1) & (_.prediction == 0), "FN"),
+            ((_.actual == 1) & (_.prediction == 1), "TP"),
         )
     )
     expr = expr.pivot_wider(
