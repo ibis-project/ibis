@@ -62,7 +62,6 @@ class PySparkCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.RowID,
         ops.TimestampBucket,
-        ops.RandomUUID,
     )
 
     LOWERED_OPS = {
@@ -688,6 +687,11 @@ class PySparkCompiler(SQLGlotCompiler):
 
     def visit_ArrayMean(self, op, *, arg):
         return self._array_reduction(dtype=op.dtype, arg=arg, output=operator.truediv)
+
+    def visit_RandomUUID(self, _):
+        raise com.UnsupportedOperationError(
+            "UUID operation not supported in the PySpark backend"
+        )
 
 
 compiler = PySparkCompiler()
