@@ -4,10 +4,10 @@ final: prev: {
       inherit (final) pkgs lib;
       pysparkVersion = lib.versions.majorMinor attrs.version;
       jarHashes = {
-        "3.5" = "sha256-KuxLeNgGzIHU5QMls1H2NJyQ3mQVROZExgMvAAk4YYs=";
-        "3.3" = "sha256-W3ij6mwrIDOc4zGqtpCsbg563qHmdMc8eZnLX6bnl2M=";
+        "3.5" = "sha256-h+cYTzHvDKrEFbvfzxvElDNGpYuY10fcg0NPcTnhKss=";
+        "3.3" = "sha256-3D++9VCiLoMP7jPvdCtBn7xnxqHnyQowcqdGUe0M3mk=";
       };
-      icebergVersion = "1.5.2";
+      icebergVersion = "1.6.1";
       scalaVersion = "2.12";
       jarName = "iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}-${icebergVersion}.jar";
       icebergJarUrl = "https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-${pysparkVersion}_${scalaVersion}/${icebergVersion}/${jarName}";
