@@ -35,16 +35,15 @@ if TYPE_CHECKING:
 _NAME_REGEX = re.compile(r'[^!"$()*,./;?@[\\\]^`{}~\n]+')
 
 
-_MEMTABLE_PATTERN = re.compile(
-    r"^_?ibis_(?:[A-Za-z_][A-Za-z_0-9]*)_memtable_[a-z0-9]{26}$"
-)
-
-
 def _qualify_memtable(
-    node: sge.Expression, *, dataset: str | None, project: str | None
+    node: sge.Expression,
+    *,
+    dataset: str | None,
+    project: str | None,
+    memtable_names: frozenset[str],
 ) -> sge.Expression:
     """Add a BigQuery dataset and project to memtable references."""
-    if isinstance(node, sge.Table) and _MEMTABLE_PATTERN.match(node.name) is not None:
+    if isinstance(node, sge.Table) and node.name in memtable_names:
         node.args["db"] = dataset
         node.args["catalog"] = project
         # make sure to quote table location
@@ -241,10 +240,15 @@ class BigQueryCompiler(SQLGlotCompiler):
         table_expr = expr.as_table()
         geocols = table_expr.schema().geospatial
 
+        memtable_names = frozenset(
+            op.name for op in table_expr.op().find(ops.InMemoryTable)
+        )
+
         result = sql.transform(
             _qualify_memtable,
             dataset=session_dataset_id,
             project=session_project,
+            memtable_names=memtable_names,
         ).transform(_remove_null_ordering_from_unsupported_window)
 
         if geocols:
