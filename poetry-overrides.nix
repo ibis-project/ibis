@@ -22,4 +22,6 @@ final: prev: {
         cp ${icebergJar} $out/${final.python.sitePackages}/pyspark/jars/${icebergJar.name}
       '';
     });
+
+  commonmark = if final.python.pythonAtLeast "3.13" then null else prev.commonmark;
 }

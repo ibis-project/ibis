@@ -29,10 +29,12 @@ in
   ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
   ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
   ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
+  ibis313 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python313; };
 
   ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
   ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
   ibisDevEnv312 = mkPoetryDevEnv pkgs.python312;
+  ibisDevEnv313 = mkPoetryDevEnv pkgs.python313;
 
   ibisSmallDevEnv = mkPoetryEnv {
     python = pkgs.python312;

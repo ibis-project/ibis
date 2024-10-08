@@ -122,7 +122,7 @@
     in
     rec {
       packages = {
-        inherit (pkgs) ibis310 ibis311 ibis312;
+        inherit (pkgs) ibis310 ibis311 ibis312 ibis313;
 
         default = pkgs.ibis312;
 
@@ -133,6 +133,7 @@
         ibis310 = mkDevShell pkgs.ibisDevEnv310;
         ibis311 = mkDevShell pkgs.ibisDevEnv311;
         ibis312 = mkDevShell pkgs.ibisDevEnv312;
+        ibis313 = mkDevShell pkgs.ibisDevEnv313;
 
         default = ibis312;
 
