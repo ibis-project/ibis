@@ -141,12 +141,17 @@ def temporary_alltypes(con):
     con.drop_table(table)
 
 
-def test_insert(con, temporary_alltypes, df):
+@pytest.mark.parametrize(
+    "transform",
+    [param(lambda df: df, id="pandas"), param(pa.Table.from_pandas, id="pyarrow")],
+)
+def test_insert(con, temporary_alltypes, df, transform):
     temporary = temporary_alltypes
     records = df[:10]
 
     assert temporary.count().execute() == 0
-    con.insert(temporary.op().name, records)
+
+    con.insert(temporary.op().name, transform(records))
 
     tm.assert_frame_equal(temporary.execute(), records)
 
