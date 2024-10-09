@@ -3680,13 +3680,13 @@ files = [
 
 [[package]]
 name = "lonboard"
-version = "0.10.0"
+version = "0.10.1"
 description = "Fast, interactive geospatial data visualization in Jupyter."
 optional = false
 python-versions = "<4.0,>=3.8"
 files = [
-    {file = "lonboard-0.10.0-py3-none-any.whl", hash = "sha256:fe078cc79a0674b0708fd901112d966acb37e2f7926fa5fefcb1d420b08d8ce4"},
-    {file = "lonboard-0.10.0.tar.gz", hash = "sha256:029665b28068ce98f703bfefaf7ced4ddc533218b2602ee3aa345c6e68456b24"},
+    {file = "lonboard-0.10.1-py3-none-any.whl", hash = "sha256:808b20fed5a60a7378fb8892abc6704fe3cf7f168437cb1ba5425a7e411b0a2e"},
+    {file = "lonboard-0.10.1.tar.gz", hash = "sha256:d5f97f896493b9d1d62dd47cd1eeae91ec02a23f7daaf2a4072e821a30320be1"},
 ]
 
 [package.dependencies]
@@ -8246,4 +8246,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "9a7eb5b2b52792b0bdf598738191bd4065e97b83d2930e2cf9e3079b9e1028bc"
+content-hash = "0abbac5501db198dc39be66b106216b9538e0281bf131a06ef08a6678c869f32"
