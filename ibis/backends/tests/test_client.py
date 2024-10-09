@@ -1381,7 +1381,12 @@ def test_insert_with_database_specified(con_create_database):
     t = ibis.memtable({"a": [1, 2, 3]})
 
     with create_and_destroy_db(con) as dbname:
-        con.create_table(table_name := gen_name("table"), obj=t, database=dbname)
+        con.create_table(
+            table_name := gen_name("table"),
+            obj=t,
+            database=dbname,
+            temp=(con.name == "flink") or None,
+        )
         try:
             con.insert(table_name, obj=t, database=dbname)
             assert con.table(table_name, database=dbname).count().to_pandas() == 6
