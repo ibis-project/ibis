@@ -18,6 +18,8 @@ from ibis.backends.mssql.tests.conftest import (
     MSSQL_PYODBC_DRIVER,
     MSSQL_USER,
 )
+from ibis.backends.tests.errors import PyODBCProgrammingError
+from ibis.util import gen_name
 
 RAW_DB_TYPES = [
     # Exact numbers
@@ -259,3 +261,36 @@ def test_dot_sql_with_unnamed_columns(con):
 
     df = expr.execute()
     assert len(df) == 1
+
+
+@pytest.mark.parametrize(
+    "temp",
+    [
+        param(
+            True,
+            marks=pytest.mark.xfail(
+                raises=PyODBCProgrammingError,
+                reason="dropping temp tables isn't implemented",
+            ),
+        ),
+        False,
+        None,
+    ],
+    ids=[
+        "temp",
+        "no-temp",
+        "no-temp-none",
+    ],
+)
+def test_create_temp_table(con, temp):
+    t = con.create_table(
+        name := gen_name("mssql_delete_me"),
+        schema={"a": "int"},
+        temp=temp,
+    )
+    try:
+        assert int(t.count().execute()) == 0
+        assert t.schema() == ibis.schema({"a": "int"})
+        assert t.columns == ("a",)
+    finally:
+        con.drop_table(name)
