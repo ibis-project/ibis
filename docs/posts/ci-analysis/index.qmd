@@ -93,7 +93,7 @@ Alright, let's jump into some data!
 
 
 ```{python}
-jobs = con.tables.jobs[_.started_at < "2023-01-09"]
+jobs = con.tables.jobs
 jobs
 ```
 
@@ -211,7 +211,7 @@ stats = stats.mutate(
         .else_("NA")
         .end()
     ),
-    team_plan=ibis.where(_.raw_improvements > 1, "Poetry + Team Plan", "None"),
+    team_plan=ibis.ifelse(_.raw_improvements > 1, "Poetry + Team Plan", "None"),
 )
 stats
 ```
@@ -221,7 +221,7 @@ Finally, we can summarize by averaging the different durations, grouping on the 
 ```{python}
 USECS_PER_MIN = 60_000_000
 
-agged = stats.group_by([_.started_date, _.improvements, _.team_plan]).agg(
+agged = stats.group_by(_.started_date, _.improvements, _.team_plan).agg(
     job=_.job_duration.div(USECS_PER_MIN).mean(),
     workflow=_.workflow_duration.div(USECS_PER_MIN).mean(),
     queueing_time=_.queueing_time.div(USECS_PER_MIN).mean(),
@@ -242,23 +242,22 @@ Ibis doesn't have builtin plotting support, so we need to pull our results into 
 
 Here I'm using `plotnine` (a Python port of `ggplot2`), which has great integration with pandas DataFrames.
 
-```{python}
-raw_df = agged.execute()
-raw_df
-```
-
-Generally, `plotnine` works with long, tidy data so let's use `pandas.melt` to get there.
+Generally, `plotnine` works with long, tidy data so let's use Ibis's
+[`pivot_longer`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.pivot_longer)
+to get there.
 
 
 ```{python}
-import pandas as pd
-
-df = pd.melt(
-    raw_df,
-    id_vars=["started_date", "improvements", "team_plan"],
-    var_name="entity",
-    value_name="duration",
+agged_pivoted = (
+    agged.pivot_longer(
+        ("job", "workflow", "queueing_time"),
+        names_to="entity",
+        values_to="duration",
+    )
+    .mutate(started_date=_.started_date.cast("timestamp").truncate("D"))
 )
+
+df = agged_pivoted.execute()
 df.head()
 ```
 
@@ -286,12 +285,16 @@ import logging
 
 # without this, findfont logging spams the notebook making it unusable
 logging.getLogger('matplotlib.font_manager').disabled = True
+logging.getLogger('plotnine').disabled = True
 ```
 
 Here we show job durations, coloring the points differently depending on whether they have no improvements, poetry, or poetry + team plan.
 
 ```{python}
-(
+import pandas as pd
+
+
+g = (
     ggplot(
         df.loc[df.entity == "job"].reset_index(drop=True),
         aes(x="started_date", y="duration", color="factor(improvements)"),
@@ -307,8 +310,8 @@ Here we show job durations, coloring the points differently depending on whether
         type='qual',
         limits=["None", "Poetry", "Poetry + Team Plan"],
     )
-    + geom_text(x=POETRY_MERGED_DATE, label=poetry_label, y=15, color="blue")
-    + geom_text(x=TEAMIZATION_DATE, label=team_label, y=10, color="blue")
+    + geom_text(aes("x", "y"), label=poetry_label, data=pd.DataFrame({"x": [POETRY_MERGED_DATE], "y": [15]}), color="blue")
+    + geom_text(aes("x", "y"), label=team_label, data=pd.DataFrame({"x": [TEAMIZATION_DATE], "y": [10]}), color="blue")
     + stat_smooth(method="lm")
     + labs(x="Date", y="Duration (minutes)")
     + ggtitle("Job Duration")
@@ -318,6 +321,7 @@ Here we show job durations, coloring the points differently depending on whether
         legend_direction="vertical",
     )
 )
+g.show()
 ```
 
 ## Result #1: Job Duration
@@ -331,7 +335,7 @@ A few things pop out to me right away:
 - Moving to the team plan had little to no effect on job run duration.
 
 ```{python}
-(
+g = (
     ggplot(
         df.loc[df.entity != "job"].reset_index(drop=True),
         aes(x="started_date", y="duration", color="factor(improvements)"),
@@ -347,8 +351,8 @@ A few things pop out to me right away:
         type='qual',
         limits=["None", "Poetry", "Poetry + Team Plan"],
     )
-    + geom_text(x=POETRY_MERGED_DATE, label=poetry_label, y=75, color="blue")
-    + geom_text(x=TEAMIZATION_DATE, label=team_label, y=50, color="blue")
+    + geom_text(aes("x", "y"), label=poetry_label, data=pd.DataFrame({"x": [POETRY_MERGED_DATE], "y": [75]}), color="blue")
+    + geom_text(aes("x", "y"), label=team_label, data=pd.DataFrame({"x": [TEAMIZATION_DATE], "y": [50]}), color="blue")
     + stat_smooth(method="lm")
     + labs(x="Date", y="Duration (minutes)")
     + ggtitle("Workflow Duration")
@@ -358,6 +362,7 @@ A few things pop out to me right away:
         legend_direction="vertical",
     )
 )
+g.show()
 ```
 
 ## Result #2: Workflow Duration and Queueing Time
@@ -377,8 +382,8 @@ Another interesting result.
 In the next plot we'll look at that correlation.
 
 ```{python}
-(
-    ggplot(raw_df, aes(x="workflow", y="queueing_time"))
+g = (
+    ggplot(agged.execute(), aes(x="workflow", y="queueing_time"))
     + geom_point()
     + geom_rug()
     + facet_grid(". ~ team_plan")
@@ -386,6 +391,7 @@ In the next plot we'll look at that correlation.
     + ggtitle("Workflow Duration vs. Queueing Time")
     + theme(figure_size=(22, 6))
 )
+g.show()
 ```
 
 ## Result #3: Workflow Duration and Queueing Duration are correlated
