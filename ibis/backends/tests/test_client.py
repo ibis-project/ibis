@@ -1380,7 +1380,7 @@ def test_insert_with_database_specified(con_create_database):
             table_name := gen_name("table"),
             obj=t,
             database=dbname,
-            temp=(con.name == "flink") or None,
+            temp=con.name == "flink",
         )
         try:
             con.insert(table_name, obj=t, database=dbname)
