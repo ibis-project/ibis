@@ -126,17 +126,21 @@ def test_xgboost_model(con):
         predicted_price=predict_price(
             (_.carat - _.carat.mean()) / _.carat.std(),
             _.cut.cases(
-                (c, i)
-                for i, c in enumerate(
-                    ("Fair", "Good", "Very Good", "Premium", "Ideal"), start=1
+                *(
+                    (c, i)
+                    for i, c in enumerate(
+                        ("Fair", "Good", "Very Good", "Premium", "Ideal"), start=1
+                    )
                 )
             ),
-            _.color.cases((c, i) for i, c in enumerate("DEFGHIJ", start=1)),
+            _.color.cases(*((c, i) for i, c in enumerate("DEFGHIJ", start=1))),
             _.clarity.cases(
-                (c, i)
-                for i, c in enumerate(
-                    ("I1", "IF", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2"),
-                    start=1,
+                *(
+                    (c, i)
+                    for i, c in enumerate(
+                        ("I1", "IF", "SI1", "SI2", "VS1", "VS2", "VVS1", "VVS2"),
+                        start=1,
+                    )
                 )
             ),
         )
