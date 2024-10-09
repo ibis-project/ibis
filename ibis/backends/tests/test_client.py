@@ -1375,9 +1375,8 @@ def create_and_destroy_db(con):
 
 
 # TODO: move this to something like `test_ddl.py`
-def test_insert_with_database_specified(con_create_database, monkeypatch):
+def test_insert_with_database_specified(con_create_database):
     con = con_create_database
-    monkeypatch.setattr(ibis.options, "default_backend", con)
 
     t = ibis.memtable({"a": [1, 2, 3]})
 
