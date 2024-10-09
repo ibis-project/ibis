@@ -438,9 +438,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         if isinstance(obj, pa.Table):
             return self.con.insert_arrow(name, obj, settings=settings, **kwargs)
         elif isinstance(obj, pd.DataFrame):
-            return self.con.insert_arrow(
-                name, pa.Table.from_pandas(obj), settings=settings, **kwargs
-            )
+            return self.con.insert_df(name, obj, settings=settings, **kwargs)
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
