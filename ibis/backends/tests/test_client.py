@@ -1368,8 +1368,10 @@ def test_overwrite(ddl_con, monkeypatch):
 @contextlib.contextmanager
 def create_and_destroy_db(con):
     con.create_database(dbname := gen_name("db"))
-    yield dbname
-    con.drop_database(dbname)
+    try:
+        yield dbname
+    finally:
+        con.drop_database(dbname)
 
 
 # TODO: move this to something like `test_ddl.py`
