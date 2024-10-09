@@ -1382,9 +1382,11 @@ def test_insert_with_database_specified(con_create_database):
 
     with create_and_destroy_db(con) as dbname:
         con.create_table(table_name := gen_name("table"), obj=t, database=dbname)
-        con.insert(table_name, obj=t, database=dbname)
-        assert con.table(table_name, database=dbname).count().to_pandas() == 6
-        con.drop_table(table_name, database=dbname)
+        try:
+            con.insert(table_name, obj=t, database=dbname)
+            assert con.table(table_name, database=dbname).count().to_pandas() == 6
+        finally:
+            con.drop_table(table_name, database=dbname)
 
 
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
