@@ -14,13 +14,13 @@ def table(mockcon):
 
 @pytest.fixture
 def simple_case(table):
-    return table.g.case().when("foo", "bar").when("baz", "qux").else_("default").end()
+    return table.g.cases(("foo", "bar"), ("baz", "qux"), else_="default")
 
 
 @pytest.fixture
 def search_case(table):
     t = table
-    return ibis.case().when(t.f > 0, t.d * 2).when(t.c < 0, t.a * 2).end()
+    return ibis.cases((t.f > 0, t.d * 2), (t.c < 0, t.a * 2))
 
 
 @pytest.fixture

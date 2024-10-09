@@ -146,7 +146,7 @@ def test_collect_into_struct(alltypes):
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
 def test_field_access_after_case(con):
     s = ibis.struct({"a": 3})
-    x = ibis.case().when(True, s).else_(ibis.struct({"a": 4})).end()
+    x = ibis.cases((True, s), else_=ibis.struct({"a": 4}))
     y = x.a
     assert con.to_pandas(y) == 3
 

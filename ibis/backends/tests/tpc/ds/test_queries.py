@@ -3862,13 +3862,11 @@ def test_73(store_sales, date_dim, store, household_demographics, customer):
                     _.ss_hdemo_sk == hd.hd_demo_sk,
                     hd.hd_buy_potential.isin(["Unknown", ">10000"]),
                     hd.hd_vehicle_count > 0,
-                    ibis.case()
-                    .when(
+                    ibis.ifelse(
                         hd.hd_vehicle_count > 0,
                         hd.hd_dep_count * 1.000 / hd.hd_vehicle_count,
+                        ibis.null(),
                     )
-                    .else_(ibis.null())
-                    .end()
                     > 1,
                 ],
             )

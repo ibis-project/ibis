@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import Counter
 
 import pytest
+from pytest import param
 
 import ibis
 
@@ -62,18 +63,13 @@ def test_substitute(backend):
 @pytest.mark.parametrize(
     "inp, exp",
     [
-        pytest.param(
-            lambda: ibis.literal(1)
-            .case()
-            .when(1, "one")
-            .when(2, "two")
-            .else_("other")
-            .end(),
+        param(
+            lambda: ibis.literal(1).cases((1, "one"), (2, "two"), else_="other"),
             "one",
             id="one_kwarg",
         ),
-        pytest.param(
-            lambda: ibis.literal(5).case().when(1, "one").when(2, "two").end(),
+        param(
+            lambda: ibis.literal(5).cases((1, "one"), (2, "two")),
             None,
             id="fallthrough",
         ),
@@ -94,13 +90,8 @@ def test_value_cases_column(batting):
     np = pytest.importorskip("numpy")
 
     df = batting.to_pandas()
-    expr = (
-        batting.RBI.case()
-        .when(5, "five")
-        .when(4, "four")
-        .when(3, "three")
-        .else_("could be good?")
-        .end()
+    expr = batting.RBI.cases(
+        (5, "five"), (4, "four"), (3, "three"), else_="could be good?"
     )
     result = expr.execute()
     expected = np.select(
@@ -113,7 +104,7 @@ def test_value_cases_column(batting):
 
 
 def test_ibis_cases_scalar():
-    expr = ibis.literal(5).case().when(5, "five").when(4, "four").end()
+    expr = ibis.literal(5).cases((5, "five"), (4, "four"))
     result = expr.execute()
     assert result == "five"
 
@@ -128,12 +119,8 @@ def test_ibis_cases_column(batting):
 
     t = batting
     df = batting.to_pandas()
-    expr = (
-        ibis.case()
-        .when(t.RBI < 5, "really bad team")
-        .when(t.teamID == "PH1", "ph1 team")
-        .else_(t.teamID)
-        .end()
+    expr = ibis.cases(
+        (t.RBI < 5, "really bad team"), (t.teamID == "PH1", "ph1 team"), else_=t.teamID
     )
     result = expr.execute()
     expected = np.select(
@@ -148,5 +135,45 @@ def test_ibis_cases_column(batting):
 @pytest.mark.notimpl("clickhouse", reason="special case this and returns 'oops'")
 def test_value_cases_null(con):
     """CASE x WHEN NULL never gets hit"""
-    e = ibis.literal(5).nullif(5).case().when(None, "oops").else_("expected").end()
+    e = ibis.literal(5).nullif(5).cases((None, "oops"), else_="expected")
     assert con.execute(e) == "expected"
+
+
+@pytest.mark.parametrize(
+    ("example", "expected"),
+    [
+        param(lambda: ibis.case().when(True, "yes").end(), "yes", id="top-level-true"),
+        param(lambda: ibis.case().when(False, "yes").end(), None, id="top-level-false"),
+        param(
+            lambda: ibis.case().when(False, "yes").else_("no").end(),
+            "no",
+            id="top-level-false-value",
+        ),
+        param(
+            lambda: ibis.literal("a").case().when("a", "yes").end(),
+            "yes",
+            id="method-true",
+        ),
+        param(
+            lambda: ibis.literal("a").case().when("b", "yes").end(),
+            None,
+            id="method-false",
+        ),
+        param(
+            lambda: ibis.literal("a").case().when("b", "yes").else_("no").end(),
+            "no",
+            id="method-false-value",
+        ),
+    ],
+)
+def test_ibis_case_still_works(con, example, expected):
+    # test that the soft-deprecated .case() method still works
+    # https://github.com/ibis-project/ibis/pull/9096
+    pd = pytest.importorskip("pandas")
+
+    with pytest.warns(FutureWarning):
+        expr = example()
+
+    result = con.execute(expr)
+
+    assert (expected is None and pd.isna(result)) or result == expected
