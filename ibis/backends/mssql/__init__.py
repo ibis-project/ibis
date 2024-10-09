@@ -602,7 +602,7 @@ GO"""
         *,
         schema: sch.SchemaLike | None = None,
         database: str | None = None,
-        temp: bool = False,
+        temp: bool | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
         """Create a new table.
@@ -682,7 +682,7 @@ GO"""
         raw_table = sg.table(temp_name, catalog=catalog, db=db, quoted=False)
         target = sge.Schema(
             this=sg.table(
-                "#" * temp + temp_name, catalog=catalog, db=db, quoted=quoted
+                "#" * bool(temp) + temp_name, catalog=catalog, db=db, quoted=quoted
             ),
             expressions=schema.to_sqlglot(self.dialect),
         )
@@ -701,7 +701,7 @@ GO"""
                 # for the subsequent `Insert`, so we need to shove a `#` in
                 # front of the table identifier.
                 _table = sg.table(
-                    "##" * temp + temp_name,
+                    "##" * bool(temp) + temp_name,
                     catalog=catalog,
                     db=db,
                     quoted=self.compiler.quoted,
