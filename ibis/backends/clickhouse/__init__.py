@@ -508,7 +508,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         """
         if catalog is not None:
-            raise com.UnsupportedBackendFeatureError(
+            raise com.UnsupportedOperationError(
                 "`catalog` namespaces are not supported by clickhouse"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
