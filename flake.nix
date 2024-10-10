@@ -81,10 +81,11 @@
       ];
 
       mkDevShell = env: pkgs.mkShell {
-        name = "ibis-${env.python.version}";
-        nativeBuildInputs = (with pkgs; [
+        name = "ibis-${env.pythonVersion}";
+        nativeBuildInputs = [
           # python dev environment
           env
+        ] ++ (with pkgs; [
           # poetry executable
           poetry
           # rendering release notes
@@ -116,6 +117,8 @@
           [FreeTDS]
           Driver = ${pkgs.lib.makeLibraryPath [ pkgs.freetds ]}/libtdsodbc.so
         '';
+
+        GDAL_DATA = "${pkgs.gdal}/share/gdal";
 
         __darwinAllowLocalNetworking = true;
       };
