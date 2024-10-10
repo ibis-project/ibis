@@ -1583,6 +1583,31 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         with self._safe_raw_sql(copy_cmd):
             pass
 
+    @util.experimental
+    def to_geo(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        format: str,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        self._run_pre_execute_hooks(expr)
+        query = self.compile(expr, params=params, limit=limit)
+
+        args = [
+            "FORMAT GDAL",
+            f"DRIVER '{format}'",
+            *(f"{k.upper()} {v!r}" for k, v in (kwargs or {}).items()),
+        ]
+
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+
+        with self._safe_raw_sql(copy_cmd):
+            pass
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
             rows = cur.fetch_arrow_table()
