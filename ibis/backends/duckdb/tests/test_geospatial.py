@@ -398,3 +398,57 @@ def test_geom_from_string(con):
     expr = value.cast("geometry")
     result = con.execute(expr)
     assert result == shapely.from_wkt("POINT (1 2)")
+
+
+no_roundtrip = pytest.mark.xfail(
+    (duckdb.IOException, duckdb.NotImplementedException, duckdb.PermissionException),
+    reason="format cannot be round-tripped",
+)
+
+
+@pytest.mark.parametrize(
+    "driver",
+    [
+        param("ESRI Shapefile", marks=no_roundtrip),
+        param("MapInfo File", marks=no_roundtrip),
+        param("S57", marks=no_roundtrip),
+        param("DGN", marks=no_roundtrip),
+        param("Memory", marks=no_roundtrip),
+        param("CSV", marks=no_roundtrip),
+        "GML",
+        param("GPX", marks=no_roundtrip),
+        param("KML", marks=no_roundtrip),
+        "GeoJSON",
+        "GeoJSONSeq",
+        param("OGR_GMT", marks=no_roundtrip),
+        "GPKG",
+        "SQLite",
+        param("WAsP", marks=no_roundtrip),
+        param("OpenFileGDB", marks=no_roundtrip),
+        param("DXF", marks=no_roundtrip),
+        param("FlatGeobuf", marks=no_roundtrip),
+        param("Geoconcept", marks=no_roundtrip),
+        param("GeoRSS", marks=no_roundtrip),
+        param("PGDUMP", marks=no_roundtrip),
+        param("GPSBabel", marks=no_roundtrip),
+        param("ODS", marks=no_roundtrip),
+        param("XLSX", marks=no_roundtrip),
+        param("Elasticsearch", marks=no_roundtrip),
+        param("Carto", marks=no_roundtrip),
+        param("AmigoCloud", marks=no_roundtrip),
+        param("Selafin", marks=no_roundtrip),
+        "JML",
+        param("VDV", marks=no_roundtrip),
+        param("MVT", marks=no_roundtrip),
+        param("NGW", marks=no_roundtrip),
+        "MapML",
+        "PMTiles",
+        "JSONFG",
+    ],
+    ids=lambda id: id.replace(" ", "_").lower(),
+)
+def test_to_geo(con, driver, zones, tmp_path):
+    ext = driver.replace(" ", "_").lower()
+    out = tmp_path / f"outfile.{ext}"
+    con.to_geo(zones, path=out, format=driver)
+    con.read_geo(out)
