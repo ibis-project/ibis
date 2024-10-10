@@ -427,6 +427,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         obj: pd.DataFrame | ir.Table,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
+        database: str | None = None,
         **kwargs: Any,
     ):
         import pandas as pd
@@ -436,16 +437,18 @@ class Backend(SQLBackend, CanCreateDatabase):
             self.truncate_table(name)
 
         if isinstance(obj, pa.Table):
-            return self.con.insert_arrow(name, obj, settings=settings, **kwargs)
+            return self.con.insert_arrow(
+                name, obj, database=database, settings=settings, **kwargs
+            )
         elif isinstance(obj, pd.DataFrame):
             return self.con.insert_df(name, obj, settings=settings, **kwargs)
         elif not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
 
-        query = self._build_insert_from_table(target=name, source=obj)
+        query = self._build_insert_from_table(target=name, source=obj, db=database)
         external_tables = self._collect_in_memory_tables(obj, {})
         external_data = self._normalize_external_tables(external_tables)
-        return self.con.command(query.sql(self.name), external_data=external_data)
+        return self.con.command(query.sql(self.dialect), external_data=external_data)
 
     def raw_sql(
         self,
@@ -508,8 +511,8 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         """
         if catalog is not None:
-            raise com.UnsupportedBackendFeatureError(
-                "`catalog` namespaces are not supported by clickhouse"
+            raise com.UnsupportedOperationError(
+                "`catalog` namespaces are not supported by ClickHouse"
             )
         query = sge.Describe(this=sg.table(table_name, db=database))
         try:

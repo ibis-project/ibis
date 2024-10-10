@@ -371,7 +371,7 @@ class SQLBackend(BaseBackend):
         # Compare the columns between the target table and the object to be inserted
         # If source is a subset of target, use source columns for insert list
         # Otherwise, assume auto-generated column names and use positional ordering.
-        target_cols = self.get_schema(target).keys()
+        target_cols = self.get_schema(target, catalog=catalog, database=db).keys()
 
         columns = (
             source_cols

@@ -10,6 +10,7 @@ import pytest
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import config, udf
@@ -458,3 +459,10 @@ def test_query_cache(con, method_name):
         method(settings={"ooze_query_cash": True})
 
     assert result == expected
+
+
+def test_invalid_catalog_argument(con):
+    with pytest.raises(
+        exc.UnsupportedOperationError, match="`catalog` namespaces are not supported"
+    ):
+        con.get_schema("t", catalog="a", database="b")

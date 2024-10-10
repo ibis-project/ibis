@@ -906,18 +906,22 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             )
             return self.raw_sql(statement.compile())
 
+        identifier = sg.table(
+            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
+        ).sql(self.dialect)
+
         if isinstance(obj, pa.Table):
             obj = obj.to_pandas()
         if isinstance(obj, dict):
             obj = pd.DataFrame.from_dict(obj)
         if isinstance(obj, pd.DataFrame):
             table = self._table_env.from_pandas(obj)
-            return table.execute_insert(table_name, overwrite=overwrite)
+            return table.execute_insert(identifier, overwrite=overwrite)
 
         if isinstance(obj, list):
             # pyflink infers datatypes, which may sometimes result in incompatible types
             table = self._table_env.from_elements(obj)
-            return table.execute_insert(table_name, overwrite=overwrite)
+            return table.execute_insert(identifier, overwrite=overwrite)
 
         raise ValueError(
             "No operation is being performed. Either the obj parameter "
