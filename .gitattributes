@@ -1,7 +1,6 @@
-ci/conda-lock/python-*.yml linguist-generated=true
 flake.lock linguist-generated=true
 poetry.lock linguist-generated=true
-requirements.txt linguist-generated=true
-docs/backends/app/requirements.txt linguist-generated=false
+ibis/examples/pixi.lock linguist-generated=true
+requirements-dev.txt linguist-generated=true
 docs/_freeze/**/html.json linguist-generated=true
 docs/**/*.excalidraw linguist-generated=true
