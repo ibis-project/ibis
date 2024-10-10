@@ -1749,8 +1749,10 @@ def test_memtable_registered_exactly_once(con, mocker):
 
 
 def test_unreachable_memtable_does_not_clobber_existing_data(con):
-    t1 = ibis.memtable({"a": [1, 2, 3]}, name="test")
-    t2 = ibis.memtable({"a": [4, 5]}, name="test")
+    name = ibis.util.gen_name("temp_memtable")
+
+    t1 = ibis.memtable({"a": [1, 2, 3]}, name=name)
+    t2 = ibis.memtable({"a": [4, 5]}, name=name)
 
     assert len(con.execute(t1)) == 3
 
@@ -1766,12 +1768,14 @@ def test_unreachable_memtable_does_not_clobber_existing_data(con):
 
 
 def test_identically_named_memtables_cannot_be_joined(con):
-    t1 = ibis.memtable({"a": [1, 2, 3]}, name="test")
-    t2 = ibis.memtable({"a": [4, 5]}, name="test")
+    name = ibis.util.gen_name("temp_memtable")
+
+    t1 = ibis.memtable({"a": [1, 2, 3]}, name=name)
+    t2 = ibis.memtable({"a": [4, 5]}, name=name)
 
     # mixing two memtables with the same name is an error
     expr = t1.join(t2, "a")
     with pytest.raises(
-        com.IbisError, match=r"Duplicate in-memory table names: \['test'\]"
+        com.IbisError, match=rf"Duplicate in-memory table names: \['{name}'\]"
     ):
         con.execute(expr)
