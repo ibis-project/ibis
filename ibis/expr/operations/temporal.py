@@ -95,6 +95,17 @@ class StringToDate(Value):
 
 
 @public
+class StringToTime(Value):
+    """Convert a string to a time."""
+
+    arg: Value[dt.String]
+    format_str: Value[dt.String]
+
+    shape = rlz.shape_like("args")
+    dtype = dt.time
+
+
+@public
 class ExtractTemporalField(Unary):
     """Extract a field from a temporal value."""
 
