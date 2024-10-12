@@ -95,7 +95,7 @@ ipython = ">=8.7.0,<9"
 poetry-plugin-export = ">=1.6.0,<2"
 poetry-dynamic-versioning = ">=0.18.0,<2"
 pre-commit = ">=4,<5"
-pyinstrument = ">=4.5.1,<5"
+pyinstrument = ">=4.5.1,<6"
 ruff = ">=0.1.8"
 tqdm = ">=4.66.1,<5"
 
