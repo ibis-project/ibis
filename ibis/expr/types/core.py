@@ -278,14 +278,23 @@ class Expr(Immutable, Coercible):
         Examples
         --------
         >>> import ibis
-        >>> t = ibis.table([("a", "int64"), ("b", "string")], name="t")
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "a": [5, 10, 15],
+        ...         "b": ["a", "b", "c"],
+        ...     }
+        ... )
         >>> f = lambda a: (a + 1).name("a")
         >>> g = lambda a: (a * 2).name("a")
         >>> result1 = t.a.pipe(f).pipe(g)
         >>> result1
-        r0 := UnboundTable: t
-          a int64
-          b string
+        r0 := InMemoryTable
+        data:
+            PandasDataFrameProxy:
+                a  b
+            0   5  a
+            1  10  b
+            2  15  c
         a: r0.a + 1 * 2
 
         >>> result2 = g(f(t.a))  # equivalent to the above
