@@ -204,7 +204,6 @@ def test_np_array_literal(con):
 
 
 @pytest.mark.parametrize("idx", range(3))
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 def test_array_index(con, idx):
     arr = [1, 2, 3]
     expr = ibis.literal(arr)
