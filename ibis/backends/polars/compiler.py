@@ -1481,3 +1481,10 @@ def execute_date_delta(op, **kw):
     delta = left - right
     method_name = f"total_{_literal_value(op.part)}s"
     return getattr(delta.dt, method_name)()
+
+
+@translate.register(ops.ArrayIndex)
+def execute_array_index(op, **kw):
+    arg = translate(op.arg, **kw)
+    index = translate(op.index, **kw)
+    return arg.list.get(index)
