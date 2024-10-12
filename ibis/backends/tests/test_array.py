@@ -406,10 +406,7 @@ def test_unnest_default_name(backend):
         ),
     ],
 )
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(
-    ["datafusion"], raises=Exception, reason="array_types table isn't defined"
-)
+@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
