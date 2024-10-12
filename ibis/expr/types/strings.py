@@ -1437,7 +1437,7 @@ class StringValue(Value):
         return ops.ExtractPath(self).to_expr()
 
     def query(self, key: str | StringValue | None = None):
-        """Parse a URL and returns query strring or query string parameter.
+        """Parse a URL and returns query string or query string parameter.
 
         If key is passed, return the value of the query string parameter named.
         If key is absent, return the query string.
