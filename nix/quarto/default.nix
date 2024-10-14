@@ -1,7 +1,7 @@
 { stdenv
 , lib
 , esbuild
-, deno
+, deno_1
 , fetchurl
 , dart-sass
 , makeWrapper
@@ -17,15 +17,15 @@ let
     "aarch64-darwin" = "macos";
   };
   shas = {
-    "x86_64-linux" = "sha256-qSQc8Qw2ah0Kbrcb0kNuFTSQB3d7dnVPRRViA7//mgE=";
-    "aarch64-linux" = "sha256-PZfVCZf6XOUMaMOmIyBe1CrPTKQv53jf2RzunZN6RNk=";
-    "aarch64-darwin" = "sha256-LCROmrVuYBI4FE1K+c/mo8S7YEJ02puqlSHLcuRLEXc=";
+    "x86_64-linux" = "sha256-4PgvIPExU6FTaGB5gOSt/InJ9wftVas5OSlvtbW4Rm4=";
+    "aarch64-linux" = "sha256-7hrySIJREoVuqPQfLYxR0cqT82oocYgB1Gbi4Rbh3ns=";
+    "aarch64-darwin" = "sha256-BcliqrsJQrP2xjTMv+jqQziQTD7nQap4IAIp2R8ZVCM=";
   };
   inherit (stdenv.hostPlatform) system;
 in
 stdenv.mkDerivation rec {
   pname = "quarto";
-  version = "1.6.15";
+  version = "1.6.25";
   src = fetchurl {
     url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${platforms.${system}}.tar.gz";
     sha256 = shas.${system};
@@ -45,10 +45,10 @@ stdenv.mkDerivation rec {
     in
     ''
       wrapProgram $out/bin/quarto \
-        --prefix QUARTO_ESBUILD : ${esbuild}/bin/esbuild \
-        --prefix QUARTO_DENO : ${deno}/bin/deno \
-        --prefix QUARTO_R : ${rEnv}/bin/R \
-        --prefix QUARTO_DART_SASS : ${dart-sass}/bin/dart-sass
+        --prefix QUARTO_ESBUILD : ${lib.getExe esbuild} \
+        --prefix QUARTO_DENO : ${lib.getExe deno_1} \
+        --prefix QUARTO_R : ${lib.getExe' rEnv "R"} \
+        --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass}
     '';
 
   installPhase = ''

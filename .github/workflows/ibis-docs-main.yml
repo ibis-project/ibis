@@ -68,6 +68,9 @@ jobs:
           key: docs-${{ github.event.before }}
           path: docs/**/.jupyter_cache
 
+      - name: run quarto check
+        run: nix develop '.#ibis311' --ignore-environment -c quarto check
+
       - name: build api docs
         run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose
 
