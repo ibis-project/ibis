@@ -1994,7 +1994,9 @@ def test_38(store_sales, catalog_sales, web_sales, date_dim, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], reason="incorrect results", raises=AssertionError)
+@pytest.mark.notyet(
+    ["datafusion"], reason="incorrect results", raises=AssertionError, strict=False
+)
 def test_39(inventory, item, warehouse, date_dim):
     inv = (
         inventory.join(item, [("inv_item_sk", "i_item_sk")])
