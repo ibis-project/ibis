@@ -294,10 +294,15 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="temporary tables not implemented",
     raises=NotImplementedError,
 )
-@pytest.mark.never(
+@pytest.mark.notyet(
     ["risingwave"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="temp tables are not supported upstream in datafusion",
 )
 @pytest.mark.notimpl(
     ["flink"],

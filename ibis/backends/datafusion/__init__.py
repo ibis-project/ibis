@@ -166,7 +166,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             this=table,
             kind="VIEW",
             expression=sg.parse_one(query, read=self.dialect),
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
 
         with self._safe_raw_sql(src):
