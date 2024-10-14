@@ -1679,17 +1679,17 @@ tests = ["pytest", "pytest-cov", "pytest-xdist"]
 
 [[package]]
 name = "datafusion"
-version = "41.0.0"
+version = "42.0.0"
 description = "Build and run queries against data"
 optional = true
 python-versions = ">=3.6"
 files = [
-    {file = "datafusion-41.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4b484035765a4f239737d6313af3cc3822448dfa86738ec44db02dfc4e08057f"},
-    {file = "datafusion-41.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:fe324048a63bf462d49cca3b046821fcb546cdab3a13b1fe860aab038c4e4ad4"},
-    {file = "datafusion-41.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b7c6987ad20b238a555fac09851f2329cd8b7e829de98446159ea27a172a5f1f"},
-    {file = "datafusion-41.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:a10179610c8d211d215ff3533bbd8f5faf3b47b00c0e8371ca9656e98c420380"},
-    {file = "datafusion-41.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:a862f6667979a367c30ae58d8770bba044bab09d1da9012ee37cb3bb86fccdf2"},
-    {file = "datafusion-41.0.0.tar.gz", hash = "sha256:b2124bcd976520a8dbcb456c200f2cb8b1343285e9329fe757aa628bbd0b08f7"},
+    {file = "datafusion-42.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:e9506356ad5d5f7b0f2d636cea24c5fc72518305aacf81207ecb4d59d0ea6866"},
+    {file = "datafusion-42.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:63a07e3779d3bdca0ecafd2eedf6948feff3ecd496a1fcf93baac122a48c6f4f"},
+    {file = "datafusion-42.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b4f04adbef61e70a3f56c6fcf6b615f75bbc42610947092870acff03171a456b"},
+    {file = "datafusion-42.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:1fb4a7f34225948d7a5db2ee3b3a578dd6b95c2bae39fd940dfd2de90a34088d"},
+    {file = "datafusion-42.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:71d9af5a9a6852f8121e4811a913cfec596f4c36240149edea57d27af7318749"},
+    {file = "datafusion-42.0.0.tar.gz", hash = "sha256:c88955a9ac59504d9d302be03158e692b9f99c3bf53dca0e84252d81f8c5ca91"},
 ]
 
 [package.dependencies]
@@ -8390,4 +8390,4 @@ visualization = ["graphviz"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7cf9aec157e3ef124e9e577b32081da071eb6487db43c477123882941aca7d6c"
+content-hash = "2d83799f3242923213e742688c1e9be0fdd352b03dc9073873fb8eebb3084265"

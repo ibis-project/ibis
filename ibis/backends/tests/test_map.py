@@ -555,7 +555,6 @@ def test_map_construct_dict(con, keys, values):
 )
 @mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
-@mark_notyet_datafusion
 def test_map_construct_array_column(con, alltypes, df):
     expr = ibis.map(ibis.array([alltypes.string_col]), ibis.array([alltypes.int_col]))
     result = con.execute(expr)

@@ -166,7 +166,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             this=table,
             kind="VIEW",
             expression=sg.parse_one(query, read=self.dialect),
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
         )
 
         with self._safe_raw_sql(src):
@@ -688,6 +687,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         ident = sg.table(name, db=db, catalog=catalog).sql(self.dialect)
         with self._safe_raw_sql(sge.delete(ident)):
             pass
+
+    def _create_cached_table(self, name: str, expr: ir.Table) -> ir.Table:
+        return self.create_table(name, expr, schema=expr.schema())
 
 
 @contextlib.contextmanager

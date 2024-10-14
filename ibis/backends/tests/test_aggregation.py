@@ -1678,6 +1678,7 @@ def test_value_counts_on_expr(backend, alltypes, df):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.xfail_version(datafusion=["datafusion==42"])
 def test_group_by_expr(backend, con):
     expr = (
         ibis.memtable(

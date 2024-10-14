@@ -1068,7 +1068,7 @@ def test_int_scalar(alltypes):
     assert isinstance(expr.execute(), int)
 
 
-@pytest.mark.notimpl(["datafusion", "polars", "druid"])
+@pytest.mark.notimpl(["polars", "druid"])
 @pytest.mark.notyet(
     ["clickhouse"], reason="https://github.com/ClickHouse/ClickHouse/issues/6697"
 )
