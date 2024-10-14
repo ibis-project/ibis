@@ -66,7 +66,7 @@ def render_method(*, member, renderer: MdRenderer) -> Iterator[str]:
         yield f"`{name}({params})`"
     yield "\n"
 
-    yield renderer.render(find_member_with_docstring(member))
+    yield get_renderer(header_level + 1).render(find_member_with_docstring(member))
 
 
 def render_methods(obj, *methods: str, level: int) -> None:
