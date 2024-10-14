@@ -66,6 +66,9 @@ jobs:
           key: docs-${{ github.event.pull_request.base.sha }}
           path: docs/**/.jupyter_cache
 
+      - name: run quarto check
+        run: nix develop '.#ibis311' --ignore-environment -c quarto check
+
       - name: generate api docs
         run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose
 
