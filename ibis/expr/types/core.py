@@ -584,6 +584,8 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
+        See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html for details.
+
         Parameters
         ----------
         path
@@ -592,8 +594,6 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value.
         **kwargs
             Additional keyword arguments passed to pyarrow.parquet.ParquetWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.parquet.ParquetWriter.html
 
         Examples
         --------
@@ -631,6 +631,8 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
+        See https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html for details.
+
         Parameters
         ----------
         directory
@@ -639,9 +641,6 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value.
         **kwargs
             Additional keyword arguments passed to pyarrow.dataset.write_dataset
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.dataset.write_dataset.html
-
         """
         self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
 
@@ -658,6 +657,8 @@ class Expr(Immutable, Coercible):
         This method is eager and will execute the associated expression
         immediately.
 
+        See https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html for details.
+
         Parameters
         ----------
         path
@@ -666,8 +667,6 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value.
         **kwargs
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
-
-        https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
         """
         self._find_backend(use_default=True).to_csv(self, path, **kwargs)
 
