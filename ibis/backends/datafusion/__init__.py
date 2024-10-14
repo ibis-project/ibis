@@ -688,6 +688,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         with self._safe_raw_sql(sge.delete(ident)):
             pass
 
+    def _create_cached_table(self, name: str, expr: ir.Table) -> ir.Table:
+        return self.create_table(name, expr, schema=expr.schema())
+
 
 @contextlib.contextmanager
 def _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
