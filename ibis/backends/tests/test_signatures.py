@@ -107,7 +107,7 @@ marks = {
     "read_csv": pytest.param(
         BaseBackend,
         "read_csv",
-        marks=pytest.mark.notyet(["duckdb", "flink", "pyspark"]),
+        marks=pytest.mark.notyet(["duckdb", "flink", "pyspark", "datafusion"]),
     ),
     "read_delta": pytest.param(
         BaseBackend,

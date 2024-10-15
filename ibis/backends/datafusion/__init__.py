@@ -28,7 +28,7 @@ from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
-from ibis.util import deprecated, gen_name, normalize_filename
+from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -414,13 +414,16 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         self.con.from_arrow(op.data.to_pyarrow(op.schema), op.name)
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self,
+        source_list: str | Path | list[str | Path] | tuple[str | Path],
+        table_name: str | None = None,
+        **kwargs: Any,
     ) -> ir.Table:
         """Register a CSV file as a table in the current database.
 
         Parameters
         ----------
-        path
+        source_list
             The data source. A string or Path to the CSV file.
         table_name
             An optional name to use for the created table. This defaults to
@@ -434,9 +437,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filename(path)
+        path = normalize_filenames(source_list)
         table_name = table_name or gen_name("read_csv")
-        # Our other backends support overwriting views / tables when reregistering
+        # Our other backends support overwriting views / tables when re-registering
         self.con.deregister_table(table_name)
         self.con.register_csv(table_name, path, **kwargs)
         return self.table(table_name)

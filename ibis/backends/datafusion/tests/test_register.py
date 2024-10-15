@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pathlib
+
 import pandas as pd
 import pyarrow as pa
 import pytest
@@ -15,6 +17,20 @@ def conn():
 def test_read_csv(conn, data_dir):
     t = conn.read_csv(data_dir / "csv" / "functional_alltypes.csv")
     assert t.count().execute()
+
+
+@pytest.mark.parametrize(
+    "function",
+    [pathlib.Path, str],
+)
+def test_read_csv_path_list(conn, data_dir, function):
+    path = data_dir / "csv" / "functional_alltypes.csv"
+
+    t = conn.read_csv(path, table_name="alltypes1")
+    t2 = conn.read_csv([function(path), function(path)], table_name="alltypes2")
+
+    assert t2.schema() == t.schema()
+    assert t2.count().execute() == 2 * t.count().execute()
 
 
 def test_read_parquet(conn, data_dir):
