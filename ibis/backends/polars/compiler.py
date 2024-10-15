@@ -1514,3 +1514,10 @@ def visit_ArraySlice(op, **kw):
     slice_len = pl.when(stop > start).then(stop - start).otherwise(0)
 
     return arg.list.slice(start, slice_len)
+
+
+@translate.register(ops.ArrayContains)
+def visit_ArrayContains(op, **kw):
+    arg = translate(op.arg, **kw)
+    value = translate(op.other, **kw)
+    return arg.list.contains(value)
