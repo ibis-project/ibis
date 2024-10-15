@@ -3469,6 +3469,9 @@ def test_65(store, item, store_sales, date_dim):
         "(ILLEGAL_AGGREGATION)"
     ),
 )
+@pytest.mark.notyet(
+    ["datafusion"], reason="out of order results", raises=AssertionError, strict=False
+)
 def test_66(web_sales, catalog_sales, warehouse, date_dim, time_dim, ship_mode):
     def agg_sales_net_by_month(sales, ns, sales_expr, net_expr):
         return (
