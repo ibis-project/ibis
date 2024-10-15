@@ -29,7 +29,7 @@ from ibis import util
 from ibis.backends import CanCreateDatabase, UrlFromPath
 from ibis.backends.duckdb.converter import DuckDBPandasData
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, AlterTable, C
+from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.util import deprecated
@@ -153,6 +153,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         if schema is not None:
             schema = ibis.schema(schema)
 
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
         properties = []
 
         if temp:
@@ -176,12 +179,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         else:
             temp_name = name
 
-        initial_table = sg.table(
-            temp_name, catalog=catalog, db=database, quoted=self.compiler.quoted
-        )
+        initial_table = sg.table(temp_name, catalog=catalog, db=database, quoted=quoted)
         target = sge.Schema(
             this=initial_table,
-            expressions=(schema or table.schema()).to_sqlglot(self.dialect),
+            expressions=(schema or table.schema()).to_sqlglot(dialect),
         )
 
         create_stmt = sge.Create(
@@ -191,17 +192,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         )
 
         # This is the same table as initial_table unless overwrite == True
-        final_table = sg.table(
-            name, catalog=catalog, db=database, quoted=self.compiler.quoted
-        )
+        final_table = sg.table(name, catalog=catalog, db=database, quoted=quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.insert(query, into=initial_table).sql(self.name)
+                insert_stmt = sge.insert(query, into=initial_table).sql(dialect)
                 cur.execute(insert_stmt).fetchall()
 
             if overwrite:
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=final_table, exists=True).sql(self.name)
+                    sge.Drop(kind="TABLE", this=final_table, exists=True).sql(dialect)
                 )
                 # TODO: This branching should be removed once DuckDB >=0.9.3 is
                 # our lower bound (there's an upstream bug in 0.9.2 that
@@ -215,19 +214,18 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                             this=final_table,
                             expression=sg.select(STAR).from_(initial_table),
                             properties=sge.Properties(expressions=properties),
-                        ).sql(self.name)
+                        ).sql(dialect)
                     )
                     cur.execute(
                         sge.Drop(kind="TABLE", this=initial_table, exists=True).sql(
-                            self.name
+                            dialect
                         )
                     )
                 else:
                     cur.execute(
                         AlterTable(
-                            this=initial_table,
-                            actions=[sge.RenameTable(this=final_table)],
-                        ).sql(self.name)
+                            this=initial_table, actions=[RenameTable(this=final_table)]
+                        ).sql(dialect)
                     )
 
         return self.table(name, database=(catalog, database))

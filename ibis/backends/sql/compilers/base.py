@@ -44,6 +44,12 @@ else:
         return Alter(*args, kind=kind, **kwargs)
 
 
+try:
+    from sqlglot.expressions import AlterRename as RenameTable
+except AttributeError:
+    from sqlglot.expressions import RenameTable  # noqa: F401
+
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Mapping
 

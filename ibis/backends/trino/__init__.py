@@ -22,7 +22,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import AlterTable, C
+from ibis.backends.sql.compilers.base import AlterTable, C, RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -523,7 +523,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                     AlterTable(
                         this=table_ref,
                         exists=True,
-                        actions=[sge.RenameTable(this=orig_table_ref, exists=True)],
+                        actions=[RenameTable(this=orig_table_ref, exists=True)],
                     ).sql(self.name)
                 )
 
