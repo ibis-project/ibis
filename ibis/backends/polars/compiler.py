@@ -1488,3 +1488,29 @@ def execute_array_index(op, **kw):
     arg = translate(op.arg, **kw)
     index = translate(op.index, **kw)
     return arg.list.get(index)
+
+
+@translate.register(ops.ArraySlice)
+def visit_ArraySlice(op, **kw):
+    arg = translate(op.arg, **kw)
+    arg_length = arg.list.len()
+
+    start = translate(op.start, **kw) if op.start is not None else 0
+    stop = translate(op.stop, **kw) if op.stop is not None else arg_length
+
+    def normalize_index(index, length):
+        index = pl.when(index < 0).then(length + index).otherwise(index)
+        return (
+            pl.when(index < 0)
+            .then(0)
+            .when(index > length)
+            .then(length)
+            .otherwise(index)
+        )
+
+    start = normalize_index(start, arg_length)
+    stop = normalize_index(stop, arg_length)
+
+    slice_len = pl.when(stop > start).then(stop - start).otherwise(0)
+
+    return arg.list.slice(start, slice_len)
