@@ -24,7 +24,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, TRUE, C
+from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -448,7 +448,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                         kind="TABLE",
                         this=table_expr,
                         exists=True,
-                        actions=[sge.RenameTable(this=this)],
+                        actions=[RenameTable(this=this)],
                     ).sql(dialect)
                 )
 
