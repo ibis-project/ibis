@@ -616,7 +616,6 @@ def test_array_filter_with_index(con, input, output, predicate):
 
 
 @builtin_array
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("col", "value"),
     [
