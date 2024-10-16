@@ -1521,3 +1521,10 @@ def visit_ArrayContains(op, **kw):
     arg = translate(op.arg, **kw)
     value = translate(op.other, **kw)
     return arg.list.contains(value)
+
+
+@translate.register(ops.ArrayRemove)
+def visit_ArrayRemove(op, **kw):
+    arg = translate(op.arg, **kw)
+    value = _literal_value(op.other)
+    return arg.list.set_difference(pl.lit([value]))
