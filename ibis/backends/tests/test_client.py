@@ -1365,6 +1365,40 @@ def test_overwrite(ddl_con, monkeypatch):
         assert t2.count().execute() == expected_count
 
 
+@contextlib.contextmanager
+def create_and_destroy_db(con):
+    con.create_database(dbname := gen_name("db"))
+    try:
+        yield dbname
+    finally:
+        con.drop_database(dbname)
+
+
+# TODO: move this to something like `test_ddl.py`
+@pytest.mark.notyet(
+    ["flink"],
+    reason="unclear whether Flink supports cross catalog/database inserts",
+    raises=Py4JJavaError,
+)
+def test_insert_with_database_specified(con_create_database):
+    con = con_create_database
+
+    t = ibis.memtable({"a": [1, 2, 3]})
+
+    with create_and_destroy_db(con) as dbname:
+        con.create_table(
+            table_name := gen_name("table"),
+            obj=t,
+            database=dbname,
+            temp=con.name == "flink",
+        )
+        try:
+            con.insert(table_name, obj=t, database=dbname)
+            assert con.table(table_name, database=dbname).count().to_pandas() == 6
+        finally:
+            con.drop_table(table_name, database=dbname)
+
+
 @pytest.mark.notyet(["datafusion"], reason="cannot list or drop catalogs")
 def test_create_catalog(con_create_catalog):
     catalog = gen_name("test_create_catalog")
