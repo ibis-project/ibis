@@ -68,6 +68,13 @@ jobs:
               key: snowpark
               extras:
                 - snowflake
+          - python-version: "3.11"
+            backend:
+              name: snowflake
+              title: Snowflake + Snowpark
+              key: snowpark
+              extras:
+                - snowflake
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -104,7 +111,7 @@ jobs:
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
-        run: poetry add snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
+        run: poetry add --lock snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
 
       - name: install ibis
         run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
