@@ -1375,6 +1375,11 @@ def create_and_destroy_db(con):
 
 
 # TODO: move this to something like `test_ddl.py`
+@pytest.mark.notyet(
+    ["flink"],
+    reason="unclear whether Flink supports cross catalog/database inserts",
+    raises=Py4JJavaError,
+)
 def test_insert_with_database_specified(con_create_database):
     con = con_create_database
 
