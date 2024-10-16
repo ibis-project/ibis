@@ -680,7 +680,6 @@ def test_array_position(con, a, expected_array):
 
 
 @builtin_array
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
