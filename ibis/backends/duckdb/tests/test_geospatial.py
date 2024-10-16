@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from operator import attrgetter, methodcaller
 
 import numpy.testing as npt
@@ -10,12 +11,14 @@ from packaging.version import parse as vparse
 from pytest import param
 
 import ibis
-from ibis.conftest import LINUX, MACOS, SANDBOXED
+from ibis.conftest import LINUX, MACOS, SANDBOXED, WINDOWS
 
 duckdb = pytest.importorskip("duckdb")
 gpd = pytest.importorskip("geopandas")
 gtm = pytest.importorskip("geopandas.testing")
 shapely = pytest.importorskip("shapely")
+
+Point = shapely.Point
 
 
 def test_geospatial_point(zones, zones_gdf):
@@ -27,16 +30,10 @@ def test_geospatial_point(zones, zones_gdf):
 
 
 # this functions are not implemented in geopandas
-@pytest.mark.parametrize(
-    ("operation", "keywords"),
-    [
-        param("as_text", {}, id="as_text"),
-        param("n_points", {}, id="n_points"),
-    ],
-)
-def test_geospatial_unary_snapshot(operation, keywords, assert_sql):
+@pytest.mark.parametrize("operation", ["as_text", "n_points"])
+def test_geospatial_unary_snapshot(operation, assert_sql):
     t = ibis.table([("geom", "geometry")], name="t")
-    expr = getattr(t.geom, operation)(**keywords).name("tmp")
+    expr = getattr(t.geom, operation)().name("tmp")
     assert_sql(expr)
 
 
@@ -49,39 +46,32 @@ def test_geospatial_dwithin(assert_sql):
 # geospatial unary functions that return a non-geometry series
 # we can test using pd.testing (tm)
 @pytest.mark.parametrize(
-    ("op", "keywords", "gp_op"),
+    ("op", "gp_op"),
     [
-        param("area", {}, "area", id="area"),
-        param("is_valid", {}, "is_valid", id="is_valid"),
+        param("area", "area", id="area"),
+        param("is_valid", "is_valid", id="is_valid"),
         param(
             "geometry_type",
-            {},
             "geom_type",
             id="geometry_type",
             marks=pytest.mark.xfail(raises=pa.lib.ArrowTypeError),
         ),
     ],
 )
-def test_geospatial_unary_tm(op, keywords, gp_op, zones, zones_gdf):
-    expr = getattr(zones.geom, op)(**keywords).name("tmp")
+def test_geospatial_unary_tm(op, gp_op, zones, zones_gdf):
+    expr = getattr(zones.geom, op)().name("tmp")
     gp_expr = getattr(zones_gdf.geometry, gp_op)
 
     tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
 
 
-@pytest.mark.parametrize(
-    ("op", "keywords", "gp_op"),
-    [
-        param("x", {}, "x", id="x_coord"),
-        param("y", {}, "y", id="y_coord"),
-    ],
-)
-def test_geospatial_xy(op, keywords, gp_op, zones, zones_gdf):
+@pytest.mark.parametrize("op", ["x", "y"], ids=["x_coord", "y_coord"])
+def test_geospatial_xy(op, zones, zones_gdf):
     cen = zones.geom.centroid().name("centroid")
     gp_cen = zones_gdf.geometry.centroid
 
-    expr = getattr(cen, op)(**keywords).name("tmp")
-    gp_expr = getattr(gp_cen, gp_op)
+    expr = getattr(cen, op)().name("tmp")
+    gp_expr = getattr(gp_cen, op)
 
     tm.assert_series_equal(expr.to_pandas(), gp_expr, check_names=False)
 
@@ -122,33 +112,20 @@ def test_geospatial_binary_tm(op, gp_op, zones, zones_gdf):
 
 # geospatial unary functions that return a geometry series
 # we can test using gpd.testing (gtm)
-@pytest.mark.parametrize(
-    ("op", "gp_op"),
-    [
-        param("centroid", "centroid", id="centroid"),
-        param("envelope", "envelope", id="envelope"),
-    ],
-)
-def test_geospatial_unary_gtm(op, gp_op, zones, zones_gdf):
+@pytest.mark.parametrize("op", ["centroid", "envelope"])
+def test_geospatial_unary_gtm(op, zones, zones_gdf):
     expr = getattr(zones.geom, op)().name("tmp")
-    gp_expr = getattr(zones_gdf.geometry, gp_op)
+    gp_expr = getattr(zones_gdf.geometry, op)
 
     gtm.assert_geoseries_equal(expr.to_pandas(), gp_expr, check_crs=False)
 
 
 # geospatial binary functions that return a geometry series
 # we can test using gpd.testing (gtm)
-@pytest.mark.parametrize(
-    ("op", "gp_op"),
-    [
-        param("difference", "difference", id="difference"),
-        param("intersection", "intersection", id="intersection"),
-        param("union", "union", id=""),
-    ],
-)
-def test_geospatial_binary_gtm(op, gp_op, zones, zones_gdf):
+@pytest.mark.parametrize("op", ["difference", "intersection", "union"])
+def test_geospatial_binary_gtm(op, zones, zones_gdf):
     expr = getattr(zones.geom, op)(zones.geom).name("tmp")
-    gp_func = getattr(zones_gdf.geometry, gp_op)(zones_gdf.geometry)
+    gp_func = getattr(zones_gdf.geometry, op)(zones_gdf.geometry)
 
     gtm.assert_geoseries_equal(expr.to_pandas(), gp_func, check_crs=False)
 
@@ -249,9 +226,9 @@ def test_geospatial_flip_coordinates(geotable):
     flipped = geotable.geom.flip_coordinates()
 
     # flipped coords
-    point = shapely.geometry.Point(40, -100)
-    line_string = shapely.geometry.LineString([[0, 0], [1, 1], [1, 2], [2, 2]])
-    polygon = shapely.geometry.Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
+    point = shapely.Point(40, -100)
+    line_string = shapely.LineString([[0, 0], [1, 1], [1, 2], [2, 2]])
+    polygon = shapely.Polygon(((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
 
     d = {
         "name": ["Point", "LineString", "Polygon"],
@@ -350,26 +327,15 @@ def geo_line_lit():
     return ibis.literal(shapely.LineString([[0, 0], [1, 0], [1, 1]]), type="geometry")
 
 
-@pytest.fixture
-def ext_dir(tmp_path_factory):
-    # this directory is necessary because of Windows extension downloads race
-    # condition
-    return tmp_path_factory.mktemp("extensions")
-
-
-def test_geo_unop_geo_literals(ext_dir, geo_line_lit):
+def test_geo_unop_geo_literals(con, geo_line_lit):
     """GeoSpatialUnOp operation on a geospatial literal"""
-    con = ibis.duckdb.connect(extension_directory=ext_dir)
     expr = geo_line_lit.length()
-
     assert con.execute(expr) == 2
 
 
-def test_geo_binop_geo_literals(ext_dir, geo_line_lit):
+def test_geo_binop_geo_literals(con, geo_line_lit):
     """GeoSpatialBinOp operation on a geospatial literal"""
-    con = ibis.duckdb.connect(extension_directory=ext_dir)
     expr = geo_line_lit.distance(shapely.Point(0, 0))
-
     assert con.execute(expr) == 0
 
 
@@ -380,12 +346,13 @@ def test_cast_wkb_to_geo(con):
     assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
 
 
-def test_load_spatial_casting(ext_dir):
-    con = ibis.duckdb.connect(extension_directory=ext_dir)
-    parquet_file = "https://github.com/ibis-project/testing-data/raw/master/parquet/geo_wkb.parquet"
-    t = con.read_parquet(parquet_file)
+def test_load_spatial_casting(data_dir, tmp_path_factory):
+    # this directory is necessary because of Windows extension downloads race
+    # condition
+    con = ibis.duckdb.connect(extension_directory=tmp_path_factory.mktemp("extensions"))
+    t = con.read_parquet(data_dir / "parquet" / "geo_wkb.parquet")
 
-    geo_expr = t.geometry.cast("geometry")
+    geo_expr = t.limit(1).geometry.cast("geometry")
 
     assert geo_expr.type().is_geospatial()
     assert isinstance(con.execute(geo_expr), gpd.GeoSeries)
@@ -398,3 +365,200 @@ def test_geom_from_string(con):
     expr = value.cast("geometry")
     result = con.execute(expr)
     assert result == shapely.from_wkt("POINT (1 2)")
+
+
+def no_roundtrip(
+    *,
+    reason: str,
+    raises: type[Exception] | tuple[type[Exception], ...] = (
+        duckdb.IOException,
+        duckdb.NotImplementedException,
+        duckdb.PermissionException,
+    ),
+):
+    """Mark a test as expected to fail due to a reader/writer issue."""
+    return pytest.mark.xfail(raises=raises, reason=reason)
+
+
+@pytest.mark.parametrize(
+    ("driver", "canonical_extension", "kwargs", "preproc"),
+    [
+        param("ESRI Shapefile", "shp", {}, None, id="shapefile"),
+        param("MapInfo File", "mif", {}, None, id="mapinfo"),
+        param(
+            "S57",
+            None,
+            {},
+            None,
+            marks=no_roundtrip(
+                reason="GDAL Error (1): Unable to load s57objectclasses.csv.  Unable to continue.",
+            ),
+            id="s57",
+        ),
+        param(
+            "CSV",
+            None,
+            {"layer_creation_options": {"geometry_name": "geom", "geometry": "as_wkt"}},
+            lambda t: t.mutate(geom=t.geom.as_text()),
+            id="csv",
+        ),
+        ("GML", None, {}, None),
+        param(
+            "GPX",
+            None,
+            {},
+            None,
+            marks=no_roundtrip(reason="no geometry type specified"),
+            id="gpx",
+        ),
+        param("KML", None, {}, None, id="kml"),
+        param("GeoJSON", None, {}, None, id="geojson"),
+        param("GeoJSONSeq", None, {}, None, id="geojsonseq"),
+        param("OGR_GMT", "gmt", {}, None, id="gmt"),
+        param("GPKG", None, {}, None, id="gpkg"),
+        param("SQLite", None, {}, None, id="sqlite"),
+        param(
+            "WAsP",
+            "map",
+            {},
+            None,
+            marks=[
+                no_roundtrip(reason="only linestrings are allowed"),
+                pytest.mark.skipif(condition=WINDOWS, reason="hard crash on windows"),
+            ],
+            id="wasp",
+        ),
+        param(
+            "OpenFileGDB",
+            "gdb",
+            {
+                "layer_creation_options": {"geometry_name": "geom"},
+                "geometry_type": "point",
+            },
+            None,
+            id="gdb",
+        ),
+        param("FlatGeobuf", "fgb", {}, None, id="flatgeobuf"),
+        param(
+            "Geoconcept",
+            "gxt",
+            {"srs": "4326"},
+            None,
+            id="geoconcept",
+            marks=no_roundtrip(reason="not entirely sure"),
+        ),
+        param(
+            "PGDUMP",
+            None,
+            {"layer_creation_options": {"geometry_name": "geom"}},
+            None,
+            marks=no_roundtrip(reason="can only be read by postgres"),
+            id="pgdump",
+        ),
+        param(
+            "GPSBabel",
+            None,
+            {},
+            None,
+            id="gpsbabel",
+            marks=no_roundtrip(
+                reason="duckdb can't write this because it doesn't expose GDAL's dataset creation options"
+            ),
+        ),
+        param(
+            "ODS",
+            "ods",
+            {},
+            lambda t: t.mutate(geom=t.geom.as_text()),
+            marks=pytest.mark.xfail(
+                condition=WINDOWS,
+                raises=duckdb.IOException,
+                reason="not working on windows",
+            ),
+            id="ods",
+        ),
+        param("XLSX", "xlsx", {}, lambda t: t.mutate(geom=t.geom.as_text()), id="xlsx"),
+        param(
+            "Selafin",
+            None,
+            {},
+            None,
+            marks=no_roundtrip(reason="duckdb wkb doesn't preserve the geometry type"),
+            id="selafin",
+        ),
+        param("JML", None, {}, None, id="jml"),
+        param("VDV", None, {}, lambda t: t.mutate(geom=t.geom.as_text()), id="vdv"),
+        param(
+            "MVT",
+            "pbf",
+            {},
+            None,
+            marks=no_roundtrip(reason="can't read the written file"),
+            id="mvt",
+        ),
+        param("MapML", None, {}, None, id="mapml"),
+        param(
+            "PMTiles",
+            None,
+            {},
+            None,
+            id="pmtiles",
+            marks=no_roundtrip(reason="row counts differ", raises=AssertionError),
+        ),
+        param("JSONFG", None, {}, None, id="jsonfg"),
+    ],
+)
+def test_to_geo(con, driver, canonical_extension, kwargs, preproc, tmp_path):
+    data = ibis.memtable({"x": [1, 3], "y": [2, 4]}).mutate(
+        geom=lambda t: t.x.point(t.y)
+    )
+
+    if preproc is not None:
+        data = preproc(data)
+
+    ext = canonical_extension or driver.replace(" ", "_").lower()
+    out = tmp_path / f"outfile.{ext}"
+
+    con.to_geo(data, path=out, format=driver, **kwargs)
+    dread = con.read_geo(out)
+
+    assert dread.count().execute() == 2
+
+
+GDAL_DATA = os.environ.get("GDAL_DATA")
+
+
+@pytest.mark.parametrize(
+    "driver",
+    [
+        param(
+            "DGN",
+            marks=pytest.mark.xfail(
+                condition=GDAL_DATA is None,
+                raises=duckdb.IOException,
+                reason="GDAL_DATA not set",
+            ),
+        ),
+        param(
+            "DXF",
+            marks=pytest.mark.xfail(
+                condition=GDAL_DATA is None,
+                raises=duckdb.IOException,
+                reason="GDAL_DATA not set",
+            ),
+        ),
+        "GEORSS",
+    ],
+)
+def test_to_geo_geom_only(con, driver, tmp_path):
+    data = ibis.memtable({"x": [1, 3], "y": [2, 4]}).select(
+        geom=lambda t: t.x.point(t.y)
+    )
+
+    ext = driver.replace(" ", "_").lower()
+    out = tmp_path / f"outfile.{ext}"
+
+    con.to_geo(data, path=out, format=driver)
+    dread = con.read_geo(out)
+
+    assert dread.count().execute() == 2

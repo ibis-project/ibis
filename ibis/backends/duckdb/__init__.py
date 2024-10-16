@@ -1581,6 +1581,108 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         with self._safe_raw_sql(copy_cmd):
             pass
 
+    @util.experimental
+    def to_geo(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        format: str,
+        layer_creation_options: Mapping[str, Any] | None = None,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing `expr` to a geospatial output.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute and persist to geospatial output.
+        path
+            A string or Path to the desired output file location.
+        format
+            The format of the geospatial output. One of GDAL's supported vector formats.
+            The list of vector formats is located here: https://gdal.org/en/latest/drivers/vector/index.html
+        layer_creation_options
+            A mapping of layer creation options.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        kwargs
+            Additional keyword arguments passed to the DuckDB `COPY` command.
+
+        Examples
+        --------
+        >>> import os
+        >>> import tempfile
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> from ibis import _
+
+        Load some geospatial data
+
+        >>> con = ibis.duckdb.connect()
+        >>> zones = ibis.examples.zones.fetch(backend=con)
+        >>> zones[["zone", "geom"]].head()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ zone                                  ┃ geom                                 ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                │ geospatial:geometry                  │
+        ├───────────────────────────────────────┼──────────────────────────────────────┤
+        │                                       │ <POLYGON ((933100.918 192536.086,    │
+        │ Newark Airport                        │ 933091.011 192572.175, 933088.585    │
+        │                                       │ 192604.9...>                         │
+        │                                       │ <MULTIPOLYGON (((1033269.244         │
+        │ Jamaica Bay                           │ 172126.008, 1033439.643 170883.946,  │
+        │                                       │ 1033473.265...>                      │
+        │                                       │ <POLYGON ((1026308.77 256767.698,    │
+        │ Allerton/Pelham Gardens               │ 1026495.593 256638.616, 1026567.23   │
+        │                                       │ 256589....>                          │
+        │                                       │ <POLYGON ((992073.467 203714.076,    │
+        │ Alphabet City                         │ 992068.667 203711.502, 992061.716    │
+        │                                       │ 203711.7...>                         │
+        │                                       │ <POLYGON ((935843.31 144283.336,     │
+        │ Arden Heights                         │ 936046.565 144173.418, 936387.922    │
+        │                                       │ 143967.75...>                        │
+        └───────────────────────────────────────┴──────────────────────────────────────┘
+
+        Write to a GeoJSON file
+
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     con.to_geo(
+        ...         zones,
+        ...         path=os.path.join(tmpdir, "zones.geojson"),
+        ...         format="geojson",
+        ...     )
+
+        Write to a Shapefile
+
+        >>> with tempfile.TemporaryDirectory() as tmpdir:
+        ...     con.to_geo(
+        ...         zones,
+        ...         path=os.path.join(tmpdir, "zones.shp"),
+        ...         format="ESRI Shapefile",
+        ...     )
+        """
+        self._run_pre_execute_hooks(expr)
+        query = self.compile(expr, params=params, limit=limit)
+
+        args = ["FORMAT GDAL", f"DRIVER '{format}'"]
+
+        if layer_creation_options := " ".join(
+            f"{k.upper()}={v}" for k, v in (layer_creation_options or {}).items()
+        ):
+            args.append(f"LAYER_CREATION_OPTIONS '{layer_creation_options}'")
+
+        args.extend(f"{k.upper()} {v!r}" for k, v in (kwargs or {}).items())
+
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+
+        with self._safe_raw_sql(copy_cmd):
+            pass
+
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
             rows = cur.fetch_arrow_table()
