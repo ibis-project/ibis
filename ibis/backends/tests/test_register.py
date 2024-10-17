@@ -25,6 +25,7 @@ pytestmark = [
     pytest.mark.notyet(
         ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkAnalysisException
     ),
+    pytest.mark.never(["databricks"], reason="no register method"),
 ]
 
 
@@ -101,6 +102,7 @@ def gzip_csv(data_dir, tmp_path):
         "snowflake",
         "sqlite",
         "trino",
+        "databricks",
     ]
 )
 def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
@@ -128,6 +130,7 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
         "snowflake",
         "sqlite",
         "trino",
+        "databricks",
     ]
 )
 def test_register_csv_gz(con, data_dir, gzip_csv):

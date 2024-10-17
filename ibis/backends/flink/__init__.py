@@ -49,6 +49,12 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     supports_temporary_tables = True
     supports_python_udfs = True
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        """No-op."""
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op."""
+
     @property
     def dialect(self):
         # TODO: remove when ported to sqlglot
