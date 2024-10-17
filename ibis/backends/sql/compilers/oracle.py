@@ -73,6 +73,7 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ExtractDayOfYear,
         ops.RowID,
         ops.RandomUUID,
+        ops.StringToTime,
     )
 
     SIMPLE_OPS = {

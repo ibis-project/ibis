@@ -52,6 +52,7 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.Median,
         ops.RowID,
         ops.TimestampBucket,
+        ops.StringToTime,
     )
 
     LOWERED_OPS = {

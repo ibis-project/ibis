@@ -955,13 +955,17 @@ def string_to_date(op, **kw):
     )
 
 
+@translate.register(ops.StringToTime)
+def string_to_time(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.str.to_time(format=_literal_value(op.format_str))
+
+
 @translate.register(ops.StringToTimestamp)
 def string_to_timestamp(op, **kw):
     arg = translate(op.arg, **kw)
-    return arg.str.strptime(
-        dtype=pl.Datetime,
-        format=_literal_value(op.format_str),
-    )
+    format = _literal_value(op.format_str)
+    return arg.str.strptime(dtype=pl.Datetime, format=format)
 
 
 @translate.register(ops.TimestampDiff)

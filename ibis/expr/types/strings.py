@@ -1336,6 +1336,35 @@ class StringValue(Value):
     def to_date(self, format_str: str) -> ir.DateValue:
         return self.as_date(format_str=format_str)
 
+    def as_time(self, format_str: str) -> ir.TimeValue:
+        """Parse a string and return a time.
+
+        Parameters
+        ----------
+        format_str
+            Format string in `strptime` format
+
+        Returns
+        -------
+        TimeValue
+            Parsed time value
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"ts": ["20:01:02"]})
+        >>> t.ts.as_time("%H:%M:%S")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ StringToTime(ts, '%H:%M:%S') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ time                         │
+        ├──────────────────────────────┤
+        │ 20:01:02                     │
+        └──────────────────────────────┘
+        """
+        return ops.StringToTime(self, format_str).to_expr()
+
     def protocol(self):
         """Parse a URL and extract protocol.
 

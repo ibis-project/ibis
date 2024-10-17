@@ -827,5 +827,8 @@ class PostgresCompiler(SQLGlotCompiler):
     def visit_ArrayAll(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="bool_and")
 
+    def visit_StringToTime(self, op, *, arg, format_str):
+        return self.cast(self.f.str_to_time(arg, format_str), to=dt.time)
+
 
 compiler = PostgresCompiler()

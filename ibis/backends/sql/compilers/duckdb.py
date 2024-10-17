@@ -709,5 +709,8 @@ class DuckDBCompiler(SQLGlotCompiler):
             .join(unnest, join_type="CROSS" if not keep_empty else "LEFT")
         )
 
+    def visit_StringToTime(self, op, *, arg, format_str):
+        return self.cast(self.f.str_to_time(arg, format_str), to=dt.time)
+
 
 compiler = DuckDBCompiler()

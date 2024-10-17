@@ -1042,6 +1042,9 @@ class SQLGlotCompiler(abc.ABC):
     def visit_InValues(self, op, *, value, options):
         return value.isin(*options)
 
+    def visit_StringToTime(self, op, *, arg, format_str):
+        return self.f.time(self.f.str_to_time(arg, format_str))
+
     ### Counting
 
     def visit_CountDistinct(self, op, *, arg, where):
