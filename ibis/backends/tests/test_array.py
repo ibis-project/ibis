@@ -832,7 +832,6 @@ def test_array_sort(con, data):
 
 
 @builtin_array
-@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
     ("a", "b", "expected_array"),
     [
@@ -853,9 +852,9 @@ def test_array_sort(con, data):
                     reason="BigQuery doesn't support arrays with null elements",
                 ),
                 pytest.mark.notyet(
-                    ["datafusion"],
+                    ["datafusion", "polars"],
                     raises=AssertionError,
-                    reason="DataFusion transforms null elements to NAN",
+                    reason="Null elements are transformed to NaN",
                 ),
                 pytest.mark.notyet(
                     ["pyspark"],
