@@ -321,7 +321,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
           is_nullable,
           system_type_name,
           precision,
-          scale
+          scale,
+          error_number,
+          error_message
         FROM sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)
         ORDER BY column_ordinal
         """
@@ -329,7 +331,18 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
             rows = cur.fetchall()
 
         schema = {}
-        for name, nullable, system_type_name, precision, scale in rows:
+        for (
+            name,
+            nullable,
+            system_type_name,
+            precision,
+            scale,
+            err_num,
+            err_msg,
+        ) in rows:
+            if err_num is not None:
+                raise com.IbisInputError(f".sql failed with message: {err_msg}")
+
             newtyp = self.compiler.type_mapper.from_string(
                 system_type_name, nullable=nullable
             )

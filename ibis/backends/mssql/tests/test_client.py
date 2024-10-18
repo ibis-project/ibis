@@ -8,6 +8,7 @@ import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 from ibis import udf
 from ibis.backends.mssql.tests.conftest import (
@@ -261,6 +262,11 @@ def test_dot_sql_with_unnamed_columns(con):
 
     df = expr.execute()
     assert len(df) == 1
+
+
+def test_dot_sql_error_handling(con):
+    with pytest.raises(com.IbisInputError, match="Invalid column name"):
+        con.sql("SELECT not_a_column")
 
 
 @pytest.mark.parametrize(
