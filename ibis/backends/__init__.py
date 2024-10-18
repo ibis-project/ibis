@@ -4,6 +4,7 @@ import abc
 import collections.abc
 import contextlib
 import functools
+import glob
 import importlib.metadata
 import keyword
 import re
@@ -1304,6 +1305,117 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
         )
+
+    @util.experimental
+    def read_csv(
+        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a CSV file as a table in the current backend.
+
+        This function reads a CSV file and registers it as a table in the current
+        backend. Note that for Impala and Trino backends, the performance may be suboptimal.
+
+        Parameters
+        ----------
+        path
+            The data source. A string or Path to the CSV file.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the backend loading function.
+            Common options are skip_rows, column_names, delimiter, and include_columns.
+            More details could be found:
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ReadOptions.html
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ParseOptions.html
+            https://arrow.apache.org/docs/python/generated/pyarrow.csv.ConvertOptions.html
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        Examples
+        --------
+        Connect to a SQLite database:
+
+        >>> con = ibis.sqlite.connect()
+
+        Read a single csv file:
+
+        >>> table = con.read_csv("path/to/file.csv")
+
+        Read all csv files in a directory:
+
+        >>> table = con.read_parquet("path/to/csv_directory/*")
+
+        Read all csv files with a glob pattern:
+
+        >>> table = con.read_csv("path/to/csv_directory/test_*.csv")
+
+        Read csv file from s3:
+
+        >>> table = con.read_csv("s3://bucket/path/to/file.csv")
+
+        Read csv file with custom pyarrow options:
+
+        >>> table = con.read_csv(
+        ...     "path/to/file.csv", delimiter=",", include_columns=["col1", "col3"]
+        ... )
+        """
+        pa = self._import_pyarrow()
+        import pyarrow.csv as pcsv
+        from pyarrow import fs
+
+        read_options_args = {}
+        parse_options_args = {}
+        convert_options_args = {}
+        memory_pool = None
+
+        for key, value in kwargs.items():
+            if hasattr(pcsv.ReadOptions, key):
+                read_options_args[key] = value
+            elif hasattr(pcsv.ParseOptions, key):
+                parse_options_args[key] = value
+            elif hasattr(pcsv.ConvertOptions, key):
+                convert_options_args[key] = value
+            elif key == "memory_pool":
+                memory_pool = value
+            else:
+                raise ValueError(f"Invalid args: {key!r}")
+
+        read_options = pcsv.ReadOptions(**read_options_args)
+        parse_options = pcsv.ParseOptions(**parse_options_args)
+        convert_options = pcsv.ConvertOptions(**convert_options_args)
+        if not memory_pool:
+            memory_pool = pa.default_memory_pool()
+
+        path = str(path)
+        file_system, path = fs.FileSystem.from_uri(path)
+
+        if isinstance(file_system, fs.LocalFileSystem):
+            paths = glob.glob(path)
+            if not paths:
+                raise FileNotFoundError(f"No files found at {path!r}")
+        else:
+            paths = [path]
+
+        pyarrow_tables = []
+        for path in paths:
+            with file_system.open_input_file(path) as f:
+                pyarrow_table = pcsv.read_csv(
+                    f,
+                    read_options=read_options,
+                    parse_options=parse_options,
+                    convert_options=convert_options,
+                    memory_pool=memory_pool,
+                )
+                pyarrow_tables.append(pyarrow_table)
+
+        pyarrow_table = pa.concat_tables(pyarrow_tables)
+        table_name = table_name or util.gen_name("read_csv")
+        self.create_table(table_name, pyarrow_table)
+        return self.table(table_name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed
