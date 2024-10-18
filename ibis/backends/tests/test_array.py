@@ -749,7 +749,7 @@ def test_array_remove(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -779,6 +779,11 @@ def test_array_remove(con, input, expected):
             [{3, 1}, set(), {42}, set(), {None}, None],
             id="null",
             marks=[
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=AssertionError,
+                    reason="Null elements are transformed to NaN",
+                ),
                 pytest.mark.notyet(
                     ["pyspark"],
                     condition=IS_SPARK_REMOTE,
