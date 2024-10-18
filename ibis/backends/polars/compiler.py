@@ -1532,3 +1532,10 @@ def visit_ArrayRemove(op, **kw):
     arg = translate(op.arg, **kw)
     value = _literal_value(op.other)
     return arg.list.set_difference(pl.lit([value]))
+
+
+@translate.register(ops.ArrayUnion)
+def visit_ArrayUnion(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    return left.list.set_union(right)
