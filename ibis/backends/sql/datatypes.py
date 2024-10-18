@@ -624,6 +624,10 @@ class DuckDBType(SqlglotType):
         ), "DuckDB only supports geometry types; geography types are not supported"
         return sge.DataType(this=typecode.GEOMETRY)
 
+    _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (
+        _from_ibis_MultiLineString
+    ) = _from_ibis_MultiPoint = _from_ibis_MultiPolygon = _from_ibis_GeoSpatial
+
 
 class TrinoType(SqlglotType):
     dialect = "trino"
