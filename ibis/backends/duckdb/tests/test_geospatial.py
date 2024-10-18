@@ -562,3 +562,11 @@ def test_to_geo_geom_only(con, driver, tmp_path):
     dread = con.read_geo(out)
 
     assert dread.count().execute() == 2
+
+
+def test_cache_geometry(con):
+    # ibis issue #10324
+    data = ibis.memtable({"x": [1, 3], "y": [2, 4]})
+    data = data.mutate(geom=data.x.point(data.y)).cache()
+    result = data.execute()
+    assert result["geom"].iloc[0] == shapely.Point(1, 2)
