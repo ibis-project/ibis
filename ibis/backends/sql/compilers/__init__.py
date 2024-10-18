@@ -3,6 +3,7 @@ from __future__ import annotations
 __all__ = [
     "BigQueryCompiler",
     "ClickHouseCompiler",
+    "DatabricksCompiler",
     "DataFusionCompiler",
     "DruidCompiler",
     "DuckDBCompiler",
@@ -22,6 +23,7 @@ __all__ = [
 
 from ibis.backends.sql.compilers.bigquery import BigQueryCompiler
 from ibis.backends.sql.compilers.clickhouse import ClickHouseCompiler
+from ibis.backends.sql.compilers.databricks import DatabricksCompiler
 from ibis.backends.sql.compilers.datafusion import DataFusionCompiler
 from ibis.backends.sql.compilers.druid import DruidCompiler
 from ibis.backends.sql.compilers.duckdb import DuckDBCompiler

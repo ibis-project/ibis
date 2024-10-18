@@ -14,6 +14,7 @@ from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    DatabricksServerOperationError,
     ExaQueryError,
     GoogleBadRequest,
     ImpalaHiveServer2Error,
@@ -67,6 +68,7 @@ aggregate_test_params = [
                     "oracle",
                     "flink",
                     "exasol",
+                    "databricks",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -215,6 +217,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "oracle",
         "flink",
         "exasol",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -592,7 +595,7 @@ def test_reduction_ops(
                     reason="`include_null=True` is not supported",
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "pyspark"],
+                    ["bigquery", "pyspark", "databricks"],
                     raises=com.UnsupportedOperationError,
                     reason="Can't mix `where` and `include_null=True`",
                     strict=False,
@@ -629,7 +632,7 @@ def test_first_last(alltypes, method, filtered, include_null):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "exasol", "flink", "pyspark", "sqlite"],
+    ["clickhouse", "exasol", "flink", "pyspark", "sqlite", "databricks"],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.notimpl(
@@ -658,7 +661,7 @@ def test_first_last(alltypes, method, filtered, include_null):
                     reason="`include_null=True` is not supported",
                 ),
                 pytest.mark.notimpl(
-                    ["bigquery", "pyspark"],
+                    ["bigquery"],
                     raises=com.UnsupportedOperationError,
                     reason="Can't mix `where` and `include_null=True`",
                     strict=False,
@@ -1177,6 +1180,11 @@ def test_median(alltypes, df):
     ["pyspark"], raises=AssertionError, reason="pyspark returns null for string median"
 )
 @pytest.mark.notyet(
+    ["databricks"],
+    raises=DatabricksServerOperationError,
+    reason="percentile of string is not allowed",
+)
+@pytest.mark.notyet(
     ["snowflake"],
     raises=SnowflakeProgrammingError,
     reason="doesn't support median of strings",
@@ -1236,6 +1244,11 @@ def test_string_quantile(alltypes, func):
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="not supported upstream")
 @pytest.mark.notyet(
     ["polars"], raises=PolarsInvalidOperationError, reason="not supported upstream"
+)
+@pytest.mark.notyet(
+    ["databricks"],
+    raises=DatabricksServerOperationError,
+    reason="percentile of string is not allowed",
 )
 def test_date_quantile(alltypes):
     expr = alltypes.timestamp_col.date().quantile(0.5)
@@ -1316,7 +1329,16 @@ def test_group_concat(
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "datafusion", "druid", "flink", "impala", "pyspark", "sqlite"],
+    [
+        "clickhouse",
+        "datafusion",
+        "druid",
+        "flink",
+        "impala",
+        "pyspark",
+        "sqlite",
+        "databricks",
+    ],
     raises=com.UnsupportedOperationError,
 )
 @pytest.mark.parametrize("filtered", [False, True])
@@ -1343,11 +1365,13 @@ def gen_test_collect_marks(distinct, filtered, ordered, include_null):
         yield pytest.mark.notimpl(["datafusion"], raises=com.UnsupportedOperationError)
     if ordered:
         yield pytest.mark.notimpl(
-            ["clickhouse", "pyspark", "flink"], raises=com.UnsupportedOperationError
+            ["clickhouse", "pyspark", "flink", "databricks"],
+            raises=com.UnsupportedOperationError,
         )
     if include_null:
         yield pytest.mark.notimpl(
-            ["clickhouse", "pyspark", "snowflake"], raises=com.UnsupportedOperationError
+            ["clickhouse", "pyspark", "snowflake", "databricks"],
+            raises=com.UnsupportedOperationError,
         )
 
     # Handle special cases
@@ -1480,6 +1504,7 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
         "oracle",
         "exasol",
         "flink",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1528,6 +1553,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "flink",
         "exasol",
         "flink",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1644,6 +1670,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["pyspark"], raises=PySparkAnalysisException)
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(["risingwave"], raises=AssertionError, strict=False)
+@pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 def test_group_concat_over_window(backend, con):
     # TODO: this test is flaky on risingwave and I DO NOT LIKE IT
     input_df = pd.DataFrame(

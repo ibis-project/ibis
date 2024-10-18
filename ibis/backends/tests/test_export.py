@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
+    DatabricksServerOperationError,
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
@@ -276,6 +277,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "snowflake",
         "sqlite",
         "trino",
+        "databricks",
     ],
     reason="no partitioning support",
 )
@@ -384,6 +386,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(
+                    ["databricks"], raises=DatabricksServerOperationError
+                ),
             ],
         ),
     ],
@@ -416,6 +421,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "trino",
         "exasol",
         "druid",
+        "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -449,6 +455,9 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Invalid SQL generated; druid doesn't know about TIMESTAMPTZ",
+)
+@pytest.mark.notimpl(
+    ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
