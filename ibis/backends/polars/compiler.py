@@ -1539,3 +1539,9 @@ def visit_ArrayUnion(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
     return left.list.set_union(right)
+
+
+@translate.register(ops.ArrayDistinct)
+def visit_ArrayDistinct(op, **kw):
+    arg = translate(op.arg, **kw)
+    return arg.list.unique()
