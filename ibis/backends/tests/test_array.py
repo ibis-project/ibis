@@ -889,7 +889,7 @@ def test_array_union(con, a, b, expected_array):
 
 
 @builtin_array
-@pytest.mark.notimpl(["polars", "flink"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )

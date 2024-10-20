@@ -1545,3 +1545,10 @@ def visit_ArrayUnion(op, **kw):
 def visit_ArrayDistinct(op, **kw):
     arg = translate(op.arg, **kw)
     return arg.list.unique()
+
+
+@translate.register(ops.ArrayIntersect)
+def visit_ArrayIntersect(op, **kw):
+    left = translate(op.left, **kw)
+    right = translate(op.right, **kw)
+    return left.list.set_intersection(right)
