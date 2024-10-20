@@ -30,7 +30,6 @@ class DataFusionCompiler(SQLGlotCompiler):
     post_rewrites = (split_select_distinct_with_order_by,)
 
     UNSUPPORTED_OPS = (
-        ops.ArrayDistinct,
         ops.ArrayFilter,
         ops.ArrayMap,
         ops.ArrayZip,
@@ -55,6 +54,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     SIMPLE_OPS = {
         ops.ApproxQuantile: "approx_percentile_cont",
         ops.ApproxMedian: "approx_median",
+        ops.ArrayDistinct: "array_distinct",
         ops.ArrayRemove: "array_remove_all",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",

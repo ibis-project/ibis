@@ -749,7 +749,6 @@ def test_array_remove(con, input, expected):
 
 
 @builtin_array
-@pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -770,6 +769,11 @@ def test_array_remove(con, input, expected):
 )
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="empty arrays not supported"
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="arrays with NaN returns a different number of rows than expected",
 )
 @pytest.mark.parametrize(
     ("input", "expected"),
