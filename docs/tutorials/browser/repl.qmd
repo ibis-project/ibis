@@ -16,7 +16,7 @@ penguins[^1] dataset loaded into the DuckDB backend!
 from urllib.parse import urlencode
 
 lines = """
-%pip install numpy pandas tzdata
+%pip install numpy pandas tzdata pyarrow
 import pyodide_js, pathlib, js
 penguins_csv_url = "https://storage.googleapis.com/ibis-tutorial-data/penguins.csv"
 penguins_text = await (await js.fetch(penguins_csv_url)).text()
