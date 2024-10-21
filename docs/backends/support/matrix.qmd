@@ -88,7 +88,7 @@ def make_support_matrix():
 
     def make_link(parts):
         module, op = parts[-2:]
-        return f'<a href="./operations.html#ibis.expr.operations.{module}.{op}">{op}</a>'
+        return f'<a href="/reference/operations#ibis.expr.operations.{module}.{op}">{op}</a>'
 
     support_matrix = (
         pd.DataFrame(support)
