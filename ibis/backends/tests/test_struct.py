@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
+    DatabricksServerOperationError,
     PolarsColumnNotFoundError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
@@ -201,6 +202,11 @@ def test_field_access_after_case(con):
     reason="snowflake doesn't have strongly typed structs",
 )
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
+@pytest.mark.notyet(
+    ["databricks"],
+    raises=DatabricksServerOperationError,
+    reason="spaces are not allowed in column names",
+)
 def test_keyword_fields(con, nullable):
     schema = ibis.schema(
         {
