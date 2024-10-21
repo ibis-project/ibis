@@ -77,10 +77,10 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: run quarto check
-        run: nix develop '.#ibis311' --ignore-environment -c quarto check
+        run: nix develop '.#ibis312' --ignore-environment -c quarto check
 
       - name: build docs
-        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just docs-build-all
+        run: nix develop '.#ibis312' --ignore-environment --keep HOME -c just docs-build-all
 
       - name: install netlify cli
         run: npm install -g netlify-cli

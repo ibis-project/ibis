@@ -275,7 +275,8 @@ build-jupyterlite:
         --debug \
         --no-libarchive \
         --piplite-wheels "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
-        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
+        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp312-cp312-pyodide_2024_0_wasm32.whl" \
+        --piplite-wheels "https://github.com/joemarshall/pyarrow-pyodide/releases/download/0.26.2/pyarrow-17.0.0-cp312-cp312-pyodide_2024_0_wasm32.whl" \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite

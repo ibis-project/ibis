@@ -69,13 +69,13 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: run quarto check
-        run: nix develop '.#ibis311' --ignore-environment -c quarto check
+        run: nix develop '.#ibis312' --ignore-environment -c quarto check
 
       - name: build api docs
-        run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose
+        run: nix develop '.#ibis312' --ignore-environment -c just docs-apigen --verbose
 
       - name: build docs
-        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just docs-render
+        run: nix develop '.#ibis312' --ignore-environment --keep HOME -c just docs-render
 
       - name: cache rendered notebooks
         uses: actions/cache/save@v4
