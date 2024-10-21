@@ -43,8 +43,7 @@ export-deps:
 
 # show all backends
 @list-backends:
-    yj -tj < pyproject.toml | \
-        jq -rcM '.tool.poetry.plugins["ibis.backends"] | keys[]' | grep -v '^spark' | sort
+    yj -tj < pyproject.toml | jq -rcM '.tool.poetry.plugins["ibis.backends"] | keys | sort[]'
 
 # format code
 fmt:
