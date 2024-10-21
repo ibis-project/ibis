@@ -11,7 +11,7 @@ check-poetry:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    required_version="1.8.3"
+    required_version="1.8.4"
     version="$(poetry --version)"
     if ! grep -qF "${required_version}" <<< "${version}"; then
         >&2 echo "poetry version must be ${required_version}, got ${version}"
