@@ -933,7 +933,6 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             _.string_col.isin(_.string_col),
             lambda df: df.string_col.isin(df.string_col),
             id="isin_col",
-            marks=pytest.mark.notimpl(["druid"]),
         ),
         param(
             (_.bigint_col + 1).isin(_.string_col.length() + 1),
@@ -949,7 +948,6 @@ def test_isin_notin(backend, alltypes, df, ibis_op, pandas_op):
             (_.bigint_col + 1).notin(_.string_col.length() + 1),
             lambda df: ~(df.bigint_col.add(1)).isin(df.string_col.str.len().add(1)),
             id="notin_expr",
-            marks=[pytest.mark.notimpl(["druid"])],
         ),
     ],
 )
@@ -1130,7 +1128,6 @@ def test_isin_uncorrelated(
 
 
 @pytest.mark.notimpl(["polars"], reason="incorrect answer")
-@pytest.mark.notimpl(["druid"])
 def test_isin_uncorrelated_filter(
     backend, batting, awards_players, batting_df, awards_players_df
 ):
