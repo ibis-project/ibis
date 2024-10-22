@@ -599,8 +599,7 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
     assert converter(res) is None
 
 
-# flink
-@pytest.mark.notyet(
+mark_notyet_nulls = pytest.mark.notyet(
     [
         "clickhouse",
         "exasol",
@@ -614,9 +613,26 @@ def test_scalar_to_memory(limit, awards_players, output_format, converter):
         "trino",
     ],
     raises=com.IbisTypeError,
-    reason="unable to handle null typed columns as input",
+    reason="unable to handle null types as input",
 )
-def test_all_null_column(con):
+
+
+@mark_notyet_nulls
+def test_all_null_table(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t)
     assert pat.is_null(result["a"].type)
+
+
+@mark_notyet_nulls
+def test_all_null_column(con):
+    t = ibis.memtable({"a": [None]})
+    result = con.to_pyarrow(t.a)
+    assert pat.is_null(result.type)
+
+
+@mark_notyet_nulls
+def test_all_null_scalar(con):
+    e = ibis.literal(None)
+    result = con.to_pyarrow(e)
+    assert pat.is_null(result.type)

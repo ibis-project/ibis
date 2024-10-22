@@ -19,6 +19,12 @@ class DuckDBPandasData(PandasData):
 
 class DuckDBPyArrowData(PyArrowData):
     @classmethod
+    def convert_scalar(cls, scalar: pa.Scalar, dtype: dt.DataType) -> pa.Scalar:
+        if dtype.is_null():
+            return pa.scalar(None)
+        return super().convert_scalar(scalar, dtype)
+
+    @classmethod
     def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
         if dtype.is_null():
             return pa.nulls(len(column))
