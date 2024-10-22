@@ -150,8 +150,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
-        if schema is not None:
-            schema = ibis.schema(schema)
 
         quoted = self.compiler.quoted
         dialect = self.dialect
@@ -176,6 +174,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         if schema is None:
             schema = table.schema()
+        else:
+            schema = ibis.schema(schema)
 
         if null_fields := schema.null_fields:
             raise exc.IbisTypeError(
@@ -190,10 +190,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             temp_name = name
 
         initial_table = sg.table(temp_name, catalog=catalog, db=database, quoted=quoted)
-        target = sge.Schema(
-            this=initial_table,
-            expressions=(schema or table.schema()).to_sqlglot(dialect),
-        )
+        target = sge.Schema(this=initial_table, expressions=schema.to_sqlglot(dialect))
 
         create_stmt = sge.Create(
             kind="TABLE",
