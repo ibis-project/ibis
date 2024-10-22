@@ -147,6 +147,8 @@ class Simple(Relation):
 
 @public
 class DropColumns(Relation):
+    """Drop columns from a relation."""
+
     parent: Relation
     columns_to_drop: frozenset[str]
 
@@ -184,6 +186,8 @@ class Reference(Relation):
 # TODO(kszucs): remove in favor of View
 @public
 class SelfReference(Reference):
+    """A self-referential relation."""
+
     values = FrozenOrderedDict()
 
 
