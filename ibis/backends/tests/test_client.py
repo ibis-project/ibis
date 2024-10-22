@@ -1766,7 +1766,7 @@ def test_same_name_memtable_is_overwritten(con):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "flink"],
+    ["clickhouse"],
     raises=AssertionError,
     reason="backend doesn't use _register_in_memory_table",
 )
