@@ -1429,15 +1429,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         **_: Any,
     ) -> pa.Table:
         table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
-        schema = expr.as_table().schema()
-        if not schema.null_fields:
-            return expr.__pyarrow_result__(table)
-
-        arrays = [
-            DuckDBPyArrowData.convert_column(table[name], dtype=typ)
-            for name, typ in schema.items()
-        ]
-        return pa.Table.from_arrays(arrays, names=list(schema.keys()))
+        return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
         self,
