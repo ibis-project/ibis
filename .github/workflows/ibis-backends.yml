@@ -680,6 +680,9 @@ jobs:
             deps:
               - setuptools@75.1.0
               - delta-spark@3.2.1
+              - googleapis-common-protos
+              - grpcio
+              - grpcio-status
     steps:
       - name: checkout
         uses: actions/checkout@v4
