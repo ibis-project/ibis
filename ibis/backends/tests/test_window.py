@@ -27,17 +27,6 @@ from ibis.legacy.udf.vectorized import analytic, reduction
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 
-pytestmark = [
-    pytest.mark.notimpl(
-        ["druid"],
-        raises=(
-            com.OperationNotDefinedError,
-            com.TableNotFound,
-            PyDruidProgrammingError,
-        ),
-    )
-]
-
 
 # adapted from https://gist.github.com/xmnlab/2c1f93df1a6c6bde4e32c8579117e9cc
 def pandas_ntile(x, bucket: int):
@@ -95,6 +84,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t, win: t.float_col.lag().over(win),
             lambda t: t.float_col.shift(1),
             id="lag",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.float_col.lead().over(win),
@@ -106,17 +96,20 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     reason="upstream is broken; returns all nulls",
                     raises=AssertionError,
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
             lambda t, win: t.id.rank().over(win),
             lambda t: t.id.rank(method="min").astype("int64") - 1,
             id="rank",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.id.dense_rank().over(win),
             lambda t: t.id.rank(method="dense").astype("int64") - 1,
             id="dense_rank",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.id.percent_rank().over(win),
@@ -137,6 +130,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -152,6 +146,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: cume_dist",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -175,6 +170,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -204,12 +200,14 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 ),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
                 pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
             lambda _, win: ibis.row_number().over(win),
             lambda t: t.cumcount(),
             id="row_number",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.double_col.cumsum().over(win),
@@ -220,6 +218,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             lambda t, win: t.double_col.cummean().over(win),
             lambda t: (t.double_col.expanding().mean().reset_index(drop=True, level=0)),
             id="cummean",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.float_col.cummin().over(win),
@@ -240,6 +239,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumany",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notany().over(win),
@@ -250,6 +250,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotany",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).all().over(win),
@@ -260,6 +261,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumall",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: (t.double_col == 0).notall().over(win),
@@ -270,6 +272,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 .astype(bool)
             ),
             id="cumnotall",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.double_col.sum().over(win),
@@ -282,6 +285,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 gb.double_col.expanding().mean().reset_index(drop=True, level=0)
             ),
             id="mean",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: t.float_col.min().over(win),
@@ -341,6 +345,7 @@ def test_grouped_bounded_expanding_window(
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -355,6 +360,7 @@ def test_grouped_bounded_expanding_window(
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "flink",
                         "impala",
                         "mssql",
@@ -402,13 +408,15 @@ def test_ungrouped_bounded_expanding_window(
 
 
 @pytest.mark.parametrize(
-    "preceding, following",
+    ("preceding", "following"),
     [
         (0, 2),
         (None, (0, 2)),
     ],
+    ids=["zero-two", "none-zero-two"],
 )
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_bounded_following_window(backend, alltypes, df, preceding, following):
     window = ibis.window(
         preceding=preceding,
@@ -532,6 +540,7 @@ def test_grouped_bounded_preceding_window(
             lambda t, win: t.double_col.mean().over(win),
             lambda gb: (gb.double_col.transform("mean")),
             id="mean",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda t, win: mean_udf(t.double_col).over(win),
@@ -543,6 +552,7 @@ def test_grouped_bounded_preceding_window(
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "flink",
                         "impala",
                         "mssql",
@@ -568,48 +578,31 @@ def test_grouped_bounded_preceding_window(
         ),
     ],
 )
-@pytest.mark.parametrize(
-    ("ordered"),
-    [
-        param(False, id="unordered"),
-    ],
-)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-def test_grouped_unbounded_window(
-    backend, alltypes, df, result_fn, expected_fn, ordered
-):
+def test_grouped_unbounded_window(backend, alltypes, df, result_fn, expected_fn):
     # Define a window that is
     # 1) Grouped
-    # 2) Ordered if `ordered` is True
     # 3) Unbounded
-    order_by = [alltypes.id] if ordered else None
-    window = ibis.window(group_by=[alltypes.string_col], order_by=order_by)
-    expr = alltypes.mutate(
-        val=result_fn(
-            alltypes,
-            win=window,
-        )
-    )
-    result = expr.execute()
-    result = result.set_index("id").sort_index()
+    window = ibis.window(group_by=[alltypes.string_col])
+    expr = alltypes.mutate(val=result_fn(alltypes, win=window))
+    result = expr.execute().set_index("id").sort_index()
 
-    # Apply `expected_fn` onto a DataFrame that is
-    # 1) Grouped
-    # 2) Ordered if `ordered` is True
-    df = df.sort_values("id") if ordered else df
-    expected = df.assign(val=expected_fn(df.groupby("string_col")))
-    expected = expected.set_index("id").sort_index()
+    expected = (
+        df.assign(val=expected_fn(df.groupby("string_col")))
+        .set_index("id")
+        .sort_index()
+    )
 
     left, right = result.val, expected.val
     backend.assert_series_equal(left, right)
 
 
 @pytest.mark.parametrize(
-    ("ibis_method", "pandas_fn"),
+    ("ibis_method_name", "pandas_fn"),
     [
-        param(methodcaller("sum"), lambda s: s.cumsum(), id="sum"),
-        param(methodcaller("min"), lambda s: s.cummin(), id="min"),
-        param(methodcaller("mean"), lambda s: s.expanding().mean(), id="mean"),
+        param("sum", lambda s: s.cumsum(), id="sum"),
+        param("min", lambda s: s.cummin(), id="min"),
+        param("mean", lambda s: s.expanding().mean(), id="mean"),
     ],
 )
 @pytest.mark.notimpl(["snowflake"], raises=AssertionError)
@@ -620,9 +613,11 @@ def test_grouped_unbounded_window(
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_simple_ungrouped_unbound_following_window(
-    backend, alltypes, ibis_method, pandas_fn
+    backend, alltypes, ibis_method_name, pandas_fn
 ):
+    ibis_method = methodcaller(ibis_method_name)
     t = alltypes.filter(alltypes.double_col < 50).order_by("id")
     df = t.execute()
 
@@ -675,6 +670,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -682,6 +678,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             lambda df: pd.Series([df.double_col.mean()] * len(df.double_col)),
             False,
             id="unordered-mean",
+            marks=pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
         ),
         param(
             lambda _, win: ibis.ntile(7).over(win),
@@ -694,6 +691,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -707,6 +705,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "flink",
                         "impala",
                         "mssql",
@@ -741,6 +740,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "impala",
                         "mssql",
                         "mysql",
@@ -776,6 +776,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -802,6 +803,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -815,6 +817,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -844,6 +847,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
+                pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
         param(
@@ -857,6 +861,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "flink",
                         "impala",
                         "mssql",
@@ -886,6 +891,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "bigquery",
                         "clickhouse",
                         "duckdb",
+                        "druid",
                         "impala",
                         "mssql",
                         "mysql",
@@ -943,6 +949,7 @@ def test_ungrouped_unbounded_window(
     raises=MySQLOperationalError,
     reason="https://github.com/tobymao/sqlglot/issues/2779",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_bounded_range_window(backend, alltypes, df):
     # Explanation of the range window spec below:
     #
@@ -1002,6 +1009,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
     expr = alltypes.mutate(val=lambda t: t.id.percent_rank())
 
@@ -1013,6 +1021,7 @@ def test_percent_rank_whole_table_no_order_by(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     t = alltypes
     expr = (
@@ -1052,6 +1061,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_mutate_window_filter(backend, alltypes):
     t = alltypes
     win = ibis.window(order_by=[t.id])
@@ -1067,6 +1077,7 @@ def test_mutate_window_filter(backend, alltypes):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["druid"], raises=com.TableNotFound)
 def test_first_last(backend):
     t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)
@@ -1120,6 +1131,7 @@ def test_first_last(backend):
     raises=PsycoPg2InternalError,
     reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_range_expression_bounds(backend):
     t = ibis.memtable(
         {
@@ -1169,6 +1181,7 @@ def test_range_expression_bounds(backend):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     # GH #7631
     t = alltypes
@@ -1200,6 +1213,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
     raises=PsycoPg2InternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
 def test_windowed_order_by_sequence_is_preserved(con):
     table = ibis.memtable({"bool_col": [True, False, False, None, True]})
     window = ibis.window(
