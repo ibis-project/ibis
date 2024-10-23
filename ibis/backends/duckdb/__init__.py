@@ -1748,6 +1748,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 parameters=input_types,
                 return_type=type_mapper.to_string(udf_node.dtype),
                 type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+                **udf_node.__config__,
             )
 
         return register_udf
