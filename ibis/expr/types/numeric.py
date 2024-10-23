@@ -56,7 +56,7 @@ class NumericValue(Value):
         """
         return self.negate()
 
-    def round(self, digits: int | IntegerValue | None = None) -> NumericValue:
+    def round(self, digits: int | IntegerValue = 0) -> NumericValue:
         """Round values to an indicated number of decimal places.
 
         Parameters
@@ -94,16 +94,16 @@ class NumericValue(Value):
         │    2.54 │
         └─────────┘
         >>> t.values.round()
-        ┏━━━━━━━━━━━━━━━┓
-        ┃ Round(values) ┃
-        ┡━━━━━━━━━━━━━━━┩
-        │ int64         │
-        ├───────────────┤
-        │             1 │
-        │             2 │
-        │             2 │
-        │             3 │
-        └───────────────┘
+        ┏━━━━━━━━━━━━━━━━━━┓
+        ┃ Round(values, 0) ┃
+        ┡━━━━━━━━━━━━━━━━━━┩
+        │ int64            │
+        ├──────────────────┤
+        │                1 │
+        │                2 │
+        │                2 │
+        │                3 │
+        └──────────────────┘
         >>> t.values.round(digits=1)
         ┏━━━━━━━━━━━━━━━━━━┓
         ┃ Round(values, 1) ┃
