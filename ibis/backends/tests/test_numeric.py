@@ -902,6 +902,13 @@ def test_simple_math_functions_columns(
     backend.assert_series_equal(result, expected)
 
 
+def test_floor_divide_precedence(con):
+    # Check that we compile to 16 / (4 / 2) and not 16 / 4 / 2
+    expr = ibis.literal(16) // (4 / ibis.literal(2))
+    result = int(con.execute(expr))
+    assert result == 8
+
+
 # we add one to double_col in this test to make sure the common case works (no
 # domain errors), and we test the backends' various failure modes in each
 # backend's test suite

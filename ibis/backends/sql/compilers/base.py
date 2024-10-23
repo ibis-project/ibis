@@ -847,7 +847,7 @@ class SQLGlotCompiler(abc.ABC):
         return arg
 
     def visit_FloorDivide(self, op, *, left, right):
-        return self.cast(self.f.floor(left / right), op.dtype)
+        return self.cast(self.f.floor(sge.paren(left) / sge.paren(right)), op.dtype)
 
     def visit_Ceil(self, op, *, arg):
         return self.cast(self.f.ceil(arg), op.dtype)
