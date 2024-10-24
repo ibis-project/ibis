@@ -535,13 +535,14 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_Round(self, op, *, arg, digits):
-        if digits is None:
-            return self.f.round(arg)
+        dtype = op.dtype
 
-        result = self.f.round(self.cast(arg, dt.decimal), digits)
-        if op.arg.dtype.is_decimal():
-            return result
-        return self.cast(result, dt.float64)
+        if dtype.is_integer():
+            result = self.f.round(arg)
+        else:
+            result = self.f.round(self.cast(arg, dt.decimal), digits)
+
+        return self.cast(result, dtype)
 
     def visit_Modulus(self, op, *, left, right):
         # postgres doesn't allow modulus of double precision values, so upcast and

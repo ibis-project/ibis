@@ -1523,3 +1523,25 @@ def test_bitwise_not_col(backend, alltypes, df):
     result = expr.execute()
     expected = ~df.int_col
     backend.assert_series_equal(result, expected.rename("tmp"))
+
+
+def test_column_round_is_integer(con):
+    t = ibis.memtable({"x": [1.2, 3.4]})
+    expr = t.x.round().cast(int)
+    result = con.execute(expr)
+
+    one, three = sorted(result.tolist())
+
+    assert one == 1
+    assert isinstance(one, int)
+
+    assert three == 3
+    assert isinstance(three, int)
+
+
+def test_scalar_round_is_integer(con):
+    expr = ibis.literal(1.2).round().cast(int)
+    result = con.execute(expr)
+
+    assert result == 1
+    assert isinstance(result, int)

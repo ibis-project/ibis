@@ -148,7 +148,7 @@ def test_sign(functional_alltypes, lineitem):
 def test_round(functional_alltypes, lineitem):
     result = functional_alltypes.double_col.round()
     assert isinstance(result, ir.IntegerColumn)
-    assert result.op().args[1] is None
+    assert result.op().args[1] == ibis.literal(0).op()
 
     result = functional_alltypes.double_col.round(2)
     assert isinstance(result, ir.FloatingColumn)

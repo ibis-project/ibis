@@ -148,19 +148,31 @@ class Round(Value):
     """Round a value."""
 
     arg: StrictNumeric
-    # TODO(kszucs): the default should be 0 instead of being None
-    digits: Optional[Integer] = None
+    digits: Integer
 
     shape = rlz.shape_like("arg")
 
     @property
     def dtype(self):
-        if self.arg.dtype.is_decimal():
-            return self.arg.dtype
-        elif self.digits is None:
-            return dt.int64
-        else:
-            return dt.double
+        digits = self.digits
+        arg_dtype = self.arg.dtype
+
+        raw_digits = getattr(digits, "value", None)
+
+        # decimals with literal-typed digits return decimals
+        if arg_dtype.is_decimal() and raw_digits is not None:
+            return arg_dtype.copy(scale=raw_digits)
+
+        nullable = arg_dtype.nullable
+
+        # if digits are unspecified that means round to an integer
+        if raw_digits is not None and raw_digits == 0:
+            return dt.int64.copy(nullable=nullable)
+
+        # otherwise one of the following is true:
+        # 1. digits are specified as a more complex expression
+        # 2. self.arg is a double column
+        return dt.double.copy(nullable=nullable)
 
 
 @public
