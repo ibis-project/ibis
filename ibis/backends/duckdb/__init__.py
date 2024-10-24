@@ -1735,22 +1735,20 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 registration_func(con)
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
-        func = udf_node.__func__
-        name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper
         input_types = [
             type_mapper.to_string(param.annotation.pattern.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
-        output_type = type_mapper.to_string(udf_node.dtype)
 
         def register_udf(con):
             return con.create_function(
-                name,
-                func,
-                input_types,
-                output_type,
+                name=type(udf_node).__name__,
+                function=udf_node.__func__,
+                parameters=input_types,
+                return_type=type_mapper.to_string(udf_node.dtype),
                 type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+                **udf_node.__config__,
             )
 
         return register_udf
