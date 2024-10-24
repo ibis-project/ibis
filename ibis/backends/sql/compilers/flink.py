@@ -330,7 +330,7 @@ class FlinkCompiler(SQLGlotCompiler):
         return sge.TryCast(this=arg, to=type_mapper.from_ibis(to))
 
     def visit_FloorDivide(self, op, *, left, right):
-        return self.f.floor(left / right)
+        return self.f.floor(sge.paren(left) / sge.paren(right))
 
     def visit_JSONGetItem(self, op, *, arg, index):
         assert isinstance(op.index, ops.Literal)
