@@ -75,7 +75,6 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.CountDistinctStar,
         ops.Covariance,
         ops.DateDiff,
-        ops.ExtractURLField,
         ops.FindInSet,
         ops.IsInf,
         ops.IsNan,

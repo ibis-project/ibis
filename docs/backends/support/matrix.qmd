@@ -74,7 +74,29 @@ def make_support_matrix():
 
     from ibis.backends.sql.compilers.base import ALL_OPERATIONS
 
-    support_matrix_ignored_operations = (ops.ScalarParameter,)
+    # these are handled either through rewrites or by # visit methods on their
+    # subclasses
+    support_matrix_ignored_operations = (
+        ops.Analytic,
+        ops.ArrayAgg,
+        ops.Constant,
+        ops.Distinct,
+        ops.DropNull,
+        ops.FillNull,
+        ops.FuzzySearch,
+        ops.Impure,
+        ops.QuantileBase,
+        ops.RankBase,
+        ops.Reduction,
+        ops.Reference,
+        ops.Relation,
+        ops.ScalarParameter,
+        ops.Set,
+        ops.Simple,
+        ops.Subquery,
+        ops.Value,
+        ops.VarianceBase,
+    )
 
     public_ops = ALL_OPERATIONS.difference(support_matrix_ignored_operations)
 

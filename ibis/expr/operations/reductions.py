@@ -194,6 +194,7 @@ class Mean(Filterable, Reduction):
             return dt.higher_precedence(dtype, dt.float64)
 
 
+@public
 class QuantileBase(Filterable, Reduction):
     arg: Column
 

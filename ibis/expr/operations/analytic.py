@@ -48,12 +48,12 @@ class RankBase(Analytic):
 
 @public
 class MinRank(RankBase):
-    pass
+    """Rank within an ordered partition."""
 
 
 @public
 class DenseRank(RankBase):
-    pass
+    """Rank within an ordered partition, consecutively."""
 
 
 @public
