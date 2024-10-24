@@ -4566,8 +4566,14 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return WindowedTable(self, time_col)
 
-    def value_counts(self) -> ir.Table:
+    def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table of this table's values.
+
+        Parameters
+        ----------
+        name
+            The name to use for the frequency column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
@@ -4591,16 +4597,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.year.value_counts().order_by("year")
-        ┏━━━━━━━┳━━━━━━━━━━━━┓
-        ┃ year  ┃ year_count ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━┩
-        │ int64 │ int64      │
-        ├───────┼────────────┤
-        │  2007 │        110 │
-        │  2008 │        114 │
-        │  2009 │        120 │
-        └───────┴────────────┘
+        >>> t.year.value_counts(name="n").order_by("year")
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ year  ┃ n     ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │  2007 │   110 │
+        │  2008 │   114 │
+        │  2009 │   120 │
+        └───────┴───────┘
         >>> t[["year", "island"]].value_counts().order_by("year", "island")
         ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ year  ┃ island    ┃ year_island_count ┃
@@ -4619,9 +4625,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴───────────┴───────────────────┘
         """
         columns = self.columns
-        return self.group_by(columns).agg(
-            lambda t: t.count().name("_".join(columns) + "_count")
-        )
+        name = name or "_".join(columns) + "_count"
+        return self.group_by(columns).agg(lambda t: t.count().name(name))
 
     def unnest(
         self, column, offset: str | None = None, keep_empty: bool = False
