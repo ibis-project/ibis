@@ -189,17 +189,19 @@ class Impure(Value):
 
 
 @public
-class TimestampNow(Constant):
+class TimestampNow(Impure):
     """Return the current timestamp."""
 
     dtype = dt.timestamp
+    shape = ds.scalar
 
 
 @public
-class DateNow(Constant):
+class DateNow(Impure):
     """Return the current date."""
 
     dtype = dt.date
+    shape = ds.scalar
 
 
 @public
