@@ -7,6 +7,7 @@
 [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-main.yml?query=branch%3Amain)
 [![Build status](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml/badge.svg)](https://github.com/ibis-project/ibis/actions/workflows/ibis-backends.yml?query=branch%3Amain)
 [![Codecov branch](https://img.shields.io/codecov/c/github/ibis-project/ibis/main.svg)](https://codecov.io/gh/ibis-project/ibis)
+[![](https://img.shields.io/badge/Gurubase-Ask%20Ibis%20Guru-006BFF)](https://gurubase.io/g/ibis)
 
 ## What is Ibis?
 
