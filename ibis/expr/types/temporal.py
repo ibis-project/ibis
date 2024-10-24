@@ -584,12 +584,11 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable(
-        ...     [
+        ...     {"timestamp_col": [
         ...         (datetime(2020, 10, 5, 8, 0, 0)),
         ...         (datetime(2020, 11, 10, 10, 2, 15)),
         ...         (datetime(2020, 12, 15, 12, 4, 30)),
-        ...     ],
-        ...     schema=ibis.Schema({"timestamp_col": "timestamp"}),
+        ...     ]},
         ... )
 
         Return a string with the year and month.
