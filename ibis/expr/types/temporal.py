@@ -357,28 +357,28 @@ class DateValue(Value, _DateComponentMixin):
         Return a string with the year and month.
 
         >>> t.date_col.strftime("%Y-%m")
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Strftime(date_col, '%Y-%m')      ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                           │
-        ├──────────────────────────────────┤
-        │ 2020-10                          │
-        │ 2020-11                          │
-        │ 2020-12                          │
-        └──────────────────────────────────┘
-        
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(date_col, '%Y-%m') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                      │
+        ├─────────────────────────────┤
+        │ 2020-10                     │
+        │ 2020-11                     │
+        │ 2020-12                     │
+        └─────────────────────────────┘
+
         Return a string with the month name, day, and year.
 
         >>> t.date_col.strftime("%B %-d, %Y")
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ Strftime(date_col, '%B %-d, %Y')      ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ string                                │
-        ├───────────────────────────────────────┤
-        │ October 5, 2020                       │
-        │ November 10, 2020                     │
-        │ December 15, 2020                     │
-        └───────────────────────────────────────┘
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(date_col, '%B %-d, %Y') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                           │
+        ├──────────────────────────────────┤
+        │ October 5, 2020                  │
+        │ November 10, 2020                │
+        │ December 15, 2020                │
+        └──────────────────────────────────┘
         """
         return ops.Strftime(self, format_str).to_expr()
 
@@ -605,7 +605,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         │ 2020-11                          │
         │ 2020-12                          │
         └──────────────────────────────────┘
-        
+
         Return a string with the month, day, and year.
 
         >>> t.timestamp_col.strftime("%B %-d, %Y")
@@ -620,7 +620,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         └───────────────────────────────────────┘
 
         Return a string with the month, day, year, hour, minute, and AM/PM.
-        
+
         >>> t.timestamp_col.strftime("%B %-d, %Y at %I:%M %p")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ Strftime(timestamp_col, '%B %-d, %Y at %I:%M %p') ┃
