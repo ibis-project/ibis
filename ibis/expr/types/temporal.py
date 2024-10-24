@@ -346,12 +346,11 @@ class DateValue(Value, _DateComponentMixin):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable(
-        ...     [
+        ...     {"date_col": [
         ...         date(2020, 10, 5),
         ...         date(2020, 11, 10),
         ...         date(2020, 12, 15),
-        ...     ],
-        ...     schema=ibis.Schema({"date_col": "date"}),
+        ...     ]},
         ... )
 
         Return a string with the year and month.
