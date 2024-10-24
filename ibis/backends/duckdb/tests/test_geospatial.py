@@ -562,3 +562,15 @@ def test_to_geo_geom_only(con, driver, tmp_path):
     dread = con.read_geo(out)
 
     assert dread.count().execute() == 2
+
+
+def test_cache_geometry(con, monkeypatch):
+    # ibis issue #10324
+
+    # monkeypatching is necessary to ensure the correct backend is used for
+    # caching
+    monkeypatch.setattr(ibis.options, "default_backend", con)
+    data = ibis.memtable({"x": [1], "y": [2]})
+    data = data.select(geom=data.x.point(data.y)).cache()
+    result = data.execute()
+    assert result.at[0, "geom"] == shapely.Point(1, 2)
