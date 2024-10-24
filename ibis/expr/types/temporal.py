@@ -339,6 +339,47 @@ class DateValue(Value, _DateComponentMixin):
         -------
         StringValue
             Formatted version of `arg`
+
+        Examples
+        --------
+        >>> from datetime import date
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "date_col": [
+        ...             date(2020, 10, 5),
+        ...             date(2020, 11, 10),
+        ...             date(2020, 12, 15),
+        ...         ]
+        ...     },
+        ... )
+
+        Return a string with the year and month.
+
+        >>> t.date_col.strftime("%Y-%m")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(date_col, '%Y-%m') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                      │
+        ├─────────────────────────────┤
+        │ 2020-10                     │
+        │ 2020-11                     │
+        │ 2020-12                     │
+        └─────────────────────────────┘
+
+        Return a string with the month name, day, and year.
+
+        >>> t.date_col.strftime("%B %-d, %Y")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(date_col, '%B %-d, %Y') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                           │
+        ├──────────────────────────────────┤
+        │ October 5, 2020                  │
+        │ November 10, 2020                │
+        │ December 15, 2020                │
+        └──────────────────────────────────┘
         """
         return ops.Strftime(self, format_str).to_expr()
 
@@ -538,6 +579,60 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         -------
         StringValue
             Formatted version of `arg`
+
+        Examples
+        --------
+        >>> from datetime import datetime
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "timestamp_col": [
+        ...             datetime(2020, 10, 5, 8, 0, 0),
+        ...             datetime(2020, 11, 10, 10, 2, 15),
+        ...             datetime(2020, 12, 15, 12, 4, 30),
+        ...         ]
+        ...     },
+        ... )
+
+        Return a string with the year and month.
+
+        >>> t.timestamp_col.strftime("%Y-%m")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(timestamp_col, '%Y-%m') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                           │
+        ├──────────────────────────────────┤
+        │ 2020-10                          │
+        │ 2020-11                          │
+        │ 2020-12                          │
+        └──────────────────────────────────┘
+
+        Return a string with the month, day, and year.
+
+        >>> t.timestamp_col.strftime("%B %-d, %Y")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(timestamp_col, '%B %-d, %Y') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                │
+        ├───────────────────────────────────────┤
+        │ October 5, 2020                       │
+        │ November 10, 2020                     │
+        │ December 15, 2020                     │
+        └───────────────────────────────────────┘
+
+        Return a string with the month, day, year, hour, minute, and AM/PM.
+
+        >>> t.timestamp_col.strftime("%B %-d, %Y at %I:%M %p")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ Strftime(timestamp_col, '%B %-d, %Y at %I:%M %p') ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                                            │
+        ├───────────────────────────────────────────────────┤
+        │ October 5, 2020 at 08:00 AM                       │
+        │ November 10, 2020 at 10:02 AM                     │
+        │ December 15, 2020 at 12:04 PM                     │
+        └───────────────────────────────────────────────────┘
         """
         return ops.Strftime(self, format_str).to_expr()
 
