@@ -4625,7 +4625,8 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴───────────┴───────────────────┘
         """
         columns = self.columns
-        name = name or "_".join(columns) + "_count"
+        if name is None:
+            name = "_".join(columns) + "_count"
         return self.group_by(columns).agg(lambda t: t.count().name(name))
 
     def unnest(
