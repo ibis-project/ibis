@@ -4,6 +4,7 @@ import contextlib
 import csv
 import gzip
 import os
+from io import BytesIO
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -21,7 +22,6 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 pytestmark = [
-    pytest.mark.notimpl(["druid", "exasol", "oracle"]),
     pytest.mark.notyet(
         ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkAnalysisException
     ),
@@ -103,6 +103,7 @@ def gzip_csv(data_dir, tmp_path):
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
     with pushd(data_dir / "csv"):
         with pytest.warns(FutureWarning, match="v9.1"):
@@ -114,7 +115,7 @@ def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
 
 
 # TODO: rewrite or delete test when register api is removed
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid", "exasol", "oracle"])
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -154,6 +155,7 @@ def test_register_csv_gz(con, data_dir, gzip_csv):
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_register_with_dotted_name(con, data_dir, tmp_path):
     basename = "foo.bar.baz/diamonds.csv"
     f = tmp_path.joinpath(basename)
@@ -211,6 +213,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_register_parquet(
     con, tmp_path, data_dir, fname, in_table_name, out_table_name
 ):
@@ -249,6 +252,7 @@ def test_register_parquet(
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_register_iterator_parquet(
     con,
     tmp_path,
@@ -277,7 +281,7 @@ def test_register_iterator_parquet(
 # TODO: remove entirely when `register` is removed
 # This same functionality is implemented across all backends
 # via `create_table` and tested in `test_client.py`
-@pytest.mark.notimpl(["datafusion"])
+@pytest.mark.notimpl(["datafusion", "druid", "exasol", "oracle"])
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -311,7 +315,7 @@ def test_register_pandas(con):
 # TODO: remove entirely when `register` is removed
 # This same functionality is implemented across all backends
 # via `create_table` and tested in `test_client.py`
-@pytest.mark.notimpl(["datafusion", "polars"])
+@pytest.mark.notimpl(["datafusion", "polars", "druid", "exasol", "oracle"])
 @pytest.mark.notyet(
     [
         "bigquery",
@@ -352,6 +356,7 @@ def test_register_pyarrow_tables(con):
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_csv_reregister_schema(con, tmp_path):
     foo = tmp_path.joinpath("foo.csv")
     with foo.open("w", newline="") as csvfile:
@@ -380,10 +385,13 @@ def test_csv_reregister_schema(con, tmp_path):
         "bigquery",
         "clickhouse",
         "datafusion",
+        "druid",
+        "exasol",
         "flink",
         "impala",
         "mysql",
         "mssql",
+        "oracle",
         "polars",
         "postgres",
         "risingwave",
@@ -414,11 +422,16 @@ def test_register_garbage(con, monkeypatch):
         ("functional_alltypes.parquet", "funk_all"),
     ],
 )
-@pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
-)
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(["druid"])
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
+
+    if con.name in ("trino", "impala"):
+        # TODO: remove after trino and impala have efficient insertion
+        pytest.skip(
+            "Both Impala and Trino lack efficient data insertion methods from Python."
+        )
 
     fname = Path(fname)
     fname = Path(data_dir) / "parquet" / fname.name
@@ -445,18 +458,8 @@ def ft_data(data_dir):
     return table.slice(0, nrows)
 
 
-@pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
-    ]
-)
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(["druid"])
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
 
@@ -473,6 +476,30 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
     assert table.count().execute() == nrows * ntables
 
 
+@pytest.mark.notyet(["flink"])
+@pytest.mark.notimpl(["druid"])
+@pytest.mark.never(
+    [
+        "duckdb",
+        "polars",
+        "bigquery",
+        "clickhouse",
+        "datafusion",
+        "snowflake",
+        "pyspark",
+    ],
+    reason="backend implements its own read_parquet",
+)
+def test_read_parquet_bytesio(con, ft_data):
+    pq = pytest.importorskip("pyarrow.parquet")
+
+    bytes_io = BytesIO()
+    pq.write_table(ft_data, bytes_io)
+    bytes_io.seek(0)
+    table = con.read_parquet(bytes_io)
+    assert table.count().execute() == ft_data.num_rows
+
+
 @pytest.mark.notyet(
     [
         "flink",
@@ -485,6 +512,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "trino",
     ]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
 
@@ -519,6 +547,7 @@ def test_read_csv_glob(con, tmp_path, ft_data):
     raises=ValueError,
     reason="read_json() missing required argument: 'schema'",
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_read_json_glob(con, tmp_path, ft_data):
     nrows = len(ft_data)
     ntables = 2
@@ -565,6 +594,7 @@ DIAMONDS_COLUMN_TYPES = {
 @pytest.mark.notyet(
     ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
+@pytest.mark.notimpl(["druid", "exasol", "oracle"])
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"
     with pushd(data_dir / "csv"):
