@@ -1099,6 +1099,12 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
+def test_integer_truediv(con):
+    expr = 1 / ibis.literal(2)
+    result = con.execute(expr)
+    assert result == 0.5
+
+
 def test_mod(backend, alltypes, df):
     expr = operator.mod(alltypes.smallint_col, alltypes.smallint_col + 1).name("tmp")
 
