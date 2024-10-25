@@ -74,7 +74,7 @@ con = ibis.druid.connect()  # <1>
 con = ibis.druid.connect(
     host="hostname",
     port=8082,
-    database="druid/v2/sql",
+    path="druid/v2/sql",
 )
 ```
 
