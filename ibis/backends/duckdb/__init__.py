@@ -1743,6 +1743,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             for param in udf_node.__signature__.parameters.values()
         ]
         output_type = type_mapper.to_string(udf_node.dtype)
+        config = udf_node.__config__
 
         def register_udf(con):
             return con.create_function(
@@ -1751,6 +1752,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 input_types,
                 output_type,
                 type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+                **config,
             )
 
         return register_udf
