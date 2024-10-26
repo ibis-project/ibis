@@ -59,7 +59,37 @@ class _DateComponentMixin:
         return DayOfWeek(self)
 
     def day_of_year(self) -> ir.IntegerValue:
-        """Extract the day of the year component."""
+        """Extract the day of the year component.
+
+        Examples
+        --------
+        >>> from datetime import date
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "date_col": [
+        ...             date(2023, 1, 1),
+        ...             date(2023, 6, 17),
+        ...             date(2023, 12, 31),
+        ...             date(2024, 2, 29),
+        ...             date(2024, 12, 31),
+        ...         ]
+        ...     },
+        ... )
+        >>> t.date_col.day_of_year()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ ExtractDayOfYear(date_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int32                      │
+        ├────────────────────────────┤
+        │                          1 │
+        │                        168 │
+        │                        365 │
+        │                         60 │
+        │                        366 │
+        └────────────────────────────┘
+        """
         return ops.ExtractDayOfYear(self).to_expr()
 
     def quarter(self) -> ir.IntegerValue:
