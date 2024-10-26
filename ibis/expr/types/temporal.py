@@ -395,6 +395,42 @@ class DateValue(Value, _DateComponentMixin):
         -------
         DateValue
             Truncated date value expression
+
+        Examples
+        --------
+        >>> from datetime import date
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "date_col": [
+        ...             date(2020, 1, 5),
+        ...             date(2020, 4, 10),
+        ...             date(2020, 7, 15),
+        ...             date(2020, 10, 20),
+        ...         ]
+        ...     },
+        ... )
+
+        Return date columns truncated to the start of the year, quarter, month, and
+        week.
+
+        >>> t.select(
+        ...     year=t.date_col.truncate("Y"),
+        ...     quarter=t.date_col.truncate("Q"),
+        ...     month=t.date_col.truncate("M"),
+        ...     week=t.date_col.truncate("W"),
+        ... )
+        ┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year       ┃ quarter    ┃ month      ┃ week       ┃
+        ┡━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ date       │ date       │ date       │ date       │
+        ├────────────┼────────────┼────────────┼────────────┤
+        │ 2020-01-01 │ 2020-01-01 │ 2020-01-01 │ 2019-12-30 │
+        │ 2020-01-01 │ 2020-04-01 │ 2020-04-01 │ 2020-04-06 │
+        │ 2020-01-01 │ 2020-07-01 │ 2020-07-01 │ 2020-07-13 │
+        │ 2020-01-01 │ 2020-10-01 │ 2020-10-01 │ 2020-10-19 │
+        └────────────┴────────────┴────────────┴────────────┘
         """
         return ops.DateTruncate(self, unit).to_expr()
 
@@ -651,6 +687,73 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         -------
         TimestampValue
             Truncated timestamp expression
+
+        Examples
+        --------
+        >>> from datetime import datetime
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "timestamp_col": [
+        ...             datetime(2020, 1, 5, 8, 0, 0),
+        ...             datetime(2020, 4, 10, 10, 2, 15),
+        ...             datetime(2020, 7, 15, 12, 4, 30),
+        ...             datetime(2020, 10, 20, 14, 6, 45),
+        ...         ]
+        ...     },
+        ... )
+
+        Return timestamp columns truncated to the start of the year, quarter, and month.
+
+        >>> t.select(
+        ...     year=t.timestamp_col.truncate("Y"),
+        ...     quarter=t.timestamp_col.truncate("Q"),
+        ...     month=t.timestamp_col.truncate("M"),
+        ... )
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ year                ┃ quarter             ┃ month               ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp           │ timestamp           │ timestamp           │
+        ├─────────────────────┼─────────────────────┼─────────────────────┤
+        │ 2020-01-01 00:00:00 │ 2020-01-01 00:00:00 │ 2020-01-01 00:00:00 │
+        │ 2020-01-01 00:00:00 │ 2020-04-01 00:00:00 │ 2020-04-01 00:00:00 │
+        │ 2020-01-01 00:00:00 │ 2020-07-01 00:00:00 │ 2020-07-01 00:00:00 │
+        │ 2020-01-01 00:00:00 │ 2020-10-01 00:00:00 │ 2020-10-01 00:00:00 │
+        └─────────────────────┴─────────────────────┴─────────────────────┘
+
+        Return timestamp columns truncated to the start of the week and day.
+
+        >>> t.select(week=t.timestamp_col.truncate("W"), day=t.timestamp_col.truncate("D"))
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ week                ┃ day                 ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp           │ timestamp           │
+        ├─────────────────────┼─────────────────────┤
+        │ 2019-12-30 00:00:00 │ 2020-01-05 00:00:00 │
+        │ 2020-04-06 00:00:00 │ 2020-04-10 00:00:00 │
+        │ 2020-07-13 00:00:00 │ 2020-07-15 00:00:00 │
+        │ 2020-10-19 00:00:00 │ 2020-10-20 00:00:00 │
+        └─────────────────────┴─────────────────────┘
+
+        Return timestamp columns truncated to the start of the hour, minute, and
+        second.
+
+        >>> t.select(
+        ...     hour=t.timestamp_col.truncate("h"),
+        ...     minute=t.timestamp_col.truncate("m"),
+        ...     second=t.timestamp_col.truncate("s"),
+        ... )
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ hour                ┃ minute              ┃ second              ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp           │ timestamp           │ timestamp           │
+        ├─────────────────────┼─────────────────────┼─────────────────────┤
+        │ 2020-01-05 08:00:00 │ 2020-01-05 08:00:00 │ 2020-01-05 08:00:00 │
+        │ 2020-04-10 10:00:00 │ 2020-04-10 10:02:00 │ 2020-04-10 10:02:15 │
+        │ 2020-07-15 12:00:00 │ 2020-07-15 12:04:00 │ 2020-07-15 12:04:30 │
+        │ 2020-10-20 14:00:00 │ 2020-10-20 14:06:00 │ 2020-10-20 14:06:45 │
+        └─────────────────────┴─────────────────────┴─────────────────────┘
         """
         return ops.TimestampTruncate(self, unit).to_expr()
 
