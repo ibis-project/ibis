@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import duckdb
 import pytest
 from pytest import param
 
@@ -107,13 +108,16 @@ def test_dont_intercept_null(con, expr, expected):
 
 
 def test_kwargs_are_forwarded(con):
-    import duckdb
-
     def nullify_two(x: int) -> int:
         return None if x == 2 else x
 
-    no_kwargs = udf.scalar.python()(nullify_two)
-    with_kwargs = udf.scalar.python(null_handling="special")(nullify_two)
+    @udf.scalar.python
+    def no_kwargs(x: int) -> int:
+        return nullify_two(x)
+
+    @udf.scalar.python(null_handling="special")
+    def with_kwargs(x: int) -> int:
+        return nullify_two(x)
 
     # If we return go Non-NULL -> Non-NULL, then passing null_handling="special"
     # will not change the result
@@ -123,5 +127,7 @@ def test_kwargs_are_forwarded(con):
     # But, if our UDF ever goes Non-NULL -> NULL, then we NEED to pass
     # null_handling="special", otherwise duckdb throws an error
     assert con.execute(with_kwargs(ibis.literal(2))) is None
+
+    expr = no_kwargs(ibis.literal(2))
     with pytest.raises(duckdb.InvalidInputException):
-        con.execute(no_kwargs(ibis.literal(2)))
+        con.execute(expr)
