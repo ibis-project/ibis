@@ -856,9 +856,7 @@ class SQLGlotCompiler(abc.ABC):
         return self.cast(self.f.floor(arg), op.dtype)
 
     def visit_Round(self, op, *, arg, digits):
-        if digits is not None:
-            return sge.Round(this=arg, decimals=digits)
-        return sge.Round(this=arg)
+        return self.cast(self.f.round(arg, digits), op.dtype)
 
     ### Random Noise
 

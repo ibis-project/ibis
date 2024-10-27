@@ -500,5 +500,10 @@ class OracleCompiler(SQLGlotCompiler):
         # remove.
         return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
 
+    def visit_Round(self, op, *, arg, digits):
+        if op.dtype.is_integer():
+            return self.f.round(arg)
+        return self.cast(self.f.round(arg, digits), op.dtype)
+
 
 compiler = OracleCompiler()
