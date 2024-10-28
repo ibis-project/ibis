@@ -1033,6 +1033,57 @@ def interval(
     IntervalScalar
         An interval expression
 
+    Examples
+    --------
+    >>> from datetime import datetime
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "timestamp_col": [
+    ...             datetime(2020, 10, 5, 8, 0, 0),
+    ...             datetime(2020, 11, 10, 10, 2, 15),
+    ...             datetime(2020, 12, 15, 12, 4, 30),
+    ...         ]
+    ...     },
+    ... )
+
+    Add and subtract ten days from a timestamp column.
+
+    >>> ten_days = ibis.interval(days=10)
+    >>> ten_days
+    ┌────────────────────────────────────────────────┐
+    │ MonthDayNano(months=0, days=10, nanoseconds=0) │
+    └────────────────────────────────────────────────┘
+    >>> t.mutate(
+    ...     plus_ten_days=t.timestamp_col + ten_days,
+    ...     minus_ten_days=t.timestamp_col - ten_days,
+    ... )
+    ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ timestamp_col       ┃ plus_ten_days       ┃ minus_ten_days      ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │ timestamp           │ timestamp           │
+    ├─────────────────────┼─────────────────────┼─────────────────────┤
+    │ 2020-10-05 08:00:00 │ 2020-10-15 08:00:00 │ 2020-09-25 08:00:00 │
+    │ 2020-11-10 10:02:15 │ 2020-11-20 10:02:15 │ 2020-10-31 10:02:15 │
+    │ 2020-12-15 12:04:30 │ 2020-12-25 12:04:30 │ 2020-12-05 12:04:30 │
+    └─────────────────────┴─────────────────────┴─────────────────────┘
+
+    Intervals provide more granularity with date arithmetic.
+
+    >>> t.mutate(
+    ...     added_interval=t.timestamp_col
+    ...     + ibis.interval(weeks=1, days=2, hours=3, minutes=4, seconds=5)
+    ... )
+    ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ timestamp_col       ┃ added_interval      ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │ timestamp           │
+    ├─────────────────────┼─────────────────────┤
+    │ 2020-10-05 08:00:00 │ 2020-10-14 11:04:05 │
+    │ 2020-11-10 10:02:15 │ 2020-11-19 13:06:20 │
+    │ 2020-12-15 12:04:30 │ 2020-12-24 15:08:35 │
+    └─────────────────────┴─────────────────────┘
     """
     keyword_value_unit = [
         ("nanoseconds", nanoseconds, "ns"),
