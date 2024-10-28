@@ -46,7 +46,7 @@ toolz = ">=0.11,<2"
 typing-extensions = ">=4.3.0,<5"
 numpy = { version = ">=1.23.2,<3", optional = true }
 pandas = { version = ">=1.5.3,<3", optional = true }
-pyarrow = { version = ">=10.0.1,<18", optional = true }
+pyarrow = { version = ">=10.0.1,<19", optional = true }
 pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
 rich = { version = ">=12.4.4,<14", optional = true }
 black = { version = ">=22.1.0,<25", optional = true }
