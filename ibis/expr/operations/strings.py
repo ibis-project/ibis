@@ -313,49 +313,44 @@ class StringConcat(Value):
 
 
 @public
-class ExtractURLField(StringUnary):
-    pass
-
-
-@public
-class ExtractProtocol(ExtractURLField):
+class ExtractProtocol(StringUnary):
     """Extract the protocol from a URL."""
 
 
 @public
-class ExtractAuthority(ExtractURLField):
+class ExtractAuthority(StringUnary):
     """Extract the authority from a URL."""
 
 
 @public
-class ExtractUserInfo(ExtractURLField):
+class ExtractUserInfo(StringUnary):
     """Extract the user info from a URL."""
 
 
 @public
-class ExtractHost(ExtractURLField):
+class ExtractHost(StringUnary):
     """Extract the host from a URL."""
 
 
 @public
-class ExtractFile(ExtractURLField):
+class ExtractFile(StringUnary):
     """Extract the file from a URL."""
 
 
 @public
-class ExtractPath(ExtractURLField):
+class ExtractPath(StringUnary):
     """Extract the path from a URL."""
 
 
 @public
-class ExtractQuery(ExtractURLField):
+class ExtractQuery(StringUnary):
     """Extract the query from a URL."""
 
     key: Optional[Value[dt.String]] = None
 
 
 @public
-class ExtractFragment(ExtractURLField):
+class ExtractFragment(StringUnary):
     """Extract the fragment from a URL."""
 
 
