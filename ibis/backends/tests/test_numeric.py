@@ -1099,7 +1099,6 @@ def test_binary_arithmetic_operations(backend, alltypes, df, op):
     backend.assert_series_equal(result, expected, check_exact=False)
 
 
-@pytest.mark.notimpl("flink", raises=AssertionError, reason="Flink does floor division")
 def test_integer_truediv(con):
     expr = 1 / ibis.literal(2)
     result = con.execute(expr)
@@ -1149,11 +1148,6 @@ def test_floating_mod(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
@@ -1164,11 +1158,6 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
-                ),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
                 ),
             ],
         ),
@@ -1181,11 +1170,6 @@ def test_floating_mod(backend, alltypes, df):
                     raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
                 ),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
@@ -1196,11 +1180,6 @@ def test_floating_mod(backend, alltypes, df):
                     "oracle",
                     raises=OracleDatabaseError,
                     reason="Oracle doesn't do integer division by zero",
-                ),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
                 ),
             ],
         ),
@@ -1216,11 +1195,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
@@ -1233,11 +1207,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
@@ -1250,11 +1219,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
@@ -1267,11 +1231,6 @@ def test_floating_mod(backend, alltypes, df):
                     reason="Oracle doesn't do integer division by zero",
                 ),
                 pytest.mark.never(["impala"], reason="doesn't allow divide by zero"),
-                pytest.mark.notyet(
-                    "flink",
-                    raises=Py4JJavaError,
-                    reason="Flink doesn't do integer division by zero",
-                ),
             ],
         ),
         param(
