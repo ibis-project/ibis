@@ -13,7 +13,7 @@ let
 
   mkPoetryDevEnv = python: mkPoetryEnv {
     inherit python;
-    groups = [ "dev" "docs" "test" ];
+    groups = [ "main" "dev" "docs" "test" ];
   };
   inherit (pkgs) lib stdenv;
 in
@@ -36,7 +36,7 @@ in
 
   ibisSmallDevEnv = mkPoetryEnv {
     python = pkgs.python312;
-    groups = [ "dev" ];
+    groups = [ "main" "dev" ];
     extras = [ ];
   };
 
