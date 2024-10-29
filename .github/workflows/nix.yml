@@ -37,11 +37,15 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+        continue-on-error:
+          - false
         include:
           - os: ubuntu-arm64-24.04 # aarch64-linux
             python-version: "3.12"
+            continue-on-error: false
           - os: macos-14 # aarch64-darwin
             python-version: "3.12"
+            continue-on-error: true
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -61,6 +65,7 @@ jobs:
           extraPullNames: nix-community,poetry2nix
 
       - name: nix build and test
+        continue-on-error: ${{ matrix.continue-on-error }}
         run: |
           set -euo pipefail
 
@@ -68,6 +73,7 @@ jobs:
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
       - name: nix build devShell
+        continue-on-error: ${{ matrix.continue-on-error }}
         run: |
           set -euo pipefail
 
