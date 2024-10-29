@@ -159,6 +159,16 @@ def test_struct_with_string_types():
     )
 
 
+def test_struct_trailing_comma_single():
+    result = dt.dtype("struct<a: int32,>")
+    assert result == dt.Struct.from_tuples([("a", dt.int32)])
+
+
+def test_struct_trailing_comma_multi():
+    result = dt.dtype("struct<a: int32, b: string  , >")
+    assert result == dt.Struct.from_tuples([("a", dt.int32), ("b", dt.string)])
+
+
 def test_array_with_string_value_types():
     assert dt.Array("int32") == dt.Array(dt.int32)
     assert dt.Array(dt.Array("array<map<string, double>>")) == (

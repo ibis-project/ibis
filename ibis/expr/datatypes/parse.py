@@ -196,6 +196,7 @@ def parse(
         spaceless_string("struct")
         .then(LANGLE)
         .then(parsy.seq(spaceless(FIELD).skip(COLON), ty).sep_by(COMMA))
+        .skip(COMMA.optional())
         .skip(RANGLE)
         .map(dt.Struct.from_tuples)
     )
