@@ -10,15 +10,15 @@
 # well and serially it takes on the order of 7-8 minutes to execute serially
 let
   extras = [ "decompiler" "visualization" ];
-  backends = [ "datafusion" "duckdb" "polars" "sqlite" ];
+  backends = [ "duckdb" "polars" "sqlite" ];
 in
 poetry2nix.mkPoetryApplication {
   python = python3;
-  groups = [ ];
-  checkGroups = [ "test" ];
+  groups = [ "main" ];
+  checkGroups = [ "main" "test" ];
   projectDir = gitignoreSource ../.;
   src = gitignoreSource ../.;
-  extras = backends ++ extras;
+  extras = backends ++ [ "datafusion" ] ++ extras;
   overrides = [
     (import ../poetry-overrides.nix)
     poetry2nix.defaultPoetryOverrides
@@ -49,12 +49,13 @@ poetry2nix.mkPoetryApplication {
 
       runHook preCheck
 
-      pytest -m 'not tpcds and (${markers})'
+      pytest -m datafusion
+      pytest -m '${markers}' --numprocesses $NIX_BUILD_CORES --dist loadgroup
 
       runHook postCheck
     '';
 
   doCheck = true;
 
-  pythonImportsCheck = [ "ibis" ] ++ map (backend: "ibis.backends.${backend}") backends;
+  pythonImportsCheck = [ "ibis" ] ++ map (backend: "ibis.backends.${backend}") (backends ++ [ "datafusion" ]);
 }
