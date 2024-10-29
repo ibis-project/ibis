@@ -28,6 +28,7 @@ concurrency:
 jobs:
   nix:
     runs-on: ${{ matrix.os }}
+    name: nix (${{ matrix.os }}, ${{ matrix.python-version }})
     strategy:
       fail-fast: false
       matrix:
