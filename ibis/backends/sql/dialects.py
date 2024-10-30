@@ -345,6 +345,7 @@ class MSSQL(TSQL):
             sge.VariancePop: rename_func("varp"),
             sge.Ceil: rename_func("ceiling"),
             sge.DateFromParts: rename_func("datefromparts"),
+            sge.Ln: rename_func("log"),
         }
 
 
