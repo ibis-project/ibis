@@ -199,7 +199,16 @@ class _TimeComponentMixin:
         return ops.ExtractHour(self).to_expr()
 
     def minute(self) -> ir.IntegerValue:
-        """Extract the minute component."""
+        """Extract the minute component.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).minute()
+        ┌────┐
+        │ 59 │
+        └────┘
+        """
         return ops.ExtractMinute(self).to_expr()
 
     def second(self) -> ir.IntegerValue:
