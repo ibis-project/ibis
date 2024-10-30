@@ -244,7 +244,7 @@ class _TimeComponentMixin:
         >>> ibis.options.interactive = True
         >>> ibis.timestamp("2024-12-31 23:59:59.999").microsecond()
         ┌────────┐
-        │ 999999 │
+        │ 999000 │
         └────────┘
         """
         return ops.ExtractMicrosecond(self).to_expr()
