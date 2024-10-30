@@ -35,7 +35,16 @@ class _DateComponentMixin:
         return ops.ExtractYear(self).to_expr()
 
     def iso_year(self) -> ir.IntegerValue:
-        """Extract the ISO year component."""
+        """Extract the ISO year component.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.date(2024, 12, 31).iso_year()
+        ┌──────┐
+        │ 2025 │
+        └──────┘
+        """
         return ops.ExtractIsoYear(self).to_expr()
 
     def month(self) -> ir.IntegerValue:
