@@ -318,7 +318,9 @@ class MSSQLCompiler(SQLGlotCompiler):
         )
 
     def visit_ExtractTemporalComponent(self, op, *, arg):
-        return self.f.datepart(self.v[type(op).__name__[len("Extract") :].lower()], arg)
+        return self.f.anon.datepart(
+            self.v[type(op).__name__[len("Extract") :].lower()], arg
+        )
 
     visit_ExtractYear = visit_ExtractMonth = visit_ExtractDay = (
         visit_ExtractDayOfYear
@@ -327,7 +329,7 @@ class MSSQLCompiler(SQLGlotCompiler):
     ) = visit_ExtractMicrosecond = visit_ExtractTemporalComponent
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
-        return self.f.datepart(self.v.iso_week, arg)
+        return self.f.anon.datepart(self.v.iso_week, arg)
 
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.f.timefromparts(hours, minutes, seconds, 0, 0)
