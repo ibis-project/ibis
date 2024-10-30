@@ -174,6 +174,14 @@ class _TimeComponentMixin:
         -------
         TimeValue
             The time component of `self`
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).time()
+        ┌──────────┐
+        │ 23:59:59 │
+        └──────────┘
         """
         return ops.Time(self).to_expr()
 
