@@ -237,7 +237,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         format_str = sg.time.format_time(
             op.format_str.value, {v: k for k, v in Impala.TIME_MAPPING.items()}
         )
-        return self.f.from_unixtime(
+        return self.f.anon.from_unixtime(
             self.f.unix_timestamp(self.cast(arg, dt.string)), format_str
         )
 
@@ -271,7 +271,9 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         arg = self.cast(util.convert_unit(arg, unit.short, "s"), dt.int32)
-        return self.cast(self.f.from_unixtime(arg, "yyyy-MM-dd HH:mm:ss"), dt.timestamp)
+        return self.cast(
+            self.f.anon.from_unixtime(arg, "yyyy-MM-dd HH:mm:ss"), dt.timestamp
+        )
 
     def visit_DateAdd(self, op, *, left, right):
         return self.cast(
