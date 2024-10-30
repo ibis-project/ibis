@@ -93,7 +93,16 @@ class _DateComponentMixin:
         return ops.ExtractDayOfYear(self).to_expr()
 
     def quarter(self) -> ir.IntegerValue:
-        """Extract the quarter component."""
+        """Extract the quarter component.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.date(2024, 12, 31).quarter()
+        ┌───┐
+        │ 4 │
+        └───┘
+        """
         return ops.ExtractQuarter(self).to_expr()
 
     def week_of_year(self) -> ir.IntegerValue:
