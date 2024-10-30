@@ -207,7 +207,7 @@ class OracleCompiler(SQLGlotCompiler):
         return arg.eq(self.NAN)
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)

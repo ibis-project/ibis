@@ -32,7 +32,7 @@ class ClickhouseAggGen(AggGen):
         if where is not None:
             name += "If"
             args += (where,)
-        return compiler.f[name](*args, dialect=compiler.dialect)
+        return compiler.f[name](*args)
 
 
 class ClickHouseCompiler(SQLGlotCompiler):

@@ -67,6 +67,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.Ln: "ln",
         ops.TypeOf: "typeof",
+        ops.RegexReplace: "regexp_replace",
     }
 
     @staticmethod
@@ -153,7 +154,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.ln(arg)
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_DateFromYMD(self, op, *, year, month, day):
         return self.cast(
@@ -296,9 +297,6 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_Date(self, op, *, arg):
         return self.cast(self.f.to_date(arg), dt.date)
-
-    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
-        return self.f.regexp_replace(arg, pattern, replacement, dialect=self.dialect)
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.anon.regexp_extract(arg, pattern, index)

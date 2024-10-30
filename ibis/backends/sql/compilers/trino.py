@@ -362,7 +362,7 @@ class TrinoCompiler(SQLGlotCompiler):
             return None
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.coalesce(self.f.element_at(arg, key), default)
@@ -458,12 +458,8 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_TemporalDelta(self, op, *, part, left, right):
         # trino truncates _after_ the delta, whereas many other backends
         # truncate each operand
-        dialect = self.dialect
         return self.f.date_diff(
-            part,
-            self.f.date_trunc(part, right, dialect=dialect),
-            self.f.date_trunc(part, left, dialect=dialect),
-            dialect=dialect,
+            part, self.f.date_trunc(part, right), self.f.date_trunc(part, left)
         )
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta

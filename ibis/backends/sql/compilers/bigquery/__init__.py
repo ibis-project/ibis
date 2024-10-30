@@ -201,6 +201,8 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.ExtractHost: "net.host",
         ops.ArgMin: "min_by",
         ops.ArgMax: "max_by",
+        ops.TimeDelta: "time_diff",
+        ops.DateDelta: "date_diff",
     }
 
     def to_sqlglot(
@@ -381,12 +383,6 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_E(self, op):
         return self.f.exp(1)
 
-    def visit_TimeDelta(self, op, *, left, right, part):
-        return self.f.time_diff(left, right, part, dialect=self.dialect)
-
-    def visit_DateDelta(self, op, *, left, right, part):
-        return self.f.date_diff(left, right, part, dialect=self.dialect)
-
     def visit_TimestampDelta(self, op, *, left, right, part):
         left_tz = op.left.dtype.timezone
         right_tz = op.right.dtype.timezone
@@ -448,12 +444,12 @@ class BigQueryCompiler(SQLGlotCompiler):
         return self.cast(self.f.floor(self.f.ieee_divide(left, right)), op.dtype)
 
     def visit_Log2(self, op, *, arg):
-        return self.f.log(arg, 2, dialect=self.dialect)
+        return self.f.log(arg, 2)
 
     def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.ln(arg)
-        return self.f.log(arg, base, dialect=self.dialect)
+        return self.f.log(arg, base)
 
     def visit_ArrayRepeat(self, op, *, arg, times):
         start = step = 1
@@ -676,14 +672,14 @@ class BigQueryCompiler(SQLGlotCompiler):
             unit = "WEEK(MONDAY)"
         else:
             unit = unit.name
-        return self.f.timestamp_trunc(arg, self.v[unit], dialect=self.dialect)
+        return self.f.timestamp_trunc(arg, self.v[unit])
 
     def visit_DateTruncate(self, op, *, arg, unit):
         if unit == DateUnit.WEEK:
             unit = "WEEK(MONDAY)"
         else:
             unit = unit.name
-        return self.f.date_trunc(arg, self.v[unit], dialect=self.dialect)
+        return self.f.date_trunc(arg, self.v[unit])
 
     def visit_TimeTruncate(self, op, *, arg, unit):
         if unit == TimeUnit.NANOSECOND:
@@ -692,7 +688,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             )
         else:
             unit = unit.name
-        return self.f.time_trunc(arg, self.v[unit], dialect=self.dialect)
+        return self.f.time_trunc(arg, self.v[unit])
 
     def _nullifzero(self, step, zero, step_dtype):
         if step_dtype.is_interval():

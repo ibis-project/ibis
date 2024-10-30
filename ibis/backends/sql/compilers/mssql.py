@@ -265,7 +265,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         if (unit := interval_units.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit!r}")
 
-        return self.f.datetrunc(self.v[unit], arg, dialect=self.dialect)
+        return self.f.datetrunc(self.v[unit], arg)
 
     visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
 
@@ -273,9 +273,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.cast(arg, dt.date)
 
     def visit_DateTimeDelta(self, op, *, left, right, part):
-        return self.f.datediff(
-            sge.Var(this=part.this.upper()), right, left, dialect=self.dialect
-        )
+        return self.f.datediff(sge.Var(this=part.this.upper()), right, left)
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_DateTimeDelta
 
@@ -316,7 +314,7 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.cast(
-            self.f.datediff(self.v.s, "1970-01-01 00:00:00", arg, dialect=self.dialect),
+            self.f.datediff(self.v.s, "1970-01-01 00:00:00", arg),
             dt.int64,
         )
 
@@ -403,12 +401,12 @@ class MSSQLCompiler(SQLGlotCompiler):
         return None
 
     def visit_Log2(self, op, *, arg):
-        return self.f.log(arg, 2, dialect=self.dialect)
+        return self.f.log(arg, 2)
 
     def visit_Log(self, op, *, arg, base):
         if base is None:
-            return self.f.log(arg, dialect=self.dialect)
-        return self.f.log(arg, base, dialect=self.dialect)
+            return self.f.log(arg)
+        return self.f.log(arg, base)
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
@@ -520,14 +518,10 @@ class MSSQLCompiler(SQLGlotCompiler):
         return result
 
     def visit_TimestampAdd(self, op, *, left, right):
-        return self.f.dateadd(
-            right.unit, self.cast(right.this, dt.int64), left, dialect=self.dialect
-        )
+        return self.f.dateadd(right.unit, self.cast(right.this, dt.int64), left)
 
     def visit_TimestampSub(self, op, *, left, right):
-        return self.f.dateadd(
-            right.unit, -self.cast(right.this, dt.int64), left, dialect=self.dialect
-        )
+        return self.f.dateadd(right.unit, -self.cast(right.this, dt.int64), left)
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
