@@ -103,7 +103,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoWithin: "st_within",
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
-        ops.RegexExtract: "regexp_extract",
     }
 
     def to_sqlglot(

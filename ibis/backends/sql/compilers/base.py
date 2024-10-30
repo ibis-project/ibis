@@ -359,6 +359,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.Radians: "radians",
         ops.RegexSearch: "regexp_like",
         ops.RegexSplit: "regexp_split",
+        ops.RegexExtract: "regexp_extract",
         ops.Repeat: "repeat",
         ops.Reverse: "reverse",
         ops.RowNumber: "row_number",
@@ -1542,9 +1543,6 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, dialect=self.dialect).subquery(copy=False)
-
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
     def binop(self, sg_cls, left, right):
         # If the op is associative we can skip parenthesizing ops of the same
