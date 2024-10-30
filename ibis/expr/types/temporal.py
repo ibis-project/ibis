@@ -1251,6 +1251,39 @@ class DayOfWeek:
         -------
         IntegerValue
             The index of the day of the week.
+
+        Examples
+        --------
+        >>> from datetime import date
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "date_col": [
+        ...             date(2024, 10, 27),
+        ...             date(2024, 10, 28),
+        ...             date(2024, 10, 29),
+        ...             date(2024, 10, 30),
+        ...             date(2024, 10, 31),
+        ...             date(2024, 11, 1),
+        ...             date(2024, 11, 2),
+        ...         ]
+        ...     },
+        ... )
+        >>> t.date_col.day_of_week.index()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ DayOfWeekIndex(date_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ int16                    │
+        ├──────────────────────────┤
+        │                        6 │
+        │                        0 │
+        │                        1 │
+        │                        2 │
+        │                        3 │
+        │                        4 │
+        │                        5 │
+        └──────────────────────────┘
         """
         return ops.DayOfWeekIndex(self._expr).to_expr()
 
@@ -1261,5 +1294,38 @@ class DayOfWeek:
         -------
         StringValue
             The name of the day of the week
+
+        Examples
+        --------
+        >>> from datetime import date
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "date_col": [
+        ...             date(2024, 10, 27),
+        ...             date(2024, 10, 28),
+        ...             date(2024, 10, 29),
+        ...             date(2024, 10, 30),
+        ...             date(2024, 10, 31),
+        ...             date(2024, 11, 1),
+        ...             date(2024, 11, 2),
+        ...         ]
+        ...     },
+        ... )
+        >>> t.date_col.day_of_week.full_name()
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ DayOfWeekName(date_col) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string                  │
+        ├─────────────────────────┤
+        │ Sunday                  │
+        │ Monday                  │
+        │ Tuesday                 │
+        │ Wednesday               │
+        │ Thursday                │
+        │ Friday                  │
+        │ Saturday                │
+        └─────────────────────────┘
         """
         return ops.DayOfWeekName(self._expr).to_expr()
