@@ -32,7 +32,7 @@ You can use the `.value` attribute to get the underlying selection in Python as 
 table.value
 ```
 
-### Interactive Filtering
+### Interactive filtering
 
 Use marimo's no-code dataframe transformer to interactively filter and transform your Ibis data:
 
@@ -43,7 +43,7 @@ transof
 
 The `.value` attribute of the transformer contains the underlying Ibis table.
 
-### Combining Filters with Ibis Queries
+### Combining filters with Ibis queries
 
 You can combine marimo's UI elements with Ibis queries to create interactive filters:
 
@@ -70,7 +70,7 @@ filtered_data = penguins.filter(
 mo.ui.table(filtered_data)
 ```
 
-### Layout and Presentation
+### Layout and presentation
 
 Use marimo's layout tools to organize your visualizations:
 
@@ -91,4 +91,4 @@ mo.ui.tabs({
 
 ## Examples
 
-For more examples, checkout the Ibis notebooks in the marimo repo: <https://github.com/marimo-team/marimo/tree/main/examples/third_party/ibis>
+For more examples, checkout the Ibis notebooks in the marimo repo: <https://github.com/marimo-team/marimo/tree/main/examples/third_party/ibis>.
