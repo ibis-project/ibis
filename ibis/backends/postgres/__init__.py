@@ -23,7 +23,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, CanListCatalog
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import TRUE, C, ColGen, F
+from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -390,13 +390,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @property
     def current_catalog(self) -> str:
-        with self._safe_raw_sql(sg.select(F.current_database())) as cur:
+        with self._safe_raw_sql(sg.select(sg.func("current_database"))) as cur:
             (db,) = cur.fetchone()
         return db
 
     @property
     def current_database(self) -> str:
-        with self._safe_raw_sql(sg.select(F.current_schema())) as cur:
+        with self._safe_raw_sql(sg.select(sg.func("current_schema"))) as cur:
             (schema,) = cur.fetchone()
         return schema
 
