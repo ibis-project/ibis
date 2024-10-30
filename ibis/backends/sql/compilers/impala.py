@@ -257,7 +257,7 @@ class ImpalaCompiler(SQLGlotCompiler):
             "us": "MICROSECONDS",
         }
         if unit.short == "Q":
-            return self.f.trunc(arg, "Q")
+            return self.f.anon.trunc(arg, "Q")
         if (impala_unit := units.get(unit.short)) is None:
             raise com.UnsupportedOperationError(
                 f"{unit!r} unit is not supported in timestamp/date truncate"
@@ -266,7 +266,7 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_DateTruncate(self, op, *, arg, unit):
         if unit.short == "Q":
-            return self.f.trunc(arg, "Q")
+            return self.f.anon.trunc(arg, "Q")
         return self.f.date_trunc(unit.name.upper(), arg)
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
