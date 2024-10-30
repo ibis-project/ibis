@@ -125,7 +125,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Atan2: "atn2",
         ops.DateFromYMD: "datefromparts",
         ops.Hash: "checksum",
-        ops.Ln: "log",
         ops.Log10: "log10",
         ops.Power: "power",
         ops.Repeat: "replicate",
@@ -178,6 +177,9 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **_):
         return self.f.newid()
+
+    def visit_Ln(self, op, *, arg):
+        return self.f.anon.log(arg)
 
     def visit_RandomScalar(self, op, **_):
         # By default RAND() will generate the same value for all calls within a
