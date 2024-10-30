@@ -1,2 +1,2 @@
 SELECT
-  TO_HEX(MD5('test')) AS `tmp`
+  MD5('test') AS `tmp`

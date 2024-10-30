@@ -1,2 +1,2 @@
 SELECT
-  timestamp_micros(123456789) AS `tmp`
+  TIMESTAMP_MICROS(123456789) AS `tmp`
