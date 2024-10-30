@@ -39,7 +39,16 @@ class _DateComponentMixin:
         return ops.ExtractIsoYear(self).to_expr()
 
     def month(self) -> ir.IntegerValue:
-        """Extract the month component."""
+        """Extract the month component.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.date(2024, 12, 31).month()
+        ┌────┐
+        │ 12 │
+        └────┘
+        """
         return ops.ExtractMonth(self).to_expr()
 
     def day(self) -> ir.IntegerValue:
