@@ -1,0 +1,101 @@
+# marimo + Ibis
+
+If you don't have data to visualize, you can load an example table:
+
+```{python}
+#| code-fold: true
+import ibis
+import ibis.selectors as s
+
+ibis.options.interactive = True
+
+penguins = ibis.examples.penguins.fetch()
+penguins.head(3)
+```
+
+## Using marimo with Ibis
+
+[marimo](https://docs.marimo.io) is a reactive notebook for Python that
+provides interactive UI elements and dataframe tools. You can use marimo's
+interactive features directly with your Ibis tables.
+
+First, import marimo and create an interactive table:
+
+```python
+import marimo as mo
+
+table = mo.ui.table(penguins, selection="multi")
+table
+```
+
+You can use the `.value` attribute to get the underlying selection in Python as
+an Ibis table. This value can be used to create visualizations, filters, and
+other interactive elements.
+
+```python
+table.value
+```
+
+### Interactive filtering
+
+Use marimo's no-code dataframe transformer to interactively filter and
+transform your Ibis data:
+
+```python
+transof = mo.ui.dataframe(penguins)
+transof
+```
+
+The `.value` attribute of the transformer contains the underlying Ibis table.
+
+### Combining filters with Ibis queries
+
+You can combine marimo's UI elements with Ibis queries to create interactive
+filters:
+
+```python
+# Create a bill length slider
+min = penguins.bill_length_mm.min().execute()
+max = penguins.bill_length_mm.max().execute()
+bill_length_slider = mo.ui.slider(
+    start=min,
+    stop=max,
+    value=max,
+    label="Max Bill Length (mm)",
+)
+bill_length_slider
+```
+
+```python
+# Apply the filters to the Ibis query
+filtered_data = penguins.filter(
+    [penguins.bill_length_mm <= bill_length_slider.value]
+)
+
+# Display the filtered results in an interactive table
+mo.ui.table(filtered_data)
+```
+
+### Layout and presentation
+
+Use marimo's layout tools to organize your visualizations:
+
+```python
+# Create tabs for different views of the data
+mo.ui.tabs({
+    "Raw Data": mo.ui.table(penguins),
+    "Summary Statistics": mo.ui.table(
+        penguins.group_by("species")
+        .agg(
+            count=ibis._.count(),
+            avg_bill_length=ibis._.bill_length_mm.mean(),
+            avg_bill_depth=ibis._.bill_depth_mm.mean(),
+        )
+    ),
+})
+```
+
+## Examples
+
+For more examples, checkout the Ibis notebooks in the marimo repo:
+<https://github.com/marimo-team/marimo/tree/main/examples/third_party/ibis>.

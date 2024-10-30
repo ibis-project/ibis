@@ -132,6 +132,7 @@ Additionally, choose tools for:
 - Quarto dashboards
 - Shiny for Python
 - Dash
+- marimo
 - ...
 
 **Testing**:
