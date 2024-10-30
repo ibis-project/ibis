@@ -27,7 +27,16 @@ class _DateComponentMixin:
     """Temporal expressions that have a date component."""
 
     def epoch_seconds(self) -> ir.IntegerValue:
-        """Extract UNIX epoch in seconds."""
+        """Extract UNIX epoch in seconds.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.date(2024, 12, 31).epoch_seconds()
+        ┌────────────┐
+        │ 1735603200 │
+        └────────────┘
+        """
         return ops.ExtractEpochSeconds(self).to_expr()
 
     def year(self) -> ir.IntegerValue:
