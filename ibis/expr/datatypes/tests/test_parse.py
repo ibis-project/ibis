@@ -322,3 +322,7 @@ roundtrippable_dtypes = st.deferred(
 @h.given(roundtrippable_dtypes)
 def test_parse_dtype_roundtrip(dtype):
     assert dt.dtype(str(dtype)) == dtype
+
+
+def test_parse_empty_struct():
+    assert dt.dtype("struct<>") == dt.Struct({})
