@@ -706,7 +706,7 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         offset = sg.to_identifier("offset")
 
-        this = self.f.anon.dateAdd(sg.to_identifier(unit), offset, start)
+        this = self.f.dateAdd(self.v[unit], offset, start)
         func = sge.Lambda(this=this, expressions=[offset])
 
         if step_value == 0:
