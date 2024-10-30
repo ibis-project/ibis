@@ -6,6 +6,7 @@ import hypothesis as h
 import hypothesis.strategies as st
 import parsy
 import pytest
+from pytest import param
 
 import ibis.expr.datatypes as dt
 import ibis.tests.strategies as its
@@ -159,14 +160,32 @@ def test_struct_with_string_types():
     )
 
 
-def test_struct_trailing_comma_single():
-    result = dt.dtype("struct<a: int32,>")
-    assert result == dt.Struct.from_tuples([("a", dt.int32)])
+@pytest.mark.parametrize(
+    ("type_string", "expected_dtype"),
+    [
+        ("struct<a: int32,>", {"a": dt.int32}),
+        ("struct<a: int32, b: string  , >", {"a": dt.int32, "b": dt.string}),
+    ],
+    ids=["single_field", "multiple_fields"],
+)
+def test_struct_trailing_comma(type_string, expected_dtype):
+    result = dt.dtype(type_string)
+    assert result == dt.Struct(expected_dtype)
 
 
-def test_struct_trailing_comma_multi():
-    result = dt.dtype("struct<a: int32, b: string  , >")
-    assert result == dt.Struct.from_tuples([("a", dt.int32), ("b", dt.string)])
+@pytest.mark.parametrize(
+    "invalid_type_string",
+    [
+        param("struct<,>", id="missing_key"),
+        param("struct<a,>", id="missing_colon"),
+        param("struct<b: ,>", id="missing_value"),
+        param("struct<c:in,>", id="invalid_type"),
+        param("struct<a:int,b:int64,,>", id="double_comma"),
+    ],
+)
+def test_struct_trailing_comma_invalid(invalid_type_string):
+    with pytest.raises(parsy.ParseError):
+        dt.dtype(invalid_type_string)
 
 
 def test_array_with_string_value_types():
