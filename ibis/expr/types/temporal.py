@@ -238,7 +238,16 @@ class _TimeComponentMixin:
         return ops.ExtractMicrosecond(self).to_expr()
 
     def millisecond(self) -> ir.IntegerValue:
-        """Extract the millisecond component."""
+        """Extract the millisecond component.
+
+        Examples
+        --------
+        >>> from ibis.interactive import *
+        >>> ibis.timestamp("2024-12-31 23:59:59.999").millisecond()
+        ┌─────┐
+        │ 999 │
+        └─────┘
+        """
         return ops.ExtractMillisecond(self).to_expr()
 
     def between(
