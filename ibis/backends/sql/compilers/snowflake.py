@@ -59,7 +59,12 @@ def multiple_args_to_zipped_struct_field_access(_, **kwargs):
 
 
 class SnowflakeFuncGen(FuncGen):
-    udf = FuncGen(namespace="ibis_udfs.public")
+    __slots__ = ()
+
+    def __init__(self, *, namespace: str | None = None, copy: bool = False) -> None:
+        super().__init__(dialect=Snowflake, namespace=namespace, copy=copy)
+
+    udf = FuncGen(dialect=Snowflake, namespace="ibis_udfs.public")
 
 
 class SnowflakeCompiler(SQLGlotCompiler):

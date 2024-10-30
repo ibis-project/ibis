@@ -142,13 +142,9 @@ class AggGen:
 
         if order_by and self.supports_order_by:
             *rest, last = args
-            out = func(
-                *rest,
-                sge.Order(this=last, expressions=order_by),
-                dialect=compiler.dialect,
-            )
+            out = func(*rest, sge.Order(this=last, expressions=order_by))
         else:
-            out = func(*args, dialect=compiler.dialect)
+            out = func(*args)
 
         if where is not None and self.supports_filter:
             out = sge.Filter(this=out, expression=sge.Where(this=where))
@@ -179,9 +175,12 @@ class AnonymousFuncGen:
 
 
 class FuncGen:
-    __slots__ = ("namespace", "anon", "copy")
+    __slots__ = ("dialect", "namespace", "anon", "copy")
 
-    def __init__(self, namespace: str | None = None, copy: bool = False) -> None:
+    def __init__(
+        self, *, dialect: sg.Dialect, namespace: str | None = None, copy: bool = False
+    ) -> None:
+        self.dialect = dialect
         self.namespace = namespace
         self.anon = AnonymousFuncGen()
         self.copy = copy
@@ -189,7 +188,11 @@ class FuncGen:
     def __getattr__(self, name: str) -> Callable[..., sge.Func]:
         name = ".".join(filter(None, (self.namespace, name)))
         return lambda *args, **kwargs: sg.func(
-            name, *map(sge.convert, args), **kwargs, copy=self.copy
+            name,
+            *map(sge.convert, args),
+            **kwargs,
+            copy=self.copy,
+            dialect=self.dialect,
         )
 
     def __getitem__(self, key: str) -> Callable[..., sge.Func]:
@@ -235,7 +238,6 @@ class ColGen:
 
 
 C = ColGen()
-F = FuncGen()
 NULL = sge.Null()
 FALSE = sge.false()
 TRUE = sge.true()
@@ -442,7 +444,9 @@ class SQLGlotCompiler(abc.ABC):
     lowered_ops: ClassVar[dict[type[ops.Node], pats.Replace]] = {}
 
     def __init__(self) -> None:
-        self.f = FuncGen(copy=self.__class__.copy_func_args)
+        self.f = FuncGen(
+            dialect=self.__class__.dialect, copy=self.__class__.copy_func_args
+        )
         self.v = VarGen()
 
     def __init_subclass__(cls, **kwargs):
@@ -1234,7 +1238,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_ScalarUDF(self, op, **kw):
-        return self.f[self.__sql_name__(op)](*kw.values(), dialect=self.dialect)
+        return self.f[self.__sql_name__(op)](*kw.values())
 
     def visit_AggUDF(self, op, *, where, **kw):
         return self.agg[self.__sql_name__(op)](*kw.values(), where=where)
