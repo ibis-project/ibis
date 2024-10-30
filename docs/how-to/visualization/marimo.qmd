@@ -3,7 +3,7 @@
 If you don't have data to visualize, you can load an example table:
 
 ```{python}
-# | code-fold: true
+#| code-fold: true
 import ibis
 import ibis.selectors as s
 
