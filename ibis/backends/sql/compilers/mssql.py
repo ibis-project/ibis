@@ -224,12 +224,12 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.sum(self.if_(where, 1, 0))
-        return self.f.count(STAR)
+        return self.f.count_big(STAR)
 
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.count(sge.Distinct(expressions=[arg]))
+        return self.f.count_big(sge.Distinct(expressions=[arg]))
 
     def visit_ApproxQuantile(self, op, *, arg, quantile, where):
         if where is not None:
