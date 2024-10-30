@@ -371,7 +371,7 @@ class OracleCompiler(SQLGlotCompiler):
         if (unyt := trunc_unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.trunc(arg, unyt)
+        return self.f.anon.trunc(arg, unyt)
 
     visit_TimestampTruncate = visit_DateTruncate
 
