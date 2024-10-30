@@ -1217,6 +1217,23 @@ class IntervalValue(Value):
         -------
         IntervalValue
             A negated interval value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+
+        Negate a positive interval of one day to subtract a day from a specific date.
+        >>> ibis.date(2024, 11, 1) + ibis.interval(days=1).negate()
+        ┌────────────┐
+        │ 2024-10-31 │
+        └────────────┘
+
+        Negate a negative interval of one day to add a day to a specific date.
+        >>> ibis.date(2024, 11, 1) + ibis.interval(days=-1).negate()
+        ┌────────────┐
+        │ 2024-11-02 │
+        └────────────┘
         """
         return ops.Negate(self).to_expr()
 
