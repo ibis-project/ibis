@@ -142,9 +142,13 @@ class AggGen:
 
         if order_by and self.supports_order_by:
             *rest, last = args
-            out = func(*rest, sge.Order(this=last, expressions=order_by))
+            out = func(
+                *rest,
+                sge.Order(this=last, expressions=order_by),
+                dialect=compiler.dialect,
+            )
         else:
-            out = func(*args)
+            out = func(*args, dialect=compiler.dialect)
 
         if where is not None and self.supports_filter:
             out = sge.Filter(this=out, expression=sge.Where(this=where))
@@ -1230,7 +1234,7 @@ class SQLGlotCompiler(abc.ABC):
         )
 
     def visit_ScalarUDF(self, op, **kw):
-        return self.f[self.__sql_name__(op)](*kw.values())
+        return self.f[self.__sql_name__(op)](*kw.values(), dialect=self.dialect)
 
     def visit_AggUDF(self, op, *, where, **kw):
         return self.agg[self.__sql_name__(op)](*kw.values(), where=where)
