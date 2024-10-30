@@ -207,7 +207,7 @@ class OracleCompiler(SQLGlotCompiler):
         return arg.eq(self.NAN)
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
@@ -371,7 +371,7 @@ class OracleCompiler(SQLGlotCompiler):
         if (unyt := trunc_unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.trunc(arg, unyt)
+        return self.f.anon.trunc(arg, unyt)
 
     visit_TimestampTruncate = visit_DateTruncate
 

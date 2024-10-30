@@ -32,7 +32,7 @@ class ClickhouseAggGen(AggGen):
         if where is not None:
             name += "If"
             args += (where,)
-        return compiler.f[name](*args, dialect=compiler.dialect)
+        return compiler.f[name](*args)
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -706,10 +706,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         offset = sg.to_identifier("offset")
 
-        func = sge.Lambda(
-            this=self.f.dateAdd(sg.to_identifier(unit), offset, start),
-            expressions=[offset],
-        )
+        this = self.f.dateAdd(self.v[unit], offset, start)
+        func = sge.Lambda(this=this, expressions=[offset])
 
         if step_value == 0:
             return self.f.array()

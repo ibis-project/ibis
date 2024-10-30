@@ -379,7 +379,6 @@ class SQLiteCompiler(SQLGlotCompiler):
                 sign, self.cast(right, dt.string), " ", unit.singular.lower()
             ),
             *modifiers,
-            dialect=self.dialect,
         )
 
     visit_TimestampAdd = visit_TimestampSub = visit_DateAdd = visit_DateSub = (

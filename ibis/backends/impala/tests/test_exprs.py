@@ -411,8 +411,8 @@ def test_decimal_timestamp_builtins(con):
         "weeks",
     ]
     for field in timestamp_fields:
-        if hasattr(ts, field):
-            exprs.append(getattr(ts, field)())
+        if (attr := getattr(ts, field, None)) is not None:
+            exprs.append(attr())
 
         offset = ibis.interval(**{field: 2})
         exprs.append(ts + offset)

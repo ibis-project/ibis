@@ -67,6 +67,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         ops.Hash: "fnv_hash",
         ops.Ln: "ln",
         ops.TypeOf: "typeof",
+        ops.RegexReplace: "regexp_replace",
     }
 
     @staticmethod
@@ -153,7 +154,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_Log(self, op, *, arg, base):
         if base is None:
             return self.f.ln(arg)
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_DateFromYMD(self, op, *, year, month, day):
         return self.cast(
@@ -236,7 +237,7 @@ class ImpalaCompiler(SQLGlotCompiler):
         format_str = sg.time.format_time(
             op.format_str.value, {v: k for k, v in Impala.TIME_MAPPING.items()}
         )
-        return self.f.from_unixtime(
+        return self.f.anon.from_unixtime(
             self.f.unix_timestamp(self.cast(arg, dt.string)), format_str
         )
 
@@ -256,7 +257,7 @@ class ImpalaCompiler(SQLGlotCompiler):
             "us": "MICROSECONDS",
         }
         if unit.short == "Q":
-            return self.f.trunc(arg, "Q")
+            return self.f.anon.trunc(arg, "Q")
         if (impala_unit := units.get(unit.short)) is None:
             raise com.UnsupportedOperationError(
                 f"{unit!r} unit is not supported in timestamp/date truncate"
@@ -265,12 +266,14 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_DateTruncate(self, op, *, arg, unit):
         if unit.short == "Q":
-            return self.f.trunc(arg, "Q")
+            return self.f.anon.trunc(arg, "Q")
         return self.f.date_trunc(unit.name.upper(), arg)
 
     def visit_TimestampFromUNIX(self, op, *, arg, unit):
         arg = self.cast(util.convert_unit(arg, unit.short, "s"), dt.int32)
-        return self.cast(self.f.from_unixtime(arg, "yyyy-MM-dd HH:mm:ss"), dt.timestamp)
+        return self.cast(
+            self.f.anon.from_unixtime(arg, "yyyy-MM-dd HH:mm:ss"), dt.timestamp
+        )
 
     def visit_DateAdd(self, op, *, left, right):
         return self.cast(
@@ -296,9 +299,6 @@ class ImpalaCompiler(SQLGlotCompiler):
 
     def visit_Date(self, op, *, arg):
         return self.cast(self.f.to_date(arg), dt.date)
-
-    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
-        return self.f.regexp_replace(arg, pattern, replacement, dialect=self.dialect)
 
     def visit_RegexExtract(self, op, *, arg, pattern, index):
         return self.f.anon.regexp_extract(arg, pattern, index)

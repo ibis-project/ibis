@@ -131,3 +131,21 @@ def test_kwargs_are_forwarded(con):
     expr = no_kwargs(ibis.literal(2))
     with pytest.raises(duckdb.InvalidInputException):
         con.execute(expr)
+
+
+def test_builtin_udf_uses_dialect():
+    # in raw sqlglot, if you call regexp_extract, it will assume the
+    # 3rd arg is "position" and not "groups". So when we make the UDF,
+    # we need to make sure that we pass the dialect when creating the
+    # sqlglot.expressions.func() object
+    @udf.scalar.builtin(
+        signature=(
+            ("string", "string", "array<string>"),
+            "struct<y: string, m: string, d: str>",
+        ),
+    )
+    def regexp_extract(s, pattern, groups): ...
+
+    e = regexp_extract("2023-04-15", r"(\d+)-(\d+)-(\d+)", ["y", "m", "d"])
+    sql = str(ibis.to_sql(e, dialect="duckdb"))
+    assert r"REGEXP_EXTRACT('2023-04-15', '(\d+)-(\d+)-(\d+)', ['y', 'm', 'd'])" in sql

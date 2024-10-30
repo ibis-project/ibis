@@ -523,13 +523,8 @@ class DuckDBCompiler(SQLGlotCompiler):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(super().visit_TimestampNow(op), dt.timestamp)
 
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
-
     def visit_RegexReplace(self, op, *, arg, pattern, replacement):
-        return self.f.regexp_replace(
-            arg, pattern, replacement, "g", dialect=self.dialect
-        )
+        return self.f.regexp_replace(arg, pattern, replacement, "g")
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
@@ -550,6 +545,9 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.agg.first(
             arg, where=where, order_by=[sge.Ordered(this=key, desc=True)]
         )
+
+    def visit_Median(self, op, *, arg, where):
+        return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)
 
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"

@@ -443,11 +443,11 @@ class FlinkCompiler(SQLGlotCompiler):
         return self.f.extract(self.v.microsecond, arg)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return (self.f.dayofweek(arg) + 5) % 7
+        return (self.f.anon.dayofweek(arg) + 5) % 7
 
     def visit_DayOfWeekName(self, op, *, arg):
-        index = self.cast(self.f.dayofweek(self.cast(arg, dt.date)), op.dtype)
-        lookup_table = self.f.str_to_map(
+        index = self.cast(self.f.anon.dayofweek(self.cast(arg, dt.date)), op.dtype)
+        lookup_table = self.f.anon.str_to_map(
             "1=Sunday,2=Monday,3=Tuesday,4=Wednesday,5=Thursday,6=Friday,7=Saturday"
         )
         return lookup_table[index]

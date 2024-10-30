@@ -175,9 +175,12 @@ class AnonymousFuncGen:
 
 
 class FuncGen:
-    __slots__ = ("namespace", "anon", "copy")
+    __slots__ = ("dialect", "namespace", "anon", "copy")
 
-    def __init__(self, namespace: str | None = None, copy: bool = False) -> None:
+    def __init__(
+        self, *, dialect: sg.Dialect, namespace: str | None = None, copy: bool = False
+    ) -> None:
+        self.dialect = dialect
         self.namespace = namespace
         self.anon = AnonymousFuncGen()
         self.copy = copy
@@ -185,7 +188,11 @@ class FuncGen:
     def __getattr__(self, name: str) -> Callable[..., sge.Func]:
         name = ".".join(filter(None, (self.namespace, name)))
         return lambda *args, **kwargs: sg.func(
-            name, *map(sge.convert, args), **kwargs, copy=self.copy
+            name,
+            *map(sge.convert, args),
+            **kwargs,
+            copy=self.copy,
+            dialect=self.dialect,
         )
 
     def __getitem__(self, key: str) -> Callable[..., sge.Func]:
@@ -231,7 +238,6 @@ class ColGen:
 
 
 C = ColGen()
-F = FuncGen()
 NULL = sge.Null()
 FALSE = sge.false()
 TRUE = sge.true()
@@ -353,6 +359,7 @@ class SQLGlotCompiler(abc.ABC):
         ops.Radians: "radians",
         ops.RegexSearch: "regexp_like",
         ops.RegexSplit: "regexp_split",
+        ops.RegexExtract: "regexp_extract",
         ops.Repeat: "repeat",
         ops.Reverse: "reverse",
         ops.RowNumber: "row_number",
@@ -438,7 +445,9 @@ class SQLGlotCompiler(abc.ABC):
     lowered_ops: ClassVar[dict[type[ops.Node], pats.Replace]] = {}
 
     def __init__(self) -> None:
-        self.f = FuncGen(copy=self.__class__.copy_func_args)
+        self.f = FuncGen(
+            dialect=self.__class__.dialect, copy=self.__class__.copy_func_args
+        )
         self.v = VarGen()
 
     def __init_subclass__(cls, **kwargs):
@@ -1534,9 +1543,6 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_SQLQueryResult(self, op, *, query, schema, source):
         return sg.parse_one(query, dialect=self.dialect).subquery(copy=False)
-
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
 
     def binop(self, sg_cls, left, right):
         # If the op is associative we can skip parenthesizing ops of the same

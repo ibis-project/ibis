@@ -59,7 +59,12 @@ def multiple_args_to_zipped_struct_field_access(_, **kwargs):
 
 
 class SnowflakeFuncGen(FuncGen):
-    udf = FuncGen(namespace="ibis_udfs.public")
+    __slots__ = ()
+
+    def __init__(self, *, namespace: str | None = None, copy: bool = False) -> None:
+        super().__init__(dialect=Snowflake, namespace=namespace, copy=copy)
+
+    udf = FuncGen(dialect=Snowflake, namespace="ibis_udfs.public")
 
 
 class SnowflakeCompiler(SQLGlotCompiler):
@@ -378,7 +383,7 @@ $$""",
         )
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_RandomScalar(self, op, **kwargs):
         return self.f.uniform(
@@ -392,19 +397,19 @@ $$""",
         return self.agg.approx_percentile(arg, 0.5, where=where)
 
     def visit_TimeDelta(self, op, *, part, left, right):
-        return self.f.timediff(part, right, left, dialect=self.dialect)
+        return self.f.timediff(part, right, left)
 
     def visit_DateDelta(self, op, *, part, left, right):
-        return self.f.datediff(part, right, left, dialect=self.dialect)
+        return self.f.datediff(part, right, left)
 
     def visit_TimestampDelta(self, op, *, part, left, right):
-        return self.f.timestampdiff(part, right, left, dialect=self.dialect)
+        return self.f.timestampdiff(part, right, left)
 
     def visit_TimestampAdd(self, op, *, left, right):
-        return self.f.timestampadd(right.unit, right.this, left, dialect=self.dialect)
+        return self.f.timestampadd(right.unit, right.this, left)
 
     def visit_TimestampSub(self, op, *, left, right):
-        return self.f.timestampadd(right.unit, -right.this, left, dialect=self.dialect)
+        return self.f.timestampadd(right.unit, -right.this, left)
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
@@ -766,7 +771,7 @@ $$""",
                         # anyway due to lack of parameterized type support in
                         # Snowflake the format depends on a session parameter
                         self.f.to_varchar(
-                            self.f.dateadd(unit, C.value, start, dialect=self.dialect),
+                            self.f.dateadd(unit, C.value, start),
                             'YYYY-MM-DD"T"HH24:MI:SS.FF6'
                             + (value_type.timezone is not None) * "TZH:TZM",
                         ),
@@ -782,11 +787,7 @@ $$""",
                     this=sge.Unnest(
                         expressions=[
                             self.f.array_generate_range(
-                                0,
-                                self.f.datediff(
-                                    unit, start, stop, dialect=self.dialect
-                                ),
-                                step,
+                                0, self.f.datediff(unit, start, stop), step
                             )
                         ]
                     )
