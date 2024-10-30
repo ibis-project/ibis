@@ -1187,7 +1187,7 @@ expr = expr1.union(expr2)
 ibis.to_sql(expr)
 ```
 
-### Intersect/Except
+### Intersection and difference
 
 SQL dialects support `INTERSECT` and `EXCEPT` operators that returns rows that
 are in both tables or only in one table, respectively.
