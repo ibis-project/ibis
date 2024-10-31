@@ -522,7 +522,7 @@ class SQLGlotCompiler(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def dialect(self) -> str:
+    def dialect(self) -> type[sg.Dialect]:
         """Backend dialect."""
 
     @property

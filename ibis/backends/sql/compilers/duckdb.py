@@ -523,9 +523,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(super().visit_TimestampNow(op), dt.timestamp)
 
-    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
-        return self.f.regexp_replace(arg, pattern, replacement, "g")
-
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
