@@ -201,8 +201,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.ExtractHost: "net.host",
         ops.ArgMin: "min_by",
         ops.ArgMax: "max_by",
-        ops.TimeDelta: "time_diff",
-        ops.DateDelta: "date_diff",
     }
 
     def to_sqlglot(
@@ -383,14 +381,20 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_E(self, op):
         return self.f.exp(1)
 
+    def visit_TimeDelta(self, op, *, left, right, part):
+        return self.f.time_diff(left, right, self.v[part])
+
+    def visit_DateDelta(self, op, *, left, right, part):
+        return self.f.date_diff(left, right, self.v[part])
+
     def visit_TimestampDelta(self, op, *, left, right, part):
         left_tz = op.left.dtype.timezone
         right_tz = op.right.dtype.timezone
 
         if left_tz is None and right_tz is None:
-            return self.f.datetime_diff(left, right, part)
+            return self.f.datetime_diff(left, right, self.v[part])
         elif left_tz is not None and right_tz is not None:
-            return self.f.timestamp_diff(left, right, part)
+            return self.f.timestamp_diff(left, right, self.v[part])
 
         raise com.UnsupportedOperationError(
             "timestamp difference with mixed timezone/timezoneless values is not implemented"
