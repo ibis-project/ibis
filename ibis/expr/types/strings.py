@@ -1020,9 +1020,9 @@ class StringValue(Value):
         why="Different backends support different regular expression syntax."
     )
     def re_search(self, pattern: str | StringValue) -> ir.BooleanValue:
-        """Return whether the values match `pattern`.
+        """Return whether `self` contains the regex `pattern`.
 
-        Returns `True` if the regex matches a string and `False` otherwise.
+        Returns `True` if the regex matches any part of a string and `False` otherwise.
 
         Parameters
         ----------
@@ -1038,7 +1038,7 @@ class StringValue(Value):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub"]})
+        >>> t = ibis.memtable({"s": ["Ibis project", "GitHub", "GitHub Actions"]})
         >>> t.s.re_search(".+Hub")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ RegexSearch(s, '.+Hub') ┃
@@ -1046,6 +1046,7 @@ class StringValue(Value):
         │ boolean                 │
         ├─────────────────────────┤
         │ False                   │
+        │ True                    │
         │ True                    │
         └─────────────────────────┘
         """
