@@ -27,23 +27,73 @@ class _DateComponentMixin:
     """Temporal expressions that have a date component."""
 
     def epoch_seconds(self) -> ir.IntegerValue:
-        """Extract UNIX epoch in seconds."""
+        """Extract UNIX epoch in seconds.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).epoch_seconds()
+        ┌────────────┐
+        │ 1735603200 │
+        └────────────┘
+        """
         return ops.ExtractEpochSeconds(self).to_expr()
 
     def year(self) -> ir.IntegerValue:
-        """Extract the year component."""
+        """Extract the year component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).year()
+        ┌──────┐
+        │ 2024 │
+        └──────┘
+        """
         return ops.ExtractYear(self).to_expr()
 
     def iso_year(self) -> ir.IntegerValue:
-        """Extract the ISO year component."""
+        """Extract the ISO year component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).iso_year()
+        ┌──────┐
+        │ 2025 │
+        └──────┘
+        """
         return ops.ExtractIsoYear(self).to_expr()
 
     def month(self) -> ir.IntegerValue:
-        """Extract the month component."""
+        """Extract the month component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).month()
+        ┌────┐
+        │ 12 │
+        └────┘
+        """
         return ops.ExtractMonth(self).to_expr()
 
     def day(self) -> ir.IntegerValue:
-        """Extract the day component."""
+        """Extract the day component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).day()
+        ┌────┐
+        │ 31 │
+        └────┘
+        """
         return ops.ExtractDay(self).to_expr()
 
     @property
@@ -93,11 +143,31 @@ class _DateComponentMixin:
         return ops.ExtractDayOfYear(self).to_expr()
 
     def quarter(self) -> ir.IntegerValue:
-        """Extract the quarter component."""
+        """Extract the quarter component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).quarter()
+        ┌───┐
+        │ 4 │
+        └───┘
+        """
         return ops.ExtractQuarter(self).to_expr()
 
     def week_of_year(self) -> ir.IntegerValue:
-        """Extract the week of the year component."""
+        """Extract the week of the year component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.date(2024, 12, 31).week_of_year()
+        ┌───┐
+        │ 1 │
+        └───┘
+        """
         return ops.ExtractWeekOfYear(self).to_expr()
 
 
@@ -111,27 +181,86 @@ class _TimeComponentMixin:
         -------
         TimeValue
             The time component of `self`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).time()
+        ┌──────────┐
+        │ 23:59:59 │
+        └──────────┘
         """
         return ops.Time(self).to_expr()
 
     def hour(self) -> ir.IntegerValue:
-        """Extract the hour component."""
+        """Extract the hour component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).hour()
+        ┌────┐
+        │ 23 │
+        └────┘
+        """
         return ops.ExtractHour(self).to_expr()
 
     def minute(self) -> ir.IntegerValue:
-        """Extract the minute component."""
+        """Extract the minute component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).minute()
+        ┌────┐
+        │ 59 │
+        └────┘
+        """
         return ops.ExtractMinute(self).to_expr()
 
     def second(self) -> ir.IntegerValue:
-        """Extract the second component."""
+        """Extract the second component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).second()
+        ┌────┐
+        │ 59 │
+        └────┘
+        """
         return ops.ExtractSecond(self).to_expr()
 
     def microsecond(self) -> ir.IntegerValue:
-        """Extract the microsecond component."""
+        """Extract the microsecond component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp("2024-12-31 23:59:59.999").microsecond()
+        ┌────────┐
+        │ 999000 │
+        └────────┘
+        """
         return ops.ExtractMicrosecond(self).to_expr()
 
     def millisecond(self) -> ir.IntegerValue:
-        """Extract the millisecond component."""
+        """Extract the millisecond component.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> ibis.timestamp("2024-12-31 23:59:59.999").millisecond()
+        ┌─────┐
+        │ 999 │
+        └─────┘
+        """
         return ops.ExtractMillisecond(self).to_expr()
 
     def between(
@@ -158,6 +287,21 @@ class _TimeComponentMixin:
         BooleanValue
             Whether `self` is between `lower` and `upper`, adjusting `timezone`
             as needed.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> lower = ibis.date(2024, 12, 30)
+        >>> upper = ibis.date(2025, 1, 1)
+        >>> ibis.date(2024, 12, 31).between(lower, upper)
+        ┌──────┐
+        │ True │
+        └──────┘
+        >>> ibis.date(2020, 12, 31).between(lower, upper)
+        ┌───────┐
+        │ False │
+        └───────┘
         """
         op = self.op()
         if isinstance(op, ops.Time):
@@ -1217,6 +1361,23 @@ class IntervalValue(Value):
         -------
         IntervalValue
             A negated interval value expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+
+        Negate a positive interval of one day to subtract a day from a specific date.
+        >>> ibis.date(2024, 11, 1) + ibis.interval(days=1).negate()
+        ┌────────────┐
+        │ 2024-10-31 │
+        └────────────┘
+
+        Negate a negative interval of one day to add a day to a specific date.
+        >>> ibis.date(2024, 11, 1) + ibis.interval(days=-1).negate()
+        ┌────────────┐
+        │ 2024-11-02 │
+        └────────────┘
         """
         return ops.Negate(self).to_expr()
 
