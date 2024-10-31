@@ -274,6 +274,21 @@ class _TimeComponentMixin:
         BooleanValue
             Whether `self` is between `lower` and `upper`, adjusting `timezone`
             as needed.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> lower = ibis.date(2024, 12, 30)
+        >>> upper = ibis.date(2025, 1, 1)
+        >>> ibis.date(2024, 12, 31).between(lower, upper)
+        ┌──────┐
+        │ True │
+        └──────┘
+        >>> ibis.date(2020, 12, 31).between(lower, upper)
+        ┌───────┐
+        │ False │
+        └───────┘
         """
         op = self.op()
         if isinstance(op, ops.Time):
