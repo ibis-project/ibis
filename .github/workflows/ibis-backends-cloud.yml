@@ -127,6 +127,19 @@ jobs:
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
 
+      - name: setup databricks credentials
+        if: matrix.backend.name == 'databricks'
+        run: |
+          {
+            echo "DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH}"
+            echo "DATABRICKS_SERVER_HOSTNAME=${DATABRICKS_SERVER_HOSTNAME}"
+            echo "DATABRICKS_TOKEN=${DATABRICKS_TOKEN}"
+          } >> "$GITHUB_ENV"
+        env:
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
         run: |

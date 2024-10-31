@@ -63,6 +63,12 @@ class Backend(SQLBackend, CanCreateDatabase):
 
         bool_type: Literal["Bool", "UInt8", "Int8"] = "Bool"
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        """No-op."""
+
+    def _finalize_memtable(self, name: str) -> None:
+        """No-op."""
+
     def _from_url(self, url: ParseResult, **kwargs) -> BaseBackend:
         """Connect to a backend using a URL `url`.
 

@@ -21,6 +21,7 @@ no_python_udfs = mark.notimpl(
         "oracle",
         "trino",
         "risingwave",
+        "databricks",
     ]
 )
 cloudpickle_version_mismatch = mark.notimpl(

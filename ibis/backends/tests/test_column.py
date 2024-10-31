@@ -23,6 +23,7 @@ import ibis.common.exceptions as com
         "trino",
         "druid",
         "flink",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )

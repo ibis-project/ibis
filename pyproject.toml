@@ -56,6 +56,7 @@ clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
   "pandas",
 ] }
 datafusion = { version = ">=0.6,<43", optional = true }
+databricks-sql-connector-core = { version = ">=4,<5", optional = true }
 db-dtypes = { version = ">=0.3,<2", optional = true }
 deltalake = { version = ">=0.9.0,<1", optional = true }
 duckdb = { version = ">=0.10,<1.2", optional = true }
@@ -162,6 +163,14 @@ clickhouse = [
   "pandas",
   "rich",
 ]
+databricks = [
+  "databricks-sql-connector-core",
+  "pyarrow",
+  "pyarrow-hotfix",
+  "numpy",
+  "pandas",
+  "rich",
+]
 datafusion = [
   "datafusion",
   "pyarrow",
@@ -241,6 +250,7 @@ geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
 [tool.poetry.plugins."ibis.backends"]
 bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
+databricks = "ibis.backends.databricks"
 datafusion = "ibis.backends.datafusion"
 druid = "ibis.backends.druid"
 duckdb = "ibis.backends.duckdb"
@@ -368,6 +378,7 @@ markers = [
   "never: The backend will never support this / pass this test. Don't bother trying to fix it",
   "bigquery: BigQuery tests",
   "clickhouse: ClickHouse tests",
+  "databricks: Databricks SQL tests",
   "datafusion: Apache Datafusion tests",
   "druid: Apache Druid tests",
   "duckdb: DuckDB tests",
