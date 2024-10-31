@@ -1231,15 +1231,60 @@ class IntegerScalar(NumericScalar, IntegerValue):
 @public
 class IntegerColumn(NumericColumn, IntegerValue):
     def bit_and(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
-        """Aggregate the column using the bitwise and operator."""
+        """Aggregate the column using the bitwise and operator.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"x": [-1, 0, 1]})
+        >>> t.x.bit_and()
+        ┌───┐
+        │ 0 │
+        └───┘
+        >>> t.x.bit_and(where=t.x != 0)
+        ┌───┐
+        │ 1 │
+        └───┘
+        """
         return ops.BitAnd(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def bit_or(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
-        """Aggregate the column using the bitwise or operator."""
+        """Aggregate the column using the bitwise or operator.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"x": [-1, 0, 1]})
+        >>> t.x.bit_or()
+        ┌────┐
+        │ -1 │
+        └────┘
+        >>> t.x.bit_or(where=t.x >= 0)
+        ┌───┐
+        │ 1 │
+        └───┘
+        """
         return ops.BitOr(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def bit_xor(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
-        """Aggregate the column using the bitwise exclusive or operator."""
+        """Aggregate the column using the bitwise exclusive or operator.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"x": [-1, 0, 1]})
+        >>> t.x.bit_xor()
+        ┌────┐
+        │ -2 │
+        └────┘
+        >>> t.x.bit_xor(where=t.x >= 0)
+        ┌───┐
+        │ 1 │
+        └───┘
+        """
         return ops.BitXor(self, where=self._bind_to_parent_table(where)).to_expr()
 
 
