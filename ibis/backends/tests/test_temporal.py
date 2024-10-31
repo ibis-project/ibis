@@ -1196,21 +1196,11 @@ def test_string_as_timestamp(alltypes, fmt):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=[
-                pytest.mark.never(
-                    ["snowflake"],
-                    reason=(
-                        "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
-                        "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
-                    ),
-                    raises=SnowflakeProgrammingError,
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
-            ],
+            marks=pytest.mark.never(
+                ["flink"],
+                raises=ValueError,
+                reason="Datetime formatting style is not supported.",
+            ),
         ),
         param(
             "MM/dd/yy",
