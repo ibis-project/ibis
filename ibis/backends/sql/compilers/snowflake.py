@@ -366,8 +366,8 @@ $$""",
 
     def visit_MapContains(self, op, *, arg, key):
         return self.f.array_contains(
-            self.if_(self.f.is_object(arg), self.f.object_keys(arg), NULL),
             self.f.to_variant(key),
+            self.if_(self.f.is_object(arg), self.f.object_keys(arg), NULL),
         )
 
     def visit_MapMerge(self, op, *, left, right):
@@ -447,7 +447,7 @@ $$""",
         return self.f.array_distinct(self.f.array_cat(left, right))
 
     def visit_ArrayContains(self, op, *, arg, other):
-        return self.f.array_contains(arg, self.f.to_variant(other))
+        return self.f.array_contains(self.f.to_variant(other), arg)
 
     def visit_ArrayConcat(self, op, *, arg):
         # array_cat only accepts two arguments
