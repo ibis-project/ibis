@@ -1,7 +1,6 @@
 { stdenv
 , lib
 , esbuild
-, deno
 , fetchurl
 , dart-sass
 , makeWrapper
@@ -46,7 +45,6 @@ stdenv.mkDerivation rec {
     ''
       wrapProgram $out/bin/quarto \
         --prefix QUARTO_ESBUILD : ${lib.getExe esbuild} \
-        --prefix QUARTO_DENO : ${lib.getExe deno} \
         --prefix QUARTO_R : ${lib.getExe' rEnv "R"} \
         --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass}
     '';
@@ -55,8 +53,6 @@ stdenv.mkDerivation rec {
     runHook preInstall
 
     mkdir -p $out/bin $out/share
-
-    rm -r bin/tools/*/deno*
 
     mv bin/* $out/bin
     mv share/* $out/share
