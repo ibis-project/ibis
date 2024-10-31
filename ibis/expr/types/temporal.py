@@ -31,7 +31,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).epoch_seconds()
         ┌────────────┐
         │ 1735603200 │
@@ -44,7 +45,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).year()
         ┌──────┐
         │ 2024 │
@@ -57,7 +59,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).iso_year()
         ┌──────┐
         │ 2025 │
@@ -70,7 +73,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).month()
         ┌────┐
         │ 12 │
@@ -83,7 +87,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).day()
         ┌────┐
         │ 31 │
@@ -142,7 +147,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).quarter()
         ┌───┐
         │ 4 │
@@ -155,7 +161,8 @@ class _DateComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.date(2024, 12, 31).week_of_year()
         ┌───┐
         │ 1 │
@@ -177,7 +184,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).time()
         ┌──────────┐
         │ 23:59:59 │
@@ -190,7 +198,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).hour()
         ┌────┐
         │ 23 │
@@ -203,7 +212,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).minute()
         ┌────┐
         │ 59 │
@@ -216,7 +226,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp(2024, 12, 31, 23, 59, 59).second()
         ┌────┐
         │ 59 │
@@ -229,7 +240,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp("2024-12-31 23:59:59.999").microsecond()
         ┌────────┐
         │ 999999 │
@@ -242,7 +254,8 @@ class _TimeComponentMixin:
 
         Examples
         --------
-        >>> from ibis.interactive import *
+        >>> import ibis
+        >>> ibis.options.interactive = True
         >>> ibis.timestamp("2024-12-31 23:59:59.999").millisecond()
         ┌─────┐
         │ 999 │
