@@ -779,8 +779,8 @@ def test_array_remove(con, input, expected):
     ("input", "expected"),
     [
         param(
-            {"a": [[1, 3, 3], [], [42, 42], [], [None], None]},
-            [{3, 1}, set(), {42}, set(), {None}, None],
+            {"a": [[1, 3, 3], [1, 3, None, 3], [42, 42], [], [None], None]},
+            [{3, 1}, {1, 3, None}, {42}, set(), {None}, None],
             id="null",
             marks=[
                 pytest.mark.notyet(

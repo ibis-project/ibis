@@ -143,15 +143,17 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayDistinct(self, op, *, arg):
+        return self._array_distinct(arg)
+
+    def _array_distinct(self, arg: sge.Expression) -> sge.Expression:
+        x = sg.to_identifier("x")
+        is_null = sge.Lambda(this=x.is_(NULL), expressions=[x])
+        contains_null = self.f.list_bool_or(self.f.list_apply(arg, is_null))
         return self.if_(
             arg.is_(NULL),
             NULL,
             self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
+            + self.if_(contains_null, self.f.array(NULL), self.f.array()),
         )
 
     def visit_ArrayPosition(self, op, *, arg, other):
@@ -223,16 +225,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_ArrayUnion(self, op, *, left, right):
         arg = self.f.list_concat(left, right)
-        return self.if_(
-            arg.is_(NULL),
-            NULL,
-            self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
-        )
+        return self._array_distinct(arg)
 
     def visit_ArrayZip(self, op, *, arg):
         i = sg.to_identifier("i")
