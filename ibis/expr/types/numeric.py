@@ -1082,6 +1082,26 @@ class IntegerValue(NumericValue):
         -------
         TimestampValue
             `self` converted to a timestamp
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "int_col": [0, 1730501716, 2147483647],
+        ...     }
+        ... )
+        >>> t.int_col.as_timestamp("s")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ TimestampFromUNIX(int_col, SECOND) ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp                          │
+        ├────────────────────────────────────┤
+        │ 1970-01-01 00:00:00                │
+        │ 2024-11-01 22:55:16                │
+        │ 2038-01-19 03:14:07                │
+        └────────────────────────────────────┘
         """
         return ops.TimestampFromUNIX(self, unit).to_expr()
 
