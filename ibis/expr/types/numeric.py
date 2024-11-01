@@ -1120,6 +1120,43 @@ class IntegerValue(NumericValue):
         -------
         IntervalValue
             An interval in units of `unit`
+
+        Examples
+        --------
+        >>> from datetime import datetime
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "timestamp_col": [
+        ...             datetime(2024, 1, 1, 0, 0, 0),
+        ...             datetime(2024, 1, 1, 0, 0, 0),
+        ...             datetime(2024, 1, 1, 0, 0, 0),
+        ...         ],
+        ...         "int_col": [1, 2, 3],
+        ...     }
+        ... )
+        >>> t.int_col.as_interval("h")
+        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ IntervalFromInteger(int_col, HOUR)                         ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ interval('h')                                              │
+        ├────────────────────────────────────────────────────────────┤
+        │ MonthDayNano(months=0, days=0, nanoseconds=3600000000000)  │
+        │ MonthDayNano(months=0, days=0, nanoseconds=7200000000000)  │
+        │ MonthDayNano(months=0, days=0, nanoseconds=10800000000000) │
+        └────────────────────────────────────────────────────────────┘
+
+        >>> t.mutate(timestamp_added_col=t.timestamp_col + t.int_col.as_interval("h"))
+        ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ timestamp_col       ┃ int_col ┃ timestamp_added_col ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+        │ timestamp           │ int64   │ timestamp           │
+        ├─────────────────────┼─────────┼─────────────────────┤
+        │ 2024-01-01 00:00:00 │       1 │ 2024-01-01 01:00:00 │
+        │ 2024-01-01 00:00:00 │       2 │ 2024-01-01 02:00:00 │
+        │ 2024-01-01 00:00:00 │       3 │ 2024-01-01 03:00:00 │
+        └─────────────────────┴─────────┴─────────────────────┘
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
 
