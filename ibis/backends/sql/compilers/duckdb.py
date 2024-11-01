@@ -182,16 +182,22 @@ class DuckDBCompiler(SQLGlotCompiler):
         arg_length = self.f.len(arg)
 
         if start is None:
-            start = 0
+            start = 1
+        elif isinstance(op.start, ops.Literal):
+            start = op.start.value
+            start += start >= 0
         else:
-            start = self.f.least(arg_length, self._neg_idx_to_pos(arg, start))
+            start = self.if_(start < 0, start, start + 1)
 
         if stop is None:
             stop = arg_length
+        elif isinstance(op.stop, ops.Literal):
+            stop = int(op.stop.value)
+            stop -= stop < 0
         else:
-            stop = self._neg_idx_to_pos(arg, stop)
+            stop = self.if_(stop < 0, stop - 1, stop)
 
-        return self.f.list_slice(arg, start + 1, stop)
+        return self.f.list_slice(arg, start, stop)
 
     def visit_ArrayMap(self, op, *, arg, body, param, index):
         expressions = [param]
