@@ -240,21 +240,39 @@ class Table(Expr, _FixedTextJupyterMixin):
                 args = ()
             else:
                 args = util.promote_list(args[0])
-        # bind positional arguments
+
         values = []
+        errs = []
+        # bind positional arguments
         for arg in args:
-            values.extend(bind(self, arg))
+            try:
+                # need tuple to cause generator to evaluate
+                bindings = tuple(bind(self, arg))
+            except com.FieldNotFoundError as e:
+                errs.append(e)
+                continue
+            values.extend(bindings)
 
         # bind keyword arguments where each entry can produce only one value
         # which is then named with the given key
         for key, arg in kwargs.items():
-            bindings = tuple(bind(self, arg))
+            try:
+                # need tuple to cause generator to evaluate
+                bindings = tuple(bind(self, arg))
+            except com.FieldNotFoundError as e:
+                errs.append(e)
+                continue
             if len(bindings) != 1:
                 raise com.IbisInputError(
                     "Keyword arguments cannot produce more than one value"
                 )
             (value,) = bindings
             values.append(value.name(key))
+        if errs:
+            raise com.IbisError(
+                "Error binding arguments to table expression: "
+                + "; ".join(str(e) for e in errs)
+            )
         return values
 
     def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
@@ -739,8 +757,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         try:
             return ops.Field(self, key).to_expr()
-        except com.IbisTypeError:
-            pass
+        except com.FieldNotFoundError as e:
+            if e.typos:
+                raise e
 
         # A mapping of common attribute typos, mapping them to the proper name
         common_typos = {
