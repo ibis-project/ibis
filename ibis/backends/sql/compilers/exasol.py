@@ -41,6 +41,8 @@ class ExasolCompiler(SQLGlotCompiler):
         ops.ArrayStringJoin,
         ops.ArrayUnion,
         ops.ArrayZip,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.BitwiseNot,
         ops.CumeDist,
         ops.DateAdd,

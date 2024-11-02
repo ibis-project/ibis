@@ -55,6 +55,8 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,

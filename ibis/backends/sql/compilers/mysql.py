@@ -68,6 +68,8 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.Covariance,
         ops.Levenshtein,
         ops.Median,

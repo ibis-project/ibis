@@ -323,6 +323,8 @@ class SQLGlotCompiler(abc.ABC):
         ops.ArrayLength: "array_size",
         ops.ArraySort: "array_sort",
         ops.ArrayStringJoin: "array_to_string",
+        ops.ArgMax: "max_by",
+        ops.ArgMin: "min_by",
         ops.Asin: "asin",
         ops.Atan2: "atan2",
         ops.Atan: "atan",
