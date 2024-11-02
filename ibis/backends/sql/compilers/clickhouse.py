@@ -115,6 +115,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
+        ops.RandomUUID: "generateUUIDv4",
+        ops.RandomScalar: "randCanonical",
     }
 
     @staticmethod
@@ -718,12 +720,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_RegexSplit(self, op, *, arg, pattern):
         return self.f.splitByRegexp(pattern, self.cast(arg, dt.String(nullable=False)))
-
-    def visit_RandomScalar(self, op, **kwargs):
-        return self.f.randCanonical()
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.generateUUIDv4()
 
     @staticmethod
     def _generate_groups(groups):

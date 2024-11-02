@@ -130,7 +130,7 @@ class ImpalaCompiler(SQLGlotCompiler):
     def visit_Xor(self, op, *, left, right):
         return sg.and_(sg.or_(left, right), sg.not_(sg.and_(left, right)))
 
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         return self.f.rand(self.f.utc_to_unix_micros(self.f.utc_timestamp()))
 
     def visit_DayOfWeekIndex(self, op, *, arg):

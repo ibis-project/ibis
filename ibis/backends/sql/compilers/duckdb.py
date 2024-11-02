@@ -103,6 +103,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoWithin: "st_within",
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
+        ops.RandomScalar: "random",
     }
 
     def to_sqlglot(
@@ -601,12 +602,6 @@ class DuckDBCompiler(SQLGlotCompiler):
                 expression=sg.to_identifier(field, quoted=self.quoted),
             )
         return super().visit_StructField(op, arg=arg, field=field)
-
-    def visit_RandomScalar(self, op, **kwargs):
-        return self.f.random()
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.uuid()
 
     def visit_TypeOf(self, op, *, arg):
         return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")

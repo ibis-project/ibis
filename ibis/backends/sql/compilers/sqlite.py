@@ -194,11 +194,11 @@ class SQLiteCompiler(SQLGlotCompiler):
 
         return arg
 
-    def visit_RandomScalar(self, op, **kwargs):
+    def visit_RandomScalar(self, op):
         return 0.5 + self.f.random() / sge.Literal.number(float(-1 << 64))
 
     def visit_Cot(self, op, *, arg):
-        return 1 / self.f.tan(arg)
+        return 1.0 / self.f.tan(arg)
 
     def visit_ArgMin(self, *args, **kwargs):
         return self._visit_arg_reduction("min", *args, **kwargs)

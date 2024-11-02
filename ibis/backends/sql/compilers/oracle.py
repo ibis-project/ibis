@@ -214,7 +214,7 @@ class OracleCompiler(SQLGlotCompiler):
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
 
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         # Not using FuncGen here because of dotted function call
         return sg.func("dbms_random.value")
 

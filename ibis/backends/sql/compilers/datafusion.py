@@ -530,7 +530,7 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayFlatten(self, op, *, arg):
         return self.if_(arg.is_(NULL), NULL, self.f.flatten(arg))
 
-    def visit_RandomUUID(self, op, **kw):
+    def visit_RandomUUID(self, op):
         return self.f.anon.uuid()
 
 

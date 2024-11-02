@@ -135,6 +135,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.TimestampNow: "sysdatetime",
         ops.Min: "min",
         ops.Max: "max",
+        ops.RandomUUID: "newid",
     }
 
     NAN = sg.func("double", sge.convert("NaN"))
@@ -177,10 +178,7 @@ class MSSQLCompiler(SQLGlotCompiler):
             table_expr = table_expr.mutate(**conversions)
         return super().to_sqlglot(table_expr, limit=limit, params=params)
 
-    def visit_RandomUUID(self, op, **_):
-        return self.f.newid()
-
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         # By default RAND() will generate the same value for all calls within a
         # query. The standard way to work around this is to pass in a unique
         # value per call, which `CHECKSUM(NEWID())` provides.
