@@ -65,8 +65,6 @@ class TrinoCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
-        ops.ArgMax: "max_by",
-        ops.ArgMin: "min_by",
         ops.Pi: "pi",
         ops.E: "e",
         ops.RegexReplace: "regexp_replace",
