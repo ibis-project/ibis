@@ -374,7 +374,7 @@ $$""",
     def visit_Log(self, op, *, arg, base):
         return self.f.log(base, arg)
 
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         return self.f.uniform(
             self.f.to_double(0.0), self.f.to_double(1.0), self.f.random()
         )

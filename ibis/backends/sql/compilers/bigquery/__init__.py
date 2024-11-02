@@ -199,8 +199,7 @@ class BigQueryCompiler(SQLGlotCompiler):
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampNow: "current_timestamp",
         ops.ExtractHost: "net.host",
-        ops.ArgMin: "min_by",
-        ops.ArgMax: "max_by",
+        ops.RandomUUID: "generate_uuid",
     }
 
     def to_sqlglot(
@@ -996,9 +995,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         if where is not None:
             arg = self.if_(where, arg, NULL)
         return self.f.count(sge.Distinct(expressions=[arg]))
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.generate_uuid()
 
     def visit_ExtractFile(self, op, *, arg):
         return self._pudf("cw_url_extract_file", arg)

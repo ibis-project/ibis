@@ -119,6 +119,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapValues: "avals",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
+        ops.RandomUUID: "gen_random_uuid",
     }
 
     def to_sqlglot(
@@ -178,9 +179,6 @@ class PostgresCompiler(SQLGlotCompiler):
             source=source,
             args=", ".join(argnames),
         )
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.gen_random_uuid()
 
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()

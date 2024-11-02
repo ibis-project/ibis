@@ -381,6 +381,8 @@ class SQLGlotCompiler(abc.ABC):
         ops.Translate: "translate",
         ops.Unnest: "explode",
         ops.Uppercase: "upper",
+        ops.RandomUUID: "uuid",
+        ops.RandomScalar: "rand",
     }
 
     BINARY_INFIX_OPS = {
@@ -868,14 +870,6 @@ class SQLGlotCompiler(abc.ABC):
 
     def visit_Round(self, op, *, arg, digits):
         return self.cast(self.f.round(arg, digits), op.dtype)
-
-    ### Random Noise
-
-    def visit_RandomScalar(self, op, **kwargs):
-        return self.f.rand()
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.uuid()
 
     ### Dtype Dysmorphia
 
