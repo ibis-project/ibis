@@ -32,6 +32,8 @@ class ImpalaCompiler(SQLGlotCompiler):
     UNSUPPORTED_OPS = (
         ops.ArrayPosition,
         ops.Array,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.Covariance,
         ops.ExtractDayOfYear,
         ops.Levenshtein,

@@ -33,6 +33,8 @@ class DruidCompiler(SQLGlotCompiler):
         ops.ArraySort,
         ops.ArrayUnion,
         ops.ArrayZip,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.CountDistinctStar,
         ops.Covariance,
         ops.Date,

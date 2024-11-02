@@ -90,6 +90,8 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.ArrayMap,
         ops.ArraySort,
         ops.ArrayUnion,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.BitAnd,
         ops.BitOr,
         ops.BitXor,
