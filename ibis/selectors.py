@@ -827,7 +827,43 @@ class NoColumns(Singleton, Selector):
 
 @public
 def none() -> Selector:
-    """Return no columns."""
+    """Return no columns.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "id": [1, 2, 3, 4, 5, 6],
+    ...         "color": ["Red", "Green", "Blue", "Blue", "Red", "Blue"],
+    ...     }
+    ... )
+
+    `s.none()` results in an empty expansion.
+
+    >>> s.none().expand(t)
+    []
+
+    This can be useful when you want to pivot a table without identifying unique
+    observations.
+
+    >>> t.pivot_wider(
+    ...     id_cols=s.none(),
+    ...     names_from="color",
+    ...     values_from="color",
+    ...     values_agg="count",
+    ...     names_sort=True,
+    ... )
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ Blue  ┃ Green ┃ Red   ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ int64 │ int64 │ int64 │
+    ├───────┼───────┼───────┤
+    │     3 │     1 │     2 │
+    └───────┴───────┴───────┘
+    """
     return NoColumns()
 
 
