@@ -88,7 +88,30 @@ class Value(Expr):
 
     # TODO(kszucs): should rename to dtype
     def type(self) -> dt.DataType:
-        """Return the [DataType](./datatypes.qmd) of `self`."""
+        """Return the [DataType](./datatypes.qmd) of `self`.
+
+        Examples
+        --------
+        >>> from datetime import datetime
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "int_col": [1],
+        ...         "timestamp_col": [
+        ...             datetime(2024, 11, 2, 10, 5, 2),
+        ...         ],
+        ...         "string_col": ["a"],
+        ...     }
+        ... )
+
+        >>> t.int_col.type()
+        Int64(nullable=True)
+        >>> t.timestamp_col.type()
+        Timestamp(timezone=None, scale=None, nullable=True)
+        >>> t.string_col.type()
+        String(nullable=True)
+        """
         return self.op().dtype
 
     def hash(self) -> ir.IntegerValue:
