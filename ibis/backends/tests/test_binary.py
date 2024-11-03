@@ -17,6 +17,7 @@ BINARY_BACKEND_TYPES = {
     "postgres": "bytea",
     "risingwave": "bytea",
     "flink": "BINARY(1) NOT NULL",
+    "databricks": "binary",
 }
 
 

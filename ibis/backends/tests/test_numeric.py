@@ -14,6 +14,7 @@ import ibis.common.exceptions as com
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
+    DatabricksServerOperationError,
     DuckDBParserException,
     ExaQueryError,
     GoogleBadRequest,
@@ -54,6 +55,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="int8",
         ),
@@ -70,6 +72,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="int16",
         ),
@@ -86,6 +89,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="int32",
         ),
@@ -102,6 +106,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="int64",
         ),
@@ -118,6 +123,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="uint8",
         ),
@@ -134,6 +140,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="uint16",
         ),
@@ -150,6 +157,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="uint32",
         ),
@@ -166,6 +174,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "integer",
                 "risingwave": "integer",
                 "flink": "INT NOT NULL",
+                "databricks": "int",
             },
             id="uint64",
         ),
@@ -182,6 +191,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
+                "databricks": "decimal(2,1)",
             },
             marks=[
                 pytest.mark.notimpl(
@@ -205,6 +215,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
+                "databricks": "decimal(2,1)",
             },
             id="float32",
         ),
@@ -221,6 +232,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(2, 1) NOT NULL",
+                "databricks": "decimal(2,1)",
             },
             id="float64",
         ),
@@ -259,6 +271,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
+                "databricks": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -271,6 +284,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(38, 18) NOT NULL",
+                "databricks": "decimal(38,18)",
             },
             marks=[
                 pytest.mark.notimpl(
@@ -302,6 +316,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "oracle": decimal.Decimal("1.1"),
                 "flink": decimal.Decimal("1.1"),
                 "polars": decimal.Decimal("1.1"),
+                "databricks": decimal.Decimal("1.1"),
             },
             {
                 "bigquery": "NUMERIC",
@@ -314,6 +329,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "flink": "DECIMAL(38, 9) NOT NULL",
+                "databricks": "decimal(38,9)",
             },
             marks=[pytest.mark.notimpl(["exasol"], raises=ExaQueryError)],
             id="decimal-small",
@@ -369,6 +385,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(["polars"], raises=TypeError),
+                pytest.mark.notyet(
+                    ["databricks"],
+                    reason="Unsupported precision.",
+                    raises=DatabricksServerOperationError,
+                ),
             ],
             id="decimal-big",
         ),
@@ -383,12 +404,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pyspark": decimal.Decimal("Infinity"),
                 "exasol": float("inf"),
                 "duckdb": float("inf"),
+                "databricks": decimal.Decimal("Infinity"),
             },
             {
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "duckdb": "FLOAT",
+                "databricks": "double",
             },
             marks=[
                 pytest.mark.notyet(
@@ -446,12 +469,14 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pyspark": decimal.Decimal("-Infinity"),
                 "exasol": float("-inf"),
                 "duckdb": float("-inf"),
+                "databricks": decimal.Decimal("-Infinity"),
             },
             {
                 "sqlite": "real",
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "duckdb": "FLOAT",
+                "databricks": "double",
             },
             marks=[
                 pytest.mark.notyet(
@@ -510,6 +535,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "pyspark": decimal.Decimal("NaN"),
                 "exasol": float("nan"),
                 "duckdb": float("nan"),
+                "databricks": decimal.Decimal("NaN"),
             },
             {
                 "bigquery": "FLOAT64",
@@ -518,6 +544,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "postgres": "numeric",
                 "risingwave": "numeric",
                 "duckdb": "FLOAT",
+                "databricks": "double",
             },
             marks=[
                 pytest.mark.notyet(
@@ -1250,6 +1277,7 @@ def test_floating_mod(backend, alltypes, df):
     ],
 )
 @pytest.mark.notyet(["mysql", "pyspark"], raises=AssertionError)
+@pytest.mark.notyet(["databricks"], raises=AssertionError, reason="returns NaNs")
 @pytest.mark.notyet(
     ["sqlite"], raises=AssertionError, reason="returns NULL when dividing by zero"
 )

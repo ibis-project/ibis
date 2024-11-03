@@ -153,3 +153,10 @@ try:
     from pyodbc import ProgrammingError as PyODBCProgrammingError
 except ImportError:
     PyODBCProgrammingError = PyODBCDataError = None
+
+try:
+    from databricks.sql.exc import (
+        ServerOperationError as DatabricksServerOperationError,
+    )
+except ImportError:
+    DatabricksServerOperationError = None

@@ -26,6 +26,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
+    DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
@@ -116,7 +117,14 @@ def test_create_table(backend, con, temp_table, func, sch):
             marks=[
                 pytest.mark.notyet(["clickhouse"], reason="Can't specify both"),
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
+                    [
+                        "pyspark",
+                        "trino",
+                        "exasol",
+                        "risingwave",
+                        "impala",
+                        "databricks",
+                    ],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notyet(
@@ -142,7 +150,14 @@ def test_create_table(backend, con, temp_table, func, sch):
             id="temp, no overwrite",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark", "trino", "exasol", "risingwave", "impala"],
+                    [
+                        "pyspark",
+                        "trino",
+                        "exasol",
+                        "risingwave",
+                        "impala",
+                        "databricks",
+                    ],
                     reason="No support for temp tables",
                 ),
                 pytest.mark.notimpl(["mssql"], reason="Incorrect temp table syntax"),
@@ -294,8 +309,8 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="temporary tables not implemented",
     raises=NotImplementedError,
 )
-@pytest.mark.notyet(
-    ["risingwave"],
+@pytest.mark.never(
+    ["risingwave", "databricks"],
     raises=com.UnsupportedOperationError,
     reason="Feature is not yet implemented: CREATE TEMPORARY TABLE",
 )
@@ -367,7 +382,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 
 
 @mark.notimpl(["polars", "druid"])
-@mark.never(["impala", "pyspark"], reason="No non-nullable datatypes")
+@mark.never(["impala", "pyspark", "databricks"], reason="No non-nullable datatypes")
 @pytest.mark.notimpl(
     ["flink"],
     raises=com.IbisError,
@@ -639,6 +654,7 @@ def test_list_catalogs(con):
         "snowflake": {"IBIS_TESTING"},
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
+        "databricks": {"hive_metastore", "ibis", "ibis_testing", "samples", "system"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -668,6 +684,7 @@ def test_list_database_contents(con):
         "snowflake": {"IBIS_TESTING"},
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},
+        "databricks": {"default"},
     }
     result = set(con.list_databases())
     assert test_databases[con.name] <= result
@@ -675,6 +692,7 @@ def test_list_database_contents(con):
 
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(["pyspark"], raises=com.IbisTypeError)
+@pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 @pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
     ["postgres"], raises=PsycoPg2UndefinedObject, reason="no unsigned int types"
@@ -900,6 +918,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "snowflake",
                         "sqlite",
                         "trino",
+                        "databricks",
                     ]
                 )
             ],
@@ -925,6 +944,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "snowflake",
                         "sqlite",
                         "trino",
+                        "databricks",
                     ]
                 )
             ],
@@ -949,6 +969,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "snowflake",
                         "sqlite",
                         "trino",
+                        "databricks",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="we don't materialize datasets to avoid perf footguns",
@@ -1293,6 +1314,7 @@ def test_set_backend_url(url, monkeypatch):
         "risingwave",
         "pyspark",
         "sqlite",
+        "databricks",
     ],
     reason="backend doesn't support timestamp with scale parameter",
 )
@@ -1495,6 +1517,9 @@ def test_close_connection(con):
     raises=TypeError,
     reason="snowflake uses a custom pyarrow extension type for JSON pretty printing",
 )
+@pytest.mark.notimpl(
+    ["databricks"], raises=json.JSONDecodeError, reason="not yet implemented"
+)
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
     table = t.to_pyarrow()
@@ -1532,7 +1557,7 @@ def test_json_to_pyarrow(con):
 
 
 @pytest.mark.notyet(
-    ["risingwave", "exasol"],
+    ["risingwave", "exasol", "databricks"],
     raises=com.UnsupportedOperationError,
     reason="no temp table support",
 )
@@ -1697,6 +1722,12 @@ def test_cross_database_join(con_create_database, monkeypatch):
 @pytest.mark.notyet(["exasol"], reason="Backend does not support raw_sql")
 @pytest.mark.notimpl(
     ["impala", "pyspark", "trino"], reason="Default constraints are not supported"
+)
+@pytest.mark.notimpl(
+    ["databricks"],
+    reason="Default constraints ARE supported, "
+    "but you have to enable them with a property AND set DEFAULT, so no",
+    raises=DatabricksServerOperationError,
 )
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)

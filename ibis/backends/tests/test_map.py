@@ -237,6 +237,9 @@ def test_column_map_values(backend):
 
 
 @mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
 def test_column_map_merge(backend):
     table = backend.map
     expr = table.select(
@@ -337,6 +340,9 @@ def test_map_column_contains_key_column(alltypes):
 @mark_notimpl_risingwave_hstore
 @mark_notyet_postgres
 @mark_notyet_datafusion
+@pytest.mark.notyet(
+    ["databricks"], reason="says one thing, does something completely different"
+)
 def test_literal_map_merge(con):
     a = ibis.literal({"a": 0, "b": 2})
     b = ibis.literal({"a": 1, "c": 3})

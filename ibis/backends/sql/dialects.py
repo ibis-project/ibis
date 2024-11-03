@@ -9,6 +9,7 @@ import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
+    Databricks,
     Hive,
     MySQL,
     Oracle,
@@ -471,10 +472,19 @@ Snowflake.Generator.TRANSFORMS |= {
 
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
 
-
 Trino.Generator.TRANSFORMS |= {
     sge.BitwiseLeftShift: rename_func("bitwise_left_shift"),
     sge.BitwiseRightShift: rename_func("bitwise_right_shift"),
     sge.FirstValue: rename_func("first_value"),
     sge.LastValue: rename_func("last_value"),
+}
+
+Databricks.Generator.TRANSFORMS |= {
+    # required because of https://github.com/tobymao/sqlglot/pull/4142
+    sge.Create: transforms.preprocess(
+        [
+            transforms.remove_unique_constraints,
+            transforms.move_partitioned_by_to_schema_columns,
+        ]
+    )
 }

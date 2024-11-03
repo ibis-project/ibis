@@ -820,7 +820,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     supports_temporary_tables = False
     supports_python_udfs = False
-    supports_in_memory_tables = True
 
     def __init__(self, *args, **kwargs):
         self._con_args: tuple[Any] = args
@@ -1119,22 +1118,18 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
                 )
                 self._current_memtables[name] = memtable
 
+    @abc.abstractmethod
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        if self.supports_in_memory_tables:
-            raise NotImplementedError(
-                f"{self.name} must implement `_register_in_memory_table` to support in-memory tables"
-            )
+        """Register an in-memory table associated with `op`."""
+
+    @abc.abstractmethod
+    def _finalize_memtable(self, name: str) -> None:
+        """Clean up a memtable named `name`."""
 
     def _finalize_in_memory_table(self, name: str) -> None:
         """Wrap `_finalize_memtable` to suppress exceptions."""
         with contextlib.suppress(Exception):
             self._finalize_memtable(name)
-
-    def _finalize_memtable(self, name: str) -> None:
-        if self.supports_in_memory_tables:
-            raise NotImplementedError(
-                f"{self.name} must implement `_finalize_memtable` to support in-memory tables"
-            )
 
     def _run_pre_execute_hooks(self, expr: ir.Expr) -> None:
         """Backend-specific hooks to run before an expression is executed."""

@@ -50,6 +50,7 @@ NULL_BACKEND_TYPES = {
     "trino": "unknown",
     "postgres": "null",
     "risingwave": "null",
+    "databricks": "void",
 }
 
 
@@ -90,6 +91,7 @@ BOOLEAN_BACKEND_TYPE = {
     "postgres": "boolean",
     "risingwave": "boolean",
     "flink": "BOOLEAN NOT NULL",
+    "databricks": "boolean",
 }
 
 
@@ -204,6 +206,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "oracle",
                         "exasol",
                         "pyspark",
+                        "databricks",
                     ],
                     reason="NaN != NULL for these backends",
                 ),
@@ -790,6 +793,11 @@ def test_table_info_large(con):
                     ["sqlite"],
                     raises=com.OperationNotDefinedError,
                     reason="quantile is not supported",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="timestamp column is discarded",
                 ),
                 pytest.mark.notimpl(
                     [
@@ -1579,6 +1587,7 @@ def test_hash(backend, alltypes, dtype):
         "pyspark",
         "risingwave",
         "sqlite",
+        "databricks",
     ]
 )
 def test_hashbytes(backend, alltypes):
@@ -1744,7 +1753,8 @@ def test_try_cast(con, from_val, to_type, expected):
             "int",
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "pyspark", "flink"], reason="casts to 1672531200"
+                    ["clickhouse", "pyspark", "flink", "databricks"],
+                    reason="casts to 1672531200",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
@@ -1807,7 +1817,7 @@ def test_try_cast_table(backend, con):
             pd.isna,
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "polars", "flink", "pyspark"],
+                    ["clickhouse", "polars", "flink", "pyspark", "databricks"],
                     reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -2033,7 +2043,10 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="impala doesn't support dynamic limit/offset",
     raises=ImpalaHiveServer2Error,
 )
-@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    reason="pyspark and databricks don't support dynamic limit/offset",
+)
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
@@ -2083,7 +2096,10 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="impala doesn't support dynamic limit/offset",
     raises=ImpalaHiveServer2Error,
 )
-@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    reason="pyspark and databricks don't support dynamic limit/offset",
+)
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
     ["mssql"],
@@ -2154,6 +2170,7 @@ def test_sample_memtable(con, backend):
         "trino",
         "exasol",
         "pyspark",
+        "databricks",
     ]
 )
 def test_sample_with_seed(backend):
