@@ -2123,6 +2123,25 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         IntegerScalar
             Number of elements in an expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "color": ["Red", "Green", "Blue", "Blue", "Red", "Blue"],
+        ...     }
+        ... )
+        >>> t.count()
+        ┌───┐
+        │ 6 │
+        └───┘
+        >>> t.count(where=t.color == "Blue")
+        ┌───┐
+        │ 3 │
+        └───┘
         """
         return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -2352,11 +2371,51 @@ class Column(Value, _FixedTextJupyterMixin):
         return ibis.dense_rank().over(order_by=self)
 
     def percent_rank(self) -> Column:
-        """Return the relative rank of the values in the column."""
+        """Return the relative rank of the values in the column.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(percent_rank=t.values.percent_rank())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ values ┃ percent_rank ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ int64  │ float64      │
+        ├────────┼──────────────┤
+        │      1 │          0.0 │
+        │      1 │          0.0 │
+        │      2 │          0.4 │
+        │      2 │          0.4 │
+        │      2 │          0.4 │
+        │      3 │          1.0 │
+        └────────┴──────────────┘
+        """
         return ibis.percent_rank().over(order_by=self)
 
     def cume_dist(self) -> Column:
-        """Return the cumulative distribution over a window."""
+        """Return the cumulative distribution over a window.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(cume_dist=t.values.cume_dist())
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ values ┃ cume_dist ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ int64  │ float64   │
+        ├────────┼───────────┤
+        │      1 │  0.333333 │
+        │      1 │  0.333333 │
+        │      2 │  0.833333 │
+        │      2 │  0.833333 │
+        │      2 │  0.833333 │
+        │      3 │  1.000000 │
+        └────────┴───────────┘
+        """
         return ibis.cume_dist().over(order_by=self)
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
@@ -2366,6 +2425,25 @@ class Column(Value, _FixedTextJupyterMixin):
         ----------
         buckets
             Number of buckets to partition into
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(ntile=t.values.ntile(3))
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ ntile ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │     0 │
+        │      1 │     0 │
+        │      2 │     1 │
+        │      2 │     1 │
+        │      2 │     2 │
+        │      3 │     2 │
+        └────────┴───────┘
         """
         return ibis.ntile(buckets).over(order_by=self)
 
