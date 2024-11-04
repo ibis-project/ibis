@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sqlite3
-import tempfile
 from pathlib import Path
 
 import duckdb
@@ -135,32 +134,6 @@ def test_read_json(con, data_dir, tmp_path):
     nrows = pqt.count().execute()
     assert nrows
     assert nrows == jst.count().execute()
-
-
-def test_temp_directory(tmp_path):
-    query = "SELECT current_setting('temp_directory')"
-
-    # 1. in-memory + no temp_directory specified
-    con = ibis.duckdb.connect()
-
-    value = con.raw_sql(query).fetchone()[0]
-    assert value  # we don't care what the specific value is
-
-    temp_directory = Path(tempfile.gettempdir()) / "duckdb"
-
-    # 2. in-memory + temp_directory specified
-    con = ibis.duckdb.connect(temp_directory=temp_directory)
-    value = con.raw_sql(query).fetchone()[0]
-    assert value == str(temp_directory)
-
-    # 3. on-disk + no temp_directory specified
-    # untested, duckdb sets the temp_directory to something implementation
-    # defined
-
-    # 4. on-disk + temp_directory specified
-    con = ibis.duckdb.connect(tmp_path / "test2.ddb", temp_directory=temp_directory)
-    value = con.raw_sql(query).fetchone()[0]
-    assert value == str(temp_directory)
 
 
 @pytest.fixture(scope="session")
@@ -381,10 +354,16 @@ def test_memtable_with_nullable_pyarrow_not_string(con):
     assert len(res) == len(data)
 
 
-def test_set_temp_dir(tmp_path):
-    path = tmp_path / "foo" / "bar"
-    ibis.duckdb.connect(temp_directory=path)
-    assert path.exists()
+@pytest.mark.parametrize(
+    "database",
+    [lambda parent: parent / "test.ddb", lambda _: ":memory:"],
+    ids=["disk", "memory"],
+)
+def test_temp_dir_set(tmp_path, database):
+    temp_directory = tmp_path / "does" / "not" / "exist"
+    temp_directory.mkdir(parents=True, exist_ok=True)
+    con = ibis.duckdb.connect(database(tmp_path), temp_directory=temp_directory)
+    assert con.settings["temp_directory"] == str(temp_directory)
 
 
 @pytest.mark.xfail(
