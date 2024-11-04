@@ -46,39 +46,39 @@ jobs:
           - name: snowflake
             title: Snowflake
             extras:
-              - snowflake
+              - --extra snowflake
           - name: databricks
             title: Databricks
             extras:
-              - databricks
+              - --extra databricks
         include:
           - python-version: "3.10"
             backend:
               name: bigquery
               title: BigQuery
               extras:
-                - bigquery
+                - --extra bigquery
           - python-version: "3.12"
             backend:
               name: bigquery
               title: BigQuery
               extras:
-                - bigquery
-                - geospatial
+                - --extra bigquery
+                - --extra geospatial
           - python-version: "3.10"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
               extras:
-                - snowflake
+                - --extra snowflake
           - python-version: "3.11"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
               extras:
-                - snowflake
+                - --extra snowflake
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -110,15 +110,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.0
+        with:
+          enable-cache: true
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
-        run: poetry add --lock snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
+        run: uv add --no-sync --optional snowflake snowflake-snowpark-python
 
       - uses: extractions/setup-just@v2
         env:
@@ -169,7 +168,7 @@ jobs:
         run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: upload code coverage
         if: success()

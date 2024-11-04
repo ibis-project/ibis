@@ -29,7 +29,7 @@ jobs:
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          extraPullNames: nix-community,poetry2nix
+          extraPullNames: nix-community
 
       - name: checkout
         uses: actions/checkout@v4
@@ -53,7 +53,7 @@ jobs:
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          extraPullNames: nix-community,poetry2nix
+          extraPullNames: nix-community
 
       - name: checkout
         uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: run quarto check
-        run: nix develop '.#ibis311' --ignore-environment -c quarto check
+        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c quarto check
 
       - name: build api docs
         run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose

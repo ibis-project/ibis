@@ -8,7 +8,7 @@
     "docker-compose",
     "dockerfile",
     "github-actions",
-    "poetry"
+    "pep621"
   ],
   "automerge": false,
   "labels": ["dependencies"],

@@ -4,13 +4,13 @@ on:
   push:
     paths:
       - README.md
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - requirements-dev.txt
   pull_request:
     paths:
       - README.md
-      - poetry.lock
+      - uv.lock
       - pyproject.toml
       - requirements-dev.txt
 
@@ -22,6 +22,11 @@ env:
   FORCE_COLOR: "1"
   SQLALCHEMY_WARN_20: "1"
   HYPOTHESIS_PROFILE: "ci"
+
+permissions:
+  # this allows extractions/setup-just to list releases for `just` at a higher
+  # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+  contents: read
 
 jobs:
   check_setuptools_install:
@@ -38,8 +43,10 @@ jobs:
           cache: pip
           cache-dependency-path: requirements-dev.txt
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.0
+        with:
+          enable-cache: true
 
       - name: update apt-get
         run: sudo apt-get update -y -q
@@ -47,20 +54,18 @@ jobs:
       - name: install system dependencies
         run: sudo apt-get install -y -q build-essential graphviz libgeos-dev freetds-dev unixodbc-dev
 
-      - name: check consistency with pyproject.toml
-        run: poetry check --lock
+      - uses: extractions/setup-just@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: generate requirements-dev.txt
-        run: poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+        run: just export-deps
 
       - name: check requirements-dev.txt
         run: git diff --exit-code requirements-dev.txt
 
       - name: install using requirements-dev.txt
         run: pip install -r requirements-dev.txt
-
-      - name: install ibis in development mode
-        run: pip install -e .
 
       - name: run tests
         run: pytest -m core -n auto --cov-report=xml:coverage.xml --cov=ibis

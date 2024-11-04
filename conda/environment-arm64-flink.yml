@@ -24,8 +24,7 @@ dependencies:
   - pandas >=1.5.3,<3
   - parsy >=2
   - pins >=0.8.2
-  - poetry-core >=1.0.0
-  - poetry-dynamic-versioning >=0.18.0
+  - uv>=0.4.29
   - polars >=1,<2
   - psycopg2 >=2.8.4
   - pyarrow =11.0.0
@@ -83,7 +82,6 @@ dependencies:
   # dev utilities
   - codespell >=2.2.6
   - ipython
-  - poetry-plugin-export
   - pre-commit
   - prettier
   - pyinstrument

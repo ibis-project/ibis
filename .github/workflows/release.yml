@@ -33,10 +33,10 @@ jobs:
       - uses: cachix/cachix-action@v15
         with:
           name: ibis
-          extraPullNames: nix-community,poetry2nix
+          extraPullNames: nix-community
 
       - name: run semantic-release
         run: ./ci/release/run.sh
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}
           GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}

@@ -1,22 +1,16 @@
-[tool.poetry]
+[project]
 name = "ibis-framework"
 version = "9.5.0"
-packages = [{ include = "ibis" }]
-include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
-exclude = [
-  "ibis/examples/gen_examples.R",
-  "ibis/examples/gen_registry.py",
-  "ibis/examples/data",
-  "ibis/examples/descriptions",
-]
-homepage = "https://ibis-project.org"
-repository = "https://github.com/ibis-project/ibis"
-documentation = "https://ibis-project.org"
+requires-python = ">=3.10"
 description = "The portable Python dataframe library"
-authors = ["Ibis Maintainers <maintainers@ibis-project.org>"]
-maintainers = ["Ibis Maintainers <maintainers@ibis-project.org>"]
-license = "Apache-2.0"
 readme = "README.md"
+license = "Apache-2.0"
+authors = [
+  { name = "Ibis Maintainers", email = "maintainers@ibis-project.org" },
+]
+maintainers = [
+  { name = "Ibis Maintainers", email = "maintainers@ibis-project.org" },
+]
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -31,223 +25,252 @@ classifiers = [
   "Topic :: Software Development :: Code Generators",
   "Topic :: Software Development :: User Interfaces",
 ]
+dependencies = [
+  "atpublic>=2.3,<6",
+  "parsy>=2,<3",
+  "python-dateutil>=2.8.2,<3",
+  "pytz>=2022.7",
+  "sqlglot>=23.4,<25.30",
+  "toolz>=0.11,<2",
+  "typing-extensions>=4.3.0,<5",
+]
 
-[tool.poetry.urls]
-"Issue Tracker" = "https://github.com/ibis-project/ibis/issues"
+[project.urls]
+Homepage = "https://ibis-project.org"
+Repository = "https://github.com/ibis-project/ibis"
+Documentation = "https://ibis-project.org"
+Issues = "https://github.com/ibis-project/ibis/issues"
+Chat = "https://ibis-project.zulipchat.com"
 
-[tool.poetry.dependencies]
-python = "^3.10"
-atpublic = ">=2.3,<6"
-parsy = ">=2,<3"
-python-dateutil = ">=2.8.2,<3"
-pytz = ">=2022.7"
-sqlglot = ">=23.4,<25.30"
-toolz = ">=0.11,<2"
-typing-extensions = ">=4.3.0,<5"
-numpy = { version = ">=1.23.2,<3", optional = true }
-pandas = { version = ">=1.5.3,<3", optional = true }
-pyarrow = { version = ">=10.0.1,<19", optional = true }
-pyarrow-hotfix = { version = ">=0.4,<1", optional = true }
-rich = { version = ">=12.4.4,<14", optional = true }
-black = { version = ">=22.1.0,<25", optional = true }
-clickhouse-connect = { version = ">=0.5.23,<1", optional = true, extras = [
-  "arrow",
-  "numpy",
-  "pandas",
-] }
-datafusion = { version = ">=0.6,<43", optional = true }
-databricks-sql-connector-core = { version = ">=4,<5", optional = true }
-db-dtypes = { version = ">=0.3,<2", optional = true }
-deltalake = { version = ">=0.9.0,<1", optional = true }
-duckdb = { version = ">=0.10,<1.2", optional = true }
-geopandas = { version = ">=0.6,<2", optional = true }
-geoarrow-types = { version = ">=0.2,<1", optional = true }
-pyproj = { version = ">=3.3.0,<4", optional = true }
-google-cloud-bigquery = { version = ">=3,<4", optional = true }
-google-cloud-bigquery-storage = { version = ">=2,<3", optional = true }
-graphviz = { version = ">=0.16,<1", optional = true }
-impyla = { version = ">=0.17,<1", optional = true }
-oracledb = { version = ">=1.3.1,<3", optional = true }
-packaging = { version = ">=21.3,<25", optional = true }
-pins = { version = ">=0.8.3,<1", extras = ["gcs"], optional = true }
-polars = { version = ">=1,<2", optional = true }
-psycopg2 = { version = ">=2.8.4,<3", optional = true }
-pydata-google-auth = { version = ">=1.4.0,<2", optional = true }
-pydruid = { version = ">=0.6.7,<1", optional = true }
-pyexasol = { version = ">=0.25.2,<1", optional = true, extras = ["pandas"] }
-mysqlclient = { version = ">=2.2.4,<3", optional = true }
-pyodbc = { version = ">=4.0.39,<6", optional = true }
-pyspark = { version = ">=3.3.3,<4", optional = true }
-# used to support posix regexen in the pandas and sqlite backends
-regex = { version = ">=2021.7.6", optional = true }
-shapely = { version = ">=2,<3", optional = true }
-# we don't support arbitrarily old versions of this library due to security
-# issues with versions <3.0.2
-snowflake-connector-python = { version = ">=3.0.2,<4,!=3.3.0b1", optional = true }
-trino = { version = ">=0.321,<1", optional = true }
-
-[tool.poetry.group.dev.dependencies]
-codespell = { version = ">=2.2.6,<3", extras = [
-  "hard-encoding-detection",
-  "toml",
-] }
-google-cloud-storage = ">=2.7.0,<3"
-ipython = ">=8.7.0,<9"
-poetry-plugin-export = ">=1.6.0,<2"
-poetry-dynamic-versioning = ">=0.18.0,<2"
-pre-commit = ">=4,<5"
-pyinstrument = ">=4.5.1,<6"
-ruff = ">=0.1.8"
-tqdm = ">=4.66.1,<5"
-
-[tool.poetry.group.test.dependencies]
-cloudpickle = "*"
-filelock = ">=3.7.0,<4"
-fsspec = "<2024.10.1"
-hypothesis = ">=6.58.0,<7"
-packaging = ">=21.3,<25"
-pytest = ">=8.2.0,<9"
-pytest-benchmark = ">=3.4.1,<6"
-pytest-deadfixtures = ">=2.2.1,<3"
-pytest-clarity = ">=1.0.1,<2"
-pytest-cov = ">=3.0.0,<7"
-pytest-httpserver = ">=1.0.5,<2"
-pytest-mock = ">=3.6.1,<4"
-pytest-randomly = ">=3.10.1,<4"
-pytest-repeat = ">=0.9.1,<0.10"
-pytest-snapshot = ">=0.9.0,<1"
-pytest-timeout = ">=2.3.1,<3"
-pytest-xdist = ">=2.3.0,<4"
-requests = ">=2,<3"
-tomli = ">=2.0.1,<3"
-
-[tool.poetry.group.docs.dependencies]
-altair = { version = ">=5.0.1,<6", python = ">=3.10,<3.13" }
-# pin griffe until https://github.com/ibis-project/ibis/pull/9865 is addressed
-griffe = { version = "<1", python = ">=3.10,<3.13" }
-ipykernel = { version = ">=6.25.1,<7", python = ">=3.10,<3.13" }
-itables = { version = ">=1.6.3,<2.3", python = ">=3.10,<3.13" }
-nbclient = { version = ">=0.8.0,<1", python = ">=3.10,<3.13" }
-plotly = { version = ">=5.16.1,<6", python = ">=3.10,<3.13" }
-plotnine = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
-py-cpuinfo = { version = ">=9,<10", python = ">=3.10,<3.13" }
-quartodoc = { version = ">=0.6.1,<1", python = ">=3.10,<3.13" }
-requests = { version = ">=2,<3", python = ">=3.10,<3.13" }
-rich = { version = ">13.8.0,<14", python = ">=3.10,<3.13" }
-scikit-learn = { version = ">=1.3,<2", python = ">=3.10,<3.13" }
-seaborn = { version = ">=0.12.2,<1", python = ">=3.10,<3.13" }
-lonboard = { version = "0.10.3", python = ">=3.10,<3.13" }
-jupyter-cache = { version = ">=1.0.0,<2", python = ">=3.10,<3.13" }
-jupyterlab = { version = ">=4.2.5,<5", python = ">=3.10,<3.13" }
-jupyterlab-night = { version = ">=0.4.6,<1", python = ">=3.10,<3.13" }
-jupyterlite-core = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
-jupyterlite-pyodide-kernel = { version = ">=0.3,<0.4", python = ">=3.10,<3.13" }
-
-[tool.poetry.extras]
+[project.optional-dependencies]
 bigquery = [
-  "db-dtypes",
-  "google-cloud-bigquery",
-  "google-cloud-bigquery-storage",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "pydata-google-auth",
-  "numpy",
-  "pandas",
-  "rich",
+  "db-dtypes>=0.3,<2",
+  "google-cloud-bigquery>=3,<4",
+  "google-cloud-bigquery-storage>=2,<3",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "pydata-google-auth>=1.4.0,<2",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
 clickhouse = [
-  "clickhouse-connect",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "clickhouse-connect[arrow,pandas,numpy]>=0.5.23,<1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
 databricks = [
-  "databricks-sql-connector-core",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "databricks-sql-connector-core>=4,<5",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
 datafusion = [
-  "datafusion",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "datafusion>=0.6,<43",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
-druid = ["pydruid", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+druid = [
+  "pydruid>=0.6.7,<1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
 duckdb = [
-  "duckdb",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
-  "packaging",
+  "duckdb>=0.10,<1.2",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+  "packaging>=21.3,<25",
 ]
-exasol = ["pyexasol", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-flink = ["pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-impala = ["impyla", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-mssql = ["pyodbc", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
-mysql = ["mysqlclient", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+exasol = [
+  "pyexasol>=0.25.2,<1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
+flink = [
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
+impala = [
+  "impyla>=0.17,<1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
+mssql = [
+  "pyodbc>=4.0.39,<6",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
+mysql = [
+  "mysqlclient>=2.2.4,<3",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
 oracle = [
-  "oracledb",
-  "packaging",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "oracledb>=1.3.1,<3",
+  "packaging>=21.3,<25",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
 polars = [
-  "polars",
-  "packaging",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "polars>=1,<2",
+  "packaging>=21.3,<25",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
-postgres = ["psycopg2", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+postgres = [
+  "psycopg2>=2.8.4,<3",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
 pyspark = [
-  "pyspark",
-  "packaging",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "pyspark>=3.3.3,<4",
+  "packaging>=21.3,<25",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
 snowflake = [
-  "snowflake-connector-python",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "snowflake-connector-python>=3.0.2,<4,!=3.3.0b1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
-sqlite = ["regex", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+sqlite = [
+  "regex>=2021.7.6",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
 risingwave = [
-  "psycopg2",
-  "pyarrow",
-  "pyarrow-hotfix",
-  "numpy",
-  "pandas",
-  "rich",
+  "psycopg2>=2.8.4,<3",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
 ]
-trino = ["trino", "pyarrow", "pyarrow-hotfix", "numpy", "pandas", "rich"]
+trino = [
+  "trino>=0.321,<1",
+  "pyarrow>=10.0.1,<19",
+  "pyarrow-hotfix>=0.4,<1",
+  "numpy>=1.23.2,<3",
+  "pandas>=1.5.3,<3",
+  "rich>=12.4.4,<14",
+]
 # non-backend extras
-visualization = ["graphviz"]
-decompiler = ["black"]
-deltalake = ["deltalake"]
-examples = ["pins"]
-geospatial = ["geoarrow-types", "geopandas", "pyproj", "shapely"]
+visualization = ["graphviz>=0.16,<1"]
+decompiler = ["black>=22.1.0,<25"]
+deltalake = ["deltalake>=0.9.0,<1"]
+examples = ["pins[gcs]>=0.8.3,<1"]
+geospatial = [
+  "geoarrow-types>=0.2,<1",
+  "geopandas>=0.6,<2",
+  "pyproj>=3.3.0,<4",
+  "shapely>=2,<3",
+]
 
-[tool.poetry.plugins."ibis.backends"]
+[dependency-groups]
+dev = [
+  "ruff>=0.7.1",
+  "codespell[hard-encoding-detection,toml]>=2.2.6,<3",
+  "google-cloud-storage>=2.7.0,<3",
+  "ipython>=8.7.0,<9",
+  "pre-commit>=4,<5",
+  "pyinstrument>=4.5.1,<6",
+  "ruff>=0.1.8",
+  "tqdm>=4.66.1,<5",
+  "dunamai>=1.22.0",
+]
+tests = [
+  "cloudpickle",
+  "filelock>=3.7.0,<4",
+  "fsspec<2024.10.1",
+  "hypothesis>=6.58.0,<7",
+  "packaging>=21.3,<25",
+  "pytest>=8.2.0,<9",
+  "pytest-benchmark>=3.4.1,<5",
+  "pytest-deadfixtures>=2.2.1,<3",
+  "pytest-clarity>=1.0.1,<2",
+  "pytest-cov>=5,<6",
+  "pytest-httpserver>=1.0.5,<2",
+  "pytest-mock>=3.6.1,<4",
+  "pytest-randomly>=3.10.1,<4",
+  "pytest-repeat>=0.9.1,<0.10",
+  "pytest-snapshot>=0.9.0,<1",
+  "pytest-timeout>=2.3.1,<3",
+  "pytest-xdist>=2.3.0,<4",
+  "requests>=2,<3",
+  "tomli>=2.0.1,<3",
+]
+docs = [
+  "altair>=5.0.1,<6",
+  # pin griffe until https://github.com/ibis-project/ibis/pull/9865 is
+  # addressed
+  "griffe<1",
+  "ipykernel>=6.25.1,<7",
+  "itables>=1.6.3,<2.3",
+  "nbclient>=0.8.0,<1",
+  "plotly>=5.16.1,<6",
+  "plotnine>=0.12.2,<1",
+  "py-cpuinfo>=9,<10",
+  "quartodoc>=0.6.1,<1",
+  "requests>=2,<3",
+  "rich>13.8.0,<14",
+  "scikit-learn>=1.3,<2",
+  "seaborn>=0.12.2,<1",
+  "lonboard==0.10.3",
+  "jupyter-cache>=1.0.0,<2",
+  "jupyterlab>=4.2.5,<5",
+  "jupyterlab-night>=0.4.6,<1",
+  "jupyterlite-core>=0.3,<0.4",
+  "jupyterlite-pyodide-kernel>=0.3,<0.4",
+]
+
+[project.entry-points."ibis.backends"]
 bigquery = "ibis.backends.bigquery"
 clickhouse = "ibis.backends.clickhouse"
 databricks = "ibis.backends.databricks"
@@ -267,6 +290,23 @@ pyspark = "ibis.backends.pyspark"
 snowflake = "ibis.backends.snowflake"
 sqlite = "ibis.backends.sqlite"
 trino = "ibis.backends.trino"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ibis"]
+
+[tool.hatch.build.targets.sdist]
+packages = ["ibis"]
+include = ["ibis/examples/metadata.json", "ibis/examples/CITATIONS.md"]
+exclude = [
+  "ibis/examples/gen_examples.R",
+  "ibis/examples/gen_registry.py",
+  "ibis/examples/data",
+  "ibis/examples/descriptions",
+]
 
 [tool.pytest.ini_options]
 doctest_optionflags = [
@@ -534,20 +574,3 @@ omit = [
   "ibis/interactive.py",
   "ibis/examples/gen_registry.py",
 ]
-
-[tool.distutils.bdist_wheel]
-# universal = true is for projects that support py2 and py3, and do not have C
-# extensions
-universal = false
-
-[tool.poetry-dynamic-versioning]
-enable = true
-dirty = true
-style = "pep440"
-pattern = '^(?P<base>\d+(\.\d+)*)'
-# index=0 bumps the major version, to handle backports that occur after a breaking change commit
-format-jinja = "{% if distance == 0 %}{{ base }}{% else %}{{ bump_version(base, index=0) }}.dev{{ distance }}{% endif %}"
-
-[build-system]
-requires = ["poetry-core>=1.1.0", "poetry-dynamic-versioning"]
-build-backend = "poetry_dynamic_versioning.backend"
