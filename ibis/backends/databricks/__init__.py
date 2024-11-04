@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import contextlib
 import functools
+import getpass
 import os
+import sys
 import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -314,7 +316,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         catalog: str | None = None,
         schema: str = "default",
         use_cloud_fetch: bool = False,
-        memtable_volume: str | None = "__ibis_memtables__",
+        memtable_volume: str | None = None,
         staging_allowed_local_path: str | None = None,
         **config: Any,
     ) -> None:
@@ -339,6 +341,11 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             staging_allowed_local_path=staging_allowed_local_path,
             **config,
         )
+        if memtable_volume is None:
+            short_version = "".join(map(str, sys.version_info[:3]))
+            memtable_volume = (
+                f"{getpass.getuser()}-py={short_version}-pid={os.getpid()}"
+            )
         self._memtable_volume = memtable_volume
         self._memtable_catalog = self.current_catalog
         self._memtable_database = self.current_database
@@ -352,7 +359,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     @util.experimental
     @classmethod
     def from_connection(
-        cls, con, memtable_volume: str = "__ibis_memtables__"
+        cls,
+        con,
+        memtable_volume: str | None = None,
     ) -> Backend:
         """Create an Ibis client from an existing connection to a Databricks cloud instance.
 
@@ -370,7 +379,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return new_backend
 
     def _post_connect(self, *, memtable_volume: str) -> None:
-        sql = f"CREATE VOLUME IF NOT EXISTS {memtable_volume} COMMENT 'Ibis memtable storage volume'"
+        sql = f"CREATE VOLUME IF NOT EXISTS `{memtable_volume}` COMMENT 'Ibis memtable storage volume'"
         with self.con.cursor() as cur:
             cur.execute(sql)
 
