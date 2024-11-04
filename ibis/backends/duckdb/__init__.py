@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import contextlib
-import os
 import urllib
 import warnings
 from operator import itemgetter
@@ -362,7 +361,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self,
         database: str | Path = ":memory:",
         read_only: bool = False,
-        temp_directory: str | Path | None = None,
         extensions: Sequence[str] | None = None,
         **config: Any,
     ) -> None:
@@ -374,9 +372,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             Path to a duckdb database.
         read_only
             Whether the database is read-only.
-        temp_directory
-            Directory to use for spilling to disk. Only set by default for
-            in-memory connections.
         extensions
             A list of duckdb extensions to install/load upon connection.
         config
@@ -394,19 +389,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             ("md:", "motherduck:", ":memory:")
         ):
             database = Path(database).absolute()
-
-        if temp_directory is None:
-            temp_directory = (
-                Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-                / "ibis-duckdb"
-                / str(os.getpid())
-            )
-        else:
-            Path(temp_directory).mkdir(parents=True, exist_ok=True)
-            config["temp_directory"] = str(temp_directory)
-
         self.con = duckdb.connect(str(database), config=config, read_only=read_only)
-
         self._post_connect(extensions)
 
     @util.experimental
