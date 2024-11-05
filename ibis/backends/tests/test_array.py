@@ -183,6 +183,42 @@ def test_array_concat_scalar(con, op):
     assert result == op(raw_left, raw_right)
 
 
+@pytest.mark.parametrize(
+    "op", [lambda x, y: x + y, lambda x, y: y + x], ids=["left", "right"]
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="doesn't support nullable arrays",
+)
+@pytest.mark.notyet(
+    ["bigquery"], raises=AssertionError, reason="bigquery treats null arrays as empty"
+)
+def test_array_concat_with_null(con, op):
+    non_null_value = ibis.array([2**31 - 1])
+    null_value = ibis.null(non_null_value.type())
+    expr = op(non_null_value, null_value)
+    result = con.execute(expr)
+    assert pd.isna(result)
+
+
+@pytest.mark.notyet(
+    ["clickhouse", "bigquery"],
+    raises=AssertionError,
+    reason="doesn't support nullable arrays, so result is not null",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="cannot handle concatenating two null values that are typed as arrays",
+)
+def test_array_concat_with_null_non_constant(con):
+    t = ibis.memtable({"a": [None]}, schema={"a": "array<int32>"})
+    expr = t.a + t.a
+    result = con.execute(expr)
+    assert all(pd.isna(result))
+
+
 def test_array_length(con):
     expr = ibis.literal([1, 2, 3]).length()
     assert con.execute(expr.name("tmp")) == 3
