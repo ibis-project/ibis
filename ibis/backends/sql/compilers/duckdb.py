@@ -349,8 +349,12 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayConcat(self, op, *, arg):
-        # TODO(cpcloud): map ArrayConcat to this in sqlglot instead of here
-        return reduce(self.f.list_concat, arg)
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.list_concat(x, y)
+            ),
+            arg,
+        )
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         if unit.short == "ns":
