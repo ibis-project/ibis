@@ -176,12 +176,16 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
         self.con = pyodbc.connect(
             user=user,
             server=f"{host},{port}",
-            password=password,
+            password=self._escape_special_characters(password),
             driver=driver,
             **kwargs,
         )
 
         self._post_connect()
+
+    @staticmethod
+    def _escape_special_characters(value: str) -> str:
+        return "{" + value.replace("}", "}}") + "}"
 
     @util.experimental
     @classmethod
