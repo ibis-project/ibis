@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 from collections.abc import Callable  # noqa: TCH003
 from typing import Annotated, Any, Optional
 
@@ -26,21 +25,6 @@ class Config(Annotable):
         for field in prefix:
             conf = getattr(conf, field)
         setattr(conf, key, value)
-
-    @contextlib.contextmanager
-    def _with_temporary(self, options):
-        try:
-            old = {}
-            for key, value in options.items():
-                old[key] = self.get(key)
-                self.set(key, value)
-            yield
-        finally:
-            for key, value in old.items():
-                self.set(key, value)
-
-    def __call__(self, options):
-        return self._with_temporary(options)
 
 
 class SQL(Config):
@@ -205,11 +189,6 @@ For more information on available backends, visit https://ibis-project.org/insta
 
 
 options = Options()
-
-
-@public
-def option_context(key, new_value):
-    return options({key: new_value})
 
 
 public(options=options)

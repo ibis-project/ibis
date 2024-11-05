@@ -10,7 +10,6 @@ import pytz
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis import config
 from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
@@ -66,16 +65,17 @@ def test_result_as_dataframe(con, alltypes):
     assert len(result) == 10
 
 
-def test_adapt_scalar_array_results(con, alltypes):
+def test_adapt_scalar_array_results(con, alltypes, monkeypatch):
     table = alltypes
 
     expr = table.double_col.sum()
     result = con.execute(expr)
     assert isinstance(result, float)
 
-    with config.option_context("interactive", True):
-        result2 = expr.execute()
-        assert isinstance(result2, float)
+    monkeypatch.setattr(ibis.options, "interactive", True)
+
+    result2 = expr.execute()
+    assert isinstance(result2, float)
 
     expr = (
         table.group_by("string_col").aggregate([table.count().name("count")]).string_col
@@ -85,7 +85,7 @@ def test_adapt_scalar_array_results(con, alltypes):
     assert isinstance(result, pd.Series)
 
 
-def test_interactive_repr_call_failure(con):
+def test_interactive_repr_call_failure(con, monkeypatch):
     t = con.table("lineitem").limit(100000)
 
     t = t.select(t, t.l_receiptdate.cast("timestamp").name("date"))
@@ -100,8 +100,9 @@ def test_interactive_repr_call_failure(con):
 
     metric = expr["avg_px"].mean().over(w2)
     enriched = expr.select(expr, metric)
-    with config.option_context("interactive", True):
-        repr(enriched)
+
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    repr(enriched)
 
 
 def test_array_default_limit(con, alltypes):
@@ -118,20 +119,22 @@ def test_limit_overrides_expr(con, alltypes):
     assert len(result) == 5
 
 
-def test_limit_equals_none_no_limit(alltypes):
+def test_limit_equals_none_no_limit(alltypes, monkeypatch):
     t = alltypes
 
-    with config.option_context("sql.default_limit", 10):
-        result = t.execute(limit=None)
-        assert len(result) > 10
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 10)
+
+    result = t.execute(limit=None)
+    assert len(result) > 10
 
 
-def test_verbose_log_queries(con, test_data_db):
+def test_verbose_log_queries(con, test_data_db, monkeypatch):
     queries = []
 
-    with config.option_context("verbose", True):
-        with config.option_context("verbose_log", queries.append):
-            con.table("orders", database=test_data_db)
+    monkeypatch.setattr(ibis.options, "verbose", True)
+    monkeypatch.setattr(ibis.options, "verbose_log", queries.append)
+
+    con.table("orders", database=test_data_db)
 
     # we can't make assertions about the length of queries, since the Python GC
     # could've collected a temporary pandas table any time between construction
@@ -140,36 +143,47 @@ def test_verbose_log_queries(con, test_data_db):
     assert expected in queries
 
 
-def test_sql_query_limits(con, test_data_db):
+def test_sql_query_limits_big(con, test_data_db, monkeypatch):
     table = con.table("nation", database=test_data_db)
-    with config.option_context("sql.default_limit", 100000):
-        # table has 25 rows
-        assert len(table.execute()) == 25
-        # comply with limit arg for Table
-        assert len(table.execute(limit=10)) == 10
-        # state hasn't changed
-        assert len(table.execute()) == 25
-        # non-Table ignores default_limit
-        assert table.count().execute() == 25
-        # non-Table doesn't observe limit arg
-        assert table.count().execute(limit=10) == 25
-    with config.option_context("sql.default_limit", 20):
-        # Table observes default limit setting
-        assert len(table.execute()) == 20
-        # explicit limit= overrides default
-        assert len(table.execute(limit=15)) == 15
-        assert len(table.execute(limit=23)) == 23
-        # non-Table ignores default_limit
-        assert table.count().execute() == 25
-        # non-Table doesn't observe limit arg
-        assert table.count().execute(limit=10) == 25
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 100_000)
+
+    # table has 25 rows
+    assert len(table.execute()) == 25
+    # comply with limit arg for Table
+    assert len(table.execute(limit=10)) == 10
+    # state hasn't changed
+    assert len(table.execute()) == 25
+    # non-Table ignores default_limit
+    assert table.count().execute() == 25
+    # non-Table doesn't observe limit arg
+    assert table.count().execute(limit=10) == 25
+
+
+def test_sql_query_limits_small(con, test_data_db, monkeypatch):
+    table = con.table("nation", database=test_data_db)
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 20)
+
+    # Table observes default limit setting
+    assert len(table.execute()) == 20
+    # explicit limit= overrides default
+    assert len(table.execute(limit=15)) == 15
+    assert len(table.execute(limit=23)) == 23
+    # non-Table ignores default_limit
+    assert table.count().execute() == 25
+    # non-Table doesn't observe limit arg
+    assert table.count().execute(limit=10) == 25
+
+
+def test_sql_query_limits_none(con, test_data_db, monkeypatch):
+    table = con.table("nation", database=test_data_db)
+    monkeypatch.setattr(ibis.options.sql, "default_limit", None)
+
     # eliminating default_limit doesn't break anything
-    with config.option_context("sql.default_limit", None):
-        assert len(table.execute()) == 25
-        assert len(table.execute(limit=15)) == 15
-        assert len(table.execute(limit=10000)) == 25
-        assert table.count().execute() == 25
-        assert table.count().execute(limit=10) == 25
+    assert len(table.execute()) == 25
+    assert len(table.execute(limit=15)) == 15
+    assert len(table.execute(limit=10000)) == 25
+    assert table.count().execute() == 25
+    assert table.count().execute(limit=10) == 25
 
 
 def test_set_compression_codec(con):
