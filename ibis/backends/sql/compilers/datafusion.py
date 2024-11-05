@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
-from functools import partial
+from functools import partial, reduce
 from itertools import starmap
 
 import sqlglot as sg
@@ -532,6 +532,14 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op):
         return self.f.anon.uuid()
+
+    def visit_ArrayConcat(self, op, *, arg):
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.array_cat(x, y)
+            ),
+            map(partial(self.cast, to=op.dtype), arg),
+        )
 
 
 compiler = DataFusionCompiler()
