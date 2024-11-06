@@ -55,6 +55,7 @@ class DataFusion(Postgres):
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
             sge.ArraySize: rename_func("array_length"),
+            sge.Median: rename_func("median"),
         }
 
 
