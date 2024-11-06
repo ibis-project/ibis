@@ -313,7 +313,12 @@ class PostgresCompiler(SQLGlotCompiler):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
     def visit_ArrayConcat(self, op, *, arg):
-        return reduce(self.f.array_cat, map(partial(self.cast, to=op.dtype), arg))
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.array_cat(x, y)
+            ),
+            map(partial(self.cast, to=op.dtype), arg),
+        )
 
     def visit_ArrayContains(self, op, *, arg, other):
         arg_dtype = op.arg.dtype

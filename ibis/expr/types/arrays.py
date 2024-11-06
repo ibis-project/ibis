@@ -197,7 +197,7 @@ class ArrayValue(Value):
         ├────────────────────────┤
         │ [7, 4]                 │
         │ [3, 4]                 │
-        │ [4]                    │
+        │ NULL                   │
         └────────────────────────┘
 
         `concat` is also available using the `+` operator
@@ -210,7 +210,7 @@ class ArrayValue(Value):
         ├────────────────────────┤
         │ [1, 7]                 │
         │ [1, 3]                 │
-        │ [1]                    │
+        │ NULL                   │
         └────────────────────────┘
         >>> t.a + [1]
         ┏━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -220,7 +220,7 @@ class ArrayValue(Value):
         ├────────────────────────┤
         │ [7, 1]                 │
         │ [3, 1]                 │
-        │ [1]                    │
+        │ NULL                   │
         └────────────────────────┘
         """
         return ops.ArrayConcat((self, other, *args)).to_expr()

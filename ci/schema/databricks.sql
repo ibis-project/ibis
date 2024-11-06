@@ -1,17 +1,17 @@
 CREATE VIEW IF NOT EXISTS diamonds AS
-SELECT * FROM parquet.`/Volumes/ibis_testing/default/testing_data/parquet/diamonds.parquet`;
+SELECT * FROM parquet.`/Volumes/ibis_testing/default/{user}_{python_version}/diamonds.parquet`;
 
 CREATE VIEW IF NOT EXISTS batting AS
-SELECT * FROM parquet.`/Volumes/ibis_testing/default/testing_data/parquet/batting.parquet`;
+SELECT * FROM parquet.`/Volumes/ibis_testing/default/{user}_{python_version}/batting.parquet`;
 
 CREATE VIEW IF NOT EXISTS awards_players AS
-SELECT * FROM parquet.`/Volumes/ibis_testing/default/testing_data/parquet/awards_players.parquet`;
+SELECT * FROM parquet.`/Volumes/ibis_testing/default/{user}_{python_version}/awards_players.parquet`;
 
 CREATE VIEW IF NOT EXISTS functional_alltypes AS
-SELECT * FROM parquet.`/Volumes/ibis_testing/default/testing_data/parquet/functional_alltypes.parquet`;
+SELECT * FROM parquet.`/Volumes/ibis_testing/default/{user}_{python_version}/functional_alltypes.parquet`;
 
 CREATE VIEW IF NOT EXISTS astronauts AS
-SELECT * FROM parquet.`/Volumes/ibis_testing/default/testing_data/parquet/astronauts.parquet`;
+SELECT * FROM parquet.`/Volumes/ibis_testing/default/{user}_{python_version}/astronauts.parquet`;
 
 CREATE TABLE IF NOT EXISTS `array_types` AS
     VALUES (ARRAY(CAST(1 AS BIGINT), 2, 3), ARRAY('a', 'b', 'c'), ARRAY(1.0, 2.0, 3.0), 'a', 1.0, ARRAY(ARRAY(), ARRAY(CAST(1 AS BIGINT), 2, 3), NULL)),

@@ -14,7 +14,6 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis import config
 from ibis import literal as L
 
 pytest.importorskip("psycopg2")
@@ -656,11 +655,12 @@ def test_not_exists(alltypes, df):
     tm.assert_frame_equal(result, expected, check_index_type=False, check_dtype=False)
 
 
-def test_interactive_repr_shows_error(alltypes):
+def test_interactive_repr_shows_error(alltypes, monkeypatch):
     expr = alltypes.int_col.convert_base(10, 2)
 
-    with config.option_context("interactive", True):
-        result = repr(expr)
+    monkeypatch.setattr(ibis.options, "interactive", True)
+
+    result = repr(expr)
 
     assert "OperationNotDefinedError" in result
     assert "BaseConvert" in result

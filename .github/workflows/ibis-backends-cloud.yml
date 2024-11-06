@@ -47,6 +47,10 @@ jobs:
             title: Snowflake
             extras:
               - snowflake
+          - name: databricks
+            title: Databricks
+            extras:
+              - databricks
         include:
           - python-version: "3.10"
             backend:

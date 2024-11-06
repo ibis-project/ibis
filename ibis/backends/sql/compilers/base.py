@@ -46,7 +46,7 @@ else:
 
 try:
     from sqlglot.expressions import AlterRename as RenameTable
-except AttributeError:
+except ImportError:
     from sqlglot.expressions import RenameTable  # noqa: F401
 
 
