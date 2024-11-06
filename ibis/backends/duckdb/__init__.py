@@ -1383,10 +1383,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         For analytics use cases this is usually nothing to fret about. In some cases you
         may need to explicit release the cursor.
 
-        ::: {.callout-warning}
-        ## DuckDB returns 1024 size batches regardless of what value of `chunk_size` argument is passed.
-        :::
-
         Parameters
         ----------
         expr
