@@ -663,6 +663,52 @@ def test_array_filter_with_index(con, input, output, predicate):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, None], [4]]},
+            {"a": [[1, None], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
+        param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
+@pytest.mark.parametrize(
+    "predicate",
+    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_filter_with_index_lambda(con, input, output, predicate):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+    expected = pd.Series(output["a"])
+
+    expr = t.select(a=t.a.filter(predicate))
+    result = con.execute(expr.a)
+    assert frozenset(map(tuple, result.values)) == frozenset(
+        map(tuple, expected.values)
+    )
+
+
+@builtin_array
 @pytest.mark.parametrize(
     ("col", "value"),
     [
@@ -786,9 +832,11 @@ def test_array_remove(con, input, expected):
 
     lhs = frozenset(
         # arg, things are coming back as nan
-        tuple(None if el is not None and math.isnan(el) else el for el in v)
-        if v is not None
-        else None
+        (
+            tuple(None if el is not None and math.isnan(el) else el for el in v)
+            if v is not None
+            else None
+        )
         for v in result.values
     )
     rhs = frozenset(tuple(v) if v is not None else None for v in expected)
