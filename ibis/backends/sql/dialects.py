@@ -31,6 +31,7 @@ class ClickHouse(_ClickHouse):
             sge.ArraySort: rename_func("arraySort"),
             sge.LogicalAnd: rename_func("min"),
             sge.LogicalOr: rename_func("max"),
+            sge.Median: rename_func("median"),
         }
 
         def except_op(self, expression: sge.Except) -> str:
