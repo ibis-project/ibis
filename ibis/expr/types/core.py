@@ -383,6 +383,16 @@ class Expr(Immutable, Coercible):
         BaseBackend
             The Ibis backend.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", {"id": [1, 2, 3]})
+        >>> backend = t.get_backend()
+        >>> backend.name
+        'duckdb'
+        >>> type(backend)
+        <class 'ibis.backends.duckdb.Backend'>
         """
         return self._find_backend(use_default=True)
 

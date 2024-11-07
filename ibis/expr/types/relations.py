@@ -182,7 +182,16 @@ class Table(Expr, _FixedTextJupyterMixin):
     __array_ufunc__ = None
 
     def get_name(self) -> str:
-        """Return the fully qualified name of the table."""
+        """Return the fully qualified name of the table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", {"id": [1, 2, 3]})
+        >>> t.get_name()
+        'memory.main.t'
+        """
         arg = self._arg
         namespace = getattr(arg, "namespace", ops.Namespace())
         pieces = namespace.catalog, namespace.database, arg.name
