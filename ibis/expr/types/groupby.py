@@ -82,6 +82,29 @@ class GroupedTable(Concrete):
         -------
         GroupedTable
             A grouped table expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {"grouper": ["a", "a", "a", "b", "b", "c"], "values": [1, 2, 3, 1, 2, 1]}
+        ... )
+        >>> expr = (
+        ...     t.group_by(t.grouper)
+        ...     .having(t.count() < 3)
+        ...     .aggregate(values_count=t.count(), values_sum=t.values.sum())
+        ...     .order_by(t.grouper)
+        ... )
+        >>> expr
+        ┏━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ grouper ┃ values_count ┃ values_sum ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ string  │ int64        │ int64      │
+        ├─────────┼──────────────┼────────────┤
+        │ b       │            2 │          3 │
+        │ c       │            1 │          1 │
+        └─────────┴──────────────┴────────────┘
         """
         table = self.table.to_expr()
         havings = table.bind(*predicates)
