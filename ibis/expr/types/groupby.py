@@ -94,6 +94,7 @@ class GroupedTable(Concrete):
         ...     t.group_by(t.grouper)
         ...     .having(t.count() < 3)
         ...     .aggregate(values_count=t.count(), values_sum=t.values.sum())
+        ...     .order_by(t.grouper)
         ... )
         >>> expr
         ┏━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
