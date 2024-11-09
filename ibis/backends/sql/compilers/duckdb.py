@@ -349,6 +349,10 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayConcat(self, op, *, arg):
+        # TODO: duckdb 1.2 was the first release to fix NULL handling.
+        # Once that is our minimum supported duckdb version, we can
+        # use `x || y || z ...` and drop the ifs
+        # https://github.com/duckdb/duckdb/issues/14692#issuecomment-2457146174
         return reduce(
             lambda x, y: self.if_(
                 x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.list_concat(x, y)
