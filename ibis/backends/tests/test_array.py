@@ -699,12 +699,11 @@ def test_array_filter_with_index(con, input, output, predicate):
 )
 def test_array_filter_with_index_lambda(con, input, output, predicate):
     t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
-    expected = pd.Series(output["a"])
 
     expr = t.select(a=t.a.filter(predicate))
-    result = con.execute(expr.a)
-    assert frozenset(map(tuple, result.values)) == frozenset(
-        map(tuple, expected.values)
+    result = con.to_pyarrow(expr.a)
+    assert frozenset(map(tuple, result.to_pylist())) == frozenset(
+        map(tuple, output["a"])
     )
 
 
@@ -832,11 +831,9 @@ def test_array_remove(con, input, expected):
 
     lhs = frozenset(
         # arg, things are coming back as nan
-        (
-            tuple(None if el is not None and math.isnan(el) else el for el in v)
-            if v is not None
-            else None
-        )
+        tuple(None if el is not None and math.isnan(el) else el for el in v)
+        if v is not None
+        else None
         for v in result.values
     )
     rhs = frozenset(tuple(v) if v is not None else None for v in expected)
