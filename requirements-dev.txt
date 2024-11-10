@@ -197,7 +197,7 @@ pyparsing==3.2.0
 pyproj==3.7.0
 pyspark==3.5.3
 pytest==8.3.3
-pytest-benchmark==4.0.0
+pytest-benchmark==5.1.0
 pytest-clarity==1.0.1
 pytest-cov==5.0.0
 pytest-deadfixtures==2.2.1
