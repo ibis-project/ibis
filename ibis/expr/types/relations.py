@@ -7,7 +7,7 @@ import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 import toolz
 from public import public
@@ -286,7 +286,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             result.append(value)
         return tuple(result)
 
-    def as_scalar(self) -> ir.ScalarExpr:
+    def as_scalar(self) -> ir.Scalar:
         """Inform ibis that the table expression should be treated as a scalar.
 
         Note that the table must have exactly one column and one row for this to
@@ -560,6 +560,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             console_width=console_width,
         )
 
+    @overload
+    def __getitem__(self, what: str | int) -> ir.Column: ...
+
+    @overload
+    def __getitem__(self, what: slice | Sequence[str | int]) -> Table: ...
+
     def __getitem__(self, what: str | int | slice | Sequence[str | int]):
         """Select one or more columns or rows from a table expression.
 
@@ -697,7 +703,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             return self.select(values)
 
-    def __len__(self):
+    def __len__(self) -> NoReturn:
         raise com.ExpressionError("Use .count() instead")
 
     def __getattr__(self, key: str) -> ir.Column:
@@ -4779,13 +4785,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
 @public
 class CachedTable(Table):
-    def __exit__(self, *_):
+    def __exit__(self, *_) -> None:
         self.release()
 
-    def __enter__(self):
+    def __enter__(self) -> CachedTable:
         return self
 
-    def release(self):
+    def release(self) -> None:
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
         return current_backend._finalize_cached_table(self.op().name)

@@ -1561,7 +1561,7 @@ class Column(Value, _FixedTextJupyterMixin):
             return literal(value)
         return value
 
-    def __deferred_repr__(self):
+    def __deferred_repr__(self) -> str:
         return f"<column[{self.type()}]>"
 
     def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
