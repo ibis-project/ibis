@@ -192,15 +192,11 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 
 1. Install development dependencies
 
+   This will also install Ibis in development mode as `ibis-framework`.
+
    ```sh
-   pip install 'poetry==1.8.4'
+   pip install 'uv>=0.4.29'
    pip install -r requirements-dev.txt
-   ```
-
-1. Install ibis in development mode
-
-   ```sh
-   pip install -e .
    ```
 
 :::

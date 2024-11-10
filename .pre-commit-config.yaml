@@ -61,7 +61,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: check-added-large-files
-        args: ["--maxkb=710"]
+        args: ["--maxkb=800"]
       - id: check-case-conflict
       - id: check-executables-have-shebangs
       - id: check-merge-conflict

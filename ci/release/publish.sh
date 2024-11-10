@@ -2,4 +2,4 @@
 
 set -euo pipefail
 
-nix develop '.#release' -c poetry publish
+nix develop '.#release' -c uv publish

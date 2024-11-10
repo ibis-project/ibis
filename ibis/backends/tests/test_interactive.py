@@ -48,7 +48,6 @@ def test_repr_png_is_none_in_interactive(table, monkeypatch):
 
 def test_repr_png_is_not_none_in_not_interactive(table, monkeypatch):
     pytest.importorskip("ibis.expr.visualize")
-
     monkeypatch.setattr(ibis.options, "interactive", False)
     monkeypatch.setattr(ibis.options, "graphviz_repr", True)
 

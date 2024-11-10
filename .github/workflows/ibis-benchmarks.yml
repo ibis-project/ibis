@@ -29,20 +29,19 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.0
+        with:
+          enable-cache: true
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --all-extras
 
       - name: make benchmark output dir
         run: mkdir .benchmarks
 
       - name: benchmark
-        run: poetry run pytest --benchmark-enable --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
+        run: uv run --all-extras --group tests pytest --benchmark-enable --benchmark-json .benchmarks/output.json ibis/tests/benchmarks
 
       - uses: google-github-actions/auth@v2
         with:

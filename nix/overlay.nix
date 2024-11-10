@@ -1,20 +1,40 @@
-pkgs: super:
+{ uv2nix, pyproject-nix }: pkgs: super:
 let
-  mkPoetryEnv = { groups, python, extras ? [ "*" ] }: pkgs.poetry2nix.mkPoetryEnv {
-    inherit python groups extras;
-    projectDir = pkgs.gitignoreSource ../.;
-    editablePackageSources = { ibis = pkgs.gitignoreSource ../ibis; };
-    overrides = [
-      (import ../poetry-overrides.nix)
-      pkgs.poetry2nix.defaultPoetryOverrides
-    ];
-    preferWheels = true;
+  # Create package overlay from workspace.
+  workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ../.; };
+
+  envOverlay = workspace.mkPyprojectOverlay {
+    sourcePreference = "wheel";
   };
 
-  mkPoetryDevEnv = python: mkPoetryEnv {
-    inherit python;
-    groups = [ "main" "dev" "docs" "test" ];
-  };
+  editableOverlay =
+    # Create an overlay enabling editable mode for all local dependencies.
+    # This is for usage with nix-nix develop
+    workspace.mkEditablePyprojectOverlay {
+      root = "$REPO_ROOT";
+    };
+
+  pyprojectOverrides = import ./pyproject-overrides.nix { inherit pkgs; };
+
+  mkEnv = python: { deps ? workspace.deps.all, editable ? true }:
+    # This devShell uses uv2nix to construct a virtual environment purely from Nix, using the same dependency specification as the application.
+    #
+    # This means that any changes done to your local files do not require a rebuild.
+    let
+      # Construct package set
+      pythonSet =
+        # Use base package set from pyproject.nix builders
+        (pkgs.callPackage pyproject-nix.build.packages {
+          inherit python;
+        }).overrideScope
+          (lib.composeManyExtensions ([
+            envOverlay
+            pyprojectOverrides
+          ] ++ lib.optional editable editableOverlay));
+    in
+    # Build virtual environment
+    pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps;
+
   inherit (pkgs) lib stdenv;
 in
 {
@@ -26,18 +46,29 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
-  ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
-  ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
+  ibis310 = pkgs.callPackage ./ibis.nix {
+    python = pkgs.python310;
+    inherit mkEnv;
+  };
 
-  ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
-  ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
-  ibisDevEnv312 = mkPoetryDevEnv pkgs.python312;
+  ibis311 = pkgs.callPackage ./ibis.nix {
+    python = pkgs.python311;
+    inherit mkEnv;
+  };
 
-  ibisSmallDevEnv = mkPoetryEnv {
+  ibis312 = pkgs.callPackage ./ibis.nix {
     python = pkgs.python312;
-    groups = [ "main" "dev" ];
-    extras = [ ];
+    inherit mkEnv;
+  };
+
+  ibisDevEnv310 = mkEnv pkgs.python310 { };
+  ibisDevEnv311 = mkEnv pkgs.python311 { };
+  ibisDevEnv312 = mkEnv pkgs.python312 { };
+
+  ibisSmallDevEnv = mkEnv pkgs.python312 {
+    deps = {
+      ibis-framework = [ "dev" ];
+    };
   };
 
   duckdb = super.duckdb.overrideAttrs (
@@ -50,7 +81,7 @@ in
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";
-    runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
+    runtimeInputs = [ pkgs.nodejs_20.pkgs.conventional-changelog-cli ];
     text = ''
       conventional-changelog --config ./.conventionalcommits.js "$@"
     '';
@@ -58,7 +89,7 @@ in
 
   check-release-notes-spelling = pkgs.writeShellApplication {
     name = "check-release-notes-spelling";
-    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.ibisSmallDevEnv ];
+    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.codespell ];
     text = ''
       tmp="$(mktemp)"
       changelog --release-count 1 --output-unreleased --outfile "$tmp"
@@ -72,7 +103,7 @@ in
 
   update-lock-files = pkgs.writeShellApplication {
     name = "update-lock-files";
-    runtimeInputs = with pkgs; [ just poetry ];
+    runtimeInputs = with pkgs; [ just uv ];
     text = "just lock";
   };
 

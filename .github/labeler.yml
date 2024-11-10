@@ -114,7 +114,7 @@ dependencies:
   - changed-files:
       - any-glob-to-any-file: "**/*.nix"
       - any-glob-to-any-file: "flake.lock"
-      - any-glob-to-any-file: "poetry.lock"
+      - any-glob-to-any-file: "uv.lock"
       - any-glob-to-any-file: "requirements-dev.txt"
       - any-glob-to-any-file: "conda/*.yml"
 
