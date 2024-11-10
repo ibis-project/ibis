@@ -2228,7 +2228,7 @@ tests = [
     { name = "hypothesis", specifier = ">=6.58.0,<7" },
     { name = "packaging", specifier = ">=21.3,<25" },
     { name = "pytest", specifier = ">=8.2.0,<9" },
-    { name = "pytest-benchmark", specifier = ">=3.4.1,<5" },
+    { name = "pytest-benchmark", specifier = ">=3.4.1,<6" },
     { name = "pytest-clarity", specifier = ">=1.0.1,<2" },
     { name = "pytest-cov", specifier = ">=5,<6" },
     { name = "pytest-deadfixtures", specifier = ">=2.2.1,<3" },
@@ -4268,15 +4268,15 @@ wheels = [
 
 [[package]]
 name = "pytest-benchmark"
-version = "4.0.0"
+version = "5.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "py-cpuinfo" },
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/28/08/e6b0067efa9a1f2a1eb3043ecd8a0c48bfeb60d3255006dcc829d72d5da2/pytest-benchmark-4.0.0.tar.gz", hash = "sha256:fb0785b83efe599a6a956361c0691ae1dbb5318018561af10f3e915caa0048d1", size = 334641 }
+sdist = { url = "https://files.pythonhosted.org/packages/39/d0/a8bd08d641b393db3be3819b03e2d9bb8760ca8479080a26a5f6e540e99c/pytest-benchmark-5.1.0.tar.gz", hash = "sha256:9ea661cdc292e8231f7cd4c10b0319e56a2118e2c09d9f50e1b3d150d2aca105", size = 337810 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/4d/a1/3b70862b5b3f830f0422844f25a823d0470739d994466be9dbbbb414d85a/pytest_benchmark-4.0.0-py3-none-any.whl", hash = "sha256:fdb7db64e31c8b277dff9850d2a2556d8b60bcb0ea6524e36e28ffd7c87f71d6", size = 43951 },
+    { url = "https://files.pythonhosted.org/packages/9e/d6/b41653199ea09d5969d4e385df9bbfd9a100f28ca7e824ce7c0a016e3053/pytest_benchmark-5.1.0-py3-none-any.whl", hash = "sha256:922de2dfa3033c227c96da942d1878191afa135a29485fb942e85dff1c592c89", size = 44259 },
 ]
 
 [[package]]
