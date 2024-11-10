@@ -676,7 +676,7 @@ def test_list_database_contents(con):
         "flink": {"default_database"},
         "impala": {"ibis_testing", "default", "_impala_builtins"},
         "mssql": {"INFORMATION_SCHEMA", "dbo", "guest"},
-        "mysql": {"ibis_testing", "information_schema"},
+        "mysql": {"ibis-testing", "information_schema"},
         "oracle": {"SYS", "IBIS"},
         "postgres": {"public", "information_schema"},
         "pyspark": set(),
