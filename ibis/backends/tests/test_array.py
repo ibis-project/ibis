@@ -663,6 +663,51 @@ def test_array_filter_with_index(con, input, output, predicate):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, None], [4]]},
+            {"a": [[1, None], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
+        param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
+@pytest.mark.parametrize(
+    "predicate",
+    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_filter_with_index_lambda(con, input, output, predicate):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+
+    expr = t.select(a=t.a.filter(predicate))
+    result = con.to_pyarrow(expr.a)
+    assert frozenset(map(tuple, result.to_pylist())) == frozenset(
+        map(tuple, output["a"])
+    )
+
+
+@builtin_array
 @pytest.mark.parametrize(
     ("col", "value"),
     [
