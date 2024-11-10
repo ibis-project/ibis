@@ -29,7 +29,7 @@ let
     tomli.flit-core = [ ];
     toolz.setuptools = [ ];
     typing-extensions.flit-core = [ ];
-  } // lib.optionalAttrs stdenv.isDarwin {
+  } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
     duckdb = {
       setuptools = [ ];
       setuptools-scm = [ ];
@@ -37,7 +37,18 @@ let
     };
   };
 in
-lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
+(lib.optionalAttrs stdenv.hostPlatform.isDarwin {
+  pyarrow = prev.pyarrow.overrideAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      final.setuptools
+      final.setuptools-scm
+      final.cython
+      final.numpy
+      pkgs.cmake
+      pkgs.arrow-cpp
+    ];
+  });
+}) // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.pkg-config pkgs.libmysqlclient ];
