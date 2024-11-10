@@ -37,7 +37,7 @@ jobs:
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
-        run: nix develop --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
+        run: nix develop '.#ibis311' --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
   build:
     runs-on: ubuntu-latest
