@@ -24,7 +24,12 @@ stdenv.mkDerivation {
   src = ../.;
   doCheck = true;
   preCheck = ''
+    set -euo pipefail
+
     ln -s ${pkgs.ibisTestingData} $PWD/ci/ibis-testing-data
+
+    HOME="$(mktemp -d)"
+    export HOME
   '';
   checkPhase = ''
     runHook preCheck
