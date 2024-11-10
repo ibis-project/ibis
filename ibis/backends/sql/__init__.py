@@ -239,7 +239,7 @@ class SQLBackend(BaseBackend):
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
-        drop_stmt = sg.exp.Drop(
+        drop_stmt = sge.Drop(
             kind="TABLE",
             this=sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted),
             exists=force,
@@ -509,7 +509,7 @@ class SQLBackend(BaseBackend):
     def _to_sqlglot_table(self, database):
         if database is None:
             # Create "table" with empty catalog and db
-            database = sg.exp.Table(catalog=None, db=None)
+            database = sge.Table(catalog=None, db=None)
         elif isinstance(database, (list, tuple)):
             if len(database) > 2:
                 raise ValueError(
@@ -528,7 +528,7 @@ class SQLBackend(BaseBackend):
                     '\n("catalog", "database")'
                     '\n("database",)'
                 )
-            database = sg.exp.Table(
+            database = sge.Table(
                 catalog=sg.to_identifier(catalog, quoted=self.compiler.quoted),
                 db=sg.to_identifier(database, quoted=self.compiler.quoted),
             )
@@ -538,14 +538,14 @@ class SQLBackend(BaseBackend):
             # sqlglot parsing of the string will assume that it's a Table
             # so we unpack the arguments into a new sqlglot object, switching
             # table (this) -> database (db) and database (db) -> catalog
-            table = sg.parse_one(database, into=sg.exp.Table, dialect=self.dialect)
+            table = sg.parse_one(database, into=sge.Table, dialect=self.dialect)
             if table.args["catalog"] is not None:
                 raise exc.IbisInputError(
                     f"Overspecified table hierarchy provided: `{table.sql(self.dialect)}`"
                 )
             catalog = table.args["db"]
             db = table.args["this"]
-            database = sg.exp.Table(catalog=catalog, db=db)
+            database = sge.Table(catalog=catalog, db=db)
         else:
             raise ValueError(
                 """Invalid database hierarchy format.  Please use either dotted
