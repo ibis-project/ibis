@@ -733,7 +733,26 @@ class Expr(Immutable, Coercible):
         )
 
     def unbind(self) -> ir.Table:
-        """Return an expression built on `UnboundTable` instead of backend-specific objects."""
+        """Return an expression built on `UnboundTable` instead of backend-specific objects.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import pandas as pd
+        >>> duckdb_con = ibis.duckdb.connect()
+        >>> polars_con = ibis.polars.connect()
+        >>> for backend in (duckdb_con, polars_con):
+        ...     t = backend.create_table("t", pd.DataFrame({"a": [1, 2, 3]}))
+        >>> bound_table = duckdb_con.table("t")
+        >>> bound_table.get_backend().name
+        'duckdb'
+        >>> unbound_table = bound_table.unbind()
+        >>> polars_con.execute(unbound_table)
+           a
+        0  1
+        1  2
+        2  3
+        """
         from ibis.expr.rewrites import _, d, p
 
         rule = p.DatabaseTable >> d.UnboundTable(
