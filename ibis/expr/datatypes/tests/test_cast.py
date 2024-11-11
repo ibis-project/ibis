@@ -119,3 +119,26 @@ def test_struct_different_fields():
     # Missing fields entirely from each other
     assert not x.castable(y)
     assert not y.castable(x)
+
+
+@pytest.mark.parametrize(
+    ("source", "target", "expected"),
+    [
+        # Fixed precision
+        ((12, 2), (12, 3), True),
+        ((12, 3), (12, 2), False),
+        # Fixed scale
+        ((12, 2), (13, 2), True),
+        ((13, 2), (12, 2), False),
+        # Equal
+        ((12, 2), (12, 2), True),
+        # Not equal
+        ((12, 2), (13, 3), True),
+        ((13, 2), (12, 3), False),
+        ((13, 2), (12, 1), False),
+    ],
+)
+def test_castable_decimal_to_decimal(source, target, expected):
+    left = dt.Decimal(*source)
+    right = dt.Decimal(*target)
+    assert left.castable(right) is expected

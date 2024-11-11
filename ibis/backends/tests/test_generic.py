@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
+    PolarsInvalidOperationError,
     PolarsSchemaError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
@@ -2413,3 +2414,35 @@ def test_named_literal(con, backend):
     result = con.to_pandas(expr)
     expected = pd.DataFrame({"one": [1]})
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsInvalidOperationError,
+    reason="n_unique isn't supported on decimal columns",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="doesn't allow casting Float64 to Decimal(38, 2)",
+)
+@pytest.mark.notimpl(
+    ["oracle"], raises=OracleDatabaseError, reason="incorrect code generated"
+)
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "impala", "mysql", "mssql", "sqlite", "trino"],
+    raises=com.OperationNotDefinedError,
+    reason="quantile not implemented",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=com.OperationNotDefinedError,
+    reason="standard deviation not implemented",
+)
+def test_table_describe_with_multiple_decimal_columns(con):
+    t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]}).cast(
+        {"a": "decimal(21, 2)", "b": "decimal(20, 2)"}
+    )
+    expr = t.describe()
+    result = con.to_pyarrow(expr)
+    assert len(result) == 2

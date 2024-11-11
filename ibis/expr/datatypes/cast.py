@@ -67,17 +67,17 @@ def castable(source: dt.DataType, target: dt.DataType, value: Any = None) -> boo
             return source.is_integer()
     elif target.is_decimal():
         if source.is_decimal():
-            downcast_precision = (
+            upcast_precision = (
                 source.precision is not None
                 and target.precision is not None
-                and source.precision < target.precision
+                and source.precision <= target.precision
             )
-            downcast_scale = (
+            upcast_scale = (
                 source.scale is not None
                 and target.scale is not None
-                and source.scale < target.scale
+                and source.scale <= target.scale
             )
-            return not (downcast_precision or downcast_scale)
+            return upcast_precision and upcast_scale
         else:
             return source.is_numeric()
     elif target.is_string():

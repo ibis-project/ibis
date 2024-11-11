@@ -2981,7 +2981,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             )
             aggs.append(agg)
 
-        t = ibis.union(*aggs)
+        names = aggs[0].schema().names
+        new_schema = {
+            name: dt.highest_precedence(types)
+            for name, *types in zip(names, *(agg.schema().types for agg in aggs))
+        }
+        t = ibis.union(*(agg.cast(new_schema) for agg in aggs))
 
         # TODO(jiting): Need a better way to remove columns with all NULL
         if string_col and not numeric_col:
