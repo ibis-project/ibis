@@ -98,10 +98,10 @@ ipython==8.29.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 itables==2.2.3
-jedi==0.19.1
+jedi==0.19.2
 jinja2==3.1.4
 joblib==1.4.2
-json5==0.9.25
+json5==0.9.27
 jsonpointer==3.0.0
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
@@ -265,12 +265,12 @@ urllib3==2.2.3
 virtualenv==20.27.1
 watchdog==6.0.0
 wcwidth==0.2.13
-webcolors==24.8.0
+webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
 werkzeug==3.1.3
 widgetsnbextension==4.0.13
 xxhash==3.5.0
 yarl==1.17.1
-zipp==3.20.2
+zipp==3.21.0
 zstandard==0.23.0
