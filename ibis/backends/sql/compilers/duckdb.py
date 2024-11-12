@@ -62,6 +62,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.ArrayAll: "list_bool_and",
         ops.ArraySum: "list_sum",
         ops.ArrayMean: "list_avg",
+        ops.ArrayMode: "list_mode",
         ops.BitAnd: "bit_and",
         ops.BitOr: "bit_or",
         ops.BitXor: "bit_xor",

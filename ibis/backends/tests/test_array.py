@@ -1816,8 +1816,32 @@ def _agg_with_nulls(agg, x):
         (ir.ArrayValue.mins, lambda x: _agg_with_nulls(min, x)),
         (ir.ArrayValue.maxs, lambda x: _agg_with_nulls(max, x)),
         (ir.ArrayValue.means, lambda x: _agg_with_nulls(statistics.mean, x)),
+        param(
+            ir.ArrayValue.modes,
+            lambda x: _agg_with_nulls(statistics.mode, x),
+            marks=[
+                pytest.mark.notyet(
+                    [
+                        "athena",
+                        "bigquery",
+                        "clickhouse",
+                        "databricks",
+                        "polars",
+                        "pyspark",
+                        "trino",
+                    ],
+                    raises=com.OperationNotDefinedError,
+                    reason="no mode aggregate in the engine",
+                ),
+                pytest.mark.notimpl(
+                    ["snowflake"],
+                    raises=com.OperationNotDefinedError,
+                    reason="not yet implemented in Ibis",
+                ),
+            ],
+        ),
     ],
-    ids=["sums", "mins", "maxs", "means"],
+    ids=["sums", "mins", "maxs", "means", "modes"],
 )
 @notimpl_aggs
 @pytest.mark.parametrize(

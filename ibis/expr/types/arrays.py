@@ -1208,6 +1208,33 @@ class ArrayValue(Value):
         """
         return ops.ArrayAll(self).to_expr()
 
+    def modes(self) -> ir.Value:
+        """Return the mode of the values in the array.
+
+        See Also
+        --------
+        [`Column.mode`](./expression-generic.qmd#ibis.expr.types.generic.Column.mode)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"arr": [[1, 2, 3, 3], [None, 6], [None], [], None]})
+        >>> t.mutate(mode=t.arr.modes())
+        ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+        ┃ arr                  ┃ mode  ┃
+        ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+        │ array<int64>         │ int64 │
+        ├──────────────────────┼───────┤
+        │ [1, 2, ... +2]       │     3 │
+        │ [None, 6]            │     6 │
+        │ [None]               │  NULL │
+        │ []                   │  NULL │
+        │ NULL                 │  NULL │
+        └──────────────────────┴───────┘
+        """
+        return ops.ArrayMode(self).to_expr()
+
     def mins(self) -> ir.NumericValue:
         """Return the minimum value in the array.
 

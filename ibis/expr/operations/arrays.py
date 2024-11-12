@@ -292,6 +292,11 @@ class ArrayMax(ArrayAgg):
     """Compute the maximum value of an array."""
 
 
+@public
+class ArrayMode(ArrayAgg):
+    """Compute the mode of an array."""
+
+
 # in duckdb summing an array of ints leads to an int, but for other backends
 # it might lead to a float??
 @public
