@@ -55,8 +55,8 @@ let
             envOverlay
             pyprojectOverrides
           ]
-          ++ lib.optional editable editableOverlay
-          ++ lib.optional (!editable) testOverlay));
+          ++ lib.optionals editable [ editableOverlay ]
+          ++ lib.optionals (!editable) [ testOverlay ]));
     in
     # Build virtual environment
     (pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps).overrideAttrs (_old: {
