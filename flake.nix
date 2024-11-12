@@ -150,6 +150,12 @@
             update-lock-files check-release-notes-spelling;
         };
 
+        checks = {
+          ibis310-pytest = pkgs.ibis310.passthru.tests.pytest;
+          ibis311-pytest = pkgs.ibis311.passthru.tests.pytest;
+          ibis312-pytest = pkgs.ibis312.passthru.tests.pytest;
+        };
+
         devShells = rec {
           ibis310 = mkDevShell pkgs.ibisDevEnv310;
           ibis311 = mkDevShell pkgs.ibisDevEnv311;
