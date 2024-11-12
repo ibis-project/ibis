@@ -61,12 +61,19 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
 
-      - name: nix build and test
+      - name: nix build environment
         run: |
           set -euo pipefail
 
           version='${{ matrix.python-version }}'
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
+
+      - name: nix test
+        run: |
+          set -euo pipefail
+
+          version='${{ matrix.python-version }}'
+          nix build ".#ibis${version//./}.passthru.tests.pytest" --fallback --keep-going --print-build-logs
 
       - name: nix build devShell
         # TODO: dev shell doesn't yet build on macos-14 (aarch64-darwin)
