@@ -237,7 +237,6 @@ class BigQueryCompiler(SQLGlotCompiler):
         sql = super().to_sqlglot(expr, limit=limit, params=params)
 
         table_expr = expr.as_table()
-        geocols = table_expr.schema().geospatial
 
         memtable_names = frozenset(
             op.name for op in table_expr.op().find(ops.InMemoryTable)
@@ -249,24 +248,6 @@ class BigQueryCompiler(SQLGlotCompiler):
             project=session_project,
             memtable_names=memtable_names,
         ).transform(_remove_null_ordering_from_unsupported_window)
-
-        if geocols:
-            # if there are any geospatial columns, we have to convert them to WKB,
-            # so interactive mode knows how to display them
-            #
-            # by default bigquery returns data to python as WKT, and there's really
-            # no point in supporting both if we don't need to.
-            quoted = self.quoted
-            result = sg.select(
-                sge.Star(
-                    replace=[
-                        self.f.st_asbinary(sg.column(col, quoted=quoted)).as_(
-                            col, quoted=quoted
-                        )
-                        for col in geocols
-                    ]
-                )
-            ).from_(result.subquery())
 
         sources = []
 

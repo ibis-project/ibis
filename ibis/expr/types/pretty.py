@@ -56,10 +56,15 @@ def _(dtype, values, **fmt_kwargs):
 def _(dtype, values, **fmt_kwargs):
     import shapely
 
-    return _format_nested(
-        [shapely.from_wkb(v) if isinstance(v, (bytes, str)) else v for v in values],
-        **fmt_kwargs,
-    )
+    def try_parse(v):
+        if v is None:
+            return v
+        try:
+            return shapely.from_wkb(v)
+        except shapely.errors.GEOSException:
+            return shapely.from_wkt(v)
+
+    return _format_nested(map(try_parse, values), **fmt_kwargs)
 
 
 @format_values.register(dt.JSON)

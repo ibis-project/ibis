@@ -9,8 +9,7 @@ class BigQueryPandasData(PandasData):
         import geopandas as gpd
         import shapely as shp
 
-        return gpd.GeoSeries(shp.from_wkb(s))
-
-    convert_Point = convert_LineString = convert_Polygon = convert_MultiLineString = (
-        convert_MultiPoint
-    ) = convert_MultiPolygon = convert_GeoSpatial
+        try:
+            return gpd.GeoSeries.from_wkt(s)
+        except shp.geos.GEOSException:
+            return gpd.GeoSeries.from_wkb(s)

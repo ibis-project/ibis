@@ -460,3 +460,32 @@ def test_geospatial_interactive(con, monkeypatch):
     )
     result = repr(expr)
     assert "POLYGON" in result
+
+
+def test_geom_from_pyarrow(con, monkeypatch):
+    shp = pytest.importorskip("shapely")
+
+    monkeypatch.setattr(ibis.options, "interactive", True)
+
+    data = pa.Table.from_pydict(
+        {
+            "id": [1, 2],
+            "location": [
+                shp.Point(1, 1).wkb,
+                shp.Point(2, 2).wkb,
+            ],
+        }
+    )
+
+    # Create table in BigQuery
+    name = gen_name("bq_test_geom")
+    schema = ibis.schema({"id": "int64", "location": "geospatial:geography;4326"})
+
+    t = con.create_table(name, data, schema=schema)
+
+    try:
+        assert repr(t)
+        assert len(t.to_pyarrow()) == 2
+        assert len(t.to_pandas()) == 2
+    finally:
+        con.drop_table(name)
