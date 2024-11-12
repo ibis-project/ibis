@@ -2439,6 +2439,11 @@ def test_named_literal(con, backend):
     raises=com.OperationNotDefinedError,
     reason="standard deviation not implemented",
 )
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=com.UnsupportedBackendType,
+    reason="BigQuery only supports two decimal types: (38, 9) and (76, 38)",
+)
 def test_table_describe_with_multiple_decimal_columns(con):
     t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]}).cast(
         {"a": "decimal(21, 2)", "b": "decimal(20, 2)"}
