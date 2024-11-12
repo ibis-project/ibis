@@ -102,7 +102,7 @@ in
       deps = {
         ibis-framework = [ "dev" ];
       };
-      editable = true;
+      editable = false;
     }
     pkgs.python312;
 
