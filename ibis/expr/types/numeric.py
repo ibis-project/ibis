@@ -893,7 +893,49 @@ class NumericColumn(Column, NumericValue):
         return ops.Mean(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def cummean(self, *, where=None, group_by=None, order_by=None) -> NumericColumn:
-        """Return the cumulative mean of the input."""
+        """Return the cumulative mean of the input.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "grouper": ["a", "a", "a", "b", "b", "c"],
+        ...         "values": [3, 2, 1, 2, 3, 2],
+        ...     }
+        ... )
+        >>> t.mutate(cummean=t.values.cummean()).order_by("id")
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummean  ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━┩
+        │ int64 │ string  │ int64  │ float64  │
+        ├───────┼─────────┼────────┼──────────┤
+        │     1 │ a       │      3 │ 3.000000 │
+        │     2 │ a       │      2 │ 2.500000 │
+        │     3 │ a       │      1 │ 2.000000 │
+        │     4 │ b       │      2 │ 2.000000 │
+        │     5 │ b       │      3 │ 2.200000 │
+        │     6 │ c       │      2 │ 2.166667 │
+        └───────┴─────────┴────────┴──────────┘
+
+        >>> t.mutate(cummean=t.values.cummean(where=t.grouper != "c", group_by="grouper")).order_by(
+        ...     "id"
+        ... )
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummean ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string  │ int64  │ float64 │
+        ├───────┼─────────┼────────┼─────────┤
+        │     1 │ a       │      3 │     3.0 │
+        │     2 │ a       │      2 │     2.5 │
+        │     3 │ a       │      1 │     2.0 │
+        │     4 │ b       │      2 │     2.0 │
+        │     5 │ b       │      3 │     2.5 │
+        │     6 │ c       │      2 │    NULL │
+        └───────┴─────────┴────────┴─────────┘
+        """
         return self.mean(where=where).over(
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
@@ -913,11 +955,90 @@ class NumericColumn(Column, NumericValue):
         -------
         NumericScalar
             The sum of the input expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "grouper": ["a", "a", "a", "b", "b", "c"],
+        ...         "values": [3, 2, 1, 2, 3, 2],
+        ...     }
+        ... )
+        >>> t.mutate(sum_col=t.values.sum())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ sum_col ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64   │
+        ├───────┼─────────┼────────┼─────────┤
+        │     1 │ a       │      3 │      13 │
+        │     2 │ a       │      2 │      13 │
+        │     3 │ a       │      1 │      13 │
+        │     4 │ b       │      2 │      13 │
+        │     5 │ b       │      3 │      13 │
+        │     6 │ c       │      2 │      13 │
+        └───────┴─────────┴────────┴─────────┘
+
+        >>> t.mutate(sum_col=t.values.sum(where=t.grouper != "c"))
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ sum_col ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64   │
+        ├───────┼─────────┼────────┼─────────┤
+        │     1 │ a       │      3 │      11 │
+        │     2 │ a       │      2 │      11 │
+        │     3 │ a       │      1 │      11 │
+        │     4 │ b       │      2 │      11 │
+        │     5 │ b       │      3 │      11 │
+        │     6 │ c       │      2 │      11 │
+        └───────┴─────────┴────────┴─────────┘
         """
         return ops.Sum(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def cumsum(self, *, where=None, group_by=None, order_by=None) -> NumericColumn:
-        """Return the cumulative sum of the input."""
+        """Return the cumulative sum of the input.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "grouper": ["a", "a", "a", "b", "b", "c"],
+        ...         "values": [3, 2, 1, 2, 3, 2],
+        ...     }
+        ... )
+        >>> t.mutate(cumsum=t.values.cumsum())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cumsum ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      5 │
+        │     3 │ a       │      1 │      6 │
+        │     4 │ b       │      2 │      8 │
+        │     5 │ b       │      3 │     11 │
+        │     6 │ c       │      2 │     13 │
+        └───────┴─────────┴────────┴────────┘
+
+        >>> t.mutate(cumsum=t.values.cumsum(where=t.grouper != "c"))
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cumsum ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      5 │
+        │     3 │ a       │      1 │      6 │
+        │     4 │ b       │      2 │      8 │
+        │     5 │ b       │      3 │     11 │
+        │     6 │ c       │      2 │     11 │
+        └───────┴─────────┴────────┴────────┘
+        """
         return self.sum(where=where).over(
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
