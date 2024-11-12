@@ -412,42 +412,55 @@ def memtable(
 
 @lazy_singledispatch
 def _memtable(
-    data: pd.DataFrame | Any,
+    data: Any,
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
-    import pandas as pd
+    if hasattr(data, "__arrow_c_stream__"):
+        # Support objects exposing arrow's PyCapsule interface
+        import pyarrow as pa
 
+        data = pa.table(data)
+    else:
+        import pandas as pd
+
+        data = pd.DataFrame(data, columns=columns)
+    return _memtable(data, columns=columns, schema=schema, name=name)
+
+
+@_memtable.register("pandas.DataFrame")
+def _memtable_from_pandas_dataframe(
+    data: pd.DataFrame,
+    *,
+    columns: Iterable[str] | None = None,
+    schema: SchemaLike | None = None,
+    name: str | None = None,
+) -> Table:
     from ibis.formats.pandas import PandasDataFrameProxy
 
-    if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame(data, columns=columns)
-    else:
-        df = data
-
-    if df.columns.inferred_type != "string":
-        cols = df.columns
+    if data.columns.inferred_type != "string":
+        cols = data.columns
         newcols = getattr(
             schema,
             "names",
             (f"col{i:d}" for i in builtins.range(len(cols))),
         )
-        df = df.rename(columns=dict(zip(cols, newcols)))
+        data = data.rename(columns=dict(zip(cols, newcols)))
 
     if columns is not None:
-        if (provided_col := len(columns)) != (exist_col := len(df.columns)):
+        if (provided_col := len(columns)) != (exist_col := len(data.columns)):
             raise ValueError(
                 "Provided `columns` must have an entry for each column in `data`.\n"
                 f"`columns` has {provided_col} elements but `data` has {exist_col} columns."
             )
 
-        df = df.rename(columns=dict(zip(df.columns, columns)))
+        data = data.rename(columns=dict(zip(data.columns, columns)))
 
     # verify that the DataFrame has no duplicate column names because ibis
     # doesn't allow that
-    cols = df.columns
+    cols = data.columns
     dupes = [name for name, count in Counter(cols).items() if count > 1]
     if dupes:
         raise IbisInputError(
@@ -456,8 +469,8 @@ def _memtable(
 
     op = ops.InMemoryTable(
         name=name if name is not None else util.gen_name("pandas_memtable"),
-        schema=sch.infer(df) if schema is None else schema,
-        data=PandasDataFrameProxy(df),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PandasDataFrameProxy(data),
     )
     return op.to_expr()
 
@@ -497,6 +510,21 @@ def _memtable_from_pyarrow_dataset(
         schema=Schema.from_pyarrow(data.schema),
         data=PyArrowDatasetProxy(data),
     ).to_expr()
+
+
+@_memtable.register("pyarrow.RecordBatchReader")
+def _memtable_from_pyarrow_RecordBatchReader(
+    data: pa.Table,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    raise TypeError(
+        "Creating an `ibis.memtable` from a `pyarrow.RecordBatchReader` would "
+        "load _all_ data into memory. If you want to do this, please do so "
+        "explicitly like `ibis.memtable(reader.read_all())`"
+    )
 
 
 @_memtable.register("polars.LazyFrame")

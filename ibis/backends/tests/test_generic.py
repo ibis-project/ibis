@@ -1222,6 +1222,24 @@ def test_memtable_construct_from_pyarrow(backend, con, monkeypatch):
     )
 
 
+def test_memtable_construct_from_pyarrow_c_stream(backend, con):
+    pa = pytest.importorskip("pyarrow")
+
+    class Opaque:
+        def __init__(self, table):
+            self._table = table
+
+        def __arrow_c_stream__(self, *args, **kwargs):
+            return self._table.__arrow_c_stream__(*args, **kwargs)
+
+    table = pa.table({"a": list("abc"), "b": [1, 2, 3]})
+
+    t = ibis.memtable(Opaque(table))
+
+    res = con.to_pyarrow(t.order_by("a"))
+    assert res.equals(table)
+
+
 @pytest.mark.parametrize("lazy", [False, True])
 def test_memtable_construct_from_polars(backend, con, lazy):
     pl = pytest.importorskip("polars")
