@@ -4,17 +4,14 @@ let
 in
 final: prev: {
   ibis-framework = prev.ibis-framework.overrideAttrs (old: {
-
     passthru = old.passthru // {
-      tests = (old.passthru.tests or { }) // {
-
+      tests = old.passthru.tests or { } // {
         pytest =
           let
             pythonEnv = final.mkVirtualEnv "ibis-framework-test-env" (deps // {
               # Use default dependencies from overlay.nix + enabled tests group.
-              ibis-framework = deps.ibis-framework ++ [ "tests" ];
+              ibis-framework = deps.ibis-framework or [ ] ++ [ "tests" ];
             });
-
           in
           stdenv.mkDerivation {
             name = "ibis-framework-test";
@@ -38,9 +35,7 @@ final: prev: {
 
             installPhase = "mkdir $out";
           };
-
       };
     };
-
   });
 }
