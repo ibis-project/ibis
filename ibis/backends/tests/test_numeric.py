@@ -4,6 +4,7 @@ import contextlib
 import decimal
 import math
 import operator
+import sqlite3
 from operator import and_, lshift, or_, rshift, xor
 
 import pytest
@@ -30,6 +31,7 @@ from ibis.backends.tests.errors import (
     PyODBCProgrammingError,
     PySparkArithmeticException,
     PySparkParseException,
+    PySparkValueError,
     SnowflakeProgrammingError,
     TrinoUserError,
 )
@@ -37,6 +39,7 @@ from ibis.expr import datatypes as dt
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
+pa = pytest.importorskip("pyarrow")
 
 
 @pytest.mark.parametrize(
@@ -1539,3 +1542,47 @@ def test_scalar_round_is_integer(con):
 
     assert result == 1
     assert isinstance(result, int)
+
+
+@pytest.mark.parametrize(
+    "numbers",
+    [
+        param(
+            [1, 2, 3],
+            marks=[
+                pytest.mark.notyet(
+                    ["duckdb", "clickhouse", "datafusion"], raises=pa.ArrowInvalid
+                ),
+                pytest.mark.notyet(
+                    ["pyspark"],
+                    raises=(
+                        # PySparkValueError is raised when using Spark connect
+                        PySparkValueError,
+                        TypeError,
+                    ),
+                ),
+            ],
+            id="ints",
+        ),
+        param(
+            [decimal.Decimal("1.1"), decimal.Decimal("2.2"), decimal.Decimal("3.3")],
+            marks=[
+                pytest.mark.notimpl(
+                    ["sqlite"],
+                    raises=(
+                        sqlite3.ProgrammingError,
+                        # With Python 3.10, the same code raises a different exception type :(
+                        sqlite3.InterfaceError,
+                    ),
+                )
+            ],
+            id="decimals",
+        ),
+    ],
+)
+@pytest.mark.notyet(["exasol"], raises=ExaQueryError)
+def test_memtable_decimal(con, numbers):
+    schema = ibis.schema(dict(numbers=dt.Decimal(38, 9)))
+    t = ibis.memtable({"numbers": numbers}, schema=schema)
+    assert t.schema() == schema
+    assert len(con.to_pyarrow(t)) == len(numbers)
