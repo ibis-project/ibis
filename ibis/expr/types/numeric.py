@@ -786,6 +786,33 @@ class NumericColumn(Column, NumericValue):
         -------
         NumericScalar
             Standard deviation of `arg`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "values": [1, 3, 3, 4, 5, 7],
+        ...     }
+        ... )
+        >>> t.values.std()
+        ┌──────────┐
+        │ 2.041241 │
+        └──────────┘
+        >>> t.mutate(std_col=t.values.std())
+        ┏━━━━━━━━┳━━━━━━━━━━┓
+        ┃ values ┃ std_col  ┃
+        ┡━━━━━━━━╇━━━━━━━━━━┩
+        │ int64  │ float64  │
+        ├────────┼──────────┤
+        │      1 │ 2.041241 │
+        │      3 │ 2.041241 │
+        │      3 │ 2.041241 │
+        │      4 │ 2.041241 │
+        │      5 │ 2.041241 │
+        │      7 │ 2.041241 │
+        └────────┴──────────┘
         """
         return ops.StandardDev(
             self, how=how, where=self._bind_to_parent_table(where)
@@ -809,6 +836,33 @@ class NumericColumn(Column, NumericValue):
         -------
         NumericScalar
             Standard deviation of `arg`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "values": [1, 3, 3, 4, 5, 7],
+        ...     }
+        ... )
+        >>> t.values.var()
+        ┌──────────┐
+        │ 4.166667 │
+        └──────────┘
+        >>> t.mutate(var_col=t.values.var())
+        ┏━━━━━━━━┳━━━━━━━━━━┓
+        ┃ values ┃ var_col  ┃
+        ┡━━━━━━━━╇━━━━━━━━━━┩
+        │ int64  │ float64  │
+        ├────────┼──────────┤
+        │      1 │ 4.166667 │
+        │      3 │ 4.166667 │
+        │      3 │ 4.166667 │
+        │      4 │ 4.166667 │
+        │      5 │ 4.166667 │
+        │      7 │ 4.166667 │
+        └────────┴──────────┘
         """
         return ops.Variance(
             self, how=how, where=self._bind_to_parent_table(where)
@@ -835,6 +889,34 @@ class NumericColumn(Column, NumericValue):
         -------
         NumericScalar
             The correlation of `left` and `right`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "left": [1, 3, 3, 4, 5, 7],
+        ...         "right": [7, 5, 4, 3, 3, 1],
+        ...     }
+        ... )
+        >>> t.left.corr(t.right, how="pop")
+        ┌────────┐
+        │ -0.968 │
+        └────────┘
+        >>> t.mutate(corr_col=t.left.corr(t.right, how="pop"))
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
+        ┃ left  ┃ right ┃ corr_col ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩
+        │ int64 │ int64 │ float64  │
+        ├───────┼───────┼──────────┤
+        │     1 │     7 │   -0.968 │
+        │     3 │     5 │   -0.968 │
+        │     3 │     4 │   -0.968 │
+        │     4 │     3 │   -0.968 │
+        │     5 │     3 │   -0.968 │
+        │     7 │     1 │   -0.968 │
+        └───────┴───────┴──────────┘
         """
         return ops.Correlation(
             self,
@@ -864,6 +946,38 @@ class NumericColumn(Column, NumericValue):
         -------
         NumericScalar
             The covariance of `self` and `right`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "left": [1, 3, 3, 4, 5, 7],
+        ...         "right": [7, 5, 4, 3, 3, 1],
+        ...     }
+        ... )
+        >>> t.left.cov(t.right)
+        ┌───────────┐
+        │ -4.033333 │
+        └───────────┘
+        >>> t.left.cov(t.right, how="pop")
+        ┌───────────┐
+        │ -3.361111 │
+        └───────────┘
+        >>> t.mutate(cov_col=t.left.cov(t.right, how="pop"))
+        ┏━━━━━━━┳━━━━━━━┳━━━━━━━━━━━┓
+        ┃ left  ┃ right ┃ cov_col   ┃
+        ┡━━━━━━━╇━━━━━━━╇━━━━━━━━━━━┩
+        │ int64 │ int64 │ float64   │
+        ├───────┼───────┼───────────┤
+        │     1 │     7 │ -3.361111 │
+        │     3 │     5 │ -3.361111 │
+        │     3 │     4 │ -3.361111 │
+        │     4 │     3 │ -3.361111 │
+        │     5 │     3 │ -3.361111 │
+        │     7 │     1 │ -3.361111 │
+        └───────┴───────┴───────────┘
         """
         return ops.Covariance(
             self,
