@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
     from pathlib import Path
 
+    import geopandas as gpd
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -550,6 +551,23 @@ def _memtable_from_polars_dataframe(
         schema=sch.infer(data) if schema is None else schema,
         data=PolarsDataFrameProxy(data),
     ).to_expr()
+
+
+@_memtable.register("geopandas.geodataframe.GeoDataFrame")
+def _memtable_from_geopandas_geodataframe(
+    data: gpd.GeoDataFrame,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    # The Pandas data proxy and the `to_arrow` method on it can't handle
+    # geopandas geometry columns. But if we first make the geometry columns WKB,
+    # then the geo column gets treated (correctly) as just a binary blob, and
+    # DuckDB can cast it to a proper geometry column after import.
+    wkb_df = data.to_wkb()
+
+    return _memtable(wkb_df, name=name, schema=schema, columns=columns)
 
 
 def _deferred_method_call(expr, method_name, **kwargs):
