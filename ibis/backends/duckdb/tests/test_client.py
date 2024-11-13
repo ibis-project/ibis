@@ -427,19 +427,19 @@ def test_pyarrow_batches_chunk_size(con):  # 10443
 
     t = ibis.memtable(
         {
-            "id": np.arange(500000),
-            "name": np.random.choice(["Alice", "Bob", "Carol", "Dave"], size=500000),
-            "age": np.random.randint(20, 70, size=500000),
+            "id": np.arange(10_000),
+            "name": np.random.choice(["Alice", "Bob", "Carol", "Dave"], size=10_000),
+            "age": np.random.randint(20, 70, size=10_000),
         }
     )
-    batches = t.to_pyarrow_batches(chunk_size=100_000)
-    assert len(next(batches)) == 100_000
-    assert len(next(batches)) == 100_000
+    batches = con.to_pyarrow_batches(t, chunk_size=4096)
+    assert len(next(batches)) == 4096
+    assert len(next(batches)) == 4096
 
-    batches = t.to_pyarrow_batches(chunk_size=800)
+    batches = con.to_pyarrow_batches(t, chunk_size=800)
     assert len(next(batches)) == 800
     assert len(next(batches)) == 800
 
-    batches = t.to_pyarrow_batches(chunk_size=-1)
+    batches = con.to_pyarrow_batches(t, chunk_size=-1)
     with pytest.raises(TypeError):
         next(batches)
