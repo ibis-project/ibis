@@ -7,6 +7,7 @@
 , rWrapper
 , rPackages
 , autoPatchelfHook
+, libgcc
 }:
 
 let
@@ -34,7 +35,10 @@ stdenv.mkDerivation rec {
   sourceRoot = lib.optionalString stdenv.isDarwin "quarto-${version}";
   unpackCmd = lib.optionalString stdenv.isDarwin "tar xzf $curSrc --directory=$sourceRoot";
 
-  nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [ makeWrapper ];
+  nativeBuildInputs = lib.optionals stdenv.isLinux [ autoPatchelfHook ] ++ [
+    makeWrapper
+    libgcc
+  ];
 
   preFixup =
     let

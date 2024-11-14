@@ -1,4 +1,7 @@
-{ uv2nix, pyproject-nix }: pkgs: super:
+{ uv2nix
+, pyproject-nix
+, pyproject-build-systems
+}: pkgs: super:
 let
   # Create package overlay from workspace.
   workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ../.; };
@@ -52,6 +55,7 @@ let
           inherit python;
         }).overrideScope
           (lib.composeManyExtensions ([
+            pyproject-build-systems.overlays.default
             envOverlay
             pyprojectOverrides
           ]

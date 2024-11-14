@@ -10,10 +10,10 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import ValidationError, attribute
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.core import Column, Value
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
-from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TC001
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
 
 @public

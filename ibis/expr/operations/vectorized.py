@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from types import FunctionType, LambdaType  # noqa: TCH003
+from types import FunctionType, LambdaType  # noqa: TC003
 from typing import Union
 
 from public import public
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.analytic import Analytic
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.reductions import Reduction

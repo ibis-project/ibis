@@ -29,6 +29,7 @@ let
     tomli.flit-core = [ ];
     toolz.setuptools = [ ];
     typing-extensions.flit-core = [ ];
+    debugpy.setuptools = [ ];
   } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
     duckdb = {
       setuptools = [ ];

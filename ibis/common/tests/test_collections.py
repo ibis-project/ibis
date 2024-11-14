@@ -61,7 +61,7 @@ def test_reversible():
 
 def test_iterator():
     class MyIterator(Iterator):
-        __slots__ = ("n", "i")
+        __slots__ = ("i", "n")
 
         def __init__(self, n):
             self.n = n

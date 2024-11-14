@@ -24,7 +24,7 @@ from ibis.common.patterns import Eq, If, InstanceOf, Object, TupleOf, _, pattern
 
 class MyNode(Node):
     __match_args__ = ("name", "children")
-    __slots__ = ("name", "children")
+    __slots__ = ("children", "name")
 
     def __init__(self, name, children):
         self.name = name

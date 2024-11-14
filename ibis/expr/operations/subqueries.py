@@ -10,7 +10,7 @@ import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
 from ibis.common.exceptions import IntegrityError
 from ibis.expr.operations.core import Value
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TC001
 
 
 @public

@@ -2073,11 +2073,6 @@ def test_40(catalog_sales, catalog_returns, warehouse, item, date_dim):
 
 @tpc_test("ds")
 @pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="Error during planning: Correlated column is not allowed in predicate",
-)
-@pytest.mark.notyet(
     ["clickhouse"],
     raises=ClickHouseDatabaseError,
     reason="correlated subqueries don't exist in clickhouse",
@@ -2230,9 +2225,6 @@ def test_44(store_sales, item):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(
-    ["datafusion"], raises=Exception, reason="Unsupported feature in DataFusion SQL"
-)
 def test_45(web_sales, customer, customer_address, date_dim, item):
     return (
         web_sales.join(customer, [("ws_bill_customer_sk", "c_customer_sk")])
@@ -4647,6 +4639,7 @@ def test_83(store_returns, item, date_dim, catalog_returns, web_returns):
 
 
 @tpc_test("ds")
+@pytest.mark.notyet(["datafusion"], reason="coercion failure", raises=Exception)
 def test_84(
     customer,
     customer_address,

@@ -23,6 +23,15 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs = {
+        pyproject-nix.follows = "pyproject-nix";
+        uv2nix.follows = "uv2nix";
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
   };
 
   outputs =
@@ -32,11 +41,12 @@
     , nixpkgs
     , pyproject-nix
     , uv2nix
+    , pyproject-build-systems
     , ...
     }: {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
-        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix; })
+        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix pyproject-build-systems; })
       ];
     } // flake-utils.lib.eachDefaultSystem (
       localSystem:
