@@ -328,7 +328,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
           scale,
           error_number,
           error_message
-        FROM sys.dm_exec_describe_first_result_set({tsql}, NULL, 0)
+        FROM sys.dm_exec_describe_first_result_set(N{tsql}, NULL, 0)
         ORDER BY column_ordinal
         """
         with self._safe_raw_sql(query) as cur:
