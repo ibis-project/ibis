@@ -1551,7 +1551,15 @@ def test_scalar_round_is_integer(con):
             [1, 2, 3],
             marks=[
                 pytest.mark.notyet(
-                    ["duckdb", "clickhouse", "datafusion"], raises=pa.ArrowInvalid
+                    [
+                        "duckdb",
+                        "clickhouse",
+                        "datafusion",
+                        "snowflake",
+                        "databricks",
+                        "bigquery",
+                    ],
+                    raises=pa.ArrowInvalid,
                 ),
                 pytest.mark.notyet(
                     ["pyspark"],
