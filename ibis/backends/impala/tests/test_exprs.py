@@ -132,7 +132,7 @@ def test_builtins(con, alltypes):
         s.repeat(i1),
     ]
 
-    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name(f"e{i:d}") for i, expr in enumerate(exprs)]
 
     projection = table.select(proj_exprs)
     projection.limit(10).execute()
@@ -418,7 +418,7 @@ def test_decimal_timestamp_builtins(con):
         exprs.append(ts + offset)
         exprs.append(ts - offset)
 
-    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name(f"e{i:d}") for i, expr in enumerate(exprs)]
 
     projection = table.select(proj_exprs).limit(10)
     projection.execute()
@@ -474,7 +474,7 @@ def test_aggregations(alltypes):
         d.var(where=cond),
     ]
 
-    metrics = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
+    metrics = [expr.name(f"e{i:d}") for i, expr in enumerate(exprs)]
 
     agged_table = table.aggregate(metrics)
     agged_table.execute()
@@ -511,7 +511,7 @@ def test_analytic_functions(alltypes):
         f.max(),
     ]
 
-    proj_exprs = [expr.name("e%d" % i) for i, expr in enumerate(exprs)]
+    proj_exprs = [expr.name(f"e{i:d}") for i, expr in enumerate(exprs)]
 
     proj_table = g.mutate(proj_exprs)
     proj_table.execute()

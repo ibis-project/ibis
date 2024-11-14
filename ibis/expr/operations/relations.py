@@ -24,7 +24,7 @@ from ibis.common.typing import Coercible, VarTuple
 from ibis.expr.operations.core import Alias, Column, Node, Scalar, Value
 from ibis.expr.operations.sortkeys import SortKey
 from ibis.expr.schema import Schema
-from ibis.formats import TableProxy  # noqa: TCH001
+from ibis.formats import TableProxy  # noqa: TC001
 
 T = TypeVar("T")
 

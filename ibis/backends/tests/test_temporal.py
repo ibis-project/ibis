@@ -782,11 +782,6 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     reason="duckdb returns dateoffsets",
                 ),
                 pytest.mark.notimpl(
-                    ["trino"],
-                    raises=AssertionError,
-                    reason="doesn't match pandas results, unclear what the issue is, perhaps timezones",
-                ),
-                pytest.mark.notimpl(
                     ["flink"],
                     raises=Py4JJavaError,
                     reason=(

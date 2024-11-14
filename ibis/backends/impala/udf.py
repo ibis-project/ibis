@@ -21,7 +21,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import util
 
-__all__ = ["scalar_function", "aggregate_function", "wrap_udf", "wrap_uda"]
+__all__ = ["aggregate_function", "scalar_function", "wrap_uda", "wrap_udf"]
 
 
 class Function(abc.ABC):

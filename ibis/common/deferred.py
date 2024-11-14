@@ -80,7 +80,7 @@ class Deferred(Slotted, Immutable, Final):
 
     """
 
-    __slots__ = ("_resolver", "_repr")
+    __slots__ = ("_repr", "_resolver")
 
     def __init__(self, obj, repr=None):
         super().__init__(_resolver=resolver(obj), _repr=repr)
@@ -327,7 +327,7 @@ class Factory(FrozenSlotted, Resolver):
 
 
 class Attr(FrozenSlotted, Resolver):
-    __slots__ = ("obj", "name")
+    __slots__ = ("name", "obj")
     obj: Resolver
     name: str
 
@@ -347,7 +347,7 @@ class Attr(FrozenSlotted, Resolver):
 
 
 class Item(FrozenSlotted, Resolver):
-    __slots__ = ("obj", "name")
+    __slots__ = ("name", "obj")
     obj: Resolver
     name: str
 
@@ -382,7 +382,7 @@ class Call(FrozenSlotted, Resolver):
 
     """
 
-    __slots__ = ("func", "args", "kwargs")
+    __slots__ = ("args", "func", "kwargs")
     func: Resolver
     args: tuple[Resolver, ...]
     kwargs: dict[str, Resolver]
@@ -446,7 +446,7 @@ _operator_symbols = {
 
 
 class UnaryOperator(FrozenSlotted, Resolver):
-    __slots__ = ("func", "arg")
+    __slots__ = ("arg", "func")
     func: Callable
     arg: Resolver
 

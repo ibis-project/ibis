@@ -50,7 +50,7 @@ class DisjointSet(Mapping[K, set[K]]):
 
     """
 
-    __slots__ = ("_parents", "_classes")
+    __slots__ = ("_classes", "_parents")
     _parents: dict
     _classes: dict
 
@@ -320,7 +320,7 @@ class Pattern(Slotted):
 
     """
 
-    __slots__ = ("head", "args", "name")
+    __slots__ = ("args", "head", "name")
     head: type
     args: tuple
     name: str | None
@@ -455,7 +455,7 @@ class DynamicApplier(Slotted):
 class Rewrite(Slotted):
     """A rewrite rule which matches a pattern and applies a pattern or a function."""
 
-    __slots__ = ("matcher", "applier")
+    __slots__ = ("applier", "matcher")
     matcher: Pattern
     applier: Callable | Pattern | Variable
 
@@ -484,7 +484,7 @@ class ENode(Slotted, Node):
 
     """
 
-    __slots__ = ("head", "args")
+    __slots__ = ("args", "head")
     head: type
     args: tuple
 
@@ -534,7 +534,7 @@ class ENode(Slotted, Node):
 
 
 class EGraph:
-    __slots__ = ("_nodes", "_etables", "_eclasses")
+    __slots__ = ("_eclasses", "_etables", "_nodes")
     _nodes: dict
     _etables: collections.defaultdict
     _eclasses: DisjointSet
