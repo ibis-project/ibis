@@ -1734,6 +1734,8 @@ def set_backend(backend: str | BaseBackend) -> None:
 def get_backend(expr: Expr | None = None) -> BaseBackend:
     """Get the current Ibis backend to use for a given expression.
 
+    Parameters
+    ----------
     expr
         An expression to get the backend from. If not passed, the default
         backend is returned.
@@ -1743,6 +1745,25 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     BaseBackend
         The Ibis backend.
 
+    Examples
+    --------
+    >>> import ibis
+
+    Get the default backend.
+
+    >>> ibis.get_backend()  # doctest: +ELLIPSIS
+    <ibis.backends.duckdb.Backend object at 0x...>
+
+    Get the backend for a specific expression.
+
+    >>> polars_con = ibis.polars.connect()
+    >>> t = polars_con.create_table("t", ibis.memtable({"a": [1, 2, 3]}))
+    >>> ibis.get_backend(t)  # doctest: +ELLIPSIS
+    <ibis.backends.polars.Backend object at 0x...>
+
+    See Also
+    --------
+    [`get_backend()`](./expression-tables.qmd#ibis.expr.types.relations.Table.get_backend)
     """
     if expr is None:
         from ibis.config import _default_backend
