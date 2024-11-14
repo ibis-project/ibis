@@ -1752,14 +1752,14 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     Get the default backend.
 
     >>> ibis.get_backend()  # doctest: +ELLIPSIS
-    <ibis.backends.duckdb.Backend object at 0x7fffbd7e1ee0>
+    <ibis.backends.duckdb.Backend object at 0x...>
 
     Get the backend for a specific expression.
 
     >>> polars_con = ibis.polars.connect()
     >>> t = polars_con.create_table("t", ibis.memtable({"a": [1, 2, 3]}))
     >>> ibis.get_backend(t)  # doctest: +ELLIPSIS
-    <ibis.backends.polars.Backend object at 0x7fffab10a5d0>
+    <ibis.backends.polars.Backend object at 0x...>
 
     See Also
     --------
