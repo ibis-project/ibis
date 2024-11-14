@@ -388,11 +388,12 @@ class Expr(Immutable, Coercible):
         >>> import ibis
         >>> con = ibis.duckdb.connect()
         >>> t = con.create_table("t", {"id": [1, 2, 3]})
-        >>> backend = t.get_backend()
-        >>> backend.name
-        'duckdb'
-        >>> type(backend)
-        <class 'ibis.backends.duckdb.Backend'>
+        >>> t.get_backend()  # doctest: +ELLIPSIS
+        <ibis.backends.duckdb.Backend object at 0x...>
+
+        See Also
+        --------
+        [`ibis.get_backend()`](./connection.qmd#ibis.get_backend)
         """
         return self._find_backend(use_default=True)
 
