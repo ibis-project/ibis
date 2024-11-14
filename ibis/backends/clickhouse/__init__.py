@@ -253,6 +253,12 @@ class Backend(SQLBackend, CanCreateDatabase):
             n += 1
             if not (schema := obj.schema):
                 raise TypeError(f"Schema is empty for external table {name}")
+            if null_fields := schema.null_fields:
+                raise com.IbisTypeError(
+                    "ClickHouse doesn't support NULL-typed fields. "
+                    "Consider assigning a type through casting or on construction. "
+                    f"Got null typed fields: {null_fields}"
+                )
 
             structure = [
                 f"{name} {type_mapper.to_string(typ.copy(nullable=not typ.is_nested()))}"
