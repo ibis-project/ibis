@@ -12,7 +12,8 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
     pyproject-nix = {
-      url = "github:nix-community/pyproject.nix";
+      # url = "github:nix-community/pyproject.nix";
+      url = "github:cpcloud/pyproject.nix/update-flit-core-to-work-with-later-nixpkgs";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
