@@ -591,6 +591,15 @@ def test_column_to_memory(limit, awards_players, output_format, expected_column_
     ) == awards_players.count().execute()
 
 
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_column_to_list(limit, awards_players):
+    res = awards_players.awardID.to_list(limit=limit)
+    assert isinstance(res, list)
+    assert (limit is not None and len(res) == limit) or len(
+        res
+    ) == awards_players.count().execute()
+
+
 @pytest.mark.parametrize("limit", no_limit)
 @pytest.mark.parametrize(
     ("output_format", "converter"),

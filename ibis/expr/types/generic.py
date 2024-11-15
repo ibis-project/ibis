@@ -1200,7 +1200,7 @@ class Value(Expr):
         return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
-        """Convert a column expression to a pandas Series or scalar object.
+        """Convert an expression to a pandas or scalar object.
 
         Parameters
         ----------
@@ -2683,6 +2683,24 @@ class Column(Value, _FixedTextJupyterMixin):
         └────────┴───────┘
         """
         return ops.NthValue(self, n).to_expr()
+
+    def to_list(self, **kwargs) -> list:
+        """Convert a column expression to a list.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`to_pyarrow`](#ibis.expr.types.core.Expr.to_pyarrow)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch().limit(5)
+        >>> t.bill_length_mm.to_list()
+        [39.1, 39.5, 40.3, None, 36.7]
+        """
+        return self.to_pyarrow(**kwargs).to_pylist()
 
 
 @public
