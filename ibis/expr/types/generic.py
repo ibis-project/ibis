@@ -1211,8 +1211,8 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.to_pandas()
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.to_pandas(limit=5)
           species     island  bill_length_mm  ...  body_mass_g     sex  year
         0  Adelie  Torgersen            39.1  ...       3750.0    male  2007
         1  Adelie  Torgersen            39.5  ...       3800.0  female  2007
@@ -2696,8 +2696,8 @@ class Column(Value, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.bill_length_mm.to_list()
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.bill_length_mm.to_list(limit=5)
         [39.1, 39.5, 40.3, None, 36.7]
         """
         return self.to_pyarrow(**kwargs).to_pylist()
