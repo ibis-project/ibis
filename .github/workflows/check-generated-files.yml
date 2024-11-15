@@ -44,7 +44,7 @@ jobs:
           cache-dependency-path: requirements-dev.txt
 
       - name: install uv
-        uses: astral-sh/setup-uv@v3.2.2
+        uses: astral-sh/setup-uv@v3.2.3
         with:
           enable-cache: true
 
