@@ -30,7 +30,7 @@ dependencies = [
   "parsy>=2,<3",
   "python-dateutil>=2.8.2,<3",
   "pytz>=2022.7",
-  "sqlglot>=23.4,<25.31",
+  "sqlglot>=23.4,<25.32",
   "toolz>=0.11,<2",
   "typing-extensions>=4.3.0,<5",
 ]
