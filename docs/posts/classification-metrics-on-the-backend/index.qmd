@@ -123,6 +123,7 @@ cm = (
     t.group_by("outcome")
     .agg(counted=_.count())
     .pivot_wider(names_from="outcome", values_from="counted")
+    .select("TP", "FP", "FN", "TN")
 )
 
 cm
@@ -170,6 +171,32 @@ metrics = cm.select(
 )
 
 metrics
+```
+
+## A more efficient approach
+
+In the illustrative example above, we used a case expression and pivoted the data the
+demonstrate where the values would fall in the confusion matrix and then performed our
+metric calculations using the pivoted data. We can actually skip this step using column
+aggregation.
+
+```{python}
+tp = (t.actual * t.prediction).sum()
+fp = t.prediction.sum() - tp
+fn = t.actual.sum() - tp
+tn = t.actual.count() - tp - fp - fn
+
+accuracy_expr = (tp + tn) / (tp + tn + fp + fn)
+precision_expr = tp / (tp + fp)
+recall_expr = tp / (tp + fn)
+f1_score_expr = 2 * (precision_expr * recall_expr) / (precision_expr + recall_expr)
+
+t.select(
+    accuracy=accuracy_expr,
+    precision=precision_expr,
+    recall=recall_expr,
+    f1_score=f1_score_expr,
+).limit(1)
 ```
 
 ## Conclusion
