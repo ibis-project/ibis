@@ -2723,9 +2723,11 @@ def null(type: dt.DataType | str | None = None) -> Value:
     `NULL`s with an unspecified type are castable and comparable to values,
     but lack datatype-specific methods:
 
+    Examples
+    --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> ibis.null().upper()
+    >>> ibis.null().upper()  # quartodoc: +EXPECTED_FAILURE
     Traceback (most recent call last):
         ...
     AttributeError: 'NullScalar' object has no attribute 'upper'
