@@ -95,10 +95,9 @@ for manager, params in managers.items():
     )
     print()
     if manager == "pixi":
-        print("::: {.callout-note}")
-        print("This command will initialize a `pixi.toml` file and also modify the ")
-        print("`.gitignore` to prevent Pixi configuration from being added to `git`.")
-        print(":::")
+        print("    This command will initialize a `pixi.toml` file and also modify ")
+        print("the `.gitignore` to prevent Pixi configuration from being added to ")
+        print("`git`.")
         print()
     print(f"1. Activate the environment")
     print()
