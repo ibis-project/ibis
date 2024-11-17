@@ -9,8 +9,8 @@ categories:
     - portability
 ---
 
-A review of binary classification models, metrics used to evaluate them, and corresponding
-metric calculations with Ibis.
+A review of binary classification models, metrics used to evaluate them, and
+corresponding metric calculations with Ibis.
 
 We're going explore common classification metrics such as accuracy, precision, recall,
 and F1 score, demonstrating how to compute each one using Ibis. In this example, we'll
@@ -190,12 +190,13 @@ precision_expr = tp / t.prediction.sum()
 recall_expr = tp / t.actual.sum()
 f1_score_expr = 2 * tp / (t.actual.sum() + t.prediction.sum())
 
-t.select(
-    accuracy=accuracy_expr,
-    precision=precision_expr,
-    recall=recall_expr,
-    f1_score=f1_score_expr,
-).limit(1)
+print(
+    f"accuracy={accuracy_expr.to_pyarrow().as_py()}",
+    f"precision={precision_expr.to_pyarrow().as_py()}",
+    f"precision={recall_expr.to_pyarrow().as_py()}",
+    f"f1_score={f1_score_expr.to_pyarrow().as_py()}",
+    sep="\n",
+)
 ```
 
 ## Conclusion
