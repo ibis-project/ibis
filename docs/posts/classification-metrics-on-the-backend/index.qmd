@@ -34,7 +34,7 @@ These metrics help us understand not just the errors the model makes, but also t
 types of errors. For example, we might want to know if the model is more likely to
 predict a positive outcome when the actual outcome is negative.
 
-The easiest way to breakdown how this works is to look at a confusion matrix.
+The easiest way to break down how this works is to look at a confusion matrix.
 
 ### Confusion matrix
 
