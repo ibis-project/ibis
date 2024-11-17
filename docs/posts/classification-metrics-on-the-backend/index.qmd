@@ -188,7 +188,7 @@ tn = t.actual.count() - tp - fp - fn
 
 accuracy_expr = (tp + tn) / (tp + tn + fp + fn)
 precision_expr = tp / t.prediction.sum()
-recall_expr = tp / (tp + fn)
+recall_expr = tp / t.actual.sum()
 f1_score_expr = 2 * (precision_expr * recall_expr) / (precision_expr + recall_expr)
 
 t.select(
