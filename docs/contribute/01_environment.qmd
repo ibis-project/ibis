@@ -84,6 +84,11 @@ for manager, params in managers.items():
         print(f"    {manager} init --import conda/environment.yml")
     print("    ```")
     print()
+    if manager == "pixi":
+        print("    This command will initialize a `pixi.toml` file and also modify ")
+        print("the `.gitignore` to prevent Pixi configuration from being added to ")
+        print("`git`.")
+        print()
     print(
         "    If you're using arm64 architecture (Mac M1/M2), use "
         "`conda/environment-arm64.yml` for setting up a dev environment for all the "
@@ -94,11 +99,6 @@ for manager, params in managers.items():
         "downgrade to 11.0, which causes conflicts in other backends."
     )
     print()
-    if manager == "pixi":
-        print("    This command will initialize a `pixi.toml` file and also modify ")
-        print("the `.gitignore` to prevent Pixi configuration from being added to ")
-        print("`git`.")
-        print()
     print(f"1. Activate the environment")
     print()
     print("    ```sh")
