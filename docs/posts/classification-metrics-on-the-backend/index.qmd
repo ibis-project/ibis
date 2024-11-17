@@ -186,7 +186,7 @@ fp = t.prediction.sum() - tp
 fn = t.actual.sum() - tp
 tn = t.actual.count() - tp - fp - fn
 
-accuracy_expr = (tp + tn) / (tp + tn + fp + fn)
+accuracy_expr = (t.actual == t.prediction).mean()
 precision_expr = tp / t.prediction.sum()
 recall_expr = tp / t.actual.sum()
 f1_score_expr = 2 * tp / (t.actual.sum() + t.prediction.sum())
