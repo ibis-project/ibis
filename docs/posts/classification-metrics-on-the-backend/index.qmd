@@ -174,7 +174,7 @@ metrics
 
 ## A more efficient approach
 
-In the illustrative example above, we used a case expression and pivoted the data the
+In the illustrative example above, we used a case expression and pivoted the data to
 demonstrate where the values would fall in the confusion matrix and then performed our
 metric calculations using the pivoted data. We can actually skip this step using column
 aggregation.
