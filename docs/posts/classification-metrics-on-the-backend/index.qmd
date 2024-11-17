@@ -9,8 +9,8 @@ categories:
     - portability
 ---
 
-A review of binary classification models, metrics used to evaluate them, and performing
-the metric calculations with Ibis.
+A review of binary classification models, metrics used to evaluate them, and corresponding
+metric calculations with Ibis.
 
 We're going explore common classification metrics such as accuracy, precision, recall,
 and F1 score, demonstrating how to compute each one using Ibis. In this example, we'll
