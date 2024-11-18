@@ -1812,13 +1812,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
     def to_array(self) -> ir.Column:
-        """View a single column table as an array.
+        """Deprecated - use `as_scalar` instead."""
 
-        Returns
-        -------
-        Value
-            A single column view of a table
-        """
         schema = self.schema()
         if len(schema) != 1:
             raise com.ExpressionError(
