@@ -1200,7 +1200,7 @@ class Value(Expr):
         return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
-        """Convert a column expression to a pandas Series or scalar object.
+        """Convert an expression to a pandas or scalar object.
 
         Parameters
         ----------
@@ -1211,8 +1211,8 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.to_pandas()
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.to_pandas(limit=5)
           species     island  bill_length_mm  ...  body_mass_g     sex  year
         0  Adelie  Torgersen            39.1  ...       3750.0    male  2007
         1  Adelie  Torgersen            39.5  ...       3800.0  female  2007
@@ -2683,6 +2683,24 @@ class Column(Value, _FixedTextJupyterMixin):
         └────────┴───────┘
         """
         return ops.NthValue(self, n).to_expr()
+
+    def to_list(self, **kwargs) -> list:
+        """Convert a column expression to a list.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`to_pyarrow`](#ibis.expr.types.core.Expr.to_pyarrow)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.bill_length_mm.to_list(limit=5)
+        [39.1, 39.5, 40.3, None, 36.7]
+        """
+        return self.to_pyarrow(**kwargs).to_pylist()
 
 
 @public
