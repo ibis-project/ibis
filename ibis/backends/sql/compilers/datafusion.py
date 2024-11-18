@@ -67,6 +67,10 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.EndsWith: "ends_with",
         ops.ArrayIntersect: "array_intersect",
         ops.ArrayUnion: "array_union",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
+        ops.MapLength: "cardinality",
+        ops.IsNull: "ifnull",
     }
 
     def _to_timestamp(self, value, target_dtype, literal=False):
@@ -532,6 +536,28 @@ class DataFusionCompiler(SQLGlotCompiler):
 
     def visit_RandomUUID(self, op, **kw):
         return self.f.anon.uuid()
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            sge.NEQ(self.f.cardinality(self.f.map_extract(arg, key)) != 0),
+        )
+
+    def visit_MapGet(self, op, *, arg, key, default):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            self.f.ifnull(
+                self.f.list_extract(self.f.map_extract(arg, key), 1),
+                default,
+            ),
+        )
+
+
+# def visit_MapKeys(self, op, *, arg):
+#         return self.if_(arg.is_(NULL), NULL, self.f.map_keys(arg))
+# ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
 
 
 compiler = DataFusionCompiler()
