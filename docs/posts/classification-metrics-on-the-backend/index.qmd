@@ -40,8 +40,8 @@ The easiest way to break down how this works is to look at a confusion matrix.
 
 A confusion matrix is a table used to describe the performance of a classification
 model on a set of data for which the true values are known. As binary classification
-only involves two categories, the confusion matrix is a simple 2x2 table of true
-positives, false positives, false negatives, and true negatives.
+only involves two categories, the confusion matrix only contains true positives, false
+positives, false negatives, and true negatives.
 
 ![](confusion_matrix.png)
 
