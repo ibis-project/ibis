@@ -1,20 +1,83 @@
-pkgs: super:
+{ uv2nix, pyproject-nix }: pkgs: super:
 let
-  mkPoetryEnv = { groups, python, extras ? [ "*" ] }: pkgs.poetry2nix.mkPoetryEnv {
-    inherit python groups extras;
-    projectDir = pkgs.gitignoreSource ../.;
-    editablePackageSources = { ibis = pkgs.gitignoreSource ../ibis; };
-    overrides = [
-      (import ../poetry-overrides.nix)
-      pkgs.poetry2nix.defaultPoetryOverrides
-    ];
-    preferWheels = true;
+  # Create package overlay from workspace.
+  workspace = uv2nix.lib.workspace.loadWorkspace { workspaceRoot = ../.; };
+
+  envOverlay = workspace.mkPyprojectOverlay {
+    sourcePreference = "wheel";
   };
 
-  mkPoetryDevEnv = python: mkPoetryEnv {
-    inherit python;
-    groups = [ "dev" "docs" "test" ];
+  # Create an overlay enabling editable mode for all local dependencies.
+  # This is for usage with `nix develop`
+  editableOverlay =
+    workspace.mkEditablePyprojectOverlay {
+      root = "$REPO_ROOT";
+    };
+
+  # Build fixups overlay
+  pyprojectOverrides = import ./pyproject-overrides.nix { inherit pkgs; };
+
+  # Adds tests to ibis-framework.passthru.tests
+  testOverlay = import ./tests.nix {
+    inherit pkgs;
+    deps = defaultDeps;
   };
+
+  # Default dependencies for env
+  defaultDeps = {
+    ibis-framework = [
+      "duckdb"
+      "datafusion"
+      "sqlite"
+      "polars"
+      "decompiler"
+      "visualization"
+    ];
+  };
+
+  mkEnv' =
+    {
+      # Python dependency specification
+      deps
+    , # Installs ibis-framework as an editable package for use with `nix develop`.
+      # This means that any changes done to your local files do not require a rebuild.
+      editable
+    ,
+    }: python:
+    let
+      # Construct package set
+      pythonSet =
+        # Use base package set from pyproject.nix builders
+        (pkgs.callPackage pyproject-nix.build.packages {
+          inherit python;
+        }).overrideScope
+          (lib.composeManyExtensions ([
+            envOverlay
+            pyprojectOverrides
+          ]
+          ++ lib.optionals editable [ editableOverlay ]
+          ++ lib.optionals (!editable) [ testOverlay ]));
+    in
+    # Build virtual environment
+    (pythonSet.mkVirtualEnv "ibis-${python.pythonVersion}" deps).overrideAttrs (_old: {
+      # Add passthru.tests from ibis-framework to venv passthru.
+      # This is used to build tests by CI.
+      passthru = {
+        inherit (pythonSet.ibis-framework.passthru) tests;
+      };
+    });
+
+  mkEnv = mkEnv' {
+    deps = defaultDeps;
+    editable = false;
+  };
+
+  mkDevEnv = mkEnv' {
+    # Enable all dependencies for development shell
+    deps = workspace.deps.all;
+    editable = true;
+  };
+
   inherit (pkgs) lib stdenv;
 in
 {
@@ -26,19 +89,22 @@ in
     sha256 = "sha256-1fenQNQB+Q0pbb0cbK2S/UIwZDE4PXXG15MH3aVbyLU=";
   };
 
-  ibis310 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python310; };
-  ibis311 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python311; };
-  ibis312 = pkgs.callPackage ./ibis.nix { python3 = pkgs.python312; };
+  ibis310 = mkEnv pkgs.python310;
+  ibis311 = mkEnv pkgs.python311;
+  ibis312 = mkEnv pkgs.python312;
 
-  ibisDevEnv310 = mkPoetryDevEnv pkgs.python310;
-  ibisDevEnv311 = mkPoetryDevEnv pkgs.python311;
-  ibisDevEnv312 = mkPoetryDevEnv pkgs.python312;
+  ibisDevEnv310 = mkDevEnv pkgs.python310;
+  ibisDevEnv311 = mkDevEnv pkgs.python311;
+  ibisDevEnv312 = mkDevEnv pkgs.python312;
 
-  ibisSmallDevEnv = mkPoetryEnv {
-    python = pkgs.python312;
-    groups = [ "dev" ];
-    extras = [ ];
-  };
+  ibisSmallDevEnv = mkEnv'
+    {
+      deps = {
+        ibis-framework = [ "dev" ];
+      };
+      editable = false;
+    }
+    pkgs.python312;
 
   duckdb = super.duckdb.overrideAttrs (
     _: lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux) {
@@ -50,7 +116,7 @@ in
 
   changelog = pkgs.writeShellApplication {
     name = "changelog";
-    runtimeInputs = [ pkgs.nodePackages.conventional-changelog-cli ];
+    runtimeInputs = [ pkgs.nodejs_20.pkgs.conventional-changelog-cli ];
     text = ''
       conventional-changelog --config ./.conventionalcommits.js "$@"
     '';
@@ -58,7 +124,7 @@ in
 
   check-release-notes-spelling = pkgs.writeShellApplication {
     name = "check-release-notes-spelling";
-    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.ibisSmallDevEnv ];
+    runtimeInputs = [ pkgs.changelog pkgs.coreutils pkgs.codespell ];
     text = ''
       tmp="$(mktemp)"
       changelog --release-count 1 --output-unreleased --outfile "$tmp"
@@ -72,7 +138,7 @@ in
 
   update-lock-files = pkgs.writeShellApplication {
     name = "update-lock-files";
-    runtimeInputs = with pkgs; [ just poetry ];
+    runtimeInputs = with pkgs; [ just uv ];
     text = "just lock";
   };
 

@@ -23,6 +23,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLProgrammingError,
     OracleDatabaseError,
+    PolarsInvalidOperationError,
     PolarsSchemaError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
@@ -50,6 +51,7 @@ NULL_BACKEND_TYPES = {
     "trino": "unknown",
     "postgres": "null",
     "risingwave": "null",
+    "databricks": "void",
 }
 
 
@@ -90,6 +92,7 @@ BOOLEAN_BACKEND_TYPE = {
     "postgres": "boolean",
     "risingwave": "boolean",
     "flink": "BOOLEAN NOT NULL",
+    "databricks": "boolean",
 }
 
 
@@ -204,6 +207,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "oracle",
                         "exasol",
                         "pyspark",
+                        "databricks",
                     ],
                     reason="NaN != NULL for these backends",
                 ),
@@ -792,6 +796,11 @@ def test_table_info_large(con):
                     reason="quantile is not supported",
                 ),
                 pytest.mark.notimpl(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="timestamp column is discarded",
+                ),
+                pytest.mark.notimpl(
                     [
                         "clickhouse",
                         "exasol",
@@ -1213,6 +1222,27 @@ def test_memtable_construct_from_pyarrow(backend, con, monkeypatch):
     )
 
 
+@pytest.mark.notimpl(
+    ["flink"], raises=TypeError, reason="doesn't support pyarrow objects yet"
+)
+def test_memtable_construct_from_pyarrow_c_stream(con):
+    pa = pytest.importorskip("pyarrow")
+
+    class Opaque:
+        def __init__(self, table):
+            self._table = table
+
+        def __arrow_c_stream__(self, *args, **kwargs):
+            return self._table.__arrow_c_stream__(*args, **kwargs)
+
+    table = pa.table({"a": list("abc"), "b": [1, 2, 3]})
+
+    t = ibis.memtable(Opaque(table))
+
+    res = con.to_pyarrow(t.order_by("a"))
+    assert res.equals(table)
+
+
 @pytest.mark.parametrize("lazy", [False, True])
 def test_memtable_construct_from_polars(backend, con, lazy):
     pl = pytest.importorskip("polars")
@@ -1262,6 +1292,19 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 
     with pytest.raises(ValueError):
         ibis.memtable(df, columns=columns)
+
+
+@pytest.mark.notyet(
+    ["mssql", "mysql", "exasol", "impala"], reason="various syntax errors reported"
+)
+def test_memtable_from_geopandas_dataframe(con, data_dir):
+    gpd = pytest.importorskip("geopandas")
+    gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")[:5]
+
+    # Read in memtable
+    t = ibis.memtable(gdf)
+    # Execute a few rows to force ingestion
+    con.to_pandas(t.limit(2).select("geometry"))
 
 
 @pytest.mark.notimpl(["oracle", "exasol"], raises=com.OperationNotDefinedError)
@@ -1579,6 +1622,7 @@ def test_hash(backend, alltypes, dtype):
         "pyspark",
         "risingwave",
         "sqlite",
+        "databricks",
     ]
 )
 def test_hashbytes(backend, alltypes):
@@ -1744,7 +1788,8 @@ def test_try_cast(con, from_val, to_type, expected):
             "int",
             marks=[
                 pytest.mark.never(
-                    ["clickhouse", "pyspark", "flink"], reason="casts to 1672531200"
+                    ["clickhouse", "pyspark", "flink", "databricks"],
+                    reason="casts to 1672531200",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
@@ -1807,7 +1852,7 @@ def test_try_cast_table(backend, con):
             pd.isna,
             marks=[
                 pytest.mark.notyet(
-                    ["clickhouse", "polars", "flink", "pyspark"],
+                    ["clickhouse", "polars", "flink", "pyspark", "databricks"],
                     reason="casts this to to a number",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -2033,7 +2078,10 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     reason="impala doesn't support dynamic limit/offset",
     raises=ImpalaHiveServer2Error,
 )
-@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    reason="pyspark and databricks don't support dynamic limit/offset",
+)
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 def test_dynamic_table_slice(backend, slc, expected_count_fn):
     t = backend.functional_alltypes
@@ -2083,7 +2131,10 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
     reason="impala doesn't support dynamic limit/offset",
     raises=ImpalaHiveServer2Error,
 )
-@pytest.mark.notyet(["pyspark"], reason="pyspark doesn't support dynamic limit/offset")
+@pytest.mark.notyet(
+    ["pyspark", "databricks"],
+    reason="pyspark and databricks don't support dynamic limit/offset",
+)
 @pytest.mark.notyet(["flink"], reason="flink doesn't support dynamic limit/offset")
 @pytest.mark.notyet(
     ["mssql"],
@@ -2154,6 +2205,7 @@ def test_sample_memtable(con, backend):
         "trino",
         "exasol",
         "pyspark",
+        "databricks",
     ]
 )
 def test_sample_with_seed(backend):
@@ -2396,3 +2448,40 @@ def test_named_literal(con, backend):
     result = con.to_pandas(expr)
     expected = pd.DataFrame({"one": [1]})
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.notyet(
+    ["polars"],
+    raises=PolarsInvalidOperationError,
+    reason="n_unique isn't supported on decimal columns",
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="doesn't allow casting Float64 to Decimal(38, 2)",
+)
+@pytest.mark.notimpl(
+    ["oracle"], raises=OracleDatabaseError, reason="incorrect code generated"
+)
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "impala", "mysql", "mssql", "sqlite", "trino"],
+    raises=com.OperationNotDefinedError,
+    reason="quantile not implemented",
+)
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=com.OperationNotDefinedError,
+    reason="standard deviation not implemented",
+)
+@pytest.mark.notyet(
+    ["bigquery"],
+    raises=com.UnsupportedBackendType,
+    reason="BigQuery only supports two decimal types: (38, 9) and (76, 38)",
+)
+def test_table_describe_with_multiple_decimal_columns(con):
+    t = ibis.memtable({"a": [1, 2, 3], "b": [4, 5, 6]}).cast(
+        {"a": "decimal(21, 2)", "b": "decimal(20, 2)"}
+    )
+    expr = t.describe()
+    result = con.to_pyarrow(expr)
+    assert len(result) == 2

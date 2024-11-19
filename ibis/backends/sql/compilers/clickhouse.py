@@ -32,7 +32,7 @@ class ClickhouseAggGen(AggGen):
         if where is not None:
             name += "If"
             args += (where,)
-        return compiler.f[name](*args, dialect=compiler.dialect)
+        return compiler.f[name](*args)
 
 
 class ClickHouseCompiler(SQLGlotCompiler):
@@ -115,6 +115,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
         ops.TimestampNow: "now",
         ops.TypeOf: "toTypeName",
         ops.Unnest: "arrayJoin",
+        ops.RandomUUID: "generateUUIDv4",
+        ops.RandomScalar: "randCanonical",
     }
 
     @staticmethod
@@ -706,10 +708,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
         offset = sg.to_identifier("offset")
 
-        func = sge.Lambda(
-            this=self.f.dateAdd(sg.to_identifier(unit), offset, start),
-            expressions=[offset],
-        )
+        this = self.f.dateAdd(self.v[unit], offset, start)
+        func = sge.Lambda(this=this, expressions=[offset])
 
         if step_value == 0:
             return self.f.array()
@@ -720,12 +720,6 @@ class ClickHouseCompiler(SQLGlotCompiler):
 
     def visit_RegexSplit(self, op, *, arg, pattern):
         return self.f.splitByRegexp(pattern, self.cast(arg, dt.String(nullable=False)))
-
-    def visit_RandomScalar(self, op, **kwargs):
-        return self.f.randCanonical()
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.generateUUIDv4()
 
     @staticmethod
     def _generate_groups(groups):

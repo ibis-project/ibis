@@ -13,7 +13,7 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis import config, udf
+from ibis import udf
 from ibis.backends.clickhouse.tests.conftest import (
     CLICKHOUSE_HOST,
     CLICKHOUSE_PASS,
@@ -72,21 +72,19 @@ def test_limit_overrides_expr(con, alltypes):
     assert len(result) == 5
 
 
-def test_limit_equals_none_no_limit(alltypes):
-    with config.option_context("sql.default_limit", 10):
-        result = alltypes.execute(limit=None)
-        assert len(result) > 10
+def test_limit_equals_none_no_limit(alltypes, monkeypatch):
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 10)
+    result = alltypes.execute(limit=None)
+    assert len(result) > 10
 
 
-def test_verbose_log_queries(con):
+def test_verbose_log_queries(con, monkeypatch):
     queries = []
 
-    def logger(x):
-        queries.append(x)
+    monkeypatch.setattr(ibis.options, "verbose", True)
+    monkeypatch.setattr(ibis.options, "verbose_log", queries.append)
 
-    with config.option_context("verbose", True):
-        with config.option_context("verbose_log", logger):
-            con.table("functional_alltypes")
+    con.table("functional_alltypes")
 
     expected = "DESCRIBE functional_alltypes"
 
@@ -95,36 +93,43 @@ def test_verbose_log_queries(con):
     assert expected in queries
 
 
-def test_sql_query_limits(alltypes):
-    table = alltypes
-    with config.option_context("sql.default_limit", 100000):
-        # table has 25 rows
-        assert len(table.execute()) == 7300
-        # comply with limit arg for Table
-        assert len(table.execute(limit=10)) == 10
-        # state hasn't changed
-        assert len(table.execute()) == 7300
-        # non-Table ignores default_limit
-        assert table.count().execute() == 7300
-        # non-Table doesn't observe limit arg
-        assert table.count().execute(limit=10) == 7300
-    with config.option_context("sql.default_limit", 20):
-        # Table observes default limit setting
-        assert len(table.execute()) == 20
-        # explicit limit= overrides default
-        assert len(table.execute(limit=15)) == 15
-        assert len(table.execute(limit=23)) == 23
-        # non-Table ignores default_limit
-        assert table.count().execute() == 7300
-        # non-Table doesn't observe limit arg
-        assert table.count().execute(limit=10) == 7300
+def test_sql_query_limits_big(alltypes, monkeypatch):
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 100_000)
+
+    # alltypes has 7300 rows
+    assert len(alltypes.execute()) == 7300  # comply with limit arg for alltypes
+    assert len(alltypes.execute(limit=10)) == 10
+    # state hasn't changed
+    assert len(alltypes.execute()) == 7300
+    # non-alltypes ignores default_limit
+    assert alltypes.count().execute() == 7300
+    # non-alltypes doesn't observe limit arg
+    assert alltypes.count().execute(limit=10) == 7300
+
+
+def test_sql_query_limits_small(alltypes, monkeypatch):
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 20)
+
+    # alltypes observes default limit setting
+    assert len(alltypes.execute()) == 20
+    # explicit limit= overrides default
+    assert len(alltypes.execute(limit=15)) == 15
+    assert len(alltypes.execute(limit=23)) == 23
+    # non-alltypes ignores default_limit
+    assert alltypes.count().execute() == 7300
+    # non-alltypes doesn't observe limit arg
+    assert alltypes.count().execute(limit=10) == 7300
+
+
+def test_sql_query_limits_none(alltypes, monkeypatch):
+    monkeypatch.setattr(ibis.options.sql, "default_limit", None)
+
     # eliminating default_limit doesn't break anything
-    with config.option_context("sql.default_limit", None):
-        assert len(table.execute()) == 7300
-        assert len(table.execute(limit=15)) == 15
-        assert len(table.execute(limit=10000)) == 7300
-        assert table.count().execute() == 7300
-        assert table.count().execute(limit=10) == 7300
+    assert len(alltypes.execute()) == 7300
+    assert len(alltypes.execute(limit=15)) == 15
+    assert len(alltypes.execute(limit=10000)) == 7300
+    assert alltypes.count().execute() == 7300
+    assert alltypes.count().execute(limit=10) == 7300
 
 
 def test_embedded_identifier_quoting(alltypes):

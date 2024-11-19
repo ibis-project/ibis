@@ -28,6 +28,7 @@ concurrency:
 jobs:
   nix:
     runs-on: ${{ matrix.os }}
+    name: nix (${{ matrix.os }}, ${{ matrix.python-version }})
     strategy:
       fail-fast: false
       matrix:
@@ -38,10 +39,10 @@ jobs:
           - "3.11"
           - "3.12"
         include:
-          - os: ubuntu-arm64-24.04
+          - os: ubuntu-arm64-24.04 # aarch64-linux
             python-version: "3.12"
-          - os: macos-14
-            python-version: "3.10"
+          - os: macos-14 # aarch64-darwin
+            python-version: "3.12"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -58,16 +59,25 @@ jobs:
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
-          extraPullNames: nix-community,poetry2nix
+          extraPullNames: nix-community
 
-      - name: nix build and test
+      - name: nix build environment
         run: |
           set -euo pipefail
 
           version='${{ matrix.python-version }}'
           nix build ".#ibis${version//./}" --fallback --keep-going --print-build-logs
 
+      - name: nix test
+        run: |
+          set -euo pipefail
+
+          version='${{ matrix.python-version }}'
+          nix build ".#ibis${version//./}.passthru.tests.pytest" --fallback --keep-going --print-build-logs
+
       - name: nix build devShell
+        # TODO: dev shell doesn't yet build on macos-14 (aarch64-darwin)
+        continue-on-error: ${{ matrix.os == 'macos-14' }}
         run: |
           set -euo pipefail
 

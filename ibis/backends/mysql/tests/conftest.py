@@ -17,7 +17,7 @@ MYSQL_USER = os.environ.get("IBIS_TEST_MYSQL_USER", "ibis")
 MYSQL_PASS = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
 MYSQL_HOST = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
 MYSQL_PORT = int(os.environ.get("IBIS_TEST_MYSQL_PORT", 3306))
-IBIS_TEST_MYSQL_DB = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
+IBIS_TEST_MYSQL_DB = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis-testing")
 
 
 class TestConf(ServiceBackendTest):

@@ -63,6 +63,8 @@ dict(value=sql_backends, color="green", icon="database")
 
 ```{python}
 #| echo: false
+import inspect
+
 import pandas as pd
 
 import ibis
@@ -72,11 +74,30 @@ import ibis.expr.operations as ops
 def make_support_matrix():
     """Construct the backend operation support matrix data."""
 
-    from ibis.backends.sql.compilers.base import ALL_OPERATIONS
+    # these are handled either through rewrites or by visit methods on their
+    # subclasses
+    support_matrix_ignored_operations = (
+        ops.Alias,
+        ops.AnalyticVectorizedUDF,
+        ops.Distinct,
+        ops.DropNull,
+        ops.ElementWiseVectorizedUDF,
+        ops.FillNull,
+        ops.ReductionVectorizedUDF,
+        ops.ScalarParameter,
+        ops.Subquery,
+    )
 
-    support_matrix_ignored_operations = (ops.ScalarParameter,)
-
-    public_ops = ALL_OPERATIONS.difference(support_matrix_ignored_operations)
+    public_ops = {
+        op
+        for _, mod in inspect.getmembers(ops, inspect.ismodule)
+        for _, op in inspect.getmembers(
+            mod, lambda cls: inspect.isclass(cls)
+            and issubclass(cls, ops.Node)
+            and cls.__name__ in mod.__all__
+            and not cls.__subclasses__()
+        )
+    }.difference(support_matrix_ignored_operations)
 
     assert public_ops
 

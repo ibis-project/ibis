@@ -274,6 +274,15 @@ def endswith(suffixes: str | tuple[str, ...]) -> Selector:
     suffixes
         Suffixes to compare column names against
 
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.endswith("id"))
+    >>> expr.columns
+    ('model_id', 'user_id')
+
     See Also
     --------
     [`startswith`](#ibis.selectors.startswith)
@@ -371,13 +380,33 @@ def matches(regex: str | re.Pattern) -> Selector:
 
 @public
 def any_of(*predicates: str | Selector) -> Selector:
-    """Include columns satisfying any of `predicates`."""
+    """Include columns satisfying any of `predicates`.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.any_of(s.endswith("id"), s.startswith("m")))
+    >>> expr.columns
+    ('model_id', 'model_name', 'user_id')
+    """
     return Any(tuple(map(_to_selector, predicates)))
 
 
 @public
 def all_of(*predicates: str | Selector) -> Selector:
-    """Include columns satisfying all of `predicates`."""
+    """Include columns satisfying all of `predicates`.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.all_of(s.endswith("id"), s.startswith("m")))
+    >>> expr.columns
+    ('model_id',)
+    """
     return All(tuple(map(_to_selector, predicates)))
 
 
@@ -726,7 +755,17 @@ class First(Singleton, Selector):
 
 @public
 def first() -> Selector:
-    """Return the first column of a table."""
+    """Return the first column of a table.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.first())
+    >>> expr.columns
+    ('model_id',)
+    """
     return First()
 
 
@@ -740,7 +779,17 @@ class Last(Singleton, Selector):
 
 @public
 def last() -> Selector:
-    """Return the last column of a table."""
+    """Return the last column of a table.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.last())
+    >>> expr.columns
+    ('user_id',)
+    """
     return Last()
 
 
@@ -754,7 +803,17 @@ class AllColumns(Singleton, Selector):
 
 @public
 def all() -> Selector:
-    """Return every column from a table."""
+    """Return every column from a table.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> t = ibis.table(dict(model_id="int", model_name="str", user_id="int"), name="t")
+    >>> expr = t.select(s.all())
+    >>> expr.columns
+    ('model_id', 'model_name', 'user_id')
+    """
     return AllColumns()
 
 
@@ -768,7 +827,43 @@ class NoColumns(Singleton, Selector):
 
 @public
 def none() -> Selector:
-    """Return no columns."""
+    """Return no columns.
+
+    Examples
+    --------
+    >>> import ibis
+    >>> import ibis.selectors as s
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "id": [1, 2, 3, 4, 5, 6],
+    ...         "color": ["Red", "Green", "Blue", "Blue", "Red", "Blue"],
+    ...     }
+    ... )
+
+    `s.none()` results in an empty expansion.
+
+    >>> s.none().expand(t)
+    []
+
+    This can be useful when you want to pivot a table without identifying unique
+    observations.
+
+    >>> t.pivot_wider(
+    ...     id_cols=s.none(),
+    ...     names_from="color",
+    ...     values_from="color",
+    ...     values_agg="count",
+    ...     names_sort=True,
+    ... )
+    ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
+    ┃ Blue  ┃ Green ┃ Red   ┃
+    ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
+    │ int64 │ int64 │ int64 │
+    ├───────┼───────┼───────┤
+    │     3 │     1 │     2 │
+    └───────┴───────┴───────┘
+    """
     return NoColumns()
 
 

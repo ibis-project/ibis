@@ -18,7 +18,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import UrlFromPath
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import C, F
+from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
 from ibis.backends.sqlite.udf import ignore_nulls, register_all
 
@@ -183,7 +183,7 @@ class Backend(SQLBackend, UrlFromPath):
 
         sql = (
             sg.select(C.name)
-            .from_(F.pragma_table_list())
+            .from_(sg.func("pragma_table_list"))
             .where(
                 C.schema.isin(*map(sge.convert, schemas)),
                 C.type.isin(sge.convert("table"), sge.convert("view")),

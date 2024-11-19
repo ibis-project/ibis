@@ -9,13 +9,14 @@ Ibis maintainers are expected to handle the following tasks as they arise:
 
 Dependency updates are automated using [Mend Renovate](https://www.mend.io/renovate/).
 
-### poetry
+### Updating the lockfile
 
-Occasionally you may need to lock [`poetry`](https://python-poetry.org)
-dependencies. Edit `pyproject.toml` as needed, then run:
+Occasionally you may need to lock dependencies. Edit
+[`pyproject.toml`](https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#)
+as needed, then run:
 
 ```sh
-just check-poetry
+just lock
 ```
 
 This will update the lockfile and also update `requirements-dev.txt` for
@@ -27,7 +28,7 @@ If you're not a maintainer, please open an issue asking us to add your example.
 
 ### Requirements
 
-You need the ability to write to the `gs://ibis-examples` GCS bucket to add an example.
+You need the ability to write to the `gs://ibis-pins` GCS bucket to add an example.
 
 ### Instructions
 

@@ -90,6 +90,8 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.ArrayMap,
         ops.ArraySort,
         ops.ArrayUnion,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.BitAnd,
         ops.BitOr,
         ops.BitXor,
@@ -125,7 +127,6 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.Atan2: "atn2",
         ops.DateFromYMD: "datefromparts",
         ops.Hash: "checksum",
-        ops.Ln: "log",
         ops.Log10: "log10",
         ops.Power: "power",
         ops.Repeat: "replicate",
@@ -134,6 +135,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         ops.TimestampNow: "sysdatetime",
         ops.Min: "min",
         ops.Max: "max",
+        ops.RandomUUID: "newid",
     }
 
     NAN = sg.func("double", sge.convert("NaN"))
@@ -176,10 +178,7 @@ class MSSQLCompiler(SQLGlotCompiler):
             table_expr = table_expr.mutate(**conversions)
         return super().to_sqlglot(table_expr, limit=limit, params=params)
 
-    def visit_RandomUUID(self, op, **_):
-        return self.f.newid()
-
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         # By default RAND() will generate the same value for all calls within a
         # query. The standard way to work around this is to pass in a unique
         # value per call, which `CHECKSUM(NEWID())` provides.
@@ -224,12 +223,12 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_CountStar(self, op, *, arg, where):
         if where is not None:
             return self.f.sum(self.if_(where, 1, 0))
-        return self.f.count(STAR)
+        return self.f.count_big(STAR)
 
     def visit_CountDistinct(self, op, *, arg, where):
         if where is not None:
             arg = self.if_(where, arg, NULL)
-        return self.f.count(sge.Distinct(expressions=[arg]))
+        return self.f.count_big(sge.Distinct(expressions=[arg]))
 
     def visit_ApproxQuantile(self, op, *, arg, quantile, where):
         if where is not None:
@@ -265,7 +264,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         if (unit := interval_units.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit!r}")
 
-        return self.f.datetrunc(self.v[unit], arg, dialect=self.dialect)
+        return self.f.datetrunc(self.v[unit], arg)
 
     visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
 
@@ -273,9 +272,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.cast(arg, dt.date)
 
     def visit_DateTimeDelta(self, op, *, left, right, part):
-        return self.f.datediff(
-            sge.Var(this=part.this.upper()), right, left, dialect=self.dialect
-        )
+        return self.f.datediff(sge.Var(this=part.this.upper()), right, left)
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_DateTimeDelta
 
@@ -316,12 +313,14 @@ class MSSQLCompiler(SQLGlotCompiler):
 
     def visit_ExtractEpochSeconds(self, op, *, arg):
         return self.cast(
-            self.f.datediff(self.v.s, "1970-01-01 00:00:00", arg, dialect=self.dialect),
+            self.f.datediff(self.v.s, "1970-01-01 00:00:00", arg),
             dt.int64,
         )
 
     def visit_ExtractTemporalComponent(self, op, *, arg):
-        return self.f.datepart(self.v[type(op).__name__[len("Extract") :].lower()], arg)
+        return self.f.anon.datepart(
+            self.v[type(op).__name__[len("Extract") :].lower()], arg
+        )
 
     visit_ExtractYear = visit_ExtractMonth = visit_ExtractDay = (
         visit_ExtractDayOfYear
@@ -330,7 +329,7 @@ class MSSQLCompiler(SQLGlotCompiler):
     ) = visit_ExtractMicrosecond = visit_ExtractTemporalComponent
 
     def visit_ExtractWeekOfYear(self, op, *, arg):
-        return self.f.datepart(self.v.iso_week, arg)
+        return self.f.anon.datepart(self.v.iso_week, arg)
 
     def visit_TimeFromHMS(self, op, *, hours, minutes, seconds):
         return self.f.timefromparts(hours, minutes, seconds, 0, 0)
@@ -403,12 +402,12 @@ class MSSQLCompiler(SQLGlotCompiler):
         return None
 
     def visit_Log2(self, op, *, arg):
-        return self.f.log(arg, 2, dialect=self.dialect)
+        return self.f.log(arg, 2)
 
     def visit_Log(self, op, *, arg, base):
         if base is None:
-            return self.f.log(arg, dialect=self.dialect)
-        return self.f.log(arg, base, dialect=self.dialect)
+            return self.f.log(arg)
+        return self.f.log(arg, base)
 
     def visit_Cast(self, op, *, arg, to):
         from_ = op.arg.dtype
@@ -520,14 +519,10 @@ class MSSQLCompiler(SQLGlotCompiler):
         return result
 
     def visit_TimestampAdd(self, op, *, left, right):
-        return self.f.dateadd(
-            right.unit, self.cast(right.this, dt.int64), left, dialect=self.dialect
-        )
+        return self.f.dateadd(right.unit, self.cast(right.this, dt.int64), left)
 
     def visit_TimestampSub(self, op, *, left, right):
-        return self.f.dateadd(
-            right.unit, -self.cast(right.this, dt.int64), left, dialect=self.dialect
-        )
+        return self.f.dateadd(right.unit, -self.cast(right.this, dt.int64), left)
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub

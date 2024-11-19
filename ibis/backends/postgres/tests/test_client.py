@@ -432,3 +432,9 @@ def enum_table(con):
 def test_enum_table(con, enum_table):
     t = con.table(enum_table)
     assert t.mood.type() == dt.unknown
+
+
+def test_parsing_oid_dtype(con):
+    # Load a table that uses the OID type and check that we map it to Int64
+    t = con.table("pg_class", database="pg_catalog")
+    assert t.oid.type() == ibis.dtype("int64")

@@ -124,6 +124,7 @@ website:
         - auto: backends/*.qmd
         - section: Support
           contents:
+            - backends/cloud_support_policy.qmd
             - auto: backends/support/*.qmd
             - reference/operations.qmd
     - id: how-to

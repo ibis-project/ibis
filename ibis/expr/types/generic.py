@@ -88,7 +88,30 @@ class Value(Expr):
 
     # TODO(kszucs): should rename to dtype
     def type(self) -> dt.DataType:
-        """Return the [DataType](./datatypes.qmd) of `self`."""
+        """Return the [DataType](./datatypes.qmd) of `self`.
+
+        Examples
+        --------
+        >>> from datetime import datetime
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "int_col": [1],
+        ...         "timestamp_col": [
+        ...             datetime(2024, 11, 2, 10, 5, 2),
+        ...         ],
+        ...         "string_col": ["a"],
+        ...     }
+        ... )
+
+        >>> t.int_col.type()
+        Int64(nullable=True)
+        >>> t.timestamp_col.type()
+        Timestamp(timezone=None, scale=None, nullable=True)
+        >>> t.string_col.type()
+        String(nullable=True)
+        """
         return self.op().dtype
 
     def hash(self) -> ir.IntegerValue:
@@ -1177,7 +1200,7 @@ class Value(Expr):
         return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
-        """Convert a column expression to a pandas Series or scalar object.
+        """Convert an expression to a pandas or scalar object.
 
         Parameters
         ----------
@@ -1188,8 +1211,8 @@ class Value(Expr):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch().limit(5)
-        >>> t.to_pandas()
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.to_pandas(limit=5)
           species     island  bill_length_mm  ...  body_mass_g     sex  year
         0  Adelie  Torgersen            39.1  ...       3750.0    male  2007
         1  Adelie  Torgersen            39.5  ...       3800.0  female  2007
@@ -1538,7 +1561,7 @@ class Column(Value, _FixedTextJupyterMixin):
             return literal(value)
         return value
 
-    def __deferred_repr__(self):
+    def __deferred_repr__(self) -> str:
         return f"<column[{self.type()}]>"
 
     def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
@@ -2100,6 +2123,25 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         IntegerScalar
             Number of elements in an expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "color": ["Red", "Green", "Blue", "Blue", "Red", "Blue"],
+        ...     }
+        ... )
+        >>> t.count()
+        ┌───┐
+        │ 6 │
+        └───┘
+        >>> t.count(where=t.color == "Blue")
+        ┌───┐
+        │ 3 │
+        └───┘
         """
         return ops.Count(self, where=self._bind_to_parent_table(where)).to_expr()
 
@@ -2329,11 +2371,51 @@ class Column(Value, _FixedTextJupyterMixin):
         return ibis.dense_rank().over(order_by=self)
 
     def percent_rank(self) -> Column:
-        """Return the relative rank of the values in the column."""
+        """Return the relative rank of the values in the column.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(percent_rank=t.values.percent_rank())
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━┓
+        ┃ values ┃ percent_rank ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━┩
+        │ int64  │ float64      │
+        ├────────┼──────────────┤
+        │      1 │          0.0 │
+        │      1 │          0.0 │
+        │      2 │          0.4 │
+        │      2 │          0.4 │
+        │      2 │          0.4 │
+        │      3 │          1.0 │
+        └────────┴──────────────┘
+        """
         return ibis.percent_rank().over(order_by=self)
 
     def cume_dist(self) -> Column:
-        """Return the cumulative distribution over a window."""
+        """Return the cumulative distribution over a window.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(cume_dist=t.values.cume_dist())
+        ┏━━━━━━━━┳━━━━━━━━━━━┓
+        ┃ values ┃ cume_dist ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━┩
+        │ int64  │ float64   │
+        ├────────┼───────────┤
+        │      1 │  0.333333 │
+        │      1 │  0.333333 │
+        │      2 │  0.833333 │
+        │      2 │  0.833333 │
+        │      2 │  0.833333 │
+        │      3 │  1.000000 │
+        └────────┴───────────┘
+        """
         return ibis.cume_dist().over(order_by=self)
 
     def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
@@ -2343,17 +2425,118 @@ class Column(Value, _FixedTextJupyterMixin):
         ----------
         buckets
             Number of buckets to partition into
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 1, 2, 3, 2]})
+        >>> t.mutate(ntile=t.values.ntile(3))
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ ntile ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │     0 │
+        │      1 │     0 │
+        │      2 │     1 │
+        │      2 │     1 │
+        │      2 │     2 │
+        │      3 │     2 │
+        └────────┴───────┘
         """
         return ibis.ntile(buckets).over(order_by=self)
 
     def cummin(self, *, where=None, group_by=None, order_by=None) -> Column:
-        """Return the cumulative min over a window."""
+        """Return the cumulative min over a window.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "grouper": ["a", "a", "a", "b", "b", "c"],
+        ...         "values": [3, 2, 1, 2, 3, 2],
+        ...     }
+        ... )
+        >>> t.mutate(cummin=t.values.cummin())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummin ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      2 │
+        │     3 │ a       │      1 │      1 │
+        │     4 │ b       │      2 │      1 │
+        │     5 │ b       │      3 │      1 │
+        │     6 │ c       │      2 │      1 │
+        └───────┴─────────┴────────┴────────┘
+        >>> t.mutate(cummin=t.values.cummin(where=t.grouper != "c", group_by=t.grouper)).order_by(
+        ...     t.id
+        ... )
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummin ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      2 │
+        │     3 │ a       │      1 │      1 │
+        │     4 │ b       │      2 │      2 │
+        │     5 │ b       │      3 │      2 │
+        │     6 │ c       │      2 │   NULL │
+        └───────┴─────────┴────────┴────────┘
+        """
         return self.min(where=where).over(
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
 
     def cummax(self, *, where=None, group_by=None, order_by=None) -> Column:
-        """Return the cumulative max over a window."""
+        """Return the cumulative max over a window.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {
+        ...         "id": [1, 2, 3, 4, 5, 6],
+        ...         "grouper": ["a", "a", "a", "b", "b", "c"],
+        ...         "values": [3, 2, 1, 2, 3, 2],
+        ...     }
+        ... )
+        >>> t.mutate(cummax=t.values.cummax())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummax ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      3 │
+        │     3 │ a       │      1 │      3 │
+        │     4 │ b       │      2 │      3 │
+        │     5 │ b       │      3 │      3 │
+        │     6 │ c       │      2 │      3 │
+        └───────┴─────────┴────────┴────────┘
+        >>> t.mutate(cummax=t.values.cummax(where=t.grouper != "c", group_by=t.grouper)).order_by(
+        ...     t.id
+        ... )
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━┳━━━━━━━━┓
+        ┃ id    ┃ grouper ┃ values ┃ cummax ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━╇━━━━━━━━┩
+        │ int64 │ string  │ int64  │ int64  │
+        ├───────┼─────────┼────────┼────────┤
+        │     1 │ a       │      3 │      3 │
+        │     2 │ a       │      2 │      3 │
+        │     3 │ a       │      1 │      3 │
+        │     4 │ b       │      2 │      2 │
+        │     5 │ b       │      3 │      3 │
+        │     6 │ c       │      2 │   NULL │
+        └───────┴─────────┴────────┴────────┘
+        """
         return self.max(where=where).over(
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
@@ -2371,6 +2554,36 @@ class Column(Value, _FixedTextJupyterMixin):
             Index of row to select
         default
             Value used if no row exists at `offset`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {"year": [2007, 2008, 2009, 2010], "total": [1899.6, 1928.2, 2037.9, 1955.2]}
+        ... )
+        >>> t.mutate(total_lead=t.total.lag())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ total   ┃ total_lead ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ float64 │ float64    │
+        ├───────┼─────────┼────────────┤
+        │  2007 │  1899.6 │       NULL │
+        │  2008 │  1928.2 │     1899.6 │
+        │  2009 │  2037.9 │     1928.2 │
+        │  2010 │  1955.2 │     2037.9 │
+        └───────┴─────────┴────────────┘
+        >>> t.mutate(total_lead=t.total.lag(2, 0))
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ total   ┃ total_lead ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ float64 │ float64    │
+        ├───────┼─────────┼────────────┤
+        │  2007 │  1899.6 │        0.0 │
+        │  2008 │  1928.2 │        0.0 │
+        │  2009 │  2037.9 │     1899.6 │
+        │  2010 │  1955.2 │     1928.2 │
+        └───────┴─────────┴────────────┘
         """
         return ops.Lag(self, offset, default).to_expr()
 
@@ -2387,6 +2600,36 @@ class Column(Value, _FixedTextJupyterMixin):
             Index of row to select
         default
             Value used if no row exists at `offset`
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable(
+        ...     {"year": [2007, 2008, 2009, 2010], "total": [1899.6, 1928.2, 2037.9, 1955.2]}
+        ... )
+        >>> t.mutate(total_lead=t.total.lead())
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ total   ┃ total_lead ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ float64 │ float64    │
+        ├───────┼─────────┼────────────┤
+        │  2007 │  1899.6 │     1928.2 │
+        │  2008 │  1928.2 │     2037.9 │
+        │  2009 │  2037.9 │     1955.2 │
+        │  2010 │  1955.2 │       NULL │
+        └───────┴─────────┴────────────┘
+        >>> t.mutate(total_lead=t.total.lead(2, 0))
+        ┏━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━┓
+        ┃ year  ┃ total   ┃ total_lead ┃
+        ┡━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━┩
+        │ int64 │ float64 │ float64    │
+        ├───────┼─────────┼────────────┤
+        │  2007 │  1899.6 │     2037.9 │
+        │  2008 │  1928.2 │     1955.2 │
+        │  2009 │  2037.9 │        0.0 │
+        │  2010 │  1955.2 │        0.0 │
+        └───────┴─────────┴────────────┘
         """
         return ops.Lead(self, offset, default).to_expr()
 
@@ -2406,8 +2649,58 @@ class Column(Value, _FixedTextJupyterMixin):
         -------
         Column
             The nth value over a window
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"values": [1, 2, 3, 4, 5, 6]})
+        >>> t.mutate(nth=t.values.nth(2))
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ nth   ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │     3 │
+        │      2 │     3 │
+        │      3 │     3 │
+        │      4 │     3 │
+        │      5 │     3 │
+        │      6 │     3 │
+        └────────┴───────┘
+        >>> t.mutate(nth=t.values.nth(7))
+        ┏━━━━━━━━┳━━━━━━━┓
+        ┃ values ┃ nth   ┃
+        ┡━━━━━━━━╇━━━━━━━┩
+        │ int64  │ int64 │
+        ├────────┼───────┤
+        │      1 │  NULL │
+        │      2 │  NULL │
+        │      3 │  NULL │
+        │      4 │  NULL │
+        │      5 │  NULL │
+        │      6 │  NULL │
+        └────────┴───────┘
         """
         return ops.NthValue(self, n).to_expr()
+
+    def to_list(self, **kwargs) -> list:
+        """Convert a column expression to a list.
+
+        Parameters
+        ----------
+        kwargs
+            Same as keyword arguments to [`to_pyarrow`](#ibis.expr.types.core.Expr.to_pyarrow)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.bill_length_mm.to_list(limit=5)
+        [39.1, 39.5, 40.3, None, 36.7]
+        """
+        return self.to_pyarrow(**kwargs).to_pylist()
 
 
 @public
@@ -2448,9 +2741,11 @@ def null(type: dt.DataType | str | None = None) -> Value:
     `NULL`s with an unspecified type are castable and comparable to values,
     but lack datatype-specific methods:
 
+    Examples
+    --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> ibis.null().upper()
+    >>> ibis.null().upper()  # quartodoc: +EXPECTED_FAILURE
     Traceback (most recent call last):
         ...
     AttributeError: 'NullScalar' object has no attribute 'upper'

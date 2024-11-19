@@ -55,6 +55,8 @@ class OracleCompiler(SQLGlotCompiler):
         ops.ArrayFlatten,
         ops.ArrayMap,
         ops.ArrayStringJoin,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.MultiQuantile,
         ops.RegexSplit,
         ops.StringSplit,
@@ -207,12 +209,12 @@ class OracleCompiler(SQLGlotCompiler):
         return arg.eq(self.NAN)
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_IsInf(self, op, *, arg):
         return arg.isin(self.POS_INF, self.NEG_INF)
 
-    def visit_RandomScalar(self, op, **_):
+    def visit_RandomScalar(self, op):
         # Not using FuncGen here because of dotted function call
         return sg.func("dbms_random.value")
 
@@ -371,7 +373,7 @@ class OracleCompiler(SQLGlotCompiler):
         if (unyt := trunc_unit_mapping.get(unit.short)) is None:
             raise com.UnsupportedOperationError(f"Unsupported truncate unit {unit}")
 
-        return self.f.trunc(arg, unyt)
+        return self.f.anon.trunc(arg, unyt)
 
     visit_TimestampTruncate = visit_DateTruncate
 
@@ -499,6 +501,11 @@ class OracleCompiler(SQLGlotCompiler):
         # Oracle's `RTRIM` and `LTRIM` which accept a set of characters to
         # remove.
         return self.visit_RStrip(op, arg=self.visit_LStrip(op, arg=arg))
+
+    def visit_Round(self, op, *, arg, digits):
+        if op.dtype.is_integer():
+            return self.f.round(arg)
+        return self.cast(self.f.round(arg, digits), op.dtype)
 
 
 compiler = OracleCompiler()

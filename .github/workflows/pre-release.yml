@@ -27,38 +27,33 @@ jobs:
       - name: install python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
-      - name: upgrade pip
-        run: python -m pip install --upgrade pip
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.3
+        with:
+          enable-cache: true
 
-      - name: install poetry
-        run: python -m pip install 'poetry==1.8.4' poetry-dynamic-versioning
+      - uses: extractions/setup-just@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: compute ibis version
-        id: get_version
-        run: echo "value=$(poetry version)" >> "$GITHUB_OUTPUT"
-
-      - name: run some poetry sanity checks
-        run: poetry check
-        if: contains(steps.get_version.outputs.value, '.dev')
+        id: get-version
+        run: echo "value=$(just bump-version)" | tee -a "$GITHUB_OUTPUT"
 
       - name: build wheel and source dist
-        run: poetry build
-        if: contains(steps.get_version.outputs.value, '.dev')
-
-      - name: add test pypi index
-        if: contains(steps.get_version.outputs.value, '.dev')
-        run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+        run: uv build
+        if: contains(steps.get-version.outputs.value, '.dev')
 
       - name: publish pre-release wheel to test pypi index
-        if: contains(steps.get_version.outputs.value, '.dev')
-        run: poetry publish -r test-pypi
+        if: contains(steps.get-version.outputs.value, '.dev')
+        run: uv publish --publish-url https://test.pypi.org/legacy/
         env:
-          POETRY_PYPI_TOKEN_TEST_PYPI: ${{ secrets.TEST_PYPI_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
 
       - name: publish pre-release wheel to pypi
-        if: contains(steps.get_version.outputs.value, '.dev')
-        run: poetry publish
+        if: contains(steps.get-version.outputs.value, '.dev')
+        run: uv publish
         env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_TOKEN }}

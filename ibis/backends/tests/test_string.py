@@ -40,6 +40,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "text",
                 "risingwave": "text",
                 "flink": "CHAR(6) NOT NULL",
+                "databricks": "string",
             },
             id="string",
         ),
@@ -56,6 +57,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "text",
                 "risingwave": "text",
                 "flink": "CHAR(7) NOT NULL",
+                "databricks": "string",
             },
             id="string-quote1",
             marks=[
@@ -84,6 +86,7 @@ pd = pytest.importorskip("pandas")
                 "postgres": "text",
                 "risingwave": "text",
                 "flink": "CHAR(7) NOT NULL",
+                "databricks": "string",
             },
             id="string-quote2",
             marks=[
@@ -440,6 +443,7 @@ def uses_java_re(t):
                         "druid",
                         "oracle",
                         "exasol",
+                        "databricks",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -467,6 +471,7 @@ def uses_java_re(t):
                         "druid",
                         "oracle",
                         "exasol",
+                        "databricks",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -774,6 +779,7 @@ def test_substr_with_null_values(backend, alltypes, df):
         "pyspark",
         "druid",
         "oracle",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1036,12 +1042,12 @@ def string_temp_table(backend, con):
     )
 
     temp_table_name = gen_name("strings")
-    temp = backend.name() not in ["exasol", "impala", "pyspark", "risingwave", "trino"]
     if backend.name() == "druid":
-        yield "I HATE DRUID"
+        pytest.xfail("druid doesn't support create table")
     else:
-        t = con.create_table(temp_table_name, better_strings, temp=temp)
-        yield t
+        yield con.create_table(
+            temp_table_name, better_strings, temp=backend.name() == "flink" or None
+        )
         con.drop_table(temp_table_name, force=True)
 
 
@@ -1187,6 +1193,7 @@ def string_temp_table(backend, con):
                         "snowflake",
                         "sqlite",
                         "trino",
+                        "databricks",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1221,6 +1228,7 @@ def string_temp_table(backend, con):
                         "snowflake",
                         "sqlite",
                         "trino",
+                        "databricks",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1232,7 +1240,7 @@ def string_temp_table(backend, con):
             id="lstrip",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=AssertionError,
                     reason="Spark SQL LTRIM doesn't accept characters to trim",
                 ),
@@ -1244,7 +1252,7 @@ def string_temp_table(backend, con):
             id="rstrip",
             marks=[
                 pytest.mark.notyet(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=AssertionError,
                     reason="Spark SQL RTRIM doesn't accept characters to trim",
                 ),
@@ -1336,14 +1344,12 @@ def string_temp_table_no_complications(backend, con):
     )
 
     temp_table_name = gen_name("strings")
-    temp = backend.name() not in ["exasol", "impala", "pyspark", "risingwave", "trino"]
-    if backend.name() == "datafusion":
-        temp = None
     if backend.name() == "druid":
-        yield "I HATE DRUID"
+        pytest.xfail("druid doesn't support create table")
     else:
-        t = con.create_table(temp_table_name, better_strings, temp=temp)
-        yield t
+        yield con.create_table(
+            temp_table_name, better_strings, temp=backend.name() == "flink" or None
+        )
         con.drop_table(temp_table_name, force=True)
 
 

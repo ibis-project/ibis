@@ -488,6 +488,10 @@ class PostgresType(SqlglotType):
             "information_schema.yes_or_no": dt.string,
             # a case-insensitive string that has it's own type for some reason
             "citext": dt.string,
+            # "Object ID" is an unsigned 4-byte integer in Postgres, but
+            # Postgres doesn't expose unsigned int types otherwise, so just map
+            # it to a signed int64 so we capture the range of values.
+            "oid": dt.int64,
         }
     )
 
@@ -1233,6 +1237,10 @@ class FlinkType(SqlglotType):
             ],
             nested=True,
         )
+
+
+class DatabricksType(SqlglotType):
+    dialect = "databricks"
 
 
 TYPE_MAPPERS = {

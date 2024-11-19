@@ -1151,7 +1151,12 @@ engine.
 
 To appear.
 
-## Unions
+## Set operators
+
+Set operations are a common SQL idiom for combining or comparing rows
+from different relations. Ibis supports the following set operations:
+
+### Unions
 
 SQL dialects often support two kinds of `UNION` operations:
 
@@ -1163,10 +1168,39 @@ The Ibis `union` function by default is a `UNION ALL`, and you can set
 `distinct=True` to get the normal `UNION` behavior:
 
 ```{python}
-expr1 = t1.limit(10)
-expr2 = t1.limit(10, offset=10)
+#| code-fold: true
+sales_2023 = ibis.table(
+    dict(product_name="string", order_quantity="int64"),
+    name="sales_2023",
+)
+sales_2024 = ibis.table(
+    dict(product_name="string", order_quantity="int64"),
+    name="sales_2024",
+)
+```
+
+```{python}
+expr1 = sales_2023.limit(10)
+expr2 = sales_2024.limit(10, offset=10)
 
 expr = expr1.union(expr2)
+ibis.to_sql(expr)
+```
+
+### Intersection and difference
+
+SQL dialects support `INTERSECT` and `EXCEPT` operators that returns rows that
+are in both tables or only in one table, respectively.
+
+In Ibis, we can perform these operations using `intersection` and `difference`.
+
+```{python}
+expr = ibis.difference(sales_2023, sales_2024)
+ibis.to_sql(expr)
+```
+
+```{python}
+expr = ibis.intersect(sales_2023, sales_2024)
 ibis.to_sql(expr)
 ```
 

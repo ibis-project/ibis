@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import contextlib
-import os
 import urllib
 import warnings
 from operator import itemgetter
@@ -362,7 +361,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self,
         database: str | Path = ":memory:",
         read_only: bool = False,
-        temp_directory: str | Path | None = None,
         extensions: Sequence[str] | None = None,
         **config: Any,
     ) -> None:
@@ -374,9 +372,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             Path to a duckdb database.
         read_only
             Whether the database is read-only.
-        temp_directory
-            Directory to use for spilling to disk. Only set by default for
-            in-memory connections.
         extensions
             A list of duckdb extensions to install/load upon connection.
         config
@@ -394,19 +389,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             ("md:", "motherduck:", ":memory:")
         ):
             database = Path(database).absolute()
-
-        if temp_directory is None:
-            temp_directory = (
-                Path(os.environ.get("XDG_CACHE_HOME", Path.home() / ".cache"))
-                / "ibis-duckdb"
-                / str(os.getpid())
-            )
-        else:
-            Path(temp_directory).mkdir(parents=True, exist_ok=True)
-            config["temp_directory"] = str(temp_directory)
-
         self.con = duckdb.connect(str(database), config=config, read_only=read_only)
-
         self._post_connect(extensions)
 
     @util.experimental
@@ -1383,10 +1366,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         For analytics use cases this is usually nothing to fret about. In some cases you
         may need to explicit release the cursor.
 
-        ::: {.callout-warning}
-        ## DuckDB returns 1024 size batches regardless of what value of `chunk_size` argument is passed.
-        :::
-
         Parameters
         ----------
         expr
@@ -1735,22 +1714,20 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 registration_func(con)
 
     def _register_udf(self, udf_node: ops.ScalarUDF):
-        func = udf_node.__func__
-        name = type(udf_node).__name__
         type_mapper = self.compiler.type_mapper
         input_types = [
             type_mapper.to_string(param.annotation.pattern.dtype)
             for param in udf_node.__signature__.parameters.values()
         ]
-        output_type = type_mapper.to_string(udf_node.dtype)
 
         def register_udf(con):
             return con.create_function(
-                name,
-                func,
-                input_types,
-                output_type,
+                name=type(udf_node).__name__,
+                function=udf_node.__func__,
+                parameters=input_types,
+                return_type=type_mapper.to_string(udf_node.dtype),
                 type=_UDF_INPUT_TYPE_MAPPING[udf_node.__input_type__],
+                **udf_node.__config__,
             )
 
         return register_udf

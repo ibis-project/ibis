@@ -6,44 +6,49 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
-# verify poetry version
-check-poetry:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    required_version="1.8.4"
-    version="$(poetry --version)"
-    if ! grep -qF "${required_version}" <<< "${version}"; then
-        >&2 echo "poetry version must be ${required_version}, got ${version}"
-        exit 1
-    fi
-
 # lock dependencies without updating existing versions
-lock: check-poetry
+lock:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    poetry lock --no-update
+    uv sync --all-extras --group dev --group tests --group docs --no-install-project --no-install-workspace
     just export-deps
 
 # update locked dependencies
-update *deps: check-poetry
+update *packages:
     #!/usr/bin/env bash
     set -euo pipefail
 
-    poetry update --lock {{ deps }}
+    packages=({{ packages }})
+    args=(--all-extras --group dev --group tests --group docs --no-install-project --no-install-workspace)
+
+    if [ "${#packages[@]}" -eq 0 ]; then
+        args+=(--upgrade)
+    else
+        for package in "${packages[@]}"; do
+            args+=(--upgrade-package "${package}")
+        done
+    fi
+
+    uv sync "${args[@]}"
+
     just export-deps
 
 # export locked dependencies
-export-deps:
-    #!/usr/bin/env bash
-    set -euo pipefail
-
-    poetry export --all-extras --with dev --with test --with docs --without-hashes --no-ansi > requirements-dev.txt
+@export-deps:
+    uv export \
+        --frozen \
+        --format requirements-txt \
+        --all-extras \
+        --group dev \
+        --group tests \
+        --group docs \
+        --no-hashes \
+        --no-header > requirements-dev.txt
 
 # show all backends
 @list-backends:
-    yj -tj < pyproject.toml | jq -rcM '.tool.poetry.plugins["ibis.backends"] | keys | sort[]'
+    yj -tj < pyproject.toml | jq -rcM '.project["entry-points"]["ibis.backends"] | keys | sort[]'
 
 # format code
 fmt:
@@ -55,8 +60,8 @@ check *args:
     pytest -m core {{ args }}
 
 # run pytest for ci; additional arguments are forwarded to pytest
-ci-check *args:
-    poetry run pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
+ci-check extras *args:
+    uv run --group tests {{ extras }} pytest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml {{ args }}
 
 # run backend doctests
 backend-doctests backend *args:
@@ -68,7 +73,7 @@ backend-doctests backend *args:
         fi
     done
     if [ -n "${CI}" ]; then
-        poetry run "${args[@]}"
+        uv run --all-extras --group tests "${args[@]}"
     else
         "${args[@]}"
     fi
@@ -97,7 +102,7 @@ doctest *args:
     set -eo pipefail
 
     if [ -n "${CI}" ]; then
-        runner=(poetry run)
+        runner=(uv run --all-extras --group tests)
     else
         runner=(python -m)
     fi
@@ -142,7 +147,7 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     runner=(python)
 
     if [ -n "${CI}" ]; then
-        runner=(poetry run python)
+        runner=(uv run --extra pyspark python)
     fi
     pyspark="$("${runner[@]}" -c "import pyspark; print(pyspark.__file__.rsplit('/', 1)[0])")"
     pushd "${pyspark}/jars"
@@ -266,16 +271,19 @@ build-jupyterlite:
     mkdir -p docs/_output/jupyterlite
 
     rm -rf dist/
-    poetry-dynamic-versioning
-    ibis_dev_version="$(poetry version | cut -d ' ' -f2)"
-    poetry build --format wheel
+
+    ibis_dev_version="$(just bump-version)"
+    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$ibis_dev_version"
+    sed -i "s/__version__ = \".+\"/__version__ = \"$ibis_dev_version\"/" ibis/__init__.py
+    uv build --wheel
+
     git checkout pyproject.toml ibis/__init__.py
 
     jupyter lite build \
         --debug \
         --no-libarchive \
         --piplite-wheels "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
-        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.0-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
+        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.2-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
@@ -294,3 +302,7 @@ docs-build-all:
 # open chat
 chat *args:
     zulip-term {{ args }}
+
+# bump the version number to the next pre-release version
+@bump-version:
+    uv run --only-group dev python ci/release/bump_version.py

@@ -82,6 +82,9 @@ def literal(op, **_):
     value = op.value
     dtype = op.dtype
 
+    if value is None:
+        return pl.lit(None, dtype=PolarsType.from_ibis(dtype))
+
     if dtype.is_array():
         value = pl.Series("", value)
         typ = PolarsType.from_ibis(dtype)

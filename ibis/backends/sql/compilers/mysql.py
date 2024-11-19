@@ -68,6 +68,8 @@ class MySQLCompiler(SQLGlotCompiler):
         ops.Array,
         ops.ArrayFlatten,
         ops.ArrayMap,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.Covariance,
         ops.Levenshtein,
         ops.Median,
@@ -120,10 +122,10 @@ class MySQLCompiler(SQLGlotCompiler):
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_TimestampDiff(self, op, *, left, right):
-        return self.f.timestampdiff(self.v.SECOND, right, left, dialect=self.dialect)
+        return self.f.timestampdiff(self.v.SECOND, right, left)
 
     def visit_DateDiff(self, op, *, left, right):
-        return self.f.timestampdiff(self.v.DAY, right, left, dialect=self.dialect)
+        return self.f.timestampdiff(self.v.DAY, right, left)
 
     def visit_ApproxCountDistinct(self, op, *, arg, where):
         if where is not None:
@@ -304,9 +306,7 @@ class MySQLCompiler(SQLGlotCompiler):
     visit_DateTruncate = visit_TimestampTruncate = visit_DateTimestampTruncate
 
     def visit_DateTimeDelta(self, op, *, left, right, part):
-        return self.f.timestampdiff(
-            self.v[part.this], right, left, dialect=self.dialect
-        )
+        return self.f.timestampdiff(self.v[part.this], right, left)
 
     visit_TimeDelta = visit_DateDelta = visit_DateTimeDelta
 
@@ -328,7 +328,7 @@ class MySQLCompiler(SQLGlotCompiler):
     def visit_TimestampAdd(self, op, *, left, right):
         if op.right.dtype.unit.short == "ms":
             right = sge.Interval(this=right.this * 1_000, unit=self.v.MICROSECOND)
-        return self.f.date_add(left, right, dialect=self.dialect)
+        return self.f.date_add(left, right)
 
     def visit_UnwrapJSONString(self, op, *, arg):
         return self.if_(

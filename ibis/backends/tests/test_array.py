@@ -18,6 +18,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
+    DatabricksServerOperationError,
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
@@ -180,6 +181,42 @@ def test_array_concat_scalar(con, op):
     expr = op(left, right)
     result = con.execute(expr)
     assert result == op(raw_left, raw_right)
+
+
+@pytest.mark.parametrize(
+    "op", [lambda x, y: x + y, lambda x, y: y + x], ids=["left", "right"]
+)
+@pytest.mark.notyet(
+    ["clickhouse"],
+    raises=ClickHouseDatabaseError,
+    reason="doesn't support nullable arrays",
+)
+@pytest.mark.notyet(
+    ["bigquery"], raises=AssertionError, reason="bigquery treats null arrays as empty"
+)
+def test_array_concat_with_null(con, op):
+    non_null_value = ibis.array([2**31 - 1])
+    null_value = ibis.null(non_null_value.type())
+    expr = op(non_null_value, null_value)
+    result = con.execute(expr)
+    assert pd.isna(result)
+
+
+@pytest.mark.notyet(
+    ["clickhouse", "bigquery"],
+    raises=AssertionError,
+    reason="doesn't support nullable arrays, so result is not null",
+)
+@pytest.mark.notyet(
+    ["datafusion"],
+    raises=Exception,
+    reason="cannot handle concatenating two null values that are typed as arrays",
+)
+def test_array_concat_with_null_non_constant(con):
+    t = ibis.memtable({"a": [None]}, schema={"a": "array<int32>"})
+    expr = t.a + t.a
+    result = con.execute(expr)
+    assert all(pd.isna(result))
 
 
 def test_array_length(con):
@@ -447,6 +484,11 @@ def test_array_slice(backend, start, stop):
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
                 ),
+                pytest.mark.notyet(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="nulls come back as NaN",
+                ),
             ],
             id="nulls",
         ),
@@ -499,6 +541,11 @@ def test_array_map(con, input, output, func):
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="nans instead of nulls",
                 ),
             ],
             id="nulls",
@@ -612,6 +659,51 @@ def test_array_filter_with_index(con, input, output, predicate):
     result = con.execute(expr.a)
     assert frozenset(map(tuple, result.values)) == frozenset(
         map(tuple, expected.values)
+    )
+
+
+@builtin_array
+@pytest.mark.notimpl(
+    ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
+)
+@pytest.mark.parametrize(
+    ("input", "output"),
+    [
+        param(
+            {"a": [[1, None, None], [4]]},
+            {"a": [[1, None], [4]]},
+            id="nulls",
+            marks=[
+                pytest.mark.notyet(
+                    ["bigquery"],
+                    raises=GoogleBadRequest,
+                    reason="NULLs are not allowed as array elements",
+                )
+            ],
+        ),
+        param({"a": [[1, 2], [1]]}, {"a": [[1], [1]]}, id="no_nulls"),
+    ],
+)
+@pytest.mark.notyet(
+    "risingwave",
+    raises=PsycoPg2InternalError,
+    reason="no support for not null column constraint",
+)
+@pytest.mark.parametrize(
+    "predicate",
+    [lambda x, i: i % 2 == 0, partial(lambda x, y, i: i % 2 == 0, y=1)],
+    ids=["lambda", "partial"],
+)
+def test_array_filter_with_index_lambda(con, input, output, predicate):
+    t = ibis.memtable(input, schema=ibis.schema(dict(a="!array<int8>")))
+
+    expr = t.select(a=t.a.filter(predicate))
+    result = con.to_pyarrow(expr.a)
+    assert frozenset(map(tuple, result.to_pylist())) == frozenset(
+        map(tuple, output["a"])
     )
 
 
@@ -779,8 +871,8 @@ def test_array_remove(con, input, expected):
     ("input", "expected"),
     [
         param(
-            {"a": [[1, 3, 3], [], [42, 42], [], [None], None]},
-            [{3, 1}, set(), {42}, set(), {None}, None],
+            {"a": [[1, 3, 3], [1, 3, None, 3], [42, 42], [], [None], None]},
+            [{3, 1}, {1, 3, None}, {42}, set(), {None}, None],
             id="null",
             marks=[
                 pytest.mark.notyet(
@@ -793,6 +885,9 @@ def test_array_remove(con, input, expected):
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"], raises=AssertionError, reason="nulls are nans"
                 ),
             ],
         ),
@@ -870,6 +965,9 @@ def test_array_sort(con, data):
                     condition=IS_SPARK_REMOTE,
                     raises=AssertionError,
                     reason="somehow, transformed results are different types",
+                ),
+                pytest.mark.notimpl(
+                    ["databricks"], raises=AssertionError, reason="nulls are nans"
                 ),
             ],
         ),
@@ -1046,6 +1144,12 @@ def test_zip_null(con, fn):
     ["pyspark"],
     reason="pyspark doesn't seem to support field selection on explode",
     raises=PySparkAnalysisException,
+)
+@pytest.mark.notimpl(
+    ["databricks"],
+    reason="databricks supports about 4 ways to explode, and "
+    "sqlglot doesn't implement the one that would enable this operation",
+    raises=DatabricksServerOperationError,
 )
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError

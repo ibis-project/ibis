@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import duckdb
 import pytest
 from pytest import param
 
+import ibis
 from ibis import udf
 
 
@@ -103,3 +105,47 @@ def dont_intercept_null(x: int) -> int:
 )
 def test_dont_intercept_null(con, expr, expected):
     assert con.execute(expr) == expected
+
+
+def test_kwargs_are_forwarded(con):
+    def nullify_two(x: int) -> int:
+        return None if x == 2 else x
+
+    @udf.scalar.python
+    def no_kwargs(x: int) -> int:
+        return nullify_two(x)
+
+    @udf.scalar.python(null_handling="special")
+    def with_kwargs(x: int) -> int:
+        return nullify_two(x)
+
+    # If we return go Non-NULL -> Non-NULL, then passing null_handling="special"
+    # will not change the result
+    assert con.execute(no_kwargs(ibis.literal(1))) == 1
+    assert con.execute(with_kwargs(ibis.literal(1))) == 1
+
+    # But, if our UDF ever goes Non-NULL -> NULL, then we NEED to pass
+    # null_handling="special", otherwise duckdb throws an error
+    assert con.execute(with_kwargs(ibis.literal(2))) is None
+
+    expr = no_kwargs(ibis.literal(2))
+    with pytest.raises(duckdb.InvalidInputException):
+        con.execute(expr)
+
+
+def test_builtin_udf_uses_dialect():
+    # in raw sqlglot, if you call regexp_extract, it will assume the
+    # 3rd arg is "position" and not "groups". So when we make the UDF,
+    # we need to make sure that we pass the dialect when creating the
+    # sqlglot.expressions.func() object
+    @udf.scalar.builtin(
+        signature=(
+            ("string", "string", "array<string>"),
+            "struct<y: string, m: string, d: str>",
+        ),
+    )
+    def regexp_extract(s, pattern, groups): ...
+
+    e = regexp_extract("2023-04-15", r"(\d+)-(\d+)-(\d+)", ["y", "m", "d"])
+    sql = str(ibis.to_sql(e, dialect="duckdb"))
+    assert r"REGEXP_EXTRACT('2023-04-15', '(\d+)-(\d+)-(\d+)', ['y', 'm', 'd'])" in sql

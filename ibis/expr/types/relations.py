@@ -7,7 +7,7 @@ import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Literal
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
 import toolz
 from public import public
@@ -182,7 +182,16 @@ class Table(Expr, _FixedTextJupyterMixin):
     __array_ufunc__ = None
 
     def get_name(self) -> str:
-        """Return the fully qualified name of the table."""
+        """Return the fully qualified name of the table.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", {"id": [1, 2, 3]})
+        >>> t.get_name()
+        'memory.main.t'
+        """
         arg = self._arg
         namespace = getattr(arg, "namespace", ops.Namespace())
         pieces = namespace.catalog, namespace.database, arg.name
@@ -286,7 +295,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             result.append(value)
         return tuple(result)
 
-    def as_scalar(self) -> ir.ScalarExpr:
+    def as_scalar(self) -> ir.Scalar:
         """Inform ibis that the table expression should be treated as a scalar.
 
         Note that the table must have exactly one column and one row for this to
@@ -560,6 +569,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             console_width=console_width,
         )
 
+    @overload
+    def __getitem__(self, what: str | int) -> ir.Column: ...
+
+    @overload
+    def __getitem__(self, what: slice | Sequence[str | int]) -> Table: ...
+
     def __getitem__(self, what: str | int | slice | Sequence[str | int]):
         """Select one or more columns or rows from a table expression.
 
@@ -697,7 +712,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         else:
             return self.select(values)
 
-    def __len__(self):
+    def __len__(self) -> NoReturn:
         raise com.ExpressionError("Use .count() instead")
 
     def __getattr__(self, key: str) -> ir.Column:
@@ -1797,13 +1812,8 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     @deprecated(as_of="9.0", instead="use table.as_scalar() instead")
     def to_array(self) -> ir.Column:
-        """View a single column table as an array.
+        """Deprecated - use `as_scalar` instead."""
 
-        Returns
-        -------
-        Value
-            A single column view of a table
-        """
         schema = self.schema()
         if len(schema) != 1:
             raise com.ExpressionError(
@@ -2966,7 +2976,12 @@ class Table(Expr, _FixedTextJupyterMixin):
             )
             aggs.append(agg)
 
-        t = ibis.union(*aggs)
+        names = aggs[0].schema().names
+        new_schema = {
+            name: dt.highest_precedence(types)
+            for name, *types in zip(names, *(agg.schema().types for agg in aggs))
+        }
+        t = ibis.union(*(agg.cast(new_schema) for agg in aggs))
 
         # TODO(jiting): Need a better way to remove columns with all NULL
         if string_col and not numeric_col:
@@ -4566,8 +4581,14 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return WindowedTable(self, time_col)
 
-    def value_counts(self) -> ir.Table:
+    def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table of this table's values.
+
+        Parameters
+        ----------
+        name
+            The name to use for the frequency column. A suitable name will be
+            automatically generated if not provided.
 
         Returns
         -------
@@ -4591,16 +4612,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
         │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
         └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-        >>> t.year.value_counts().order_by("year")
-        ┏━━━━━━━┳━━━━━━━━━━━━┓
-        ┃ year  ┃ year_count ┃
-        ┡━━━━━━━╇━━━━━━━━━━━━┩
-        │ int64 │ int64      │
-        ├───────┼────────────┤
-        │  2007 │        110 │
-        │  2008 │        114 │
-        │  2009 │        120 │
-        └───────┴────────────┘
+        >>> t.year.value_counts(name="n").order_by("year")
+        ┏━━━━━━━┳━━━━━━━┓
+        ┃ year  ┃ n     ┃
+        ┡━━━━━━━╇━━━━━━━┩
+        │ int64 │ int64 │
+        ├───────┼───────┤
+        │  2007 │   110 │
+        │  2008 │   114 │
+        │  2009 │   120 │
+        └───────┴───────┘
         >>> t[["year", "island"]].value_counts().order_by("year", "island")
         ┏━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┓
         ┃ year  ┃ island    ┃ year_island_count ┃
@@ -4619,9 +4640,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┴───────────┴───────────────────┘
         """
         columns = self.columns
-        return self.group_by(columns).agg(
-            lambda t: t.count().name("_".join(columns) + "_count")
-        )
+        if name is None:
+            name = "_".join(columns) + "_count"
+        return self.group_by(columns).agg(lambda t: t.count().name(name))
 
     def unnest(
         self, column, offset: str | None = None, keep_empty: bool = False
@@ -4773,13 +4794,13 @@ class Table(Expr, _FixedTextJupyterMixin):
 
 @public
 class CachedTable(Table):
-    def __exit__(self, *_):
+    def __exit__(self, *_) -> None:
         self.release()
 
-    def __enter__(self):
+    def __enter__(self) -> CachedTable:
         return self
 
-    def release(self):
+    def release(self) -> None:
         """Release the underlying expression from the cache."""
         current_backend = self._find_backend(use_default=True)
         return current_backend._finalize_cached_table(self.op().name)

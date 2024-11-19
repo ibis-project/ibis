@@ -3,8 +3,11 @@ from __future__ import annotations
 import hypothesis as h
 import hypothesis.strategies as st
 import pytest
+from packaging.version import parse as vparse
 
+import ibis
 import ibis.expr.datatypes as dt
+import ibis.expr.schema as sch
 from ibis.common.exceptions import IntegrityError
 
 pa = pytest.importorskip("pyarrow")
@@ -242,3 +245,42 @@ def test_geoarrow_crs_gets_converted_to_geo():
     ibis_type = PyArrowType.to_ibis(pyarrow_type)
     assert ibis_type.srid == 32620
     assert ibis_type.to_pyarrow() == pyarrow_type
+
+
+def test_schema_infer_pyarrow_table():
+    table = pa.Table.from_arrays(
+        [
+            pa.array([1, 2, 3]),
+            pa.array(["a", "b", "c"]),
+            pa.array([True, False, True]),
+        ],
+        ["a", "b", "c"],
+    )
+    s = sch.infer(table)
+    assert s == ibis.schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+
+
+def test_schema_from_to_pyarrow_schema():
+    pyarrow_schema = pa.schema(
+        [
+            pa.field("a", pa.int64()),
+            pa.field("b", pa.string()),
+            pa.field("c", pa.bool_()),
+        ]
+    )
+    ibis_schema = ibis.schema(pyarrow_schema)
+    restored_schema = ibis_schema.to_pyarrow()
+
+    assert ibis_schema == ibis.schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+    assert restored_schema == pyarrow_schema
+
+
+@pytest.mark.xfail(
+    condition=vparse(pa.__version__) < vparse("18.0.0"),
+    raises=TypeError,
+    reason="pyarrow doesn't support Mappings that implement the `__arrow_c_schema__` method",
+)
+def test_schema___arrow_c_schema__():
+    schema = ibis.schema({"a": dt.int64, "b": dt.string, "c": dt.boolean})
+    pa_schema = pa.schema(schema)
+    assert pa_schema == schema.to_pyarrow()

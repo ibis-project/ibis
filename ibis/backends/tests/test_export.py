@@ -10,6 +10,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
+    DatabricksServerOperationError,
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
@@ -231,12 +232,15 @@ def test_table_to_parquet_dir(tmp_path, backend, awards_players):
         key=lambda path: int(path.with_suffix("").name.split("-")[1]),
     )
 
-    df_list = [pd.read_parquet(file) for file in parquet_files]
-    df = pd.concat(df_list).reset_index(drop=True)
+    sort_keys = list(awards_players.columns)
 
-    backend.assert_frame_equal(
-        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+    expected = (
+        pd.concat(map(pd.read_parquet, parquet_files))
+        .sort_values(sort_keys)
+        .reset_index(drop=True)
     )
+    result = awards_players.to_pandas().sort_values(sort_keys).reset_index(drop=True)
+    backend.assert_frame_equal(result, expected)
 
 
 @pytest.mark.notimpl(
@@ -276,6 +280,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "snowflake",
         "sqlite",
         "trino",
+        "databricks",
     ],
     reason="no partitioning support",
 )
@@ -384,6 +389,9 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                     reason="precision is out of range",
                 ),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
+                pytest.mark.notyet(
+                    ["databricks"], raises=DatabricksServerOperationError
+                ),
             ],
         ),
     ],
@@ -416,6 +424,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "trino",
         "exasol",
         "druid",
+        "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -449,6 +458,9 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Invalid SQL generated; druid doesn't know about TIMESTAMPTZ",
+)
+@pytest.mark.notimpl(
+    ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
@@ -574,9 +586,22 @@ def test_column_to_memory(limit, awards_players, output_format, expected_column_
     method = methodcaller(f"to_{output_format}", limit=limit)
     res = method(awards_players.awardID)
     assert isinstance(res, getattr(mod, expected_column_type))
-    assert (limit is not None and len(res) == limit) or len(
-        res
-    ) == awards_players.count().execute()
+    assert (
+        (len(res) == limit)
+        if limit is not None
+        else len(res) == awards_players.count().execute()
+    )
+
+
+@pytest.mark.parametrize("limit", limit_no_limit)
+def test_column_to_list(limit, awards_players):
+    res = awards_players.awardID.to_list(limit=limit)
+    assert isinstance(res, list)
+    assert (
+        (len(res) == limit)
+        if limit is not None
+        else len(res) == awards_players.count().execute()
+    )
 
 
 @pytest.mark.parametrize("limit", no_limit)

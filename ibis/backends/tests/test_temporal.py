@@ -119,7 +119,16 @@ def test_timestamp_extract(backend, alltypes, df, attr):
     reason="AttributeError: 'StringColumn' object has no attribute 'X'",
 )
 @pytest.mark.notyet(
-    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    [
+        "mysql",
+        "sqlite",
+        "mssql",
+        "impala",
+        "datafusion",
+        "pyspark",
+        "flink",
+        "databricks",
+    ],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't appear to support this operation directly",
 )
@@ -140,7 +149,16 @@ def test_extract_iso_year(backend, alltypes, df, transform):
     reason="AttributeError: 'StringColumn' object has no attribute 'X'",
 )
 @pytest.mark.notyet(
-    ["mysql", "sqlite", "mssql", "impala", "datafusion", "pyspark", "flink"],
+    [
+        "mysql",
+        "sqlite",
+        "mssql",
+        "impala",
+        "datafusion",
+        "pyspark",
+        "flink",
+        "databricks",
+    ],
     raises=com.OperationNotDefinedError,
     reason="backend doesn't appear to support this operation directly",
 )
@@ -206,7 +224,7 @@ def test_timestamp_extract_literal(con, func, expected):
 
 @pytest.mark.notimpl(["oracle", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notyet(
-    ["pyspark"],
+    ["pyspark", "databricks"],
     raises=com.UnsupportedOperationError,
     reason="PySpark backend does not support extracting microseconds.",
 )
@@ -355,6 +373,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "datafusion",
                         "exasol",
                         "druid",
+                        "databricks",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -751,6 +770,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
                 ),
+                pytest.mark.notyet(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="apparent over/underflow",
+                ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["duckdb"],
@@ -805,6 +829,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     condition=IS_SPARK_REMOTE,
                     raises=PySparkConnectGrpcException,
                     reason="arrow conversion breaks",
+                ),
+                pytest.mark.notyet(
+                    ["databricks"],
+                    raises=AssertionError,
+                    reason="apparent over/underflow",
                 ),
             ],
         ),
@@ -1042,7 +1071,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
             "ms",
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=com.UnsupportedArgumentError,
                     reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
@@ -1057,7 +1086,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=com.UnsupportedArgumentError,
                     reason="PySpark backend does not support timestamp from unix time with unit us. Supported unit is s.",
                 ),
@@ -1078,7 +1107,7 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
             "ns",
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=com.UnsupportedArgumentError,
                     reason="PySpark backend does not support timestamp from unix time with unit ms. Supported unit is s.",
                 ),
@@ -1196,21 +1225,11 @@ def test_string_as_timestamp(alltypes, fmt):
         param(
             "%m/%d/%y",
             id="mysql_format",
-            marks=[
-                pytest.mark.never(
-                    ["snowflake"],
-                    reason=(
-                        "(snowflake.connector.errors.ProgrammingError) 100096 (22007): "
-                        "Can't parse '11/01/10' as timestamp with format '%m/%d/%y'"
-                    ),
-                    raises=SnowflakeProgrammingError,
-                ),
-                pytest.mark.never(
-                    ["flink"],
-                    raises=ValueError,
-                    reason="Datetime formatting style is not supported.",
-                ),
-            ],
+            marks=pytest.mark.never(
+                ["flink"],
+                raises=ValueError,
+                reason="Datetime formatting style is not supported.",
+            ),
         ),
         param(
             "MM/dd/yy",
@@ -1272,6 +1291,7 @@ def test_string_as_date(alltypes, fmt):
         "druid",
         "datafusion",
         "flink",
+        "databricks",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1412,6 +1432,7 @@ DATE_BACKEND_TYPES = {
     "sqlite": "text",
     "trino": "date",
     "risingwave": "date",
+    "databricks": "date",
 }
 
 
@@ -1437,11 +1458,12 @@ TIMESTAMP_BACKEND_TYPES = {
     "postgres": "timestamp without time zone",
     "risingwave": "timestamp without time zone",
     "flink": "TIMESTAMP(6) NOT NULL",
+    "databricks": "timestamp",
 }
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol", "oracle"],
+    ["pyspark", "mysql", "exasol", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(["impala"], raises=com.OperationNotDefinedError)
@@ -1458,7 +1480,7 @@ def test_timestamp_literal(con, backend):
 
 
 @pytest.mark.notimpl(
-    ["mysql", "pyspark", "exasol"], raises=com.OperationNotDefinedError
+    ["mysql", "pyspark", "exasol", "databricks"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 @pytest.mark.parametrize(
@@ -1518,7 +1540,7 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pyspark", "polars", "mysql", "oracle"],
+    ["datafusion", "pyspark", "polars", "mysql", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1571,6 +1593,11 @@ def test_time_literal(con, backend):
     ids=["second", "subsecond"],
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(
+    ["databricks"],
+    raises=AssertionError,
+    reason="returns a timedelta instead of a time",
+)
 def test_extract_time_from_timestamp(con, microsecond):
     raw_ts = datetime.datetime(2023, 1, 7, 13, 20, 5, microsecond)
     ts = ibis.timestamp(raw_ts)
@@ -1611,7 +1638,7 @@ INTERVAL_BACKEND_TYPES = {
 )
 @pytest.mark.notimpl(
     ["bigquery", "duckdb"],
-    reason="BigQuery returns DateOffset arrays",
+    reason="backend returns DateOffset arrays",
     raises=AssertionError,
 )
 @pytest.mark.notyet(
@@ -1633,6 +1660,11 @@ INTERVAL_BACKEND_TYPES = {
     ),
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
+@pytest.mark.notimpl(
+    ["databricks"],
+    reason="returns a different string format than expected in the test",
+    raises=AssertionError,
+)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
@@ -1655,7 +1687,7 @@ def test_date_column_from_ymd(backend, con, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["pyspark", "mysql", "exasol"], raises=com.OperationNotDefinedError
+    ["pyspark", "mysql", "exasol", "databricks"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(["impala", "oracle"], raises=com.OperationNotDefinedError)
 def test_timestamp_column_from_ymdhms(backend, con, alltypes, df):
@@ -1738,6 +1770,11 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
     reason="PySpark doesn't handle big timestamps",
     condition=not IS_SPARK_REMOTE,
     raises=pd.errors.OutOfBoundsDatetime,
+)
+@pytest.mark.notyet(
+    ["databricks"],
+    reason="returns a value with a timezone, which the test doesn't expect",
+    raises=AssertionError,
 )
 @pytest.mark.notimpl(["flink"], raises=ArrowInvalid)
 @pytest.mark.notyet(
@@ -1845,7 +1882,7 @@ def test_large_timestamp(con):
             id="ns",
             marks=[
                 pytest.mark.notyet(
-                    ["impala", "pyspark", "trino"],
+                    ["impala", "pyspark", "trino", "databricks"],
                     reason="drivers appear to truncate nanos",
                     raises=AssertionError,
                 ),
@@ -1946,9 +1983,9 @@ def test_timestamp_precision_output(con, ts, scale, unit):
             id="timestamp",
             marks=[
                 pytest.mark.notimpl(
-                    ["pyspark"],
+                    ["pyspark", "databricks"],
                     raises=AssertionError,
-                    reason="pyspark difference is timezone aware",
+                    reason="backend computes timezone aware difference",
                 ),
                 pytest.mark.notimpl(
                     ["mysql"],
@@ -1969,7 +2006,7 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid"],
+    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2071,7 +2108,17 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "impala", "mysql", "oracle", "pyspark", "sqlite", "trino", "druid"],
+    [
+        "datafusion",
+        "impala",
+        "mysql",
+        "oracle",
+        "pyspark",
+        "sqlite",
+        "trino",
+        "druid",
+        "databricks",
+    ],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notimpl(

@@ -42,6 +42,12 @@ class MockBackend(BaseBackend):
     def disconnect(self):
         pass
 
+    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        pass
+
+    def _finalize_memtable(self, name: str) -> None:
+        pass
+
     def table(self, name, **kwargs):
         schema = self.get_schema(name)
         node = ops.DatabaseTable(source=self, name=name, schema=schema)

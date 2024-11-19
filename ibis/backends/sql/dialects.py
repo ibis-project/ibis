@@ -9,6 +9,7 @@ import sqlglot.generator as sgn
 from sqlglot import transforms
 from sqlglot.dialects import (
     TSQL,
+    Databricks,
     Hive,
     MySQL,
     Oracle,
@@ -30,6 +31,7 @@ class ClickHouse(_ClickHouse):
             sge.ArraySort: rename_func("arraySort"),
             sge.LogicalAnd: rename_func("min"),
             sge.LogicalOr: rename_func("max"),
+            sge.Median: rename_func("median"),
         }
 
         def except_op(self, expression: sge.Except) -> str:
@@ -53,6 +55,7 @@ class DataFusion(Postgres):
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
             sge.ArraySize: rename_func("array_length"),
+            sge.Median: rename_func("median"),
         }
 
 
@@ -345,6 +348,7 @@ class MSSQL(TSQL):
             sge.VariancePop: rename_func("varp"),
             sge.Ceil: rename_func("ceiling"),
             sge.DateFromParts: rename_func("datefromparts"),
+            sge.Ln: rename_func("log"),
         }
 
 
@@ -470,10 +474,19 @@ Snowflake.Generator.TRANSFORMS |= {
 
 SQLite.Generator.TYPE_MAPPING |= {sge.DataType.Type.BOOLEAN: "BOOLEAN"}
 
-
 Trino.Generator.TRANSFORMS |= {
     sge.BitwiseLeftShift: rename_func("bitwise_left_shift"),
     sge.BitwiseRightShift: rename_func("bitwise_right_shift"),
     sge.FirstValue: rename_func("first_value"),
     sge.LastValue: rename_func("last_value"),
+}
+
+Databricks.Generator.TRANSFORMS |= {
+    # required because of https://github.com/tobymao/sqlglot/pull/4142
+    sge.Create: transforms.preprocess(
+        [
+            transforms.remove_unique_constraints,
+            transforms.move_partitioned_by_to_schema_columns,
+        ]
+    )
 }

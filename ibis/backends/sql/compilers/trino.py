@@ -65,8 +65,6 @@ class TrinoCompiler(SQLGlotCompiler):
 
     SIMPLE_OPS = {
         ops.Arbitrary: "any_value",
-        ops.ArgMax: "max_by",
-        ops.ArgMin: "min_by",
         ops.Pi: "pi",
         ops.E: "e",
         ops.RegexReplace: "regexp_replace",
@@ -174,28 +172,58 @@ class TrinoCompiler(SQLGlotCompiler):
             )
 
     def visit_ArrayFilter(self, op, *, arg, param, body, index):
+        # no index, life is simpler
         if index is None:
             return self.f.filter(arg, sge.Lambda(this=body, expressions=[param]))
-        else:
-            placeholder = sg.to_identifier("__trino_filter__")
-            index = sg.to_identifier(index)
-            return self.f.filter(
-                self.f.zip_with(
-                    arg,
-                    # users are limited to 10_000 elements here because it
-                    # seems like trino won't ever actually address the limit
-                    self.f.sequence(0, self.f.cardinality(arg) - 1),
-                    sge.Lambda(
-                        # semantics are: arg if predicate(arg, index) else null
-                        this=self.if_(body, param, NULL),
-                        expressions=[param, index],
+
+        placeholder = sg.to_identifier("__trino_filter__")
+        index = sg.to_identifier(index)
+        keep, value = map(sg.to_identifier, ("keep", "value"))
+
+        # first, zip the array with the index and call the user's function,
+        # returning a struct of {"keep": value-of-predicate, "value": array-element}
+        zipped = self.f.zip_with(
+            arg,
+            # users are limited to 10_000 elements here because it
+            # seems like trino won't ever actually address the limit
+            self.f.sequence(0, self.f.cardinality(arg) - 1),
+            sge.Lambda(
+                this=self.cast(
+                    sge.Struct(
+                        expressions=[
+                            sge.PropertyEQ(this=keep, expression=body),
+                            sge.PropertyEQ(this=value, expression=param),
+                        ]
+                    ),
+                    dt.Struct(
+                        {
+                            "keep": dt.boolean,
+                            "value": op.arg.dtype.value_type,
+                        }
                     ),
                 ),
-                # then, filter out elements that are null
-                sge.Lambda(
-                    this=placeholder.is_(sg.not_(NULL)), expressions=[placeholder]
-                ),
-            )
+                expressions=[param, index],
+            ),
+        )
+
+        # second, keep only the elements whose predicate returned true
+        filtered = self.f.filter(
+            # then, filter out elements that are null
+            zipped,
+            sge.Lambda(
+                this=sge.Dot(this=placeholder, expression=keep),
+                expressions=[placeholder],
+            ),
+        )
+
+        # finally, extract the "value" field from the struct
+        return self.f.transform(
+            filtered,
+            sge.Lambda(
+                this=sge.Dot(this=placeholder, expression=value),
+                expressions=[placeholder],
+            ),
+        )
 
     def visit_ArrayContains(self, op, *, arg, other):
         return self.if_(
@@ -362,7 +390,7 @@ class TrinoCompiler(SQLGlotCompiler):
             return None
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
     def visit_MapGet(self, op, *, arg, key, default):
         return self.f.coalesce(self.f.element_at(arg, key), default)
@@ -458,12 +486,8 @@ class TrinoCompiler(SQLGlotCompiler):
     def visit_TemporalDelta(self, op, *, part, left, right):
         # trino truncates _after_ the delta, whereas many other backends
         # truncate each operand
-        dialect = self.dialect
         return self.f.date_diff(
-            part,
-            self.f.date_trunc(part, right, dialect=dialect),
-            self.f.date_trunc(part, left, dialect=dialect),
-            dialect=dialect,
+            part, self.f.date_trunc(part, right), self.f.date_trunc(part, left)
         )
 
     visit_TimeDelta = visit_DateDelta = visit_TimestampDelta = visit_TemporalDelta

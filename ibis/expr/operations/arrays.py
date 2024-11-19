@@ -272,6 +272,7 @@ class TimestampRange(Range):
     step: Value[dt.Interval]
 
 
+@public
 class ArrayAgg(Value):
     arg: Value[dt.Array]
     shape = rlz.shape_like("args")

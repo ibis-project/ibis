@@ -119,6 +119,7 @@ class PostgresCompiler(SQLGlotCompiler):
         ops.MapValues: "avals",
         ops.RegexSearch: "regexp_like",
         ops.TimeFromHMS: "make_time",
+        ops.RandomUUID: "gen_random_uuid",
     }
 
     def to_sqlglot(
@@ -178,9 +179,6 @@ class PostgresCompiler(SQLGlotCompiler):
             source=source,
             args=", ".join(argnames),
         )
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.gen_random_uuid()
 
     def visit_Mode(self, op, *, arg, where):
         expr = self.f.mode()
@@ -315,7 +313,12 @@ class PostgresCompiler(SQLGlotCompiler):
         return reduce(lambda x, y: sge.DPipe(this=x, expression=y), arg)
 
     def visit_ArrayConcat(self, op, *, arg):
-        return reduce(self.f.array_cat, map(partial(self.cast, to=op.dtype), arg))
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.array_cat(x, y)
+            ),
+            map(partial(self.cast, to=op.dtype), arg),
+        )
 
     def visit_ArrayContains(self, op, *, arg, other):
         arg_dtype = op.arg.dtype
@@ -535,13 +538,14 @@ class PostgresCompiler(SQLGlotCompiler):
         )
 
     def visit_Round(self, op, *, arg, digits):
-        if digits is None:
-            return self.f.round(arg)
+        dtype = op.dtype
 
-        result = self.f.round(self.cast(arg, dt.decimal), digits)
-        if op.arg.dtype.is_decimal():
-            return result
-        return self.cast(result, dt.float64)
+        if dtype.is_integer():
+            result = self.f.round(arg)
+        else:
+            result = self.f.round(self.cast(arg, dt.decimal), digits)
+
+        return self.cast(result, dtype)
 
     def visit_Modulus(self, op, *, left, right):
         # postgres doesn't allow modulus of double precision values, so upcast and

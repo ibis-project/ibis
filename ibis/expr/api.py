@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
     from pathlib import Path
 
+    import geopandas as gpd
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -412,42 +413,55 @@ def memtable(
 
 @lazy_singledispatch
 def _memtable(
-    data: pd.DataFrame | Any,
+    data: Any,
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
-    import pandas as pd
+    if hasattr(data, "__arrow_c_stream__"):
+        # Support objects exposing arrow's PyCapsule interface
+        import pyarrow as pa
 
+        data = pa.table(data)
+    else:
+        import pandas as pd
+
+        data = pd.DataFrame(data, columns=columns)
+    return _memtable(data, columns=columns, schema=schema, name=name)
+
+
+@_memtable.register("pandas.DataFrame")
+def _memtable_from_pandas_dataframe(
+    data: pd.DataFrame,
+    *,
+    columns: Iterable[str] | None = None,
+    schema: SchemaLike | None = None,
+    name: str | None = None,
+) -> Table:
     from ibis.formats.pandas import PandasDataFrameProxy
 
-    if not isinstance(data, pd.DataFrame):
-        df = pd.DataFrame(data, columns=columns)
-    else:
-        df = data
-
-    if df.columns.inferred_type != "string":
-        cols = df.columns
+    if data.columns.inferred_type != "string":
+        cols = data.columns
         newcols = getattr(
             schema,
             "names",
             (f"col{i:d}" for i in builtins.range(len(cols))),
         )
-        df = df.rename(columns=dict(zip(cols, newcols)))
+        data = data.rename(columns=dict(zip(cols, newcols)))
 
     if columns is not None:
-        if (provided_col := len(columns)) != (exist_col := len(df.columns)):
+        if (provided_col := len(columns)) != (exist_col := len(data.columns)):
             raise ValueError(
                 "Provided `columns` must have an entry for each column in `data`.\n"
                 f"`columns` has {provided_col} elements but `data` has {exist_col} columns."
             )
 
-        df = df.rename(columns=dict(zip(df.columns, columns)))
+        data = data.rename(columns=dict(zip(data.columns, columns)))
 
     # verify that the DataFrame has no duplicate column names because ibis
     # doesn't allow that
-    cols = df.columns
+    cols = data.columns
     dupes = [name for name, count in Counter(cols).items() if count > 1]
     if dupes:
         raise IbisInputError(
@@ -456,8 +470,8 @@ def _memtable(
 
     op = ops.InMemoryTable(
         name=name if name is not None else util.gen_name("pandas_memtable"),
-        schema=sch.infer(df) if schema is None else schema,
-        data=PandasDataFrameProxy(df),
+        schema=sch.infer(data) if schema is None else schema,
+        data=PandasDataFrameProxy(data),
     )
     return op.to_expr()
 
@@ -499,6 +513,21 @@ def _memtable_from_pyarrow_dataset(
     ).to_expr()
 
 
+@_memtable.register("pyarrow.RecordBatchReader")
+def _memtable_from_pyarrow_RecordBatchReader(
+    data: pa.Table,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    raise TypeError(
+        "Creating an `ibis.memtable` from a `pyarrow.RecordBatchReader` would "
+        "load _all_ data into memory. If you want to do this, please do so "
+        "explicitly like `ibis.memtable(reader.read_all())`"
+    )
+
+
 @_memtable.register("polars.LazyFrame")
 def _memtable_from_polars_lazyframe(data: pl.LazyFrame, **kwargs):
     return _memtable_from_polars_dataframe(data.collect(), **kwargs)
@@ -522,6 +551,23 @@ def _memtable_from_polars_dataframe(
         schema=sch.infer(data) if schema is None else schema,
         data=PolarsDataFrameProxy(data),
     ).to_expr()
+
+
+@_memtable.register("geopandas.geodataframe.GeoDataFrame")
+def _memtable_from_geopandas_geodataframe(
+    data: gpd.GeoDataFrame,
+    *,
+    name: str | None = None,
+    schema: SchemaLike | None = None,
+    columns: Iterable[str] | None = None,
+):
+    # The Pandas data proxy and the `to_arrow` method on it can't handle
+    # geopandas geometry columns. But if we first make the geometry columns WKB,
+    # then the geo column gets treated (correctly) as just a binary blob, and
+    # DuckDB can cast it to a proper geometry column after import.
+    wkb_df = data.to_wkb()
+
+    return _memtable(wkb_df, name=name, schema=schema, columns=columns)
 
 
 def _deferred_method_call(expr, method_name, **kwargs):
@@ -1033,6 +1079,57 @@ def interval(
     IntervalScalar
         An interval expression
 
+    Examples
+    --------
+    >>> from datetime import datetime
+    >>> import ibis
+    >>> ibis.options.interactive = True
+    >>> t = ibis.memtable(
+    ...     {
+    ...         "timestamp_col": [
+    ...             datetime(2020, 10, 5, 8, 0, 0),
+    ...             datetime(2020, 11, 10, 10, 2, 15),
+    ...             datetime(2020, 12, 15, 12, 4, 30),
+    ...         ]
+    ...     },
+    ... )
+
+    Add and subtract ten days from a timestamp column.
+
+    >>> ten_days = ibis.interval(days=10)
+    >>> ten_days
+    ┌────────────────────────────────────────────────┐
+    │ MonthDayNano(months=0, days=10, nanoseconds=0) │
+    └────────────────────────────────────────────────┘
+    >>> t.mutate(
+    ...     plus_ten_days=t.timestamp_col + ten_days,
+    ...     minus_ten_days=t.timestamp_col - ten_days,
+    ... )
+    ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ timestamp_col       ┃ plus_ten_days       ┃ minus_ten_days      ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │ timestamp           │ timestamp           │
+    ├─────────────────────┼─────────────────────┼─────────────────────┤
+    │ 2020-10-05 08:00:00 │ 2020-10-15 08:00:00 │ 2020-09-25 08:00:00 │
+    │ 2020-11-10 10:02:15 │ 2020-11-20 10:02:15 │ 2020-10-31 10:02:15 │
+    │ 2020-12-15 12:04:30 │ 2020-12-25 12:04:30 │ 2020-12-05 12:04:30 │
+    └─────────────────────┴─────────────────────┴─────────────────────┘
+
+    Intervals provide more granularity with date arithmetic.
+
+    >>> t.mutate(
+    ...     added_interval=t.timestamp_col
+    ...     + ibis.interval(weeks=1, days=2, hours=3, minutes=4, seconds=5)
+    ... )
+    ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ timestamp_col       ┃ added_interval      ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
+    │ timestamp           │ timestamp           │
+    ├─────────────────────┼─────────────────────┤
+    │ 2020-10-05 08:00:00 │ 2020-10-14 11:04:05 │
+    │ 2020-11-10 10:02:15 │ 2020-11-19 13:06:20 │
+    │ 2020-12-15 12:04:30 │ 2020-12-24 15:08:35 │
+    └─────────────────────┴─────────────────────┘
     """
     keyword_value_unit = [
         ("nanoseconds", nanoseconds, "ns"),
@@ -1637,6 +1734,8 @@ def set_backend(backend: str | BaseBackend) -> None:
 def get_backend(expr: Expr | None = None) -> BaseBackend:
     """Get the current Ibis backend to use for a given expression.
 
+    Parameters
+    ----------
     expr
         An expression to get the backend from. If not passed, the default
         backend is returned.
@@ -1646,6 +1745,25 @@ def get_backend(expr: Expr | None = None) -> BaseBackend:
     BaseBackend
         The Ibis backend.
 
+    Examples
+    --------
+    >>> import ibis
+
+    Get the default backend.
+
+    >>> ibis.get_backend()  # doctest: +ELLIPSIS
+    <ibis.backends.duckdb.Backend object at 0x...>
+
+    Get the backend for a specific expression.
+
+    >>> polars_con = ibis.polars.connect()
+    >>> t = polars_con.create_table("t", ibis.memtable({"a": [1, 2, 3]}))
+    >>> ibis.get_backend(t)  # doctest: +ELLIPSIS
+    <ibis.backends.polars.Backend object at 0x...>
+
+    See Also
+    --------
+    [`get_backend()`](./expression-tables.qmd#ibis.expr.types.relations.Table.get_backend)
     """
     if expr is None:
         from ibis.config import _default_backend

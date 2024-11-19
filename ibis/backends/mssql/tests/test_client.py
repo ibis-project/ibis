@@ -300,3 +300,22 @@ def test_create_temp_table(con, temp):
         assert t.columns == ("a",)
     finally:
         con.drop_table(name)
+
+
+def test_escape_special_characters():
+    test_func = ibis.backends.mssql.Backend._escape_special_characters
+    assert test_func("1bis_Testing!") == "{1bis_Testing!}"
+    assert test_func("{1bis_Testing!") == "{{1bis_Testing!}"
+    assert test_func("1bis_Testing!}") == "{1bis_Testing!}}}"
+    assert test_func("{1bis_Testing!}") == "{{1bis_Testing!}}}"
+    assert test_func("1bis}Testing!") == "{1bis}}Testing!}"
+    assert test_func("{R;3G1/8Al2AniRye") == "{{R;3G1/8Al2AniRye}"
+    assert test_func("{R;3G1/8Al2AniRye}") == "{{R;3G1/8Al2AniRye}}}"
+
+
+def test_non_ascii_column_name(con):
+    expr = con.sql("SELECT 1 AS [калона]")
+    schema = expr.schema()
+    names = schema.names
+    assert len(names) == 1
+    assert names[0] == "калона"

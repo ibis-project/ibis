@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.9.2.42-alpine
+    image: clickhouse/clickhouse-server:24.10.1.2812-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -18,7 +18,7 @@ services:
   mysql:
     environment:
       MYSQL_ALLOW_EMPTY_PASSWORD: "true"
-      MYSQL_DATABASE: ibis_testing
+      MYSQL_DATABASE: ibis-testing
       MYSQL_PASSWORD: ibis
       MYSQL_USER: ibis
     healthcheck:
@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.10.13
+    image: bitnami/minio:2024.11.7
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:463
+    image: trinodb/trino:464
     ports:
       - 8080:8080
     networks:
@@ -367,7 +367,7 @@ services:
       - oracle:/opt/oracle/data
 
   exasol:
-    image: exasol/docker-db:8.31.0
+    image: exasol/docker-db:8.32.0
     privileged: true
     ports:
       - 8563:8563
@@ -555,7 +555,7 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:v2.0.2
+    image: ghcr.io/risingwavelabs/risingwave:v2.0.3
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \

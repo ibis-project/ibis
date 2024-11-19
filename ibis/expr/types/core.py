@@ -137,7 +137,7 @@ class Expr(Immutable, Coercible):
     def __hash__(self):
         return hash((self.__class__, self._arg))
 
-    def equals(self, other):
+    def equals(self, other) -> bool:
         """Return whether this expression is _structurally_ equivalent to `other`.
 
         If you want to produce an equality expression, use `==` syntax.
@@ -375,7 +375,7 @@ class Expr(Immutable, Coercible):
 
         return backends[0]
 
-    def get_backend(self):
+    def get_backend(self) -> BaseBackend:
         """Get the current Ibis backend of the expression.
 
         Returns
@@ -383,6 +383,17 @@ class Expr(Immutable, Coercible):
         BaseBackend
             The Ibis backend.
 
+        Examples
+        --------
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", {"id": [1, 2, 3]})
+        >>> t.get_backend()  # doctest: +ELLIPSIS
+        <ibis.backends.duckdb.Backend object at 0x...>
+
+        See Also
+        --------
+        [`ibis.get_backend()`](./connection.qmd#ibis.get_backend)
         """
         return self._find_backend(use_default=True)
 
@@ -723,7 +734,26 @@ class Expr(Immutable, Coercible):
         )
 
     def unbind(self) -> ir.Table:
-        """Return an expression built on `UnboundTable` instead of backend-specific objects."""
+        """Return an expression built on `UnboundTable` instead of backend-specific objects.
+
+        Examples
+        --------
+        >>> import ibis
+        >>> import pandas as pd
+        >>> duckdb_con = ibis.duckdb.connect()
+        >>> polars_con = ibis.polars.connect()
+        >>> for backend in (duckdb_con, polars_con):
+        ...     t = backend.create_table("t", pd.DataFrame({"a": [1, 2, 3]}))
+        >>> bound_table = duckdb_con.table("t")
+        >>> bound_table.get_backend().name
+        'duckdb'
+        >>> unbound_table = bound_table.unbind()
+        >>> polars_con.execute(unbound_table)
+           a
+        0  1
+        1  2
+        2  3
+        """
         from ibis.expr.rewrites import _, d, p
 
         rule = p.DatabaseTable >> d.UnboundTable(

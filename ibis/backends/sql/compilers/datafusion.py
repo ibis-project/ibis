@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import calendar
 import math
-from functools import partial
+from functools import partial, reduce
 from itertools import starmap
 
 import sqlglot as sg
@@ -534,16 +534,17 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_ArrayFlatten(self, op, *, arg):
         return self.if_(arg.is_(NULL), NULL, self.f.flatten(arg))
 
-    def visit_RandomUUID(self, op, **kw):
+    def visit_RandomUUID(self, op):
         return self.f.anon.uuid()
 
-    def visit_MapContains(self, op, *, arg, key):
-        return self.if_(
-            sg.or_(arg.is_(NULL), key.is_(NULL)),
-            NULL,
-            sge.NEQ(self.f.cardinality(self.f.map_extract(arg, key)) != 0),
+    def visit_ArrayConcat(self, op, *, arg):
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.array_cat(x, y)
+            ),
+            map(partial(self.cast, to=op.dtype), arg),
         )
-
+    
     def visit_MapGet(self, op, *, arg, key, default):
         return self.if_(
             sg.or_(arg.is_(NULL), key.is_(NULL)),
@@ -554,10 +555,13 @@ class DataFusionCompiler(SQLGlotCompiler):
             ),
         )
 
-
-# def visit_MapKeys(self, op, *, arg):
-#         return self.if_(arg.is_(NULL), NULL, self.f.map_keys(arg))
-# ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
-
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            sge.NEQ(self.f.cardinality(self.f.map_extract(arg, key)) != 0),
+        )
+      
+    # ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
 
 compiler = DataFusionCompiler()

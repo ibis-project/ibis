@@ -62,8 +62,10 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.3
+        with:
+          enable-cache: true
 
       - name: install ${{ matrix.os }} system dependencies
         if: matrix.os == 'ubuntu-latest'
@@ -77,16 +79,13 @@ jobs:
         if: matrix.os == 'windows-latest'
         run: choco install graphviz
 
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras "visualization decompiler"
-
       - name: install numpy/pandas/pyarrow
         if: matrix.pyarrow
-        run: poetry run pip install numpy pandas pyarrow pyarrow-hotfix
+        run: pip install numpy pandas pyarrow pyarrow-hotfix
 
       - name: check imports
         if: matrix.pyarrow
-        run: poetry run python -c 'import numpy, pandas, pyarrow, pyarrow_hotfix'
+        run: python -c 'import numpy, pandas, pyarrow, pyarrow_hotfix'
 
       - uses: extractions/setup-just@v2
         env:
@@ -94,16 +93,16 @@ jobs:
 
       - name: run all core tests and run benchmarks once parallel
         if: matrix.os != 'windows-latest'
-        run: just ci-check -m "'core or benchmark'" --numprocesses auto -rfEs
+        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" --numprocesses auto -rfEs
 
       - name: run all core tests and run benchmarks once serial
         if: matrix.os == 'windows-latest'
-        run: just ci-check -m "'core or benchmark'" -rfEs
+        run: just ci-check "--extra visualization --extra decompiler" -m "'core or benchmark'" -rfEs
 
       - name: upload code coverage
         if: success()
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: core,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -121,8 +120,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.3
+        with:
+          enable-cache: true
 
       - name: install system dependencies
         run: |
@@ -131,12 +132,8 @@ jobs:
           sudo apt-get update -y -qq
           sudo apt-get install -y -q build-essential libgeos-dev
 
-      - name: install ibis
-        # install duckdb and geospatial because of https://github.com/ibis-project/ibis/issues/4856
-        run: poetry install --without dev --without docs --without test --extras duckdb --extras geospatial
-
       - name: check shapely and duckdb imports
-        run: poetry run python -c 'import shapely.geometry, duckdb'
+        run: uv run --extra duckdb --extra geospatial python -c 'import shapely.geometry, duckdb'
 
   test_doctests:
     name: Doctests
@@ -158,11 +155,10 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
-
-      - name: install ibis with all extras
-        run: poetry install --without dev --without docs --all-extras
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.3
+        with:
+          enable-cache: true
 
       - uses: extractions/setup-just@v2
         env:
@@ -172,12 +168,12 @@ jobs:
         run: just doctest --junitxml=junit.xml --cov=ibis --cov-report=xml:coverage.xml
 
       - name: check for dead fixtures
-        run: poetry run pytest --dead-fixtures -m 'not flink'
+        run: uv run --all-extras --group tests pytest --dead-fixtures -m 'not flink'
 
       - name: upload code coverage
         if: success()
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: core,doctests,${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}

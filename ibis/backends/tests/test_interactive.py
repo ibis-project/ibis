@@ -13,11 +13,12 @@
 # limitations under the License.
 from __future__ import annotations
 
+import shutil
+
 import pytest
 
 import ibis
 import ibis.common.exceptions as exc
-from ibis import config
 
 
 @pytest.fixture
@@ -40,19 +41,18 @@ def test_interactive_execute_on_repr(table, queries):
     assert len(queries) >= 1
 
 
-def test_repr_png_is_none_in_interactive(table):
-    with config.option_context("interactive", True):
-        assert table._repr_png_() is None
+def test_repr_png_is_none_in_interactive(table, monkeypatch):
+    monkeypatch.setattr(ibis.options, "interactive", True)
+    assert table._repr_png_() is None
 
 
-def test_repr_png_is_not_none_in_not_interactive(table):
+def test_repr_png_is_not_none_in_not_interactive(table, monkeypatch):
     pytest.importorskip("ibis.expr.visualize")
+    monkeypatch.setattr(ibis.options, "interactive", False)
+    monkeypatch.setattr(ibis.options, "graphviz_repr", True)
 
-    with (
-        config.option_context("interactive", False),
-        config.option_context("graphviz_repr", True),
-    ):
-        assert table._repr_png_() is not None
+    assert shutil.which("dot") is not None
+    assert table._repr_png_() is not None
 
 
 @pytest.mark.notimpl(["polars"])
@@ -70,12 +70,14 @@ def test_respect_set_limit(table, queries):
 
 
 @pytest.mark.notimpl(["polars"])
-def test_disable_query_limit(table, queries):
+def test_disable_query_limit(table, queries, monkeypatch):
     assert ibis.options.sql.default_limit is None
 
-    with config.option_context("sql.default_limit", 10):
-        assert ibis.options.sql.default_limit == 10
-        repr(table.select("id", "bool_col"))
+    monkeypatch.setattr(ibis.options.sql, "default_limit", 10)
+
+    assert ibis.options.sql.default_limit == 10
+
+    repr(table.select("id", "bool_col"))
 
     assert len(queries) >= 1
 

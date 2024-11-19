@@ -420,3 +420,26 @@ def test_memtable_doesnt_leak(con, monkeypatch):
     df = ibis.memtable({"a": [1, 2, 3]}, name=name).execute()
     assert name not in con.list_tables()
     assert len(df) == 3
+
+
+def test_pyarrow_batches_chunk_size(con):  # 10443
+    import numpy as np
+
+    t = ibis.memtable(
+        {
+            "id": np.arange(10_000),
+            "name": np.random.choice(["Alice", "Bob", "Carol", "Dave"], size=10_000),
+            "age": np.random.randint(20, 70, size=10_000),
+        }
+    )
+    batches = con.to_pyarrow_batches(t, chunk_size=4096)
+    assert len(next(batches)) == 4096
+    assert len(next(batches)) == 4096
+
+    batches = con.to_pyarrow_batches(t, chunk_size=800)
+    assert len(next(batches)) == 800
+    assert len(next(batches)) == 800
+
+    batches = con.to_pyarrow_batches(t, chunk_size=-1)
+    with pytest.raises(TypeError):
+        next(batches)

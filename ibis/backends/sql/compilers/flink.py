@@ -71,11 +71,12 @@ class FlinkCompiler(SQLGlotCompiler):
         ops.ApproxMedian,
         ops.ArrayFlatten,
         ops.ArrayStringJoin,
+        ops.ArgMax,
+        ops.ArgMin,
         ops.Correlation,
         ops.CountDistinctStar,
         ops.Covariance,
         ops.DateDiff,
-        ops.ExtractURLField,
         ops.FindInSet,
         ops.IsInf,
         ops.IsNan,
@@ -329,6 +330,10 @@ class FlinkCompiler(SQLGlotCompiler):
             )
         return sge.TryCast(this=arg, to=type_mapper.from_ibis(to))
 
+    def visit_Divide(self, op, *, left, right):
+        dtype = op.dtype
+        return self.cast(left, dtype) / self.cast(right, dtype)
+
     def visit_FloorDivide(self, op, *, left, right):
         return self.f.floor(sge.paren(left) / sge.paren(right))
 
@@ -444,11 +449,11 @@ class FlinkCompiler(SQLGlotCompiler):
         return self.f.extract(self.v.microsecond, arg)
 
     def visit_DayOfWeekIndex(self, op, *, arg):
-        return (self.f.dayofweek(arg) + 5) % 7
+        return (self.f.anon.dayofweek(arg) + 5) % 7
 
     def visit_DayOfWeekName(self, op, *, arg):
-        index = self.cast(self.f.dayofweek(self.cast(arg, dt.date)), op.dtype)
-        lookup_table = self.f.str_to_map(
+        index = self.cast(self.f.anon.dayofweek(self.cast(arg, dt.date)), op.dtype)
+        lookup_table = self.f.anon.str_to_map(
             "1=Sunday,2=Monday,3=Tuesday,4=Wednesday,5=Thursday,6=Friday,7=Saturday"
         )
         return lookup_table[index]

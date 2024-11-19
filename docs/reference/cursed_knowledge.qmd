@@ -24,3 +24,10 @@ execution engines.
   so to get two unique random numbers, users must defeat that optimization.
   This is done by passing **any** argument to those functions. It's left as an
   exercise for the reader to figure out how to generate two unique inputs.
+
+## Postgres
+
+* Postgres doesn't have unsigned integer datatypes, except that it does.  It's
+  called [`OID`](https://www.postgresql.org/docs/current/datatype-oid.html) for
+  "Object ID" and it's a 4-byte unsigned int, mostly only used in certain
+  internal tables.

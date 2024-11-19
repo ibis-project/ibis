@@ -71,8 +71,6 @@ class PySparkCompiler(SQLGlotCompiler):
     }
 
     SIMPLE_OPS = {
-        ops.ArgMax: "max_by",
-        ops.ArgMin: "min_by",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayFlatten: "flatten",
         ops.ArrayIntersect: "array_intersect",
@@ -399,11 +397,8 @@ class PySparkCompiler(SQLGlotCompiler):
         if index is not None:
             expressions.append(index)
 
-        func = sge.Lambda(this=self.if_(body, param, NULL), expressions=expressions)
-        transform = self.f.transform(arg, func)
-
-        func = sge.Lambda(this=param.is_(sg.not_(NULL)), expressions=expressions)
-        return self.f.filter(transform, func)
+        lamduh = sge.Lambda(this=body, expressions=expressions)
+        return self.f.filter(arg, lamduh)
 
     def visit_ArrayIndex(self, op, *, arg, index):
         return self.f.element_at(arg, index + 1)

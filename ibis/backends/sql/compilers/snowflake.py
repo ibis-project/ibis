@@ -59,7 +59,12 @@ def multiple_args_to_zipped_struct_field_access(_, **kwargs):
 
 
 class SnowflakeFuncGen(FuncGen):
-    udf = FuncGen(namespace="ibis_udfs.public")
+    __slots__ = ()
+
+    def __init__(self, *, namespace: str | None = None, copy: bool = False) -> None:
+        super().__init__(dialect=Snowflake, namespace=namespace, copy=copy)
+
+    udf = FuncGen(dialect=Snowflake, namespace="ibis_udfs.public")
 
 
 class SnowflakeCompiler(SQLGlotCompiler):
@@ -104,10 +109,10 @@ class SnowflakeCompiler(SQLGlotCompiler):
     )
 
     SIMPLE_OPS = {
+        # overrides booland_agg/boolor_agg because neither of those can be used
+        # in a cumulative window frame, while min and max can
         ops.All: "min",
         ops.Any: "max",
-        ops.ArgMax: "max_by",
-        ops.ArgMin: "min_by",
         ops.ArrayDistinct: "array_distinct",
         ops.ArrayFlatten: "array_flatten",
         ops.ArrayIndex: "get",
@@ -127,10 +132,17 @@ class SnowflakeCompiler(SQLGlotCompiler):
         ops.Hash: "hash",
         ops.Median: "median",
         ops.Mode: "mode",
+        ops.RandomUUID: "uuid_string",
         ops.StringToDate: "to_date",
         ops.StringToTimestamp: "to_timestamp_tz",
         ops.TimeFromHMS: "time_from_parts",
         ops.TimestampFromYMDHMS: "timestamp_from_parts",
+        ops.ToJSONMap: "as_object",
+        ops.ToJSONArray: "as_array",
+        ops.UnwrapJSONString: "as_varchar",
+        ops.UnwrapJSONInt64: "as_integer",
+        ops.UnwrapJSONFloat64: "as_double",
+        ops.UnwrapJSONBoolean: "as_boolean",
     }
 
     def __init__(self):
@@ -303,24 +315,6 @@ $$""",
             return self.if_(self.f.is_array(arg), arg, NULL)
         return super().visit_Cast(op, arg=arg, to=to)
 
-    def visit_ToJSONMap(self, op, *, arg):
-        return self.if_(self.f.is_object(arg), arg, NULL)
-
-    def visit_ToJSONArray(self, op, *, arg):
-        return self.if_(self.f.is_array(arg), arg, NULL)
-
-    def visit_UnwrapJSONString(self, op, *, arg):
-        return self.if_(self.f.is_varchar(arg), self.f.as_varchar(arg), NULL)
-
-    def visit_UnwrapJSONInt64(self, op, *, arg):
-        return self.if_(self.f.is_integer(arg), self.f.as_integer(arg), NULL)
-
-    def visit_UnwrapJSONFloat64(self, op, *, arg):
-        return self.if_(self.f.is_double(arg), self.f.as_double(arg), NULL)
-
-    def visit_UnwrapJSONBoolean(self, op, *, arg):
-        return self.if_(self.f.is_boolean(arg), self.f.as_boolean(arg), NULL)
-
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.NAN)
 
@@ -361,8 +355,8 @@ $$""",
 
     def visit_MapContains(self, op, *, arg, key):
         return self.f.array_contains(
-            self.if_(self.f.is_object(arg), self.f.object_keys(arg), NULL),
             self.f.to_variant(key),
+            self.if_(self.f.is_object(arg), self.f.object_keys(arg), NULL),
         )
 
     def visit_MapMerge(self, op, *, left, right):
@@ -378,33 +372,30 @@ $$""",
         )
 
     def visit_Log(self, op, *, arg, base):
-        return self.f.log(base, arg, dialect=self.dialect)
+        return self.f.log(base, arg)
 
-    def visit_RandomScalar(self, op, **kwargs):
+    def visit_RandomScalar(self, op):
         return self.f.uniform(
             self.f.to_double(0.0), self.f.to_double(1.0), self.f.random()
         )
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.uuid_string()
 
     def visit_ApproxMedian(self, op, *, arg, where):
         return self.agg.approx_percentile(arg, 0.5, where=where)
 
     def visit_TimeDelta(self, op, *, part, left, right):
-        return self.f.timediff(part, right, left, dialect=self.dialect)
+        return self.f.timediff(part, right, left)
 
     def visit_DateDelta(self, op, *, part, left, right):
-        return self.f.datediff(part, right, left, dialect=self.dialect)
+        return self.f.datediff(part, right, left)
 
     def visit_TimestampDelta(self, op, *, part, left, right):
-        return self.f.timestampdiff(part, right, left, dialect=self.dialect)
+        return self.f.timestampdiff(part, right, left)
 
     def visit_TimestampAdd(self, op, *, left, right):
-        return self.f.timestampadd(right.unit, right.this, left, dialect=self.dialect)
+        return self.f.timestampadd(right.unit, right.this, left)
 
     def visit_TimestampSub(self, op, *, left, right):
-        return self.f.timestampadd(right.unit, -right.this, left, dialect=self.dialect)
+        return self.f.timestampadd(right.unit, -right.this, left)
 
     visit_DateAdd = visit_TimestampAdd
     visit_DateSub = visit_TimestampSub
@@ -442,7 +433,7 @@ $$""",
         return self.f.array_distinct(self.f.array_cat(left, right))
 
     def visit_ArrayContains(self, op, *, arg, other):
-        return self.f.array_contains(arg, self.f.to_variant(other))
+        return self.f.array_contains(self.f.to_variant(other), arg)
 
     def visit_ArrayConcat(self, op, *, arg):
         # array_cat only accepts two arguments
@@ -766,7 +757,7 @@ $$""",
                         # anyway due to lack of parameterized type support in
                         # Snowflake the format depends on a session parameter
                         self.f.to_varchar(
-                            self.f.dateadd(unit, C.value, start, dialect=self.dialect),
+                            self.f.dateadd(unit, C.value, start),
                             'YYYY-MM-DD"T"HH24:MI:SS.FF6'
                             + (value_type.timezone is not None) * "TZH:TZM",
                         ),
@@ -782,11 +773,7 @@ $$""",
                     this=sge.Unnest(
                         expressions=[
                             self.f.array_generate_range(
-                                0,
-                                self.f.datediff(
-                                    unit, start, stop, dialect=self.dialect
-                                ),
-                                step,
+                                0, self.f.datediff(unit, start, stop), step
                             )
                         ]
                     )
@@ -813,31 +800,50 @@ $$""",
         return self.f.transform(arg, sge.Lambda(this=body, expressions=[param]))
 
     def visit_ArrayFilter(self, op, *, arg, param, body, index):
-        if index is not None:
-            arg = self.f.arrays_zip(
-                arg, self.f.array_generate_range(0, self.f.array_size(arg))
-            )
-            null_filter_arg = self.f.get(param, "$1")
-            # extract the field we care about
-            placeholder = sg.to_identifier("__ibis_snowflake_arg__")
-            post_process = lambda arg: self.f.transform(
+        if index is None:
+            return self.f.filter(
                 arg,
+                # nulls are considered false when they are returned from a
+                # `filter` predicate
+                #
+                # we're using is_null_value here because snowflake
+                # automatically converts embedded SQL NULLs to JSON nulls in
+                # higher order functions
                 sge.Lambda(
-                    this=self.f.get(placeholder, "$1"), expressions=[placeholder]
+                    this=sg.and_(sg.not_(self.f.is_null_value(param)), body),
+                    expressions=[param],
                 ),
             )
-        else:
-            null_filter_arg = param
-            post_process = lambda arg: arg
 
-        # null_filter is necessary otherwise null values are treated as JSON
-        # nulls instead of SQL NULLs
-        null_filter = self.cast(null_filter_arg, op.dtype.value_type).is_(sg.not_(NULL))
+        zipped = self.f.arrays_zip(
+            arg, self.f.array_generate_range(0, self.f.array_size(arg))
+        )
+        # extract the field we care about
+        keeps = self.f.transform(
+            zipped,
+            sge.Lambda(
+                this=self.f.object_construct_keep_null(
+                    "keep", body, "value", self.f.get(param, "$1")
+                ),
+                expressions=[param],
+            ),
+        )
 
-        return post_process(
-            self.f.filter(
-                arg, sge.Lambda(this=sg.and_(body, null_filter), expressions=[param])
-            )
+        # then, filter out elements that are null
+        placeholder1 = sg.to_identifier("__f1__")
+        placeholder2 = sg.to_identifier("__f2__")
+        filtered = self.f.filter(
+            keeps,
+            sge.Lambda(
+                this=self.cast(self.f.get(placeholder1, "keep"), dt.boolean),
+                expressions=[placeholder1],
+            ),
+        )
+        return self.f.transform(
+            filtered,
+            sge.Lambda(
+                this=self.f.get(placeholder2, "value"), expressions=[placeholder2]
+            ),
         )
 
     def visit_JoinLink(self, op, *, how, table, predicates):

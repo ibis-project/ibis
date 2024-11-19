@@ -103,6 +103,7 @@ class DuckDBCompiler(SQLGlotCompiler):
         ops.GeoWithin: "st_within",
         ops.GeoX: "st_x",
         ops.GeoY: "st_y",
+        ops.RandomScalar: "random",
     }
 
     def to_sqlglot(
@@ -143,15 +144,17 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayDistinct(self, op, *, arg):
+        return self._array_distinct(arg)
+
+    def _array_distinct(self, arg: sge.Expression) -> sge.Expression:
+        x = sg.to_identifier("x")
+        is_null = sge.Lambda(this=x.is_(NULL), expressions=[x])
+        contains_null = self.f.list_bool_or(self.f.list_apply(arg, is_null))
         return self.if_(
             arg.is_(NULL),
             NULL,
             self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
+            + self.if_(contains_null, self.f.array(NULL), self.f.array()),
         )
 
     def visit_ArrayPosition(self, op, *, arg, other):
@@ -180,16 +183,22 @@ class DuckDBCompiler(SQLGlotCompiler):
         arg_length = self.f.len(arg)
 
         if start is None:
-            start = 0
+            start = 1
+        elif isinstance(op.start, ops.Literal):
+            start = op.start.value
+            start += start >= 0
         else:
-            start = self.f.least(arg_length, self._neg_idx_to_pos(arg, start))
+            start = self.if_(start < 0, start, start + 1)
 
         if stop is None:
             stop = arg_length
+        elif isinstance(op.stop, ops.Literal):
+            stop = int(op.stop.value)
+            stop -= stop < 0
         else:
-            stop = self._neg_idx_to_pos(arg, stop)
+            stop = self.if_(stop < 0, stop - 1, stop)
 
-        return self.f.list_slice(arg, start + 1, stop)
+        return self.f.list_slice(arg, start, stop)
 
     def visit_ArrayMap(self, op, *, arg, body, param, index):
         expressions = [param]
@@ -223,16 +232,7 @@ class DuckDBCompiler(SQLGlotCompiler):
 
     def visit_ArrayUnion(self, op, *, left, right):
         arg = self.f.list_concat(left, right)
-        return self.if_(
-            arg.is_(NULL),
-            NULL,
-            self.f.list_distinct(arg)
-            + self.if_(
-                self.f.list_count(arg) < self.f.len(arg),
-                self.f.array(NULL),
-                self.f.array(),
-            ),
-        )
+        return self._array_distinct(arg)
 
     def visit_ArrayZip(self, op, *, arg):
         i = sg.to_identifier("i")
@@ -349,8 +349,16 @@ class DuckDBCompiler(SQLGlotCompiler):
         )
 
     def visit_ArrayConcat(self, op, *, arg):
-        # TODO(cpcloud): map ArrayConcat to this in sqlglot instead of here
-        return reduce(self.f.list_concat, arg)
+        # TODO: duckdb 1.2 was the first release to fix NULL handling.
+        # Once that is our minimum supported duckdb version, we can
+        # use `x || y || z ...` and drop the ifs
+        # https://github.com/duckdb/duckdb/issues/14692#issuecomment-2457146174
+        return reduce(
+            lambda x, y: self.if_(
+                x.is_(NULL).or_(y.is_(NULL)), NULL, self.f.list_concat(x, y)
+            ),
+            arg,
+        )
 
     def visit_IntervalFromInteger(self, op, *, arg, unit):
         if unit.short == "ns":
@@ -523,14 +531,6 @@ class DuckDBCompiler(SQLGlotCompiler):
         """DuckDB current timestamp defaults to timestamp + tz."""
         return self.cast(super().visit_TimestampNow(op), dt.timestamp)
 
-    def visit_RegexExtract(self, op, *, arg, pattern, index):
-        return self.f.regexp_extract(arg, pattern, index, dialect=self.dialect)
-
-    def visit_RegexReplace(self, op, *, arg, pattern, replacement):
-        return self.f.regexp_replace(
-            arg, pattern, replacement, "g", dialect=self.dialect
-        )
-
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
@@ -550,6 +550,9 @@ class DuckDBCompiler(SQLGlotCompiler):
         return self.agg.first(
             arg, where=where, order_by=[sge.Ordered(this=key, desc=True)]
         )
+
+    def visit_Median(self, op, *, arg, where):
+        return self.visit_Quantile(op, arg=arg, quantile=sge.convert(0.5), where=where)
 
     def visit_Quantile(self, op, *, arg, quantile, where):
         suffix = "cont" if op.arg.dtype.is_numeric() else "disc"
@@ -613,12 +616,6 @@ class DuckDBCompiler(SQLGlotCompiler):
                 expression=sg.to_identifier(field, quoted=self.quoted),
             )
         return super().visit_StructField(op, arg=arg, field=field)
-
-    def visit_RandomScalar(self, op, **kwargs):
-        return self.f.random()
-
-    def visit_RandomUUID(self, op, **kwargs):
-        return self.f.uuid()
 
     def visit_TypeOf(self, op, *, arg):
         return self.f.coalesce(self.f.nullif(self.f.typeof(arg), '"NULL"'), "NULL")

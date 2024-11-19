@@ -122,7 +122,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         >>> host = os.environ.get("IBIS_TEST_MYSQL_HOST", "localhost")
         >>> user = os.environ.get("IBIS_TEST_MYSQL_USER", "ibis")
         >>> password = os.environ.get("IBIS_TEST_MYSQL_PASSWORD", "ibis")
-        >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis_testing")
+        >>> database = os.environ.get("IBIS_TEST_MYSQL_DATABASE", "ibis-testing")
         >>> con = ibis.mysql.connect(database=database, host=host, user=user, password=password)
         >>> con.list_tables()  # doctest: +ELLIPSIS
         [...]
@@ -337,11 +337,12 @@ class Backend(SQLBackend, CanCreateDatabase):
             the current database (`self.current_database`).
         """
         if database is not None:
-            table_loc = database
+            table_loc = self._to_sqlglot_table(database)
         else:
-            table_loc = self.current_database
-
-        table_loc = self._to_sqlglot_table(table_loc)
+            table_loc = sge.Table(
+                db=sg.to_identifier(self.current_database, quoted=self.compiler.quoted),
+                catalog=None,
+            )
 
         conditions = [TRUE]
 

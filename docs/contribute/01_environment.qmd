@@ -18,7 +18,7 @@ the `conda/mamba` setup and refer to the comment related to `arm64`
 architectures.
 :::
 
-## Conda/Mamba
+## Conda/Mamba/Pixi
 
 ### Support matrix [^conda-callout]
 
@@ -45,6 +45,10 @@ managers = {
         "name": "Mamba",
         "url": "https://github.com/mamba-org/mamba",
     },
+    "pixi": {
+        "name": "Pixi",
+        "url": "https://pixi.sh/latest/",
+    },
 }
 
 for manager, params in managers.items():
@@ -58,7 +62,10 @@ for manager, params in managers.items():
     print(f"1. Install `gh`")
     print()
     print("    ```sh")
-    print(f"    {manager} install -c conda-forge gh")
+    if manager == "conda" or manager == "mamba":
+        print(f"    {manager} install -c conda-forge gh")
+    elif manager == "pixi":
+        print(f"    {manager} global install gh")
     print("    ```")
     print()
     print(f"1. Fork and clone the ibis repository:")
@@ -67,29 +74,38 @@ for manager, params in managers.items():
     print("    gh repo fork --clone --remote ibis-project/ibis")
     print("    ```")
     print()
-    print(f"1. Create a Conda environment using `environment.yml`")
+    print(f"1. Create a {name} environment using `environment.yml`")
     print()
     print("    ```sh")
     print("    cd ibis")
-    print(f"    {manager} env create --file conda/environment.yml")
+    if manager == "conda" or manager == "mamba":
+        print(f"    {manager} env create --file conda/environment.yml")
+    elif manager == "pixi":
+        print(f"    {manager} init --import conda/environment.yml")
     print("    ```")
     print()
-    if manager == "conda" or manager == "mamba":
+    if manager == "pixi":
+        print("    This command will initialize a `pixi.toml` file and also modify ")
+        print("the `.gitignore` to prevent Pixi configuration from being added to ")
+        print("`git`.")
         print()
-        print(
-            "    If you're using arm64 architecture (Mac M1/M2), use "
-            "`conda/environment-arm64.yml` for setting up a dev environment for all the "
-            "backends that are possible to install excluding Flink; use "
-            "`conda/environment-arm64-flink.yml` for setting up a dev environment for all "
-            "the backends that are possible to install including Flink. The reason to have "
-            "two separate environments is because `apache-flink` forces `pyarrow` to "
-            "downgrade to 11.0, which causes conflicts in other backends."
-        )
-        print()
+    print(
+        "    If you're using arm64 architecture (Mac M1/M2), use "
+        "`conda/environment-arm64.yml` for setting up a dev environment for all the "
+        "backends that are possible to install excluding Flink; use "
+        "`conda/environment-arm64-flink.yml` for setting up a dev environment for all "
+        "the backends that are possible to install including Flink. The reason to have "
+        "two separate environments is because `apache-flink` forces `pyarrow` to "
+        "downgrade to 11.0, which causes conflicts in other backends."
+    )
+    print()
     print(f"1. Activate the environment")
     print()
     print("    ```sh")
-    print(f"    {manager} activate ibis-dev")
+    if manager == "conda" or manager == "mamba":
+        print(f"    {manager} activate ibis-dev")
+    elif manager == "pixi":
+        print(f"    {manager} shell")
     print("    ```")
     print()
     print(
@@ -97,7 +113,7 @@ for manager, params in managers.items():
     )
     print()
     print("    ```sh")
-    print("    pip install -e .")
+    print("    uv pip install -e .")
     print("    ```")
     print()
 ```
@@ -192,15 +208,11 @@ For a better development experience see the `conda/mamba` or `nix` setup instruc
 
 1. Install development dependencies
 
+   This will also install Ibis in development mode as `ibis-framework`.
+
    ```sh
-   pip install 'poetry==1.8.4'
+   pip install 'uv>=0.4.29'
    pip install -r requirements-dev.txt
-   ```
-
-1. Install ibis in development mode
-
-   ```sh
-   pip install -e .
    ```
 
 :::

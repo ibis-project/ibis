@@ -46,35 +46,39 @@ jobs:
           - name: snowflake
             title: Snowflake
             extras:
-              - snowflake
+              - --extra snowflake
+          - name: databricks
+            title: Databricks
+            extras:
+              - --extra databricks
         include:
           - python-version: "3.10"
             backend:
               name: bigquery
               title: BigQuery
               extras:
-                - bigquery
+                - --extra bigquery
           - python-version: "3.12"
             backend:
               name: bigquery
               title: BigQuery
               extras:
-                - bigquery
-                - geospatial
+                - --extra bigquery
+                - --extra geospatial
           - python-version: "3.10"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
               extras:
-                - snowflake
+                - --extra snowflake
           - python-version: "3.11"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
               extras:
-                - snowflake
+                - --extra snowflake
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -106,15 +110,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: install poetry
-        run: pip install 'poetry==1.8.4'
+      - name: install uv
+        uses: astral-sh/setup-uv@v3.2.3
+        with:
+          enable-cache: true
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
-        run: poetry add --lock snowflake-snowpark-python --python="==${{ steps.install_python.outputs.python-version }}"
-
-      - name: install ibis
-        run: poetry install --without dev --without docs --extras "${{ join(matrix.backend.extras, ' ') }} examples"
+        run: uv add --no-sync --optional snowflake snowflake-snowpark-python
 
       - uses: extractions/setup-just@v2
         env:
@@ -126,6 +129,19 @@ jobs:
       - uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+      - name: setup databricks credentials
+        if: matrix.backend.name == 'databricks'
+        run: |
+          {
+            echo "DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH}"
+            echo "DATABRICKS_SERVER_HOSTNAME=${DATABRICKS_SERVER_HOSTNAME}"
+            echo "DATABRICKS_TOKEN=${DATABRICKS_TOKEN}"
+          } >> "$GITHUB_ENV"
+        env:
+          DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+          DATABRICKS_SERVER_HOSTNAME: ${{ secrets.DATABRICKS_SERVER_HOSTNAME }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
 
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
@@ -152,12 +168,12 @@ jobs:
         run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        run: just ci-check -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
 
       - name: upload code coverage
         if: success()
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}
