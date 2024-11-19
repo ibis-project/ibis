@@ -3285,17 +3285,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         >>> tolerance = timedelta(seconds=1)
         >>> sensors.asof_join(events, on="event_time", predicates="site", tolerance=tolerance).drop(
         ...     "event_time_right"
-        ... )
+        ... ).order_by("event_time")
         ┏━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
         ┃ site   ┃ humidity ┃ event_time              ┃ site_right ┃ event_type     ┃
         ┡━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
         │ string │ float64  │ timestamp               │ string     │ string         │
         ├────────┼──────────┼─────────────────────────┼────────────┼────────────────┤
-        │ b      │      0.6 │ 2024-11-17 18:12:15.120 │ b          │ rain start     │
         │ a      │      0.3 │ 2024-11-16 12:00:15.500 │ a          │ cloud coverage │
-        │ a      │      0.7 │ 2024-11-18 18:12:15.100 │ a          │ rain stop      │
         │ b      │      0.4 │ 2024-11-16 12:00:15.700 │ NULL       │ NULL           │
         │ a      │      0.5 │ 2024-11-17 18:12:14.950 │ NULL       │ NULL           │
+        │ b      │      0.6 │ 2024-11-17 18:12:15.120 │ b          │ rain start     │
+        │ a      │      0.7 │ 2024-11-18 18:12:15.100 │ a          │ rain stop      │
         └────────┴──────────┴─────────────────────────┴────────────┴────────────────┘
         """
         from ibis.expr.types.joins import Join
