@@ -544,7 +544,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             ),
             map(partial(self.cast, to=op.dtype), arg),
         )
-    
+
     def visit_MapGet(self, op, *, arg, key, default):
         return self.if_(
             sg.or_(arg.is_(NULL), key.is_(NULL)),
@@ -559,9 +559,10 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.if_(
             sg.or_(arg.is_(NULL), key.is_(NULL)),
             NULL,
-            sge.NEQ(self.f.cardinality(self.f.map_extract(arg, key)) != 0),
+            self.f.list_contains(self.f.map_keys(arg), key),
         )
-      
+
     # ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
+
 
 compiler = DataFusionCompiler()
