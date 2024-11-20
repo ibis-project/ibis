@@ -3210,6 +3210,88 @@ class Table(Expr, _FixedTextJupyterMixin):
         -------
         Table
             Table expression
+
+        Examples
+        --------
+        >>> from datetime import datetime, timedelta
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> sensors = ibis.memtable(
+        ...     {
+        ...         "site": ["a", "b", "a", "b", "a"],
+        ...         "humidity": [0.3, 0.4, 0.5, 0.6, 0.7],
+        ...         "event_time": [
+        ...             datetime(2024, 11, 16, 12, 0, 15, 500000),
+        ...             datetime(2024, 11, 16, 12, 0, 15, 700000),
+        ...             datetime(2024, 11, 17, 18, 12, 14, 950000),
+        ...             datetime(2024, 11, 17, 18, 12, 15, 120000),
+        ...             datetime(2024, 11, 18, 18, 12, 15, 100000),
+        ...         ],
+        ...     }
+        ... )
+        >>> events = ibis.memtable(
+        ...     {
+        ...         "site": ["a", "b", "a"],
+        ...         "event_type": [
+        ...             "cloud coverage",
+        ...             "rain start",
+        ...             "rain stop",
+        ...         ],
+        ...         "event_time": [
+        ...             datetime(2024, 11, 16, 12, 0, 15, 400000),
+        ...             datetime(2024, 11, 17, 18, 12, 15, 100000),
+        ...             datetime(2024, 11, 18, 18, 12, 15, 100000),
+        ...         ],
+        ...     }
+        ... )
+
+        This setup simulates time-series data by pairing irregularly collected sensor
+        readings with weather events, enabling analysis of environmental conditions
+        before each event. We will use the `asof_join` method to match each event with
+        the most recent prior sensor reading from the sensors table at the same site.
+
+        >>> sensors
+        ┏━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ site   ┃ humidity ┃ event_time              ┃
+        ┡━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ float64  │ timestamp               │
+        ├────────┼──────────┼─────────────────────────┤
+        │ a      │      0.3 │ 2024-11-16 12:00:15.500 │
+        │ b      │      0.4 │ 2024-11-16 12:00:15.700 │
+        │ a      │      0.5 │ 2024-11-17 18:12:14.950 │
+        │ b      │      0.6 │ 2024-11-17 18:12:15.120 │
+        │ a      │      0.7 │ 2024-11-18 18:12:15.100 │
+        └────────┴──────────┴─────────────────────────┘
+        >>> events
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+        ┃ site   ┃ event_type     ┃ event_time              ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━┩
+        │ string │ string         │ timestamp               │
+        ├────────┼────────────────┼─────────────────────────┤
+        │ a      │ cloud coverage │ 2024-11-16 12:00:15.400 │
+        │ b      │ rain start     │ 2024-11-17 18:12:15.100 │
+        │ a      │ rain stop      │ 2024-11-18 18:12:15.100 │
+        └────────┴────────────────┴─────────────────────────┘
+
+        We can find the closest event to each sensor reading with a 1 second tolerance.
+        Using the "site" column as a join predicate ensures we only match events that
+        occurred at or near the same site as the sensor reading.
+
+        >>> tolerance = timedelta(seconds=1)
+        >>> sensors.asof_join(events, on="event_time", predicates="site", tolerance=tolerance).drop(
+        ...     "event_time_right"
+        ... ).order_by("event_time")
+        ┏━━━━━━━━┳━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+        ┃ site   ┃ humidity ┃ event_time              ┃ site_right ┃ event_type     ┃
+        ┡━━━━━━━━╇━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+        │ string │ float64  │ timestamp               │ string     │ string         │
+        ├────────┼──────────┼─────────────────────────┼────────────┼────────────────┤
+        │ a      │      0.3 │ 2024-11-16 12:00:15.500 │ a          │ cloud coverage │
+        │ b      │      0.4 │ 2024-11-16 12:00:15.700 │ NULL       │ NULL           │
+        │ a      │      0.5 │ 2024-11-17 18:12:14.950 │ NULL       │ NULL           │
+        │ b      │      0.6 │ 2024-11-17 18:12:15.120 │ b          │ rain start     │
+        │ a      │      0.7 │ 2024-11-18 18:12:15.100 │ a          │ rain stop      │
+        └────────┴──────────┴─────────────────────────┴────────────┴────────────────┘
         """
         from ibis.expr.types.joins import Join
 
