@@ -1407,14 +1407,15 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.pretty import to_rich
 
-        return to_rich(
-            self,
+        overrides = dict(
             max_rows=max_rows,
             max_length=max_length,
             max_string=max_string,
             max_depth=max_depth,
-            console_width=console_width,
         )
+        overrides = {k: v for k, v in overrides.items() if v is not None}
+        options = ibis.options.repr.interactive.copy(**overrides)
+        return to_rich(self, options, console_width=console_width)
 
     def __pyarrow_result__(
         self,

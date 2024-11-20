@@ -559,15 +559,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.pretty import to_rich
 
-        return to_rich(
-            self,
-            max_columns=max_columns,
+        overrides = dict(
             max_rows=max_rows,
+            max_columns=max_columns,
             max_length=max_length,
             max_string=max_string,
             max_depth=max_depth,
-            console_width=console_width,
         )
+        overrides = {k: v for k, v in overrides.items() if v is not None}
+        options = ibis.options.repr.interactive.copy(**overrides)
+        return to_rich(self, options=options, console_width=console_width)
 
     @overload
     def __getitem__(self, what: str | int) -> ir.Column: ...
