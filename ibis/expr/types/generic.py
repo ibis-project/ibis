@@ -1631,6 +1631,7 @@ class Column(Value, FixedTextJupyterMixin):
         """
         return to_rich(
             self,
+            max_columns=1,
             max_rows=max_rows,
             max_length=max_length,
             max_string=max_string,

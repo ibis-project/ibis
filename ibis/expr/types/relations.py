@@ -944,8 +944,8 @@ class Table(Expr, FixedTextJupyterMixin):
         """
         return to_rich(
             self,
-            max_columns=max_columns,
             max_rows=max_rows,
+            max_columns=max_columns,
             max_length=max_length,
             max_string=max_string,
             max_depth=max_depth,

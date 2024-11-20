@@ -21,6 +21,7 @@ import ibis
 import ibis.expr.datatypes as dt
 
 if TYPE_CHECKING:
+    from ibis.config import Interactive
     from ibis.expr.types import Column, Scalar, Table
 
 
@@ -260,13 +261,7 @@ def format_dtype(dtype, max_string: int) -> Text:
     return Text.styled(strtyp, "dim")
 
 
-def to_rich_scalar(
-    expr: Scalar,
-    *,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
-) -> Panel:
+def to_rich_scalar(expr: Scalar, options: Interactive) -> Pretty:
     value = expr.to_pyarrow().as_py()
 
     if value is None:
@@ -275,9 +270,9 @@ def to_rich_scalar(
         (formatted_value,) = format_values(
             expr.type(),
             [value],
-            max_length=max_length or ibis.options.repr.interactive.max_length,
-            max_string=max_string or ibis.options.repr.interactive.max_string,
-            max_depth=max_depth or ibis.options.repr.interactive.max_depth,
+            max_length=options.max_length,
+            max_string=options.max_string,
+            max_depth=options.max_depth,
         )
 
     return Panel(formatted_value, expand=False, box=box.SQUARE)
@@ -285,19 +280,14 @@ def to_rich_scalar(
 
 def to_rich_table(
     tablish: Table | Column,
-    *,
-    max_rows: int | None = None,
-    max_columns: int | None = None,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
+    options: Interactive,
     console_width: int | float | None = None,
 ) -> rich.table.Table:
-    max_rows = max_rows or ibis.options.repr.interactive.max_rows
-    max_columns = max_columns or ibis.options.repr.interactive.max_columns
     console_width = console_width or float("inf")
-    max_string = max_string or ibis.options.repr.interactive.max_string
-    show_types = ibis.options.repr.interactive.show_types
+    max_rows = options.max_rows
+    max_columns = options.max_columns
+    max_string = options.max_string
+    show_types = options.show_types
 
     table = tablish.as_table()
     orig_ncols = len(table.columns)
@@ -339,9 +329,9 @@ def to_rich_table(
         formatted, min_width, max_width = format_column(
             dtype,
             result[name].to_pylist()[:max_rows],
-            max_length=max_length,
+            max_length=options.max_length,
             max_string=max_string,
-            max_depth=max_depth,
+            max_depth=options.max_depth,
         )
         dtype_str = format_dtype(dtype, max_string)
         if show_types and not isinstance(dtype, (dt.Struct, dt.Map, dt.Array)):

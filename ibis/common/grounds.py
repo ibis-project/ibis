@@ -167,7 +167,7 @@ class Annotable(Abstract, metaclass=AnnotableMeta):
     def __args__(self) -> tuple[Any, ...]:
         return tuple(getattr(self, name) for name in self.__argnames__)
 
-    def copy(self, **overrides: Any) -> Annotable:
+    def copy(self, **overrides: Any) -> Self:
         """Return a copy of this object with the given overrides.
 
         Parameters
