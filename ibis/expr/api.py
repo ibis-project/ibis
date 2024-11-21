@@ -591,7 +591,7 @@ def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     expr
         The expression or column name to use for sorting
     nulls_first
-        Bool to indicate weather to put NULL values first or not.
+        Bool to indicate whether to put NULL values first or not.
 
     See Also
     --------
@@ -632,7 +632,7 @@ def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     expr
         The expression or column name to use for sorting
     nulls_first
-        Bool to indicate weather to put NULL values first or not.
+        Bool to indicate whether to put NULL values first or not.
 
     See Also
     --------
