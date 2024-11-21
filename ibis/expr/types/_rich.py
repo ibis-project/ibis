@@ -401,7 +401,18 @@ def to_rich_table(
             if not next_flex_cols:
                 break
 
-    rich_table = rich.table.Table(padding=(0, 1, 0, 1))
+    if options.show_count:
+        # use underscore to be friendly to i18n and python REPL
+        nrows = f"{table.count().execute():_}"
+    else:
+        nrows = "…"
+    if isinstance(tablish, ibis.Table):
+        dims = f"{orig_ncols:_} cols by {nrows} rows"
+    else:
+        dims = f"{nrows} rows"
+    rich_table = rich.table.Table(
+        title=dims, title_justify="left", padding=(0, 1, 0, 1)
+    )
 
     # Configure the columns on the rich table.
     for name, dtype, _, max_width in col_info:

@@ -892,6 +892,7 @@ class Table(Expr, FixedTextJupyterMixin):
         max_length: int | None = None,
         max_string: int | None = None,
         max_depth: int | None = None,
+        show_count: bool | None = None,
         console_width: int | float | None = None,
     ) -> RichTable:
         """Return a subset as a Rich Table.
@@ -913,6 +914,8 @@ class Table(Expr, FixedTextJupyterMixin):
             Maximum length for pretty-printed strings
         max_depth
             Maximum depth for nested data types
+        show_count
+            Show the row count. This can be computationally expensive and slow.
         console_width
             Width of the console in characters. If not specified, the width
             will be inferred from the console.
@@ -949,6 +952,7 @@ class Table(Expr, FixedTextJupyterMixin):
             max_length=max_length,
             max_string=max_string,
             max_depth=max_depth,
+            show_count=show_count,
             console_width=console_width,
         )
 

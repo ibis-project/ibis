@@ -66,6 +66,10 @@ class Interactive(Config):
         Maximum depth for nested data types.
     show_types : bool
         Show the inferred type of value expressions in the interactive repr.
+    show_count: bool
+        For Columns and Tables, show the row count.
+        This can be computationally expensive and slow,
+        and therefore defaults to `False`.
 
     """
 
@@ -75,6 +79,7 @@ class Interactive(Config):
     max_string: int = 80
     max_depth: int = 1
     show_types: bool = True
+    show_count: bool = False
 
 
 class Repr(Config):

@@ -59,6 +59,7 @@ def to_rich(
     max_string: int | None = None,
     max_depth: int | None = None,
     console_width: int | float | None = None,
+    show_count: bool | None = None,
 ) -> rich.panel.Panel | rich.table.Table:
     """Truncate, evaluate, and render an Ibis expression as a rich object."""
     from ibis.expr.types._rich import to_rich_scalar, to_rich_table
@@ -69,6 +70,7 @@ def to_rich(
         max_length=max_length,
         max_string=max_string,
         max_depth=max_depth,
+        show_count=show_count,
     )
     overrides = {k: v for k, v in overrides.items() if v is not None}
     options = ibis.options.repr.interactive.copy(**overrides)
