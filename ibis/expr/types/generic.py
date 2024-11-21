@@ -1366,6 +1366,7 @@ class Column(Value, _FixedTextJupyterMixin):
         max_length: int | None = None,
         max_string: int | None = None,
         max_depth: int | None = None,
+        show_count: bool | None = None,
         console_width: int | float | None = None,
     ) -> rich.table.Table:
         """Print a subset as a single-column Rich Table.
@@ -1385,6 +1386,8 @@ class Column(Value, _FixedTextJupyterMixin):
             Maximum length for pretty-printed strings.
         max_depth
             Maximum depth for nested data types.
+        show_count
+            Show the row count. This can be computationally expensive and slow.
         console_width
             Width of the console in characters. If not specified, the width
             will be inferred from the console.
@@ -1412,10 +1415,11 @@ class Column(Value, _FixedTextJupyterMixin):
             max_length=max_length,
             max_string=max_string,
             max_depth=max_depth,
+            show_count=show_count,
         )
         overrides = {k: v for k, v in overrides.items() if v is not None}
         options = ibis.options.repr.interactive.copy(**overrides)
-        return to_rich(self, options, console_width=console_width)
+        return to_rich(self, options=options, console_width=console_width)
 
     def __pyarrow_result__(
         self,
