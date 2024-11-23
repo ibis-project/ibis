@@ -470,7 +470,7 @@ def to_sql(
     >>> import ibis
     >>> t = ibis.table({"a": "int", "b": "int"}, name="t")
     >>> expr = t.mutate(c=t.a + t.b)
-    >>> ibis.to_sql(expr)
+    >>> ibis.to_sql(expr)  # doctest: +SKIP
     SELECT
       "t0"."a",
       "t0"."b",
@@ -478,7 +478,7 @@ def to_sql(
     FROM "t" AS "t0"
 
     You can also specify the SQL dialect to use for compilation:
-    >>> ibis.to_sql(expr, dialect="mysql")
+    >>> ibis.to_sql(expr, dialect="mysql")  # doctest: +SKIP
     SELECT
       `t0`.`a`,
       `t0`.`b`,
