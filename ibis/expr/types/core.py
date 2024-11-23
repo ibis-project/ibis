@@ -424,8 +424,8 @@ class Expr(Immutable, Coercible):
         limit: int | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
-    ):
-        """Compile to an execution target.
+    ) -> str:
+        r"""Compile to an execution target.
 
         Parameters
         ----------
@@ -436,6 +436,37 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value
         pretty
             In case of SQL backends, return a pretty formatted SQL query.
+
+        Returns
+        -------
+        str
+            SQL query representation of the expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> d = {"a": [1, 2, 3], "b": [4, 5, 6]}
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", d)
+        >>> expr = t.mutate(c=t.a + t.b)
+        >>> expr.compile()
+        'SELECT "t0"."a", "t0"."b", "t0"."a" + "t0"."b" AS "c" FROM "memory"."main"."t" AS "t0"'
+
+        If you want to see the pretty formatted SQL query, set `pretty` to `True`.
+        >>> expr.compile(pretty=True)
+        'SELECT\n  "t0"."a",\n  "t0"."b",\n  "t0"."a" + "t0"."b" AS "c"\nFROM "memory"."main"."t" AS "t0"'
+
+        If the expression does not have a backend, an error will be raised.
+        >>> t = ibis.memtable(d)
+        >>> expr = t.mutate(c=t.a + t.b)
+        >>> expr.compile()  # quartodoc: +EXPECTED_FAILURE
+        Traceback (most recent call last):
+        ...
+        ibis.common.exceptions.IbisError: Expression depends on no backends, and ...
+
+        See Also
+        --------
+        [`ibis.to_sql()`](./expression-generic.qmd#ibis.to_sql)
         """
         return self._find_backend().compile(
             self, limit=limit, params=params, pretty=pretty
