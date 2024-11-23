@@ -128,6 +128,28 @@ cm = (
 cm
 ```
 
+We can plot the confusion matrix to visualize the results.
+
+```{python}
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+data = cm.to_pyarrow().to_pydict()
+
+plt.figure(figsize=(6, 4))
+sns.heatmap(
+    [[data["TP"][0], data["FP"][0]], [data["FN"][0], data["TN"][0]]],
+    annot=True,
+    fmt="d",
+    cmap="Blues",
+    cbar=False,
+    xticklabels=["Predicted Positive", "Predicted Negative"],
+    yticklabels=["Actual Positive", "Actual Negative"],
+)
+plt.title("Confusion Matrix")
+plt.show()
+```
+
 Now that we've built a confusion matrix, we're able to more easily calculate a few
 common classification metrics.
 
