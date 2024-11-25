@@ -465,6 +465,30 @@ def to_sql(
     str
         Formatted SQL string
 
+    Examples
+    --------
+    >>> import ibis
+    >>> t = ibis.table({"a": "int", "b": "int"}, name="t")
+    >>> expr = t.mutate(c=t.a + t.b)
+    >>> ibis.to_sql(expr)  # doctest: +SKIP
+    SELECT
+      "t0"."a",
+      "t0"."b",
+      "t0"."a" + "t0"."b" AS "c"
+    FROM "t" AS "t0"
+
+    You can also specify the SQL dialect to use for compilation:
+    >>> ibis.to_sql(expr, dialect="mysql")  # doctest: +SKIP
+    SELECT
+      `t0`.`a`,
+      `t0`.`b`,
+      `t0`.`a` + `t0`.`b` AS `c`
+    FROM `t` AS `t0`
+
+    See Also
+    --------
+    [`Table.compile()`](./expression-tables.qmd#ibis.expr.types.relations.Table.compile)
+
     """
     import ibis.backends.sql.compilers as sc
 

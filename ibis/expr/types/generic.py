@@ -1192,11 +1192,97 @@ class Value(Expr):
         return _binop(ops.Less, self, other)
 
     def asc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression ascending."""
+        """Sort an expression ascending.
+
+        Parameters
+        ----------
+        nulls_first
+            Whether to sort `NULL` values first
+
+        Returns
+        -------
+        Value
+            Sorted expression
+
+        See Also
+        --------
+        [`ibis.asc()`](./expression-generic.qmd#ibis.asc)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 3, None]})
+        >>> t.order_by(t.a.asc())
+        ┏━━━━━━━━━┓
+        ┃ a       ┃
+        ┡━━━━━━━━━┩
+        │ float64 │
+        ├─────────┤
+        │     1.0 │
+        │     2.0 │
+        │     3.0 │
+        │    NULL │
+        └─────────┘
+        >>> t.order_by(t.a.asc(nulls_first=True))
+        ┏━━━━━━━━━┓
+        ┃ a       ┃
+        ┡━━━━━━━━━┩
+        │ float64 │
+        ├─────────┤
+        │    NULL │
+        │     1.0 │
+        │     2.0 │
+        │     3.0 │
+        └─────────┘
+        """
         return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
     def desc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression descending."""
+        """Sort an expression descending.
+
+        Parameters
+        ----------
+        nulls_first
+            Whether to sort `NULL` values first.
+
+        Returns
+        -------
+        Value
+            Sorted expression
+
+        See Also
+        --------
+        [`ibis.desc()`](./expression-generic.qmd#ibis.desc)
+
+        Examples
+        --------
+        >>> import ibis
+        >>> ibis.options.interactive = True
+        >>> t = ibis.memtable({"a": [1, 2, 3, None]})
+        >>> t.order_by(t.a.desc())
+        ┏━━━━━━━━━┓
+        ┃ a       ┃
+        ┡━━━━━━━━━┩
+        │ float64 │
+        ├─────────┤
+        │     3.0 │
+        │     2.0 │
+        │     1.0 │
+        │    NULL │
+        └─────────┘
+        >>> t.order_by(t.a.desc(nulls_first=True))
+        ┏━━━━━━━━━┓
+        ┃ a       ┃
+        ┡━━━━━━━━━┩
+        │ float64 │
+        ├─────────┤
+        │    NULL │
+        │     3.0 │
+        │     2.0 │
+        │     1.0 │
+        └─────────┘
+        """
         return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
     def to_pandas(self, **kwargs) -> pd.Series:
