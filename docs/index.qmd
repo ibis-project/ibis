@@ -46,7 +46,7 @@ about:
 
 ### An open source dataframe library that works with any data system
 
-- Use the same API for 20+ backends
+- Use the same API for nearly 20 backends
 - Fast local dataframes with embedded DuckDB (default), Polars, or DataFusion
 - Iterate locally and deploy remotely by changing a single line of code
 - Compose SQL and Python dataframe code, bridging the gap between data engineering and data science
@@ -90,9 +90,9 @@ grouped  # <2>
 1. Transform the table.
 2. Display the transformed table.
 
-### One API for 20+ backends
+### One API for nearly 20 backends
 
-Use the same dataframe API for 20+ backends:
+Use the same dataframe API for nearly 20 backends:
 
 ```{python}
 #| code-fold: true
