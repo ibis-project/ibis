@@ -246,6 +246,10 @@ class Hash(Value):
 class HashBytes(Value):
     arg: Value[dt.String | dt.Binary]
     how: LiteralType[
+        "md2",
+        "MD2",
+        "md4",
+        "MD4",
         "md5",
         "MD5",
         "sha1",
