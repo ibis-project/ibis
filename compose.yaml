@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.10.1.2812-alpine
+    image: clickhouse/clickhouse-server:24.11.1.2557-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -28,7 +28,7 @@ services:
         - CMD
         - mariadb-admin
         - ping
-    image: mariadb:11.5.2
+    image: mariadb:11.6.2
     ports:
       - 3306:3306
     networks:
@@ -82,7 +82,7 @@ services:
       - mssql
 
   hive-metastore-db:
-    image: postgres:17.0-alpine
+    image: postgres:17.2-alpine
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:464
+    image: trinodb/trino:466
     ports:
       - 8080:8080
     networks:
@@ -172,7 +172,7 @@ services:
       - $PWD/docker/trino/jvm.config:/etc/trino/jvm.config:ro
 
   druid-postgres:
-    image: postgres:17.0-alpine
+    image: postgres:17.2-alpine
     container_name: druid-postgres
     environment:
       POSTGRES_PASSWORD: FoolishPassword

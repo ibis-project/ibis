@@ -153,3 +153,7 @@ docs/**/*.html
 .jupyterlite.doit.db
 docs/jupyter_lite_config.json
 *.quarto_ipynb
+
+# pixi environments
+.pixi
+*.egg-info
