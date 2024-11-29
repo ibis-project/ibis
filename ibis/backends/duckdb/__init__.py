@@ -31,7 +31,6 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
-from ibis.util import deprecated
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, MutableMapping, Sequence
@@ -482,77 +481,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
             pass
-
-    @deprecated(
-        as_of="9.1",
-        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
-    )
-    def register(
-        self,
-        source: str | Path | Any,
-        table_name: str | None = None,
-        **kwargs: Any,
-    ) -> ir.Table:
-        """Register a data source as a table in the current database.
-
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file or directory of
-            parquet/csv files, an iterable of parquet or CSV files, a pandas
-            dataframe, a pyarrow table or dataset, or a postgres URI.
-        table_name
-            An optional name to use for the created table. This defaults to a
-            sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to DuckDB loading functions for
-            CSV or parquet.  See https://duckdb.org/docs/data/csv and
-            https://duckdb.org/docs/data/parquet for more information.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-
-        """
-
-        if isinstance(source, (str, Path)):
-            first = str(source)
-        elif isinstance(source, (list, tuple)):
-            first = source[0]
-        else:
-            try:
-                return self.read_in_memory(source, table_name=table_name, **kwargs)
-            except (duckdb.InvalidInputException, NameError):
-                self._register_failure()
-
-        if first.startswith(("parquet://", "parq://")) or first.endswith(
-            ("parq", "parquet")
-        ):
-            return self.read_parquet(source, table_name=table_name, **kwargs)
-        elif first.startswith(
-            ("csv://", "csv.gz://", "txt://", "txt.gz://")
-        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
-            return self.read_csv(source, table_name=table_name, **kwargs)
-        elif first.startswith(("postgres://", "postgresql://")):
-            return self.read_postgres(source, table_name=table_name, **kwargs)
-        elif first.startswith("sqlite://"):
-            return self.read_sqlite(
-                first[len("sqlite://") :], table_name=table_name, **kwargs
-            )
-        else:
-            self._register_failure()  # noqa: RET503
-
-    def _register_failure(self):
-        import inspect
-
-        msg = ", ".join(
-            name for name, _ in inspect.getmembers(self) if name.startswith("read_")
-        )
-        raise ValueError(
-            f"Cannot infer appropriate read function for input, "
-            f"please call one of {msg} directly"
-        )
 
     @util.experimental
     def read_json(
