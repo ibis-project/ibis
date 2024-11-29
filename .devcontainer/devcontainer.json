@@ -1,6 +1,5 @@
 {
-  "build": { "dockerfile": "Dockerfile",
-             "context": ".." },
+  "build": { "dockerfile": "Dockerfile", "context": ".." },
   "containerUser": "vscode",
   "remoteUser": "vscode",
   "customizations": {
