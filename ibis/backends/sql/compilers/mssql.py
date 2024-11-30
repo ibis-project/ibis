@@ -447,7 +447,7 @@ class MSSQLCompiler(SQLGlotCompiler):
         return self.if_(arg, 1, 0).eq(0)
 
     def visit_HashBytes(self, op, *, arg, how):
-        if how in ("md2", "md4", "md5", "sha1"):
+        if how in ("md5", "sha1"):
             return self.f.hashbytes(how, arg)
         elif how == "sha256":
             return self.f.hashbytes("sha2_256", arg)
