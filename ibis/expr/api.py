@@ -2126,6 +2126,17 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     │     2 │
     │     2 │
     └───────┘
+
+    More than two table expressions can be intersected at once.
+    >>> t3 = ibis.memtable({"a": [2, 3, 3]})
+    >>> ibis.intersect(t1, t2, t3)
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    └───────┘
     """
     return table.intersect(*rest, distinct=distinct) if rest else table
 
