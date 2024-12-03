@@ -1718,7 +1718,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t1 = ibis.memtable({"a": [1, 2]})
+        >>> t1 = ibis.memtable({"a": [1, 2, 2]})
         >>> t1
         ┏━━━━━━━┓
         ┃ a     ┃
@@ -1727,14 +1727,16 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├───────┤
         │     1 │
         │     2 │
+        │     2 │
         └───────┘
-        >>> t2 = ibis.memtable({"a": [2, 3]})
+        >>> t2 = ibis.memtable({"a": [2, 2, 3]})
         >>> t2
         ┏━━━━━━━┓
         ┃ a     ┃
         ┡━━━━━━━┩
         │ int64 │
         ├───────┤
+        │     2 │
         │     2 │
         │     3 │
         └───────┘
@@ -1744,6 +1746,15 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┡━━━━━━━┩
         │ int64 │
         ├───────┤
+        │     2 │
+        └───────┘
+        >>> t1.intersect(t2, distinct=False)
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
         │     2 │
         └───────┘
         """

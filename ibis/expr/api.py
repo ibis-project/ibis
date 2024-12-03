@@ -2079,11 +2079,15 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     Table
         A new table containing the intersection of all input tables.
 
+    See Also
+    --------
+    [`Table.intersect`](./expression-tables.qmd#ibis.expr.types.relations.Table.intersect)
+
     Examples
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> t1 = ibis.memtable({"a": [1, 2]})
+    >>> t1 = ibis.memtable({"a": [1, 2, 2]})
     >>> t1
     ┏━━━━━━━┓
     ┃ a     ┃
@@ -2092,14 +2096,16 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     ├───────┤
     │     1 │
     │     2 │
+    │     2 │
     └───────┘
-    >>> t2 = ibis.memtable({"a": [2, 3]})
+    >>> t2 = ibis.memtable({"a": [2, 2, 3]})
     >>> t2
     ┏━━━━━━━┓
     ┃ a     ┃
     ┡━━━━━━━┩
     │ int64 │
     ├───────┤
+    │     2 │
     │     2 │
     │     3 │
     └───────┘
@@ -2111,7 +2117,15 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     ├───────┤
     │     2 │
     └───────┘
-
+    >>> ibis.intersect(t1, t2, distinct=False)
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     2 │
+    │     2 │
+    └───────┘
     """
     return table.intersect(*rest, distinct=distinct) if rest else table
 
