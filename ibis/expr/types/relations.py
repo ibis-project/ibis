@@ -1757,6 +1757,17 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     2 │
         │     2 │
         └───────┘
+
+        More than two table expressions can be intersected at once.
+        >>> t3 = ibis.memtable({"a": [2, 3, 3]})
+        >>> t1.intersect(t2, t3)
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     2 │
+        └───────┘
         """
         return self._assemble_set_op(ops.Intersection, table, *rest, distinct=distinct)
 
