@@ -151,7 +151,7 @@ ibis.to_sql(joined)
 
 If you pass a function instead of a string or Ibis expression in any projection
 context, it will be invoked with the "parent" table as its argument. This can
-help significantly when [composing complex operations. Consider this SQL:
+help significantly when composing complex operations. Consider this SQL:
 
 ```sql
 SELECT one, avg(abs(the_sum)) AS mad

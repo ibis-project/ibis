@@ -111,7 +111,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v3.2.2
+        uses: astral-sh/setup-uv@v4.2.0
         with:
           enable-cache: true
 
@@ -173,7 +173,7 @@ jobs:
       - name: upload code coverage
         if: success()
         continue-on-error: true
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           flags: backend,${{ matrix.backend.name }},${{ runner.os }},python-${{ steps.install_python.outputs.python-version }}
           token: ${{ secrets.CODECOV_TOKEN }}

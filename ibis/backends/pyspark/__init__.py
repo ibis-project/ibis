@@ -58,13 +58,6 @@ PYSPARK_LT_35 = PYSPARK_VERSION < vparse("3.5")
 ConnectionMode = Literal["streaming", "batch"]
 
 
-def normalize_filenames(source_list):
-    # Promote to list
-    source_list = util.promote_list(source_list)
-
-    return list(map(util.normalize_filename, source_list))
-
-
 @F.pandas_udf(returnType=DoubleType(), functionType=F.PandasUDFType.SCALAR)
 def unwrap_json_float(s: pd.Series) -> pd.Series:
     import json
@@ -872,7 +865,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source_list = normalize_filenames(source_list)
+        source_list = util.normalize_filenames(source_list)
         spark_df = self._session.read.csv(
             source_list, inferSchema=inferSchema, header=header, **kwargs
         )
@@ -912,7 +905,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
                 "Please use `read_json_dir` instead."
             )
-        source_list = normalize_filenames(source_list)
+        source_list = util.normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
         table_name = table_name or util.gen_name("read_json")
 
