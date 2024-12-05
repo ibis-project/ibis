@@ -50,12 +50,11 @@ def gzip_csv(data_dir, tmp_path):
 
 # TODO: rewrite or delete test when register api is removed
 @pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
+    ("fname", "table_name"),
     [
-        param("diamonds.csv", None, "ibis_read_csv_", id="default"),
+        param("diamonds.csv", None, id="default"),
         param(
             "csv://diamonds.csv",
-            "Diamonds2",
             "Diamonds2",
             id="csv_name",
             marks=pytest.mark.notyet(
@@ -65,12 +64,10 @@ def gzip_csv(data_dir, tmp_path):
         param(
             "file://diamonds.csv",
             "fancy_stones",
-            "fancy_stones",
             id="file_name",
         ),
         param(
             "file://diamonds.csv",
-            "fancy stones",
             "fancy stones",
             id="file_atypical_name",
             marks=pytest.mark.notyet(
@@ -79,7 +76,6 @@ def gzip_csv(data_dir, tmp_path):
         ),
         param(
             ["file://diamonds.csv", "diamonds.csv"],
-            "fancy_stones2",
             "fancy_stones2",
             id="multi_csv",
             marks=pytest.mark.notyet(
@@ -105,12 +101,16 @@ def gzip_csv(data_dir, tmp_path):
         "databricks",
     ]
 )
-def test_register_csv(con, data_dir, fname, in_table_name, out_table_name):
+def test_register_csv(con, data_dir, fname, table_name):
+    tables_before = set(con.list_tables())
     with pushd(data_dir / "csv"):
         with pytest.warns(FutureWarning, match="v9.1"):
-            table = con.register(fname, table_name=in_table_name)
+            table = con.register(fname, table_name=table_name)
+    new_tables = set(con.list_tables()) - tables_before
+    assert len(new_tables) == 1
+    if table_name is not None:
+        assert new_tables.pop() == table_name
 
-    assert any(out_table_name in t for t in con.list_tables())
     if con.name != "datafusion":
         table.count().execute()
 
@@ -185,18 +185,12 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
 
 # TODO: rewrite or delete test when register api is removed
 @pytest.mark.parametrize(
-    ("fname", "in_table_name", "out_table_name"),
+    ("fname", "table_name"),
     [
-        param(
-            "parquet://functional_alltypes.parquet", None, "ibis_read_parquet", id="url"
-        ),
-        param("functional_alltypes.parquet", "funk_all", "funk_all", id="basename"),
-        param(
-            "parquet://functional_alltypes.parq", "funk_all", "funk_all", id="url_parq"
-        ),
-        param(
-            "parquet://functional_alltypes", None, "ibis_read_parquet", id="url_no_ext"
-        ),
+        param("parquet://functional_alltypes.parquet", None, id="url"),
+        param("functional_alltypes.parquet", "my_table1", id="basename"),
+        param("parquet://functional_alltypes.parq", "my_table2", id="url_parq"),
+        param("parquet://functional_alltypes", None, id="url_no_ext"),
     ],
 )
 @pytest.mark.notyet(
@@ -214,9 +208,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "trino",
     ]
 )
-def test_register_parquet(
-    con, tmp_path, data_dir, fname, in_table_name, out_table_name
-):
+def test_register_parquet(con, tmp_path, data_dir, fname, table_name):
     pq = pytest.importorskip("pyarrow.parquet")
 
     fname = Path(fname)
@@ -224,12 +216,14 @@ def test_register_parquet(
 
     pq.write_table(table, tmp_path / fname.name)
 
+    tables_before = set(con.list_tables())
     with pushd(tmp_path):
         with pytest.warns(FutureWarning, match="v9.1"):
-            table = con.register(f"parquet://{fname.name}", table_name=in_table_name)
-
-        assert any(out_table_name in t for t in con.list_tables())
-
+            table = con.register(f"parquet://{fname.name}", table_name=table_name)
+    new_tables = set(con.list_tables()) - tables_before
+    assert len(new_tables) == 1
+    if table_name is not None:
+        assert new_tables.pop() == table_name
     if con.name != "datafusion":
         table.count().execute()
 
@@ -263,6 +257,7 @@ def test_register_iterator_parquet(
 
     pq.write_table(table, tmp_path / "functional_alltypes.parquet")
 
+    tables_before = set(con.list_tables())
     with pushd(tmp_path):
         with pytest.warns(FutureWarning, match="v9.1"):
             table = con.register(
@@ -272,8 +267,8 @@ def test_register_iterator_parquet(
                 ],
                 table_name=None,
             )
-
-    assert any("ibis_read_parquet" in t for t in con.list_tables())
+    new_tables = set(con.list_tables()) - tables_before
+    assert len(new_tables) == 1
     assert table.count().execute()
 
 
