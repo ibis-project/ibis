@@ -27,7 +27,6 @@ from ibis.backends.flink.ddl import (
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.errors import Py4JJavaError
 from ibis.expr.operations.udf import InputType
-from ibis.util import gen_name
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -767,7 +766,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
                 f"`schema` must be explicitly provided when calling `read_{file_type}`"
             )
 
-        table_name = table_name or gen_name(f"read_{file_type}")
+        table_name = table_name or util.gen_name_from_path(path)
         tbl_properties = {
             "connector": "filesystem",
             "path": path,

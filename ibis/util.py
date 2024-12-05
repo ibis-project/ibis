@@ -16,6 +16,7 @@ import textwrap
 import types
 import uuid
 import warnings
+from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from uuid import uuid4
@@ -27,7 +28,6 @@ from ibis.common.typing import Coercible
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
     from numbers import Real
-    from pathlib import Path
 
     import ibis.expr.types as ir
 
@@ -520,6 +520,28 @@ def gen_name(namespace: str) -> str:
     """Create a unique identifier."""
     uid = base64.b32encode(uuid.uuid4().bytes).decode().rstrip("=").lower()
     return f"ibis_{namespace}_{uid}"
+
+
+def gen_name_from_path(path: str | Path) -> str:
+    """Create a user-friendly unique identifier from a file path.
+
+    This is NOT a stable API. We may change the implementation at any time.
+
+    Examples
+    --------
+    >>> gen_name_from_path("s3://path/to/myfile.csv")  # doctest: +ELLIPSIS
+    'ibis_read_s3__path__to__myfile__csv...'
+    >>> gen_name_from_path("s3://long_long_long_path/to/myfile.csv")  # doctest: +ELLIPSIS
+    'ibis_read_s3__myfile__csv...'
+    """
+    basename = os.path.basename(path)
+    basename = re.sub(r"[^a-zA-Z0-9_]", "_", basename)
+    # MySQL has a limit of 64 characters for table names.
+    # Let's not give users runtime errors because of this.
+    basename = basename[-25:]
+    basename = basename.strip("_")
+    prefix = f"read_{basename}"
+    return gen_name(prefix)
 
 
 def slice_to_limit_offset(
