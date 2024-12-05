@@ -120,7 +120,6 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "flink",
         "impala",
         "mssql",
@@ -143,7 +142,6 @@ def test_read_csv_gz(con, data_dir, gzip_csv):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "flink",
         "impala",
         "mssql",
@@ -170,7 +168,6 @@ def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
 @pytest.mark.notyet(
     [
         "bigquery",
-        "clickhouse",
         "flink",
         "impala",
         "mssql",
