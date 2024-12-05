@@ -1097,7 +1097,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql"],
+                    ["impala"],
                     raises=AssertionError,
                     reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
@@ -1114,7 +1114,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql"],
+                    ["impala"],
                     raises=AssertionError,
                     reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
@@ -1131,7 +1131,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql"],
+                    ["impala"],
                     raises=AssertionError,
                     reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
@@ -1148,7 +1148,7 @@ def string_temp_table(backend, con):
                     reason="Treats len(🐍) == 2",
                 ),
                 pytest.mark.notyet(
-                    ["impala", "mysql"],
+                    ["impala"],
                     raises=AssertionError,
                     reason="Treats len(🐍) == 4 and accented characters as len 2",
                 ),
@@ -1159,11 +1159,6 @@ def string_temp_table(backend, con):
             lambda t: t.str.len().astype("int32"),
             id="len",
             marks=[
-                pytest.mark.notyet(
-                    ["mysql"],
-                    raises=AssertionError,
-                    reason="thinks emoji are 4 characters long",
-                ),
                 pytest.mark.notyet(
                     ["impala", "polars"],
                     raises=AssertionError,
