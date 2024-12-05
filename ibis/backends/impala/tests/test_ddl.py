@@ -172,22 +172,6 @@ def test_drop_view(con, created_view):
     assert created_view not in con.list_tables()
 
 
-@pytest.fixture
-def path_uuid():
-    return f"change-location-{util.guid()}"
-
-
-@pytest.fixture
-def table(con, tmp_dir, path_uuid):
-    table_name = f"table_{util.guid()}"
-    fake_path = pjoin(tmp_dir, path_uuid)
-    schema = ibis.schema([("foo", "string"), ("bar", "int64")])
-    yield con.create_table(
-        table_name, schema=schema, format="parquet", external=True, location=fake_path
-    )
-    con.drop_table(table_name)
-
-
 def test_query_avro(con, test_data_dir):
     hdfs_path = pjoin(test_data_dir, "directory/avro/tpch/region")
 
