@@ -455,7 +455,7 @@ class StringValue(Value):
         self,
         how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
     ) -> ir.BinaryValue:
-        """Compute the binary hash value of the input.
+        r"""Compute the binary hash value of the input.
 
         Parameters
         ----------
@@ -466,6 +466,12 @@ class StringValue(Value):
         -------
         BinaryValue
             Binary expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> str_lit = ibis.literal("hello")
+        >>> result = str_lit.hashbytes("md5")  # b']A@*\xbcK*v\xb9q\x9d\x91\x10\x17\xc5\x92'
         """
         return ops.HashBytes(self, how).to_expr()
 
@@ -492,7 +498,7 @@ class StringValue(Value):
         >>> t = ibis.memtable({"species": ["Adelie", "Chinstrap", "Gentoo"]})
         >>> t.species.hexdigest()
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ HexDigest(species)                                           ┃
+        ┃ HexDigest(species)                                               ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
         │ string                                                           │
         ├──────────────────────────────────────────────────────────────────┤
