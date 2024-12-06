@@ -530,9 +530,7 @@ def gen_name_from_path(path: str | Path) -> str:
     Examples
     --------
     >>> gen_name_from_path("s3://path/to/myfile.csv")  # doctest: +ELLIPSIS
-    'ibis_read_s3__path__to__myfile__csv...'
-    >>> gen_name_from_path("s3://long_long_long_path/to/myfile.csv")  # doctest: +ELLIPSIS
-    'ibis_read_s3__myfile__csv...'
+    'ibis_read_myfile_csv...'
     """
     basename = os.path.basename(path)
     basename = re.sub(r"[^a-zA-Z0-9_]", "_", basename)
