@@ -98,13 +98,11 @@ We can use the `case` function to create a new column that categorizes the outco
 
 ```{python}
 
-case_expr = (
-    ibis.case()
-    .when((_.actual == 0) & (_.prediction == 0), "TN")
-    .when((_.actual == 0) & (_.prediction == 1), "FP")
-    .when((_.actual == 1) & (_.prediction == 0), "FN")
-    .when((_.actual == 1) & (_.prediction == 1), "TP")
-    .end()
+case_expr = ibis.cases(
+    ((_.actual == 0) & (_.prediction == 0), "TN"),
+    ((_.actual == 0) & (_.prediction == 1), "FP"),
+    ((_.actual == 1) & (_.prediction == 0), "FN"),
+    ((_.actual == 1) & (_.prediction == 1), "TP"),
 )
 
 t = t.mutate(outcome=case_expr)
