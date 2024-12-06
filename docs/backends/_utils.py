@@ -63,7 +63,7 @@ def render_method(*, member, renderer: MdRenderer) -> Iterator[str]:
     yield f"{header} {name} {{ #{member.path} }}"
     yield "\n"
     if params is not None:
-        yield f"`{name}({params})`"
+        yield f"`{name}({', '.join(params)})`"
     yield "\n"
 
     yield get_renderer(header_level + 1).render(find_member_with_docstring(member))
