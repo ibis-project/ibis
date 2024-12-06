@@ -84,7 +84,6 @@ from _utils import get_backend, get_object, render_methods
 
 render_methods = partial(render_methods, level=4)
 backend = get_object("ibis.backends.impala", "Backend")
-table = get_object("ibis.backends.impala.client", "ImpalaTable")
 ```
 
 ## Database methods
@@ -97,8 +96,7 @@ render_methods(backend, "create_database", "drop_database", "list_databases")
 
 ## Table methods
 
-The `Backend` object itself has many helper utility methods. You'll
-find the most methods on `ImpalaTable`.
+The `Backend` object itself has many helper utility methods.
 
 ```{python}
 #| echo: false
@@ -114,20 +112,6 @@ render_methods(
     "truncate_table",
     "get_schema",
     "cache_table",
-)
-```
-
-The best way to interact with a single table is through the
-`ImpalaTable` object you get back from `Backend.table`.
-
-```{python}
-#| echo: false
-#| output: asis
-render_methods(
-    table,
-    "drop",
-    "insert",
-    "describe_formatted",
 )
 ```
 
@@ -187,9 +171,7 @@ import ibis
 client = ibis.impala.connect(host=host)
 ```
 
-You can accomplish many tasks directly through the client object, but we
-additionally provide APIs to streamline tasks involving a single Impala
-table or database.
+You can accomplish many tasks directly through the client object.
 
 ## Table objects
 
@@ -204,17 +186,6 @@ expression referencing a physical Impala table:
 
 ```python
 table = client.table('functional_alltypes', database='ibis_testing')
-```
-
-`ImpalaTable` is a Python subclass of the more general Ibis `Table`
-that has additional Impala-specific methods. So you can use it
-interchangeably with any code expecting a `Table`.
-
-While the client has a `drop_table` method you can use to drop tables,
-the table itself has a method `drop` that you can use:
-
-```python
-table.drop()
 ```
 
 ## Expression execution
@@ -257,11 +228,11 @@ If you pass an Ibis expression to `create_table`, Ibis issues a
 `CREATE TABLE ... AS SELECT` (CTAS) statement:
 
 ```python
->>> table = db.table('functional_alltypes')
+>>> table = client.table('functional_alltypes')
 >>> expr = table.group_by('string_col').size()
->>> db.create_table('string_freqs', expr, format='parquet')
+>>> client.create_table('string_freqs', expr, format='parquet')
 
->>> freqs = db.table('string_freqs')
+>>> freqs = client.table('string_freqs')
 >>> freqs.to_pandas()
   string_col  count
 0          9    730
@@ -294,13 +265,12 @@ translated to the appropriate Impala schema and data types.
 As Ibis types are simplified compared with Impala types, this may expand
 in the future to include a more fine-grained schema declaration.
 
-You can use the `create_table` method either on a database or client
-object.
+You can use the `create_table` method on the client object.
 
 ```python
 schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
-db.create_table(name, schema=schema)
+client.create_table(name, schema=schema)
 ```
 
 By default, this stores the data files in the database default location.
@@ -311,14 +281,14 @@ from getpass import getuser
 schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
 location = '/home/{}/new-table-data'.format(getuser())
-db.create_table(name, schema=schema, location=location)
+client.create_table(name, schema=schema, location=location)
 ```
 
 If the schema matches a known table schema, you can always use the
 `schema` method to get a schema object:
 
 ```python
->>> t = db.table('functional_alltypes')
+>>> t = client.table('functional_alltypes')
 >>> t.schema()
 ibis.Schema {
   id               int32
@@ -345,7 +315,7 @@ used as the partition keys.
 ```python
 schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
-db.create_table(name, schema=schema, partition=['year', 'month'])
+client.create_table(name, schema=schema, partition=['year', 'month'])
 ```
 
 ## Partitioned tables
@@ -355,7 +325,7 @@ each partition behaves as its own \"subtable\" sharing a common schema,
 each partition can have its own file format, directory path,
 serialization properties, and so forth.
 
-There are a handful of table methods for adding and removing partitions
+There are a handful of methods for adding and removing partitions
 and getting information about the partition schema and any existing
 partition data:
 
@@ -363,12 +333,11 @@ partition data:
 #| echo: false
 #| output: asis
 render_methods(
-    table,
+    backend,
     "add_partition",
     "drop_partition",
-    "is_partitioned",
-    "partition_schema",
-    "partitions",
+    "get_partition_schema",
+    "list_partitions",
 )
 ```
 
@@ -379,15 +348,13 @@ values, or pass a list of the partition values:
 ```python
 schema = ibis.schema(dict(foo='string', year='int32', month='int16'))
 name = 'new_table'
-db.create_table(name, schema=schema, partition=['year', 'month'])
+client.create_table(name, schema=schema, partition=['year', 'month'])
 
-table = db.table(name)
+client.add_partition(name, {'year': 2007, 'month', 4})
+client.add_partition(name, [2007, 5])
+client.add_partition(name, [2007, 6])
 
-table.add_partition({'year': 2007, 'month', 4})
-table.add_partition([2007, 5])
-table.add_partition([2007, 6])
-
-table.drop_partition([2007, 6])
+client.drop_partition(name, [2007, 6])
 ```
 
 We'll cover partition metadata management and data loading below.
@@ -398,13 +365,15 @@ If the schemas are compatible, you can insert into a table directly from
 an Ibis table expression:
 
 ```python
->>> t = db.functional_alltypes
->>> db.create_table('insert_test', schema=t.schema())
->>> target = db.table('insert_test')
+>>> t = client.functional_alltypes
+>>> client.create_table('insert_test', schema=t.schema())
 
->>> target.insert(t[:3])
->>> target.insert(t[:3])
->>> target.insert(t[:3])
+>>> client.insert('insert_test', t[:3])
+>>> client.insert('insert_test', t[:3])
+>>> client.insert('insert_test', t[:3])
+
+>>> target = client.table('insert_test')
+
 
 >>> target.to_pandas()
      id  bool_col  tinyint_col  ...           timestamp_col  year  month
@@ -419,8 +388,6 @@ an Ibis table expression:
 8  5772      True            2  ... 2010-08-01 00:02:00.100  2010      8
 
 [9 rows x 13 columns]
-
->>> target.drop()
 ```
 
 If the table is partitioned, you must indicate the partition you are
@@ -428,7 +395,7 @@ inserting into:
 
 ```python
 part = {'year': 2007, 'month': 4}
-table.insert(expr, partition=part)
+client.insert(table_name, expr, partition=part)
 ```
 
 ## Managing table metadata
@@ -439,17 +406,16 @@ metadata.
 ### Detailed table metadata: `DESCRIBE FORMATTED`
 
 To get a handy wrangled version of `DESCRIBE FORMATTED` use the
-`metadata` method.
+`describe_formatted` method.
 
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(table, "metadata")
+render_methods(backend, "describe_formatted")
 ```
 
 ```python
->>> t = client.table('ibis_testing.functional_alltypes')
->>> meta = t.metadata()
+>>> meta = t.describe_formatted('functional_alltypes', database='ibis_testing')
 >>> meta
 <class 'ibis.backends.impala.metadata.TableMetadata'>
 {'info': {'CreateTime': datetime.datetime(2021, 1, 14, 21, 23, 8),
@@ -496,19 +462,17 @@ render_methods(table, "metadata")
 datetime.datetime(2021, 1, 14, 21, 23, 8)
 ```
 
-The `files` function is also available to see all of the physical HDFS
+The `show_files` function is also available to see all of the physical HDFS
 data files backing a table:
 
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(table, "files")
+render_methods(backend, "show_files")
 ```
 
 ```python
->>> ss = c.table('tpcds_parquet.store_sales')
-
->>> ss.files()[:5]
+>>> client.show_files('store_sales', database='tpcds_parquet')[:5]
                                                 path      size  \
 0  hdfs://localhost:20500/test-warehouse/tpcds.st...  160.61KB
 1  hdfs://localhost:20500/test-warehouse/tpcds.st...  123.88KB
@@ -526,36 +490,18 @@ render_methods(table, "files")
 
 ### Modifying table metadata
 
-For unpartitioned tables, you can use the `alter` method to change its
-location, file format, and other properties. For partitioned tables, to
-change partition-specific metadata use `alter_partition`.
-
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(table, "alter", "alter_partition")
+render_methods(backend, "alter_partition")
 ```
 
-For example, if you wanted to \"point\" an existing table at a directory
-of CSV files, you could run the following command:
+If a table is partitioned, you can modify the properties of a particular
+partition:
 
 ```python
-from getpass import getuser
-
-csv_props = {
-    'serialization.format': ',',
-    'field.delim': ',',
-}
-data_dir = '/home/{}/my-csv-files'.format(getuser())
-
-table.alter(location=data_dir, format='text', serde_properties=csv_props)
-```
-
-If the table is partitioned, you can modify only the properties of a
-particular partition:
-
-```python
-table.alter_partition(
+client.alter_partition(
+    'table_name',
     {'year': 2007, 'month': 5},
     location=data_dir,
     format='text',
@@ -570,7 +516,7 @@ table.alter_partition(
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(table, "compute_stats")
+render_methods(backend, "compute_stats")
 ```
 
 Impala-backed physical tables have a method `compute_stats` that
@@ -579,14 +525,14 @@ query planning and optimization. It is standard practice to invoke this
 after creating a table or loading new data:
 
 ```python
-table.compute_stats()
+client.compute_stats('table_name')
 ```
 
 If you are using a recent version of Impala, you can also access the
 `COMPUTE INCREMENTAL STATS` DDL command:
 
 ```python
-table.compute_stats(incremental=True)
+client.compute_stats('table_name', incremental=True)
 ```
 
 ### Seeing table and column statistics
@@ -594,17 +540,16 @@ table.compute_stats(incremental=True)
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(table, "column_stats", "stats")
+render_methods(backend, "column_stats", "table_stats")
 ```
 
-The `compute_stats` and `stats` functions return the results of
+The `compute_stats` and `table_stats` functions return the results of
 `SHOW COLUMN STATS` and `SHOW TABLE STATS`, respectively, and their
 output will depend, of course, on the last `COMPUTE STATS` call.
 
 ```python
->>> ss = c.table('tpcds_parquet.store_sales')
->>> ss.compute_stats(incremental=True)
->>> stats = ss.stats()
+>>> client.compute_stats('store_sales', database='tpcds_parquet', incremental=True)
+>>> stats = client.table_stats('store_sales', database='tpcds_parquet')
 >>> stats[:5]
   ss_sold_date_sk  #Rows  #Files     Size Bytes Cached Cache Replication  \
 0         2450829   1071       1  78.34KB   NOT CACHED        NOT CACHED
@@ -627,7 +572,7 @@ output will depend, of course, on the last `COMPUTE STATS` call.
 3  hdfs://localhost:20500/test-warehouse/tpcds.st...
 4  hdfs://localhost:20500/test-warehouse/tpcds.st...
 
->>> cstats = ss.column_stats()
+>>> cstats = client.column_status('store_sales', database='tpcds_parquet')
 >>> cstats
                    Column          Type  #Distinct Values  #Nulls  Max Size  Avg Size
 0         ss_sold_time_sk        BIGINT             13879      -1       NaN         8
@@ -657,14 +602,12 @@ output will depend, of course, on the last `COMPUTE STATS` call.
 
 ### `REFRESH` and `INVALIDATE METADATA`
 
-These DDL commands are available as table-level and client-level
-methods:
+These DDL commands are available as client-level methods:
 
 ```{python}
 #| echo: false
 #| output: asis
-render_methods(backend, "invalidate_metadata")
-render_methods(table, "invalidate_metadata", "refresh")
+render_methods(backend, "invalidate_metadata", "refresh")
 ```
 
 You can invalidate the cached metadata for a single table or for all
@@ -674,10 +617,9 @@ tables using `invalidate_metadata`, and similarly invoke
 ```python
 client.invalidate_metadata()
 
-table = db.table(table_name)
-table.invalidate_metadata()
+client.invalidate_metadata(table_name)
 
-table.refresh()
+client.refresh(table_name)
 ```
 
 These methods are often used in conjunction with the `LOAD DATA`
@@ -782,8 +724,7 @@ For example:
 
 >>> data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
 
->>> db.create_table('pandas_table', data)
->>> t = db.pandas_table
+>>> t = client.create_table('pandas_table', data)
 >>> t.to_pandas()
   bar  foo
 0   a    1
@@ -791,12 +732,9 @@ For example:
 2   c    3
 3   d    4
 
->>> t.drop()
+>>> to_insert = client.create_table('empty_for_insert', schema=t.schema())
 
->>> db.create_table('empty_for_insert', schema=t.schema())
-
->>> to_insert = db.empty_for_insert
->>> to_insert.insert(data)
+>>> client.insert('empty_for_insert', data)
 >>> to_insert.to_pandas()
   bar  foo
 0   a    1
@@ -804,35 +742,6 @@ For example:
 2   c    3
 3   d    4
 
->>> to_insert.drop()
-```
-
-```python
->>> import pandas as pd
-
->>> data = pd.DataFrame({'foo': [1, 2, 3, 4], 'bar': ['a', 'b', 'c', 'd']})
-
->>> db.create_table('pandas_table', data)
->>> t = db.pandas_table
->>> t.to_pandas()
-   foo bar
-0    1   a
-1    2   b
-2    3   c
-3    4   d
-
->>> t.drop()
->>> db.create_table('empty_for_insert', schema=t.schema())
->>> to_insert = db.empty_for_insert
->>> to_insert.insert(data)
->>> to_insert.to_pandas()
-   foo bar
-0    1   a
-1    2   b
-2    3   c
-3    4   d
-
->>> to_insert.drop()
 ```
 
 ## Queries on Parquet, Avro, and Delimited files
