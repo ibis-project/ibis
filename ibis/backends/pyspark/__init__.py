@@ -827,7 +827,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         path = util.normalize_filename(path)
         spark_df = self._session.read.parquet(path, **kwargs)
-        table_name = table_name or util.gen_name_from_path(path, "parquet")
+        table_name = table_name or util.gen_name_from_path(path)
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -869,7 +869,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         spark_df = self._session.read.csv(
             source_list, inferSchema=inferSchema, header=header, **kwargs
         )
-        table_name = table_name or util.gen_name_from_path(source_list[0], "csv")
+        table_name = table_name or util.gen_name_from_path(source_list[0])
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -907,7 +907,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         source_list = util.normalize_filenames(source_list)
         spark_df = self._session.read.json(source_list, **kwargs)
-        table_name = table_name or util.gen_name_from_path(source_list[0], "json")
+        table_name = table_name or util.gen_name_from_path(source_list[0])
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -1217,7 +1217,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                     watermark.time_col,
                     _interval_to_string(watermark.allowed_delay),
                 )
-        table_name = table_name or util.gen_name_from_path(path, "csv_dir")
+        table_name = table_name or util.gen_name_from_path(path)
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -1272,7 +1272,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                     watermark.time_col,
                     _interval_to_string(watermark.allowed_delay),
                 )
-        table_name = table_name or util.gen_name_from_path(path, "parquet_dir")
+        table_name = table_name or util.gen_name_from_path(path)
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
@@ -1318,7 +1318,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                     watermark.time_col,
                     _interval_to_string(watermark.allowed_delay),
                 )
-        table_name = table_name or util.gen_name_from_path(path, "json_dir")
+        table_name = table_name or util.gen_name_from_path(path)
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)

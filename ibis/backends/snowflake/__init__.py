@@ -1010,7 +1010,7 @@ $$ {defn["source"]} $$"""
         """
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
-        table = table_name or util.gen_name_from_path(path, "json_snowflake")
+        table = table_name or util.gen_name_from_path(path)
         quoted = self.compiler.quoted
         qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
@@ -1107,7 +1107,7 @@ $$ {defn["source"]} $$"""
         )
 
         stage = util.gen_name("read_parquet_stage")
-        table = table_name or util.gen_name_from_path(abspath, "parquet_snowflake")
+        table = table_name or util.gen_name_from_path(abspath)
         quoted = self.compiler.quoted
         qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
