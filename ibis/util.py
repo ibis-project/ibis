@@ -16,7 +16,6 @@ import textwrap
 import types
 import uuid
 import warnings
-from pathlib import Path
 from types import ModuleType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from uuid import uuid4
@@ -28,6 +27,7 @@ from ibis.common.typing import Coercible
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
     from numbers import Real
+    from pathlib import Path
 
     import ibis.expr.types as ir
 
