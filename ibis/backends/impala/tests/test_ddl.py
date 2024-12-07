@@ -93,16 +93,6 @@ def test_truncate_table(con, alltypes, temp_table):
     assert not nrows
 
 
-def test_truncate_table_expression(con, alltypes, temp_table):
-    expr = alltypes.limit(1)
-
-    con.create_table(temp_table, obj=expr)
-    t = con.table(temp_table)
-    t.truncate()
-    nrows = t.count().execute()
-    assert not nrows
-
-
 def test_ctas_from_table_expr(con, alltypes, temp_table):
     t = con.create_table(temp_table, alltypes)
     assert t.count().execute()
@@ -130,19 +120,15 @@ def test_insert_table(con, alltypes, temp_table, test_data_db):
     expr = alltypes
     db = test_data_db
 
-    con.create_table(temp_table, expr.limit(0), database=db)
+    t = con.create_table(temp_table, expr.limit(0), database=db)
 
-    con.insert(temp_table, expr.limit(10), database=db)
-
-    # check using ImpalaTable.insert
-    t = con.table(temp_table, database=db)
-    t.insert(expr.limit(10))
+    con.insert(temp_table, expr.limit(20), database=db)
 
     sz = t.count()
     assert sz.execute() == 20
 
     # Overwrite and verify only 10 rows now
-    t.insert(expr.limit(10), overwrite=True)
+    con.insert(temp_table, expr.limit(10), database=db, overwrite=True)
     assert sz.execute() == 10
 
 
@@ -157,19 +143,12 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
         database=db,
     )
 
-    t = con.table(temp_table, database=db)
-
-    to_insert = expr.select(
-        expr.tinyint_col, expr.smallint_col.name("int_col"), expr.string_col
-    )
-    t.insert(to_insert.limit(10))
-
     to_insert = expr.select(
         expr.tinyint_col,
         expr.smallint_col.cast("int32").name("int_col"),
         expr.string_col,
     )
-    t.insert(to_insert.limit(10))
+    con.insert(temp_table, to_insert.limit(10), database=db)
 
     to_insert = expr.select(
         expr.tinyint_col, expr.bigint_col.name("int_col"), expr.string_col
@@ -177,16 +156,7 @@ def test_insert_validate_types(con, alltypes, test_data_db, temp_table):
 
     limit_expr = to_insert.limit(10)
     with pytest.raises(com.IbisError):
-        t.insert(limit_expr)
-
-
-def test_compute_stats(con):
-    t = con.table("functional_alltypes")
-
-    t.compute_stats()
-    t.compute_stats(incremental=True)
-
-    con.compute_stats("functional_alltypes")
+        con.insert(temp_table, limit_expr, database=db)
 
 
 @pytest.fixture
@@ -200,53 +170,6 @@ def created_view(con, alltypes):
 def test_drop_view(con, created_view):
     con.drop_view(created_view)
     assert created_view not in con.list_tables()
-
-
-@pytest.fixture
-def path_uuid():
-    return f"change-location-{util.guid()}"
-
-
-@pytest.fixture
-def table(con, tmp_dir, path_uuid):
-    table_name = f"table_{util.guid()}"
-    fake_path = pjoin(tmp_dir, path_uuid)
-    schema = ibis.schema([("foo", "string"), ("bar", "int64")])
-    yield con.create_table(
-        table_name, schema=schema, format="parquet", external=True, location=fake_path
-    )
-    con.drop_table(table_name)
-
-
-def test_change_location(table, tmp_dir, path_uuid):
-    old_loc = table.metadata().location
-
-    new_path = pjoin(tmp_dir, "new-path")
-    table.alter(location=new_path)
-
-    new_loc = table.metadata().location
-    assert new_loc == old_loc.replace(path_uuid, "new-path")
-
-
-def test_change_properties(table):
-    props = {"foo": "1", "bar": "2"}
-
-    table.alter(tbl_properties=props)
-    tbl_props = table.metadata().tbl_properties
-    for k, v in props.items():
-        assert v == tbl_props[k]
-
-    table.alter(serde_properties=props)
-    serde_props = table.metadata().serde_properties
-    for k, v in props.items():
-        assert v == serde_props[k]
-
-
-def test_change_format(table):
-    table.alter(format="avro")
-
-    meta = table.metadata()
-    assert "Avro" in meta.hive_format
 
 
 def test_query_avro(con, test_data_dir):
@@ -265,7 +188,7 @@ def test_query_avro(con, test_data_dir):
     table = con.avro_file(hdfs_path, avro_schema)
 
     # table exists
-    assert table._qualified_name in con.list_tables()
+    assert table.get_name() in con.list_tables()
 
     expr = table.r_name.value_counts()
     expr.execute()

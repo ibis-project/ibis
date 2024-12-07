@@ -259,3 +259,13 @@ def test_sample(backend_name, snapshot, subquery):
     row = ibis.to_sql(t.sample(0.5, method="row"), dialect=backend_name)
     snapshot.assert_match(block, "block.sql")
     snapshot.assert_match(row, "row.sql")
+
+
+@pytest.mark.parametrize("backend_name", _get_backends_to_test())
+@pytest.mark.notimpl(["polars"], raises=ValueError, reason="not a SQL backend")
+def test_order_by_no_deference_literals(backend_name, snapshot):
+    t = ibis.table({"a": "int"}, name="test")
+    s = t.select("a", i=ibis.literal(9), s=ibis.literal("foo"))
+    o = s.order_by("a", "i", "s")
+    sql = ibis.to_sql(o, dialect=backend_name)
+    snapshot.assert_match(sql, "out.sql")
