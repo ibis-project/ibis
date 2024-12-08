@@ -86,7 +86,13 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str) -> ir.Table:
+    def table(self, name: str, database: None = None) -> ir.Table:
+        if database is not None:
+            raise com.IbisError(
+                "Passing `database` to the Polars backend's `table()` method is not "
+                "supported: Polars cannot set a database."
+            )
+
         table = self._tables.get(name)
         if table is None:
             raise com.TableNotFound(name)
@@ -390,19 +396,20 @@ class Backend(BaseBackend, NoUrl):
     ) -> ir.Table:
         if database is not None:
             raise com.IbisError(
-                "Passing `database` to the Polars backend create_table method has no "
-                "effect: Polars cannot set a database."
+                "Passing `database` to the Polars backend's `create_table()` method is "
+                "not supported: Polars cannot set a database."
             )
 
         if temp is False:
             raise com.IbisError(
-                "Passing `temp=False` to the Polars backend create_table method is not "
-                "supported: all tables are in memory and temporary."
+                "Passing `temp=False` to the Polars backend's `create_table()` method "
+                "is not supported: all tables are in memory and temporary."
             )
 
         if not overwrite and name in self._tables:
             raise com.IntegrityError(
-                f"Table {name} already exists. Use overwrite=True to clobber existing tables"
+                f"Table {name!r} already exists. Use `overwrite=True` to clobber "
+                "existing tables."
             )
 
         if schema is not None and obj is None:
