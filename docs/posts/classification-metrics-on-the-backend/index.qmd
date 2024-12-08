@@ -215,7 +215,7 @@ f1_score_expr = 2 * tp / (t.actual.sum() + t.prediction.sum())
 print(
     f"accuracy={accuracy_expr.to_pyarrow().as_py()}",
     f"precision={precision_expr.to_pyarrow().as_py()}",
-    f"precision={recall_expr.to_pyarrow().as_py()}",
+    f"recall_expr={recall_expr.to_pyarrow().as_py()}",
     f"f1_score={f1_score_expr.to_pyarrow().as_py()}",
     sep="\n",
 )
