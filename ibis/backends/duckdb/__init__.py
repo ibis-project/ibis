@@ -588,8 +588,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             An ibis table expression
 
         """
+        filenames = util.normalize_filenames(source_list)
         if not table_name:
-            table_name = util.gen_name("read_json")
+            table_name = util.gen_name_from_path(filenames[0])
 
         options = [
             sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
@@ -612,11 +613,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         self._create_temp_view(
             table_name,
-            sg.select(STAR).from_(
-                self.compiler.f.read_json_auto(
-                    util.normalize_filenames(source_list), *options
-                )
-            ),
+            sg.select(STAR).from_(self.compiler.f.read_json_auto(filenames, *options)),
         )
 
         return self.table(table_name)
@@ -703,7 +700,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         source_list = util.normalize_filenames(source_list)
 
         if not table_name:
-            table_name = util.gen_name("read_csv")
+            table_name = util.gen_name_from_path(source_list[0])
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
@@ -779,16 +776,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             The just-registered table
 
         """
-
-        if not table_name:
-            table_name = util.gen_name("read_geo")
-
         # load geospatial extension
         self.load_extension("spatial")
 
         source = util.normalize_filename(source)
         if source.startswith(("http://", "https://", "s3://")):
             self._load_extensions(["httpfs"])
+
+        if not table_name:
+            table_name = util.gen_name_from_path(source)
 
         source_expr = sg.select(STAR).from_(
             self.compiler.f.st_read(
@@ -835,7 +831,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         """
         source_list = util.normalize_filenames(source_list)
 
-        table_name = table_name or util.gen_name("read_parquet")
+        table_name = table_name or util.gen_name_from_path(source_list[0])
 
         # Default to using the native duckdb parquet reader
         # If that fails because of auth issues, fall back to ingesting via
@@ -944,7 +940,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         """
         source_table = util.normalize_filenames(source_table)[0]
 
-        table_name = table_name or util.gen_name("read_delta")
+        table_name = table_name or util.gen_name_from_path(source_table)
 
         try:
             from deltalake import DeltaTable
