@@ -4720,6 +4720,10 @@ class Table(Expr, _FixedTextJupyterMixin):
         │  2009 │ Dream     │                44 │
         │  2009 │ Torgersen │                16 │
         └───────┴───────────┴───────────────────┘
+
+        ::: {.callout-note title="Changed in version 10.0.0"}
+        Added `name` parameter.
+        :::
         """
         columns = self.columns
         if name is None:
