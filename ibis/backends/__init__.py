@@ -4,6 +4,7 @@ import abc
 import collections.abc
 import contextlib
 import functools
+import glob
 import importlib.metadata
 import keyword
 import re
@@ -23,6 +24,7 @@ from ibis import util
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Mapping, MutableMapping
+    from io import BytesIO
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -1299,6 +1301,100 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
         )
+
+    @util.experimental
+    def read_parquet(
+        self, path: str | Path | BytesIO, table_name: str | None = None, **kwargs: Any
+    ) -> ir.Table:
+        """Register a parquet file as a table in the current backend.
+
+        This function reads a Parquet file and registers it as a table in the current
+        backend. Note that for Impala and Trino backends, the performance
+        may be suboptimal.
+
+        Parameters
+        ----------
+        path
+            The data source. May be a path to a file, glob pattern to match Parquet files,
+            directory of parquet files, or BytseIO.
+        table_name
+            An optional name to use for the created table. This defaults to
+            a sequentially generated name.
+        **kwargs
+            Additional keyword arguments passed to the pyarrow loading function.
+            See https://arrow.apache.org/docs/python/generated/pyarrow.parquet.read_table.html
+            for more information.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table
+
+        Examples
+        --------
+        Connect to a SQLite database:
+
+        >>> con = ibis.sqlite.connect()
+
+        Read a single parquet file:
+
+        >>> table = con.read_parquet("path/to/file.parquet")
+
+        Read all parquet files in a directory:
+
+        >>> table = con.read_parquet("path/to/parquet_directory/")
+
+        Read parquet files with a glob pattern
+
+        >>> table = con.read_parquet("path/to/parquet_directory/data_*.parquet")
+
+        Read from Amazon S3
+
+        >>> table = con.read_parquet("s3://bucket-name/path/to/file.parquet")
+
+        Read from Google Cloud Storage
+
+        >>> table = con.read_parquet("gs://bucket-name/path/to/file.parquet")
+
+        Read with a custom table name
+
+        >>> table = con.read_parquet("s3://bucket/data.parquet", table_name="my_table")
+
+        Read with additional pyarrow options
+
+        >>> table = con.read_parquet("gs://bucket/data.parquet", columns=["col1", "col2"])
+
+        Read from Amazon S3 with secret info
+
+        >>> from pyarrow import fs
+        >>> s3_fs = fs.S3FileSystem(
+        ...     access_key="YOUR_ACCESS_KEY", secret_key="YOUR_SECRET_KEY", region="YOUR_AWS_REGION"
+        ... )
+        >>> table = con.read_parquet("s3://bucket/data.parquet", filesystem=s3_fs)
+
+        Read from HTTPS URL
+
+        >>> import fsspec
+        >>> from io import BytesIO
+        >>> url = "https://example.com/data/file.parquet"
+        >>> credentials = {}
+        >>> f = fsspec.open(url, **credentials).open()
+        >>> reader = BytesIO(f.read())
+        >>> table = con.read_parquet(reader)
+        >>> reader.close()
+        >>> f.close()
+        """
+        import pyarrow.parquet as pq
+
+        table_name = table_name or util.gen_name("read_parquet")
+        paths = list(glob.glob(str(path)))
+        if paths:
+            table = pq.read_table(paths, **kwargs)
+        else:
+            table = pq.read_table(path, **kwargs)
+
+        self.create_table(table_name, table)
+        return self.table(table_name)
 
     def _transpile_sql(self, query: str, *, dialect: str | None = None) -> str:
         # only transpile if dialect was passed
