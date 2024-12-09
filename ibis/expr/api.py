@@ -1243,6 +1243,9 @@ def cases(
     │ divisible by 2 │
     │ divisible by 2 │
     └────────────────┘
+
+    ::: {.callout-note title="Added in version 10.0.0"}
+    :::
     """
     cases, results = zip(branch, *branches)
     return ops.SearchedCase(cases=cases, results=results, default=else_).to_expr()
