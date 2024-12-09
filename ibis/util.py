@@ -522,6 +522,26 @@ def gen_name(namespace: str) -> str:
     return f"ibis_{namespace}_{uid}"
 
 
+def gen_name_from_path(path: str | Path) -> str:
+    """Create a user-friendly unique identifier from a file path.
+
+    This is NOT a stable API. We may change the implementation at any time.
+
+    Examples
+    --------
+    >>> gen_name_from_path("s3://path/to/myfile.csv")  # doctest: +ELLIPSIS
+    'ibis_read_myfile_csv...'
+    """
+    basename = os.path.basename(path)
+    basename = re.sub(r"[^a-zA-Z0-9_]", "_", basename)
+    # MySQL has a limit of 64 characters for table names.
+    # Let's not give users runtime errors because of this.
+    basename = basename[-25:]
+    basename = basename.strip("_")
+    prefix = f"read_{basename}"
+    return gen_name(prefix)
+
+
 def slice_to_limit_offset(
     what: slice, count: ir.IntegerScalar
 ) -> tuple[int | ir.IntegerScalar, int | ir.IntegerScalar]:

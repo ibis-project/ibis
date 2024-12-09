@@ -883,7 +883,7 @@ $$ {defn["source"]} $$"""
         # 99 is the maximum allowed number of threads by Snowflake:
         # https://docs.snowflake.com/en/sql-reference/sql/put#optional-parameters
         threads = min((os.cpu_count() or 2) // 2, 99)
-        table = table_name or ibis.util.gen_name("read_csv_snowflake")
+        table = table_name or ibis.util.gen_name_from_path(path)
         compiler = self.compiler
         quoted = compiler.quoted
         qtable = sg.to_identifier(table, quoted=quoted)
@@ -1010,7 +1010,7 @@ $$ {defn["source"]} $$"""
         """
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
-        table = table_name or util.gen_name("read_json_snowflake")
+        table = table_name or util.gen_name_from_path(path)
         quoted = self.compiler.quoted
         qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
@@ -1107,7 +1107,7 @@ $$ {defn["source"]} $$"""
         )
 
         stage = util.gen_name("read_parquet_stage")
-        table = table_name or util.gen_name("read_parquet_snowflake")
+        table = table_name or util.gen_name_from_path(abspath)
         quoted = self.compiler.quoted
         qtable = sg.table(table, quoted=quoted)
         threads = min((os.cpu_count() or 2) // 2, 99)
