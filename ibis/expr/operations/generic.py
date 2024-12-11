@@ -13,12 +13,12 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.annotations import attribute
-from ibis.common.deferred import Deferred  # noqa: TCH001
+from ibis.common.deferred import Deferred
 from ibis.common.grounds import Singleton
-from ibis.common.patterns import InstanceOf, Length  # noqa: TCH001
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.patterns import InstanceOf, Length
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.core import Scalar, Unary, Value
-from ibis.expr.operations.relations import Relation  # noqa: TCH001
+from ibis.expr.operations.relations import Relation  # noqa: TC001
 
 
 @public

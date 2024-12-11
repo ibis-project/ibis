@@ -334,7 +334,7 @@ def test_generic_coerced_to():
         def shape(self) -> S: ...
 
     class Literal(Value[T, Scalar]):
-        __slots__ = ("_value", "_dtype")
+        __slots__ = ("_dtype", "_value")
 
         def __init__(self, value, dtype):
             self._value = value

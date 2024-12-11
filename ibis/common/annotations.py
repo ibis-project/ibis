@@ -39,7 +39,7 @@ class ValidationError(Exception):
 
 
 class AttributeValidationError(ValidationError):
-    __slots__ = ("name", "value", "pattern")
+    __slots__ = ("name", "pattern", "value")
 
     def __init__(self, name: str, value: AnyType, pattern: Pattern):
         self.name = name
@@ -51,7 +51,7 @@ class AttributeValidationError(ValidationError):
 
 
 class ReturnValidationError(ValidationError):
-    __slots__ = ("func", "value", "pattern")
+    __slots__ = ("func", "pattern", "value")
 
     def __init__(self, func: Callable, value: AnyType, pattern: Pattern):
         self.func = func
@@ -63,7 +63,7 @@ class ReturnValidationError(ValidationError):
 
 
 class SignatureValidationError(ValidationError):
-    __slots__ = ("msg", "sig", "func", "args", "kwargs", "errors")
+    __slots__ = ("args", "errors", "func", "kwargs", "msg", "sig")
 
     def __init__(
         self,
@@ -102,7 +102,7 @@ class Annotation(Slotted, Immutable):
     Annotations are used to mark fields in a class and to validate them.
     """
 
-    __slots__ = ("pattern", "default")
+    __slots__ = ("default", "pattern")
     pattern: Pattern
     default: AnyType
 
@@ -204,7 +204,7 @@ class Argument(Annotation):
 
     """
 
-    __slots__ = ("typehint", "kind")
+    __slots__ = ("kind", "typehint")
     typehint: AnyType
     kind: int
 
