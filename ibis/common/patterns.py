@@ -549,7 +549,7 @@ class Option(Slotted, Pattern):
 
     """
 
-    __slots__ = ("pattern", "default")
+    __slots__ = ("default", "pattern")
     pattern: Pattern
     default: AnyType
 
@@ -692,7 +692,7 @@ class GenericInstanceOf(Slotted, Pattern):
 
     """
 
-    __slots__ = ("type", "origin", "fields")
+    __slots__ = ("fields", "origin", "type")
     origin: type
     fields: FrozenDict[str, Pattern]
 
@@ -738,7 +738,7 @@ class LazyInstanceOf(Slotted, Pattern):
     """
 
     __fields__ = ("qualname", "package")
-    __slots__ = ("qualname", "package", "loaded")
+    __slots__ = ("loaded", "package", "qualname")
     qualname: str
     package: str
     loaded: type
@@ -775,7 +775,7 @@ class CoercedTo(Slotted, Pattern, Generic[T_co]):
 
     """
 
-    __slots__ = ("type", "func")
+    __slots__ = ("func", "type")
     type: T_co
 
     def __init__(self, type):
@@ -845,7 +845,7 @@ class GenericCoercedTo(Slotted, Pattern):
 
     """
 
-    __slots__ = ("origin", "params", "checker")
+    __slots__ = ("checker", "origin", "params")
     origin: type
     params: FrozenDict[str, type]
     checker: GenericInstanceOf
@@ -1164,7 +1164,7 @@ class GenericSequenceOf(Slotted, Pattern):
 
     """
 
-    __slots__ = ("item", "type", "length")
+    __slots__ = ("item", "length", "type")
     item: Pattern
     type: Pattern
     length: Length
@@ -1218,7 +1218,7 @@ class GenericMappingOf(Slotted, Pattern):
 
     """
 
-    __slots__ = ("key", "value", "type")
+    __slots__ = ("key", "type", "value")
     key: Pattern
     value: Pattern
     type: Pattern
@@ -1285,7 +1285,7 @@ class Object(Slotted, Pattern):
 
     """
 
-    __slots__ = ("type", "args", "kwargs")
+    __slots__ = ("args", "kwargs", "type")
     type: Pattern
     args: tuple[Pattern, ...]
     kwargs: FrozenDict[str, Pattern]
@@ -1341,7 +1341,7 @@ class Object(Slotted, Pattern):
 
 
 class Node(Slotted, Pattern):
-    __slots__ = ("type", "each_arg")
+    __slots__ = ("each_arg", "type")
     type: Pattern
 
     def __init__(self, type, each_arg):
@@ -1408,7 +1408,7 @@ class CallableWith(Slotted, Pattern):
 
 
 class SomeOf(Slotted, Pattern):
-    __slots__ = ("pattern", "delimiter")
+    __slots__ = ("delimiter", "pattern")
 
     @classmethod
     def __create__(cls, *args, **kwargs):
@@ -1432,7 +1432,7 @@ class SomeChunksOf(Slotted, Pattern):
     Designed to be used inside a `PatternList` pattern with the `*` syntax.
     """
 
-    __slots__ = ("pattern", "delimiter")
+    __slots__ = ("delimiter", "pattern")
 
     def __init__(self, *args, **kwargs):
         pattern = GenericSequenceOf(PatternList(args), **kwargs)

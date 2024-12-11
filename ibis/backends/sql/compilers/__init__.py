@@ -3,8 +3,8 @@ from __future__ import annotations
 __all__ = [
     "BigQueryCompiler",
     "ClickHouseCompiler",
-    "DatabricksCompiler",
     "DataFusionCompiler",
+    "DatabricksCompiler",
     "DruidCompiler",
     "DuckDBCompiler",
     "ExasolCompiler",
@@ -16,8 +16,8 @@ __all__ = [
     "PostgresCompiler",
     "PySparkCompiler",
     "RisingWaveCompiler",
-    "SnowflakeCompiler",
     "SQLiteCompiler",
+    "SnowflakeCompiler",
     "TrinoCompiler",
 ]
 

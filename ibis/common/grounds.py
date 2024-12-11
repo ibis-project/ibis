@@ -26,7 +26,7 @@ from ibis.common.bases import (  # noqa: F401
     Immutable,
     Singleton,
 )
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict  # noqa: TC001
 from ibis.common.patterns import Pattern
 from ibis.common.typing import evaluate_annotations
 

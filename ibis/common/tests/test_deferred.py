@@ -290,7 +290,7 @@ class ValueMock(Slotted):
 
 
 class ColumnMock(ValueMock):
-    __slots__ = ("name", "dtype")
+    __slots__ = ("dtype", "name")
 
     def __init__(self, name, dtype):
         super().__init__(name=name, dtype=dtype)
@@ -303,14 +303,14 @@ class ColumnMock(ValueMock):
 
 
 class UnaryMock(ValueMock):
-    __slots__ = ("name", "arg")
+    __slots__ = ("arg", "name")
 
     def __init__(self, name, arg):
         super().__init__(name=name, arg=arg)
 
 
 class BinaryMock(ValueMock):
-    __slots__ = ("name", "left", "right")
+    __slots__ = ("left", "name", "right")
 
     def __init__(self, name, left, right):
         super().__init__(name=name, left=left, right=right)

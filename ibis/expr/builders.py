@@ -13,8 +13,8 @@ from ibis.common.annotations import annotated, attribute
 from ibis.common.deferred import Deferred, Resolver, deferrable
 from ibis.common.exceptions import IbisInputError
 from ibis.common.grounds import Concrete
-from ibis.common.selectors import Selector  # noqa: TCH001
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.selectors import Selector  # noqa: TC001
+from ibis.common.typing import VarTuple  # noqa: TC001
 
 if TYPE_CHECKING:
     from typing_extensions import Self

@@ -105,6 +105,7 @@ repos:
         name: shellcheck
         language: system
         entry: shellcheck
+        args: ["--shell", "bash"]
         types_or:
           - sh
           - shell
