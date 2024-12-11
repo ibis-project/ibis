@@ -229,20 +229,6 @@ def test_read_sqlite_no_table_name(con, tmp_path):
         con.read_sqlite(path)
 
 
-@pytest.mark.xfail(
-    LINUX and SANDBOXED,
-    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=duckdb.IOException,
-)
-def test_register_sqlite(con, tmp_path):
-    path = tmp_path / "test.db"
-    sqlite_con = sqlite3.connect(str(path))
-    sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    with pytest.warns(FutureWarning, match="v9.1"):
-        ft = con.register(f"sqlite://{path}", "t")
-    assert ft.count().execute()
-
-
 # Because we create a new connection and the test requires loading/installing a
 # DuckDB extension, we need to xfail these on Nix.
 @pytest.mark.xfail(
