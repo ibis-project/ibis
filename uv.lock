@@ -2182,7 +2182,7 @@ requires-dist = [
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4,<14" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2,<3" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1,<4" },
-    { name = "sqlglot", specifier = ">=23.4,<25.35" },
+    { name = "sqlglot", specifier = ">=23.4,<26.1" },
     { name = "toolz", specifier = ">=0.11,<2" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321,<1" },
     { name = "typing-extensions", specifier = ">=4.3.0,<5" },
@@ -5138,11 +5138,11 @@ wheels = [
 
 [[package]]
 name = "sqlglot"
-version = "25.34.0"
+version = "26.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0c/d7/525f10c3fa9acf88856671f51a123f514e89e36c559cb5874773af5263a2/sqlglot-25.34.0.tar.gz", hash = "sha256:eff9ff35c1eecc04aa4a9ce377f3b678333952c704659730abe1ac9d6664a3b7", size = 19770469 }
+sdist = { url = "https://files.pythonhosted.org/packages/fc/9a/a815124044d598b7f6174be176f379eccd9d583e3130594c381fdfb5736f/sqlglot-26.0.0.tar.gz", hash = "sha256:eb4470e8b3aa2cff1a4ecca4cfe36658e9797ab82416e566abe12672195e1ab8", size = 19775305 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2a/57/243d4ae9276c1e1da12830f73a424594b04b145e35bb37dc7e14d5e41038/sqlglot-25.34.0-py3-none-any.whl", hash = "sha256:516e515501545a1e1fe792a4082293f2f4ebd46364757ba1c2887600b566b0d3", size = 434958 },
+    { url = "https://files.pythonhosted.org/packages/6b/1e/af60a2188773414a9fa65d0e8a32e81342cfcbedf113a19df724d2968c04/sqlglot-26.0.0-py3-none-any.whl", hash = "sha256:1ee9b285e3138c2642a5670c0dbec9afd01860246837788b0f3d228aa6aff619", size = 435457 },
 ]
 
 [[package]]
