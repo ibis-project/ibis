@@ -4688,6 +4688,10 @@ class Table(Expr, _FixedTextJupyterMixin):
     def value_counts(self, *, name: str | None = None) -> ir.Table:
         """Compute a frequency table of this table's values.
 
+        ::: {.callout-note title="Changed in version 10.0.0"}
+        Added `name` parameter.
+        :::
+
         Parameters
         ----------
         name

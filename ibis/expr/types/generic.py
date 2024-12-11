@@ -2064,6 +2064,9 @@ class Column(Value, _FixedTextJupyterMixin):
         Computes a Table containing the top `k` values by a certain metric
         (defaults to count).
 
+        ::: {.callout-note title="Changed in version 9.5.0"}
+        Added `name` parameter.
+
         Parameters
         ----------
         k
@@ -2122,6 +2125,7 @@ class Column(Value, _FixedTextJupyterMixin):
         │ J      │      5.01 │
         │ H      │      4.13 │
         └────────┴───────────┘
+        :::
         """
         from ibis.expr.types.relations import bind
 
@@ -2268,6 +2272,9 @@ class Column(Value, _FixedTextJupyterMixin):
         │ c      │     3 │
         │ d      │     4 │
         └────────┴───────┘
+
+        ::: {.callout-note title="Added in version 9.5.0"}
+        :::
         """
         colname = self.get_name()
         if name is None:
@@ -2774,6 +2781,9 @@ class Column(Value, _FixedTextJupyterMixin):
         >>> t = ibis.examples.penguins.fetch()
         >>> t.bill_length_mm.to_list(limit=5)
         [39.1, 39.5, 40.3, None, 36.7]
+
+        ::: {.callout-note title="Added in version 10.0.0"}
+        :::
         """
         return self.to_pyarrow(**kwargs).to_pylist()
 
