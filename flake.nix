@@ -12,8 +12,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable-small";
 
     pyproject-nix = {
-      # url = "github:nix-community/pyproject.nix";
-      url = "github:cpcloud/pyproject.nix/update-flit-core-to-work-with-later-nixpkgs";
+      url = "github:nix-community/pyproject.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
@@ -21,6 +20,15 @@
       url = "github:adisbladis/uv2nix";
       inputs = {
         pyproject-nix.follows = "pyproject-nix";
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+
+    pyproject-build-systems = {
+      url = "github:pyproject-nix/build-system-pkgs";
+      inputs = {
+        pyproject-nix.follows = "pyproject-nix";
+        uv2nix.follows = "uv2nix";
         nixpkgs.follows = "nixpkgs";
       };
     };
@@ -33,11 +41,12 @@
     , nixpkgs
     , pyproject-nix
     , uv2nix
+    , pyproject-build-systems
     , ...
     }: {
       overlays.default = nixpkgs.lib.composeManyExtensions [
         gitignore.overlay
-        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix; })
+        (import ./nix/overlay.nix { inherit uv2nix pyproject-nix pyproject-build-systems; })
       ];
     } // flake-utils.lib.eachDefaultSystem (
       localSystem:
