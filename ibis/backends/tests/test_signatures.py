@@ -126,15 +126,6 @@ marks = {
         "read_parquet",
         marks=pytest.mark.notyet(["duckdb", "flink"]),
     ),
-    "table": pytest.param(
-        BaseBackend,
-        "table",
-        marks=pytest.mark.notyet(
-            [
-                "polars",
-            ]
-        ),
-    ),
     "to_parquet_dir": pytest.param(
         BaseBackend,
         "to_parquet_dir",
