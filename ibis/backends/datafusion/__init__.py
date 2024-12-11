@@ -28,7 +28,6 @@ from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.operations.udf import InputType
 from ibis.formats.pyarrow import PyArrowSchema, PyArrowType
-from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
 try:
     from datafusion import ExecutionContext as SessionContext
@@ -160,7 +159,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         yield self.raw_sql(sql).collect()
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
-        name = gen_name("datafusion_metadata_view")
+        name = util.gen_name("datafusion_metadata_view")
         table = sg.table(name, quoted=self.compiler.quoted)
         src = sge.Create(
             this=table,
@@ -345,7 +344,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         table = database.table(table_name)
         return sch.schema(table.schema)
 
-    @deprecated(
+    @util.deprecated(
         as_of="9.1",
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
     )
@@ -437,11 +436,11 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filenames(source_list)
-        table_name = table_name or gen_name("read_csv")
+        paths = util.normalize_filenames(source_list)
+        table_name = table_name or util.gen_name_from_path(paths[0])
         # Our other backends support overwriting views / tables when re-registering
         self.con.deregister_table(table_name)
-        self.con.register_csv(table_name, path, **kwargs)
+        self.con.register_csv(table_name, paths, **kwargs)
         return self.table(table_name)
 
     def read_parquet(
@@ -465,8 +464,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filename(path)
-        table_name = table_name or gen_name("read_parquet")
+        path = util.normalize_filename(path)
+        table_name = table_name or util.gen_name_from_path(path)
         # Our other backends support overwriting views / tables when reregistering
         self.con.deregister_table(table_name)
         self.con.register_parquet(table_name, path, **kwargs)
@@ -494,9 +493,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             The just-registered table
 
         """
-        source_table = normalize_filename(source_table)
+        source_table = util.normalize_filename(source_table)
 
-        table_name = table_name or gen_name("read_delta")
+        table_name = table_name or util.gen_name_from_path(source_table)
 
         # Our other backends support overwriting views / tables when reregistering
         self.con.deregister_table(table_name)
@@ -730,55 +729,55 @@ def _read_in_memory(
 
 @_read_in_memory.register(dict)
 def _pydict(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pydict")
+    tmp_name = util.gen_name("pydict")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_pydict(source, name=tmp_name)
 
 
 @_read_in_memory.register("polars.DataFrame")
 def _polars(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("polars")
+    tmp_name = util.gen_name("polars")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_polars(source, name=tmp_name)
 
 
 @_read_in_memory.register("polars.LazyFrame")
 def _polars(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("polars")
+    tmp_name = util.gen_name("polars")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_polars(source.collect(), name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.Table")
 def _pyarrow_table(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pyarrow")
+    tmp_name = util.gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_arrow(source, name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatchReader")
 def _pyarrow_rbr(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pyarrow")
+    tmp_name = util.gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_arrow(source.read_all(), name=tmp_name)
 
 
 @_read_in_memory.register("pyarrow.RecordBatch")
 def _pyarrow_rb(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pyarrow")
+    tmp_name = util.gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.register_record_batches(tmp_name, [[source]])
 
 
 @_read_in_memory.register("pyarrow.dataset.Dataset")
 def _pyarrow_rb(source, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pyarrow")
+    tmp_name = util.gen_name("pyarrow")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.register_dataset(tmp_name, source)
 
 
 @_read_in_memory.register("pandas.DataFrame")
 def _pandas(source: pd.DataFrame, table_name, _conn, overwrite: bool = False):
-    tmp_name = gen_name("pandas")
+    tmp_name = util.gen_name("pandas")
     with _create_and_drop_memtable(_conn, table_name, tmp_name, overwrite):
         _conn.con.from_pandas(source, name=tmp_name)

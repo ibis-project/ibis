@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from ibis.util import PseudoHashable, flatten_iterable, import_object
+from ibis.util import (
+    PseudoHashable,
+    flatten_iterable,
+    gen_name_from_path,
+    import_object,
+)
 
 
 @pytest.mark.parametrize(
@@ -138,3 +145,28 @@ def test_pseudo_hashable():
     assert ph2 != ph3
     assert ph3 == ph3
     assert ph1 == ph4
+
+
+@pytest.mark.parametrize(
+    ("path", "expected"),
+    [
+        ("my file.csv", "ibis_read_my_file_csv"),
+        ("/my file.csv", "ibis_read_my_file_csv"),
+        (
+            "/really extra super long file name.csv",
+            "ibis_read_super_long_file_name_csv",
+        ),
+        ("s3://my file.csv", "ibis_read_my_file_csv"),
+        ("PATH-TO/my-file.csv", "ibis_read_my_file_csv"),
+        ("/PATH-TO/my-file.csv", "ibis_read_my_file_csv"),
+        ("s3://PATH-TO/my-file.csv", "ibis_read_my_file_csv"),
+    ],
+)
+@pytest.mark.parametrize("use_path", [True, False])
+def test_gen_name_from_path(path, expected, use_path):
+    if use_path:
+        path = Path(path)
+    result = gen_name_from_path(path)
+    # MySQL has a 64 character limit for table names
+    assert len(result) <= 64
+    assert result.startswith(expected)
