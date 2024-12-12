@@ -22,9 +22,9 @@ architectures.
 
 ### Support matrix [^conda-callout]
 
-|      Python Version {{< fa arrow-right >}} |                   Python 3.9 |   Python 3.10    |   Python 3.11    |
+|                                            |                   Python 3.9 |   Python 3.10    |   Python 3.11    |
 | -----------------------------------------: | :--------------------------: | :--------------: | :--------------: |
-| **Operating System** {{< fa arrow-down >}} |                              |                  |                  |
+|  |                              |                  |                  |
 |                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}} | {{< fa check >}} |
 |                         **macOS (x86_64)** |             {{< fa check >}} | {{< fa check >}} | {{< fa check >}} |
 |                        **macOS (aarch64)** |             {{< fa check >}} | {{< fa check >}} | {{< fa check >}} |
@@ -124,9 +124,9 @@ for manager, params in managers.items():
 
 ### Support matrix
 
-|      Python Version {{< fa arrow-right >}} |  Python 3.9                  |  Python 3.10              |   Python 3.11             |
+|                                            |  Python 3.9                  |  Python 3.10              |   Python 3.11             |
 | -----------------------------------------: | :--------------------------: | :-----------------------: | :-----------------------: |
-| **Operating System** {{< fa arrow-down >}} |                              |                           |                           |
+|  |                              |                           |                           |
 |                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}}          | {{< fa check >}}          |
 |                         **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
 |                    **macOS (arm64/M1/M2)** | {{< fa ban >}}[^m1]          | {{< fa ban >}}[^m1]       | {{< fa ban >}}[^m1]       |
@@ -181,6 +181,75 @@ for manager, params in managers.items():
     This will launch a `bash` shell with all of the required dependencies installed.
     This may take a while due to artifact download from the cache.
 
+## Container (uv)
+
+### Support matrix
+
+|                                            |  Python 3.9                  |  Python 3.10              |   Python 3.11             |
+| -----------------------------------------: | :--------------------------: | :-----------------------: | :-----------------------: |
+| |                              |                           |                           |
+|                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}}          | {{< fa check >}}          |
+|                         **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
+|                    **macOS (arm64/M1/M2)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
+|                                **Windows** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
+
+1. Install `Docker Desktop` for your platform.
+
+1. [Install `VS Code`](https://code.visualstudio.com/)
+
+1. [Install `VS Code Docker Extension`](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker)
+
+1. [Install `VS Code Dev Containers Extension`](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+1. If using an Apple Silicon Mac, virtualization may be fastest with Colima.
+    1. [Install `Colima`](https://github.com/abiosoft/colima)
+    2. To use colima for virtualization, `docker context use colima` or `export DOCKER_CONTEXT=colima`.
+    3. Verify that the Colima context is in effect with `docker context ls`.
+    4. Start Colima: `start colima`.
+    5. If you encounter disk resource issues after building images, `colima prune` or `colima delete` may be needed.
+
+    As an alternative to `Colima`, install Rosetta 2.
+
+    ```sh
+    softwareupdate --install-rosetta
+    ```
+
+1. Build the .devcontainer image from the project directory. (*name:tag* values are flexible.)
+
+    ```sh
+    docker build -f .devcontainer/Dockerfile . -t ibisproj:1
+    ```
+
+    This will build an image for the build (host) platform by default.
+
+1. Inspect the ID of the built image: `docker images` (see `IMAGE` column)
+
+1. Launch a development container with `docker run -itd $IMAGE_ID bash`.
+
+1. In VS Code, open the project directory.
+
+1. Menu options for working with devcontainers are available through the blue `'><'` button with tooltip `'Open a Remote  Window'`, at the lower left corner of the project window.
+
+    * Use `'Attach to Running Container'` then select the container.
+    * Other menu options, such as `'Reopen in Container'`, will give less control over naming and tagging.
+    * Containers continue to run until they are explicitly stopped. Use `docker ps -a` to see
+        their status.
+
+1. After pressing any button to close the automatically launched terminal, launch a new 
+    `VS Code` terminal. The project will be in the container as an editable install, 
+    with the working directory `/app`.
+
+1. Use `uv` commands, such `uv pip list` to show the install packages within the `uv` 
+    .venv. Run non-`uv` commands within the virtual environment using `uv run`, for 
+    example `uv run pytest -m core`. Standard `git` commands are available without 
+    `uv run` because they do not need packages in the .venv to work.
+
+1. To exit a container, click the `'Dev Container'` button on the lower left of the 
+    window and select the last menu option, `'Close Remote Connection'`.
+
+1. To ensure you have the latest dependencies from the main branch, based on `pyproject.toml`,
+    exit any running container, and from your local copy of the repo, 
+    `git pull origin main`. Reopen the project in a new container.
 
 ## pip
 
