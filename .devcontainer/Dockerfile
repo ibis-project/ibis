@@ -33,12 +33,6 @@ RUN chown -R $USERNAME $VENV_DIR && chmod -R 755 $VENV_DIR
 ENV IBIS_PROJECT=.
 RUN chown -R $USERNAME $IBIS_PROJECT
 
-# ENV HYPOTHESIS_EXAMPLE_DB_DIR=.hypothesis
-# RUN chmod -R 755 $HYPOTHESIS_EXAMPLE_DB_DIR
-
-# ENV PYTEST_CACHE=.pytest_cache
-# RUN chmod -R 755 $PYTEST_CACHE
-
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
 
