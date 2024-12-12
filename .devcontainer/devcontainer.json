@@ -2,6 +2,8 @@
   "build": { "dockerfile": "Dockerfile", "context": ".." },
   "containerUser": "vscode",
   "remoteUser": "vscode",
+  "postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+  "workspaceFolder": "/app",
   "customizations": {
     "codespaces": {
       "openFiles": ["docs/tutorials/getting_started.qmd"]
