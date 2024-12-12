@@ -236,14 +236,16 @@ for manager, params in managers.items():
     `uv run` because they do not need packages in the .venv to work.
 
 1. To exit a container, click the `'Dev Container'` button on the lower left of the 
-    window and select the last menu option, `'Close Remote Connection'`. You can reopen 
-    a container and any changes since the last session will persist.
+    window and select the last menu option, `'Close Remote Connection'`.
 
 1. To ensure you have the latest dependencies from the main branch based on 
-    `pyproject.toml`, exit any running container. From your local copy of the repo, 
-    `git pull origin main`. Reopen the project in a new container, then 
-    `'Rebuild the Container'` to copy files from the local git repo and have the build 
-    run `uv sync`.
+    `pyproject.toml`:
+
+    * Exit any running container.
+    * From your local Git repo, `git pull origin main`.
+    * Reopen the project in a new container
+    * `'Rebuild Container'` to copy files from the local Git repo and have the build 
+      run `uv sync`.
 
 ## pip
 
