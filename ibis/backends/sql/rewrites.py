@@ -320,7 +320,9 @@ def merge_select_select(_, **kwargs):
         selections=selections,
         predicates=unique_predicates,
         qualified=unique_qualified,
-        sort_keys=unique_sort_keys,
+        sort_keys=tuple(
+            key for key in unique_sort_keys if not isinstance(key.expr, ops.Literal)
+        ),
         distinct=distinct,
     )
     return result if complexity(result) <= complexity(_) else _
