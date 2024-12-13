@@ -238,10 +238,11 @@ for manager, params in managers.items():
 1. To exit a container, click the `Dev Container` button on the lower left of the
     window and select the last menu option, `Close Remote Connection`.
 
-1. To ensure you have the latest dependencies from the main branch based on
+1. To ensure you have the latest dependencies from the main upstream branch based on
     `pyproject.toml`:
 
     * Exit any running container.
+    * Sync your fork.
     * From your local Git repo, `git pull origin main`.
     * Reopen the project in a new container.
     * `Rebuild Container` to copy files from the local Git repo and have the build
