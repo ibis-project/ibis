@@ -24,7 +24,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --group dev --group tests \
+    uv venv && uv sync --group dev --group tests \
         --extra duckdb --extra clickhouse  --extra examples --extra geospatial
 
 ENV VENV_DIR=.venv
@@ -35,6 +35,8 @@ RUN chown -R $USERNAME $IBIS_PROJECT
 
 # Place executables in the environment at the front of the path
 ENV PATH="/app/.venv/bin:$PATH"
+
+SHELL ["/bin/bash", "-c", "source .venv/bin/activate"]
 
 ENTRYPOINT []
 
