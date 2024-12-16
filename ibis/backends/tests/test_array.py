@@ -192,7 +192,13 @@ def test_array_concat_scalar(con, op):
     reason="doesn't support nullable arrays",
 )
 @pytest.mark.notyet(
-    ["bigquery"], raises=AssertionError, reason="bigquery treats null arrays as empty"
+    ["bigquery"],
+    raises=ValueError,
+    reason=(
+        "bigquery treats null arrays as empty "
+        "and a ValueError is raised from `pd.isna` "
+        "when the value is not a truthy value"
+    ),
 )
 def test_array_concat_with_null(con, op):
     non_null_value = ibis.array([2**31 - 1])
