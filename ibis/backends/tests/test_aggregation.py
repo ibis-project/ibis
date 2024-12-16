@@ -647,23 +647,16 @@ def test_first_last(alltypes, method, filtered, include_null):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("method", ["first", "last"])
-@pytest.mark.parametrize("filtered", [False, True])
+@pytest.mark.parametrize("filtered", [False, True], ids=["not-filtered", "filtered"])
 @pytest.mark.parametrize(
     "include_null",
     [
-        False,
+        param(False, id="exclude-null"),
         param(
             True,
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "exasol",
-                        "flink",
-                        "postgres",
-                        "risingwave",
-                        "snowflake",
-                    ],
+                    ["clickhouse", "exasol", "flink", "postgres", "snowflake"],
                     raises=com.UnsupportedOperationError,
                     reason="`include_null=True` is not supported",
                 ),
@@ -674,6 +667,7 @@ def test_first_last(alltypes, method, filtered, include_null):
                     strict=False,
                 ),
             ],
+            id="include-null",
         ),
     ],
 )
