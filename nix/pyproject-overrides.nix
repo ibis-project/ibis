@@ -30,6 +30,9 @@ let
     toolz.setuptools = [ ];
     typing-extensions.flit-core = [ ];
     debugpy.setuptools = [ ];
+    google-crc32c.setuptools = [ ];
+    lz4.setuptools = [ ];
+    snowflake-connector-python.setuptools = [ ];
   } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
     duckdb = {
       setuptools = [ ];
@@ -39,15 +42,23 @@ let
   };
 in
 (lib.optionalAttrs stdenv.hostPlatform.isDarwin {
-  pyarrow = prev.pyarrow.overrideAttrs (attrs: {
+  pyproj = prev.pyproj.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
       final.setuptools
-      final.setuptools-scm
       final.cython
-      final.numpy
-      pkgs.cmake
-      pkgs.arrow-cpp
+      pkgs.proj
     ];
+    PROJ_DIR = "${lib.getBin pkgs.proj}";
+    PROJ_INCDIR = "${lib.getDev pkgs.proj}";
+  });
+
+  psygnal = prev.psygnal.overrideAttrs (_: {
+    src = pkgs.fetchFromGitHub {
+      owner = "pyapp-kit";
+      repo = prev.psygnal.pname;
+      rev = "refs/tags/v${prev.psygnal.version}";
+      hash = "sha256-eGJWtmw2Ps3jII4T8E6s3djzxfqcSdyPemvejal0cn4=";
+    };
   });
 }) // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {

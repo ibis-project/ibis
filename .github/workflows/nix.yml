@@ -38,11 +38,16 @@ jobs:
           - "3.10"
           - "3.11"
           - "3.12"
+          - "3.13"
         include:
           - os: ubuntu-arm64-24.04 # aarch64-linux
             python-version: "3.12"
+          - os: ubuntu-arm64-24.04 # aarch64-linux
+            python-version: "3.13"
           - os: macos-14 # aarch64-darwin
             python-version: "3.12"
+          - os: macos-14 # aarch64-darwin
+            python-version: "3.13"
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -76,8 +81,6 @@ jobs:
           nix build ".#ibis${version//./}.passthru.tests.pytest" --fallback --keep-going --print-build-logs
 
       - name: nix build devShell
-        # TODO: dev shell doesn't yet build on macos-14 (aarch64-darwin)
-        continue-on-error: ${{ matrix.os == 'macos-14' }}
         run: |
           set -euo pipefail
 

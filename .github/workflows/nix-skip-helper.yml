@@ -39,7 +39,11 @@ jobs:
         include:
           - os: ubuntu-arm64-24.04
             python-version: "3.12"
+          - os: ubuntu-arm64-24.04
+            python-version: "3.13"
           - os: macos-14
             python-version: "3.12"
+          - os: macos-14
+            python-version: "3.13"
     steps:
       - run: echo "No build required"

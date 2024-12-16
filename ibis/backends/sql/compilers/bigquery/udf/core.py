@@ -85,7 +85,7 @@ def rewrite_len(node):
     return ast.Attribute(value=node.args[0], attr="length", ctx=ast.Load())
 
 
-@rewrite.register(ast.Call(func=ast.Attribute(attr="append")))
+@rewrite.register(ast.Call(func=ast.Attribute(attr="append", value=None)))
 def rewrite_append(node):
     return ast.Call(
         func=ast.Attribute(value=node.func.value, attr="push", ctx=ast.Load()),
