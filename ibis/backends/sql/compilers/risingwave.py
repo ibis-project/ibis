@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sqlglot as sg
 import sqlglot.expressions as sge
 
 import ibis.common.exceptions as com
@@ -40,25 +41,23 @@ class RisingWaveCompiler(PostgresCompiler):
         return self.cast(sge.CurrentTimestamp(), dt.date)
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
-        if include_null:
-            raise com.UnsupportedOperationError(
-                "`include_null=True` is not supported by the risingwave backend"
-            )
         if not order_by:
             raise com.UnsupportedOperationError(
                 "RisingWave requires an `order_by` be specified in `first`"
             )
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first_value(arg, where=where, order_by=order_by)
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
-        if include_null:
-            raise com.UnsupportedOperationError(
-                "`include_null=True` is not supported by the risingwave backend"
-            )
         if not order_by:
             raise com.UnsupportedOperationError(
                 "RisingWave requires an `order_by` be specified in `last`"
             )
+        if not include_null:
+            cond = arg.is_(sg.not_(NULL, copy=False))
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_Correlation(self, op, *, left, right, how, where):
