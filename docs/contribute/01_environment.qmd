@@ -24,7 +24,6 @@ architectures.
 
 |                                            |   Python 3.10                |   Python 3.11    |   Python 3.12    |
 | -----------------------------------------: | :--------------------------: | :--------------: | :--------------: |
-|                                            |                              |                  |                  |
 |                                  **Linux** | {{< fa check >}}[^supported] | {{< fa check >}} | {{< fa check >}} |
 |                         **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}} | {{< fa check >}} |
 |                        **macOS (aarch64)** | {{< fa check >}}             | {{< fa check >}} | {{< fa check >}} |
@@ -124,13 +123,13 @@ for manager, params in managers.items():
 
 ### Support matrix
 
-|                          |  Python 3.10                 |   Python 3.11             |   Python 3.12             |   Python 3.13             |
-| -----------------------: | :--------------------------: | :-----------------------: | :-----------------------: | :-----------------------: |
-|       **Linux (x86_64)** | {{< fa check >}}[^supported] | {{< fa check >}}          | {{< fa check >}}          | {{< fa check >}}          |
-|        **Linux (arm64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          | {{< fa check >}}          |
-|       **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          | {{< fa check >}}          |
-|  **macOS (arm64/M1/M2)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          | {{< fa check >}}          |
-|              **Windows** | {{< fa ban >}}[^unlikely]    | {{< fa ban >}}[^unlikely] | {{< fa ban >}}[^unlikely] | {{< fa ban >}}[^unlikely] |
+|                          | Python 3.10                  | Python 3.11        | Python 3.12        | Python 3.13        |
+| -----------------------: | :--------------------------: | :----------------: | :----------------: | :----------------: |
+|       **Linux (x86_64)** | {{< fa check >}}[^supported] | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|        **Linux (arm64)** | {{< fa check >}}             | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|       **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|  **macOS (arm64/M1/M2)** | {{< fa check >}}             | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|              **Windows** | {{< fa ban >}}[^unlikely]    | {{< fa ban >}}     | {{< fa ban >}}     | {{< fa ban >}}     |
 
 1.  [Install `nix`](https://nixos.org/download.html)
 1.  Configure `nix`
@@ -185,13 +184,12 @@ for manager, params in managers.items():
 
 ### Support matrix
 
-|                                            |  Python 3.9                  |  Python 3.10              |   Python 3.11             |
-| -----------------------------------------: | :--------------------------: | :-----------------------: | :-----------------------: |
-|                                            |                              |                           |                           |
-|                                  **Linux** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
-|                         **macOS (x86_64)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
-|                    **macOS (arm64/M1/M2)** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
-|                                **Windows** | {{< fa check >}}             | {{< fa check >}}          | {{< fa check >}}          |
+|                         | Python 3.10        | Python 3.11        | Python 3.12        | Python 3.13        |
+| ----------------------: | :----------------: | :----------------: | :----------------: | :----------------: |
+|               **Linux** | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|      **macOS (x86_64)** | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+| **macOS (arm64/M1/M2)** | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
+|             **Windows** | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   | {{< fa check >}}   |
 
 1. Git clone the project repository.
 
