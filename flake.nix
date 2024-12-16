@@ -148,15 +148,16 @@
           '';
 
           GDAL_DATA = "${pkgs.gdal}/share/gdal";
+          PROJ_DATA = "${pkgs.proj}/share/proj";
 
           __darwinAllowLocalNetworking = true;
         };
       in
       rec {
         packages = {
-          default = packages.ibis312;
+          default = packages.ibis313;
 
-          inherit (pkgs) ibis310 ibis311 ibis312
+          inherit (pkgs) ibis310 ibis311 ibis312 ibis313
             update-lock-files check-release-notes-spelling;
         };
 
@@ -164,14 +165,16 @@
           ibis310-pytest = pkgs.ibis310.passthru.tests.pytest;
           ibis311-pytest = pkgs.ibis311.passthru.tests.pytest;
           ibis312-pytest = pkgs.ibis312.passthru.tests.pytest;
+          ibis313-pytest = pkgs.ibis313.passthru.tests.pytest;
         };
 
         devShells = rec {
           ibis310 = mkDevShell pkgs.ibisDevEnv310;
           ibis311 = mkDevShell pkgs.ibisDevEnv311;
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
+          ibis313 = mkDevShell pkgs.ibisDevEnv313;
 
-          default = ibis312;
+          default = ibis313;
 
           preCommit = pkgs.mkShell {
             name = "preCommit";

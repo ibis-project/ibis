@@ -53,6 +53,11 @@ let
         # Use base package set from pyproject.nix builders
         (pkgs.callPackage pyproject-nix.build.packages {
           inherit python;
+          stdenv = pkgs.stdenv.override {
+            targetPlatform = pkgs.stdenv.targetPlatform // {
+              darwinSdkVersion = "12.0";
+            };
+          };
         }).overrideScope
           (lib.composeManyExtensions ([
             pyproject-build-systems.overlays.default
@@ -96,10 +101,12 @@ in
   ibis310 = mkEnv pkgs.python310;
   ibis311 = mkEnv pkgs.python311;
   ibis312 = mkEnv pkgs.python312;
+  ibis313 = mkEnv pkgs.python313;
 
   ibisDevEnv310 = mkDevEnv pkgs.python310;
   ibisDevEnv311 = mkDevEnv pkgs.python311;
   ibisDevEnv312 = mkDevEnv pkgs.python312;
+  ibisDevEnv313 = mkDevEnv pkgs.python313;
 
   ibisSmallDevEnv = mkEnv'
     {
@@ -108,7 +115,7 @@ in
       };
       editable = false;
     }
-    pkgs.python312;
+    pkgs.python313;
 
   duckdb = super.duckdb.overrideAttrs (
     _: lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux) {
@@ -149,7 +156,7 @@ in
   gen-examples = pkgs.writeShellApplication {
     name = "gen-examples";
     runtimeInputs = [
-      pkgs.ibisDevEnv312
+      pkgs.ibisDevEnv313
       (pkgs.rWrapper.override {
         packages = with pkgs.rPackages; [
           Lahman

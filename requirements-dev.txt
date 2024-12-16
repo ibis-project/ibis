@@ -11,9 +11,9 @@ appdirs==1.4.4
 appnope==0.1.4 ; platform_system == 'Darwin'
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
-arro3-compute==0.4.2
-arro3-core==0.4.2
-arro3-io==0.4.2
+arro3-compute==0.4.5
+arro3-core==0.4.5
+arro3-io==0.4.5
 arrow==1.3.0
 asn1crypto==1.5.1
 asttokens==3.0.0
@@ -158,7 +158,7 @@ pins==0.8.6
 pkginfo==1.12.0
 platformdirs==4.3.6
 plotly==5.24.1
-plotnine==0.14.3
+plotnine==0.14.4
 pluggy==1.5.0
 plum-dispatch==2.5.4
 polars==1.17.1

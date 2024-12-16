@@ -15,11 +15,13 @@ let
     "x86_64-linux" = "linux-amd64";
     "aarch64-linux" = "linux-arm64";
     "aarch64-darwin" = "macos";
+    "x86_64-darwin" = "macos";
   };
   shas = {
     "x86_64-linux" = "sha256-mVoFBQJJHGn5ZbwOtamshEQl9FzmRVEBye3bBXFUlUI=";
     "aarch64-linux" = "sha256-TNik4+OdDqGwArw9wkrq4wNHt6tGgYo32V9KNPSsPWo=";
     "aarch64-darwin" = "sha256-fjcmyVyPSHyHBICjpweuCnGtMAAlPNNzBMHEk+2emBA=";
+    "x86_64-darwin" = "sha256-fjcmyVyPSHyHBICjpweuCnGtMAAlPNNzBMHEk+2emBA=";
   };
   inherit (stdenv.hostPlatform) system;
 in
@@ -73,7 +75,7 @@ stdenv.mkDerivation rec {
     homepage = "https://quarto.org/";
     changelog = "https://github.com/quarto-dev/quarto-cli/releases/tag/v${version}";
     license = licenses.gpl2Plus;
-    platforms = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
+    platforms = builtins.attrNames platforms;
     sourceProvenance = with sourceTypes; [ binaryNativeCode binaryBytecode ];
   };
 }
