@@ -1297,6 +1297,11 @@ def test_memtable_column_naming_mismatch(con, monkeypatch, df, columns):
 @pytest.mark.notyet(
     ["mssql", "mysql", "exasol", "impala"], reason="various syntax errors reported"
 )
+@pytest.mark.notyet(
+    ["snowflake"],
+    reason="unable to handle the varbinary geometry column",
+    raises=SnowflakeProgrammingError,
+)
 def test_memtable_from_geopandas_dataframe(con, data_dir):
     gpd = pytest.importorskip("geopandas")
     gdf = gpd.read_file(data_dir / "geojson" / "zones.geojson")[:5]
