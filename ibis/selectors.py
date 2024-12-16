@@ -65,11 +65,11 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import util
-from ibis.common.collections import frozendict  # noqa: TCH001
+from ibis.common.collections import frozendict  # noqa: TC001
 from ibis.common.deferred import Deferred, Resolver
 from ibis.common.grounds import Concrete, Singleton
 from ibis.common.selectors import All, Any, Expandable, Selector
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 
 
 def __getattr__(name):

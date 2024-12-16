@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import TYPE_CHECKING, Any
 
 import pyarrow as pa
@@ -42,6 +43,9 @@ _from_pyarrow_types = {
     pa.large_string(): dt.String,
     pa.binary(): dt.Binary,
 }
+
+with contextlib.suppress(AttributeError):
+    _from_pyarrow_types[pa.string_view()] = dt.String
 
 
 _to_pyarrow_types = {

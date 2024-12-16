@@ -472,7 +472,7 @@ def test_default_format_implementation(snapshot):
 
 def test_arbitrary_traversables_are_supported(snapshot):
     class MyNode(Traversable):
-        __slots__ = ("obj", "children")
+        __slots__ = ("children", "obj")
         __argnames__ = ("obj", "children")
 
         def __init__(self, obj, children):

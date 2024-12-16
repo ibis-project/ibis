@@ -80,14 +80,6 @@ def test_annotations_are_not_hashable():
         hash(a)
 
 
-def test_argument_repr():
-    argument = Argument(is_int, typehint=int, default=None)
-    assert repr(argument) == (
-        "Argument(pattern=InstanceOf(type=<class 'int'>), default=None, "
-        "typehint=<class 'int'>, kind=<_ParameterKind.POSITIONAL_OR_KEYWORD: 1>)"
-    )
-
-
 def test_default_argument():
     annotation = Argument(pattern=lambda x, context: int(x), default=3)
     assert annotation.pattern.match(1, {}) == 1

@@ -42,38 +42,6 @@ def test_select_basics(t, snapshot):
     snapshot.assert_match(result, "out2.sql")
 
 
-def test_load_data_unpartitioned(snapshot):
-    path = "/path/to/data"
-    stmt = ddl.LoadData("functional_alltypes", path, database="foo")
-
-    result = stmt.compile()
-    snapshot.assert_match(result, "out1.sql")
-
-    stmt.overwrite = True
-    result = stmt.compile()
-    snapshot.assert_match(result, "out2.sql")
-
-
-def test_load_data_partitioned(snapshot):
-    path = "/path/to/data"
-    part = {"year": 2007, "month": 7}
-    part_schema = ibis.schema([("year", "int32"), ("month", "int32")])
-    stmt = ddl.LoadData(
-        "functional_alltypes",
-        path,
-        database="foo",
-        partition=part,
-        partition_schema=part_schema,
-    )
-
-    result = stmt.compile()
-    snapshot.assert_match(result, "out1.sql")
-
-    stmt.overwrite = True
-    result = stmt.compile()
-    snapshot.assert_match(result, "out2.sql")
-
-
 def test_cache_table_pool_name(snapshot):
     statement = ddl.CacheTable("foo", database="bar")
     query = statement.compile()

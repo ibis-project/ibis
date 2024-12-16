@@ -414,6 +414,41 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value
         kwargs
             Keyword arguments
+
+        Examples
+        --------
+        >>> import ibis
+        >>> t = ibis.examples.penguins.fetch()
+        >>> t.execute()
+               species     island  bill_length_mm  ...  body_mass_g     sex  year
+        0       Adelie  Torgersen            39.1  ...       3750.0    male  2007
+        1       Adelie  Torgersen            39.5  ...       3800.0  female  2007
+        2       Adelie  Torgersen            40.3  ...       3250.0  female  2007
+        3       Adelie  Torgersen             NaN  ...          NaN    None  2007
+        4       Adelie  Torgersen            36.7  ...       3450.0  female  2007
+        ..         ...        ...             ...  ...          ...     ...   ...
+        339  Chinstrap      Dream            55.8  ...       4000.0    male  2009
+        340  Chinstrap      Dream            43.5  ...       3400.0  female  2009
+        341  Chinstrap      Dream            49.6  ...       3775.0    male  2009
+        342  Chinstrap      Dream            50.8  ...       4100.0    male  2009
+        343  Chinstrap      Dream            50.2  ...       3775.0  female  2009
+        [344 rows x 8 columns]
+
+        Scalar parameters can be supplied dynamically during execution.
+        >>> species = ibis.param("string")
+        >>> expr = t.filter(t.species == species).order_by(t.bill_length_mm)
+        >>> expr.execute(limit=3, params={species: "Gentoo"})
+          species  island  bill_length_mm  ...  body_mass_g     sex  year
+        0  Gentoo  Biscoe            40.9  ...         4650  female  2007
+        1  Gentoo  Biscoe            41.7  ...         4700  female  2009
+        2  Gentoo  Biscoe            42.0  ...         4150  female  2007
+        <BLANKLINE>
+        [3 rows x 8 columns]
+
+        See Also
+        --------
+        [`Table.to_pandas()`](./expression-tables.qmd#ibis.expr.types.relations.Table.to_pandas)
+        [`Value.to_pandas()`](./expression-generic.qmd#ibis.expr.types.generic.Value.to_pandas)
         """
         return self._find_backend(use_default=True).execute(
             self, limit=limit, params=params, **kwargs
@@ -424,8 +459,8 @@ class Expr(Immutable, Coercible):
         limit: int | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
-    ):
-        """Compile to an execution target.
+    ) -> str:
+        r"""Compile to an execution target.
 
         Parameters
         ----------
@@ -436,6 +471,37 @@ class Expr(Immutable, Coercible):
             Mapping of scalar parameter expressions to value
         pretty
             In case of SQL backends, return a pretty formatted SQL query.
+
+        Returns
+        -------
+        str
+            SQL query representation of the expression
+
+        Examples
+        --------
+        >>> import ibis
+        >>> d = {"a": [1, 2, 3], "b": [4, 5, 6]}
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table("t", d)
+        >>> expr = t.mutate(c=t.a + t.b)
+        >>> expr.compile()
+        'SELECT "t0"."a", "t0"."b", "t0"."a" + "t0"."b" AS "c" FROM "memory"."main"."t" AS "t0"'
+
+        If you want to see the pretty formatted SQL query, set `pretty` to `True`.
+        >>> expr.compile(pretty=True)
+        'SELECT\n  "t0"."a",\n  "t0"."b",\n  "t0"."a" + "t0"."b" AS "c"\nFROM "memory"."main"."t" AS "t0"'
+
+        If the expression does not have a backend, an error will be raised.
+        >>> t = ibis.memtable(d)
+        >>> expr = t.mutate(c=t.a + t.b)
+        >>> expr.compile()  # quartodoc: +EXPECTED_FAILURE
+        Traceback (most recent call last):
+        ...
+        ibis.common.exceptions.IbisError: Expression depends on no backends, and ...
+
+        See Also
+        --------
+        [`ibis.to_sql()`](./expression-generic.qmd#ibis.to_sql)
         """
         return self._find_backend().compile(
             self, limit=limit, params=params, pretty=pretty

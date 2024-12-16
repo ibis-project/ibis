@@ -14,11 +14,11 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.annotations import attribute
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict  # noqa: TC001
 from ibis.common.deferred import var
 from ibis.common.graph import Graph
 from ibis.common.patterns import InstanceOf, Object, Pattern, replace
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
 
@@ -320,7 +320,9 @@ def merge_select_select(_, **kwargs):
         selections=selections,
         predicates=unique_predicates,
         qualified=unique_qualified,
-        sort_keys=unique_sort_keys,
+        sort_keys=tuple(
+            key for key in unique_sort_keys if not isinstance(key.expr, ops.Literal)
+        ),
         distinct=distinct,
     )
     return result if complexity(result) <= complexity(_) else _

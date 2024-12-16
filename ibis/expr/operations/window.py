@@ -13,13 +13,13 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
 from ibis.common.patterns import CoercionError
-from ibis.common.typing import VarTuple  # noqa: TCH001
-from ibis.expr.operations.analytic import Analytic  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
+from ibis.expr.operations.analytic import Analytic  # noqa: TC001
 from ibis.expr.operations.core import Column, Value
 from ibis.expr.operations.generic import Literal
 from ibis.expr.operations.numeric import Negate
-from ibis.expr.operations.reductions import Reduction  # noqa: TCH001
-from ibis.expr.operations.sortkeys import SortKey  # noqa: TCH001
+from ibis.expr.operations.reductions import Reduction  # noqa: TC001
+from ibis.expr.operations.sortkeys import SortKey  # noqa: TC001
 
 T = TypeVar("T", bound=dt.Numeric | dt.Interval, covariant=True)
 S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
