@@ -11,23 +11,25 @@
 }:
 
 let
-  platforms = {
-    "x86_64-linux" = "linux-amd64";
-    "aarch64-linux" = "linux-arm64";
-    "aarch64-darwin" = "macos";
-    "x86_64-darwin" = "macos";
+  platforms = rec {
+    x86_64-linux = "linux-amd64";
+    aarch64-linux = "linux-arm64";
+    aarch64-darwin = "macos";
+    x86_64-darwin = aarch64-darwin;
   };
-  shas = {
-    "x86_64-linux" = "sha256-mVoFBQJJHGn5ZbwOtamshEQl9FzmRVEBye3bBXFUlUI=";
-    "aarch64-linux" = "sha256-TNik4+OdDqGwArw9wkrq4wNHt6tGgYo32V9KNPSsPWo=";
-    "aarch64-darwin" = "sha256-fjcmyVyPSHyHBICjpweuCnGtMAAlPNNzBMHEk+2emBA=";
-    "x86_64-darwin" = "sha256-fjcmyVyPSHyHBICjpweuCnGtMAAlPNNzBMHEk+2emBA=";
+  shas = rec {
+    x86_64-linux = "sha256-15fHlnE6V8FNgRX0mkXWJqFkeGlwlqBCHy0tmA5fnUo=";
+    aarch64-linux = "sha256-yzzaMnKyeEGGI3Col7iD6FAF3a6bXlfsE8EHmNRu4LY=";
+    aarch64-darwin = "sha256-W0IvOWdW7g7iaJcK6FF3X+1+EAWuqYUA1Zt/Es2aThY=";
+    # hashes are the same for both macos architectures, because the packages
+    # are identical
+    x86_64-darwin = aarch64-darwin;
   };
   inherit (stdenv.hostPlatform) system;
 in
 stdenv.mkDerivation rec {
   pname = "quarto";
-  version = "1.6.32";
+  version = "1.6.39";
   src = fetchurl {
     url = "https://github.com/quarto-dev/quarto-cli/releases/download/v${version}/quarto-${version}-${platforms.${system}}.tar.gz";
     sha256 = shas.${system};
