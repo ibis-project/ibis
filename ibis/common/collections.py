@@ -345,7 +345,7 @@ class RewindableIterator(Iterator[V]):
 
     """
 
-    __slots__ = ("_iterator", "_checkpoint")
+    __slots__ = ("_checkpoint", "_iterator")
 
     def __init__(self, iterable):
         self._iterator = iter(iterable)

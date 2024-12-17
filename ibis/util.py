@@ -640,7 +640,7 @@ class Namespace:
 class PseudoHashable(Coercible, Generic[V]):
     """A wrapper that provides a best effort precomputed hash."""
 
-    __slots__ = ("obj", "hash")
+    __slots__ = ("hash", "obj")
     obj: V
 
     def __init__(self, obj: V):

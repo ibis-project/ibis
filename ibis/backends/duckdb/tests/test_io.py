@@ -211,8 +211,8 @@ def test_read_mysql(con, mysqlurl):  # pragma: no cover
 def test_read_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
-    sqlite_con = sqlite3.connect(str(path))
-    sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    with sqlite3.connect(str(path)) as sqlite_con:
+        sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
 
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
@@ -221,26 +221,11 @@ def test_read_sqlite(con, tmp_path):
 def test_read_sqlite_no_table_name(con, tmp_path):
     path = tmp_path / "test.db"
 
-    sqlite3.connect(str(path))
+    with sqlite3.connect(str(path)) as _:
+        assert path.exists()
 
-    assert path.exists()
-
-    with pytest.raises(ValueError):
-        con.read_sqlite(path)
-
-
-@pytest.mark.xfail(
-    LINUX and SANDBOXED,
-    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
-    raises=duckdb.IOException,
-)
-def test_register_sqlite(con, tmp_path):
-    path = tmp_path / "test.db"
-    sqlite_con = sqlite3.connect(str(path))
-    sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
-    with pytest.warns(FutureWarning, match="v9.1"):
-        ft = con.register(f"sqlite://{path}", "t")
-    assert ft.count().execute()
+        with pytest.raises(ValueError):
+            con.read_sqlite(path)
 
 
 # Because we create a new connection and the test requires loading/installing a

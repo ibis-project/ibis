@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import ast
+from inspect import _empty as EMPTY
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -20,7 +21,7 @@ def matches(value: ast.AST, pattern: ast.AST) -> bool:
     fields = [
         (field, getattr(pattern, field))
         for field in pattern._fields
-        if hasattr(pattern, field)
+        if hasattr(pattern, field) and getattr(pattern, field) is not EMPTY
     ]
     return all(
         matches(getattr(value, field_name), field_value)

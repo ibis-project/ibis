@@ -19,7 +19,7 @@ from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.rewrites import lower_stringslice, replace_parameter
 from ibis.formats.polars import PolarsSchema
-from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
+from ibis.util import gen_name, normalize_filename, normalize_filenames
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -86,7 +86,13 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str) -> ir.Table:
+    def table(self, name: str, database: None = None) -> ir.Table:
+        if database is not None:
+            raise com.IbisError(
+                "Passing `database` to the Polars backend's `table()` method is not "
+                "supported: Polars cannot set a database."
+            )
+
         table = self._tables.get(name)
         if table is None:
             raise com.TableNotFound(name)
@@ -99,73 +105,6 @@ class Backend(BaseBackend, NoUrl):
 
     def _finalize_memtable(self, name: str) -> None:
         self.drop_table(name, force=True)
-
-    @deprecated(
-        as_of="9.1",
-        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
-    )
-    def register(
-        self,
-        source: str | Path | Any,
-        table_name: str | None = None,
-        **kwargs: Any,
-    ) -> ir.Table:
-        """Register a data source as a table in the current database.
-
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file, a parquet directory, or a pandas
-            dataframe.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-        **kwargs
-            Additional keyword arguments passed to Polars loading functions for
-            CSV or parquet.
-            See https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_csv.html
-            and https://pola-rs.github.io/polars/py-polars/html/reference/api/polars.scan_parquet.html
-            for more information
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-
-        """
-
-        if isinstance(source, (str, Path)):
-            first = str(source)
-        elif isinstance(source, (list, tuple)):
-            first = str(source[0])
-        else:
-            try:
-                return self.read_pandas(source, table_name=table_name, **kwargs)
-            except ValueError:
-                self._register_failure()
-
-        if first.startswith(("parquet://", "parq://")) or first.endswith(
-            ("parq", "parquet")
-        ):
-            return self.read_parquet(source, table_name=table_name, **kwargs)
-        elif first.startswith(
-            ("csv://", "csv.gz://", "txt://", "txt.gz://")
-        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
-            return self.read_csv(source, table_name=table_name, **kwargs)
-        else:
-            self._register_failure()
-        return None
-
-    def _register_failure(self):
-        import inspect
-
-        msg = ", ".join(
-            m[0] for m in inspect.getmembers(self) if m[0].startswith("read_")
-        )
-        raise ValueError(
-            f"Cannot infer appropriate read function for input, "
-            f"please call one of {msg} directly"
-        )
 
     def _add_table(self, name: str, obj: pl.LazyFrame | pl.DataFrame) -> None:
         if isinstance(obj, pl.DataFrame):
@@ -390,19 +329,20 @@ class Backend(BaseBackend, NoUrl):
     ) -> ir.Table:
         if database is not None:
             raise com.IbisError(
-                "Passing `database` to the Polars backend create_table method has no "
-                "effect: Polars cannot set a database."
+                "Passing `database` to the Polars backend's `create_table()` method is "
+                "not supported: Polars cannot set a database."
             )
 
         if temp is False:
             raise com.IbisError(
-                "Passing `temp=False` to the Polars backend create_table method is not "
-                "supported: all tables are in memory and temporary."
+                "Passing `temp=False` to the Polars backend's `create_table()` method "
+                "is not supported: all tables are in memory and temporary."
             )
 
         if not overwrite and name in self._tables:
             raise com.IntegrityError(
-                f"Table {name} already exists. Use overwrite=True to clobber existing tables"
+                f"Table {name!r} already exists. Use `overwrite=True` to clobber "
+                "existing tables."
             )
 
         if schema is not None and obj is None:

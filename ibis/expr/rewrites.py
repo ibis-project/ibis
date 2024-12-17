@@ -7,14 +7,14 @@ from collections import defaultdict
 import toolz
 
 import ibis.expr.operations as ops
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict  # noqa: TC001
 from ibis.common.deferred import Item, _, deferred, var
 from ibis.common.exceptions import ExpressionError, IbisInputError
 from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Check, pattern, replace
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import Namespace, promote_list
 
 p = Namespace(pattern, module=ops)

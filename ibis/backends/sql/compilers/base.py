@@ -80,7 +80,7 @@ class AggGen:
     class _Accessor:
         """An internal type to handle getattr/getitem access."""
 
-        __slots__ = ("handler", "compiler")
+        __slots__ = ("compiler", "handler")
 
         def __init__(self, handler: Callable, compiler: SQLGlotCompiler):
             self.handler = handler
@@ -175,7 +175,7 @@ class AnonymousFuncGen:
 
 
 class FuncGen:
-    __slots__ = ("dialect", "namespace", "anon", "copy")
+    __slots__ = ("anon", "copy", "dialect", "namespace")
 
     def __init__(
         self, *, dialect: sg.Dialect, namespace: str | None = None, copy: bool = False

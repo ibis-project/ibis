@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.11.7
+    image: bitnami/minio:2024.12.13
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:466
+    image: trinodb/trino:467
     ports:
       - 8080:8080
     networks:
@@ -346,7 +346,7 @@ services:
       - druid
 
   oracle:
-    image: gvenzl/oracle-free:23.5-slim
+    image: gvenzl/oracle-free:23.6-slim
     environment:
       ORACLE_PASSWORD: ibis
       ORACLE_DATABASE: IBIS_TESTING
@@ -555,7 +555,7 @@ services:
       - impala
 
   risingwave:
-    image: ghcr.io/risingwavelabs/risingwave:v2.0.4
+    image: ghcr.io/risingwavelabs/risingwave:v2.1.0
     command: "standalone --meta-opts=\" \
       --advertise-addr 0.0.0.0:5690 \
       --backend mem \

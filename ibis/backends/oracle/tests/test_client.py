@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date  # noqa: TCH003
+from datetime import date  # noqa: TC003
 
 import oracledb
 import pandas as pd

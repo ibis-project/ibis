@@ -470,12 +470,19 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col.approx_nunique(where=where),
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
-            marks=pytest.mark.xfail_version(
-                duckdb=["duckdb>=1.1"],
-                raises=AssertionError,
-                reason="not exact, even at this tiny scale",
-                strict=False,
-            ),
+            marks=[
+                pytest.mark.xfail_version(
+                    duckdb=["duckdb>=1.1"],
+                    raises=AssertionError,
+                    reason="not exact, even at this tiny scale",
+                    strict=False,
+                ),
+                pytest.mark.notimpl(
+                    ["datafusion"],
+                    reason="data type is not supported",
+                    raises=Exception,
+                ),
+            ],
         ),
         param(
             lambda t, where: t.bigint_col.bit_and(where=where),
@@ -640,23 +647,16 @@ def test_first_last(alltypes, method, filtered, include_null):
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize("method", ["first", "last"])
-@pytest.mark.parametrize("filtered", [False, True])
+@pytest.mark.parametrize("filtered", [False, True], ids=["not-filtered", "filtered"])
 @pytest.mark.parametrize(
     "include_null",
     [
-        False,
+        param(False, id="exclude-null"),
         param(
             True,
             marks=[
                 pytest.mark.notimpl(
-                    [
-                        "clickhouse",
-                        "exasol",
-                        "flink",
-                        "postgres",
-                        "risingwave",
-                        "snowflake",
-                    ],
+                    ["clickhouse", "exasol", "flink", "postgres", "snowflake"],
                     raises=com.UnsupportedOperationError,
                     reason="`include_null=True` is not supported",
                 ),
@@ -667,6 +667,7 @@ def test_first_last(alltypes, method, filtered, include_null):
                     strict=False,
                 ),
             ],
+            id="include-null",
         ),
     ],
 )

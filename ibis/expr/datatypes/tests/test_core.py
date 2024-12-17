@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import datetime  # noqa: TCH003
-import decimal  # noqa: TCH003
-import uuid  # noqa: TCH003
+import datetime  # noqa: TC003
+import decimal  # noqa: TC003
+import uuid  # noqa: TC003
 from dataclasses import dataclass
 from typing import Annotated, NamedTuple
 

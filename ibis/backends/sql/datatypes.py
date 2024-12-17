@@ -102,6 +102,12 @@ _from_sqlglot_types = {
     # XML = auto()
 }
 
+if sg.__version_tuple__[0] >= 26:
+    _from_sqlglot_types |= {
+        typecode.DATETIME2: dt.Timestamp,
+        typecode.SMALLDATETIME: dt.Timestamp,
+    }
+
 _to_sqlglot_types = {
     dt.Null: typecode.NULL,
     dt.Boolean: typecode.BOOLEAN,

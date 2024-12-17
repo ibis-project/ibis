@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-import numbers  # noqa: TCH003
+import numbers  # noqa: TC003
 from typing import Literal
 
 from public import public
@@ -10,7 +10,7 @@ from public import public
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import ValidationError, attribute
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.operations.core import Column, Value
 
 
