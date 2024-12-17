@@ -8,6 +8,7 @@ import functools
 import inspect
 import textwrap
 from collections import ChainMap
+from inspect import _empty as EMPTY
 from typing import TYPE_CHECKING
 
 from ibis.backends.sql.compilers.bigquery.udf.find import find_names
@@ -66,7 +67,7 @@ def semicolon(f: Callable) -> Callable:
     return wrapper
 
 
-@rewrite.register(ast.Call(func=ast.Name(id="print")))
+@rewrite.register(ast.Call(func=ast.Name(id="print"), args=EMPTY, keywords=EMPTY))
 def rewrite_print(node):
     return ast.Call(
         func=ast.Attribute(
@@ -79,13 +80,15 @@ def rewrite_print(node):
     )
 
 
-@rewrite.register(ast.Call(func=ast.Name(id="len")))
+@rewrite.register(ast.Call(func=ast.Name(id="len"), args=EMPTY, keywords=EMPTY))
 def rewrite_len(node):
     assert len(node.args) == 1
     return ast.Attribute(value=node.args[0], attr="length", ctx=ast.Load())
 
 
-@rewrite.register(ast.Call(func=ast.Attribute(attr="append", value=None)))
+@rewrite.register(
+    ast.Call(func=ast.Attribute(attr="append", value=None), args=EMPTY, keywords=EMPTY)
+)
 def rewrite_append(node):
     return ast.Call(
         func=ast.Attribute(value=node.func.value, attr="push", ctx=ast.Load()),
@@ -95,7 +98,11 @@ def rewrite_append(node):
 
 
 @rewrite.register(
-    ast.Call(func=ast.Attribute(value=ast.Name(id="Array"), attr="from_"))
+    ast.Call(
+        func=ast.Attribute(value=ast.Name(id="Array"), attr="from_"),
+        args=EMPTY,
+        keywords=EMPTY,
+    )
 )
 def rewrite_array_from(node):
     return ast.Call(
