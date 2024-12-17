@@ -36,16 +36,14 @@ TIMESTAMPS_TZ = [
 @pytest.fixture(scope="session")
 def db(tmp_path_factory):
     path = str(tmp_path_factory.mktemp("databases") / "formats.db")
-    con = sqlite3.connect(path)
-    con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
-    con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMPTZ)")
-    con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
-    con.execute("CREATE TABLE basic (a INTEGER, b REAL, c BOOLEAN, d BLOB)")
-    with con:
+    with sqlite3.connect(path) as con:
+        con.execute("CREATE TABLE timestamps (ts TIMESTAMP)")
+        con.execute("CREATE TABLE timestamps_tz (ts TIMESTAMPTZ)")
+        con.execute("CREATE TABLE weird (str_col STRING, date_col ITSADATE)")
+        con.execute("CREATE TABLE basic (a INTEGER, b REAL, c BOOLEAN, d BLOB)")
         con.executemany("INSERT INTO timestamps VALUES (?)", [(t,) for t in TIMESTAMPS])
         con.executemany(
-            "INSERT INTO timestamps_tz VALUES (?)",
-            [(t,) for t in TIMESTAMPS_TZ],
+            "INSERT INTO timestamps_tz VALUES (?)", [(t,) for t in TIMESTAMPS_TZ]
         )
         con.executemany(
             "INSERT INTO weird VALUES (?, ?)",
@@ -56,7 +54,6 @@ def db(tmp_path_factory):
                 ("d", "2022-01-04"),
             ],
         )
-    con.close()
     return path
 
 
