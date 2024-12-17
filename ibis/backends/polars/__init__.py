@@ -12,6 +12,7 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
+from ibis import util
 from ibis.backends import BaseBackend, NoUrl
 from ibis.backends.polars.compiler import translate
 from ibis.backends.polars.rewrites import bind_unbound_table, rewrite_join
@@ -19,7 +20,6 @@ from ibis.backends.sql.dialects import Polars
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.expr.rewrites import lower_stringslice, replace_parameter
 from ibis.formats.polars import PolarsSchema
-from ibis.util import deprecated, gen_name, normalize_filename, normalize_filenames
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
@@ -106,7 +106,7 @@ class Backend(BaseBackend, NoUrl):
     def _finalize_memtable(self, name: str) -> None:
         self.drop_table(name, force=True)
 
-    @deprecated(
+    @util.deprecated(
         as_of="9.1",
         instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
     )
@@ -215,12 +215,12 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        source_list = normalize_filenames(path)
+        source_list = util.normalize_filenames(path)
+        table_name = table_name or util.gen_name_from_path(source_list[0])
         # Flatten the list if there's only one element because Polars
         # can't handle glob strings, or compressed CSVs in a single-element list
         if len(source_list) == 1:
             source_list = source_list[0]
-        table_name = table_name or gen_name("read_csv")
         try:
             table = pl.scan_csv(source_list, **kwargs)
             # triggers a schema computation to handle compressed csv inference
@@ -256,8 +256,8 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        path = normalize_filename(path)
-        table_name = table_name or gen_name("read_json")
+        path = util.normalize_filename(path)
+        table_name = table_name or util.gen_name_from_path(path)
         try:
             self._add_table(table_name, pl.scan_ndjson(path, **kwargs))
         except pl.exceptions.ComputeError:
@@ -296,8 +296,8 @@ class Backend(BaseBackend, NoUrl):
                 "read_delta method. You can install it using pip:\n\n"
                 "pip install 'ibis-framework[polars,deltalake]'\n"
             )
-        path = normalize_filename(path)
-        table_name = table_name or gen_name("read_delta")
+        path = util.normalize_filename(path)
+        table_name = table_name or util.gen_name_from_path(path)
         self._add_table(table_name, pl.scan_delta(path, **kwargs))
         return self.table(table_name)
 
@@ -324,7 +324,7 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        table_name = table_name or gen_name("read_in_memory")
+        table_name = table_name or util.gen_name("read_in_memory")
 
         self._add_table(table_name, pl.from_pandas(source, **kwargs).lazy())
         return self.table(table_name)
@@ -357,24 +357,21 @@ class Backend(BaseBackend, NoUrl):
             The just-registered table
 
         """
-        table_name = table_name or gen_name("read_parquet")
-        if not isinstance(path, (str, Path)) and len(path) == 1:
-            path = path[0]
+        paths = util.normalize_filenames(path)
+        table_name = table_name or util.gen_name_from_path(paths[0])
 
-        if not isinstance(path, (str, Path)) and len(path) > 1:
+        if len(paths) > 1:
             self._import_pyarrow()
             import pyarrow.dataset as ds
 
-            paths = [normalize_filename(p) for p in path]
             obj = pl.scan_pyarrow_dataset(
                 source=ds.dataset(paths, format="parquet"),
                 **kwargs,
             )
-            self._add_table(table_name, obj)
         else:
-            path = normalize_filename(path)
-            self._add_table(table_name, pl.scan_parquet(path, **kwargs))
+            obj = pl.scan_parquet(paths[0], **kwargs)
 
+        self._add_table(table_name, obj)
         return self.table(table_name)
 
     def create_table(

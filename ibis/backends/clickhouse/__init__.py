@@ -581,7 +581,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         paths = list(glob.glob(str(path)))
         schema = PyArrowSchema.to_ibis(ds.dataset(paths, format="parquet").schema)
 
-        name = table_name or util.gen_name("read_parquet")
+        name = table_name or util.gen_name_from_path(paths[0])
         table = self.create_table(name, engine=engine, schema=schema, temp=True)
 
         for file_path in paths:
@@ -609,7 +609,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         paths = list(glob.glob(str(path)))
         schema = PyArrowSchema.to_ibis(ds.dataset(paths, format="csv").schema)
 
-        name = table_name or util.gen_name("read_csv")
+        name = table_name or util.gen_name_from_path(paths[0])
         table = self.create_table(name, engine=engine, schema=schema, temp=True)
 
         for file_path in paths:
