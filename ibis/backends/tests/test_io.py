@@ -119,14 +119,12 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
 @pytest.mark.notimpl(["datafusion"])
 @pytest.mark.notyet(
     [
-        "bigquery",
         "flink",
         "impala",
         "mssql",
         "mysql",
         "postgres",
         "risingwave",
-        "snowflake",
         "sqlite",
         "trino",
         "databricks",
@@ -140,18 +138,7 @@ def test_read_csv_gz(con, data_dir, gzip_csv):
 
 
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "snowflake",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
     basename = "foo.bar.baz/diamonds.csv"
@@ -166,18 +153,7 @@ def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
 
 
 @pytest.mark.notyet(
-    [
-        "bigquery",
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "snowflake",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_csv_schema(con, tmp_path):
     foo = tmp_path.joinpath("foo.csv")
@@ -197,21 +173,12 @@ def test_read_csv_schema(con, tmp_path):
 
     assert result_schema.names == ("cola", "colb", "colc")
     assert result_schema["cola"].is_integer()
-    assert result_schema["colb"].is_float64()
+    assert result_schema["colb"].is_numeric()
     assert result_schema["colc"].is_string()
 
 
 @pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -314,16 +281,7 @@ def test_read_parquet_iterator(
 
 
 @pytest.mark.notyet(
-    [
-        "flink",
-        "impala",
-        "mssql",
-        "mysql",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "trino",
-    ]
+    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
