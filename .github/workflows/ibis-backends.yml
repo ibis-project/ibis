@@ -258,7 +258,42 @@ jobs:
               sys-deps:
                 - cmake
                 - ninja-build
+          # pytorch wheel doesn't exist for windows + python 3.13, so test
+          # against 3.12 until that's shipped
+          - os: windows-latest
+            python-version: "3.12"
+            backend:
+              name: duckdb
+              title: DuckDB
+              serial: true
+              extras:
+                - --extra duckdb
+                - --extra deltalake
+                - --extra geospatial
+                - --extra examples
+                - --extra decompiler
+                - --extra polars
+            additional_deps:
+              - torch
+          # also test duckdb with python 3.13 on windows, *without* pytorch
+          - os: windows-latest
+            python-version: "3.13"
+            backend:
+              name: duckdb
+              title: DuckDB
+              serial: true
+              extras:
+                - --extra duckdb
+                - --extra deltalake
+                - --extra geospatial
+                - --extra examples
+                - --extra decompiler
+                - --extra polars
         exclude:
+          - os: windows-latest
+            python-version: "3.13"
+            backend:
+              name: duckdb
           - os: windows-latest
             backend:
               name: mysql
