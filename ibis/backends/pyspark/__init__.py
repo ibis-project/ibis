@@ -28,7 +28,6 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 from ibis.expr.operations.udf import InputType
 from ibis.legacy.udf.vectorized import _coerce_to_series
-from ibis.util import deprecated
 
 try:
     from pyspark.errors import ParseException
@@ -911,65 +910,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         spark_df.createOrReplaceTempView(table_name)
         return self.table(table_name)
-
-    @deprecated(
-        as_of="9.1",
-        instead="use the explicit `read_*` method for the filetype you are trying to read, e.g., read_parquet, read_csv, etc.",
-    )
-    def register(
-        self,
-        source: str | Path | Any,
-        table_name: str | None = None,
-        **kwargs: Any,
-    ) -> ir.Table:
-        """Register a data source as a table in the current database.
-
-        Parameters
-        ----------
-        source
-            The data source(s). May be a path to a file or directory of
-            parquet/csv files, or an iterable of CSV files.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a random generated name.
-        **kwargs
-            Additional keyword arguments passed to PySpark loading functions for
-            CSV or parquet.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-
-        """
-        if isinstance(source, (str, Path)):
-            first = str(source)
-        elif isinstance(source, (list, tuple)):
-            first = source[0]
-        else:
-            self._register_failure()
-
-        if first.startswith(("parquet://", "parq://")) or first.endswith(
-            ("parq", "parquet")
-        ):
-            return self.read_parquet(source, table_name=table_name, **kwargs)
-        elif first.startswith(
-            ("csv://", "csv.gz://", "txt://", "txt.gz://")
-        ) or first.endswith(("csv", "csv.gz", "tsv", "tsv.gz", "txt", "txt.gz")):
-            return self.read_csv(source, table_name=table_name, **kwargs)
-        else:
-            self._register_failure()  # noqa: RET503
-
-    def _register_failure(self):
-        import inspect
-
-        msg = ", ".join(
-            name for name, _ in inspect.getmembers(self) if name.startswith("read_")
-        )
-        raise ValueError(
-            f"Cannot infer appropriate read function for input, "
-            f"please call one of {msg} directly"
-        )
 
     @util.experimental
     def to_delta(
