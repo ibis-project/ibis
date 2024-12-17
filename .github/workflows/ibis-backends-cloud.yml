@@ -41,7 +41,7 @@ jobs:
       matrix:
         python-version:
           - "3.10"
-          - "3.12"
+          - "3.13"
         backend:
           - name: snowflake
             title: Snowflake
@@ -58,7 +58,7 @@ jobs:
               title: BigQuery
               extras:
                 - --extra bigquery
-          - python-version: "3.12"
+          - python-version: "3.13"
             backend:
               name: bigquery
               title: BigQuery
