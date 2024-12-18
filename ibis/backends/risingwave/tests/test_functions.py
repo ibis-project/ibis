@@ -301,7 +301,7 @@ def test_category_label(alltypes, df):
     bins = [0, 10, 25, 50, 100]
     labels = ["a", "b", "c", "d"]
     bucket = d.bucket(bins)
-    expr = bucket.label(labels)
+    expr = bucket.cases(*enumerate(labels), else_=None)
     result = expr.execute()
 
     with warnings.catch_warnings():
