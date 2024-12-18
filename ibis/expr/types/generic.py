@@ -14,7 +14,7 @@ from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
-from ibis.util import deprecated, promote_list, warn_deprecated
+from ibis.util import deprecated, promote_list
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -2142,9 +2142,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
-    def arbitrary(
-        self, where: ir.BooleanValue | None = None, how: Any = None
-    ) -> Scalar:
+    def arbitrary(self, where: ir.BooleanValue | None = None) -> Scalar:
         """Select an arbitrary value in a column.
 
         Returns an arbitrary (nondeterministic, backend-specific) value from
@@ -2155,8 +2153,6 @@ class Column(Value, _FixedTextJupyterMixin):
         ----------
         where
             A filter expression
-        how
-            DEPRECATED
 
         Returns
         -------
@@ -2188,13 +2184,6 @@ class Column(Value, _FixedTextJupyterMixin):
         │     2 │ a      │     8.3 │
         └───────┴────────┴─────────┘
         """
-        if how is not None:
-            warn_deprecated(
-                name="how",
-                as_of="9.0",
-                removed_in="10.0",
-                instead="call `first` or `last` explicitly",
-            )
         return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
 
     def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
