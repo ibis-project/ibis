@@ -26,7 +26,7 @@ import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, UrlFromPath
 from ibis.backends.sql import SQLBackend
-from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
+from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -387,23 +387,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def _memtable_volume_path(self) -> str:
         return f"/Volumes/{self._memtable_catalog}/{self._memtable_database}/{self._memtable_volume}"
 
-    def _in_memory_table_exists(self, name: str) -> bool:
-        sql = (
-            sg.select(self.compiler.f.count(STAR))
-            .from_(
-                sg.table("views", db="information_schema", catalog=self.current_catalog)
-            )
-            .where(
-                C.table_name.eq(sge.convert(name)),
-                C.table_schema.eq(self.compiler.f.current_database()),
-            )
-        )
-        with self._safe_raw_sql(sql) as cur:
-            [(out,)] = cur.fetchall()
-
-        assert 0 <= out <= 1, str(out)
-        return out == 1
-
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         import pyarrow.parquet as pq
 
@@ -610,19 +593,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 for name, typ in zip(rows["col_name"], rows["data_type"])
             }
         )
-
-    def _get_temp_view_definition(self, name: str, definition: str) -> str:
-        return sge.Create(
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            kind="VIEW",
-            expression=definition,
-            replace=True,
-            properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-        )
-
-    def _create_temp_view(self, table_name, source):
-        with self._safe_raw_sql(self._get_temp_view_definition(table_name, source)):
-            pass
 
     def rename_table(self, old_name: str, new_name: str) -> None:
         """Rename an existing table.

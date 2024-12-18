@@ -27,6 +27,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
+    PyAthenaDatabaseError,
+    PyAthenaOperationalError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
@@ -54,7 +56,9 @@ NULL_BACKEND_TYPES = {
 }
 
 
-@pytest.mark.notyet(["flink"], "The runtime does not support untyped `NULL` values.")
+@pytest.mark.notyet(
+    ["flink", "athena"], "The runtime does not support untyped `NULL` values."
+)
 def test_null_literal(con, backend):
     expr = ibis.null()
     assert pd.isna(con.execute(expr))
@@ -72,7 +76,7 @@ def test_null_literal(con, backend):
     reason="https://github.com/ibis-project/ibis/issues/9109",
     raises=AssertionError,
 )
-def test_null_literal_typed(con, backend):
+def test_null_literal_typed(con):
     expr = ibis.null(bool)
     assert expr.type() == dt.boolean
     assert pd.isna(con.execute(expr))
@@ -92,6 +96,7 @@ BOOLEAN_BACKEND_TYPE = {
     "risingwave": "boolean",
     "flink": "BOOLEAN NOT NULL",
     "databricks": "boolean",
+    "athena": "boolean",
 }
 
 
@@ -207,6 +212,7 @@ def test_isna(backend, alltypes, col, value, filt):
                         "exasol",
                         "pyspark",
                         "databricks",
+                        "athena",
                     ],
                     reason="NaN != NULL for these backends",
                 ),
@@ -752,7 +758,7 @@ def test_table_info_large(con):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink"],
+    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink", "athena"],
     raises=com.OperationNotDefinedError,
     reason="quantile and mode is not supported",
 )
@@ -892,7 +898,17 @@ def test_table_describe(alltypes, selector, expected_columns):
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "bigquery", "impala", "mysql", "mssql", "trino", "flink", "sqlite"],
+    [
+        "datafusion",
+        "bigquery",
+        "impala",
+        "mysql",
+        "mssql",
+        "trino",
+        "flink",
+        "sqlite",
+        "athena",
+    ],
     raises=com.OperationNotDefinedError,
     reason="quantile is not supported",
 )
@@ -1190,7 +1206,10 @@ def test_isin_uncorrelated_filter(
             marks=[
                 pytest.mark.notyet(
                     ["exasol"], raises=ExaQueryError, reason="no time type"
-                )
+                ),
+                pytest.mark.notyet(
+                    ["athena"], raises=PyAthenaOperationalError, reason="no time type"
+                ),
             ],
         ),
     ],
@@ -1568,6 +1587,7 @@ def test_distinct_on_keep_is_none(backend, on):
         "druid",  # not sure what's going on here
         "mysql",  # CHECKSUM TABLE but not column
         "trino",  # checksum returns varbinary
+        "athena",
     ]
 )
 @pytest.mark.parametrize(
@@ -1616,7 +1636,7 @@ def test_hash(backend, alltypes, dtype):
     assert h1.notnull().all()
 
 
-@pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake"])
+@pytest.mark.notimpl(["trino", "oracle", "exasol", "snowflake", "athena"])
 @pytest.mark.notyet(
     [
         "datafusion",
@@ -1661,15 +1681,10 @@ def test_hashbytes(backend, alltypes):
         "risingwave",
         "snowflake",
         "trino",
+        "athena",
     ]
 )
-@pytest.mark.notyet(
-    [
-        "druid",
-        "polars",
-        "sqlite",
-    ]
-)
+@pytest.mark.notyet(["druid", "polars", "sqlite"])
 def test_hexdigest(backend, alltypes):
     h1 = alltypes.order_by("id").string_col.hexdigest().execute(limit=10)
     df = alltypes.order_by("id").execute(limit=10)
@@ -1752,6 +1767,7 @@ def test_cast(con, from_type, to_type, from_val, expected):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notimpl(
                     ["druid"], reason="casts to 1672531200000 (millisecond)"
@@ -1802,6 +1818,7 @@ def test_try_cast(con, from_val, to_type, expected):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
                 pytest.mark.notimpl(["polars"], reason="casts to 1672531200000000000"),
             ],
@@ -1839,15 +1856,7 @@ def test_try_cast_table(backend, con):
 
 
 @pytest.mark.notimpl(
-    [
-        "datafusion",
-        "mysql",
-        "oracle",
-        "postgres",
-        "risingwave",
-        "sqlite",
-        "exasol",
-    ]
+    ["datafusion", "mysql", "oracle", "postgres", "risingwave", "sqlite", "exasol"]
 )
 @pytest.mark.notimpl(["druid"], strict=False)
 @pytest.mark.parametrize(
@@ -1866,6 +1875,7 @@ def test_try_cast_table(backend, con):
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["mssql"], raises=PyODBCDataError),
             ],
             id="datetime-to-float",
@@ -2068,6 +2078,11 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     raises=TrinoUserError,
     reason="backend doesn't support dynamic limit/offset",
 )
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaDatabaseError,
+    reason="backend doesn't support dynamic limit/offset",
+)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notyet(["druid"], reason="druid doesn't support dynamic limit/offset")
 @pytest.mark.notyet(["polars"], reason="polars doesn't support dynamic limit/offset")
@@ -2119,6 +2134,11 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 @pytest.mark.notimpl(
     ["trino"],
     raises=TrinoUserError,
+    reason="backend doesn't support dynamic limit/offset",
+)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaDatabaseError,
     reason="backend doesn't support dynamic limit/offset",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
@@ -2214,6 +2234,7 @@ def test_sample_memtable(con, backend):
         "exasol",
         "pyspark",
         "databricks",
+        "athena",
     ]
 )
 def test_sample_with_seed(backend):
@@ -2349,9 +2370,9 @@ def test_select_sort_sort_deferred(backend, alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["druid"],
+    ["druid", "athena"],
     raises=AttributeError,
-    reason="inserting three rows into druid is difficult",
+    reason="not yet added the data for this backend",
 )
 def test_topk_counts_null(con):
     t = con.tables.topk
@@ -2472,7 +2493,7 @@ def test_named_literal(con, backend):
     ["oracle"], raises=OracleDatabaseError, reason="incorrect code generated"
 )
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "impala", "mysql", "mssql", "sqlite", "trino"],
+    ["datafusion", "flink", "impala", "mysql", "mssql", "sqlite", "trino", "athena"],
     raises=com.OperationNotDefinedError,
     reason="quantile not implemented",
 )

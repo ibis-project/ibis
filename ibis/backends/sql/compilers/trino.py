@@ -92,6 +92,7 @@ class TrinoCompiler(SQLGlotCompiler):
         ops.ArrayIntersect: "array_intersect",
         ops.BitAnd: "bitwise_and_agg",
         ops.BitOr: "bitwise_or_agg",
+        ops.BitXor: "bitwise_xor_agg",
         ops.TypeOf: "typeof",
         ops.Levenshtein: "levenshtein_distance",
         ops.ExtractProtocol: "url_extract_protocol",

@@ -14,7 +14,8 @@ pytestmark = [
     mark.notyet(
         ["databricks"],
         reason="Databricks does not support temporary tables, even though they allow the syntax",
-    )
+    ),
+    mark.notyet(["athena"], reason="Amazon Athena doesn't support temporary tables"),
 ]
 
 

@@ -26,6 +26,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JError,
     Py4JJavaError,
+    PyAthenaOperationalError,
     PyDruidProgrammingError,
     PyODBCDataError,
     PyODBCProgrammingError,
@@ -54,6 +55,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -71,6 +73,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -88,6 +91,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -105,6 +109,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -122,6 +127,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -139,6 +145,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -156,6 +163,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -173,6 +181,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "integer",
                 "trino": "integer",
+                "athena": "integer",
                 "duckdb": "INTEGER",
                 "postgres": "integer",
                 "risingwave": "integer",
@@ -190,6 +199,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "real",
+                "athena": "real",
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -214,6 +224,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "real",
+                "athena": "real",
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -231,6 +242,7 @@ pa = pytest.importorskip("pyarrow")
                 "snowflake": "INTEGER",
                 "sqlite": "real",
                 "trino": "double",
+                "athena": "double",
                 "duckdb": "DECIMAL(2,1)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -261,6 +273,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
+                "athena": decimal.Decimal("1"),
                 "exasol": decimal.Decimal("1"),
                 "duckdb": decimal.Decimal("1.1"),
                 "impala": decimal.Decimal("1"),
@@ -283,6 +296,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "sqlite": "real",
                 "impala": "DECIMAL(9,0)",
                 "trino": "decimal(18,3)",
+                "athena": "decimal(38,0)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -306,6 +320,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "snowflake": decimal.Decimal("1.1"),
                 "sqlite": decimal.Decimal("1.1"),
                 "trino": decimal.Decimal("1.1"),
+                "athena": decimal.Decimal("1.1"),
                 "duckdb": decimal.Decimal("1.100000000"),
                 "impala": decimal.Decimal("1.1"),
                 "postgres": decimal.Decimal("1.1"),
@@ -328,6 +343,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "impala": "DECIMAL(38,9)",
                 "sqlite": "real",
                 "trino": "decimal(38,9)",
+                "athena": "decimal(38,9)",
                 "duckdb": "DECIMAL(38,9)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -356,6 +372,7 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 "clickhouse": "Decimal(76, 38)",
                 "sqlite": "real",
                 "trino": "decimal(2,1)",
+                "athena": "decimal(2,1)",
                 "duckdb": "DECIMAL(18,3)",
                 "postgres": "numeric",
                 "risingwave": "numeric",
@@ -379,6 +396,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 ),
                 pytest.mark.notyet(
                     ["trino"], reason="Unsupported precision.", raises=TrinoUserError
+                ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    reason="Unsupported precision.",
+                    raises=PyAthenaOperationalError,
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
                 pytest.mark.notyet(
@@ -443,6 +465,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["trino"],
                     raises=TrinoUserError,
+                    reason="can't cast infinity to decimal",
+                ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=PyAthenaOperationalError,
                     reason="can't cast infinity to decimal",
                 ),
                 pytest.mark.notyet(
@@ -520,6 +547,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                     raises=TrinoUserError,
                     reason="can't cast infinity to decimal",
                 ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=PyAthenaOperationalError,
+                    reason="can't cast infinity to decimal",
+                ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(["exasol"], raises=ExaQueryError),
                 pytest.mark.notyet(["polars"], reason="panic", raises=BaseException),
@@ -586,6 +618,11 @@ def test_numeric_literal(con, backend, expr, expected_types):
                 pytest.mark.notyet(
                     ["trino"],
                     raises=TrinoUserError,
+                    reason="can't cast nan to decimal",
+                ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=PyAthenaOperationalError,
                     reason="can't cast nan to decimal",
                 ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
@@ -1429,12 +1466,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
 @pytest.mark.parametrize(
     ("op", "left_fn", "right_fn"),
     [
-        param(
-            lshift,
-            lambda t: t.int_col,
-            lambda t: t.int_col,
-            id="lshift_col_col",
-        ),
+        param(lshift, lambda t: t.int_col, lambda t: t.int_col, id="lshift_col_col"),
         param(
             lshift,
             lambda _: 3,
@@ -1452,6 +1484,7 @@ def test_bitwise_columns(backend, con, alltypes, df, op, left_fn, right_fn):
         param(rshift, lambda t: t.int_col, lambda _: 3, id="rshift_col_scalar"),
     ],
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
 @flink_no_bitwise
 def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
@@ -1482,11 +1515,17 @@ def test_bitwise_shift(backend, alltypes, df, op, left_fn, right_fn):
         ),
         param(
             lshift,
-            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+            marks=[
+                pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
+            ],
         ),
         param(
             rshift,
-            marks=[pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)],
+            marks=[
+                pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
+            ],
         ),
     ],
 )
@@ -1558,6 +1597,7 @@ def test_scalar_round_is_integer(con):
                         "snowflake",
                         "databricks",
                         "bigquery",
+                        "athena",
                     ],
                     raises=pa.ArrowInvalid,
                 ),

@@ -1249,6 +1249,10 @@ class DatabricksType(SqlglotType):
     dialect = "databricks"
 
 
+class AthenaType(SqlglotType):
+    dialect = "athena"
+
+
 TYPE_MAPPERS = {
     mapper.dialect: mapper
     for mapper in set(get_subclasses(SqlglotType)) - {SqlglotType, BigQueryUDFType}

@@ -31,6 +31,7 @@ from ibis.backends.tests.errors import (
     PolarsPanicException,
     PsycoPg2InternalError,
     Py4JJavaError,
+    PyAthenaOperationalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkConnectGrpcException,
@@ -342,7 +343,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
             "us",
             marks=[
                 pytest.mark.notimpl(
-                    ["mysql", "sqlite", "trino", "datafusion", "exasol"],
+                    ["mysql", "sqlite", "trino", "datafusion", "exasol", "athena"],
                     raises=com.UnsupportedOperationError,
                 ),
                 pytest.mark.notyet(
@@ -374,6 +375,7 @@ def test_timestamp_extract_week_of_year(backend, alltypes, df):
                         "exasol",
                         "druid",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.UnsupportedOperationError,
                 ),
@@ -481,7 +483,7 @@ def test_date_truncate(backend, alltypes, df, unit):
             marks=[
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notyet(
-                    ["trino"],
+                    ["trino", "athena"],
                     raises=com.UnsupportedOperationError,
                     reason="week not implemented",
                 ),
@@ -530,7 +532,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                     ["clickhouse", "sqlite"], raises=com.UnsupportedOperationError
                 ),
                 pytest.mark.notimpl(
-                    ["trino"],
+                    ["trino", "athena"],
                     raises=AssertionError,
                     reason="we're dropping microseconds to ensure results consistent with pandas",
                 ),
@@ -604,7 +606,9 @@ def test_integer_to_interval_timestamp(
         param(
             "W",
             marks=[
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["trino", "athena"], raises=com.UnsupportedOperationError
+                ),
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
@@ -764,6 +768,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                     ["bigquery", "snowflake", "sqlite", "exasol", "mssql"],
                     raises=com.OperationNotDefinedError,
                 ),
+                pytest.mark.notimpl(
+                    ["athena"],
+                    raises=PyAthenaOperationalError,
+                    reason="not supported in hive",
+                ),
                 pytest.mark.notyet(
                     ["pyspark"],
                     condition=IS_SPARK_REMOTE,
@@ -808,6 +817,11 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
                 pytest.mark.notimpl(
                     ["bigquery", "druid", "flink", "mssql"],
                     raises=com.OperationNotDefinedError,
+                ),
+                pytest.mark.notimpl(
+                    ["athena"],
+                    raises=PyAthenaOperationalError,
+                    reason="not supported in hive",
                 ),
                 pytest.mark.notyet(
                     ["datafusion"],
@@ -1075,6 +1089,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     raises=com.UnsupportedOperationError,
                     reason="`ms` unit is not supported!",
                 ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=AssertionError,
+                    reason="athena or pyathena drops fractional seconds",
+                ),
             ],
         ),
         param(
@@ -1096,6 +1115,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     raises=ValueError,
                     reason="<TimestampUnit.MICROSECOND: 'us'> unit is not supported!",
                 ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=AssertionError,
+                    reason="athena or pyathena drops fractional seconds",
+                ),
             ],
         ),
         param(
@@ -1116,6 +1140,11 @@ unit_factors = {"s": 10**9, "ms": 10**6, "us": 10**3, "ns": 1}
                     ["flink"],
                     raises=ValueError,
                     reason="<TimestampUnit.MICROSECOND: 'us'> unit is not supported!",
+                ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=AssertionError,
+                    reason="athena or pyathena drops fractional seconds",
                 ),
             ],
         ),
@@ -1185,6 +1214,11 @@ def test_integer_to_timestamp(backend, con, unit):
                     raises=TrinoUserError,
                 ),
                 pytest.mark.never(
+                    ["athena"],
+                    reason="datetime formatting style not supported",
+                    raises=PyAthenaOperationalError,
+                ),
+                pytest.mark.never(
                     ["polars"],
                     reason="datetime formatting style not supported",
                     raises=PolarsInvalidOperationError,
@@ -1246,6 +1280,11 @@ def test_string_as_timestamp(alltypes, fmt):
                     raises=TrinoUserError,
                 ),
                 pytest.mark.never(
+                    ["athena"],
+                    reason="datetime formatting style not supported",
+                    raises=PyAthenaOperationalError,
+                ),
+                pytest.mark.never(
                     ["polars"],
                     reason="datetime formatting style not supported",
                     raises=PolarsInvalidOperationError,
@@ -1287,6 +1326,7 @@ def test_string_as_date(alltypes, fmt):
         "datafusion",
         "flink",
         "databricks",
+        "athena",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1386,12 +1426,14 @@ def test_day_of_week_column_group_by(
     backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_now(con):
     expr = ibis.now()
     result = con.execute(expr.name("tmp"))
     assert isinstance(result, datetime.datetime)
 
 
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_now_from_projection(alltypes):
     n = 2
     expr = alltypes.select(now=ibis.now()).limit(n)
@@ -1426,6 +1468,7 @@ DATE_BACKEND_TYPES = {
     "snowflake": "DATE",
     "sqlite": "text",
     "trino": "date",
+    "athena": "date",
     "risingwave": "date",
     "databricks": "date",
 }
@@ -1449,6 +1492,7 @@ TIMESTAMP_BACKEND_TYPES = {
     "snowflake": "TIMESTAMP_NTZ",
     "sqlite": "text",
     "trino": "timestamp(3)",
+    "athena": "timestamp(3)",
     "duckdb": "TIMESTAMP",
     "postgres": "timestamp without time zone",
     "risingwave": "timestamp without time zone",
@@ -1514,6 +1558,7 @@ def test_timestamp_literal(con, backend):
         "<NUMERIC>, <NUMERIC>, <NUMERIC>, <NUMERIC>)"
     ),
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_timestamp_with_timezone_literal(con, timezone, expected):
     expr = ibis.timestamp(2022, 2, 4, 16, 20, 0).cast(dt.Timestamp(timezone=timezone))
     result = con.execute(expr)
@@ -1528,6 +1573,7 @@ TIME_BACKEND_TYPES = {
     "snowflake": "TIME",
     "sqlite": "text",
     "trino": "time(3)",
+    "athena": "time(3)",
     "duckdb": "TIME",
     "postgres": "time without time zone",
     "risingwave": "time without time zone",
@@ -1542,6 +1588,7 @@ TIME_BACKEND_TYPES = {
     ["clickhouse", "impala", "exasol"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_time_literal(con, backend):
     expr = ibis.time(16, 20, 0)
     result = con.execute(expr)
@@ -1576,7 +1623,7 @@ def test_time_literal(con, backend):
                     raises=AssertionError,
                     reason="doesn't have enough precision to capture microseconds",
                 ),
-                pytest.mark.notyet(["trino"], raises=AssertionError),
+                pytest.mark.notyet(["trino", "athena"], raises=AssertionError),
                 pytest.mark.notyet(
                     ["flink"],
                     raises=AssertionError,
@@ -1588,6 +1635,7 @@ def test_time_literal(con, backend):
     ids=["second", "subsecond"],
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(
     ["databricks"],
     raises=AssertionError,
@@ -1609,6 +1657,7 @@ INTERVAL_BACKEND_TYPES = {
     "clickhouse": "IntervalSecond",
     "sqlite": "integer",
     "trino": "interval day to second",
+    "athena": "interval day to second",
     "duckdb": "INTERVAL",
     "postgres": "interval",
     "risingwave": "interval",
@@ -1660,6 +1709,7 @@ INTERVAL_BACKEND_TYPES = {
     reason="returns a different string format than expected in the test",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_interval_literal(con, backend):
     expr = ibis.interval(1, unit="s")
     result = con.execute(expr)
@@ -1740,6 +1790,7 @@ def test_timestamp_extract_milliseconds_with_big_value(con):
     reason="ORA-00932",
 )
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_integer_cast_to_timestamp_column(backend, alltypes, df):
     expr = alltypes.int_col.cast("timestamp")
     expected = pd.to_datetime(df.int_col, unit="s").rename(expr.get_name())
@@ -1749,6 +1800,7 @@ def test_integer_cast_to_timestamp_column(backend, alltypes, df):
 
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError)
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 def test_integer_cast_to_timestamp_scalar(alltypes, df):
     expr = alltypes.int_col.min().cast("timestamp")
     result = expr.execute()
@@ -1757,7 +1809,9 @@ def test_integer_cast_to_timestamp_scalar(alltypes, df):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse"], raises=AssertionError, reason="clickhouse truncates the result"
+    ["clickhouse", "athena"],
+    raises=AssertionError,
+    reason="clickhouse truncates the result",
 )
 @pytest.mark.notimpl(["druid"], reason="timezone doesn't match", raises=AssertionError)
 @pytest.mark.notyet(
@@ -1829,7 +1883,7 @@ def test_timestamp_date_comparison(backend, alltypes, df, left_fn, right_fn):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse"], reason="returns incorrect results", raises=AssertionError
+    ["clickhouse", "athena"], reason="returns incorrect results", raises=AssertionError
 )
 @pytest.mark.notimpl(
     ["pyspark"], condition=not IS_SPARK_REMOTE, raises=pd.errors.OutOfBoundsDatetime
@@ -1868,6 +1922,7 @@ def test_large_timestamp(con):
                     raises=AssertionError,
                 ),
                 pytest.mark.notimpl(["exasol"], raises=AssertionError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
         param(
@@ -1925,6 +1980,7 @@ def test_large_timestamp(con):
                     raises=PsycoPg2InternalError,
                     reason="Parse error: timestamp without time zone Can't cast string to timestamp (expected format is YYYY-MM-DD HH:MM:SS[.D+{up to 6 digits}] or YYYY-MM-DD HH:MM or YYYY-MM-DD or ISO 8601 format)",
                 ),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
         ),
     ],
@@ -2001,7 +2057,7 @@ def test_delta(con, start, end, unit, expected):
 
 
 @pytest.mark.notimpl(
-    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid", "databricks"],
+    ["impala", "mysql", "pyspark", "sqlite", "trino", "druid", "databricks", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.parametrize(
@@ -2113,6 +2169,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
         "trino",
         "druid",
         "databricks",
+        "athena",
     ],
     raises=com.OperationNotDefinedError,
 )

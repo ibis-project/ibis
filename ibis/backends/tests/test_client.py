@@ -26,6 +26,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
+    BotoInvalidRequestException,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
@@ -33,6 +34,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PsycoPg2UndefinedObject,
     Py4JJavaError,
+    PyAthenaDatabaseError,
     PyODBCProgrammingError,
     SnowflakeProgrammingError,
 )
@@ -61,6 +63,9 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
         pytest.xfail(
             "flink doesn't implement create_table from schema without additional arguments"
         )
+    elif con.name == "athena":
+        pytest.xfail("create table must specific external location")
+
     temporary = con.create_table(temp_table_name, schema=schema)
     assert temporary.to_pandas().empty
 
@@ -93,6 +98,11 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
 )
 @pytest.mark.notimpl(["druid"])
 @pytest.mark.notimpl(
+    ["athena"],
+    raises=BotoInvalidRequestException,
+    reason="create table requires a location",
+)
+@pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
 )
@@ -124,6 +134,7 @@ def test_create_table(backend, con, temp_table, func, sch):
                         "risingwave",
                         "impala",
                         "databricks",
+                        "athena",
                     ],
                     reason="No support for temp tables",
                 ),
@@ -142,7 +153,14 @@ def test_create_table(backend, con, temp_table, func, sch):
             False,
             True,
             id="no temp, overwrite",
-            marks=pytest.mark.notyet(["flink", "polars"]),
+            marks=[
+                pytest.mark.notyet(["flink", "polars"]),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=(PyAthenaDatabaseError, com.UnsupportedOperationError),
+                    reason="quotes are incorrect",
+                ),
+            ],
         ),
         param(
             True,
@@ -157,6 +175,7 @@ def test_create_table(backend, con, temp_table, func, sch):
                         "risingwave",
                         "impala",
                         "databricks",
+                        "athena",
                     ],
                     reason="No support for temp tables",
                 ),
@@ -197,6 +216,11 @@ def test_create_table_overwrite_temp(backend, con, temp_table, temp, overwrite):
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
 @pytest.mark.notyet(["flink"], raises=com.IbisError)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=com.UnsupportedOperationError,
+    reason="no reasonable implementation is supported by the database",
+)
 def test_load_data(backend, con, temp_table, lamduh):
     sch = ibis.schema(
         [
@@ -302,7 +326,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
     reason="oracle temp tables aren't cleaned up on reconnect -- they need to "
     "be switched from using atexit to weakref.finalize",
 )
-@mark.notimpl(["trino", "druid"], reason="doesn't implement temporary tables")
+@mark.notimpl(["trino", "druid", "athena"], reason="doesn't implement temporary tables")
 @mark.notimpl(["exasol"], reason="Exasol does not support temporary tables")
 @pytest.mark.notimpl(
     ["impala", "pyspark"],
@@ -365,6 +389,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
         "snowflake",
         "sqlite",
         "trino",
+        "athena",
     ]
 )
 @pytest.mark.notimpl(
@@ -381,7 +406,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
     assert temp_table_orig not in con.list_tables()
 
 
-@mark.notimpl(["polars", "druid"])
+@mark.notimpl(["polars", "druid", "athena"])
 @mark.never(["impala", "pyspark", "databricks"], reason="No non-nullable datatypes")
 @pytest.mark.notimpl(
     ["flink"],
@@ -520,6 +545,9 @@ def test_insert_no_overwrite_from_dataframe(
     ["datafusion"], raises=Exception, reason="DELETE DML not implemented upstream"
 )
 @pytest.mark.notyet(["druid"], raises=NotImplementedError)
+@pytest.mark.notyet(
+    ["athena"], raises=com.UnsupportedOperationError, reason="s3 location required"
+)
 def test_insert_overwrite_from_dataframe(
     backend, con, employee_data_1_temp_table, test_employee_data_2
 ):
@@ -655,6 +683,7 @@ def test_list_catalogs(con):
         "trino": {"memory"},
         "pyspark": {"spark_catalog"},
         "databricks": {"hive_metastore", "ibis", "ibis_testing", "samples", "system"},
+        "athena": {"AwsDataCatalog"},
     }
     result = set(con.list_catalogs())
     assert test_catalogs[con.name] <= result
@@ -685,6 +714,7 @@ def test_list_database_contents(con):
         "sqlite": {"main"},
         "trino": {"default", "information_schema"},
         "databricks": {"default"},
+        "athena": set(),
     }
     result = set(con.list_databases())
     assert test_databases[con.name] <= result
@@ -709,6 +739,9 @@ def test_list_database_contents(con):
     ["risingwave"],
     raises=PsycoPg2InternalError,
     reason="unsigned integers are not supported",
+)
+@pytest.mark.notimpl(
+    ["athena"], raises=com.UnsupportedOperationError, reason="no temp tables"
 )
 @pytest.mark.notimpl(
     ["flink"],
@@ -1000,6 +1033,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     ],
 )
 @pytest.mark.notimpl(["druid"])
+@pytest.mark.notimpl(["athena"], raises=BotoInvalidRequestException)
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -1304,6 +1338,7 @@ def test_set_backend_url(url, monkeypatch):
 @pytest.mark.never(
     ["oracle"], reason="oracle doesn't allow DESCRIBE outside of its CLI"
 )
+@pytest.mark.notimpl(["athena"], reason="no overwrite")
 @pytest.mark.notimpl(["druid"], reason="dialect is broken")
 @pytest.mark.notimpl(
     ["flink"],
@@ -1334,6 +1369,7 @@ def gen_test_name(con: BaseBackend):
 @mark.notimpl(
     ["druid"], raises=NotImplementedError, reason="generated SQL fails to parse"
 )
+@mark.notimpl(["athena"], reason="syntax isn't correct; probably a sqlglot issue")
 @mark.notimpl(["impala"], reason="impala doesn't support memtable")
 @mark.notimpl(["pyspark"])
 @mark.notimpl(
@@ -1381,6 +1417,7 @@ def create_and_destroy_db(con):
     reason="unclear whether Flink supports cross catalog/database inserts",
     raises=Py4JJavaError,
 )
+@pytest.mark.notimpl(["athena"])
 def test_insert_with_database_specified(con_create_database):
     con = con_create_database
 
@@ -1499,6 +1536,7 @@ def test_close_connection(con):
 @pytest.mark.notimpl(
     ["databricks"], raises=json.JSONDecodeError, reason="not yet implemented"
 )
+@pytest.mark.notimpl(["athena"], raises=AttributeError, reason="not yet implemented")
 def test_json_to_pyarrow(con):
     t = con.tables.json_t
     table = t.to_pyarrow()
@@ -1541,7 +1579,9 @@ def test_json_to_pyarrow(con):
     reason="no temp table support",
 )
 @pytest.mark.notyet(
-    ["impala", "trino"], raises=NotImplementedError, reason="no temp table support"
+    ["impala", "trino", "athena"],
+    raises=NotImplementedError,
+    reason="no temp table support",
 )
 @pytest.mark.notyet(
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
@@ -1564,6 +1604,7 @@ def test_schema_with_caching(alltypes):
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
+@pytest.mark.notyet(["athena"])
 @pytest.mark.notyet(
     ["datafusion"], reason="Doesn't support table creation from records"
 )
@@ -1657,6 +1698,7 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
 
 @pytest.mark.notyet(["druid"], reason="can't create tables")
+@pytest.mark.notimpl(["athena"], reason="can't create tables correctly in some cases")
 @pytest.mark.notyet(
     ["flink"], reason="can't create non-temporary tables from in-memory data"
 )
@@ -1708,6 +1750,7 @@ def test_cross_database_join(con_create_database, monkeypatch):
     "but you have to enable them with a property AND set DEFAULT, so no",
     raises=DatabricksServerOperationError,
 )
+@pytest.mark.notimpl(["athena"], reason="insert isn't implemented yet")
 def test_insert_into_table_missing_columns(con, temp_table):
     db = getattr(con, "current_database", None)
 

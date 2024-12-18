@@ -24,6 +24,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     Py4JError,
     Py4JJavaError,
+    PyAthenaOperationalError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
     PySparkAnalysisException,
@@ -69,6 +70,7 @@ aggregate_test_params = [
                     "flink",
                     "exasol",
                     "databricks",
+                    "athena",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -107,6 +109,7 @@ aggregate_test_params = [
                     "flink",
                     "risingwave",
                     "exasol",
+                    "athena",
                 ],
                 raises=com.OperationNotDefinedError,
             ),
@@ -218,6 +221,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
         "flink",
         "exasol",
         "databricks",
+        "athena",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -399,6 +403,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                         "exasol",
                         "flink",
                         "risingwave",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -523,7 +528,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
-                    ["impala", "pyspark", "flink"], raises=com.OperationNotDefinedError
+                    ["impala", "pyspark", "flink", "athena"],
+                    raises=com.OperationNotDefinedError,
                 ),
             ],
         ),
@@ -817,7 +823,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
-                    ["trino"],
+                    ["trino", "athena"],
                     reason="backend implements approximate quantiles",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -853,7 +859,7 @@ def test_count_distinct_star(alltypes, df, ibis_cond, pandas_cond):
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.never(
-                    ["trino"],
+                    ["trino", "athena"],
                     reason="backend implements approximate quantiles",
                     raises=com.OperationNotDefinedError,
                 ),
@@ -987,10 +993,7 @@ def test_approx_quantile(con, filtered, multi):
             lambda t, where: t.G[where].corr(t.RBI[where]),
             id="corr_pop",
             marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
                     ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
@@ -1031,15 +1034,13 @@ def test_approx_quantile(con, filtered, multi):
                     reason="Correlation with how='sample' is not supported.",
                 ),
                 pytest.mark.notyet(
-                    [
-                        "risingwave",
-                        "snowflake",
-                        "oracle",
-                    ],
+                    ["risingwave", "snowflake", "oracle"],
                     raises=ValueError,
                     reason="XXXXSQLExprTranslator only implements population correlation coefficient",
                 ),
-                pytest.mark.notyet(["trino"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["trino", "athena"], raises=com.UnsupportedOperationError
+                ),
             ],
         ),
         param(
@@ -1075,10 +1076,7 @@ def test_approx_quantile(con, filtered, multi):
             lambda t, where: (t.G[where] > 34.0).corr(t.G[where] <= 34.0),
             id="corr_pop_bool",
             marks=[
-                pytest.mark.notimpl(
-                    ["druid"],
-                    raises=com.OperationNotDefinedError,
-                ),
+                pytest.mark.notimpl(["druid"], raises=com.OperationNotDefinedError),
                 pytest.mark.notyet(
                     ["impala", "mysql", "sqlite", "flink"],
                     raises=com.OperationNotDefinedError,
@@ -1150,7 +1148,7 @@ def test_approx_median(alltypes):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "druid", "trino"],
+    ["impala", "mysql", "mssql", "druid", "trino", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.never(
@@ -1169,7 +1167,7 @@ def test_median(alltypes, df):
     ["bigquery", "druid", "sqlite"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "flink"],
+    ["impala", "mysql", "mssql", "trino", "flink", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1224,7 +1222,7 @@ def test_string_quantile(alltypes, func):
     ["bigquery", "sqlite", "druid"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["impala", "mysql", "mssql", "trino", "exasol", "flink"],
+    ["impala", "mysql", "mssql", "trino", "exasol", "flink", "athena"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
@@ -1506,6 +1504,7 @@ def test_topk_filter_op(con, alltypes, df, result_fn, expected_fn):
         "exasol",
         "flink",
         "databricks",
+        "athena",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1555,6 +1554,7 @@ def test_aggregate_list_like(backend, alltypes, df, agg_fn):
         "exasol",
         "flink",
         "databricks",
+        "athena",
     ],
     raises=com.OperationNotDefinedError,
 )
@@ -1672,6 +1672,7 @@ def test_grouped_case(backend, con):
 @pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError)
 @pytest.mark.notyet(["risingwave"], raises=AssertionError, strict=False)
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_group_concat_over_window(backend, con):
     # TODO: this test is flaky on risingwave and I DO NOT LIKE IT
     input_df = pd.DataFrame(

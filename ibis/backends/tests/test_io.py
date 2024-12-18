@@ -83,7 +83,17 @@ DIAMONDS_COLUMN_TYPES = {
     [param(None, id="default"), param("fancy_stones", id="file_name")],
 )
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_csv(con, data_dir, in_table_name, num_diamonds):
     fname = "diamonds.csv"
@@ -128,6 +138,7 @@ def test_read_csv(con, data_dir, in_table_name, num_diamonds):
         "sqlite",
         "trino",
         "databricks",
+        "athena",
     ]
 )
 def test_read_csv_gz(con, data_dir, gzip_csv):
@@ -138,7 +149,17 @@ def test_read_csv_gz(con, data_dir, gzip_csv):
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
     basename = "foo.bar.baz/diamonds.csv"
@@ -153,7 +174,17 @@ def test_read_csv_with_dotted_name(con, data_dir, tmp_path):
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_csv_schema(con, tmp_path):
     foo = tmp_path.joinpath("foo.csv")
@@ -178,7 +209,17 @@ def test_read_csv_schema(con, tmp_path):
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_csv_glob(con, tmp_path, ft_data):
     pc = pytest.importorskip("pyarrow.csv")
@@ -204,7 +245,17 @@ def test_read_csv_glob(con, tmp_path, ft_data):
     ],
 )
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_parquet(con, tmp_path, data_dir, fname, in_table_name):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -254,6 +305,7 @@ def read_table(path: Path) -> Iterator[tuple[str, pa.Table]]:
         "snowflake",
         "sqlite",
         "trino",
+        "athena",
     ]
 )
 def test_read_parquet_iterator(
@@ -281,7 +333,17 @@ def test_read_parquet_iterator(
 
 
 @pytest.mark.notyet(
-    ["flink", "impala", "mssql", "mysql", "postgres", "risingwave", "sqlite", "trino"]
+    [
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "postgres",
+        "risingwave",
+        "sqlite",
+        "trino",
+        "athena",
+    ]
 )
 def test_read_parquet_glob(con, tmp_path, ft_data):
     pq = pytest.importorskip("pyarrow.parquet")
@@ -310,6 +372,7 @@ def test_read_parquet_glob(con, tmp_path, ft_data):
         "risingwave",
         "sqlite",
         "trino",
+        "athena",
     ]
 )
 @pytest.mark.notimpl(
@@ -350,6 +413,7 @@ def test_read_json_glob(con, tmp_path, ft_data):
         "snowflake",
         "sqlite",
         "trino",
+        "athena",
     ]
 )
 def test_read_garbage(con, monkeypatch):

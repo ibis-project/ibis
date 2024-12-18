@@ -17,7 +17,16 @@ pytest.importorskip("pins")
 )
 @pytest.mark.notimpl(["pyspark", "exasol", "databricks"])
 @pytest.mark.notyet(
-    ["clickhouse", "druid", "impala", "mssql", "trino", "risingwave", "datafusion"]
+    [
+        "clickhouse",
+        "druid",
+        "impala",
+        "mssql",
+        "trino",
+        "risingwave",
+        "datafusion",
+        "athena",
+    ]
 )
 @pytest.mark.parametrize(
     ("example", "columns"),

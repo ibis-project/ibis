@@ -6,7 +6,11 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
-from ibis.backends.tests.errors import PsycoPg2InternalError, Py4JJavaError
+from ibis.backends.tests.errors import (
+    PsycoPg2InternalError,
+    Py4JJavaError,
+    PyAthenaOperationalError,
+)
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -611,6 +615,11 @@ def test_map_get_with_null_on_not_nullable(con, null_value):
 @pytest.mark.parametrize("null_value", [None, ibis.null()])
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="Flink cannot handle typeless nulls"
+)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="athena cannot handle typeless nulls",
 )
 @mark_notimpl_risingwave_hstore
 @mark_notyet_datafusion

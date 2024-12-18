@@ -46,6 +46,10 @@ jobs:
             title: Databricks
             extras:
               - --extra databricks
+          - name: athena
+            title: Amazon Athena
+            extras:
+              - --extra athena
         include:
           - python-version: "3.10"
             backend:
@@ -78,7 +82,7 @@ jobs:
     # rate limit while restricting GITHUB_TOKEN permissions elsewhere
     permissions:
       contents: "read"
-      # required for GCP workload identity federation
+      # required for workload identity federation
       id-token: "write"
 
     steps:
@@ -127,6 +131,7 @@ jobs:
         run: just download-data
 
       - uses: google-github-actions/auth@v2
+        if: matrix.backend.name == 'bigquery'
         with:
           project_id: "ibis-gbq"
           workload_identity_provider: "${{ vars.WIF_PROVIDER_NAME }}"
@@ -163,6 +168,13 @@ jobs:
           SNOWFLAKE_DATABASE: ${{ secrets.SNOWFLAKE_DATABASE }}
           SNOWFLAKE_SCHEMA: ${{ secrets.SNOWFLAKE_SCHEMA }}
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+
+      - name: setup aws credentials
+        if: matrix.backend.name == 'athena'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-2
+          role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
 
       - name: enable snowpark testing
         if: matrix.backend.key == 'snowpark'

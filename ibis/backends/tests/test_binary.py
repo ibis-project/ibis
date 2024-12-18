@@ -18,6 +18,7 @@ BINARY_BACKEND_TYPES = {
     "risingwave": "bytea",
     "flink": "BINARY(1) NOT NULL",
     "databricks": "binary",
+    "athena": "varbinary",
 }
 
 
