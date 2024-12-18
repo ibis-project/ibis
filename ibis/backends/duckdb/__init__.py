@@ -1330,7 +1330,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ) -> dict[str, torch.Tensor]:
         """Execute an expression and return results as a dictionary of torch tensors.
 
@@ -1641,7 +1641,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
 
 @lazy_singledispatch
-def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any):
+def _read_in_memory(source: Any, table_name: str, _conn: Backend, **_: Any):
     raise NotImplementedError(
         f"The `{_conn.name}` backend currently does not support "
         f"reading data of {type(source)!r}"
@@ -1653,12 +1653,12 @@ def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any)
 @_read_in_memory.register("pyarrow.Table")
 @_read_in_memory.register("pandas.DataFrame")
 @_read_in_memory.register("pyarrow.dataset.Dataset")
-def _default(source, table_name, _conn, **kwargs: Any):
+def _default(source, table_name, _conn, **_: Any):
     _conn.con.register(table_name, source)
 
 
 @_read_in_memory.register("pyarrow.RecordBatchReader")
-def _pyarrow_rbr(source, table_name, _conn, **kwargs: Any):
+def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     _conn.con.register(table_name, source)
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.
