@@ -188,7 +188,14 @@
 
           release = pkgs.mkShell {
             name = "release";
-            packages = with pkgs; [ git uv nodejs_20 unzip gnugrep python3 ];
+            packages = with pkgs; [
+              git
+              uv
+              nodejs_20
+              unzip
+              gnugrep
+              (python3.withPackages (p: [ p.packaging ]))
+            ];
           };
         };
       }
