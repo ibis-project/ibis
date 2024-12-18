@@ -275,21 +275,6 @@ def test_attach_sqlite(data_dir, tmp_path):
     assert dt.String(nullable=True) in set(types)
 
 
-def test_re_read_in_memory_overwrite(con):
-    df_pandas_1 = pd.DataFrame({"a": ["a"], "b": [1], "d": ["hi"]})
-    df_pandas_2 = pd.DataFrame({"a": [1], "c": [1.4]})
-
-    with pytest.warns(FutureWarning, match="memtable"):
-        table = con.read_in_memory(df_pandas_1, table_name="df")
-    assert len(table.columns) == 3
-    assert table.schema() == ibis.schema([("a", "str"), ("b", "int"), ("d", "str")])
-
-    with pytest.warns(FutureWarning, match="memtable"):
-        table = con.read_in_memory(df_pandas_2, table_name="df")
-    assert len(table.columns) == 2
-    assert table.schema() == ibis.schema([("a", "int"), ("c", "float")])
-
-
 def test_memtable_with_nullable_dtypes(con):
     data = pd.DataFrame(
         {
@@ -381,37 +366,24 @@ def test_s3_403_fallback(con, httpserver, monkeypatch):
 
 def test_register_numpy_str(con):
     data = pd.DataFrame({"a": [np.str_("xyz"), None]})
-    with pytest.warns(FutureWarning, match="memtable"):
-        result = con.read_in_memory(data)
-    tm.assert_frame_equal(result.execute(), data)
+    result = ibis.memtable(data)
+    tm.assert_frame_equal(con.execute(result), data)
 
 
-def test_register_recordbatchreader_warns(con):
+def test_memtable_recordbatchreader_raises(con):
     table = pa.Table.from_batches(
-        [
-            pa.RecordBatch.from_pydict({"x": [1, 2]}),
-            pa.RecordBatch.from_pydict({"x": [3, 4]}),
-        ]
+        map(pa.RecordBatch.from_pydict, [{"x": [1, 2]}, {"x": [3, 4]}])
     )
     reader = table.to_reader()
-    sol = table.to_pandas()
-    with pytest.warns(FutureWarning, match="memtable"):
-        t = con.read_in_memory(reader)
+
+    with pytest.raises(TypeError):
+        ibis.memtable(reader)
+
+    t = ibis.memtable(reader.read_all())
 
     # First execute is fine
-    res = t.execute()
-    tm.assert_frame_equal(res, sol)
-
-    # Later executes warn
-    with pytest.warns(UserWarning, match="RecordBatchReader"):
-        t.limit(2).execute()
-
-    # Re-registering over the name with a new reader is fine
-    reader = table.to_reader()
-    with pytest.warns(FutureWarning, match="memtable"):
-        t = con.read_in_memory(reader, table_name=t.get_name())
-    res = t.execute()
-    tm.assert_frame_equal(res, sol)
+    res = con.execute(t)
+    tm.assert_frame_equal(res, table.to_pandas())
 
 
 def test_csv_with_slash_n_null(con, tmp_path):

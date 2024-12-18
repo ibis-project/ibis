@@ -808,43 +808,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # by the time we execute against this so we register it
         # explicitly.
 
-    @util.deprecated(
-        instead="Pass in-memory data to `memtable` instead.",
-        as_of="9.1",
-        removed_in="10.0",
-    )
-    def read_in_memory(
-        self,
-        source: pd.DataFrame
-        | pa.Table
-        | pa.RecordBatchReader
-        | pl.DataFrame
-        | pl.LazyFrame,
-        table_name: str | None = None,
-    ) -> ir.Table:
-        """Register an in-memory table object in the current database.
-
-        Supported objects include pandas DataFrame, a Polars
-        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
-
-        Parameters
-        ----------
-        source
-            The data source.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-
-        """
-        table_name = table_name or util.gen_name("read_in_memory")
-        _read_in_memory(source, table_name, self)
-        return self.table(table_name)
-
     def read_delta(
         self,
         source_table: str,
