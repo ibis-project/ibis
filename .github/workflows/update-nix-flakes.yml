@@ -1,4 +1,4 @@
-name: update-flake-lock
+name: Update nix flakes
 on:
   workflow_dispatch:
   schedule:
