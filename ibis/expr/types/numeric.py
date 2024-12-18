@@ -13,8 +13,6 @@ from ibis.expr.types.generic import Column, Scalar, Value
 from ibis.util import deprecated
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
-
     import ibis.expr.types as ir
 
 
@@ -1593,41 +1591,6 @@ class IntegerValue(NumericValue):
             return NotImplemented
         else:
             return node.to_expr()
-
-    def label(self, labels: Iterable[str], nulls: str | None = None) -> ir.StringValue:
-        """Label a set of integer values with strings.
-
-        Parameters
-        ----------
-        labels
-            An iterable of string labels. Each integer value in `self` will be mapped to
-            a value in `labels`.
-        nulls
-            String label to use for `NULL` values
-
-        Returns
-        -------
-        StringValue
-            `self` labeled with `labels`
-
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.memtable({"a": [0, 1, 0, 2]})
-        >>> t.select(t.a, labeled=t.a.label(["a", "b", "c"]))
-        ┏━━━━━━━┳━━━━━━━━━┓
-        ┃ a     ┃ labeled ┃
-        ┡━━━━━━━╇━━━━━━━━━┩
-        │ int64 │ string  │
-        ├───────┼─────────┤
-        │     0 │ a       │
-        │     1 │ b       │
-        │     0 │ a       │
-        │     2 │ c       │
-        └───────┴─────────┘
-        """
-        return self.cases(*enumerate(labels), else_=nulls)
 
 
 @public
