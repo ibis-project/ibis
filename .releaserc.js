@@ -65,8 +65,7 @@ module.exports = {
       {
         verifyConditionsCmd:
           "ci/release/verify_conditions.sh ${options.dryRun}",
-        // TODO(cpcloud): re-enable once deprecation removals for 10.0 are merged
-        // verifyReleaseCmd: "ci/release/verify_release.sh ${nextRelease.version}",
+        verifyReleaseCmd: "ci/release/verify_release.sh ${nextRelease.version}",
         prepareCmd: "ci/release/prepare.sh ${nextRelease.version}",
         publishCmd: "ci/release/publish.sh"
       }
