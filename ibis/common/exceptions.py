@@ -15,10 +15,11 @@
 
 from __future__ import annotations
 
+import difflib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
 
 class TableNotFound(Exception):
@@ -43,6 +44,23 @@ class ExpressionError(IbisError):
 
 class RelationError(ExpressionError):
     """RelationError."""
+
+
+class FieldNotFoundError(AttributeError, IbisError):
+    """When you try to access `table_or_struct.does_not_exist`."""
+
+    def __init__(self, obj: object, name: str, options: Iterable[str]) -> None:
+        self.obj = obj
+        self.name = name
+        self.options = set(options)
+        self.typos = set(difflib.get_close_matches(name, self.options))
+        if len(self.typos) == 1:
+            msg = f"'{name}' not found in {obj.__class__.__name__} object. Did you mean '{next(iter(self.typos))}'?"
+        elif len(self.typos) > 1:
+            msg = f"'{name}' not found in {obj.__class__.__name__} object. Did you mean one of {self.typos}?"
+        else:
+            msg = f"'{name}' not found in {obj.__class__.__name__} object. Possible options: {self.options}"
+        super().__init__(msg)
 
 
 class TranslationError(IbisError):
