@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -211,8 +210,12 @@ def test_read_mysql(con, mysqlurl):  # pragma: no cover
 def test_read_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
-    with sqlite3.connect(str(path)) as sqlite_con:
-        sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    scon = sqlite3.connect(str(path))
+    try:
+        with scon:
+            scon.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    finally:
+        scon.close()
 
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
@@ -221,11 +224,14 @@ def test_read_sqlite(con, tmp_path):
 def test_read_sqlite_no_table_name(con, tmp_path):
     path = tmp_path / "test.db"
 
-    with sqlite3.connect(str(path)) as _:
+    scon = sqlite3.connect(str(path))
+    try:
         assert path.exists()
 
         with pytest.raises(ValueError):
             con.read_sqlite(path)
+    finally:
+        scon.close()
 
 
 # Because we create a new connection and the test requires loading/installing a
@@ -238,41 +244,42 @@ def test_read_sqlite_no_table_name(con, tmp_path):
 def test_attach_sqlite(data_dir, tmp_path):
     import sqlite3
 
-    test_db_path = tmp_path / "test.db"
-    with sqlite3.connect(test_db_path) as scon:
-        for line in (
-            Path(data_dir.parent / "schema" / "sqlite.sql").read_text().split(";")
-        ):
-            scon.execute(line)
-
     # Create a new connection here because we already have the `ibis_testing`
     # tables loaded in to the `con` fixture.
     con = ibis.duckdb.connect()
 
-    con.attach_sqlite(test_db_path)
-    assert set(con.list_tables()) >= {
-        "functional_alltypes",
-        "awards_players",
-        "batting",
-        "diamonds",
-    }
+    test_db_path = tmp_path / "test.db"
+    scon = sqlite3.connect(test_db_path)
+    try:
+        with scon:
+            scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
 
-    fa = con.tables.functional_alltypes
-    assert len(set(fa.schema().types)) > 1
+        con.attach_sqlite(test_db_path)
+        assert set(con.list_tables()) >= {
+            "functional_alltypes",
+            "awards_players",
+            "batting",
+            "diamonds",
+        }
 
-    # overwrite existing sqlite_db and force schema to all strings
-    con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
-    assert set(con.list_tables()) >= {
-        "functional_alltypes",
-        "awards_players",
-        "batting",
-        "diamonds",
-    }
+        fa = con.tables.functional_alltypes
+        assert len(set(fa.schema().types)) > 1
 
-    fa = con.tables.functional_alltypes
-    types = fa.schema().types
-    assert len(set(types)) == 1
-    assert dt.String(nullable=True) in set(types)
+        # overwrite existing sqlite_db and force schema to all strings
+        con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
+        assert set(con.list_tables()) >= {
+            "functional_alltypes",
+            "awards_players",
+            "batting",
+            "diamonds",
+        }
+
+        fa = con.tables.functional_alltypes
+        types = fa.schema().types
+        assert len(set(types)) == 1
+        assert dt.String(nullable=True) in set(types)
+    finally:
+        scon.close()
 
 
 def test_memtable_with_nullable_dtypes(con):
