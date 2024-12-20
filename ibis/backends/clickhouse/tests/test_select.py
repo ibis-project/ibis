@@ -6,7 +6,6 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.tests.errors import ClickHouseDatabaseError
 
 cc = pytest.importorskip("clickhouse_connect")
 
@@ -189,16 +188,11 @@ def test_physical_table_reference_translate(alltypes, assert_sql):
 
 
 def test_non_equijoin(alltypes):
-    t = alltypes.limit(100)
+    t = alltypes.limit(10)
     t2 = t.view()
     expr = t.join(t2, t.tinyint_col < t2.timestamp_col.minute()).count()
-
-    # compilation should pass
-    expr.compile()
-
-    # while execution should fail since clickhouse doesn't support non-equijoin
-    with pytest.raises(ClickHouseDatabaseError, match="INVALID_JOIN_ON_EXPRESSION"):
-        expr.execute()
+    count = expr.to_pandas()
+    assert count == 45
 
 
 @pytest.mark.parametrize(
