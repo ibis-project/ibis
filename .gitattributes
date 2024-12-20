@@ -1,8 +1,6 @@
 flake.lock linguist-generated=true
-poetry.lock linguist-generated=true
+uv.lock linguist-generated=true
 ibis/examples/pixi.lock linguist-generated=true
 requirements-dev.txt linguist-generated=true
 docs/_freeze/**/html.json linguist-generated=true
 docs/**/*.excalidraw linguist-generated=true
-# GitHub syntax highlighting
-pixi.lock linguist-language=YAML linguist-generated=true
