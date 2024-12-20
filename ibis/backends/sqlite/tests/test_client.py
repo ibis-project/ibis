@@ -71,8 +71,9 @@ def test_builtin_agg_udf(con):
 )
 def test_connect(url, ext, tmp_path):
     path = os.path.abspath(tmp_path / f"test.{ext}")
-    with sqlite3.connect(path):
-        pass
+
+    sqlite3.connect(path).close()
+
     con = ibis.connect(url(path))
     one = ibis.literal(1)
     assert con.execute(one) == 1
