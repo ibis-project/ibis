@@ -1,6 +1,6 @@
 -e .
 aiohappyeyeballs==2.4.4
-aiohttp==3.11.10
+aiohttp==3.11.11
 aiosignal==1.3.2
 alembic==1.14.0
 altair==5.5.0
@@ -86,7 +86,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
-hypothesis==6.122.3
+hypothesis==6.122.4
 identify==2.6.3
 idna==3.10
 importlib-metadata==8.5.0
@@ -108,11 +108,11 @@ jsonschema-specifications==2024.10.1
 jupyter-cache==1.0.1
 jupyter-client==8.6.3
 jupyter-core==5.7.2
-jupyter-events==0.10.0
+jupyter-events==0.11.0
 jupyter-lsp==2.2.5
 jupyter-server==2.14.2
 jupyter-server-terminals==0.5.3
-jupyterlab==4.3.3
+jupyterlab==4.3.4
 jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
@@ -133,8 +133,8 @@ mizani==0.13.1
 multidict==6.1.0
 mypy-extensions==1.0.0
 mysqlclient==2.2.6
-narwhals==1.18.4
-nbclient==0.10.1
+narwhals==1.19.0
+nbclient==0.10.2
 nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
@@ -168,8 +168,8 @@ prometheus-client==0.21.1
 prompt-toolkit==3.0.48
 propcache==0.2.1
 proto-plus==1.25.0
-protobuf==5.29.1
-psutil==6.1.0
+protobuf==5.29.2
+psutil==6.1.1
 psycopg2==2.9.10
 psygnal==0.11.1
 ptyprocess==0.7.0 ; os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')
@@ -182,8 +182,8 @@ pyarrow-hotfix==0.6
 pyasn1==0.6.1
 pyasn1-modules==0.4.1
 pycparser==2.22
-pydantic==2.10.3
-pydantic-core==2.27.1
+pydantic==2.10.4
+pydantic-core==2.27.2
 pydata-google-auth==1.9.0
 pydruid==0.6.9
 pyexasol==0.27.0
@@ -225,7 +225,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.22.3
 rsa==4.9
-ruff==0.8.3
+ruff==0.8.4
 scikit-learn==1.6.0
 scipy==1.14.1
 seaborn==0.13.2
@@ -239,7 +239,7 @@ sortedcontainers==2.4.0
 soupsieve==2.6
 sphobjinv==2.3.1.1
 sqlalchemy==2.0.36
-sqlglot==26.0.0
+sqlglot==26.0.1
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
