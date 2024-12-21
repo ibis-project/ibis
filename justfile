@@ -273,8 +273,6 @@ build-jupyterlite:
     rm -rf dist/
 
     ibis_dev_version="$(just bump-version)"
-    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$ibis_dev_version"
-    sed -i "s/__version__ = \".+\"/__version__ = \"$ibis_dev_version\"/" ibis/__init__.py
     uv build --wheel
 
     git checkout pyproject.toml ibis/__init__.py
@@ -303,6 +301,16 @@ docs-build-all:
 chat *args:
     zulip-term {{ args }}
 
-# bump the version number to the next pre-release version
-@bump-version:
+# compute the next version number
+@compute-version:
     uv run --only-group dev python ci/release/bump_version.py
+
+# bump the version number in necessary files
+bump-version:
+    #!/usr/bin/env bash
+
+    ibis_dev_version="$(just compute-version)"
+    uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$ibis_dev_version" > /dev/null
+    sed -i 's/__version__ = .\+/__version__ = "'$ibis_dev_version'"/g' ibis/__init__.py
+    just lock > /dev/null
+    echo "$ibis_dev_version"

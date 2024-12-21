@@ -46,7 +46,6 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
         with:
-          enable-cache: true
           version: "0.4.x"
 
       - name: update apt-get

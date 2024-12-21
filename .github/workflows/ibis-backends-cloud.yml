@@ -112,8 +112,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
