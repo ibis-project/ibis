@@ -1880,16 +1880,16 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.122.4"
+version = "6.122.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/4c/595e4719bc4fccbce1f69818164fd0128a6c47228b48c88279e68b4b9982/hypothesis-6.122.4.tar.gz", hash = "sha256:edbcc1b36eea8159e4df9afa669ae8570416f96df5591bec7ad561f2dd0d4931", size = 414480 }
+sdist = { url = "https://files.pythonhosted.org/packages/00/c2/e3273ee89ffeee95e1aa95e691eca3ada126eacaf196ca4c48d6c98ab9d4/hypothesis-6.122.5.tar.gz", hash = "sha256:e0994f04331251d51e18040f497c839a52b37669b422fe4cfef85a54d41405bf", size = 414794 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2f/bb/535d3cf4347fb122a453d0a80b5db055558e4b31289a90491d574a4088e2/hypothesis-6.122.4-py3-none-any.whl", hash = "sha256:77f6799115d68a4b95c06d3b28ba2cfe40de6d5e656ad9b751232b25beba790d", size = 475801 },
+    { url = "https://files.pythonhosted.org/packages/5e/aa/d78b7642d9ab608c01c90ec54d2cfab817df9e40aa27c2a22f25f2c25ffa/hypothesis-6.122.5-py3-none-any.whl", hash = "sha256:c50b104d9d5163ebdeb09ccd93626343664942570bcb067c41adf10394a81caf", size = 476092 },
 ]
 
 [[package]]
@@ -2421,7 +2421,7 @@ wheels = [
 
 [[package]]
 name = "ipython"
-version = "8.30.0"
+version = "8.31.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "sys_platform == 'win32'" },
@@ -2436,9 +2436,9 @@ dependencies = [
     { name = "traitlets" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d8/8b/710af065ab8ed05649afa5bd1e07401637c9ec9fb7cfda9eac7e91e9fbd4/ipython-8.30.0.tar.gz", hash = "sha256:cb0a405a306d2995a5cbb9901894d240784a9f341394c6ba3f4fe8c6eb89ff6e", size = 5592205 }
+sdist = { url = "https://files.pythonhosted.org/packages/01/35/6f90fdddff7a08b7b715fccbd2427b5212c9525cd043d26fdc45bee0708d/ipython-8.31.0.tar.gz", hash = "sha256:b6a2274606bec6166405ff05e54932ed6e5cfecaca1fc05f2cacde7bb074d70b", size = 5501011 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1d/f3/1332ba2f682b07b304ad34cad2f003adcfeb349486103f4b632335074a7c/ipython-8.30.0-py3-none-any.whl", hash = "sha256:85ec56a7e20f6c38fce7727dcca699ae4ffc85985aa7b23635a8008f918ae321", size = 820765 },
+    { url = "https://files.pythonhosted.org/packages/04/60/d0feb6b6d9fe4ab89fe8fe5b47cbf6cd936bfd9f1e7ffa9d0015425aeed6/ipython-8.31.0-py3-none-any.whl", hash = "sha256:46ec58f8d3d076a61d128fe517a51eb730e3aaf0c184ea8c17d16e366660c6a6", size = 821583 },
 ]
 
 [[package]]
@@ -2654,7 +2654,7 @@ wheels = [
 
 [[package]]
 name = "jupyter-server"
-version = "2.14.2"
+version = "2.15.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio" },
@@ -2677,9 +2677,9 @@ dependencies = [
     { name = "traitlets" },
     { name = "websocket-client" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0c/34/88b47749c7fa9358e10eac356c4b97d94a91a67d5c935a73f69bc4a31118/jupyter_server-2.14.2.tar.gz", hash = "sha256:66095021aa9638ced276c248b1d81862e4c50f292d575920bbe960de1c56b12b", size = 719933 }
+sdist = { url = "https://files.pythonhosted.org/packages/61/8c/df09d4ab646141f130f9977b32b206ba8615d1969b2eba6a2e84b7f89137/jupyter_server-2.15.0.tar.gz", hash = "sha256:9d446b8697b4f7337a1b7cdcac40778babdd93ba614b6d68ab1c0c918f1c4084", size = 725227 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/57/e1/085edea6187a127ca8ea053eb01f4e1792d778b4d192c74d32eb6730fed6/jupyter_server-2.14.2-py3-none-any.whl", hash = "sha256:47ff506127c2f7851a17bf4713434208fc490955d0e8632e95014a9a9afbeefd", size = 383556 },
+    { url = "https://files.pythonhosted.org/packages/e2/a2/89eeaf0bb954a123a909859fa507fa86f96eb61b62dc30667b60dbd5fdaf/jupyter_server-2.15.0-py3-none-any.whl", hash = "sha256:872d989becf83517012ee669f09604aa4a28097c0bd90b2f424310156c2cdae3", size = 385826 },
 ]
 
 [[package]]
@@ -4342,12 +4342,12 @@ wheels = [
 
 [[package]]
 name = "pyspark"
-version = "3.5.3"
+version = "3.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "py4j" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/90/cb80c8cf194958ab9a3242851c62fa5aef1a0b42f2d9642f1e2eca098005/pyspark-3.5.3.tar.gz", hash = "sha256:68b7cc0c0c570a7d8644f49f40d2da8709b01d30c9126cc8cf93b4f84f3d9747", size = 317304325 }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/18/6bb8c4e857122fc898f32336cb6e9e98415a7802c2a3738e907b4bd60953/pyspark-3.5.4.tar.gz", hash = "sha256:1c2926d63020902163f58222466adf6f8016f6c43c1f319b8e7a71dbaa05fc51", size = 317313656 }
 
 [[package]]
 name = "pytest"
