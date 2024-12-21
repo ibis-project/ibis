@@ -8,7 +8,7 @@ annotated-types==0.7.0
 anyio==4.7.0
 anywidget==0.9.13
 appdirs==1.4.4
-appnope==0.1.4 ; platform_system == 'Darwin'
+appnope==0.1.4 ; sys_platform == 'darwin'
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 arro3-compute==0.4.5
@@ -63,8 +63,8 @@ filelock==3.16.1
 fonttools==4.55.3
 fqdn==1.5.1
 frozenlist==1.5.0
-fsspec==2024.10.0
-gcsfs==2024.10.0
+fsspec==2024.12.0
+gcsfs==2024.12.0
 geoarrow-types==0.2.0
 geopandas==1.0.1
 google-api-core==2.24.0
