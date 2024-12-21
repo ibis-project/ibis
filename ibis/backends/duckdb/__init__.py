@@ -392,7 +392,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         >>> import ibis
         >>> ibis.duckdb.connect(threads=4, memory_limit="1GB")  # doctest: +ELLIPSIS
         <ibis.backends.duckdb.Backend object at 0x...>
-
         """
         if not isinstance(database, Path) and not database.startswith(
             ("md:", "motherduck:", ":memory:")
