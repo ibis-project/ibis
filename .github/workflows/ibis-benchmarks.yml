@@ -31,8 +31,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev

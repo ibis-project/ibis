@@ -31,8 +31,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
       - uses: extractions/setup-just@v2
         env:

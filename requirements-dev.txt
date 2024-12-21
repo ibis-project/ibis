@@ -8,7 +8,7 @@ annotated-types==0.7.0
 anyio==4.7.0
 anywidget==0.9.13
 appdirs==1.4.4
-appnope==0.1.4 ; sys_platform == 'darwin'
+appnope==0.1.4 ; platform_system == 'Darwin'
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 arro3-compute==0.4.5

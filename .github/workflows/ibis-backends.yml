@@ -66,8 +66,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
       - uses: extractions/setup-just@v2
         env:
@@ -488,8 +486,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
       - name: install other deps
         if: matrix.backend.additional_deps != null
@@ -605,8 +601,6 @@ jobs:
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.0.1
-        with:
-          enable-cache: true
 
         # it requires a version of pandas that pyspark is not compatible with
       - name: remove lonboard
