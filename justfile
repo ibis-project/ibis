@@ -275,7 +275,7 @@ build-jupyterlite:
     ibis_dev_version="$(just bump-version)"
     uv build --wheel
 
-    git checkout pyproject.toml ibis/__init__.py
+    git checkout pyproject.toml ibis/__init__.py uv.lock
 
     jupyter lite build \
         --debug \
