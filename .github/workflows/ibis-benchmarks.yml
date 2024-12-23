@@ -30,7 +30,7 @@ jobs:
           python-version: "3.11"
 
       - name: install uv
-        uses: astral-sh/setup-uv@v5.0.1
+        uses: astral-sh/setup-uv@v5.1.0
 
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
