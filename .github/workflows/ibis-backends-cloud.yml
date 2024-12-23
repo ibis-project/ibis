@@ -15,11 +15,6 @@ on:
     types:
       - labeled
 
-permissions:
-  # this allows extractions/setup-just to list releases for `just` at a higher
-  # rate limit while restricting GITHUB_TOKEN permissions elsewhere
-  contents: read
-
 env:
   FORCE_COLOR: "1"
   SQLALCHEMY_WARN_20: "1"
@@ -79,6 +74,13 @@ jobs:
               key: snowpark
               extras:
                 - --extra snowflake
+    # this allows extractions/setup-just to list releases for `just` at a higher
+    # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+    permissions:
+      contents: "read"
+      # required for GCP workload identity federation
+      id-token: "write"
+
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -126,7 +128,7 @@ jobs:
 
       - uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+          workload_identity_provider: "${{ secrets.WIF_PROVIDER_NAME }}"
 
       - name: setup databricks credentials
         if: matrix.backend.name == 'databricks'
