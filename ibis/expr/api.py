@@ -1184,6 +1184,9 @@ def cases(
 
     Equivalent to a SQL `CASE` statement.
 
+    ::: {.callout-note title="Added in version 10.0.0"}
+    :::
+
     Parameters
     ----------
     branch

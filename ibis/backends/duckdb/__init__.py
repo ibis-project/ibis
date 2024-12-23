@@ -365,6 +365,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     ) -> None:
         """Create an Ibis client connected to a DuckDB database.
 
+        ::: {.callout-note title="Changed in version 10.0.0"}
+        Before, we had special handling if the user passed the `temp_directory`
+        parameter, setting a custom default, and creating intermediate
+        directories if necessary. Now, we do nothing, and just pass the value
+        directly to DuckDB. You may need to add
+        `Path(your_temp_dir).mkdir(exists_ok=True, parents=True)`
+        to your code to maintain the old behavior.
+        :::
+
         Parameters
         ----------
         database
