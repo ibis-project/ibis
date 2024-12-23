@@ -67,6 +67,10 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.EndsWith: "ends_with",
         ops.ArrayIntersect: "array_intersect",
         ops.ArrayUnion: "array_union",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
+        ops.MapLength: "cardinality",
+        ops.IsNull: "ifnull",
     }
 
     def _to_timestamp(self, value, target_dtype, literal=False):
@@ -540,6 +544,25 @@ class DataFusionCompiler(SQLGlotCompiler):
             ),
             map(partial(self.cast, to=op.dtype), arg),
         )
+
+    def visit_MapGet(self, op, *, arg, key, default):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            self.f.ifnull(
+                self.f.list_extract(self.f.map_extract(arg, key), 1),
+                default,
+            ),
+        )
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            self.f.list_contains(self.f.map_keys(arg), key),
+        )
+
+    # ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
 
 
 compiler = DataFusionCompiler()
