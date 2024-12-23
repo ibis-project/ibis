@@ -1,10 +1,10 @@
 version = 1
 requires-python = ">=3.10"
 resolution-markers = [
-    "python_full_version >= '3.13'",
-    "python_full_version == '3.12.*'",
-    "python_full_version == '3.11.*'",
     "python_full_version < '3.11'",
+    "python_full_version == '3.11.*'",
+    "python_full_version == '3.12.*'",
+    "python_full_version >= '3.13'",
 ]
 
 [[package]]
@@ -830,7 +830,7 @@ name = "click"
 version = "8.1.8"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/b9/2e/0090cbf739cee7d23781ad4b89a9894a41538e4fcf4c31dcdd705b78eb8b/click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a", size = 226593 }
 wheels = [
@@ -1880,16 +1880,16 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.122.6"
+version = "6.123.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/08/883c6e5c2a7a8223b040eb5dfa5ebb1f83f9832b9df0557f35cbaff2805a/hypothesis-6.122.6.tar.gz", hash = "sha256:2642598dc4426945d62b849a915d0d3e2d53f0fb17090f0cf10d8a545a421dc1", size = 414773 }
+sdist = { url = "https://files.pythonhosted.org/packages/04/15/d493f4b19a07595b61474b81bb823891f43131351cc1e2c4a5a849357f55/hypothesis-6.123.0.tar.gz", hash = "sha256:d206c70e6919c8c76dd94b4ffc6daa05f55473b97988e63b88ad3ad66cc389d1", size = 417909 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c3/fb/b4b14912ba46dc44213969a4ae2fbf2567d80f3ec758eab6b0e750cb217e/hypothesis-6.122.6-py3-none-any.whl", hash = "sha256:4fd14a4303c5a28b7ee11b024baa622b90899311db851666f7a6775a1f54b151", size = 476120 },
+    { url = "https://files.pythonhosted.org/packages/cd/65/a7e123a607a071c4d9c64019b392b2af128046f0911390d3e379530a6a79/hypothesis-6.123.0-py3-none-any.whl", hash = "sha256:13fb3fe8879245d224be423ca2086150593d9fd8dcfd4585e62dea3c5c8cdddb", size = 479892 },
 ]
 
 [[package]]
@@ -2400,7 +2400,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "sys_platform == 'darwin'" },
+    { name = "appnope", marker = "platform_system == 'Darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -3090,7 +3090,7 @@ dependencies = [
     { name = "numpy" },
     { name = "pandas" },
     { name = "scipy" },
-    { name = "tzdata", marker = "sys_platform == 'emscripten' or sys_platform == 'win32'" },
+    { name = "tzdata", marker = "platform_system == 'Emscripten' or platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/91/c3/9f83c374314b2b42e7aec65f3bf87046415ab265f209fa8a04eb6da822ee/mizani-0.13.1.tar.gz", hash = "sha256:e3247ea12c746c8104767d7e42a2d16473173c7bc314f298d8294a58f4653353", size = 765181 }
 wheels = [
@@ -3193,11 +3193,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "1.19.0"
+version = "1.19.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8e/56/2909562daa55568cebb8c9f410e3ab9e7da265a2fa7a7920854001099264/narwhals-1.19.0.tar.gz", hash = "sha256:a1a03bf922548ed1da5426acc954327a94c02c3a08558b65a0937dbd3b77fb48", size = 218994 }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/fe/8133d3a21978e333a70f42561167551482b42044fc12cbbb7908aa64e5f5/narwhals-1.19.1.tar.gz", hash = "sha256:e597e7ed9da42ffb2c80b21e174817b27592a8570edea8c46c90a726e3b796af", size = 222808 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/5a/67/5b9736f23b9ab599044b85bab0dbf994a3104ad2d0e332e821ebfe761c69/narwhals-1.19.0-py3-none-any.whl", hash = "sha256:517eca140103dbf61e4513fe462885a06bc21b565521a5ac0b79a7e31f152efe", size = 256396 },
+    { url = "https://files.pythonhosted.org/packages/80/0c/c01eb700963a978b741a93c0ed233d613643ece0ad54f5e2765a307f26f2/narwhals-1.19.1-py3-none-any.whl", hash = "sha256:72476dcc95f1d3f2c0c1f047cdd4879346b2871fe13d1223025466d8a3dcaea4", size = 260574 },
 ]
 
 [[package]]
@@ -5471,7 +5471,7 @@ name = "tqdm"
 version = "4.67.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "colorama", marker = "platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a8/4b/29b4ef32e036bb34e4ab51796dd745cdba7ed47ad142a9f4a1eb8e0c744d/tqdm-4.67.1.tar.gz", hash = "sha256:f8aef9c52c08c13a65f30ea34f4e5aac3fd1a34959879d7e59e63027286627f2", size = 169737 }
 wheels = [
@@ -5534,7 +5534,7 @@ name = "tzlocal"
 version = "5.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "tzdata", marker = "sys_platform == 'win32'" },
+    { name = "tzdata", marker = "platform_system == 'Windows'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/04/d3/c19d65ae67636fe63953b20c2e4a8ced4497ea232c43ff8d01db16de8dc0/tzlocal-5.2.tar.gz", hash = "sha256:8d399205578f1a9342816409cc1e46a93ebd5755e39ea2d85334bea911bf0e6e", size = 30201 }
 wheels = [
