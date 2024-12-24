@@ -701,6 +701,7 @@ def test_aggregate_having_implicit_metric(table):
     implicit_having_metric = table.aggregate(metric, by=by, having=having)
     expected_aggregate = ops.Aggregate(
         parent=table,
+        keys={"g": table.g},
         groups={"g": table.g},
         metrics={"total": table.f.sum(), table.c.sum().get_name(): table.c.sum()},
     )
@@ -730,6 +731,7 @@ def test_agg_having_explicit_metric(table):
     )
     expected_aggregate = ops.Aggregate(
         parent=table,
+        keys={"g": table.g},
         groups={"g": table.g},
         metrics={"total": table.f.sum(), "sum": table.c.sum()},
     )
@@ -784,6 +786,7 @@ def test_group_by_having_api(table):
 
     agg = ops.Aggregate(
         parent=table,
+        keys={"g": table.g},
         groups={"g": table.g},
         metrics={"foo": table.f.sum(), "Mean(d)": table.d.mean()},
     ).to_expr()
@@ -842,7 +845,7 @@ def test_groupby_convenience(table):
     ids=["list", "tuple", "none", "selector"],
 )
 def test_group_by_nothing(table, group):
-    with pytest.raises(ValidationError):
+    with pytest.raises(com.IbisInputError, match="No grouping keys"):
         table.group_by(group)
 
 
@@ -1502,6 +1505,7 @@ def test_having(table):
 
     agg = ops.Aggregate(
         parent=m,
+        keys={"foo": m.foo},
         groups={"foo": m.foo},
         metrics={"CountStar()": ops.CountStar(m), "Sum(foo)": ops.Sum(m.foo)},
     ).to_expr()
