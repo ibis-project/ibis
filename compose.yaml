@@ -38,7 +38,6 @@ services:
       - $PWD/docker/mysql:/docker-entrypoint-initdb.d:ro
 
   postgres:
-    user: postgres
     environment:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: ibis_testing
