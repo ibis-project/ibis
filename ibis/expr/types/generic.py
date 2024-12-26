@@ -2066,6 +2066,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         ::: {.callout-note title="Changed in version 9.5.0"}
         Added `name` parameter.
+        :::
 
         Parameters
         ----------
@@ -2125,7 +2126,6 @@ class Column(Value, _FixedTextJupyterMixin):
         │ J      │      5.01 │
         │ H      │      4.13 │
         └────────┴───────────┘
-        :::
         """
         from ibis.expr.types.relations import bind
 
