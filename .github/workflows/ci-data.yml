@@ -42,7 +42,8 @@ jobs:
 
       - uses: google-github-actions/auth@v2
         with:
-          workload_identity_provider: "${{ secrets.WIF_PROVIDER_NAME }}"
+          project_id: "ibis-gbq"
+          workload_identity_provider: "${{ vars.WIF_PROVIDER_NAME }}"
 
       - uses: google-github-actions/setup-gcloud@v2
 
