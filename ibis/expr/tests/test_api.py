@@ -143,6 +143,15 @@ def test_duplicate_columns_in_memtable_not_allowed():
         ibis.memtable(df)
 
 
+def test_memtable_column_names_match_schema():
+    pd = pytest.importorskip("pandas")
+
+    df = pd.DataFrame([[1, 2], [3, 4]])
+    schema = {"a": "int64", "b": "int64"}
+    t = ibis.memtable(df, schema=schema)
+    t.a.execute()  # Raises a KeyError if the column name does not match
+
+
 @pytest.mark.parametrize(
     "op",
     [
