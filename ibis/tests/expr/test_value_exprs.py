@@ -442,7 +442,7 @@ def test_cast_same_type_noop(table):
     assert i.cast("int8") is i
 
 
-def test_string_slice_step(table):
+def test_string_slice_step():
     s = ibis.literal("abcde")
     s[1:3]
     s[1:3:1]
@@ -509,7 +509,7 @@ def test_negate_boolean_column(table):
 
 
 @pytest.mark.parametrize("column", ["a", "b"])
-@pytest.mark.parametrize("condition_fn", [lambda t: None, lambda t: t.a > 8])
+@pytest.mark.parametrize("condition_fn", [lambda _: None, lambda t: t.a > 8])
 def test_arbitrary(table, column, condition_fn):
     col = table[column]
     where = condition_fn(table)
@@ -517,12 +517,6 @@ def test_arbitrary(table, column, condition_fn):
     assert expr.type() == col.type()
     assert isinstance(expr, ir.Scalar)
     assert isinstance(expr.op(), ops.Arbitrary)
-
-
-def test_arbitrary_how_deprecated(table):
-    with pytest.warns(FutureWarning, match="v9.0"):
-        out = table.a.arbitrary(how="last")
-    assert isinstance(out.op(), ops.Arbitrary)
 
 
 @pytest.mark.parametrize(
@@ -803,12 +797,12 @@ def test_literal_promotions(table, op, name, case, ex_type):
 @pytest.mark.parametrize(
     ("op", "left_fn", "right_fn", "ex_type"),
     [
-        (operator.sub, lambda t: t["a"], lambda t: 0, "int8"),
-        (operator.sub, lambda t: 0, lambda t: t["a"], "int16"),
-        (operator.sub, lambda t: t["b"], lambda t: 0, "int16"),
-        (operator.sub, lambda t: 0, lambda t: t["b"], "int32"),
-        (operator.sub, lambda t: t["c"], lambda t: 0, "int32"),
-        (operator.sub, lambda t: 0, lambda t: t["c"], "int64"),
+        (operator.sub, lambda t: t["a"], lambda _: 0, "int8"),
+        (operator.sub, lambda _: 0, lambda t: t["a"], "int16"),
+        (operator.sub, lambda t: t["b"], lambda _: 0, "int16"),
+        (operator.sub, lambda _: 0, lambda t: t["b"], "int32"),
+        (operator.sub, lambda t: t["c"], lambda _: 0, "int32"),
+        (operator.sub, lambda _: 0, lambda t: t["c"], "int64"),
     ],
     ids=lambda arg: str(getattr(arg, "__name__", arg)),
 )

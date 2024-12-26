@@ -432,9 +432,9 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
 @pytest.mark.notyet(["clickhouse"], raises=Exception)
 @pytest.mark.notyet(["mssql"], raises=PyDeltaTableError)
 @pytest.mark.xfail_version(
-    pyspark=["pyspark==3.5.3"],
+    pyspark=["pyspark<4"],
     condition=CI and IS_SPARK_REMOTE,
-    reason="unclear, but pyspark 3.5.3 fails to write delta on CI when using spark-connect",
+    reason="not supported until pyspark 4",
 )
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":

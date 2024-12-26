@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:24.11.1.2557-alpine
+    image: clickhouse/clickhouse-server:24.12.1.1614-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -99,7 +99,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2024.12.13
+    image: bitnami/minio:2024.12.18
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
@@ -161,7 +161,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:467
+    image: trinodb/trino:468
     ports:
       - 8080:8080
     networks:
@@ -588,7 +588,7 @@ services:
       - risingwave
 
   spark-connect:
-    image: bitnami/spark:3.5.3
+    image: bitnami/spark:3.5.4
     ports:
       - 15002:15002
     command: /opt/bitnami/spark/sbin/start-connect-server.sh --name ibis_testing --packages org.apache.spark:spark-connect_2.12:3.5.3,org.apache.iceberg:iceberg-spark-runtime-3.5_2.12:1.6.1,io.delta:delta-core_2.12:2.1.0

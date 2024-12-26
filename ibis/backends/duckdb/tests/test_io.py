@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -211,8 +210,12 @@ def test_read_mysql(con, mysqlurl):  # pragma: no cover
 def test_read_sqlite(con, tmp_path):
     path = tmp_path / "test.db"
 
-    with sqlite3.connect(str(path)) as sqlite_con:
-        sqlite_con.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    scon = sqlite3.connect(str(path))
+    try:
+        with scon:
+            scon.execute("CREATE TABLE t AS SELECT 1 a UNION SELECT 2 UNION SELECT 3")
+    finally:
+        scon.close()
 
     ft = con.read_sqlite(path, table_name="t")
     assert ft.count().execute()
@@ -221,11 +224,14 @@ def test_read_sqlite(con, tmp_path):
 def test_read_sqlite_no_table_name(con, tmp_path):
     path = tmp_path / "test.db"
 
-    with sqlite3.connect(str(path)) as _:
+    scon = sqlite3.connect(str(path))
+    try:
         assert path.exists()
 
         with pytest.raises(ValueError):
             con.read_sqlite(path)
+    finally:
+        scon.close()
 
 
 # Because we create a new connection and the test requires loading/installing a
@@ -238,56 +244,42 @@ def test_read_sqlite_no_table_name(con, tmp_path):
 def test_attach_sqlite(data_dir, tmp_path):
     import sqlite3
 
-    test_db_path = tmp_path / "test.db"
-    with sqlite3.connect(test_db_path) as scon:
-        for line in (
-            Path(data_dir.parent / "schema" / "sqlite.sql").read_text().split(";")
-        ):
-            scon.execute(line)
-
     # Create a new connection here because we already have the `ibis_testing`
     # tables loaded in to the `con` fixture.
     con = ibis.duckdb.connect()
 
-    con.attach_sqlite(test_db_path)
-    assert set(con.list_tables()) >= {
-        "functional_alltypes",
-        "awards_players",
-        "batting",
-        "diamonds",
-    }
+    test_db_path = tmp_path / "test.db"
+    scon = sqlite3.connect(test_db_path)
+    try:
+        with scon:
+            scon.executescript((data_dir.parent / "schema" / "sqlite.sql").read_text())
 
-    fa = con.tables.functional_alltypes
-    assert len(set(fa.schema().types)) > 1
+        con.attach_sqlite(test_db_path)
+        assert set(con.list_tables()) >= {
+            "functional_alltypes",
+            "awards_players",
+            "batting",
+            "diamonds",
+        }
 
-    # overwrite existing sqlite_db and force schema to all strings
-    con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
-    assert set(con.list_tables()) >= {
-        "functional_alltypes",
-        "awards_players",
-        "batting",
-        "diamonds",
-    }
+        fa = con.tables.functional_alltypes
+        assert len(set(fa.schema().types)) > 1
 
-    fa = con.tables.functional_alltypes
-    types = fa.schema().types
-    assert len(set(types)) == 1
-    assert dt.String(nullable=True) in set(types)
+        # overwrite existing sqlite_db and force schema to all strings
+        con.attach_sqlite(test_db_path, overwrite=True, all_varchar=True)
+        assert set(con.list_tables()) >= {
+            "functional_alltypes",
+            "awards_players",
+            "batting",
+            "diamonds",
+        }
 
-
-def test_re_read_in_memory_overwrite(con):
-    df_pandas_1 = pd.DataFrame({"a": ["a"], "b": [1], "d": ["hi"]})
-    df_pandas_2 = pd.DataFrame({"a": [1], "c": [1.4]})
-
-    with pytest.warns(FutureWarning, match="memtable"):
-        table = con.read_in_memory(df_pandas_1, table_name="df")
-    assert len(table.columns) == 3
-    assert table.schema() == ibis.schema([("a", "str"), ("b", "int"), ("d", "str")])
-
-    with pytest.warns(FutureWarning, match="memtable"):
-        table = con.read_in_memory(df_pandas_2, table_name="df")
-    assert len(table.columns) == 2
-    assert table.schema() == ibis.schema([("a", "int"), ("c", "float")])
+        fa = con.tables.functional_alltypes
+        types = fa.schema().types
+        assert len(set(types)) == 1
+        assert dt.String(nullable=True) in set(types)
+    finally:
+        scon.close()
 
 
 def test_memtable_with_nullable_dtypes(con):
@@ -381,37 +373,24 @@ def test_s3_403_fallback(con, httpserver, monkeypatch):
 
 def test_register_numpy_str(con):
     data = pd.DataFrame({"a": [np.str_("xyz"), None]})
-    with pytest.warns(FutureWarning, match="memtable"):
-        result = con.read_in_memory(data)
-    tm.assert_frame_equal(result.execute(), data)
+    result = ibis.memtable(data)
+    tm.assert_frame_equal(con.execute(result), data)
 
 
-def test_register_recordbatchreader_warns(con):
+def test_memtable_recordbatchreader_raises(con):
     table = pa.Table.from_batches(
-        [
-            pa.RecordBatch.from_pydict({"x": [1, 2]}),
-            pa.RecordBatch.from_pydict({"x": [3, 4]}),
-        ]
+        map(pa.RecordBatch.from_pydict, [{"x": [1, 2]}, {"x": [3, 4]}])
     )
     reader = table.to_reader()
-    sol = table.to_pandas()
-    with pytest.warns(FutureWarning, match="memtable"):
-        t = con.read_in_memory(reader)
+
+    with pytest.raises(TypeError):
+        ibis.memtable(reader)
+
+    t = ibis.memtable(reader.read_all())
 
     # First execute is fine
-    res = t.execute()
-    tm.assert_frame_equal(res, sol)
-
-    # Later executes warn
-    with pytest.warns(UserWarning, match="RecordBatchReader"):
-        t.limit(2).execute()
-
-    # Re-registering over the name with a new reader is fine
-    reader = table.to_reader()
-    with pytest.warns(FutureWarning, match="memtable"):
-        t = con.read_in_memory(reader, table_name=t.get_name())
-    res = t.execute()
-    tm.assert_frame_equal(res, sol)
+    res = con.execute(t)
+    tm.assert_frame_equal(res, table.to_pandas())
 
 
 def test_csv_with_slash_n_null(con, tmp_path):

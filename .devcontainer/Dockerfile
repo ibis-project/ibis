@@ -1,5 +1,5 @@
 FROM mcr.microsoft.com/vscode/devcontainers/python:3.13
-COPY --from=ghcr.io/astral-sh/uv:0.5.9 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 ARG USERNAME=vscode
 
 RUN curl https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc | gpg --dearmor > conda.gpg && \

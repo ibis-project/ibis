@@ -410,13 +410,6 @@ class StringValue(Value):
         """
         return ops.Capitalize(self).to_expr()
 
-    @util.deprecated(
-        instead="use the `capitalize` method", as_of="9.0", removed_in="10.0"
-    )
-    def initcap(self) -> StringValue:
-        """Deprecated. Use `capitalize` instead."""
-        return self.capitalize()
-
     def __contains__(self, *_: Any) -> bool:
         raise TypeError("Use string_expr.contains(arg)")
 

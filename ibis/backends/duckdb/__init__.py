@@ -808,43 +808,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # by the time we execute against this so we register it
         # explicitly.
 
-    @util.deprecated(
-        instead="Pass in-memory data to `memtable` instead.",
-        as_of="9.1",
-        removed_in="10.0",
-    )
-    def read_in_memory(
-        self,
-        source: pd.DataFrame
-        | pa.Table
-        | pa.RecordBatchReader
-        | pl.DataFrame
-        | pl.LazyFrame,
-        table_name: str | None = None,
-    ) -> ir.Table:
-        """Register an in-memory table object in the current database.
-
-        Supported objects include pandas DataFrame, a Polars
-        DataFrame/LazyFrame, or a PyArrow Table or RecordBatchReader.
-
-        Parameters
-        ----------
-        source
-            The data source.
-        table_name
-            An optional name to use for the created table. This defaults to
-            a sequentially generated name.
-
-        Returns
-        -------
-        ir.Table
-            The just-registered table
-
-        """
-        table_name = table_name or util.gen_name("read_in_memory")
-        _read_in_memory(source, table_name, self)
-        return self.table(table_name)
-
     def read_delta(
         self,
         source_table: str,
@@ -1073,13 +1036,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         >>> import ibis
         >>> import sqlite3
         >>> ibis.options.interactive = True
-        >>> with sqlite3.connect("/tmp/sqlite.db") as con:
+        >>> con = sqlite3.connect("/tmp/sqlite.db")
+        >>> with con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
         <...>
+        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> t = con.read_sqlite(path="/tmp/sqlite.db", table_name="t")
         >>> t
@@ -1167,13 +1132,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         --------
         >>> import ibis
         >>> import sqlite3
-        >>> with sqlite3.connect("/tmp/attach_sqlite.db") as con:
+        >>> con = sqlite3.connect("/tmp/attach_sqlite.db")
+        >>> with con:
         ...     con.execute("DROP TABLE IF EXISTS t")  # doctest: +ELLIPSIS
         ...     con.execute("CREATE TABLE t (a INT, b TEXT)")  # doctest: +ELLIPSIS
         ...     con.execute(
         ...         "INSERT INTO t VALUES (1, 'a'), (2, 'b'), (3, 'c')"
         ...     )  # doctest: +ELLIPSIS
         <...>
+        >>> con.close()
         >>> con = ibis.connect("duckdb://")
         >>> con.list_tables()
         []
@@ -1367,7 +1334,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **kwargs: Any,
+        **_: Any,
     ) -> dict[str, torch.Tensor]:
         """Execute an expression and return results as a dictionary of torch tensors.
 
@@ -1678,7 +1645,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
 
 @lazy_singledispatch
-def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any):
+def _read_in_memory(source: Any, table_name: str, _conn: Backend, **_: Any):
     raise NotImplementedError(
         f"The `{_conn.name}` backend currently does not support "
         f"reading data of {type(source)!r}"
@@ -1690,12 +1657,12 @@ def _read_in_memory(source: Any, table_name: str, _conn: Backend, **kwargs: Any)
 @_read_in_memory.register("pyarrow.Table")
 @_read_in_memory.register("pandas.DataFrame")
 @_read_in_memory.register("pyarrow.dataset.Dataset")
-def _default(source, table_name, _conn, **kwargs: Any):
+def _default(source, table_name, _conn, **_: Any):
     _conn.con.register(table_name, source)
 
 
 @_read_in_memory.register("pyarrow.RecordBatchReader")
-def _pyarrow_rbr(source, table_name, _conn, **kwargs: Any):
+def _pyarrow_rbr(source, table_name, _conn, **_: Any):
     _conn.con.register(table_name, source)
     # Ensure the reader isn't marked as started, in case the name is
     # being overwritten.

@@ -1,6 +1,6 @@
 -e .
 aiohappyeyeballs==2.4.4
-aiohttp==3.11.10
+aiohttp==3.11.11
 aiosignal==1.3.2
 alembic==1.14.0
 altair==5.5.0
@@ -33,8 +33,8 @@ cffi==1.17.1
 cfgv==3.4.0
 chardet==5.2.0
 charset-normalizer==3.4.0
-click==8.1.7
-clickhouse-connect==0.8.10
+click==8.1.8
+clickhouse-connect==0.8.11
 cloudpickle==3.1.0
 codespell==2.3.0
 colorama==0.4.6
@@ -63,8 +63,8 @@ filelock==3.16.1
 fonttools==4.55.3
 fqdn==1.5.1
 frozenlist==1.5.0
-fsspec==2024.10.0
-gcsfs==2024.10.0
+fsspec==2024.12.0
+gcsfs==2024.12.0
 geoarrow-types==0.2.0
 geopandas==1.0.1
 google-api-core==2.24.0
@@ -86,7 +86,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
-hypothesis==6.122.3
+hypothesis==6.123.0
 identify==2.6.3
 idna==3.10
 importlib-metadata==8.5.0
@@ -94,12 +94,12 @@ importlib-resources==6.4.5
 impyla==0.19.0
 iniconfig==2.0.0
 ipykernel==6.29.5
-ipython==8.30.0
+ipython==8.31.0
 ipywidgets==8.1.5
 isoduration==20.11.0
 itables==2.2.4
 jedi==0.19.2
-jinja2==3.1.4
+jinja2==3.1.5
 joblib==1.4.2
 json5==0.10.0
 jsonpointer==3.0.0
@@ -108,11 +108,11 @@ jsonschema-specifications==2024.10.1
 jupyter-cache==1.0.1
 jupyter-client==8.6.3
 jupyter-core==5.7.2
-jupyter-events==0.10.0
+jupyter-events==0.11.0
 jupyter-lsp==2.2.5
-jupyter-server==2.14.2
+jupyter-server==2.15.0
 jupyter-server-terminals==0.5.3
-jupyterlab==4.3.3
+jupyterlab==4.3.4
 jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
@@ -133,14 +133,14 @@ mizani==0.13.1
 multidict==6.1.0
 mypy-extensions==1.0.0
 mysqlclient==2.2.6
-narwhals==1.18.4
-nbclient==0.10.1
+narwhals==1.19.1
+nbclient==0.10.2
 nbconvert==7.16.4
 nbformat==5.10.4
 nest-asyncio==1.6.0
 nodeenv==1.9.1
 notebook-shim==0.2.4
-numpy==2.2.0
+numpy==2.2.1
 oauthlib==3.2.2
 openpyxl==3.1.5
 oracledb==2.5.1
@@ -168,8 +168,8 @@ prometheus-client==0.21.1
 prompt-toolkit==3.0.48
 propcache==0.2.1
 proto-plus==1.25.0
-protobuf==5.29.1
-psutil==6.1.0
+protobuf==5.29.2
+psutil==6.1.1
 psycopg2==2.9.10
 psygnal==0.11.1
 ptyprocess==0.7.0 ; os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')
@@ -182,8 +182,8 @@ pyarrow-hotfix==0.6
 pyasn1==0.6.1
 pyasn1-modules==0.4.1
 pycparser==2.22
-pydantic==2.10.3
-pydantic-core==2.27.1
+pydantic==2.10.4
+pydantic-core==2.27.2
 pydata-google-auth==1.9.0
 pydruid==0.6.9
 pyexasol==0.27.0
@@ -195,7 +195,7 @@ pyogrio==0.10.0
 pyopenssl==24.3.0
 pyparsing==3.2.0
 pyproj==3.7.0
-pyspark==3.5.3
+pyspark==3.5.4
 pytest==8.3.4
 pytest-benchmark==5.1.0
 pytest-clarity==1.0.1
@@ -225,7 +225,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.22.3
 rsa==4.9
-ruff==0.8.3
+ruff==0.8.4
 scikit-learn==1.6.0
 scipy==1.14.1
 seaborn==0.13.2
@@ -237,9 +237,9 @@ sniffio==1.3.1
 snowflake-connector-python==3.12.4
 sortedcontainers==2.4.0
 soupsieve==2.6
-sphobjinv==2.3.1.1
+sphobjinv==2.3.1.2
 sqlalchemy==2.0.36
-sqlglot==26.0.0
+sqlglot==26.0.1
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
@@ -261,7 +261,7 @@ typing-extensions==4.12.2
 tzdata==2024.2
 tzlocal==5.2
 uri-template==1.3.0
-urllib3==2.2.3
+urllib3==2.3.0
 virtualenv==20.28.0
 watchdog==6.0.0
 wcwidth==0.2.13

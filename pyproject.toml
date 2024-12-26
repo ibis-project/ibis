@@ -228,7 +228,7 @@ dev = [
 tests = [
   "cloudpickle",
   "filelock>=3.7.0,<4",
-  "fsspec<2024.10.1",
+  "fsspec<2024.12.1",
   "hypothesis>=6.58.0,<7",
   "packaging>=21.3,<25",
   "pytest>=8.2.0,<9",

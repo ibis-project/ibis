@@ -25,7 +25,11 @@
       "allowedVersions": "/^13\\..+$/"
     },
     {
-      "matchPackagePrefixes": ["clickhouse"],
+      "matchPackagePatterns": ["spark"],
+      "addLabels": ["pyspark"]
+    },
+    {
+      "matchPackagePatterns": ["clickhouse"],
       "addLabels": ["clickhouse"]
     },
     {

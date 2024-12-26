@@ -91,7 +91,7 @@ jobs:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
 
-      - uses: actions/create-github-app-token@v1.11.0
+      - uses: actions/create-github-app-token@v1.11.1
         id: generate_token
         with:
           app-id: ${{ secrets.DOCS_BOT_APP_ID }}
@@ -111,9 +111,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: install uv
-        uses: astral-sh/setup-uv@v4.2.0
-        with:
-          enable-cache: true
+        uses: astral-sh/setup-uv@v5.1.0
 
       - name: install additional deps
         if: matrix.backend.key == 'snowpark'
