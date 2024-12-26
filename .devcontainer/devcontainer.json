@@ -9,7 +9,12 @@
       "openFiles": ["docs/tutorials/getting_started.qmd"]
     },
     "vscode": {
-      "extensions": ["ms-toolsai.jupyter", "ms-python.python", "quarto.quarto"]
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python",
+        "quarto.quarto",
+        "charliermarsh.ruff"
+      ]
     }
   },
   "features": {
