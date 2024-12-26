@@ -1,7 +1,7 @@
 FROM postgis/postgis:16-3.5-alpine AS pgvector-builder
-RUN apk add --no-cache git build-base clang15 llvm15-dev llvm15
+RUN apk add --no-cache git build-base clang19 llvm19-dev llvm19
 WORKDIR /tmp
-RUN git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git
+RUN git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
 WORKDIR /tmp/pgvector
 RUN make && make install
 
