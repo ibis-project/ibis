@@ -2,10 +2,6 @@ FROM mcr.microsoft.com/vscode/devcontainers/python:3.13
 COPY --from=ghcr.io/astral-sh/uv:0.5.11 /uv /uvx /bin/
 ARG USERNAME=vscode
 
-RUN curl https://repo.anaconda.com/pkgs/misc/gpgkeys/anaconda.asc | gpg --dearmor > conda.gpg && \
-    install -o root -g root -m 644 conda.gpg /usr/share/keyrings/conda-archive-keyring.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/conda-archive-keyring.gpg] https://repo.anaconda.com/pkgs/misc/debrepo/conda stable main" | sudo tee -a /etc/apt/sources.list.d/conda.list
-
 RUN apt-get update && \
   apt-get install -y --no-install-recommends libgdal-dev && \
   rm -rf /var/lib/apt/lists/*
