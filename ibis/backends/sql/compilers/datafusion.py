@@ -91,8 +91,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         if dtype.is_decimal():
             return self.cast(
                 sg.exp.convert(str(value)),
-                dt.Decimal(precision=dtype.precision or 38,
-                           scale=dtype.scale or 9),
+                dt.Decimal(precision=dtype.precision or 38, scale=dtype.scale or 9),
             )
         elif dtype.is_numeric():
             if isinstance(value, float):
@@ -132,8 +131,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         if to.is_interval():
             unit = to.unit.name.lower()
             return sg.cast(
-                self.f.concat(self.cast(arg, dt.string),
-                              f" {unit}"), "interval"
+                self.f.concat(self.cast(arg, dt.string), f" {unit}"), "interval"
             )
         if to.is_timestamp():
             return self._to_timestamp(arg, to)
@@ -216,16 +214,14 @@ class DataFusionCompiler(SQLGlotCompiler):
         return self.if_(
             length <= self.f.length(arg),
             arg,
-            self.f.concat(self.f.repeat(
-                pad, length - self.f.length(arg)), arg),
+            self.f.concat(self.f.repeat(pad, length - self.f.length(arg)), arg),
         )
 
     def visit_RPad(self, op, *, arg, length, pad):
         return self.if_(
             length <= self.f.length(arg),
             arg,
-            self.f.concat(arg, self.f.repeat(
-                pad, length - self.f.length(arg))),
+            self.f.concat(arg, self.f.repeat(pad, length - self.f.length(arg))),
         )
 
     def visit_ExtractFragment(self, op, *, arg):
@@ -355,8 +351,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             )
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
-            where = cond if where is None else sge.And(
-                this=cond, expression=where)
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.array_agg(arg, where=where, order_by=order_by)
 
     def visit_Covariance(self, op, *, left, right, how, where):
@@ -412,14 +407,11 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_DateFromYMD(self, op, *, year, month, day):
         return self.cast(
             self.f.concat(
-                self.f.lpad(
-                    self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
+                self.f.lpad(self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
                 "-",
-                self.f.lpad(
-                    self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
                 "-",
-                self.f.lpad(
-                    self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
             ),
             dt.date,
         )
@@ -429,23 +421,17 @@ class DataFusionCompiler(SQLGlotCompiler):
     ):
         return self.f.to_timestamp_micros(
             self.f.concat(
-                self.f.lpad(
-                    self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
+                self.f.lpad(self.cast(self.cast(year, dt.int64), dt.string), 4, "0"),
                 "-",
-                self.f.lpad(
-                    self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(month, dt.int64), dt.string), 2, "0"),
                 "-",
-                self.f.lpad(
-                    self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(day, dt.int64), dt.string), 2, "0"),
                 "T",
-                self.f.lpad(
-                    self.cast(self.cast(hours, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(hours, dt.int64), dt.string), 2, "0"),
                 ":",
-                self.f.lpad(
-                    self.cast(self.cast(minutes, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(minutes, dt.int64), dt.string), 2, "0"),
                 ":",
-                self.f.lpad(
-                    self.cast(self.cast(seconds, dt.int64), dt.string), 2, "0"),
+                self.f.lpad(self.cast(self.cast(seconds, dt.int64), dt.string), 2, "0"),
                 ".000000Z",
             )
         )
@@ -459,22 +445,19 @@ class DataFusionCompiler(SQLGlotCompiler):
     def visit_StringConcat(self, op, *, arg):
         any_args_null = (a.is_(NULL) for a in arg)
         return self.if_(
-            sg.or_(*any_args_null), self.cast(NULL,
-                                              dt.string), self.f.concat(*arg)
+            sg.or_(*any_args_null), self.cast(NULL, dt.string), self.f.concat(*arg)
         )
 
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
-            where = cond if where is None else sge.And(
-                this=cond, expression=where)
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.first_value(arg, where=where, order_by=order_by)
 
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if not include_null:
             cond = arg.is_(sg.not_(NULL, copy=False))
-            where = cond if where is None else sge.And(
-                this=cond, expression=where)
+            where = cond if where is None else sge.And(this=cond, expression=where)
         return self.agg.last_value(arg, where=where, order_by=order_by)
 
     def visit_ArgMin(self, op, *, arg, key, where):
@@ -517,8 +500,7 @@ class DataFusionCompiler(SQLGlotCompiler):
             # datafusion lower cases all column names internally unless quoted so
             # quoted=True is required here for correctness
             by_names_quoted = tuple(
-                sg.column(key, table=getattr(
-                    value, "table", None), quoted=quoted)
+                sg.column(key, table=getattr(value, "table", None), quoted=quoted)
                 for key, value in groups.items()
             )
             selections = by_names_quoted + metrics
