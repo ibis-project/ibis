@@ -1,9 +1,15 @@
 {
   "rangeStrategy": "widen",
-  "extends": ["config:base", ":enablePreCommit", ":dependencyDashboard"],
-  "schedule": ["after 10pm and before 5am every weekday", "every weekend"],
+  "extends": ["config:recommended", ":enablePreCommit", ":dependencyDashboard"],
+  "schedule": [
+    "after 10pm every weekday",
+    "every weekend",
+    "before 5am every weekday"
+  ],
   "semanticCommits": "enabled",
-  "lockFileMaintenance": { "enabled": true },
+  "lockFileMaintenance": {
+    "enabled": true
+  },
   "enabledManagers": [
     "docker-compose",
     "dockerfile",
@@ -20,78 +26,78 @@
     },
     {
       "matchManagers": ["docker-compose"],
-      "matchPackagePatterns": ["postgres"],
       "matchCurrentVersion": "/^13\\..+$/",
-      "allowedVersions": "/^13\\..+$/"
+      "allowedVersions": "/^13\\..+$/",
+      "matchPackageNames": ["/postgres/"]
     },
     {
-      "matchPackagePatterns": ["spark"],
-      "addLabels": ["pyspark"]
+      "addLabels": ["pyspark"],
+      "matchPackageNames": ["/spark/"]
     },
     {
-      "matchPackagePatterns": ["clickhouse"],
-      "addLabels": ["clickhouse"]
+      "addLabels": ["clickhouse"],
+      "matchPackageNames": ["/clickhouse/"]
     },
     {
-      "matchPackagePatterns": ["datafusion"],
-      "addLabels": ["datafusion"]
+      "addLabels": ["datafusion"],
+      "matchPackageNames": ["/datafusion/"]
     },
     {
-      "matchPackagePatterns": [
-        "db-dtypes",
-        "google-cloud-bigquery",
-        "google-cloud-bigquery-storage",
-        "pydata-google-auth"
-      ],
-      "addLabels": ["bigquery"]
+      "addLabels": ["bigquery"],
+      "matchPackageNames": [
+        "/db-dtypes/",
+        "/google-cloud-bigquery/",
+        "/google-cloud-bigquery-storage/",
+        "/pydata-google-auth/"
+      ]
     },
     {
-      "matchPackagePatterns": ["duckdb"],
-      "addLabels": ["duckdb"]
+      "addLabels": ["duckdb"],
+      "matchPackageNames": ["/duckdb/"]
     },
     {
-      "matchPackagePatterns": ["impyla", "impala", "kudu"],
-      "addLabels": ["impala"]
+      "addLabels": ["impala"],
+      "matchPackageNames": ["/impyla/", "/impala/", "/kudu/"]
     },
     {
-      "matchPackagePatterns": ["oracledb", "oracle-free"],
-      "addLabels": ["oracle"]
+      "addLabels": ["oracle"],
+      "matchPackageNames": ["/oracledb/", "/oracle-free/"]
     },
     {
-      "matchPackagePatterns": ["polars"],
-      "addLabels": ["polars"]
+      "addLabels": ["polars"],
+      "matchPackageNames": ["/polars/"]
     },
     {
-      "matchPackagePatterns": ["psycopg2", "postgres"],
-      "addLabels": ["postgres"]
+      "addLabels": ["postgres"],
+      "matchPackageNames": ["/psycopg2/", "/postgres/"]
     },
     {
-      "matchPackagePatterns": ["pydruid", "zookeeper", "druid"],
-      "addLabels": ["druid"]
+      "addLabels": ["druid"],
+      "matchPackageNames": ["/pydruid/", "/zookeeper/", "/druid/"]
     },
     {
-      "matchPackagePatterns": ["mysqlclient", "mariadb"],
-      "addLabels": ["mysql"]
+      "addLabels": ["mysql"],
+      "matchPackageNames": ["/mysqlclient/", "/mariadb/"]
     },
     {
-      "matchPackagePatterns": ["pymssql", "mssql"],
-      "addLabels": ["mssql"]
+      "addLabels": ["mssql"],
+      "matchPackageNames": ["/pymssql/", "/mssql/"]
     },
     {
-      "matchPackagePatterns": ["pyspark"],
-      "addLabels": ["pyspark"]
+      "addLabels": ["pyspark"],
+      "matchPackageNames": ["/pyspark/"]
     },
     {
-      "matchPackagePatterns": ["risingwave"],
-      "addLabels": ["risingwave"]
+      "addLabels": ["risingwave"],
+      "matchPackageNames": ["/risingwave/"]
     },
     {
-      "matchPackagePatterns": ["snowflake-connector-python"],
-      "addLabels": ["snowflake"]
+      "addLabels": ["snowflake"],
+      "matchPackageNames": ["/snowflake-connector-python/"]
     },
     {
-      "matchPackagePatterns": ["trino", "minio"],
-      "addLabels": ["trino"]
+      "addLabels": ["trino"],
+      "matchPackageNames": ["/trino/", "/minio/"]
     },
     {
       "matchDepTypes": ["dev"],
