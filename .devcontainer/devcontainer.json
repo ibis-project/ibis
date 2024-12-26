@@ -17,8 +17,7 @@
       "extensions": [
         "ms-toolsai.jupyter",
         "ms-python.python",
-        "quarto.quarto",
-        "charliermarsh.ruff"
+        "quarto.quarto"
       ]
     }
   },

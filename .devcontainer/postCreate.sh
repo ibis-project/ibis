@@ -1,7 +1,5 @@
 #!/bin/sh
 
-source /opt/conda/etc/profile.d/conda.sh
-
 # install ibis
 python3 -m pip install ipython
 
