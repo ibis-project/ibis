@@ -9,6 +9,14 @@ jobs:
   gcs_insert:
     if: github.repository_owner == 'ibis-project'
     runs-on: ubuntu-latest
+
+    # this allows extractions/setup-just to list releases for `just` at a higher
+    # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+    permissions:
+      contents: "read"
+      # required for GCP workload identity federation
+      id-token: "write"
+
     steps:
       - name: set date
         id: set_date
