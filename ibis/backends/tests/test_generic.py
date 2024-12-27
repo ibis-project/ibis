@@ -24,7 +24,6 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
-    PolarsSchemaError,
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
@@ -818,7 +817,7 @@ def test_table_info_large(con):
                 ),
                 pytest.mark.notyet(
                     ["polars"],
-                    raises=PolarsSchemaError,
+                    raises=PolarsInvalidOperationError,
                     reason="type Float32 is incompatible with expected type Float64",
                 ),
             ],
@@ -854,7 +853,7 @@ def test_table_info_large(con):
                 ),
                 pytest.mark.notimpl(
                     ["polars"],
-                    raises=PolarsSchemaError,
+                    raises=PolarsInvalidOperationError,
                     reason="type Float32 is incompatible with expected type Float64",
                 ),
             ],
@@ -873,6 +872,10 @@ def test_table_info_large(con):
                     ["oracle"],
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
+                ),
+                pytest.mark.xfail_version(
+                    polars=["polars>=1.18"],
+                    reason="panic when converting string to binary",
                 ),
             ],
             id="string_col",
