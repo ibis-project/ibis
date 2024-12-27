@@ -2140,7 +2140,7 @@ tests = [
 
 [package.metadata]
 requires-dist = [
-    { name = "atpublic", specifier = ">=2.3,<6" },
+    { name = "atpublic", specifier = ">=2.3" },
     { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0,<25" },
     { name = "clickhouse-connect", extras = ["arrow", "pandas", "numpy"], marker = "extra == 'clickhouse'", specifier = ">=0.5.23,<1" },
     { name = "databricks-sql-connector-core", marker = "extra == 'databricks'", specifier = ">=4,<5" },
@@ -2198,7 +2198,7 @@ requires-dist = [
     { name = "pandas", marker = "extra == 'snowflake'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'sqlite'", specifier = ">=1.5.3,<3" },
     { name = "pandas", marker = "extra == 'trino'", specifier = ">=1.5.3,<3" },
-    { name = "parsy", specifier = ">=2,<3" },
+    { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3,<1" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1,<2" },
     { name = "psycopg2", marker = "extra == 'postgres'", specifier = ">=2.8.4,<3" },
@@ -2247,7 +2247,7 @@ requires-dist = [
     { name = "pyodbc", marker = "extra == 'mssql'", specifier = ">=4.0.39,<6" },
     { name = "pyproj", marker = "extra == 'geospatial'", specifier = ">=3.3.0,<4" },
     { name = "pyspark", marker = "extra == 'pyspark'", specifier = ">=3.3.3,<4" },
-    { name = "python-dateutil", specifier = ">=2.8.2,<3" },
+    { name = "python-dateutil", specifier = ">=2.8.2" },
     { name = "pytz", specifier = ">=2022.7" },
     { name = "regex", marker = "extra == 'sqlite'", specifier = ">=2021.7.6" },
     { name = "rich", marker = "extra == 'bigquery'", specifier = ">=12.4.4,<14" },
@@ -2272,9 +2272,9 @@ requires-dist = [
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2,<3" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1,<4" },
     { name = "sqlglot", specifier = ">=23.4,<26.1" },
-    { name = "toolz", specifier = ">=0.11,<2" },
+    { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321,<1" },
-    { name = "typing-extensions", specifier = ">=4.3.0,<5" },
+    { name = "typing-extensions", specifier = ">=4.3.0" },
 ]
 
 [package.metadata.requires-dev]
