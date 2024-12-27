@@ -11,14 +11,17 @@ on:
 # instances of this job running at one time
 concurrency: benchmarks-${{ github.repository }}
 
-permissions:
-  # increase the rate limit for github operations, but limit token permissions
-  # to read-only
-  contents: read
-
 jobs:
   benchmarks:
     runs-on: ubuntu-latest
+
+    # this allows extractions/setup-just to list releases for `just` at a higher
+    # rate limit while restricting GITHUB_TOKEN permissions elsewhere
+    permissions:
+      contents: "read"
+      # required for GCP workload identity federation
+      id-token: "write"
+
     steps:
       - name: checkout
         uses: actions/checkout@v4
