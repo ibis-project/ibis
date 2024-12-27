@@ -406,15 +406,11 @@ def uses_java_re(t):
             lambda t: t.string_col.find("a"),
             lambda t: t.string_col.str.find("a"),
             id="find",
-            marks=pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t: t.date_string_col.find("13", 3),
             lambda t: t.date_string_col.str.find("13", 3),
             id="find_start",
-            marks=[
-                pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError),
-            ],
         ),
         param(
             lambda t: t.string_col.lpad(10, "a"),
@@ -1084,7 +1080,6 @@ def string_temp_table(backend, con):
             lambda t: t.string_col.find("123"),
             lambda t: t.str.find("123"),
             id="find",
-            marks=pytest.mark.notimpl("polars", raises=com.OperationNotDefinedError),
         ),
         param(
             lambda t: t.string_col.rpad(4, "-"),
