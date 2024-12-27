@@ -8,7 +8,7 @@ annotated-types==0.7.0
 anyio==4.7.0
 anywidget==0.9.13
 appdirs==1.4.4
-appnope==0.1.4 ; platform_system == 'Darwin'
+appnope==0.1.4 ; sys_platform == 'darwin'
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 arro3-compute==0.4.5
@@ -32,7 +32,7 @@ certifi==2024.12.14
 cffi==1.17.1
 cfgv==3.4.0
 chardet==5.2.0
-charset-normalizer==3.4.0
+charset-normalizer==3.4.1
 click==8.1.8
 clickhouse-connect==0.8.11
 cloudpickle==3.1.0
@@ -40,7 +40,7 @@ codespell==2.3.0
 colorama==0.4.6
 comm==0.2.2
 contourpy==1.3.1
-coverage==7.6.9
+coverage==7.6.10
 cryptography==44.0.0
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
@@ -86,7 +86,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
-hypothesis==6.123.0
+hypothesis==6.123.1
 identify==2.6.3
 idna==3.10
 importlib-metadata==8.5.0
@@ -119,7 +119,7 @@ jupyterlab-server==2.27.3
 jupyterlab-widgets==3.0.13
 jupyterlite-core==0.3.0
 jupyterlite-pyodide-kernel==0.3.2
-kiwisolver==1.4.7
+kiwisolver==1.4.8
 lonboard==0.10.3
 lz4==4.3.3
 mako==1.3.8
@@ -161,7 +161,7 @@ plotly==5.24.1
 plotnine==0.14.4
 pluggy==1.5.0
 plum-dispatch==2.5.4
-polars==1.17.1
+polars==1.18.0
 pprintpp==0.4.0
 pre-commit==4.0.1
 prometheus-client==0.21.1
