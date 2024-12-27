@@ -408,6 +408,12 @@ def memtable(
             "passing `columns` and schema` is ambiguous; "
             "pass one or the other but not both"
         )
+
+    if schema is not None:
+        import ibis
+
+        schema = ibis.schema(schema)
+
     return _memtable(data, name=name, schema=schema, columns=columns)
 
 
