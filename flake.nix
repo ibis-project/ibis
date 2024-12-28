@@ -93,6 +93,9 @@
 
           # Get repository root using git. This is expanded at runtime by the editable `.pth` machinery.
           export REPO_ROOT=$(git rev-parse --show-toplevel)
+
+          # Prevent uv from downloading managed Python's
+          export UV_PYTHON_DOWNLOADS=never
         '';
 
         preCommitDeps = with pkgs; [
