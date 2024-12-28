@@ -1555,3 +1555,12 @@ def visit_ArrayIntersect(op, **kw):
     left = translate(op.left, **kw)
     right = translate(op.right, **kw)
     return left.list.set_intersection(right)
+
+
+@translate.register(ops.StringFind)
+def visit_StringFind(op, **kw):
+    arg = translate(op.arg, **kw)
+    start = translate(op.start, **kw) if op.start is not None else 0
+    end = translate(op.end, **kw) if op.end is not None else None
+    expr = arg.str.slice(start, end).str.find(_literal_value(op.substr), literal=True)
+    return pl.when(expr.is_null()).then(-1).otherwise(expr + start)
