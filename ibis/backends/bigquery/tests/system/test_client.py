@@ -3,6 +3,7 @@ from __future__ import annotations
 import collections
 import datetime
 import decimal
+import os
 from urllib.parse import urlparse
 
 import pandas as pd
@@ -235,7 +236,11 @@ def test_exists_table_different_project(con):
     assert "foobar" not in con.list_tables(database=dataset)
 
 
-@pytest.mark.xfail(raises=Forbidden, reason="WIF auth not entirely worked out yet")
+@pytest.mark.xfail(
+    condition=os.environ.get("GITHUB_ACTIONS") is not None,
+    raises=Forbidden,
+    reason="WIF auth not entirely worked out yet",
+)
 def test_multiple_project_queries_execute(con):
     posts_questions = con.table(
         "posts_questions", database="bigquery-public-data.stackoverflow"

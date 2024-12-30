@@ -102,7 +102,11 @@ def test_multiple_calls_has_one_definition(con):
     assert con.execute(expr) == 8.0
 
 
-@pytest.mark.xfail(raises=Forbidden, reason="WIF auth not entirely worked out yet")
+@pytest.mark.xfail(
+    condition=os.environ.get("GITHUB_ACTIONS") is not None,
+    raises=Forbidden,
+    reason="WIF auth not entirely worked out yet",
+)
 def test_udf_libraries(con):
     @udf.scalar.python(
         # whatever symbols are exported in the library are visible inside the
