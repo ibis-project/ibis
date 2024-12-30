@@ -87,7 +87,7 @@ httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
 hypothesis==6.123.2
-identify==2.6.3
+identify==2.6.4
 idna==3.10
 importlib-metadata==8.5.0
 importlib-resources==6.4.5
@@ -128,12 +128,12 @@ markupsafe==3.0.2
 matplotlib==3.10.0
 matplotlib-inline==0.1.7
 mdurl==0.1.2
-mistune==3.0.2
+mistune==3.1.0
 mizani==0.13.1
 multidict==6.1.0
 mypy-extensions==1.0.0
 mysqlclient==2.2.6
-narwhals==1.19.1
+narwhals==1.20.1
 nbclient==0.10.2
 nbconvert==7.16.4
 nbformat==5.10.4
