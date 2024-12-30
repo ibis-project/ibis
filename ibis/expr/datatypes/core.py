@@ -73,8 +73,8 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
 
 
 @dtype.register(str)
-def from_string(value):
-    return DataType.from_string(value)
+def from_string(value, nullable: bool = True):
+    return DataType.from_string(value, nullable)
 
 
 @dtype.register("numpy.dtype")
@@ -165,13 +165,17 @@ class DataType(Concrete, Coercible):
         return castable(self, to, **kwargs)
 
     @classmethod
-    def from_string(cls, value) -> Self:
+    def from_string(cls, value, nullable: bool = True) -> Self:
         from ibis.expr.datatypes.parse import parse
 
         try:
-            return parse(value)
+            typ = parse(value)
         except SyntaxError:
             raise TypeError(f"{value!r} cannot be parsed as a datatype")
+
+        if not nullable:
+            return typ.copy(nullable=nullable)
+        return typ
 
     @classmethod
     def from_typehint(cls, typ, nullable=True) -> Self:
