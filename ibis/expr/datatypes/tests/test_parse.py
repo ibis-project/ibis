@@ -13,6 +13,7 @@ import ibis.tests.strategies as its
 from ibis.common.annotations import ValidationError
 
 
+@pytest.mark.parametrize("nullable", [True, False])
 @pytest.mark.parametrize(
     ("spec", "expected"),
     [
@@ -43,8 +44,8 @@ from ibis.common.annotations import ValidationError
         ("multipolygon", dt.multipolygon),
     ],
 )
-def test_primitive_from_string(spec, expected):
-    assert dt.dtype(spec) == expected
+def test_primitive_from_string(nullable, spec, expected):
+    assert dt.dtype(spec, nullable=nullable) == expected(nullable=nullable)
 
 
 @pytest.mark.parametrize(
