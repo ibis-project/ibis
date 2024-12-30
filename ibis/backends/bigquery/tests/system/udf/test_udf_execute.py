@@ -5,6 +5,7 @@ import os
 import pandas as pd
 import pandas.testing as tm
 import pytest
+from google.api_core.exceptions import Forbidden
 from pytest import param
 
 import ibis
@@ -101,6 +102,7 @@ def test_multiple_calls_has_one_definition(con):
     assert con.execute(expr) == 8.0
 
 
+@pytest.mark.xfail(raises=Forbidden, reason="WIF auth not entirely worked out yet")
 def test_udf_libraries(con):
     @udf.scalar.python(
         # whatever symbols are exported in the library are visible inside the
