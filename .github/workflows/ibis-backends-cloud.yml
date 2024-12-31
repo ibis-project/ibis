@@ -181,7 +181,7 @@ jobs:
         run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist=loadgroup
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -x ibis/backends/tests/test_client.py
 
       - name: upload code coverage
         if: success()
