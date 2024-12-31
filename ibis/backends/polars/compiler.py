@@ -717,6 +717,9 @@ _reductions = {
     ops.Median: "median",
     ops.Min: "min",
     ops.Sum: "sum",
+    ops.BitOr: "bitwise_or",
+    ops.BitAnd: "bitwise_and",
+    ops.BitXor: "bitwise_xor",
 }
 
 
@@ -1614,21 +1617,3 @@ def visit_StringFind(op, **kw):
     end = translate(op.end, **kw) if op.end is not None else None
     expr = arg.str.slice(start, end).str.find(_literal_value(op.substr), literal=True)
     return pl.when(expr.is_null()).then(-1).otherwise(expr + start)
-
-
-@translate.register(ops.BitAnd)
-def visit_BitAnd(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.bitwise_and()
-
-
-@translate.register(ops.BitOr)
-def visit_BitOr(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.bitwise_or()
-
-
-@translate.register(ops.BitXor)
-def visit_BitXor(op, **kw):
-    arg = translate(op.arg, **kw)
-    return arg.bitwise_xor()
