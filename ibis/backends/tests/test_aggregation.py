@@ -490,7 +490,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_and",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql", "exasol"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notimpl(["druid"], strict=False, raises=AssertionError),
@@ -505,7 +505,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_or",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql", "exasol"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(
@@ -519,7 +519,7 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             id="bit_xor",
             marks=[
                 pytest.mark.notimpl(
-                    ["polars", "mssql", "exasol"],
+                    ["mssql", "exasol"],
                     raises=com.OperationNotDefinedError,
                 ),
                 pytest.mark.notyet(

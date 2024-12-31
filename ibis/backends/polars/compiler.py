@@ -717,6 +717,9 @@ _reductions = {
     ops.Median: "median",
     ops.Min: "min",
     ops.Sum: "sum",
+    ops.BitOr: "bitwise_or",
+    ops.BitAnd: "bitwise_and",
+    ops.BitXor: "bitwise_xor",
 }
 
 
