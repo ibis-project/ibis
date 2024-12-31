@@ -36,48 +36,48 @@ jobs:
       matrix:
         python-version:
           - "3.10"
-          # - "3.13"
+          - "3.13"
         backend:
-          # - name: snowflake
-          #   title: Snowflake
-          #   extras:
-          #     - --extra snowflake
-          # - name: databricks
-          #   title: Databricks
-          #   extras:
-          #     - --extra databricks
+          - name: snowflake
+            title: Snowflake
+            extras:
+              - --extra snowflake
+          - name: databricks
+            title: Databricks
+            extras:
+              - --extra databricks
           - name: athena
             title: Amazon Athena
             extras:
               - --extra athena
-        # include:
-        #   - python-version: "3.10"
-        #     backend:
-        #       name: bigquery
-        #       title: BigQuery
-        #       extras:
-        #         - --extra bigquery
-        #   - python-version: "3.13"
-        #     backend:
-        #       name: bigquery
-        #       title: BigQuery
-        #       extras:
-        #         - --extra bigquery
-        #         - --extra geospatial
-        #   - python-version: "3.10"
-        #     backend:
-        #       name: snowflake
-        #       title: Snowflake + Snowpark
-        #       key: snowpark
-        #       extras:
-        #         - --extra snowflake
-        #   - python-version: "3.11"
-        #     backend:
-        #       name: snowflake
-        #       title: Snowflake + Snowpark
-        #       key: snowpark
-        #       extras:
-        #         - --extra snowflake
+        include:
+          - python-version: "3.10"
+            backend:
+              name: bigquery
+              title: BigQuery
+              extras:
+                - --extra bigquery
+          - python-version: "3.13"
+            backend:
+              name: bigquery
+              title: BigQuery
+              extras:
+                - --extra bigquery
+                - --extra geospatial
+          - python-version: "3.10"
+            backend:
+              name: snowflake
+              title: Snowflake + Snowpark
+              key: snowpark
+              extras:
+                - --extra snowflake
+          - python-version: "3.11"
+            backend:
+              name: snowflake
+              title: Snowflake + Snowpark
+              key: snowpark
+              extras:
+                - --extra snowflake
     # this allows extractions/setup-just to list releases for `just` at a higher
     # rate limit while restricting GITHUB_TOKEN permissions elsewhere
     permissions:
@@ -181,7 +181,7 @@ jobs:
         run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
-        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} -x ibis/backends/tests/test_client.py
+        run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
 
       - name: upload code coverage
         if: success()
