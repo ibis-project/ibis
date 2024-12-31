@@ -374,6 +374,7 @@ def test_grouped_bounded_expanding_window(
                         "trino",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -567,6 +568,7 @@ def test_grouped_bounded_preceding_window(
                         "datafusion",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -721,6 +723,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "datafusion",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -757,6 +760,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "exasol",
                         "flink",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -790,7 +794,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lag",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino", "exasol"],
+                    ["trino", "exasol", "athena"],
                     reason="this isn't actually broken: the backend result is equal up to ordering",
                     raises=AssertionError,
                     strict=False,  # sometimes it passes
@@ -831,7 +835,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="unordered-lead",
             marks=[
                 pytest.mark.notimpl(
-                    ["trino"],
+                    ["trino", "athena"],
                     reason=(
                         "this isn't actually broken: the trino backend "
                         "result is equal up to ordering"
@@ -880,6 +884,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "datafusion",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -911,6 +916,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                         "exasol",
                         "flink",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1083,7 +1089,7 @@ def test_mutate_window_filter(backend, alltypes):
 
 
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
-@pytest.mark.notimpl(["druid"], raises=com.TableNotFound)
+@pytest.mark.notimpl(["druid", "athena"], raises=com.TableNotFound)
 def test_first_last(backend):
     t = backend.win
     w = ibis.window(group_by=t.g, order_by=[t.x, t.y], preceding=1, following=0)

@@ -1,16 +1,26 @@
 # Cloud backend support policy
 
-Ibis supports a number of proprietary cloud backends.
+Ibis supports and tests some of the major proprietary cloud backends:
 
-Snowflake and Databricks cost money to test in our continuous integration test suite.
+- Google BigQuery
+- Snowflake
+- Databricks Cloud
+- Amazon Athena
 
-If funding dries up, support for these backends will become best effort.
+**All of these services cost money to run in our continuous integration test suite.**
 
-If you're interested in ensuring continued support for a cloud backend, please
-consider sponsoring Ibis development.
+If funding for these services dries up, support for these backends will move to
+best effort.
 
-The cost at the time of writing (2024-10-31) is about **$5,000 USD per year**
-split evenly between the Snowflake and Databricks backend.
+If you or your company are interested in ensuring continued maintenance for one
+of these backends, please get in touch with us on
+[Zulip](https://ibis-project.zulipchat.com/), or [open a GitHub
+issue](https://github.com/ibis-project/ibis/issues/new) and consider sponsoring
+Ibis development.
 
-Google has very generously supported the entire cost of testing the BigQuery
-backend for a number of years.
+## Current cost estimates
+
+- Google BigQuery: free, donated very generously by Google
+- Snowflake: $2500 USD per year
+- Databricks Cloud: $2500 USD per year
+- Amazon Athena: ?

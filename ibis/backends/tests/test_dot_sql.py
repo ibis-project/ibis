@@ -17,6 +17,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     GoogleBadRequest,
     OracleDatabaseError,
+    PyAthenaOperationalError,
 )
 
 pd = pytest.importorskip("pandas")
@@ -319,6 +320,7 @@ def test_embedded_cte(alltypes, ftname_raw):
 @pytest.mark.never(
     ["oracle"], raises=OracleDatabaseError, reason="backend requires aliasing"
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_unnamed_columns(con):
     sql = "SELECT 'a', 1 AS \"col42\""
     sgexpr = sg.parse_one(sql, read="duckdb")

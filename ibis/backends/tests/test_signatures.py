@@ -57,6 +57,7 @@ marks = {
                 "sqlite",
                 "trino",
                 "databricks",
+                "athena",
             ],
             reason="SQL backends all have an additional `pretty` argument for formatting the generated SQL",
         ),

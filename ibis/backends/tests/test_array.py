@@ -28,6 +28,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2ProgrammingError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
+    PyAthenaDatabaseError,
+    PyAthenaOperationalError,
     PySparkAnalysisException,
     TrinoUserError,
 )
@@ -113,7 +115,7 @@ def test_array_scalar(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["flink", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "polars", "athena"], raises=com.OperationNotDefinedError)
 def test_array_repeat(con):
     expr = ibis.array([1.0, 2.0]) * 2
 
@@ -123,7 +125,7 @@ def test_array_repeat(con):
     assert np.array_equal(result, expected)
 
 
-@pytest.mark.notimpl(["flink", "polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(["flink", "polars", "athena"], raises=com.OperationNotDefinedError)
 def test_array_repeat_column(con):
     t = ibis.memtable({"x": [[1.0, 2.0]]}, schema=ibis.schema({"x": "array<float64>"}))
     expr = (t.x * 2).name("tmp")
@@ -153,6 +155,7 @@ def test_array_concat_variadic(con):
 # Issues #2370
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError)
 @pytest.mark.notyet(["trino"], raises=TrinoUserError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_array_concat_some_empty(con):
     left = ibis.literal([])
     right = ibis.literal([2, 1])
@@ -293,6 +296,11 @@ builtin_array = toolz.compose(
     reason="snowflake has an extremely specialized way of implementing arrays",
     raises=AssertionError,
 )
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_array_discovery(backend):
     t = backend.array_types
     expected = ibis.schema(
@@ -314,6 +322,11 @@ def test_array_discovery(backend):
     reason="BigQuery doesn't support casting array<T> to array<U>",
     raises=GoogleBadRequest,
 )
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_unnest_simple(backend):
     array_types = backend.array_types
     expected = (
@@ -329,6 +342,11 @@ def test_unnest_simple(backend):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_unnest_complex(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -357,6 +375,11 @@ def test_unnest_complex(backend):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_unnest_idempotent(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -380,6 +403,11 @@ def test_unnest_idempotent(backend):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_unnest_no_nulls(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -405,6 +433,11 @@ def test_unnest_no_nulls(backend):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_unnest_default_name(backend):
     array_types = backend.array_types
     df = array_types.execute()
@@ -450,6 +483,11 @@ def test_unnest_default_name(backend):
     ],
 )
 @pytest.mark.notimpl(["datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_array_slice(backend, start, stop):
     array_types = backend.array_types
     expr = array_types.select(sliced=array_types.y[start:stop])
@@ -469,6 +507,7 @@ def test_array_slice(backend, start, stop):
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
 )
@@ -527,6 +566,7 @@ def test_array_map(con, input, output, func):
     raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array: ..."
 )
@@ -580,6 +620,7 @@ def test_array_map_with_index(con, input, output, func):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -626,6 +667,7 @@ def test_array_filter(con, input, output, predicate):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -672,6 +714,7 @@ def test_array_filter_with_index(con, input, output, predicate):
 @pytest.mark.notimpl(
     ["datafusion", "flink", "polars"], raises=com.OperationNotDefinedError
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 @pytest.mark.notimpl(
     ["sqlite"], raises=com.UnsupportedBackendType, reason="Unsupported type: Array..."
 )
@@ -714,6 +757,11 @@ def test_array_filter_with_index_lambda(con, input, output, predicate):
 
 
 @builtin_array
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 @pytest.mark.parametrize(
     ("col", "value"),
     [
@@ -895,6 +943,11 @@ def test_array_remove(con, input, expected):
                 pytest.mark.notimpl(
                     ["databricks"], raises=AssertionError, reason="nulls are nans"
                 ),
+                pytest.mark.notyet(
+                    ["athena"],
+                    raises=AssertionError,
+                    reason="pyarrow doesn't return non-numpy objects for arrays",
+                ),
             ],
         ),
         param(
@@ -973,7 +1026,9 @@ def test_array_sort(con, data):
                     reason="somehow, transformed results are different types",
                 ),
                 pytest.mark.notimpl(
-                    ["databricks"], raises=AssertionError, reason="nulls are nans"
+                    ["databricks", "athena"],
+                    raises=AssertionError,
+                    reason="nulls are nans",
                 ),
             ],
         ),
@@ -1044,6 +1099,7 @@ def test_array_intersect(con, data):
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaDatabaseError)
 def test_unnest_struct(con):
     data = {"value": [[{"a": 1}, {"a": 2}], [{"a": 3}, {"a": 4}]]}
     t = ibis.memtable(data, schema=ibis.schema({"value": "!array<!struct<a: !int>>"}))
@@ -1066,6 +1122,7 @@ def test_unnest_struct(con):
 @pytest.mark.notimpl(
     ["flink"], reason="flink unnests a and b as separate columns", raises=Py4JJavaError
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaDatabaseError)
 def test_unnest_struct_with_multiple_fields(con):
     data = {
         "value": [
@@ -1092,6 +1149,11 @@ array_zip_notimpl = pytest.mark.notimpl(
 
 @builtin_array
 @array_zip_notimpl
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_zip(backend):
     t = backend.array_types
 
@@ -1121,6 +1183,11 @@ def test_zip(backend):
     "bigquery",
     raises=AssertionError,
     reason="BigQuery converts NULLs with array type to an empty array",
+)
+@pytest.mark.notyet(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="anonymous structs are not supported",
 )
 @pytest.mark.parametrize(
     "fn",
@@ -1165,6 +1232,7 @@ def test_zip_null(con, fn):
     raises=Py4JJavaError,
     reason="does not seem to support field selection on unnest",
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_array_of_struct_unnest(con):
     jobs = ibis.memtable(
         {
@@ -1294,21 +1362,9 @@ def test_range_single_argument_unnest(con, n):
     assert frozenset(result.values) == frozenset(range(n))
 
 
+@pytest.mark.parametrize("start", [-7, 0, 7])
+@pytest.mark.parametrize("stop", [-7, 0, 7])
 @pytest.mark.parametrize("step", [-2, -1, 1, 2])
-@pytest.mark.parametrize(
-    ("start", "stop"),
-    [
-        param(-7, -7),
-        param(-7, 0),
-        param(-7, 7),
-        param(0, -7),
-        param(0, 0),
-        param(0, 7),
-        param(7, -7),
-        param(7, 0),
-        param(7, 7),
-    ],
-)
 @pytest.mark.notyet(
     ["datafusion"],
     reason="range and unnest aren't implemented upstream",
@@ -1368,6 +1424,7 @@ def test_unnest_empty_array(con):
     raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
+@pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
 def test_array_map_with_conflicting_names(backend, con):
     t = ibis.memtable({"x": [[1, 2]]}, schema=ibis.schema(dict(x="!array<int8>")))
     expr = t.select(a=t.x.map(lambda x: x + 1)).select(
@@ -1380,7 +1437,7 @@ def test_array_map_with_conflicting_names(backend, con):
 
 @builtin_array
 @pytest.mark.notimpl(
-    ["datafusion", "flink", "polars", "sqlite", "sqlite"],
+    ["datafusion", "flink", "polars", "sqlite", "sqlite", "athena"],
     raises=com.OperationNotDefinedError,
 )
 def test_complex_array_map(con):
@@ -1493,7 +1550,9 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
     ],
 )
 @timestamp_range_tzinfos
-@pytest.mark.notimpl(["flink", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink", "datafusion", "athena"], raises=com.OperationNotDefinedError
+)
 def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     start = start.replace(tzinfo=tzinfo)
     stop = stop.replace(tzinfo=tzinfo)
@@ -1542,7 +1601,9 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     ],
 )
 @timestamp_range_tzinfos
-@pytest.mark.notimpl(["flink", "datafusion"], raises=com.OperationNotDefinedError)
+@pytest.mark.notimpl(
+    ["flink", "datafusion", "athena"], raises=com.OperationNotDefinedError
+)
 def test_timestamp_range_zero_step(con, start, stop, step, tzinfo):
     start = start.replace(tzinfo=tzinfo)
     stop = stop.replace(tzinfo=tzinfo)
@@ -1608,6 +1669,11 @@ def test_array_literal_with_exprs(con, input, expected):
     raises=TrinoUserError,
     reason="sqlglot generates code that assumes there's only at most two fields to unpack from a struct",
 )
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=PyAthenaOperationalError,
+    reason="sqlglot generates code that assumes there's only at most two fields to unpack from a struct",
+)
 def test_zip_unnest_lift(con):
     data = pd.DataFrame(dict(array1=[[1, 2, 3]], array2=[[4, 5, 6]]))
     t = ibis.memtable(data)
@@ -1627,6 +1693,11 @@ def test_zip_unnest_lift(con):
     ["y", lambda t: t.y, ibis._.y],
     ids=["string", "lambda", "deferred"],
 )
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_table_unnest(backend, colspec):
     t = backend.array_types
     expr = t.unnest(colspec)
@@ -1636,6 +1707,11 @@ def test_table_unnest(backend, colspec):
 
 @pytest.mark.notimpl(
     ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
+)
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
 )
 def test_table_unnest_with_offset(backend):
     t = backend.array_types
@@ -1675,6 +1751,11 @@ def test_table_unnest_with_keep_empty(con):
 @pytest.mark.notyet(
     ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
 )
+@pytest.mark.notimpl(
+    ["athena"],
+    raises=com.TableNotFound,
+    reason="not yet set up with all testing tables",
+)
 def test_table_unnest_column_expr(backend):
     t = backend.array_types
     expr = t.unnest(t.y.map(lambda v: v.cast("str") + "'s").name("plural"))
@@ -1687,6 +1768,7 @@ def test_table_unnest_column_expr(backend):
     ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
+@pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(

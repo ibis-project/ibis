@@ -15,6 +15,8 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PsycoPg2SyntaxError,
     Py4JJavaError,
+    PyAthenaDatabaseError,
+    PyAthenaOperationalError,
     PySparkAnalysisException,
 )
 from ibis.common.exceptions import IbisError
@@ -195,6 +197,9 @@ def test_field_access_after_case(con):
     ["trino"],
     raises=AssertionError,
     reason="trino returns unquoted and therefore unparsable struct field names, we fall back to dt.unknown",
+)
+@pytest.mark.notyet(
+    ["athena"], raises=(AssertionError, PyAthenaOperationalError, PyAthenaDatabaseError)
 )
 @pytest.mark.notyet(
     ["snowflake"],

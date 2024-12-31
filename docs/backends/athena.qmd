@@ -1,0 +1,117 @@
+# Amazon Athena
+
+[https://aws.amazon.com/athena](https://aws.amazon.com/athena/)
+
+## Install
+
+Install Ibis and dependencies for the Athena backend:
+
+::: {.panel-tabset}
+
+## `pip`
+
+Install with the `athena` extra:
+
+```{.bash}
+pip install 'ibis-framework[athena]'
+```
+
+And connect:
+
+```{.python}
+import ibis
+
+con = ibis.athena.connect(s3_staging_dir="s3://...")  # <1>
+```
+
+::: {.callout-note}
+## At a **minimum**, the `s3_staging_dir` argument must be provided.
+
+This argument tells the underlying driver library--`pyathena`--and ultimately
+Athena itself where to dump query results.
+:::
+
+1. Adjust other connection parameters as needed.
+
+## `conda`
+
+Install for Athena:
+
+```{.bash}
+conda install -c conda-forge ibis-athena
+```
+
+```{.python}
+import ibis
+
+con = ibis.athena.connect(s3_staging_dir="s3://...")  # <1>
+```
+
+::: {.callout-note}
+## At a **minimum**, the `s3_staging_dir` argument must be provided.
+
+This argument tells the underlying driver library--`pyathena`--and ultimately
+Athena itself where to dump query results.
+:::
+
+1. Adjust other connection parameters as needed.
+
+## `mamba`
+
+Install for Athena:
+
+```{.bash}
+mamba install -c conda-forge ibis-athena
+```
+
+```{.python}
+import ibis
+
+con = ibis.athena.connect(s3_staging_dir="s3://my-bucket/")  # <1>
+```
+
+::: {.callout-note}
+## At a **minimum**, the `s3_staging_dir` argument must be provided.
+
+This argument tells the underlying driver library--`pyathena`--and ultimately
+Athena itself where to dump query results.
+:::
+
+1. Adjust other connection parameters as needed.
+
+:::
+
+## Connect
+
+### `ibis.athena.connect`
+
+```python
+con = ibis.athena.connect(
+    s3_staging_dir="s3://my-bucket/",
+)
+```
+
+::: {.callout-note}
+## At a **minimum**, the `s3_staging_dir` argument must be provided.
+
+This argument tells the underlying driver
+library--[`pyathena`](https://laughingman7743.github.io/PyAthena/)--and
+ultimately Athena itself where to dump query results.
+:::
+
+### Connection Parameters
+
+```{python}
+#| echo: false
+#| output: asis
+from _utils import render_do_connect
+
+render_do_connect("athena")
+```
+
+```{python}
+#| echo: false
+BACKEND = "Athena"
+```
+
+{{< include ./_templates/api.qmd >}}

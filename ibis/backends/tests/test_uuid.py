@@ -8,6 +8,7 @@ import pytest
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+from ibis.backends.tests.errors import PyAthenaOperationalError
 
 RAW_TEST_UUID = "08f48812-7948-4718-96c7-27fa6a398db6"
 TEST_UUID = uuid.UUID(RAW_TEST_UUID)
@@ -30,6 +31,7 @@ UUID_BACKEND_TYPE = {
 
 
 @pytest.mark.notimpl(["polars"], raises=NotImplementedError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_uuid_literal(con, backend):
     backend_name = backend.name()
 
@@ -46,6 +48,7 @@ def test_uuid_literal(con, backend):
     ["druid", "exasol", "oracle", "polars", "risingwave", "pyspark"],
     raises=com.OperationNotDefinedError,
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 @pytest.mark.never(
     ["mysql"], raises=AssertionError, reason="MySQL generates version 1 UUIDs"
 )

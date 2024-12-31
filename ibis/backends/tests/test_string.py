@@ -35,6 +35,7 @@ pd = pytest.importorskip("pandas")
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(6)",
+                "athena": "varchar(6)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -52,6 +53,7 @@ pd = pytest.importorskip("pandas")
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
+                "athena": "varchar(7)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -81,6 +83,7 @@ pd = pytest.importorskip("pandas")
                 "snowflake": "VARCHAR",
                 "sqlite": "text",
                 "trino": "varchar(7)",
+                "athena": "varchar(7)",
                 "duckdb": "VARCHAR",
                 "impala": "STRING",
                 "postgres": "text",
@@ -440,6 +443,7 @@ def uses_java_re(t):
                         "oracle",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -468,6 +472,7 @@ def uses_java_re(t):
                         "oracle",
                         "exasol",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -707,7 +712,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             id="authority",
             marks=[
                 pytest.mark.notyet(
-                    ["bigquery", "trino"], raises=com.OperationNotDefinedError
+                    ["bigquery", "trino", "athena"], raises=com.OperationNotDefinedError
                 )
             ],
         ),
@@ -716,7 +721,7 @@ def test_substr_with_null_values(backend, alltypes, df):
             "user:pass",
             marks=[
                 pytest.mark.notyet(
-                    ["bigquery", "clickhouse", "trino"],
+                    ["bigquery", "clickhouse", "trino", "athena"],
                     raises=com.OperationNotDefinedError,
                     reason="doesn't support `USERINFO`",
                 )
@@ -1045,6 +1050,8 @@ def string_temp_table(backend, con):
     temp_table_name = gen_name("strings")
     if backend.name() == "druid":
         pytest.xfail("druid doesn't support create table")
+    elif backend.name() == "athena":
+        pytest.xfail("not yet supported")
     else:
         yield con.create_table(
             temp_table_name, better_strings, temp=backend.name() == "flink" or None
@@ -1189,6 +1196,7 @@ def string_temp_table(backend, con):
                         "sqlite",
                         "trino",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1224,6 +1232,7 @@ def string_temp_table(backend, con):
                         "sqlite",
                         "trino",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.OperationNotDefinedError,
                 ),
@@ -1341,6 +1350,8 @@ def string_temp_table_no_complications(backend, con):
     temp_table_name = gen_name("strings")
     if backend.name() == "druid":
         pytest.xfail("druid doesn't support create table")
+    elif backend.name() == "athena":
+        pytest.xfail("not yet supported")
     else:
         yield con.create_table(
             temp_table_name, better_strings, temp=backend.name() == "flink" or None

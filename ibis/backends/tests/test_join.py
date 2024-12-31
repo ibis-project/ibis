@@ -273,7 +273,7 @@ def test_join_with_trivial_predicate(awards_players, predicate, how, pandas_valu
     assert len(result) == len(expected)
 
 
-@pytest.mark.notimpl(["druid"], raises=com.TableNotFound)
+@pytest.mark.notimpl(["druid", "athena"], raises=com.TableNotFound)
 @pytest.mark.parametrize(
     ("how", "nrows", "gen_right", "keys"),
     [
@@ -387,6 +387,7 @@ def test_join_conflicting_columns(backend, con):
         "sqlite",
         "trino",
         "databricks",
+        "athena",
     ],
     reason="Users can implement this with ibis.row_number(): https://github.com/ibis-project/ibis/issues/9486",
 )

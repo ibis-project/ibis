@@ -16,6 +16,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     MySQLOperationalError,
     OracleDatabaseError,
+    PyAthenaOperationalError,
     PyDeltaTableError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -139,9 +140,9 @@ def test_column_to_pyarrow_table_schema(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "athena"],
     raises=AssertionError,
-    reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
+    reason="backend doesn't respect chunk_size parameter",
 )
 def test_table_pyarrow_batch_chunk_size(awards_players):
     with awards_players.to_pyarrow_batches(limit=2050, chunk_size=2048) as batch_reader:
@@ -154,9 +155,9 @@ def test_table_pyarrow_batch_chunk_size(awards_players):
 
 @pytest.mark.notimpl(["datafusion", "flink"])
 @pytest.mark.notyet(
-    ["clickhouse"],
+    ["clickhouse", "athena"],
     raises=AssertionError,
-    reason="clickhouse connect doesn't seem to respect `max_block_size` parameter",
+    reason="backend doesn't respect chunk_size parameter",
 )
 def test_column_pyarrow_batch_chunk_size(awards_players):
     with awards_players.awardID.to_pyarrow_batches(
@@ -281,6 +282,7 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
         "sqlite",
         "trino",
         "databricks",
+        "athena",
     ],
     reason="no partitioning support",
 )
@@ -381,6 +383,7 @@ def test_table_to_csv_writer_kwargs(delimiter, tmp_path, awards_players):
                 pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
                 pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError),
                 pytest.mark.notyet(["trino"], raises=TrinoUserError),
+                pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
                 pytest.mark.notyet(["oracle"], raises=OracleDatabaseError),
                 pytest.mark.notyet(["mysql"], raises=MySQLOperationalError),
                 pytest.mark.notyet(
@@ -425,6 +428,7 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
         "exasol",
         "druid",
         "databricks",  # feels a bit weird given it's their format ¯\_(ツ)_/¯
+        "athena",
     ],
     raises=NotImplementedError,
     reason="read_delta not yet implemented",
@@ -462,6 +466,7 @@ def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
 @pytest.mark.notimpl(
     ["databricks"], raises=AssertionError, reason="Only the devil knows"
 )
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_arrow_timestamp_with_time_zone(alltypes):
     from ibis.formats.pyarrow import PyArrowType
 
