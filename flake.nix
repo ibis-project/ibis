@@ -143,7 +143,6 @@
           inherit shellHook;
 
           PYSPARK_PYTHON = "${env}/bin/python";
-          AWS_PROFILE = "ibis-testing";
 
           # needed for mssql+pyodbc
           ODBCSYSINI = pkgs.writeTextDir "odbcinst.ini" ''
