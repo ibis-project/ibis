@@ -568,6 +568,13 @@ def string_join(op, **kw):
     return pl.concat_str(args, separator=sep)
 
 
+@translate.register(ops.ArrayStringJoin)
+def array_string_join(op, **kw):
+    arg = translate(op.arg, **kw)
+    sep = _literal_value(op.sep)
+    return arg.list.join(sep)
+
+
 @translate.register(ops.Substring)
 def string_substring(op, **kw):
     arg = translate(op.arg, **kw)
