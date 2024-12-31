@@ -829,7 +829,7 @@ def test_capitalize(con, inp, expected):
     raises=(com.OperationNotDefinedError, com.UnsupportedBackendType),
 )
 @pytest.mark.notimpl(
-    ["polars", "oracle", "flink"],
+    ["oracle", "flink"],
     raises=com.OperationNotDefinedError,
 )
 def test_array_string_join(con):
