@@ -1468,6 +1468,15 @@ def execute_timestamp_range(op, **kw):
     return pl.datetime_ranges(start, stop, f"{step}{unit}", closed="left")
 
 
+@translate.register(ops.TimeFromHMS)
+def execute_time_from_hms(op, **kw):
+    return pl.time(
+        hour=translate(op.hours, **kw),
+        minute=translate(op.minutes, **kw),
+        second=translate(op.seconds, **kw),
+    )
+
+
 @translate.register(ops.DropColumns)
 def execute_drop_columns(op, **kw):
     parent = translate(op.parent, **kw)
