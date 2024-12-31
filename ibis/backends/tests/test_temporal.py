@@ -1535,7 +1535,7 @@ TIME_BACKEND_TYPES = {
 
 
 @pytest.mark.notimpl(
-    ["datafusion", "pyspark", "polars", "mysql", "oracle", "databricks"],
+    ["datafusion", "pyspark", "mysql", "oracle", "databricks"],
     raises=com.OperationNotDefinedError,
 )
 @pytest.mark.notyet(
