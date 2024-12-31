@@ -1589,6 +1589,7 @@ def test_scalar_round_is_integer(con):
     ],
 )
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError)
+@pytest.mark.notimpl(["flink"], raises=NotImplementedError)
 def test_memtable_decimal(con, numbers):
     schema = ibis.schema(dict(numbers=dt.Decimal(38, 9)))
     t = ibis.memtable({"numbers": numbers}, schema=schema)

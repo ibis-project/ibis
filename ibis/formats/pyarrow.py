@@ -327,12 +327,12 @@ class PyArrowData(DataMapper):
     @classmethod
     def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
         desired_schema = PyArrowSchema.from_ibis(schema)
-        pa_schema = table.schema
-
-        if pa_schema != desired_schema:
-            return table.cast(desired_schema, safe=False)
-        else:
+        if table.schema == desired_schema:
             return table
+        arrays = [
+            cls.convert_column(table[name], dtype) for name, dtype in schema.items()
+        ]
+        return pa.Table.from_arrays(arrays, names=list(schema.keys()))
 
 
 class PyArrowTableProxy(TableProxy[V]):
