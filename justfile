@@ -78,11 +78,6 @@ backend-doctests backend *args:
         "${args[@]}"
     fi
 
-# lint code
-lint:
-    ruff format -q . --check
-    ruff check .
-
 # run the test suite for one or more backends
 test +backends:
     #!/usr/bin/env bash
