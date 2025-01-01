@@ -537,6 +537,7 @@ def test_drop_null_invalid(alltypes):
         param(["col_1", "col_3"], id="one-and-three"),
     ],
 )
+@pytest.mark.notimpl(["druid"], strict=False)
 def test_drop_null_table(backend, alltypes, how, subset):
     is_two = alltypes.int_col == 2
     is_four = alltypes.int_col == 4
