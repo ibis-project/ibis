@@ -262,7 +262,7 @@ docs = [
   "altair>=5.0.1,<6",
   # pin griffe until https://github.com/ibis-project/ibis/pull/9865 is
   # addressed
-  "griffe<1",
+  "griffe<2",
   "ipykernel>=6.25.1,<7",
   "itables>=1.6.3,<2.3",
   "nbclient>=0.8.0,<1",

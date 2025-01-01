@@ -1857,14 +1857,14 @@ wheels = [
 
 [[package]]
 name = "griffe"
-version = "0.49.0"
+version = "1.5.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/93/61/7ecb30d0f246f1fc378536e53d2fe523ee8e0a327e45a6cfc79ae1412a3e/griffe-0.49.0.tar.gz", hash = "sha256:a7e1235c27d8139e0fd24a5258deef6061bc876a9fda8117a5cf7b53ee940a91", size = 377276 }
+sdist = { url = "https://files.pythonhosted.org/packages/22/9b/0bc9d53ed6628aae43223dd3c081637da54f66ed17a8c1d9fd36ee5da244/griffe-1.5.4.tar.gz", hash = "sha256:073e78ad3e10c8378c2f798bd4ef87b92d8411e9916e157fd366a17cc4fd4e52", size = 389376 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/7e/79c1337f56a4124eec149aaf23819430632faedc247e902fe4b9ccf03f65/griffe-0.49.0-py3-none-any.whl", hash = "sha256:c0d505f2a444ac342b22f4647d6444c8db64964b6a379c14f401fc467c0741a3", size = 143668 },
+    { url = "https://files.pythonhosted.org/packages/7c/29/d0f156c076ec71eb485e70cbcde4872e3c045cda965a48d1d938aa3d9f76/griffe-1.5.4-py3-none-any.whl", hash = "sha256:ed33af890586a5bebc842fcb919fc694b3dc1bc55b7d9e0228de41ce566b4a1d", size = 128102 },
 ]
 
 [[package]]
@@ -2405,7 +2405,7 @@ dev = [
 ]
 docs = [
     { name = "altair", specifier = ">=5.0.1,<6" },
-    { name = "griffe", specifier = "<1" },
+    { name = "griffe", specifier = "<2" },
     { name = "ipykernel", specifier = ">=6.25.1,<7" },
     { name = "itables", specifier = ">=1.6.3,<2.3" },
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
