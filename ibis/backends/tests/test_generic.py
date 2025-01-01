@@ -545,11 +545,17 @@ def test_drop_null_table(backend, alltypes, how, subset):
         col_1=is_two.ifelse(ibis.null(), alltypes.float_col),
         col_2=is_four.ifelse(ibis.null(), alltypes.float_col),
         col_3=(is_two | is_four).ifelse(ibis.null(), alltypes.float_col),
-    ).select("col_1", "col_2", "col_3")
+    ).select("id", "col_1", "col_2", "col_3")
 
     table_pandas = table.execute()
-    result = table.drop_null(subset, how).execute().reset_index(drop=True)
-    expected = table_pandas.dropna(how=how, subset=subset).reset_index(drop=True)
+    result = (
+        table.drop_null(subset, how).order_by("id").execute().reset_index(drop=True)
+    )
+    expected = (
+        table_pandas.dropna(how=how, subset=subset)
+        .sort_values(["id"])
+        .reset_index(drop=True)
+    )
 
     backend.assert_frame_equal(result, expected)
 
