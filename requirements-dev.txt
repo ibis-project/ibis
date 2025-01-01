@@ -86,7 +86,7 @@ google-resumable-media==2.7.2
 googleapis-common-protos==1.66.0
 graphviz==0.20.3
 greenlet==3.1.1 ; (python_full_version < '3.13' and platform_machine == 'AMD64') or (python_full_version < '3.13' and platform_machine == 'WIN32') or (python_full_version < '3.13' and platform_machine == 'aarch64') or (python_full_version < '3.13' and platform_machine == 'amd64') or (python_full_version < '3.13' and platform_machine == 'ppc64le') or (python_full_version < '3.13' and platform_machine == 'win32') or (python_full_version < '3.13' and platform_machine == 'x86_64')
-griffe==0.49.0
+griffe==1.5.4
 grpcio==1.68.1
 grpcio-status==1.68.1
 h11==0.14.0
@@ -202,7 +202,7 @@ pyjwt==2.10.1
 pyodbc==5.2.0
 pyogrio==0.10.0
 pyopenssl==24.3.0
-pyparsing==3.2.0
+pyparsing==3.2.1
 pyproj==3.7.0
 pyspark==3.5.4
 pytest==8.3.4
