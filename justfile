@@ -156,6 +156,32 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     curl -qSsL -o "${jar}" "${url}"
     ls "${jar}"
 
+# pull images
+pull *backends:
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    backends=({{ backends }})
+    buildable=()
+    pullable=()
+
+    for backend in "${backends[@]}"; do
+        if [ "${backend}" = "flink" -o "${backend}" = "postgres" ]; then
+            buildable+=("${backend}")
+        else
+            pullable+=("${backend}")
+        fi
+    done
+
+    if [ "${#backends[@]}" -eq 0 ]; then
+        docker compose pull --ignore-buildable
+        docker compose build "${buildable[@]}" --pull
+    elif [ "${#buildable[@]}" -gt 0 ]; then
+        docker compose build "${buildable[@]}" --pull
+    elif [ "${#pullable[@]}" -gt 0 ]; then
+        docker compose pull "${pullable[@]}" --ignore-buildable
+    fi
+
 # start backends using docker compose; no arguments starts all backends
 up *backends:
     #!/usr/bin/env bash
