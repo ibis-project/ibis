@@ -51,9 +51,9 @@ update *packages:
     yj -tj < pyproject.toml | jq -rcM '.project["entry-points"]["ibis.backends"] | keys | sort[]'
 
 # format code
-fmt:
-    ruff format .
-    ruff check --fix .
+@fmt:
+    ruff format --quiet .
+    ruff check --quiet --fix .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:
