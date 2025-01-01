@@ -51,9 +51,9 @@ update *packages:
     yj -tj < pyproject.toml | jq -rcM '.project["entry-points"]["ibis.backends"] | keys | sort[]'
 
 # format code
-fmt:
-    ruff format .
-    ruff check --fix .
+@fmt:
+    ruff format --quiet .
+    ruff check --quiet --fix .
 
 # run all non-backend tests; additional arguments are forwarded to pytest
 check *args:
@@ -77,11 +77,6 @@ backend-doctests backend *args:
     else
         "${args[@]}"
     fi
-
-# lint code
-lint:
-    ruff format -q . --check
-    ruff check .
 
 # run the test suite for one or more backends
 test +backends:
@@ -155,6 +150,32 @@ download-iceberg-jar pyspark scala="2.12" iceberg="1.6.1":
     url="https://search.maven.org/remotecontent?filepath=org/apache/iceberg/iceberg-spark-runtime-{{ pyspark }}_{{ scala }}/{{ iceberg }}/${jar}"
     curl -qSsL -o "${jar}" "${url}"
     ls "${jar}"
+
+# pull images
+pull *backends:
+    #!/usr/bin/env bash
+    set -eo pipefail
+
+    backends=({{ backends }})
+    buildable=()
+    pullable=()
+
+    for backend in "${backends[@]}"; do
+        if [ "${backend}" = "flink" -o "${backend}" = "postgres" ]; then
+            buildable+=("${backend}")
+        else
+            pullable+=("${backend}")
+        fi
+    done
+
+    if [ "${#backends[@]}" -eq 0 ]; then
+        docker compose pull --ignore-buildable
+        docker compose build "${buildable[@]}" --pull
+    elif [ "${#buildable[@]}" -gt 0 ]; then
+        docker compose build "${buildable[@]}" --pull
+    elif [ "${#pullable[@]}" -gt 0 ]; then
+        docker compose pull "${pullable[@]}" --ignore-buildable
+    fi
 
 # start backends using docker compose; no arguments starts all backends
 up *backends:
