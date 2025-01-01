@@ -19,7 +19,9 @@ if TYPE_CHECKING:
     from ibis.backends import BaseBackend
 
 
-IBIS_ATHENA_S3_STAGING_DIR = env.get("IBIS_ATHENA_S3_STAGING_DIR", "s3://ibis-testing/")
+IBIS_ATHENA_S3_STAGING_DIR = env.get(
+    "IBIS_ATHENA_S3_STAGING_DIR", "s3://aws-athena-query-results-ibis-testing/"
+)
 AWS_REGION = env.get("AWS_REGION", "us-east-2")
 AWS_PROFILE = env.get("AWS_PROFILE")
 CONNECT_ARGS = dict(
