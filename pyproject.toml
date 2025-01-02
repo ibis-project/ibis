@@ -239,7 +239,7 @@ dev = [
 tests = [
   "cloudpickle",
   "filelock>=3.7.0,<4",
-  "fsspec<2024.12.1",
+  "fsspec[s3]<2024.12.1",
   "hypothesis>=6.58.0,<7",
   "packaging>=21.3,<25",
   "pytest>=8.2.0,<9",
@@ -256,7 +256,6 @@ tests = [
   "pytest-xdist>=2.3.0,<4",
   "requests>=2,<3",
   "tomli>=2.0.1,<3",
-  "s3fs>=2024.10.0",
 ]
 docs = [
   "altair>=5.0.1,<6",

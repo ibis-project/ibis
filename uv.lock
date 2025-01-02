@@ -731,6 +731,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/fc/55/96142937f66150805c25c4d0f31ee4132fd33497753400734f9dfdcbdc66/bleach-6.2.0-py3-none-any.whl", hash = "sha256:117d9c6097a7c3d22fd578fcd8d35ff1e125df6736f554da4e432fdd63f31e5e", size = 163406 },
 ]
 
+[package.optional-dependencies]
+css = [
+    { name = "tinycss2" },
+]
+
 [[package]]
 name = "boto3"
 version = "1.35.88"
@@ -2223,7 +2228,7 @@ docs = [
 tests = [
     { name = "cloudpickle" },
     { name = "filelock" },
-    { name = "fsspec" },
+    { name = "fsspec", extra = ["s3"] },
     { name = "hypothesis" },
     { name = "packaging" },
     { name = "pytest" },
@@ -2239,7 +2244,6 @@ tests = [
     { name = "pytest-timeout" },
     { name = "pytest-xdist" },
     { name = "requests" },
-    { name = "s3fs" },
     { name = "tomli" },
 ]
 
@@ -2427,7 +2431,7 @@ docs = [
 tests = [
     { name = "cloudpickle" },
     { name = "filelock", specifier = ">=3.7.0,<4" },
-    { name = "fsspec", specifier = "<2024.12.1" },
+    { name = "fsspec", extras = ["s3"], specifier = "<2024.12.1" },
     { name = "hypothesis", specifier = ">=6.58.0,<7" },
     { name = "packaging", specifier = ">=21.3,<25" },
     { name = "pytest", specifier = ">=8.2.0,<9" },
@@ -2443,7 +2447,6 @@ tests = [
     { name = "pytest-timeout", specifier = ">=2.3.1,<3" },
     { name = "pytest-xdist", specifier = ">=2.3.0,<4" },
     { name = "requests", specifier = ">=2,<3" },
-    { name = "s3fs", specifier = ">=2024.10.0" },
     { name = "tomli", specifier = ">=2.0.1,<3" },
 ]
 
@@ -3353,11 +3356,11 @@ wheels = [
 
 [[package]]
 name = "nbconvert"
-version = "7.16.4"
+version = "7.16.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "bleach" },
+    { name = "bleach", extra = ["css"] },
     { name = "defusedxml" },
     { name = "jinja2" },
     { name = "jupyter-core" },
@@ -3369,12 +3372,11 @@ dependencies = [
     { name = "packaging" },
     { name = "pandocfilters" },
     { name = "pygments" },
-    { name = "tinycss2" },
     { name = "traitlets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/af/e8/ba521a033b21132008e520c28ceb818f9f092da5f0261e94e509401b29f9/nbconvert-7.16.4.tar.gz", hash = "sha256:86ca91ba266b0a448dc96fa6c5b9d98affabde2867b363258703536807f9f7f4", size = 854422 }
+sdist = { url = "https://files.pythonhosted.org/packages/46/2c/d026c0367f2be2463d4c2f5b538e28add2bc67bc13730abb7f364ae4eb8b/nbconvert-7.16.5.tar.gz", hash = "sha256:c83467bb5777fdfaac5ebbb8e864f300b277f68692ecc04d6dab72f2d8442344", size = 856367 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b8/bb/bb5b6a515d1584aa2fd89965b11db6632e4bdc69495a52374bcc36e56cfa/nbconvert-7.16.4-py3-none-any.whl", hash = "sha256:05873c620fe520b6322bf8a5ad562692343fe3452abda5765c7a34b7d1aa3eb3", size = 257388 },
+    { url = "https://files.pythonhosted.org/packages/8f/9e/2dcc9fe00cf55d95a8deae69384e9cea61816126e345754f6c75494d32ec/nbconvert-7.16.5-py3-none-any.whl", hash = "sha256:e12eac052d6fd03040af4166c563d76e7aeead2e9aadf5356db552a1784bd547", size = 258061 },
 ]
 
 [[package]]
@@ -3789,7 +3791,7 @@ wheels = [
 
 [[package]]
 name = "plotnine"
-version = "0.14.4"
+version = "0.14.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "matplotlib" },
@@ -3799,9 +3801,9 @@ dependencies = [
     { name = "scipy" },
     { name = "statsmodels" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/00/a6/29b7451fefb61fbb44ff9b42b2657155218598cfd458405c38619483937f/plotnine-0.14.4.tar.gz", hash = "sha256:634d7168bf6f5c97e810083718aaa4330fb10f32e0e3828746a678cbd461305a", size = 6424541 }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/0e/618bfa724ad19418c83eb22cdc4332dc69bb67f47094bd013ffe15e188d2/plotnine-0.14.5.tar.gz", hash = "sha256:9e75969e8e10d8d770a4be36d10e075cc10b88ca6fcc99e36ada53436fb5653f", size = 6424617 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9c/c1/a2953385c0f811cf03e9379c24365b8a42e25deb589adb256a119f467305/plotnine-0.14.4-py3-none-any.whl", hash = "sha256:b0b8a855ccd1b0326bb225c617f8f90f426479d7e0ae142c7c7b9584764ca837", size = 1301176 },
+    { url = "https://files.pythonhosted.org/packages/4d/c5/7cfda7ba9fa02243367fbfb4880b6de8039266f22c47c2dbbd39b6adc46f/plotnine-0.14.5-py3-none-any.whl", hash = "sha256:4a8bc4360732dd69a0263def4abab285ed8f0f4386186f1e44c642f2cea79b88", size = 1301197 },
 ]
 
 [[package]]
