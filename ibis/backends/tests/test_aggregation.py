@@ -1780,3 +1780,16 @@ def test_rollup(con, backend, grouping_set_table):
     )
 
     backend.assert_frame_equal(result, expected)
+
+
+def test_grouping_empty_table(con, backend):
+    # TODO(cpcloud): group_id doesn't allow string columns
+    t = ibis.memtable({"c1": []}, schema={"c1": "int"})
+    expr = (
+        t.group_by(ibis.cube("c1"))
+        .agg(gid=lambda t: ibis.group_id(t.c1))
+        .order_by(s.first())
+    )
+    result = con.to_pandas(expr)
+    expected = pd.DataFrame({"c1": [None], "gid": [1]})
+    backend.assert_frame_equal(result, expected)
