@@ -10,6 +10,7 @@ from pytest import param
 import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
+import ibis.selectors as s
 from ibis import _
 from ibis import literal as L
 from ibis.backends.tests.errors import (
@@ -1736,3 +1737,46 @@ def test_group_by_scalar(alltypes, df, value):
     result = expr.execute()
     n = result["n"].values[0].item()
     assert n == len(df)
+
+
+@pytest.fixture(scope="session")
+def grouping_set_table():
+    return ibis.memtable(
+        {
+            "a": [1, 1, 2, 2, 3, 5],
+            "b": ["a", "a", "b", "a", "a", "c"],
+            "c": [12, 10, 5, 7, 5, 2],
+        }
+    )
+
+
+def test_cube(con, backend, grouping_set_table):
+    expr = (
+        grouping_set_table.group_by(ibis.cube("b"))
+        .agg(sum_a=lambda t: t.a.sum())
+        .order_by(s.all())
+    )
+
+    result = con.to_pandas(expr)
+    expected = pd.DataFrame({"b": ["a", "b", "c", None], "sum_a": [7, 2, 5, 14]})
+
+    backend.assert_frame_equal(result, expected)
+
+
+def test_rollup(con, backend, grouping_set_table):
+    expr = (
+        grouping_set_table.group_by(ibis.rollup("b", "c"))
+        .agg(sum_a=lambda t: t.a.sum())
+        .order_by(s.all())
+    )
+
+    result = con.to_pandas(expr)
+    expected = pd.DataFrame(
+        {
+            "b": ["a"] * 5 + ["b"] * 2 + ["c"] * 2 + [None],
+            "c": [5, 7, 10, 12, None, 5, None, 2, None, None],
+            "sum_a": [3, 2, 1, 1, 7, 2, 2, 5, 5, 14],
+        }
+    )
+
+    backend.assert_frame_equal(result, expected)
