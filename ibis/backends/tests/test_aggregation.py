@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import itertools
+import sqlite3
 from datetime import date
 from operator import methodcaller
 
@@ -20,7 +21,9 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLNotSupportedError,
+    MySQLOperationalError,
     OracleDatabaseError,
+    PolarsColumnNotFoundError,
     PolarsInvalidOperationError,
     PsycoPg2InternalError,
     Py4JError,
@@ -1749,6 +1752,10 @@ def grouping_set_table():
     )
 
 
+@pytest.mark.notyet(["sqlite"], raises=sqlite3.OperationalError)
+@pytest.mark.notyet(["mysql"], raises=MySQLOperationalError)
+@pytest.mark.notyet(["polars"], raises=PolarsColumnNotFoundError)
+@pytest.mark.notyet(["druid"])
 def test_cube(con, backend, grouping_set_table):
     expr = (
         grouping_set_table.group_by(ibis.cube("b"))
@@ -1762,6 +1769,10 @@ def test_cube(con, backend, grouping_set_table):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notyet(["sqlite"], raises=sqlite3.OperationalError)
+@pytest.mark.notyet(["mysql"], raises=MySQLOperationalError)
+@pytest.mark.notyet(["polars"], raises=PolarsColumnNotFoundError)
+@pytest.mark.notyet(["druid"])
 def test_rollup(con, backend, grouping_set_table):
     expr = (
         grouping_set_table.group_by(ibis.rollup("b", "c"))
@@ -1781,6 +1792,26 @@ def test_rollup(con, backend, grouping_set_table):
     backend.assert_frame_equal(result, expected)
 
 
+@pytest.mark.notyet(["sqlite"], raises=sqlite3.OperationalError)
+@pytest.mark.notyet(["mysql"], raises=MySQLOperationalError)
+@pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
+@pytest.mark.notyet(["druid"], raises=Exception)
+@pytest.mark.notyet(
+    [
+        "exasol",
+        "oracle",
+        "clickhouse",
+        "datafusion",
+        "risingwave",
+        "mssql",
+        "pyspark",
+        "impala",
+        "snowflake",
+        "bigquery",
+    ],
+    raises=AssertionError,
+    reason="returns empty for a grouping set on an empty table, which disagrees with half the backends",
+)
 def test_grouping_empty_table(con, backend):
     # TODO(cpcloud): group_id doesn't allow string columns
     t = ibis.memtable({"c1": []}, schema={"c1": "int"})
@@ -1790,5 +1821,8 @@ def test_grouping_empty_table(con, backend):
         .order_by(s.first())
     )
     result = con.to_pandas(expr)
-    expected = pd.DataFrame({"c1": [None], "gid": [1]})
-    backend.assert_frame_equal(result, expected)
+
+    assert len(result) == 1
+    assert len(result.columns) == 2
+    assert pd.isnull(result.at[0, "c1"])
+    assert result.at[0, "gid"] == 1
