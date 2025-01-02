@@ -6,43 +6,50 @@ import sys
 from os import environ as env
 from typing import TYPE_CHECKING, Any
 
+import pytest
 import sqlglot as sg
 import sqlglot.expressions as sge
+from sqlglot.dialects import Athena
 
 import ibis
 from ibis.backends.conftest import TEST_TABLES
 from ibis.backends.tests.base import BackendTest
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     import s3fs
 
     from ibis.backends import BaseBackend
 
 
+pq = pytest.importorskip("pyarrow.parquet")
+
+
 IBIS_ATHENA_S3_STAGING_DIR = env.get(
-    "IBIS_ATHENA_S3_STAGING_DIR", "s3://aws-athena-query-results-ibis-testing/"
+    "IBIS_ATHENA_S3_STAGING_DIR", "s3://aws-athena-query-results-ibis-testing"
 )
 AWS_REGION = env.get("AWS_REGION", "us-east-2")
 AWS_PROFILE = env.get("AWS_PROFILE")
 CONNECT_ARGS = dict(
-    s3_staging_dir=IBIS_ATHENA_S3_STAGING_DIR,
+    s3_staging_dir=f"{IBIS_ATHENA_S3_STAGING_DIR}/",
     region_name=AWS_REGION,
     profile_name=AWS_PROFILE,
 )
 
 
-def create_table(con, *, fs: s3fs.S3FileSystem, file: str, folder: str) -> None:
-    import pyarrow.parquet as pq
-
+def create_table(con, *, fs: s3fs.S3FileSystem, file: Path, folder: str) -> None:
     from ibis.formats.pyarrow import PyArrowSchema
 
     arrow_schema = pq.read_metadata(file).schema.to_arrow_schema()
-    schema = PyArrowSchema.to_ibis(arrow_schema).to_sqlglot("athena")
+    ibis_schema = PyArrowSchema.to_ibis(arrow_schema)
+    sg_schema = ibis_schema.to_sqlglot(Athena)
     name = file.with_suffix("").name
 
     ddl = sge.Create(
         kind="TABLE",
-        this=sge.Schema(this=sg.table(name), expressions=schema),
+        exists=True,
+        this=sge.Schema(this=sg.table(name), expressions=sg_schema),
         properties=sge.Properties(
             expressions=[
                 sge.ExternalProperty(),
@@ -54,11 +61,9 @@ def create_table(con, *, fs: s3fs.S3FileSystem, file: str, folder: str) -> None:
 
     fs.put(str(file), f"{folder.removeprefix('s3://')}/{name}/{file.name}")
 
-    drop_query = sge.Drop(kind="TABLE", this=sg.table(name), exists=True).sql("athena")
-    create_query = ddl.sql("athena")
+    create_query = ddl.sql(Athena)
 
     with con.cursor() as cur:
-        cur.execute(drop_query)
         cur.execute(create_query)
 
 
@@ -66,39 +71,30 @@ class TestConf(BackendTest):
     supports_map = False
     supports_json = False
     supports_structs = False
+
     driver_supports_multiple_statements = False
-    deps = ("pyathena", "s3fs")
+
+    deps = ("pyathena", "fsspec")
 
     def _load_data(self, **_: Any) -> None:
-        import pyathena
-        import s3fs
+        import fsspec
 
-        files = list(self.data_dir.joinpath("parquet").glob("*.parquet"))
+        files = self.data_dir.joinpath("parquet").glob("*.parquet")
 
         user = getpass.getuser()
         python_version = "".join(map(str, sys.version_info[:3]))
         folder = f"{user}_{python_version}"
 
-        fs = s3fs.S3FileSystem()
+        fs = fsspec.filesystem("s3")
 
-        futures = []
+        con = self.connection.con
+        folder = f"{IBIS_ATHENA_S3_STAGING_DIR}/{folder}"
 
-        with (
-            pyathena.connect(**CONNECT_ARGS) as con,
-            concurrent.futures.ThreadPoolExecutor() as executor,
-        ):
-            for file in files:
-                futures.append(
-                    executor.submit(
-                        create_table,
-                        con,
-                        fs=fs,
-                        file=file,
-                        folder=f"{IBIS_ATHENA_S3_STAGING_DIR}{folder}",
-                    )
-                )
-
-            for future in concurrent.futures.as_completed(futures):
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            for future in concurrent.futures.as_completed(
+                executor.submit(create_table, con, fs=fs, file=file, folder=folder)
+                for file in files
+            ):
                 future.result()
 
     @staticmethod
