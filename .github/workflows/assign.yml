@@ -10,6 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.comment.body == '/take'
     steps:
-      - uses: pozil/auto-assign-issue@v2.1.1
+      - uses: pozil/auto-assign-issue@v2.1.2
         with:
           assignees: ${{ github.event.comment.user.login }}
