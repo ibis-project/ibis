@@ -2146,7 +2146,7 @@ polars = [
 postgres = [
     { name = "numpy" },
     { name = "pandas" },
-    { name = "psycopg2" },
+    { name = "psycopg" },
     { name = "pyarrow" },
     { name = "pyarrow-hotfix" },
     { name = "rich" },
@@ -2318,7 +2318,7 @@ requires-dist = [
     { name = "parsy", specifier = ">=2" },
     { name = "pins", extras = ["gcs"], marker = "extra == 'examples'", specifier = ">=0.8.3,<1" },
     { name = "polars", marker = "extra == 'polars'", specifier = ">=1,<2" },
-    { name = "psycopg2", marker = "extra == 'postgres'", specifier = ">=2.8.4,<3" },
+    { name = "psycopg", marker = "extra == 'postgres'", specifier = ">=3.2.0,<4" },
     { name = "psycopg2", marker = "extra == 'risingwave'", specifier = ">=2.8.4,<3" },
     { name = "pyarrow", marker = "extra == 'athena'", specifier = ">=10.0.1" },
     { name = "pyarrow", marker = "extra == 'bigquery'", specifier = ">=10.0.1" },
@@ -4005,6 +4005,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/47/da/99f4345d4ddf2845cb5b5bd0d93d554e84542d116934fde07a0c50bd4e9f/psutil-6.1.1-cp36-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:33431e84fee02bc84ea36d9e2c4a6d395d479c9dd9bba2376c1f6ee8f3a4e0b3", size = 289017 },
     { url = "https://files.pythonhosted.org/packages/38/53/bd755c2896f4461fd4f36fa6a6dcb66a88a9e4b9fd4e5b66a77cf9d4a584/psutil-6.1.1-cp37-abi3-win32.whl", hash = "sha256:eaa912e0b11848c4d9279a93d7e2783df352b082f40111e078388701fd479e53", size = 250602 },
     { url = "https://files.pythonhosted.org/packages/7b/d7/7831438e6c3ebbfa6e01a927127a6cb42ad3ab844247f3c5b96bea25d73d/psutil-6.1.1-cp37-abi3-win_amd64.whl", hash = "sha256:f35cfccb065fff93529d2afb4a2e89e363fe63ca1e4a5da22b603a85833c2649", size = 254444 },
+]
+
+[[package]]
+name = "psycopg"
+version = "3.2.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
+    { name = "tzdata", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d1/ad/7ce016ae63e231575df0498d2395d15f005f05e32d3a2d439038e1bd0851/psycopg-3.2.3.tar.gz", hash = "sha256:a5764f67c27bec8bfac85764d23c534af2c27b893550377e37ce59c12aac47a2", size = 155550 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ce/21/534b8f5bd9734b7a2fcd3a16b1ee82ef6cad81a4796e95ebf4e0c6a24119/psycopg-3.2.3-py3-none-any.whl", hash = "sha256:644d3973fe26908c73d4be746074f6e5224b03c1101d302d9a53bf565ad64907", size = 197934 },
 ]
 
 [[package]]

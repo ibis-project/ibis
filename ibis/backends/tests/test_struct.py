@@ -13,7 +13,7 @@ from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     PolarsColumnNotFoundError,
     PsycoPg2InternalError,
-    PsycoPg2SyntaxError,
+    PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
@@ -138,7 +138,7 @@ def test_collect_into_struct(alltypes):
 
 
 @pytest.mark.notimpl(
-    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPgSyntaxError
 )
 @pytest.mark.notimpl(
     ["risingwave"],
@@ -155,7 +155,7 @@ def test_field_access_after_case(con):
 
 
 @pytest.mark.notimpl(
-    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPgSyntaxError
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
 @pytest.mark.parametrize(
@@ -242,7 +242,7 @@ def test_keyword_fields(con, nullable):
 
 @pytest.mark.notyet(
     ["postgres"],
-    raises=PsycoPg2SyntaxError,
+    raises=PsycoPgSyntaxError,
     reason="sqlglot doesn't implement structs for postgres correctly",
 )
 @pytest.mark.notyet(
