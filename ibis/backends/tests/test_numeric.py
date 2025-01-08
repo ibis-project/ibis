@@ -22,8 +22,8 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     OracleDatabaseError,
-    PsycoPg2DivisionByZero,
     PsycoPg2InternalError,
+    PsycoPgDivisionByZero,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -1323,7 +1323,7 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
-@pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
+@pytest.mark.notyet(["postgres"], raises=PsycoPgDivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):

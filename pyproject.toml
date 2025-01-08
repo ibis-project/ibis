@@ -163,7 +163,7 @@ polars = [
   "rich>=12.4.4,<14",
 ]
 postgres = [
-  "psycopg2>=2.8.4,<3",
+  "psycopg>=3.2.0,<4",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4,<1",
   "numpy>=1.23.2,<3",

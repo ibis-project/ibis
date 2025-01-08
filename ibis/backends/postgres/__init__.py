@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
-    import psycopg2
+    import psycopg
     import pyarrow as pa
 
 
@@ -90,8 +90,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.connect(**kwargs)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        from psycopg2.extras import execute_batch
-
         schema = op.schema
         if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
             raise exc.IbisTypeError(
@@ -129,7 +127,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         with self.begin() as cur:
             cur.execute(create_stmt_sql)
-            execute_batch(cur, sql, data, 128)
+            cur.executemany(sql, data)
 
     @contextlib.contextmanager
     def begin(self):
@@ -145,14 +143,16 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         finally:
             cursor.close()
 
-    def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
+    def _fetch_from_cursor(
+        self, cursor: psycopg.Cursor, schema: sch.Schema
+    ) -> pd.DataFrame:
         import pandas as pd
 
         from ibis.backends.postgres.converter import PostgresPandasData
 
         try:
             df = pd.DataFrame.from_records(
-                cursor, columns=schema.names, coerce_float=True
+                cursor.fetchall(), columns=schema.names, coerce_float=True
             )
         except Exception:
             # clean up the cursor if we fail to create the DataFrame
@@ -166,7 +166,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @property
     def version(self):
-        version = f"{self.con.server_version:0>6}"
+        version = f"{self.con.info.server_version:0>6}"
         major = int(version[:2])
         minor = int(version[2:4])
         patch = int(version[4:])
@@ -233,17 +233,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
           year            int32
           month           int32
         """
-        import psycopg2
-        import psycopg2.extras
+        import psycopg
+        import psycopg.types.json
 
-        psycopg2.extras.register_default_json(loads=lambda x: x)
+        psycopg.types.json.set_json_loads(loads=lambda x: x)
 
-        self.con = psycopg2.connect(
+        self.con = psycopg.connect(
             host=host,
             port=port,
             user=user,
             password=password,
-            database=database,
+            dbname=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
             **kwargs,
         )
@@ -252,7 +252,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+    def from_connection(cls, con: psycopg.Connection) -> Backend:
         """Create an Ibis client from an existing connection to a PostgreSQL database.
 
         Parameters
@@ -701,8 +701,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             yield result
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
-        import psycopg2
-        import psycopg2.extras
+        import psycopg
+        import psycopg.types
+        import psycopg.types.hstore
 
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
@@ -711,13 +712,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         cursor = con.cursor()
 
         try:
-            # try to load hstore, uuid and ipaddress extensions
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_hstore(cursor)
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_uuid(conn_or_curs=cursor)
-            with contextlib.suppress(psycopg2.ProgrammingError):
-                psycopg2.extras.register_ipaddress(cursor)
+            # try to load hstore
+            with contextlib.suppress(TypeError):
+                type_info = psycopg.types.TypeInfo.fetch(con, "hstore")
+            with contextlib.suppress(psycopg.ProgrammingError, TypeError):
+                psycopg.types.hstore.register_hstore(type_info, cursor)
         except Exception:
             cursor.close()
             raise
