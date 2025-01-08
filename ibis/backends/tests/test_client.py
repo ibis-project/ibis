@@ -32,7 +32,7 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     OracleDatabaseError,
     PsycoPg2InternalError,
-    PsycoPg2UndefinedObject,
+    PsycoPgUndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyODBCProgrammingError,
@@ -725,7 +725,7 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 @pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
-    ["postgres"], raises=PsycoPg2UndefinedObject, reason="no unsigned int types"
+    ["postgres"], raises=PsycoPgUndefinedObject, reason="no unsigned int types"
 )
 @pytest.mark.notyet(
     ["oracle"], raises=OracleDatabaseError, reason="no unsigned int types"

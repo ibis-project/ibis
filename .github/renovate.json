@@ -69,7 +69,7 @@
     },
     {
       "addLabels": ["postgres"],
-      "matchPackageNames": ["/psycopg2/", "/postgres/"]
+      "matchPackageNames": ["/psycopg/", "/postgres/"]
     },
     {
       "addLabels": ["druid"],
@@ -89,7 +89,7 @@
     },
     {
       "addLabels": ["risingwave"],
-      "matchPackageNames": ["/risingwave/"]
+      "matchPackageNames": ["/psycopg2/", "/risingwave/"]
     },
     {
       "addLabels": ["snowflake"],

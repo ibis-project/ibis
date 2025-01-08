@@ -48,7 +48,7 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "postgres"
-    deps = ("psycopg2",)
+    deps = ("psycopg",)
 
     driver_supports_multiple_statements = True
 
