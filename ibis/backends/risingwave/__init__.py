@@ -5,10 +5,9 @@ from __future__ import annotations
 from operator import itemgetter
 from typing import TYPE_CHECKING
 
-import psycopg2
+import psycopg
 import sqlglot as sg
 import sqlglot.expressions as sge
-from psycopg2 import extras
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -110,12 +109,12 @@ class Backend(PostgresBackend):
           month           int32
         """
 
-        self.con = psycopg2.connect(
+        self.con = psycopg.connect(
             host=host,
             port=port,
             user=user,
             password=password,
-            database=database,
+            dbname=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
         )
 
@@ -289,7 +288,7 @@ class Backend(PostgresBackend):
         )
         with self.begin() as cur:
             cur.execute(create_stmt_sql)
-            extras.execute_batch(cur, sql, data, 128)
+            cur.executemany(sql, data)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None

@@ -31,7 +31,7 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
-    PsycoPg2InternalError,
+    PsycoPgInternalError,
     PsycoPgUndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
@@ -415,7 +415,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason='Feature is not yet implemented: column constraints "NOT NULL"',
 )
 def test_nullable_input_output(con, temp_table):
@@ -538,7 +538,7 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="truncate not supported upstream",
 )
 @pytest.mark.notyet(
@@ -584,7 +584,7 @@ def test_insert_no_overwrite_from_expr(
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="truncate not supported upstream",
 )
 def test_insert_overwrite_from_expr(
@@ -608,7 +608,7 @@ def test_insert_overwrite_from_expr(
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="truncate not supported upstream",
 )
 def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
@@ -737,7 +737,7 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="unsigned integers are not supported",
 )
 @pytest.mark.notimpl(
