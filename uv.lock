@@ -2392,7 +2392,7 @@ requires-dist = [
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4,<14" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2,<3" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1,<4" },
-    { name = "sqlglot", specifier = ">=23.4,<26.1" },
+    { name = "sqlglot", specifier = ">=23.4,<26.2" },
     { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321,<1" },
     { name = "typing-extensions", specifier = ">=4.3.0" },
@@ -5456,11 +5456,11 @@ wheels = [
 
 [[package]]
 name = "sqlglot"
-version = "26.0.1"
+version = "26.1.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/99/39/35cee255a3de5a4bfbe8780d200761423bb1949249ff541ba81420eebbf5/sqlglot-26.0.1.tar.gz", hash = "sha256:588cde7739029fda310fb7dd49afdc0a20b79e760e4cd6d5e1cd083e7e458b90", size = 19785413 }
+sdist = { url = "https://files.pythonhosted.org/packages/1b/02/60d542ff60b98ed444176f655a43ecd8c06e9d1f1d38abac3266a41a7eec/sqlglot-26.1.3.tar.gz", hash = "sha256:01fe1a31786e6c7b1ce02470942dfd5fbfd403b7c2d78d9fc4e8aad9eddba2ef", size = 19858552 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/ac/7cf4f8c133cd2cec68937c87322a5052987f3995f21b87e3d545b4d4aa02/sqlglot-26.0.1-py3-none-any.whl", hash = "sha256:ced4967ce3a4a713d35e2037492fbe1a5187936fdfbd72d7b9ace7815c2d2225", size = 437917 },
+    { url = "https://files.pythonhosted.org/packages/71/fe/4521660e276a69f23f7773f52107a1c5ca079cdfaac7c09fb602b60a73c0/sqlglot-26.1.3-py3-none-any.whl", hash = "sha256:e64d696eedb917a0770a10bc0f2a0ce4dffdf95c4fd36cd66e44da3bf2c298c1", size = 439637 },
 ]
 
 [[package]]
@@ -5690,17 +5690,19 @@ wheels = [
 
 [[package]]
 name = "trino"
-version = "0.331.0"
+version = "0.332.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "lz4" },
     { name = "python-dateutil" },
     { name = "pytz" },
     { name = "requests" },
     { name = "tzlocal" },
+    { name = "zstandard" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/80/56716b9ee69e769cd2babc2dfe58d601ea7f244a2e67a7ef02f7fd3bd3df/trino-0.331.0.tar.gz", hash = "sha256:2d9acdf7b19d136c97c98e55599fb9a5556e124282b0a40afb93bdfbb5371708", size = 50851 }
+sdist = { url = "https://files.pythonhosted.org/packages/19/3b/8a4eeee6b2665b8383708d9def34cff22e5ce4fadeb22e6e6b1e43155cbd/trino-0.332.0.tar.gz", hash = "sha256:23fb44d0bafb5175f1111fef5a2f0caf32c751c32a26c0126553777f91bd2f56", size = 54726 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2d/aa/cce7a726e314fbeae9fed8ed5d6bd4af19796286d7ee82f120e3633da74c/trino-0.331.0-py3-none-any.whl", hash = "sha256:4f909e6c2966d23917e2538bc7f342d5dcc6e512102811fb1e53bdaf15bd49e3", size = 53771 },
+    { url = "https://files.pythonhosted.org/packages/c5/d9/f8a65d6e53f39c58acea7cd30ead79b0ecc773659687b1fe1ae74a1b3b34/trino-0.332.0-py3-none-any.whl", hash = "sha256:24ef06c231578cff55b966a585a177d847bcb77a02504ac9c96394676a884952", size = 57321 },
 ]
 
 [[package]]
