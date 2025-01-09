@@ -33,7 +33,7 @@ class TestConf(ServiceBackendTest):
     supports_structs = False
     rounding_method = "half_to_even"
     service_name = "risingwave"
-    deps = ("psycopg2",)
+    deps = ("psycopg",)
 
     @property
     def test_files(self) -> Iterable[Path]:

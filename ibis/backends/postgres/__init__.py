@@ -713,11 +713,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         try:
             # try to load hstore
-            with contextlib.suppress(TypeError):
-                type_info = psycopg.types.TypeInfo.fetch(con, "hstore")
-            with contextlib.suppress(psycopg.ProgrammingError, TypeError):
-                psycopg.types.hstore.register_hstore(type_info, cursor)
-        except Exception:
+            psycopg.types.hstore.register_hstore(
+                psycopg.types.TypeInfo.fetch(con, "hstore"),
+                cursor,
+            )
+        except (psycopg.InternalError, psycopg.ProgrammingError, TypeError):
             cursor.close()
             raise
 

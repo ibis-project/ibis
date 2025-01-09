@@ -7,11 +7,9 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
-import psycopg2
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pandas.api.types import is_float_dtype
-from psycopg2 import extras
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -536,7 +534,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             port=port,
             user=user,
             password=password,
-            database=database,
+            dbname=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
         )
 
@@ -710,7 +708,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
         with self.begin() as cur:
             cur.execute(create_stmt_sql)
-            extras.execute_batch(cur, sql, data, 128)
+            cur.executemany(sql, data)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None

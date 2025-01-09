@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis.util import gen_name
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 RISINGWAVE_TEST_DB = os.environ.get("IBIS_TEST_RISINGWAVE_DATABASE", "dev")
 IBIS_RISINGWAVE_HOST = os.environ.get("IBIS_TEST_RISINGWAVE_HOST", "localhost")

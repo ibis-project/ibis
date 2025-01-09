@@ -14,7 +14,7 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     ImpalaHiveServer2Error,
     MySQLOperationalError,
-    PsycoPg2InternalError,
+    PsycoPgInternalError,
     Py4JJavaError,
     PyDruidProgrammingError,
     PyODBCProgrammingError,
@@ -127,7 +127,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -143,7 +143,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: cume_dist",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -167,7 +167,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -199,7 +199,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
                     ["impala", "mssql"], raises=com.OperationNotDefinedError
                 ),
                 pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPgInternalError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
             ],
         ),
@@ -342,7 +342,7 @@ def test_grouped_bounded_expanding_window(
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -614,7 +614,7 @@ def test_grouped_unbounded_window(backend, alltypes, df, result_fn, expected_fn)
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -643,7 +643,7 @@ def test_simple_ungrouped_unbound_following_window(
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
@@ -671,7 +671,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -692,7 +692,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Unrecognized window function: ntile",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -781,7 +781,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -808,7 +808,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -822,7 +822,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             marks=[
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -852,7 +852,7 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
                 ),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
@@ -1018,7 +1018,7 @@ def test_grouped_bounded_range_window(backend, alltypes, df):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -1070,7 +1070,7 @@ def test_grouped_ordered_window_coalesce(backend, alltypes, df):
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -1140,7 +1140,7 @@ def test_first_last(backend):
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError, reason="bug in Flink")
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="sql parser error: Expected literal int, found: INTERVAL at line:1, column:99",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -1190,7 +1190,7 @@ def test_range_expression_bounds(backend):
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Unrecognized window function: percent_rank",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
@@ -1222,7 +1222,7 @@ def test_rank_followed_by_over_call_merge_frames(backend, alltypes, df):
 @pytest.mark.notimpl(["polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
 )
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)

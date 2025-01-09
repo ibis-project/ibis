@@ -7,7 +7,7 @@ import ibis
 import ibis.common.exceptions as exc
 import ibis.expr.datatypes as dt
 from ibis.backends.tests.errors import (
-    PsycoPg2InternalError,
+    PsycoPgInternalError,
     Py4JJavaError,
     PyAthenaOperationalError,
 )
@@ -51,7 +51,7 @@ mark_notyet_datafusion = pytest.mark.notyet(
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 @pytest.mark.parametrize(
@@ -73,7 +73,7 @@ def test_map_nulls(con, k, v):
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 @pytest.mark.parametrize(
@@ -94,7 +94,7 @@ def test_map_keys_nulls(con, k, v):
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 @pytest.mark.parametrize(
@@ -123,7 +123,7 @@ def test_map_values_nulls(con, map):
 
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 @pytest.mark.parametrize(
@@ -194,7 +194,7 @@ def test_map_get_contains_nulls(con, map, key, method):
 @pytest.mark.notyet("clickhouse", reason="nested types can't be NULL")
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPg2InternalError,
+    raises=PsycoPgInternalError,
     reason="function hstore(character varying[], character varying[]) does not exist",
 )
 @pytest.mark.parametrize(
