@@ -2388,7 +2388,7 @@ requires-dist = [
     { name = "rich", marker = "extra == 'trino'", specifier = ">=12.4.4,<14" },
     { name = "shapely", marker = "extra == 'geospatial'", specifier = ">=2,<3" },
     { name = "snowflake-connector-python", marker = "extra == 'snowflake'", specifier = ">=3.0.2,!=3.3.0b1,<4" },
-    { name = "sqlglot", specifier = ">=23.4,<26.1" },
+    { name = "sqlglot", specifier = ">=23.4,<26.2" },
     { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321,<1" },
     { name = "typing-extensions", specifier = ">=4.3.0" },
@@ -4015,6 +4015,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/33/39/5a9a229bb5414abeb86e33b8fc8143ab0aecce5a7f698a53e31367d30caa/psycopg2-2.9.10-cp311-cp311-win_amd64.whl", hash = "sha256:0435034157049f6846e95103bd8f5a668788dd913a7c30162ca9503fdf542cb4", size = 1163736 },
     { url = "https://files.pythonhosted.org/packages/3d/16/4623fad6076448df21c1a870c93a9774ad8a7b4dd1660223b59082dd8fec/psycopg2-2.9.10-cp312-cp312-win32.whl", hash = "sha256:65a63d7ab0e067e2cdb3cf266de39663203d38d6a8ed97f5ca0cb315c73fe067", size = 1025113 },
     { url = "https://files.pythonhosted.org/packages/66/de/baed128ae0fc07460d9399d82e631ea31a1f171c0c4ae18f9808ac6759e3/psycopg2-2.9.10-cp312-cp312-win_amd64.whl", hash = "sha256:4a579d6243da40a7b3182e0430493dbd55950c493d8c68f4eec0b302f6bbf20e", size = 1163951 },
+    { url = "https://files.pythonhosted.org/packages/ae/49/a6cfc94a9c483b1fa401fbcb23aca7892f60c7269c5ffa2ac408364f80dc/psycopg2-2.9.10-cp313-cp313-win_amd64.whl", hash = "sha256:91fd603a2155da8d0cfcdbf8ab24a2d54bca72795b90d2a3ed2b6da8d979dee2", size = 2569060 },
 ]
 
 [[package]]
@@ -5444,11 +5445,11 @@ wheels = [
 
 [[package]]
 name = "sqlglot"
-version = "26.0.1"
+version = "26.1.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/99/39/35cee255a3de5a4bfbe8780d200761423bb1949249ff541ba81420eebbf5/sqlglot-26.0.1.tar.gz", hash = "sha256:588cde7739029fda310fb7dd49afdc0a20b79e760e4cd6d5e1cd083e7e458b90", size = 19785413 }
+sdist = { url = "https://files.pythonhosted.org/packages/15/39/63ea9ec4d9484bea61204251e77b4fd26a6115d9726a8d7034381d9a429d/sqlglot-26.1.2.tar.gz", hash = "sha256:a3ead475c3f44bcd0e227a8a3897411375480c734a9d44336dd0cd8f268f4806", size = 19856813 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/62/ac/7cf4f8c133cd2cec68937c87322a5052987f3995f21b87e3d545b4d4aa02/sqlglot-26.0.1-py3-none-any.whl", hash = "sha256:ced4967ce3a4a713d35e2037492fbe1a5187936fdfbd72d7b9ace7815c2d2225", size = 437917 },
+    { url = "https://files.pythonhosted.org/packages/41/79/338ea74fa5128211a6507701ea8c40fc8b1a3927fc2b8fad9eeae297b1e6/sqlglot-26.1.2-py3-none-any.whl", hash = "sha256:b7f1f8ffe3a57968f69fac89401b8099f97044e15732f68bac54e606c1f7d375", size = 439580 },
 ]
 
 [[package]]
