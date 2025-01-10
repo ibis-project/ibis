@@ -2419,7 +2419,7 @@ docs = [
     { name = "jupyter-cache", specifier = ">=1.0.0,<2" },
     { name = "jupyterlab", specifier = ">=4.2.5,<5" },
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
-    { name = "jupyterlite-core", specifier = ">=0.3,<0.4" },
+    { name = "jupyterlite-core", specifier = ">=0.3,<0.6" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.3,<0.4" },
     { name = "lonboard", specifier = "==0.10.3" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
