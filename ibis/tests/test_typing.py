@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 from ibis.common.typing import get_type_hints
