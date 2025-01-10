@@ -60,7 +60,11 @@ def get_type_hints(
 
     if include_properties:
         for name in dir(obj):
-            attr = getattr(obj, name)
+            try:
+                attr = getattr(obj, name)
+            except AttributeError:
+                # What else can be done besides skipping and continuing?
+                continue
             if isinstance(attr, property):
                 annots = _get_type_hints(attr.fget, include_extras=include_extras)
                 if return_annot := annots.get("return"):
