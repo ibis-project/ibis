@@ -16,7 +16,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 
 @pytest.mark.parametrize(
@@ -1195,7 +1195,7 @@ def test_string_to_binary_cast(con):
     )
     with con.begin() as c:
         c.execute(sql_string)
-        raw_data = [row[0][0] for row in c.fetchall()]
+        raw_data = [row[0] for row in c.fetchall()]
     expected = pd.Series(raw_data, name=name)
     tm.assert_series_equal(result, expected)
 
@@ -1212,7 +1212,7 @@ def test_string_to_binary_round_trip(con):
     )
     with con.begin() as c:
         c.execute(sql_string)
-        rows = [row[0] for (row,) in c.fetchall()]
+        rows = [row[0] for row in c.fetchall()]
     expected = pd.Series(rows, name=name)
     tm.assert_series_equal(result, expected)
 

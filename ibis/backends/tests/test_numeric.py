@@ -22,8 +22,8 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     OracleDatabaseError,
-    PsycoPg2DivisionByZero,
-    PsycoPg2InternalError,
+    PsycoPgDivisionByZero,
+    PsycoPgInternalError,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -783,7 +783,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -802,7 +802,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1001,7 +1001,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1014,7 +1014,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1053,7 +1053,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
+                    raises=PsycoPgInternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1323,7 +1323,7 @@ def test_floating_mod(backend, alltypes, df):
 )
 @pytest.mark.notyet(["mssql"], raises=PyODBCDataError)
 @pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
-@pytest.mark.notyet(["postgres"], raises=PsycoPg2DivisionByZero)
+@pytest.mark.notyet(["postgres"], raises=PsycoPgDivisionByZero)
 @pytest.mark.notimpl(["exasol"], raises=ExaQueryError)
 @pytest.mark.xfail_version(duckdb=["duckdb<1.1"])
 def test_divide_by_zero(backend, alltypes, df, column, denominator):
