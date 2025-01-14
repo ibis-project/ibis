@@ -1526,9 +1526,9 @@ class Column(Value, _FixedTextJupyterMixin):
         if data_mapper is None:
             from ibis.formats.pandas import PandasData as data_mapper
 
-        assert (
-            len(df.columns) == 1
-        ), "more than one column when converting columnar result DataFrame to Series"
+        assert len(df.columns) == 1, (
+            "more than one column when converting columnar result DataFrame to Series"
+        )
         # in theory we could use df.iloc[:, 0], but there seems to be a bug in
         # older geopandas where df.iloc[:, 0] doesn't return the same kind of
         # object as df.loc[:, column_name] when df is a GeoDataFrame

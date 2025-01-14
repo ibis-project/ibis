@@ -15,11 +15,11 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 
-from impala.error import HiveServer2Error  # noqa: E402
+from impala.error import HiveServer2Error
 
 
 @pytest.fixture
-def temp_view(con) -> str:
+def temp_view(con):
     name = util.gen_name("view")
     yield name
     con.drop_view(name, force=True)

@@ -283,9 +283,9 @@ class PythonToJavaScriptTranslator:
             return "true"
         elif value is False:
             return "false"
-        assert (
-            value is None
-        ), f"value is not True and is not False, must be None, got {value}"
+        assert value is None, (
+            f"value is not True and is not False, must be None, got {value}"
+        )
         return "null"
 
     def visit_Str(self, node):

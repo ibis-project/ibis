@@ -629,9 +629,9 @@ class DuckDBType(SqlglotType):
 
     @classmethod
     def _from_ibis_GeoSpatial(cls, dtype: dt.GeoSpatial):
-        assert (
-            dtype.geotype == "geometry"
-        ), "DuckDB only supports geometry types; geography types are not supported"
+        assert dtype.geotype == "geometry", (
+            "DuckDB only supports geometry types; geography types are not supported"
+        )
         return sge.DataType(this=typecode.GEOMETRY)
 
     _from_ibis_Point = _from_ibis_LineString = _from_ibis_Polygon = (

@@ -2958,7 +2958,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             col_max = lit(None).cast(float)
             col_mode = lit(None).cast(str)
             quantile_values = {
-                f"p{100*q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
+                f"p{100 * q:.6f}".rstrip("0").rstrip("."): lit(None).cast(float)
                 for q in quantile
             }
 
@@ -2969,7 +2969,9 @@ class Table(Expr, _FixedTextJupyterMixin):
                 col_min = col.min().cast(float)
                 col_max = col.max().cast(float)
                 quantile_values = {
-                    f"p{100*q:.6f}".rstrip("0").rstrip("."): col.quantile(q).cast(float)
+                    f"p{100 * q:.6f}".rstrip("0").rstrip("."): col.quantile(q).cast(
+                        float
+                    )
                     for q in quantile
                 }
             elif typ.is_string():

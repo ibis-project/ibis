@@ -9,7 +9,7 @@ from ibis.tests.util import assert_equal
 
 pytest.importorskip("impala")
 
-from impala.error import HiveServer2Error  # noqa: E402
+from impala.error import HiveServer2Error
 
 
 def test_parquet_file_with_name(con, test_data_dir, temp_table):

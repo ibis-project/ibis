@@ -251,8 +251,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_First(self, op, *, arg, where, order_by, include_null):
         if where is not None and include_null:
             raise com.UnsupportedOperationError(
-                "Combining `include_null=True` and `where` is not supported "
-                "by pyspark"
+                "Combining `include_null=True` and `where` is not supported by pyspark"
             )
         out = self.agg.first(arg, where=where, order_by=order_by)
         if not include_null:
@@ -262,8 +261,7 @@ class PySparkCompiler(SQLGlotCompiler):
     def visit_Last(self, op, *, arg, where, order_by, include_null):
         if where is not None and include_null:
             raise com.UnsupportedOperationError(
-                "Combining `include_null=True` and `where` is not supported "
-                "by pyspark"
+                "Combining `include_null=True` and `where` is not supported by pyspark"
             )
         out = self.agg.last(arg, where=where, order_by=order_by)
         if not include_null:

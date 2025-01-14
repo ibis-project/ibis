@@ -98,12 +98,11 @@ class StringValue(Value):
                 raise ValueError("Step can only be 1")
             if start is not None and not isinstance(start, ir.Expr) and start < 0:
                 raise ValueError(
-                    "Negative slicing not yet supported, got start value "
-                    f"of {start:d}"
+                    f"Negative slicing not yet supported, got start value of {start:d}"
                 )
             if stop is not None and not isinstance(stop, ir.Expr) and stop < 0:
                 raise ValueError(
-                    "Negative slicing not yet supported, got stop value " f"of {stop:d}"
+                    f"Negative slicing not yet supported, got stop value of {stop:d}"
                 )
             if start is None and stop is None:
                 return self

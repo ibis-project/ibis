@@ -66,7 +66,7 @@ class TestConf(BackendTest):
             yield (
                 f"""
                 CREATE OR REPLACE TABLE {table} AS
-                SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
+                SELECT * FROM read_parquet('{parquet_dir / f"{table}.parquet"}')
                 """
             )
         if not SANDBOXED:
@@ -74,7 +74,7 @@ class TestConf(BackendTest):
                 yield (
                     f"""
                     CREATE OR REPLACE TABLE {table} AS
-                    SELECT * FROM st_read('{geojson_dir / f'{table}.geojson'}')
+                    SELECT * FROM st_read('{geojson_dir / f"{table}.geojson"}')
                     """
                 )
             for table in TEST_TABLE_GEO_PARQUET:
@@ -82,7 +82,7 @@ class TestConf(BackendTest):
                 yield (
                     f"""
                 CREATE OR REPLACE TABLE {table} AS
-                SELECT * FROM read_parquet('{parquet_dir / f'{table}.parquet'}')
+                SELECT * FROM read_parquet('{parquet_dir / f"{table}.parquet"}')
                 """
                 )
             yield (
