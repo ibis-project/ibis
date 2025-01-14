@@ -23,7 +23,6 @@ import pathlib, js
 penguins_csv_url = "https://storage.googleapis.com/ibis-tutorial-data/penguins.csv"
 pathlib.Path("penguins.csv").write_text(await (await js.fetch(penguins_csv_url)).text())
 del pathlib, js, penguins_csv_url
-%clear
 %pip install 'ibis-framework[duckdb]'
 from ibis.interactive import *
 penguins = ibis.read_csv("penguins.csv")
