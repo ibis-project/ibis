@@ -277,9 +277,9 @@ def test_elementwise_udf(udf_backend, udf_alltypes, udf_df, udf):
     result = expr.execute()
 
     expected_func = getattr(expr.op(), "__func__", getattr(udf, "func", None))
-    assert (
-        expected_func is not None
-    ), f"neither __func__ nor func attributes found on {udf} or expr object"
+    assert expected_func is not None, (
+        f"neither __func__ nor func attributes found on {udf} or expr object"
+    )
 
     expected = expected_func(udf_df["double_col"])
     udf_backend.assert_series_equal(result, expected, check_names=False)
@@ -292,9 +292,9 @@ def test_elementwise_udf_mutate(udf_backend, udf_alltypes, udf_df, udf):
     result = expr.execute()
 
     expected_func = getattr(udf_expr.op(), "__func__", getattr(udf, "func", None))
-    assert (
-        expected_func is not None
-    ), f"neither __func__ nor func attributes found on {udf} or expr object"
+    assert expected_func is not None, (
+        f"neither __func__ nor func attributes found on {udf} or expr object"
+    )
 
     expected = udf_df.assign(incremented=expected_func(udf_df["double_col"]))
     udf_backend.assert_series_equal(result["incremented"], expected["incremented"])

@@ -341,8 +341,7 @@ class Backend(SQLBackend):
                 )
         elif tables or udfs or udas:
             raise com.IntegrityError(
-                f"Database {name} must be empty before "
-                "being dropped, or set force=True"
+                f"Database {name} must be empty before being dropped, or set force=True"
             )
         statement = ddl.DropDatabase(name, must_exist=not force)
         self._safe_exec_sql(statement)

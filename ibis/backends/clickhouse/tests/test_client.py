@@ -369,7 +369,7 @@ def test_create_table_no_syntax_error(con):
 
 
 def test_password_with_bracket():
-    password = f'{os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")}[]'
+    password = f"{os.environ.get('IBIS_TEST_CLICKHOUSE_PASSWORD', '')}[]"
     quoted_pass = quote_plus(password)
     host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
     user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")

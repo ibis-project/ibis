@@ -785,8 +785,7 @@ class Decimal(Numeric, Parametric):
         if precision is not None:
             if not isinstance(precision, numbers.Integral):
                 raise TypeError(
-                    "Decimal type precision must be an integer; "
-                    f"got {type(precision)}"
+                    f"Decimal type precision must be an integer; got {type(precision)}"
                 )
             if precision < 0:
                 raise ValueError("Decimal type precision cannot be negative")

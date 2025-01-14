@@ -31,9 +31,9 @@ def pytest_pyfunc_call(pyfuncitem):
         testargs["backend"] = backend
 
     result = testfunction(**testargs)
-    assert (
-        result is None
-    ), "test function should not return anything, did you mean to use assert?"
+    assert result is None, (
+        "test function should not return anything, did you mean to use assert?"
+    )
     return True
 
 

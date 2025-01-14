@@ -61,9 +61,9 @@ class Renderer(qd.MdRenderer):
                 if expect_failure in first or any(
                     expect_failure in line for line in rest
                 ):
-                    assert (
-                        start and end
-                    ), "expected failure should never occur alongside a skipped doctest example"
+                    assert start and end, (
+                        "expected failure should never occur alongside a skipped doctest example"
+                    )
                     result.append("#| error: true")
 
                 # remove the quartodoc markers from the rendered code

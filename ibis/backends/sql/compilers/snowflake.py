@@ -847,9 +847,9 @@ $$""",
         )
 
     def visit_JoinLink(self, op, *, how, table, predicates):
-        assert (
-            predicates or how == "cross"
-        ), "expected non-empty predicates when not a cross join"
+        assert predicates or how == "cross", (
+            "expected non-empty predicates when not a cross join"
+        )
 
         if how == "asof":
             # the asof join match condition is always the first predicate by

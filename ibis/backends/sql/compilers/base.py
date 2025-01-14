@@ -205,9 +205,9 @@ class FuncGen:
         first, *rest = args
 
         if isinstance(first, sge.Select):
-            assert (
-                not rest
-            ), "only one argument allowed when `first` is a select statement"
+            assert not rest, (
+                "only one argument allowed when `first` is a select statement"
+            )
 
         return sge.Array(expressions=list(map(sge.convert, (first, *rest))))
 

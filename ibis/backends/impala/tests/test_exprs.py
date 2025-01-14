@@ -148,9 +148,9 @@ def _check_impala_output_types_match(con, table):
     for n, left_ty, right_ty in zip(
         left_schema.names, left_schema.types, right_schema.types
     ):
-        assert (
-            left_ty == right_ty
-        ), f"Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}"
+        assert left_ty == right_ty, (
+            f"Value for {n} had left type {left_ty} and right type {right_ty}\nquery:\n{query}"
+        )
 
 
 @pytest.mark.parametrize(
