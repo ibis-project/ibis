@@ -220,7 +220,7 @@ class MySQLCompiler(SQLGlotCompiler):
 
     def visit_EndsWith(self, op, *, arg, end):
         to = sge.DataType(this=sge.DataType.Type.BINARY)
-        return self.f.right(arg, self.f.char_length(end)).eq(sge.Cast(this=end, to=to))
+        return self.f.right(arg, self.f.length(end)).eq(sge.Cast(this=end, to=to))
 
     def visit_StartsWith(self, op, *, arg, start):
         to = sge.DataType(this=sge.DataType.Type.BINARY)
