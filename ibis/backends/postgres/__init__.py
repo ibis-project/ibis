@@ -717,9 +717,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 psycopg.types.TypeInfo.fetch(con, "hstore"),
                 cursor,
             )
-        except (psycopg.InternalError, psycopg.ProgrammingError, TypeError):
+        except (psycopg.InternalError, psycopg.ProgrammingError):
             cursor.close()
             raise
+        except TypeError:
+            pass
 
         try:
             cursor.execute(query, **kwargs)
