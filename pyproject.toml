@@ -277,8 +277,8 @@ docs = [
   "jupyter-cache>=1.0.0,<2",
   "jupyterlab>=4.2.5,<5",
   "jupyterlab-night>=0.4.6,<1",
-  "jupyterlite-core>=0.3,<0.6",
-  "jupyterlite-pyodide-kernel>=0.3,<0.4",
+  "jupyterlite-core>=0.5,<0.6",
+  "jupyterlite-pyodide-kernel>=0.5,<0.6",
 ]
 
 [project.entry-points."ibis.backends"]

@@ -125,8 +125,8 @@ jupyterlab-night==0.5.1
 jupyterlab-pygments==0.3.0
 jupyterlab-server==2.27.3
 jupyterlab-widgets==3.0.13
-jupyterlite-core==0.3.0
-jupyterlite-pyodide-kernel==0.3.2
+jupyterlite-core==0.5.0
+jupyterlite-pyodide-kernel==0.5.0
 kiwisolver==1.4.8
 lonboard==0.10.3
 lz4==4.3.3

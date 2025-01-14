@@ -37,7 +37,7 @@ jobs:
       - name: run doctests
         # keep HOME because duckdb (which we use for doctests) wants to use
         # that for extensions
-        run: nix develop '.#ibis311' --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
+        run: nix develop '.#ibis312' --ignore-environment --keep HOME --keep HYPOTHESIS_PROFILE -c just doctest
 
   build:
     runs-on: ubuntu-latest
@@ -69,10 +69,10 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: build api docs
-        run: nix develop '.#ibis311' --ignore-environment -c just docs-apigen --verbose
+        run: nix develop '.#ibis312' --ignore-environment -c just docs-apigen --verbose
 
       - name: build docs
-        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just docs-render
+        run: nix develop '.#ibis312' --ignore-environment --keep HOME -c just docs-render
 
       - name: cache rendered notebooks
         uses: actions/cache/save@v4
@@ -81,7 +81,7 @@ jobs:
           path: docs/**/.jupyter_cache
 
       - name: build jupyterlite
-        run: nix develop '.#ibis311' --ignore-environment --keep HOME -c just build-jupyterlite
+        run: nix develop '.#ibis312' --ignore-environment --keep HOME -c just build-jupyterlite
 
       - name: check that all frozen computations were done before push
         run: git diff --exit-code --stat
