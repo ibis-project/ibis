@@ -886,10 +886,6 @@ def test_table_info_large(con):
                     raises=OracleDatabaseError,
                     reason="ORA-02000: missing AS keyword",
                 ),
-                pytest.mark.xfail_version(
-                    polars=["polars>=1.18"],
-                    reason="panic when converting string to binary",
-                ),
             ],
             id="string_col",
         ),
