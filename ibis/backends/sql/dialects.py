@@ -363,6 +363,7 @@ MySQL.Generator.TRANSFORMS |= {
     sge.RegexpLike: (
         lambda _, e: f"({e.this.sql('mysql')} RLIKE {e.expression.sql('mysql')})"
     ),
+    sge.Length: rename_func("char_length"),
 }
 
 
