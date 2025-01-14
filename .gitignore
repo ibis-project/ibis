@@ -151,7 +151,7 @@ docs/**/*.html
 
 # jupyterlite stuff
 .jupyterlite.doit.db
-docs/jupyter_lite_config.json
+jupyter_lite_config.json
 *.quarto_ipynb
 
 # pixi environments
