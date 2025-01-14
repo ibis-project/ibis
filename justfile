@@ -298,10 +298,13 @@ build-jupyterlite:
 
     git checkout pyproject.toml ibis/__init__.py uv.lock
 
+    jq '{"PipliteAddon": {"piplite_urls": [$ibis]}}' -nM \
+        --arg ibis "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
+        > docs/jupyter_lite_config.json
+
     jupyter lite build \
         --debug \
         --no-libarchive \
-        --piplite-wheels "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
