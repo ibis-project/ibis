@@ -1977,8 +1977,8 @@ def test_large_timestamp(con):
                 pytest.mark.notimpl(["exasol"], raises=AssertionError),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=PsycoPg2InternalError,
-                    reason="Parse error: timestamp without time zone Can't cast string to timestamp (expected format is YYYY-MM-DD HH:MM:SS[.D+{up to 6 digits}] or YYYY-MM-DD HH:MM or YYYY-MM-DD or ISO 8601 format)",
+                    raises=ValueError,
+                    reason="Only supports up to microseconds",
                 ),
                 pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError),
             ],
