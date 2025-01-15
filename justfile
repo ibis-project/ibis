@@ -298,11 +298,13 @@ build-jupyterlite:
 
     git checkout pyproject.toml ibis/__init__.py uv.lock
 
+    jq '{"PipliteAddon": {"piplite_urls": [$ibis]}}' -nM \
+        --arg ibis "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
+        > jupyter_lite_config.json
+
     jupyter lite build \
         --debug \
         --no-libarchive \
-        --piplite-wheels "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
-        --piplite-wheels "https://duckdb.github.io/duckdb-pyodide/wheels/duckdb-1.1.2-cp311-cp311-emscripten_3_1_46_wasm32.whl" \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
