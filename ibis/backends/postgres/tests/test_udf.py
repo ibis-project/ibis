@@ -12,7 +12,7 @@ import ibis.expr.datatypes as dt
 from ibis import udf
 from ibis.util import guid
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 
 @pytest.fixture(scope="session")

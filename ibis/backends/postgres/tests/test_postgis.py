@@ -7,7 +7,7 @@ import pandas.testing as tm
 import pytest
 from numpy import testing
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 gpd = pytest.importorskip("geopandas")
 pytest.importorskip("shapely")
 
