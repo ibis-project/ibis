@@ -61,6 +61,10 @@ in
     };
   });
 }) // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
+  hatchling = prev.hatchling.overrideAttrs (attrs: {
+    propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ final.editables ];
+  });
+
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.pkg-config pkgs.libmysqlclient ];
