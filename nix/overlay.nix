@@ -38,6 +38,8 @@ let
     ];
   };
 
+  inherit (pkgs) lib stdenv;
+
   mkEnv' =
     {
       # Python dependency specification
@@ -48,14 +50,15 @@ let
     ,
     }: python:
     let
+      inherit (stdenv) targetPlatform;
       # Construct package set
       pythonSet =
         # Use base package set from pyproject.nix builders
         (pkgs.callPackage pyproject-nix.build.packages {
           inherit python;
-          stdenv = pkgs.stdenv.override {
-            targetPlatform = pkgs.stdenv.targetPlatform // {
-              darwinSdkVersion = "12.0";
+          stdenv = stdenv.override {
+            targetPlatform = targetPlatform // {
+              darwinSdkVersion = if targetPlatform.isAarch64 then "14.0" else "12.0";
             };
           };
         }).overrideScope
@@ -86,8 +89,6 @@ let
     deps = workspace.deps.all;
     editable = true;
   };
-
-  inherit (pkgs) lib stdenv;
 in
 {
   ibisTestingData = pkgs.fetchFromGitHub {
