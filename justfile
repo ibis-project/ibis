@@ -300,7 +300,7 @@ build-jupyterlite:
 
     jq '{"PipliteAddon": {"piplite_urls": [$ibis]}}' -nM \
         --arg ibis "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
-        > docs/jupyter_lite_config.json
+        > jupyter_lite_config.json
 
     jupyter lite build \
         --debug \
