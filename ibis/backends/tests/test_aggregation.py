@@ -1251,7 +1251,7 @@ def test_string_quantile(alltypes, func):
 )
 def test_date_quantile(alltypes):
     expr = alltypes.timestamp_col.date().quantile(0.5)
-    result = expr.execute()
+    result = expr.execute().to_pydatetime().date()
     assert result == date(2009, 12, 31)
 
 

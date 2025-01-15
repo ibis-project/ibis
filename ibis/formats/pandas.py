@@ -222,17 +222,20 @@ class PandasData(DataMapper):
     def convert_Date(cls, s, dtype, pandas_type):
         if isinstance(s.dtype, pd.DatetimeTZDtype):
             s = s.dt.tz_convert("UTC").dt.tz_localize(None)
+
         try:
-            return s.astype(pandas_type).dt.date
+            return s.astype(pandas_type)
         except (ValueError, TypeError, pd._libs.tslibs.OutOfBoundsDatetime):
 
             def try_date(v):
-                if isinstance(v, datetime.datetime):
-                    return v.date()
+                if isinstance(v, datetime.date):
+                    return pd.Timestamp(v)
                 elif isinstance(v, str):
                     if v.endswith("Z"):
-                        return datetime.datetime.fromisoformat(v[:-1]).date()
-                    return datetime.date.fromisoformat(v)
+                        datetime_obj = datetime.datetime.fromisoformat(v[:-1])
+                    else:
+                        datetime_obj = datetime.datetime.fromisoformat(v)
+                    return pd.Timestamp(datetime_obj)
                 else:
                     return v
 
