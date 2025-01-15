@@ -21,9 +21,12 @@ r3 := JoinChain[r0]
     g:     r2.g
 
 Aggregate[r3]
-  groups:
-    g:   r3.g
-    key: r3.key
   metrics:
     foo: Mean(r3.f - r3.value)
     bar: Sum(r3.f)
+  keys:
+    g:   r3.g
+    key: r3.key
+  groups:
+    g:   r3.g
+    key: r3.key
