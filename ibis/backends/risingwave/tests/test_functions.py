@@ -14,7 +14,7 @@ import ibis
 import ibis.expr.datatypes as dt
 from ibis import literal as L
 
-pytest.importorskip("psycopg")
+pytest.importorskip("psycopg2")
 
 
 @pytest.mark.parametrize(("value", "expected"), [(0, None), (5.5, 5.5)])

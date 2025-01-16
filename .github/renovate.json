@@ -89,7 +89,7 @@
     },
     {
       "addLabels": ["risingwave"],
-      "matchPackageNames": ["/psycopg/", "/risingwave/"]
+      "matchPackageNames": ["/psycopg2/", "/risingwave/"]
     },
     {
       "addLabels": ["snowflake"],

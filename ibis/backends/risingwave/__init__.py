@@ -9,7 +9,6 @@ from urllib.parse import unquote_plus
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from pandas.api.types import is_float_dtype
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import psycopg2.extensions
     import pyarrow as pa
 
 
@@ -105,6 +105,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.connect(**kwargs)
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
+        from pandas.api.types import is_float_dtype
         from psycopg2.extras import execute_batch
 
         schema = op.schema
@@ -528,13 +529,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
           year            int32
           month           int32
         """
+        import psycopg2
 
         self.con = psycopg2.connect(
             host=host,
             port=port,
             user=user,
             password=password,
-            dbname=database,
+            database=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
         )
 
@@ -680,35 +682,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return ops.DatabaseTable(
             name, schema=schema, source=self, namespace=ops.Namespace(database=database)
         ).to_expr()
-
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
-            raise com.IbisTypeError(
-                f"{self.name} cannot yet reliably handle `null` typed columns; "
-                f"got null typed columns: {null_columns}"
-            )
-
-        name = op.name
-        quoted = self.compiler.quoted
-
-        create_stmt = sg.exp.Create(
-            kind="TABLE",
-            this=sg.exp.Schema(
-                this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
-            ),
-        )
-        create_stmt_sql = create_stmt.sql(self.dialect)
-
-        df = op.data.to_frame()
-        data = df.itertuples(index=False)
-        sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="%s"
-        )
-        with self.begin() as cur:
-            cur.execute(create_stmt_sql)
-            cur.executemany(sql, data)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
