@@ -22,8 +22,8 @@ from ibis.backends.tests.errors import (
     ImpalaHiveServer2Error,
     MySQLOperationalError,
     OracleDatabaseError,
+    PsycoPg2InternalError,
     PsycoPgDivisionByZero,
-    PsycoPgInternalError,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -783,7 +783,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -802,7 +802,7 @@ def test_isnan_isinf(
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1001,7 +1001,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1014,7 +1014,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],
@@ -1053,7 +1053,7 @@ def test_floor_divide_precedence(con):
                 pytest.mark.notimpl(["polars"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function log10(numeric, numeric) does not exist",
                 ),
             ],

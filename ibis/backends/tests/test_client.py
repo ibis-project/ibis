@@ -31,8 +31,8 @@ from ibis.backends.tests.errors import (
     ExaQueryError,
     ImpalaHiveServer2Error,
     OracleDatabaseError,
-    PsycoPgInternalError,
-    PsycoPgUndefinedObject,
+    PsycoPg2InternalError,
+    PsycoPg2UndefinedObject,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyODBCProgrammingError,
@@ -415,7 +415,7 @@ def test_rename_table(con, temp_table, temp_table_orig):
 )
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason='Feature is not yet implemented: column constraints "NOT NULL"',
 )
 def test_nullable_input_output(con, temp_table):
@@ -538,7 +538,7 @@ def test_insert_no_overwrite_from_dataframe(
 @pytest.mark.notimpl(["polars"], reason="`insert` method not implemented")
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
 @pytest.mark.notyet(
@@ -584,7 +584,7 @@ def test_insert_no_overwrite_from_expr(
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
 def test_insert_overwrite_from_expr(
@@ -608,7 +608,7 @@ def test_insert_overwrite_from_expr(
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="truncate not supported upstream",
 )
 def test_insert_overwrite_from_list(con, employee_data_1_temp_table):
@@ -725,7 +725,7 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["databricks"], raises=DatabricksServerOperationError)
 @pytest.mark.notyet(["bigquery"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
-    ["postgres"], raises=PsycoPgUndefinedObject, reason="no unsigned int types"
+    ["postgres"], raises=PsycoPg2UndefinedObject, reason="no unsigned int types"
 )
 @pytest.mark.notyet(
     ["oracle"], raises=OracleDatabaseError, reason="no unsigned int types"
@@ -737,7 +737,7 @@ def test_list_database_contents(con):
 @pytest.mark.notyet(["impala"], raises=ImpalaHiveServer2Error)
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="unsigned integers are not supported",
 )
 @pytest.mark.notimpl(

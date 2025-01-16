@@ -22,10 +22,12 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
-    PsycoPgIndeterminateDatatype,
+    PsycoPg2ArraySubscriptError,
+    PsycoPg2IndeterminateDatatype,
+    PsycoPg2InternalError,
+    PsycoPg2ProgrammingError,
+    PsycoPg2SyntaxError,
     PsycoPgInternalError,
-    PsycoPgInvalidTextRepresentation,
-    PsycoPgProgrammingError,
     PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
@@ -504,7 +506,7 @@ def test_array_slice(backend, start, stop):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
@@ -563,7 +565,7 @@ def test_array_map(con, input, output, func):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="TODO(Kexiang): seems a bug",
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
@@ -644,7 +646,7 @@ def test_array_map_with_index(con, input, output, func):
 )
 @pytest.mark.notyet(
     "risingwave",
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
 @pytest.mark.parametrize(
@@ -691,7 +693,7 @@ def test_array_filter(con, input, output, predicate):
 )
 @pytest.mark.notyet(
     "risingwave",
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
 @pytest.mark.parametrize(
@@ -738,7 +740,7 @@ def test_array_filter_with_index(con, input, output, predicate):
 )
 @pytest.mark.notyet(
     "risingwave",
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
 @pytest.mark.parametrize(
@@ -1114,8 +1116,8 @@ def test_unnest_struct(con):
 
 
 @builtin_array
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPgInternalError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
 )
@@ -1205,8 +1207,8 @@ def test_zip_null(con, fn):
 
 
 @builtin_array
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPgProgrammingError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=Exception, reason="not yet supported")
 @pytest.mark.notimpl(
     ["polars"],
@@ -1276,21 +1278,12 @@ def flatten_data():
     ["bigquery"], reason="BigQuery doesn't support arrays of arrays", raises=TypeError
 )
 @pytest.mark.notyet(
-    ["postgres"],
+    ["postgres", "risingwave"],
     reason="Postgres doesn't truly support arrays of arrays",
     raises=(
         com.OperationNotDefinedError,
-        PsycoPgIndeterminateDatatype,
-        PsycoPgInternalError,
-    ),
-)
-@pytest.mark.notyet(
-    ["risingwave"],
-    reason="Risingwave doesn't truly support arrays of arrays",
-    raises=(
-        com.OperationNotDefinedError,
-        PsycoPgIndeterminateDatatype,
-        PsycoPgInternalError,
+        PsycoPg2IndeterminateDatatype,
+        PsycoPg2InternalError,
     ),
 )
 @pytest.mark.parametrize(
@@ -1397,7 +1390,7 @@ def test_range_start_stop_step(con, start, stop, step):
 @pytest.mark.notimpl(["flink"], raises=com.OperationNotDefinedError)
 @pytest.mark.never(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="Invalid parameter step: step size cannot equal zero",
 )
 def test_range_start_stop_step_zero(con, start, stop):
@@ -1430,7 +1423,7 @@ def test_unnest_empty_array(con):
 @pytest.mark.notimpl(["sqlite"], raises=com.UnsupportedBackendType)
 @pytest.mark.notyet(
     "risingwave",
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="no support for not null column constraint",
 )
 @pytest.mark.notimpl(["athena"], raises=PyAthenaDatabaseError)
@@ -1513,7 +1506,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             id="pos",
             marks=pytest.mark.notimpl(
                 ["risingwave"],
-                raises=PsycoPgInternalError,
+                raises=PsycoPg2InternalError,
                 reason="function make_interval() does not exist",
             ),
         ),
@@ -1531,7 +1524,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function neg(interval) does not exist",
                 ),
             ],
@@ -1551,7 +1544,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function neg(interval) does not exist",
                 ),
             ],
@@ -1583,7 +1576,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 pytest.mark.notyet(["polars"], raises=PolarsComputeError),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function make_interval() does not exist",
                 ),
             ],
@@ -1602,7 +1595,7 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
                 ),
                 pytest.mark.notyet(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function neg(interval) does not exist",
                 ),
             ],
@@ -1758,7 +1751,7 @@ def test_table_unnest_with_keep_empty(con):
     ["datafusion", "polars", "flink"], raises=com.OperationNotDefinedError
 )
 @pytest.mark.notyet(
-    ["risingwave"], raises=PsycoPgInternalError, reason="not supported in risingwave"
+    ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
 )
 @pytest.mark.notimpl(
     ["athena"],
@@ -1778,10 +1771,10 @@ def test_table_unnest_column_expr(backend):
 )
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
-@pytest.mark.notimpl(["risingwave"], raises=PsycoPgProgrammingError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(
-    ["risingwave"], raises=PsycoPgInternalError, reason="not supported in risingwave"
+    ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
 )
 def test_table_unnest_array_of_struct_of_array(con):
     t = ibis.memtable(
@@ -1896,7 +1889,7 @@ def test_array_agg_bool(con, data, agg, baseline_func):
 
 @pytest.mark.notyet(
     ["postgres"],
-    raises=PsycoPgInvalidTextRepresentation,
+    raises=PsycoPg2ArraySubscriptError,
     reason="all dimensions must match in size",
 )
 @pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)

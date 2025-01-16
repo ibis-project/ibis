@@ -29,7 +29,7 @@ from ibis.backends.tests.errors import (
     OracleDatabaseError,
     PolarsInvalidOperationError,
     PolarsPanicException,
-    PsycoPgInternalError,
+    PsycoPg2InternalError,
     Py4JJavaError,
     PyAthenaOperationalError,
     PyDruidProgrammingError,
@@ -494,7 +494,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
                 sqlite_without_ymd_intervals,
@@ -518,7 +518,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: millisecond",
                 ),
                 sqlite_without_hms_intervals,
@@ -543,7 +543,7 @@ def test_date_truncate(backend, alltypes, df, unit):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: microsecond",
                 ),
             ],
@@ -612,7 +612,7 @@ def test_integer_to_interval_timestamp(
                 pytest.mark.notyet(["oracle"], raises=com.UnsupportedArgumentError),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Bind error: Invalid unit: week",
                 ),
                 pytest.mark.notimpl(
@@ -2148,7 +2148,7 @@ def test_delta(con, start, end, unit, expected):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
 )
 def test_timestamp_bucket(backend, kws, pd_freq):
@@ -2182,7 +2182,7 @@ def test_timestamp_bucket(backend, kws, pd_freq):
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="function date_bin(interval, timestamp without time zone, timestamp without time zone) does not exist",
 )
 def test_timestamp_bucket_offset(backend, offset_mins):

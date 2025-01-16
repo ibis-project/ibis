@@ -21,7 +21,7 @@ from ibis.backends.tests.errors import (
     MySQLNotSupportedError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
-    PsycoPgInternalError,
+    PsycoPg2InternalError,
     Py4JError,
     Py4JJavaError,
     PyAthenaOperationalError,
@@ -963,7 +963,7 @@ def test_approx_quantile(con, filtered, multi):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -983,7 +983,7 @@ def test_approx_quantile(con, filtered, multi):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1005,7 +1005,7 @@ def test_approx_quantile(con, filtered, multi):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1062,7 +1062,7 @@ def test_approx_quantile(con, filtered, multi):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],
@@ -1088,7 +1088,7 @@ def test_approx_quantile(con, filtered, multi):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="function covar_pop(integer, integer) does not exist",
                 ),
             ],

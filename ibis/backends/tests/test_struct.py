@@ -12,8 +12,8 @@ from ibis import util
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
     PolarsColumnNotFoundError,
-    PsycoPgInternalError,
-    PsycoPgSyntaxError,
+    PsycoPg2InternalError,
+    PsycoPg2SyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
@@ -138,12 +138,12 @@ def test_collect_into_struct(alltypes):
 
 
 @pytest.mark.notimpl(
-    ["postgres"], reason="struct literals not implemented", raises=PsycoPgSyntaxError
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
 )
 @pytest.mark.notimpl(
     ["risingwave"],
     reason="struct literals not implemented",
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
 )
 @pytest.mark.notyet(["datafusion"], raises=Exception, reason="unsupported syntax")
 @pytest.mark.notimpl(["flink"], raises=Py4JJavaError, reason="not implemented in ibis")
@@ -155,7 +155,7 @@ def test_field_access_after_case(con):
 
 
 @pytest.mark.notimpl(
-    ["postgres"], reason="struct literals not implemented", raises=PsycoPgSyntaxError
+    ["postgres"], reason="struct literals not implemented", raises=PsycoPg2SyntaxError
 )
 @pytest.mark.notimpl(["flink"], raises=IbisError, reason="not implemented in ibis")
 @pytest.mark.parametrize(
@@ -181,7 +181,7 @@ def test_field_access_after_case(con):
                 pytest.mark.notyet(
                     ["risingwave"],
                     reason="non-nullable struct types not implemented",
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                 ),
                 pytest.mark.notimpl(
                     ["pyspark"],
@@ -242,12 +242,12 @@ def test_keyword_fields(con, nullable):
 
 @pytest.mark.notyet(
     ["postgres"],
-    raises=PsycoPgSyntaxError,
+    raises=PsycoPg2SyntaxError,
     reason="sqlglot doesn't implement structs for postgres correctly",
 )
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="sqlglot doesn't implement structs for postgres correctly",
 )
 @pytest.mark.notyet(

@@ -9,7 +9,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis import _
-from ibis.backends.tests.errors import OracleDatabaseError, PsycoPgInternalError
+from ibis.backends.tests.errors import OracleDatabaseError, PsycoPg2InternalError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
@@ -101,7 +101,7 @@ def test_scalar_param_struct(con):
 @pytest.mark.notyet(["bigquery"])
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="function make_date(integer, integer, integer) does not exist",
 )
 def test_scalar_param_map(con):

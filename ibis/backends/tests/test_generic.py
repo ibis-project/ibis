@@ -24,8 +24,8 @@ from ibis.backends.tests.errors import (
     MySQLProgrammingError,
     OracleDatabaseError,
     PolarsInvalidOperationError,
-    PsycoPgInternalError,
-    PsycoPgSyntaxError,
+    PsycoPg2InternalError,
+    PsycoPg2SyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
@@ -1132,7 +1132,7 @@ def test_typeof(con):
 @pytest.mark.notyet(["exasol"], raises=ExaQueryError, reason="not supported by exasol")
 @pytest.mark.notyet(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="https://github.com/risingwavelabs/risingwave/issues/1343",
 )
 @pytest.mark.notyet(
@@ -1735,8 +1735,8 @@ def test_hexdigest(backend, alltypes):
                 pytest.mark.notimpl(["flink"], raises=Py4JJavaError),
                 pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError),
                 pytest.mark.notimpl(["oracle"], raises=OracleDatabaseError),
-                pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError),
-                pytest.mark.notimpl(["risingwave"], raises=PsycoPgInternalError),
+                pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError),
+                pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError),
                 pytest.mark.notimpl(["snowflake"], raises=AssertionError),
                 pytest.mark.never(
                     ["datafusion", "exasol", "impala", "mssql", "mysql", "sqlite"],
@@ -2073,7 +2073,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="risingwave doesn't support limit/offset",
 )
 @pytest.mark.notyet(
@@ -2174,7 +2174,7 @@ def test_dynamic_table_slice(backend, slc, expected_count_fn):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="risingwave doesn't support limit/offset",
 )
 def test_dynamic_table_slice_with_computed_offset(backend):

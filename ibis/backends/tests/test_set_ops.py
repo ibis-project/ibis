@@ -8,7 +8,7 @@ from pytest import param
 import ibis
 import ibis.expr.types as ir
 from ibis import _
-from ibis.backends.tests.errors import PsycoPgInternalError, PyDruidProgrammingError
+from ibis.backends.tests.errors import PsycoPg2InternalError, PyDruidProgrammingError
 
 pd = pytest.importorskip("pandas")
 
@@ -74,7 +74,7 @@ def test_union_mixed_distinct(backend, union_subsets):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: INTERSECT all",
                 ),
             ],
@@ -118,7 +118,7 @@ def test_intersect(backend, alltypes, df, distinct):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: EXCEPT all",
                 ),
             ],
@@ -208,7 +208,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: INTERSECT all",
                 ),
             ],

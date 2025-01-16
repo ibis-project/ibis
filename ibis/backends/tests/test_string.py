@@ -14,7 +14,7 @@ from ibis.backends.tests.errors import (
     ClickHouseDatabaseError,
     MySQLOperationalError,
     OracleDatabaseError,
-    PsycoPgInternalError,
+    PsycoPg2InternalError,
     PyODBCProgrammingError,
 )
 from ibis.common.annotations import ValidationError
@@ -70,7 +70,7 @@ pd = pytest.importorskip("pandas")
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
                 ),
             ],
@@ -100,7 +100,7 @@ pd = pytest.importorskip("pandas")
                 ),
                 pytest.mark.notimpl(
                     ["risingwave"],
-                    raises=PsycoPgInternalError,
+                    raises=PsycoPg2InternalError,
                     reason='sql parser error: Expected end of statement, found: "NG\'" at line:1, column:31 Near "SELECT \'STRI"NG\' AS "\'STRI""',
                 ),
             ],
@@ -879,7 +879,7 @@ def test_multiple_subs(con):
 )
 @pytest.mark.notimpl(
     ["risingwave"],
-    raises=PsycoPgInternalError,
+    raises=PsycoPg2InternalError,
     reason="function levenshtein(character varying, character varying) does not exist",
 )
 @pytest.mark.parametrize(
