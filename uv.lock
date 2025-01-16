@@ -1693,7 +1693,7 @@ wheels = [
 
 [[package]]
 name = "google-cloud-bigquery"
-version = "3.27.0"
+version = "3.28.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "google-api-core", extra = ["grpc"] },
@@ -1704,9 +1704,9 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c0/05/633ce6686b1fed2cd364fa4698bfa6d586263cd4795d012584f8097061e1/google_cloud_bigquery-3.27.0.tar.gz", hash = "sha256:379c524054d7b090fa56d0c22662cc6e6458a6229b6754c0e7177e3a73421d2c", size = 456964 }
+sdist = { url = "https://files.pythonhosted.org/packages/01/71/6bf23975ad8e865afb2b1ac2cfa22dbb332a24754763391820fc1402a662/google_cloud_bigquery-3.28.0.tar.gz", hash = "sha256:161f9f424400f7bd0a4885ee80027f0030f4f5ff6feaaa1c30bb12c2c5a0e783", size = 465074 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f5/40/4b11a4a8839de8ce802a3ccd60b34e70ce10d13d434a560534ba98f0ea3f/google_cloud_bigquery-3.27.0-py2.py3-none-any.whl", hash = "sha256:b53b0431e5ba362976a4cd8acce72194b4116cdf8115030c7b339b884603fcc3", size = 240100 },
+    { url = "https://files.pythonhosted.org/packages/81/10/696686774a87909b14b6a29e4f5819754c2269029437354627d04d5b6279/google_cloud_bigquery-3.28.0-py2.py3-none-any.whl", hash = "sha256:29a0ed6ea19eab9bf59429f66d7a2b20ebea78597e76ed6fb653a581486e90c8", size = 243738 },
 ]
 
 [[package]]
@@ -1982,16 +1982,16 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.123.17"
+version = "6.124.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/a7/695b2bcb4e8438e1d4683efa6877fc95be293a11251471d4552d6dd08259/hypothesis-6.123.17.tar.gz", hash = "sha256:5850893975b4f08e893ddc10f1d468bc7e011d59703f70fe06a10161e426e602", size = 418572 }
+sdist = { url = "https://files.pythonhosted.org/packages/ec/93/c2fcbc503e57fafd40539ede966d3cb0b6e11dee23573a8e068a60624368/hypothesis-6.124.0.tar.gz", hash = "sha256:397a740af269646d87915c59d4299f58ef68ba89c213653d899aa533df76a03a", size = 419219 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/8a/f1c166f048df4b314d0d38e9530b7af516a16160873d724bb416084d6990/hypothesis-6.123.17-py3-none-any.whl", hash = "sha256:5c949fb44935e32c61c64abfcc3975eec41f8205ade2223073ba074c1e078ead", size = 480880 },
+    { url = "https://files.pythonhosted.org/packages/54/20/83285f2c2e9d832696802e6e219bfae9f9a7b87a0c1d7ea14615b319a62c/hypothesis-6.124.0-py3-none-any.whl", hash = "sha256:8d642bee278f933c2b3c41db69cbb001f89a7eed03c6a9cc37f6c59396b30815", size = 481397 },
 ]
 
 [[package]]
@@ -2911,15 +2911,15 @@ wheels = [
 
 [[package]]
 name = "jupyterlite-pyodide-kernel"
-version = "0.5.0"
+version = "0.5.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "jupyterlite-core" },
     { name = "pkginfo" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/9b/8b/e8df376d14f9e718899707d795033dcfcb38d21c387781cf9e695ebd1377/jupyterlite_pyodide_kernel-0.5.0.tar.gz", hash = "sha256:788a29e3af2f200f97a3a9b925da78aa9e4bd81d26de01f284dd5a48ec39e8ea", size = 529644 }
+sdist = { url = "https://files.pythonhosted.org/packages/cf/6e/eed5e06fd1059eb42bcd025d4565df610d0ca3d8c389f0a4346c3d8cbeb6/jupyterlite_pyodide_kernel-0.5.1.tar.gz", hash = "sha256:e222260b1a02615441916acff35e4fb60871a536d5d54dcbd85d50cb76bdfab8", size = 528941 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8a/47/7545278a693b48072b2f3d5ab5b0aa3caf11354d653a5c90cbb7c1fb531b/jupyterlite_pyodide_kernel-0.5.0-py3-none-any.whl", hash = "sha256:d2692802dce727cbd9681482e92b5f8aac15f140a76c3c0cea1c1971fb708469", size = 545828 },
+    { url = "https://files.pythonhosted.org/packages/74/6b/e3e95b49d2e852cbb893f743f640bb93e5a7a10f74a678ad26d7f339a198/jupyterlite_pyodide_kernel-0.5.1-py3-none-any.whl", hash = "sha256:c9b59636b93a309480882832ff23f4294d5cc70d8d78162f106cfa6a4c2e4d50", size = 545826 },
 ]
 
 [[package]]
@@ -5764,16 +5764,16 @@ wheels = [
 
 [[package]]
 name = "virtualenv"
-version = "20.28.1"
+version = "20.29.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "distlib" },
     { name = "filelock" },
     { name = "platformdirs" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/50/39/689abee4adc85aad2af8174bb195a819d0be064bf55fcc73b49d2b28ae77/virtualenv-20.28.1.tar.gz", hash = "sha256:5d34ab240fdb5d21549b76f9e8ff3af28252f5499fb6d6f031adac4e5a8c5329", size = 7650532 }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/5d/8d625ebddf9d31c301f85125b78002d4e4401fe1c15c04dca58a54a3056a/virtualenv-20.29.0.tar.gz", hash = "sha256:6345e1ff19d4b1296954cee076baaf58ff2a12a84a338c62b02eda39f20aa982", size = 7658081 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/51/8f/dfb257ca6b4e27cb990f1631142361e4712badab8e3ca8dc134d96111515/virtualenv-20.28.1-py3-none-any.whl", hash = "sha256:412773c85d4dab0409b83ec36f7a6499e72eaf08c80e81e9576bca61831c71cb", size = 4276719 },
+    { url = "https://files.pythonhosted.org/packages/f0/d3/12687ab375bb0e077ea802a5128f7b45eb5de7a7c6cb576ccf9dd59ff80a/virtualenv-20.29.0-py3-none-any.whl", hash = "sha256:c12311863497992dc4b8644f8ea82d3b35bb7ef8ee82e6630d76d0197c39baf9", size = 4282443 },
 ]
 
 [[package]]
