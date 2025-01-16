@@ -27,6 +27,7 @@ dependencies:
   - pip
   - uv>=0.4.29
   - polars >=1,<2
+  - psycopg2 >= 2.8.4
   - psycopg >= 3.2.0
   - pyarrow >=10.0.1
   - pyarrow-hotfix >=0.4
