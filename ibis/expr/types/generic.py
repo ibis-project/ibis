@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 from public import public
 
@@ -17,6 +17,9 @@ from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_
 from ibis.util import deprecated, promote_list
 
 if TYPE_CHECKING:
+    import datetime
+    import uuid
+
     import pandas as pd
     import polars as pl
     import pyarrow as pa
@@ -134,6 +137,48 @@ class Value(Expr):
         -4155090522938856779
         """
         return ops.Hash(self).to_expr()
+
+    @overload
+    def cast(
+        self, target_type: Literal["string", "str"] | type[str]
+    ) -> ir.StringValue: ...
+    @overload
+    def cast(
+        self,
+        target_type: Literal[
+            "int",
+            "uint",
+            "int8",
+            "uint8",
+            "int16",
+            "uint16",
+            "int32",
+            "uint32",
+            "int64",
+            "uint64",
+        ]
+        | type[int],
+    ) -> ir.IntegerValue: ...
+    @overload
+    def cast(
+        self,
+        target_type: Literal["float", "float8", "float16", "float32", "float64"]
+        | type[float],
+    ) -> ir.FloatingValue: ...
+    @overload
+    def cast(
+        self, target_type: Literal["bool", "boolean"] | type[bool]
+    ) -> ir.BooleanValue: ...
+    @overload
+    def cast(self, target_type: Literal["date"]) -> ir.DateValue: ...
+    @overload
+    def cast(
+        self, target_type: Literal["datetime", "timestamp"] | type[datetime.datetime]
+    ) -> ir.TimestampValue: ...
+    @overload
+    def cast(self, target_type: Literal["time"]) -> ir.TimeValue: ...
+    @overload
+    def cast(self, target_type: Literal["uuid"] | type[uuid.UUID]) -> ir.UUIDValue: ...
 
     def cast(self, target_type: Any) -> Value:
         """Cast expression to indicated data type.
