@@ -27,6 +27,7 @@ from ibis.backends.tests.errors import (
     PsycoPg2InternalError,
     PsycoPg2ProgrammingError,
     PsycoPg2SyntaxError,
+    PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
     PyAthenaOperationalError,
@@ -1094,7 +1095,7 @@ def test_array_intersect(con, data):
 
 
 @builtin_array
-@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError

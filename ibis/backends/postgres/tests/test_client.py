@@ -30,10 +30,10 @@ import ibis
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
-from ibis.backends.tests.errors import PsycoPg2OperationalError
+from ibis.backends.tests.errors import PsycoPgOperationalError
 from ibis.util import gen_name
 
-pytest.importorskip("psycopg2")
+pytest.importorskip("psycopg")
 
 POSTGRES_TEST_DB = os.environ.get("IBIS_TEST_POSTGRES_DATABASE", "ibis_testing")
 IBIS_POSTGRES_HOST = os.environ.get("IBIS_TEST_POSTGRES_HOST", "localhost")
@@ -260,7 +260,7 @@ def test_kwargs_passthrough_in_connect():
 
 def test_port():
     # check that we parse and use the port (and then of course fail cuz it's bogus)
-    with pytest.raises(PsycoPg2OperationalError):
+    with pytest.raises(PsycoPgOperationalError):
         ibis.connect("postgresql://postgres:postgres@localhost:1337/ibis_testing")
 
 
@@ -388,7 +388,7 @@ def test_password_with_bracket():
     quoted_pass = quote_plus(password)
     url = f"postgres://{IBIS_POSTGRES_USER}:{quoted_pass}@{IBIS_POSTGRES_HOST}:{IBIS_POSTGRES_PORT}/{POSTGRES_TEST_DB}"
     with pytest.raises(
-        PsycoPg2OperationalError,
+        PsycoPgOperationalError,
         match=f'password authentication failed for user "{IBIS_POSTGRES_USER}"',
     ):
         ibis.connect(url)

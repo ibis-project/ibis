@@ -10,7 +10,6 @@ from urllib.parse import unquote_plus
 import psycopg2
 import sqlglot as sg
 import sqlglot.expressions as sge
-from pandas.api.types import is_float_dtype
 from psycopg2 import extras
 
 import ibis
@@ -105,48 +104,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             del kwargs["port"]
 
         return self.connect(**kwargs)
-
-    def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
-        from psycopg2.extras import execute_batch
-
-        schema = op.schema
-        if null_columns := [col for col, dtype in schema.items() if dtype.is_null()]:
-            raise exc.IbisTypeError(
-                f"{self.name} cannot yet reliably handle `null` typed columns; "
-                f"got null typed columns: {null_columns}"
-            )
-
-        name = op.name
-        quoted = self.compiler.quoted
-        create_stmt = sg.exp.Create(
-            kind="TABLE",
-            this=sg.exp.Schema(
-                this=sg.to_identifier(name, quoted=quoted),
-                expressions=schema.to_sqlglot(self.dialect),
-            ),
-            properties=sg.exp.Properties(expressions=[sge.TemporaryProperty()]),
-        )
-        create_stmt_sql = create_stmt.sql(self.dialect)
-
-        df = op.data.to_frame()
-        # nan gets compiled into 'NaN'::float which throws errors in non-float columns
-        # In order to hold NaN values, pandas automatically converts integer columns
-        # to float columns if there are NaN values in them. Therefore, we need to convert
-        # them to their original dtypes (that support pd.NA) to figure out which columns
-        # are actually non-float, then fill the NaN values in those columns with None.
-        convert_df = df.convert_dtypes()
-        for col in convert_df.columns:
-            if not is_float_dtype(convert_df[col]):
-                df[col] = df[col].replace(float("nan"), None)
-
-        data = df.itertuples(index=False)
-        sql = self._build_insert_template(
-            name, schema=schema, columns=True, placeholder="%s"
-        )
-
-        with self.begin() as cur:
-            cur.execute(create_stmt_sql)
-            execute_batch(cur, sql, data, 128)
 
     @contextlib.contextmanager
     def begin(self):
