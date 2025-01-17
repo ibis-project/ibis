@@ -8,7 +8,15 @@ format:
 Try our experimental JupyterLite console with Ibis, using the Palmer
 penguins[^1] dataset loaded into the DuckDB backend!
 
-{{< include ../../_tabsets/repl_warning.qmd >}}
+::: {.callout-warning collapse="true"}
+## Ibis in the browser is experimental.
+
+iOS is known to crash on this page.
+
+Mobile Firefox may also not work (the page won't crash though).
+
+Please [open an issue on GitHub](https://github.com/ibis-project/ibis/issues/new/choose) if you encounter problems.
+:::
 
 ```{python}
 #| echo: false
