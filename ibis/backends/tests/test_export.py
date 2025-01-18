@@ -348,6 +348,38 @@ def test_table_to_csv(tmp_path, backend, awards_players):
 
 
 @pytest.mark.notimpl(
+    [
+        "athena",
+        "bigquery",
+        "clickhouse",
+        "databricks",
+        "datafusion",
+        "druid",
+        "exasol",
+        "flink",
+        "impala",
+        "mssql",
+        "mysql",
+        "oracle",
+        "polars",
+        "postgres",
+        "pyspark",
+        "risingwave",
+        "snowflake",
+        "sqlite",
+        "trino",
+    ],
+    reason="haven't gotten to them yet. Might be easy!",
+    raises=NotImplementedError,
+)
+def test_to_json(backend, tmp_path, awards_players):
+    out_path = tmp_path / "out.json"
+    awards_players.to_json(out_path)
+    df = pd.read_json(out_path, orient="records")
+    backend.assert_frame_equal(awards_players.to_pandas(), df)
+
+
+@pytest.mark.notimpl(
     ["duckdb"],
     reason="cannot inline WriteOptions objects",
     raises=DuckDBParserException,

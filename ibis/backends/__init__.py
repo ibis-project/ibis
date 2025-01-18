@@ -586,6 +586,32 @@ class _FileIOHandler:
         with expr.to_pyarrow_batches(params=params) as batch_reader:
             write_deltalake(path, batch_reader, **kwargs)
 
+    @util.experimental
+    def to_json(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of `expr` to a json file of [{column -> value}, ...] objects.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to Delta Lake table.
+        path
+            The data source. A string or Path to the Delta Lake table.
+        kwargs
+            Additional, backend-specifc keyword arguments.
+        """
+        backend = expr._find_backend(use_default=True)
+        raise NotImplementedError(
+            f"{backend.__class__.__name__} does not support writing to JSON."
+        )
+
 
 class CanListCatalog(abc.ABC):
     @abc.abstractmethod
