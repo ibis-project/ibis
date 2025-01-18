@@ -772,6 +772,28 @@ class Expr(Immutable, Coercible):
         self._find_backend(use_default=True).to_delta(self, path, **kwargs)
 
     @experimental
+    def to_json(
+        self,
+        path: str | Path,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of `expr` to a json file of [{column -> value}, ...] objects.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to Delta Lake table.
+        path
+            The data source. A string or Path to the Delta Lake table.
+        kwargs
+            Additional, backend-specifc keyword arguments.
+        """
+        self._find_backend(use_default=True).to_json(self, path, **kwargs)
+
+    @experimental
     def to_torch(
         self,
         *,

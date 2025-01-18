@@ -8,7 +8,7 @@ import urllib
 import warnings
 from operator import itemgetter
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
 import pyarrow as pa
@@ -1565,6 +1565,45 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         with self._safe_raw_sql(copy_cmd):
             pass
+
+    @util.experimental
+    def to_json(
+        self,
+        expr: ir.Table,
+        path: str | Path,
+        *,
+        compression: Literal["auto", "none", "gzip", "zstd"] = "auto",
+        dateformat: str | None = None,
+        timestampformat: str | None = None,
+    ) -> None:
+        """Write the results of `expr` to a json file of [{column -> value}, ...] objects.
+
+        This method is eager and will execute the associated expression
+        immediately.
+        See https://duckdb.org/docs/sql/statements/copy.html#json-options
+        for more info.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to Delta Lake table.
+        path
+            URLs such as S3 buckets are supported.
+        compression
+            Compression codec to use. One of "auto", "none", "gzip", "zstd".
+        dateformat
+            Date format string.
+        timestampformat
+            Timestamp format string.
+        """
+        opts = f", COMPRESSION '{compression.upper()}'"
+        if dateformat:
+            opts += f", DATEFORMAT '{dateformat}'"
+        if timestampformat:
+            opts += f", TIMESTAMPFORMAT '{timestampformat}'"
+        self.raw_sql(
+            f"COPY ({self.compile(expr)}) TO '{path!s}' (FORMAT JSON, ARRAY true{opts});"
+        )
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
