@@ -24,12 +24,6 @@ Please [open an issue on GitHub](https://github.com/ibis-project/ibis/issues/new
 from urllib.parse import urlencode
 
 lines = """
-import pathlib, js
-penguins_csv_url = "https://storage.googleapis.com/ibis-tutorial-data/penguins.csv"
-penguins_text = await (await js.fetch(penguins_csv_url)).text()
-pathlib.Path("penguins.csv").write_text(penguins_text)
-del pathlib, js, penguins_csv_url, penguins_text
-%clear
 %pip install 'ibis-framework[duckdb]'
 from ibis.interactive import *
 penguins = ibis.read_csv("penguins.csv")
