@@ -302,12 +302,15 @@ build-jupyterlite:
         --arg ibis "dist/ibis_framework-${ibis_dev_version}-py3-none-any.whl" \
         > jupyter_lite_config.json
 
+    curl -SLsO https://storage.googleapis.com/ibis-tutorial-data/penguins.csv
     jupyter lite build \
         --debug \
+        --contents penguins.csv  \
         --no-libarchive \
         --apps repl \
         --no-unused-shared-packages \
         --output-dir docs/_output/jupyterlite
+    rm -f penguins.csv
     # jupyter lite build can copy from the nix store, and preserves the
     # original write bit; without this the next run of this rule will result in
     # a permission error when the build tries to remove existing files
