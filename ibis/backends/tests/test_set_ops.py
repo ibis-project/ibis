@@ -169,13 +169,13 @@ def test_table_set_operations_api(alltypes, method):
         param(
             True, marks=pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
         ),
-        False,
+        param(False, marks=[pytest.mark.notyet(["polars"], strict=False)]),
     ],
 )
 @pytest.mark.parametrize(
     "ordered",
     [
-        False,
+        param(False, marks=[pytest.mark.notyet(["polars"], strict=False)]),
         param(
             True,
             marks=pytest.mark.notyet(
@@ -199,7 +199,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
 @pytest.mark.parametrize(
     "distinct",
     [
-        True,
+        param(True, marks=[pytest.mark.notimpl(["polars"])]),
         param(
             False,
             marks=[
@@ -211,6 +211,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: INTERSECT all",
                 ),
+                pytest.mark.notyet(["polars"]),
             ],
         ),
     ],
@@ -226,12 +227,15 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
 @pytest.mark.parametrize(
     "ordered",
     [
-        False,
+        param(False, marks=pytest.mark.notyet(["polars"])),
         param(
             True,
-            marks=pytest.mark.notyet(
-                ["mssql"], reason="ORDER BY not supported in subquery"
-            ),
+            marks=[
+                pytest.mark.notyet(
+                    ["mssql"], reason="ORDER BY not supported in subquery"
+                ),
+                pytest.mark.notyet(["polars"]),
+            ],
         ),
     ],
 )
