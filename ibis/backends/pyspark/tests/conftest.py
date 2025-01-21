@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
+from pyspark.errors.exceptions.connect import SparkConnectException
 
 import ibis
 from ibis import util
@@ -378,11 +379,12 @@ else:
             return con
 
     @pytest.fixture(scope="session")
-    def con_streaming(data_dir, tmp_path_factory, worker_id):
-        backend_test = TestConfForStreaming.load_data(
-            data_dir, tmp_path_factory, worker_id
-        )
-        return backend_test.connection
+    def backend_streaming(data_dir, tmp_path_factory, worker_id):
+        return TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
+
+    @pytest.fixture(scope="session")
+    def con_streaming(backend_streaming):
+        return backend_streaming.connection
 
     @pytest.fixture(autouse=True, scope="function")
     def stop_active_jobs(con_streaming):
@@ -396,13 +398,21 @@ else:
         df = self._session.sql(expr.compile())
         df.writeStream.format("memory").queryName(table_name).start()
 
+    def __del__(self):
+        try:  # noqa: SIM105
+            self.connection.disconnect()
+        except (AttributeError, SparkConnectException):
+            pass
+
 
 @pytest.fixture(scope="session")
-def con(data_dir, tmp_path_factory, worker_id):
-    backend_test = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
-    con = backend_test.connection
+def backend(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
 
-    return con
+
+@pytest.fixture(scope="session")
+def con(backend):
+    return backend.connection
 
 
 class IbisWindow:
