@@ -667,14 +667,18 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         def make_struct_argument(obj: Mapping[str, str | dt.DataType]) -> sge.Struct:
             expressions = []
             geospatial = False
-            type_mapper = self.compiler.type_mapper
+            dialect = self.compiler.dialect
+            possible_geospatial_types = (
+                sge.DataType.Type.GEOGRAPHY,
+                sge.DataType.Type.GEOMETRY,
+            )
 
             for name, typ in obj.items():
-                typ = dt.dtype(typ)
-                geospatial |= typ.is_geospatial()
-                sgtype = type_mapper.from_ibis(typ)
+                sgtype = sg.parse_one(typ, read=dialect, into=sge.DataType)
+                geospatial |= sgtype.this in possible_geospatial_types
                 prop = sge.PropertyEQ(
-                    this=sge.to_identifier(name), expression=sge.convert(sgtype)
+                    this=sge.to_identifier(name),
+                    expression=sge.convert(sgtype.sql(dialect)),
                 )
                 expressions.append(prop)
 
