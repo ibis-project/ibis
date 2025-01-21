@@ -399,10 +399,11 @@ else:
         df.writeStream.format("memory").queryName(table_name).start()
 
     def __del__(self):
-        try:  # noqa: SIM105
-            self.connection.disconnect()
-        except (AttributeError, PySparkConnectException):
-            pass
+        if not SPARK_REMOTE:
+            try:  # noqa: SIM105
+                self.connection.disconnect()
+            except (AttributeError, PySparkConnectException):
+                pass
 
 
 @pytest.fixture(scope="session")
