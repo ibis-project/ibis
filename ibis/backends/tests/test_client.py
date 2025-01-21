@@ -1773,9 +1773,7 @@ def test_insert_into_table_missing_columns(con, temp_table):
 
 @pytest.mark.notyet(["druid"], raises=AssertionError, reason="can't drop tables")
 @pytest.mark.notyet(
-    ["clickhouse", "flink"],
-    raises=AssertionError,
-    reason="memtables are assembled every time",
+    ["clickhouse"], raises=AssertionError, reason="memtables are assembled every time"
 )
 @pytest.mark.notyet(
     ["bigquery"], raises=AssertionError, reason="test is flaky", strict=False
@@ -1821,7 +1819,7 @@ def test_same_name_memtable_is_overwritten(con):
 
 
 @pytest.mark.notimpl(
-    ["clickhouse", "flink"],
+    ["clickhouse"],
     raises=AssertionError,
     reason="backend doesn't use _register_in_memory_table",
 )
