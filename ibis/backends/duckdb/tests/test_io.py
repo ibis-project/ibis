@@ -15,6 +15,7 @@ from pytest import param
 import ibis
 import ibis.expr.datatypes as dt
 from ibis.conftest import ARM64, LINUX, MACOS, SANDBOXED
+from ibis.util import gen_name
 
 
 def test_read_csv(con, data_dir):
@@ -461,3 +462,10 @@ def test_read_json_no_auto_detection(con, tmp_path):
 
     t = con.read_json(path, auto_detect=False, columns={"year": "varchar"})
     assert t.year.type() == dt.string
+
+
+def test_read_csv_with_duckdb_specific_types(con):
+    path = f"{gen_name('duckdb')}.csv"
+    columns = {"a": "STRUCT(a INTEGER)"}
+    with pytest.raises(duckdb.IOException, match="No files found"):
+        con.read_csv(path, columns=columns)
