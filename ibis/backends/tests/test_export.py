@@ -687,6 +687,10 @@ mark_notyet_nulls = pytest.mark.notyet(
 
 
 @mark_notyet_nulls
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["bigquery"], raises=UserWarning)
+@pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_all_null_table(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t)
@@ -694,6 +698,10 @@ def test_all_null_table(con):
 
 
 @mark_notyet_nulls
+@pytest.mark.notyet(["snowflake"], raises=SnowflakeProgrammingError)
+@pytest.mark.notyet(["bigquery"], raises=UserWarning)
+@pytest.mark.notyet(["databricks"], raises=pa.ArrowNotImplementedError)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_all_null_column(con):
     t = ibis.memtable({"a": [None]})
     result = con.to_pyarrow(t.a)
@@ -701,6 +709,10 @@ def test_all_null_column(con):
 
 
 @pytest.mark.notyet(["flink"], raises=Py4JJavaError)
+@pytest.mark.notyet(
+    ["snowflake", "bigquery", "databricks"], raises=pa.ArrowNotImplementedError
+)
+@pytest.mark.notyet(["athena"], raises=PyAthenaOperationalError)
 def test_all_null_scalar(con):
     e = ibis.literal(None)
     result = con.to_pyarrow(e)
