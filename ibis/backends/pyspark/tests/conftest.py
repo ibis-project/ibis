@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pytest
 from filelock import FileLock
-from pyspark.errors.exceptions.connect import SparkConnectException
 
 import ibis
 from ibis import util
@@ -20,6 +19,7 @@ from ibis.backends.pyspark import Backend
 from ibis.backends.pyspark.datatypes import PySparkSchema
 from ibis.backends.tests.base import BackendTest, ServiceBackendTest
 from ibis.backends.tests.data import json_types, topk, win
+from ibis.backends.tests.errors import PySparkConnectException
 from ibis.conftest import IS_SPARK_REMOTE, SPARK_REMOTE
 
 if TYPE_CHECKING:
@@ -401,7 +401,7 @@ else:
     def __del__(self):
         try:  # noqa: SIM105
             self.connection.disconnect()
-        except (AttributeError, SparkConnectException):
+        except (AttributeError, PySparkConnectException):
             pass
 
 
