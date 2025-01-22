@@ -663,7 +663,7 @@ def test_object_pattern_requires_its_arguments_to_match():
 
     # if the type matcher (first argument of Object) receives a generic pattern
     # instead of an explicit type, the validation above cannot occur, so test
-    # the the pattern still doesn't match when it requires more positional
+    # the pattern still doesn't match when it requires more positional
     # arguments than the object `__match_args__` has
     pattern = Object(InstanceOf(Empty), var("a"))
     assert match(pattern, Empty()) is NoMatch
