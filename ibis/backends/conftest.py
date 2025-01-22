@@ -470,7 +470,9 @@ def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
 @pytest.fixture(scope="session")
 def ddl_con(ddl_backend):
     """Instance of Client, already connected to the db (if applies)."""
-    return ddl_backend.connection
+    connection = ddl_backend.connection
+    yield connection
+    connection.disconnect()
 
 
 @pytest.fixture(
