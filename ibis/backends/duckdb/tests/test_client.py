@@ -392,11 +392,12 @@ def test_multiple_tables_with_the_same_name(tmp_path):
 @pytest.mark.parametrize(
     "input",
     [
-        {"columns": {"lat": "float64", "lon": "float64", "geom": "geometry"}},
-        {"types": {"geom": "geometry"}},
+        {"columns": {"lat": "double", "lon": "float", "geom": "geometry"}},
+        {"types": {"geom": "geometry", "lon": "float"}},
     ],
+    ids=["columns", "types"],
 )
-@pytest.mark.parametrize("all_varchar", [True, False])
+@pytest.mark.parametrize("all_varchar", [True, False], ids=["varchar", "not_varchar"])
 @pytest.mark.xfail(
     LINUX and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
