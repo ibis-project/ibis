@@ -373,6 +373,11 @@ def test_table_to_csv(tmp_path, backend, awards_players):
     backend.assert_frame_equal(awards_players.to_pandas(), df)
 
 
+@pytest.mark.notimpl(
+    ["druid"],
+    raises=PyDruidProgrammingError,
+    reason="druid can only order by time columns",
+)
 @pytest.mark.parametrize("chunk_size", [1, 1000])
 def test_to_dicts(chunk_size, awards_players):
     t = (
