@@ -5,6 +5,7 @@ import subprocess
 import sys
 
 import duckdb
+import numpy as np
 import pandas as pd
 import pyarrow as pa
 import pytest
@@ -423,8 +424,6 @@ def test_memtable_doesnt_leak(con):
 
 
 def test_pyarrow_batches_chunk_size(con):  # 10443
-    import numpy as np
-
     t = ibis.memtable(
         {
             "id": np.arange(10_000),
