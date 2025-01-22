@@ -11,6 +11,9 @@ from ibis.backends.tests.errors import Py4JJavaError
 
 tm = pytest.importorskip("pandas.testing")
 
+# Concurrent execution of CREATE OR REPLACE FUNCTION in postgres fails
+# This ensures that all tests in this module run in the same process as
+# long as --dist=loadgroup is passed, which it is.
 pytestmark = pytest.mark.xdist_group("impure")
 
 no_randoms = [
