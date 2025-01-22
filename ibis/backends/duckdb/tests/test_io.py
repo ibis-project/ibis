@@ -465,7 +465,7 @@ def test_read_json_no_auto_detection(con, tmp_path):
 
 
 def test_read_csv_with_duckdb_specific_types(con):
-    path = f"{gen_name('duckdb')}.csv"
+    path = gen_name("duckdb")
     columns = {"a": "STRUCT(a INTEGER)"}
     with pytest.raises(duckdb.IOException, match="No files found"):
         con.read_csv(path, columns=columns)
