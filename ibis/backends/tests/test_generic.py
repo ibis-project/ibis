@@ -1057,6 +1057,7 @@ def test_between(backend, alltypes, df):
     backend.assert_series_equal(result, expected)
 
 
+@pytest.mark.notyet(["flink"], reason="timestamp subtraction doesn't work")
 def test_interactive(alltypes, monkeypatch):
     monkeypatch.setattr(ibis.options, "interactive", True)
 
