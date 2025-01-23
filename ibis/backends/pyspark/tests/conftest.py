@@ -324,6 +324,9 @@ else:
             spark = configure_spark_with_delta_pip(config).getOrCreate()
             return ibis.pyspark.connect(spark, **kw)
 
+        def __del__(self):
+            pass
+
     class TestConfForStreaming(BackendTest):
         deps = ("pyspark",)
 
@@ -379,6 +382,9 @@ else:
             spark = SparkSession.getActiveSession().newSession()
             con = ibis.pyspark.connect(spark, mode="streaming", **kw)
             return con
+
+        def __del__(self):
+            pass
 
     @pytest.fixture(scope="session")
     def con_streaming(data_dir, tmp_path_factory, worker_id):
