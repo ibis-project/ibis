@@ -1,5 +1,5 @@
 -e .
-aiobotocore==2.18.0
+aiobotocore==2.19.0
 aiohappyeyeballs==2.4.4
 aiohttp==3.11.11
 aioitertools==0.12.0
@@ -21,7 +21,7 @@ asn1crypto==1.5.1
 asttokens==3.0.0
 async-lru==2.0.4
 async-timeout==5.0.1 ; python_full_version < '3.11'
-atpublic==5.0
+atpublic==5.1
 attrs==24.3.0
 aws-error-utils==2.7.0
 aws-sso-lib==1.14.0
@@ -32,8 +32,8 @@ beautifulsoup4==4.12.3
 bitarray==3.0.0
 black==24.10.0
 bleach==6.2.0
-boto3==1.36.1
-botocore==1.36.1
+boto3==1.36.3
+botocore==1.36.3
 cachetools==5.5.1
 certifi==2024.12.14
 cffi==1.17.1
@@ -52,7 +52,7 @@ cryptography==44.0.0
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
 datafusion==43.1.0
-db-dtypes==1.3.1
+db-dtypes==1.4.0
 debugpy==1.8.12
 decorator==5.1.1
 defusedxml==0.7.1
@@ -64,10 +64,10 @@ dunamai==1.23.0
 et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 execnet==2.1.1
-executing==2.1.0
+executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.17.0
-fonttools==4.55.4
+fonttools==4.55.5
 fqdn==1.5.1
 frozenlist==1.5.0
 fsspec==2024.12.0
@@ -75,7 +75,7 @@ gcsfs==2024.12.0
 geoarrow-types==0.2.0
 geopandas==1.0.1
 google-api-core==2.24.0
-google-auth==2.37.0
+google-auth==2.38.0
 google-auth-oauthlib==1.2.1
 google-cloud-bigquery==3.29.0
 google-cloud-bigquery-storage==2.27.0
@@ -87,8 +87,8 @@ googleapis-common-protos==1.66.0
 graphviz==0.20.3
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
 griffe==1.5.5
-grpcio==1.69.0
-grpcio-status==1.69.0
+grpcio==1.70.0
+grpcio-status==1.70.0
 h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
@@ -193,13 +193,13 @@ pyasn1==0.6.1
 pyasn1-modules==0.4.1
 pyathena==3.12.2
 pycparser==2.22
-pydantic==2.10.5
+pydantic==2.10.6
 pydantic-core==2.27.2
-pydata-google-auth==1.9.0
+pydata-google-auth==1.9.1
 pydruid==0.6.9
 pyexasol==0.27.0
 pygments==2.19.1
-pyinstrument==5.0.0
+pyinstrument==5.0.1
 pyjwt==2.10.1
 pyodbc==5.2.0
 pyogrio==0.10.0
@@ -236,9 +236,9 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.22.3
 rsa==4.9
-ruff==0.9.2
+ruff==0.9.3
 s3fs==2024.12.0
-s3transfer==0.11.1
+s3transfer==0.11.2
 scikit-learn==1.6.1
 scipy==1.15.1
 seaborn==0.13.2
@@ -247,12 +247,12 @@ setuptools==75.8.0
 shapely==2.0.6
 six==1.17.0
 sniffio==1.3.1
-snowflake-connector-python==3.12.4
+snowflake-connector-python==3.13.0
 sortedcontainers==2.4.0
 soupsieve==2.6
 sphobjinv==2.3.1.2
 sqlalchemy==2.0.37
-sqlglot==26.3.5
+sqlglot==26.3.6
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
