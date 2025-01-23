@@ -22,10 +22,11 @@ from ibis.backends.tests.errors import (
     GoogleBadRequest,
     MySQLOperationalError,
     PolarsComputeError,
+    PsycoPg2ArraySubscriptError,
     PsycoPg2IndeterminateDatatype,
     PsycoPg2InternalError,
     PsycoPg2ProgrammingError,
-    PsycoPgInvalidTextRepresentation,
+    PsycoPg2SyntaxError,
     PsycoPgSyntaxError,
     Py4JJavaError,
     PyAthenaDatabaseError,
@@ -1117,7 +1118,7 @@ def test_unnest_struct(con):
 
 
 @builtin_array
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2InternalError)
 @pytest.mark.notimpl(
     ["trino"], reason="inserting maps into structs doesn't work", raises=TrinoUserError
@@ -1208,7 +1209,7 @@ def test_zip_null(con, fn):
 
 
 @builtin_array
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notimpl(["datafusion"], raises=Exception, reason="not yet supported")
 @pytest.mark.notimpl(
@@ -1768,7 +1769,7 @@ def test_table_unnest_column_expr(backend):
 @pytest.mark.notimpl(["datafusion", "polars"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["trino"], raises=TrinoUserError)
 @pytest.mark.notimpl(["athena"], raises=PyAthenaOperationalError)
-@pytest.mark.notimpl(["postgres"], raises=PsycoPgSyntaxError)
+@pytest.mark.notimpl(["postgres"], raises=PsycoPg2SyntaxError)
 @pytest.mark.notimpl(["risingwave"], raises=PsycoPg2ProgrammingError)
 @pytest.mark.notyet(
     ["risingwave"], raises=PsycoPg2InternalError, reason="not supported in risingwave"
@@ -1889,7 +1890,7 @@ def test_array_agg_bool(con, data, agg, baseline_func):
 
 @pytest.mark.notyet(
     ["postgres"],
-    raises=PsycoPgInvalidTextRepresentation,
+    raises=PsycoPg2ArraySubscriptError,
     reason="all dimensions must match in size",
 )
 @pytest.mark.notimpl(["risingwave", "flink"], raises=com.OperationNotDefinedError)

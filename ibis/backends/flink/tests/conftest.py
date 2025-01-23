@@ -158,10 +158,13 @@ def simple_table(simple_schema):
 
 
 @pytest.fixture(scope="session")
-def con(tmp_path_factory, data_dir, worker_id):
-    return TestConfForStreaming.load_data(
-        data_dir, tmp_path_factory, worker_id
-    ).connection
+def local_backend(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+
+
+@pytest.fixture(scope="session")
+def con(local_backend):
+    return local_backend.connection
 
 
 @pytest.fixture

@@ -60,10 +60,10 @@ class TestConf(ServiceBackendTest):
 
 
 @pytest.fixture(scope="session")
-def backend(data_dir, tmp_path_factory, worker_id):
+def local_backend(data_dir, tmp_path_factory, worker_id):
     return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
 
 
 @pytest.fixture(scope="session")
-def con(backend):
-    return backend.connection
+def con(local_backend):
+    return local_backend.connection

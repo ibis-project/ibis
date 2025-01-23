@@ -56,15 +56,12 @@ try:
     from pyspark.errors.exceptions.base import PySparkValueError
     from pyspark.errors.exceptions.base import PythonException as PySparkPythonException
     from pyspark.errors.exceptions.connect import (
-        SparkConnectException as PySparkConnectException,
-    )
-    from pyspark.errors.exceptions.connect import (
         SparkConnectGrpcException as PySparkConnectGrpcException,
     )
 except ImportError:
     PySparkParseException = PySparkAnalysisException = PySparkArithmeticException = (
         PySparkPythonException
-    ) = PySparkConnectException = PySparkConnectGrpcException = PySparkValueError = None
+    ) = PySparkConnectGrpcException = PySparkValueError = None
 
 try:
     from google.api_core.exceptions import BadRequest as GoogleBadRequest
