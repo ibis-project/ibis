@@ -122,6 +122,9 @@ class TestConf(BackendTest):
         )
         con.create_table("topk", topk, temp=True)
 
+    def __del__(self):
+        pass
+
 
 class TestConfForStreaming(TestConf):
     @staticmethod
@@ -133,6 +136,9 @@ class TestConfForStreaming(TestConf):
 
         table_env = get_table_env(local_env=True, streaming_mode=True)
         return ibis.flink.connect(table_env, **kw)
+
+    def __del__(self):
+        pass
 
 
 @pytest.fixture
