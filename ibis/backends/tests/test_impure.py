@@ -23,7 +23,9 @@ no_randoms = [
 ]
 
 no_udfs = [
-    pytest.mark.notyet("datafusion", raises=NotImplementedError),
+    pytest.mark.notyet(
+        ["datafusion", "athena", "databricks"], raises=NotImplementedError
+    ),
     pytest.mark.notimpl(
         [
             "bigquery",
@@ -149,8 +151,8 @@ impure_params_uncorrelated = pytest.mark.parametrize(
             lambda table: my_random(table.float_col),
             marks=[
                 *no_udfs,
-                # no "impure" argument for pyspark yet
-                pytest.mark.notimpl("pyspark"),
+                # no "impure" argument for pyspark and snowflake yet
+                pytest.mark.notimpl(["pyspark", "snowflake"]),
             ],
             id="udf",
         ),
@@ -159,7 +161,7 @@ impure_params_uncorrelated = pytest.mark.parametrize(
 
 
 # You can work around this by doing .select().cache().select()
-@pytest.mark.notyet(["clickhouse"], reason="instances are correlated")
+@pytest.mark.notyet(["clickhouse", "athena"], reason="instances are correlated")
 @impure_params_uncorrelated
 def test_impure_uncorrelated_different_id(alltypes, impure):
     # This is the opposite of test_impure_correlated.
@@ -174,7 +176,7 @@ def test_impure_uncorrelated_different_id(alltypes, impure):
 
 
 # You can work around this by doing .select().cache().select()
-@pytest.mark.notyet(["clickhouse"], reason="instances are correlated")
+@pytest.mark.notyet(["clickhouse", "athena"], reason="instances are correlated")
 @impure_params_uncorrelated
 def test_impure_uncorrelated_same_id(alltypes, impure):
     # Similar to test_impure_uncorrelated_different_id, but the two expressions
@@ -196,6 +198,7 @@ def test_impure_uncorrelated_same_id(alltypes, impure):
         "trino",
         "flink",
         "bigquery",
+        "athena",
     ],
     raises=AssertionError,
     reason="instances are not correlated but ideally they would be",
