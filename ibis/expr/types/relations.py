@@ -1778,12 +1778,12 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        table:
+        table
             A table expression
-        *rest:
+        *rest
             Additional table expressions
         distinct
-            Only diff distinct rows not occurring in the calling table
+            Use set difference (`True`) or multiset difference (`False`). See examples.
 
         See Also
         --------
@@ -1798,33 +1798,49 @@ class Table(Expr, _FixedTextJupyterMixin):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t1 = ibis.memtable({"a": [1, 2]})
-        >>> t1
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     1 │
-        │     2 │
-        └───────┘
-        >>> t2 = ibis.memtable({"a": [2, 3]})
-        >>> t2
-        ┏━━━━━━━┓
-        ┃ a     ┃
-        ┡━━━━━━━┩
-        │ int64 │
-        ├───────┤
-        │     2 │
-        │     3 │
-        └───────┘
+        >>> t1 = ibis.memtable({"a": [7, 8, 8, 9, 9, 9]})
+        >>> t2 = ibis.memtable({"a": [8, 9]})
+
+        With distinct=True, if a row ever appears in any of `*rest`,
+        it will not appear in the result.
+        So here, all appearances of 8 and 9 are removed:
+
         >>> t1.difference(t2)
         ┏━━━━━━━┓
         ┃ a     ┃
         ┡━━━━━━━┩
         │ int64 │
         ├───────┤
-        │     1 │
+        │     7 │
+        └───────┘
+
+        With `distinct=False`, the algorithm is a [multiset](https://en.wikipedia.org/wiki/Multiset) difference.
+        This means, that since 8 and 9 each appear once in `t2`,
+        the result will be the input with a single instance of each removed:
+
+        >>> t1.difference(t2, distinct=False).order_by("a")
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     7 │
+        │     8 │
+        │     9 │
+        │     9 │
+        └───────┘
+
+        With multiple tables in `*rest`, we apply the operation consecutively.
+        Here, we remove two eights and two nines:
+
+        >>> t1.difference(t2, t2, distinct=False).order_by("a")
+        ┏━━━━━━━┓
+        ┃ a     ┃
+        ┡━━━━━━━┩
+        │ int64 │
+        ├───────┤
+        │     7 │
+        │     9 │
         └───────┘
         """
         node = ops.Difference(self, table, distinct=distinct)
