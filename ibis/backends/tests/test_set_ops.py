@@ -199,7 +199,7 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
 @pytest.mark.parametrize(
     "distinct",
     [
-        param(True, marks=[pytest.mark.notimpl(["polars"])]),
+        True,
         param(
             False,
             marks=[
@@ -211,7 +211,6 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: INTERSECT all",
                 ),
-                pytest.mark.notyet(["polars"]),
             ],
         ),
     ],
@@ -227,15 +226,12 @@ def test_top_level_union(backend, con, alltypes, distinct, ordered):
 @pytest.mark.parametrize(
     "ordered",
     [
-        param(False, marks=pytest.mark.notyet(["polars"])),
+        False,
         param(
             True,
-            marks=[
-                pytest.mark.notyet(
-                    ["mssql"], reason="ORDER BY not supported in subquery"
-                ),
-                pytest.mark.notyet(["polars"]),
-            ],
+            marks=pytest.mark.notyet(
+                ["mssql"], reason="ORDER BY not supported in subquery"
+            ),
         ),
     ],
 )

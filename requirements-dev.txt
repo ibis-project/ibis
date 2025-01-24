@@ -67,7 +67,7 @@ execnet==2.1.1
 executing==2.2.0
 fastjsonschema==2.21.1
 filelock==3.17.0
-fonttools==4.55.5
+fonttools==4.55.6
 fqdn==1.5.1
 frozenlist==1.5.0
 fsspec==2024.12.0
@@ -93,7 +93,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
-hypothesis==6.124.2
+hypothesis==6.124.5
 identify==2.6.6
 idna==3.10
 importlib-metadata==8.6.1
@@ -169,7 +169,7 @@ plotly==5.24.1
 plotnine==0.14.5
 pluggy==1.5.0
 plum-dispatch==2.5.7
-polars==1.20.0
+polars==1.21.0
 pprintpp==0.4.0
 pre-commit==4.1.0
 prometheus-client==0.21.1
@@ -227,7 +227,7 @@ pywinpty==2.0.14 ; os_name == 'nt'
 pyyaml==6.0.2
 pyzmq==26.2.0
 quartodoc==0.9.1
-referencing==0.36.1
+referencing==0.36.2
 regex==2024.11.6
 requests==2.32.3
 requests-oauthlib==2.0.0
@@ -252,7 +252,7 @@ sortedcontainers==2.4.0
 soupsieve==2.6
 sphobjinv==2.3.1.2
 sqlalchemy==2.0.37
-sqlglot==26.3.6
+sqlglot==26.3.8
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
