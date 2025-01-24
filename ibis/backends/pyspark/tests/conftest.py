@@ -19,7 +19,6 @@ from ibis.backends.pyspark import Backend
 from ibis.backends.pyspark.datatypes import PySparkSchema
 from ibis.backends.tests.base import BackendTest, ServiceBackendTest
 from ibis.backends.tests.data import json_types, topk, win
-from ibis.backends.tests.errors import PySparkConnectException
 from ibis.conftest import IS_SPARK_REMOTE, SPARK_REMOTE
 
 if TYPE_CHECKING:
@@ -379,12 +378,11 @@ else:
             return con
 
     @pytest.fixture(scope="session")
-    def backend_streaming(data_dir, tmp_path_factory, worker_id):
-        return TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id)
-
-    @pytest.fixture(scope="session")
-    def con_streaming(backend_streaming):
-        return backend_streaming.connection
+    def con_streaming(data_dir, tmp_path_factory, worker_id):
+        backend_test = TestConfForStreaming.load_data(
+            data_dir, tmp_path_factory, worker_id
+        )
+        return backend_test.connection
 
     @pytest.fixture(autouse=True, scope="function")
     def stop_active_jobs(con_streaming):
@@ -398,22 +396,13 @@ else:
         df = self._session.sql(expr.compile())
         df.writeStream.format("memory").queryName(table_name).start()
 
-    def __del__(self):
-        if not SPARK_REMOTE:
-            try:  # noqa: SIM105
-                self.connection.disconnect()
-            except (AttributeError, PySparkConnectException):
-                pass
-
 
 @pytest.fixture(scope="session")
-def backend(data_dir, tmp_path_factory, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+def con(data_dir, tmp_path_factory, worker_id):
+    backend_test = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
+    con = backend_test.connection
 
-
-@pytest.fixture(scope="session")
-def con(backend):
-    return backend.connection
+    return con
 
 
 class IbisWindow:

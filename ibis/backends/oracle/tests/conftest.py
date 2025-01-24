@@ -133,13 +133,8 @@ class TestConf(ServiceBackendTest):
 
 
 @pytest.fixture(scope="session")
-def backend(data_dir, tmp_path_factory, worker_id):
-    return TestConf.load_data(data_dir, tmp_path_factory, worker_id)
-
-
-@pytest.fixture(scope="session")
-def con(backend):
-    return backend.connection
+def con(data_dir, tmp_path_factory, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection
 
 
 def init_oracle_database(
