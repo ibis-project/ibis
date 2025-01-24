@@ -2180,7 +2180,7 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     >>> t1 = ibis.memtable({"a": [7, 8, 8, 9, 9, 9]})
     >>> t2 = ibis.memtable({"a": [8, 9]})
 
-    With distinct=True, if a row ever appears in any of `*rest`,
+    With `distinct=True`, if a row ever appears in any of `*rest`,
     it will not appear in the result.
     So here, all appearances of 8 and 9 are removed:
 
@@ -2193,7 +2193,7 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     │     7 │
     └───────┘
 
-    With `distinct=False`, the algorithm is more of a multiset/bag difference.
+    With `distinct=False`, the algorithm is a [multiset](https://en.wikipedia.org/wiki/Multiset) difference.
     This means, that since 8 and 9 each appear once in `t2`,
     the result will be the input with a single instance of each removed:
 
@@ -2210,7 +2210,7 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     └───────┘
 
     With multiple tables in `*rest`, we apply the operation consecutively.
-    Here, we we remove two 8s and two 9s:
+    Here, we remove two eights and two nines:
 
     >>> t1.difference(t2, t2, distinct=False).order_by("a")
     ┏━━━━━━━┓

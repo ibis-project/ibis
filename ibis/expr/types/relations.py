@@ -1783,7 +1783,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         *rest
             Additional table expressions
         distinct
-            Use set difference (True) or multiset difference (False). See examples.
+            Use set difference (`True`) or multiset difference (`False`). See examples.
 
         See Also
         --------
@@ -1814,7 +1814,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         │     7 │
         └───────┘
 
-        With `distinct=False`, the algorithm is more of a multiset/bag difference.
+        With `distinct=False`, the algorithm is a [multiset](https://en.wikipedia.org/wiki/Multiset) difference.
         This means, that since 8 and 9 each appear once in `t2`,
         the result will be the input with a single instance of each removed:
 
@@ -1831,7 +1831,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         └───────┘
 
         With multiple tables in `*rest`, we apply the operation consecutively.
-        Here, we we remove two 8s and two 9s:
+        Here, we remove two eights and two nines:
 
         >>> t1.difference(t2, t2, distinct=False).order_by("a")
         ┏━━━━━━━┓
