@@ -319,6 +319,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
         # us to pre-filter the columns we want back.
         # The syntax is:
         # `sys.dm_exec_describe_first_result_set(@tsql, @params, @include_browse_information)`
+        #
+        # Yes, this *is* a SQL injection risk, but it's not clear how to avoid
+        # that since we allow users to pass arbitrary SQL.
+        #
+        # SQLGlot has a bug that forces capitalization of
+        # `dm_exec_describe_first_result_set`, so we can't even use its builder
+        # APIs. That doesn't really solve the injection problem though.
         query = f"""
         SELECT
           name,
@@ -330,7 +337,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
           error_message
         FROM sys.dm_exec_describe_first_result_set(N{tsql}, NULL, 0)
         ORDER BY column_ordinal
-        """
+        """  # noqa: S608
         with self._safe_raw_sql(query) as cur:
             rows = cur.fetchall()
 
