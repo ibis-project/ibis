@@ -2162,7 +2162,11 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     *rest
         Additional table expressions
     distinct
-        Only diff distinct rows not occurring in the calling table
+        Use set difference (True) or multiset difference (False). See examples.
+
+    See Also
+    --------
+    [`ibis.difference`](./expression-tables.qmd#ibis.difference)
 
     Returns
     -------
@@ -2173,35 +2177,50 @@ def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Ta
     --------
     >>> import ibis
     >>> ibis.options.interactive = True
-    >>> t1 = ibis.memtable({"a": [1, 2]})
-    >>> t1
+    >>> t1 = ibis.memtable({"a": [7, 8, 8, 9, 9, 9]})
+    >>> t2 = ibis.memtable({"a": [8, 9]})
+
+    With distinct=True, if a row ever appears in any of `*rest`,
+    it will not appear in the result.
+    So here, all appearances of 8 and 9 are removed:
+
+    >>> t1.difference(t2)
     ┏━━━━━━━┓
     ┃ a     ┃
     ┡━━━━━━━┩
     │ int64 │
     ├───────┤
-    │     1 │
-    │     2 │
-    └───────┘
-    >>> t2 = ibis.memtable({"a": [2, 3]})
-    >>> t2
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     2 │
-    │     3 │
-    └───────┘
-    >>> ibis.difference(t1, t2)
-    ┏━━━━━━━┓
-    ┃ a     ┃
-    ┡━━━━━━━┩
-    │ int64 │
-    ├───────┤
-    │     1 │
+    │     7 │
     └───────┘
 
+    With `distinct=False`, the algorithm is more of a multiset/bag difference.
+    This means, that since 8 and 9 each appear once in `t2`,
+    the result will be the input with a single instance of each removed:
+
+    >>> t1.difference(t2, distinct=False).order_by("a")
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     7 │
+    │     8 │
+    │     9 │
+    │     9 │
+    └───────┘
+
+    With multiple tables in `*rest`, we apply the operation consecutively.
+    Here, we we remove two 8s and two 9s:
+
+    >>> t1.difference(t2, t2, distinct=False).order_by("a")
+    ┏━━━━━━━┓
+    ┃ a     ┃
+    ┡━━━━━━━┩
+    │ int64 │
+    ├───────┤
+    │     7 │
+    │     9 │
+    └───────┘
     """
     return table.difference(*rest, distinct=distinct) if rest else table
 
