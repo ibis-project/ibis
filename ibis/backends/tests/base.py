@@ -63,12 +63,6 @@ class BackendTest(abc.ABC):
     tpc_absolute_tolerance: float | None = None
     "Absolute tolerance for floating point comparisons with pytest.approx in TPC correctness tests."
 
-    def __del__(self):
-        try:  # noqa: SIM105
-            self.connection.disconnect()
-        except AttributeError:
-            pass
-
     @property
     @abc.abstractmethod
     def deps(self) -> Iterable[str]:
