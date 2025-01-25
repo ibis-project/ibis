@@ -6,6 +6,9 @@ version="${1}"
 
 nix develop '.#release' -c uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$version"
 
+# sync lockfile
+nix develop '.#release' -c uv sync
+
 # build artifacts
 nix develop '.#release' -c uv build
 

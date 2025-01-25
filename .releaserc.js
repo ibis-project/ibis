@@ -82,6 +82,7 @@ module.exports = {
       {
         assets: [
           "pyproject.toml",
+          "uv.lock",
           "docs/release_notes_generated.qmd",
           "ibis/__init__.py"
         ],
