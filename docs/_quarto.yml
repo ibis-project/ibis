@@ -162,6 +162,7 @@ website:
             - reference/expression-strings.qmd
             - reference/expression-temporal.qmd
             - reference/expression-collections.qmd
+            - reference/expression-json.qmd
             - reference/expression-geospatial.qmd
 
         - section: Type system
@@ -522,6 +523,16 @@ quartodoc:
             - name: struct
               dynamic: true
               signature_name: full
+
+        - kind: page
+          path: expression-json
+          package: ibis
+          summary:
+            name: JSON expressions
+            desc: Expressions for manipulating JSON values.
+          contents:
+            - name: JSONValue
+              package: ibis.expr.types.json
 
         - kind: page
           path: expression-geospatial
