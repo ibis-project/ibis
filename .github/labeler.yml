@@ -1,4 +1,8 @@
-# backends
+athena:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/athena/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/athena/**"
+
 bigquery:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/bigquery/**"
@@ -8,6 +12,11 @@ clickhouse:
   - changed-files:
       - any-glob-to-any-file: "ibis/backends/clickhouse/**"
       - any-glob-to-any-file: "ibis/backends/sql/compilers/clickhouse/**"
+
+databricks:
+  - changed-files:
+      - any-glob-to-any-file: "ibis/backends/databricks/**"
+      - any-glob-to-any-file: "ibis/backends/sql/compilers/databricks/**"
 
 datafusion:
   - changed-files:
