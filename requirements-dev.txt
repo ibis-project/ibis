@@ -22,7 +22,7 @@ asttokens==3.0.0
 async-lru==2.0.4
 async-timeout==5.0.1 ; python_full_version < '3.11'
 atpublic==5.1
-attrs==24.3.0
+attrs==25.1.0
 aws-error-utils==2.7.0
 aws-sso-lib==1.14.0
 aws-sso-util==4.33.0
@@ -41,7 +41,7 @@ cfgv==3.4.0
 chardet==5.2.0
 charset-normalizer==3.4.1
 click==8.1.8
-clickhouse-connect==0.8.14
+clickhouse-connect==0.8.15
 cloudpickle==3.1.1
 codespell==2.4.0
 colorama==0.4.6
@@ -93,7 +93,7 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
-hypothesis==6.124.5
+hypothesis==6.124.7
 identify==2.6.6
 idna==3.10
 importlib-metadata==8.6.1
