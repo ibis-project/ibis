@@ -145,6 +145,9 @@ class DataType(Concrete, Coercible):
         prefix = "!" * (not self.nullable)
         return f"{prefix}{self.name.lower()}{self._pretty_piece}"
 
+    def __repr__(self) -> str:
+        return str(self)
+
     def equals(self, other):
         if not isinstance(other, DataType):
             raise TypeError(
