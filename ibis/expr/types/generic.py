@@ -104,16 +104,16 @@ class Value(Expr):
         ...         "timestamp_col": [
         ...             datetime(2024, 11, 2, 10, 5, 2),
         ...         ],
-        ...         "string_col": ["a"],
+        ...         "array_of_string_col": [["a", "b", "c"]],
         ...     }
         ... )
 
-        >>> t.int_col.type()
-        Int64(nullable=True)
-        >>> t.timestamp_col.type()
-        Timestamp(timezone=None, scale=None, nullable=True)
-        >>> t.string_col.type()
-        String(nullable=True)
+        >>> t.int_col.type(), type(t.int_col.type())
+        (int64, <class 'ibis.expr.datatypes.core.Int64'>)
+        >>> t.timestamp_col.type(), type(t.timestamp_col.type())
+        (timestamp, <class 'ibis.expr.datatypes.core.Timestamp'>)
+        >>> t.timestamp_col.type(), type(t.array_of_string_col.type())
+        (array<string>, <class 'ibis.expr.datatypes.core.Array'>)
         """
         return self.op().dtype
 
@@ -2934,13 +2934,13 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
     >>> import ibis
     >>> x = ibis.literal(42)
     >>> x.type()
-    Int8(nullable=True)
+    int8
 
     Construct a `float64` literal from an `int`
 
     >>> y = ibis.literal(42, type="double")
     >>> y.type()
-    Float64(nullable=True)
+    float64
 
     Ibis checks for invalid types
 
