@@ -180,7 +180,14 @@ class SqlglotType(TypeMapper):
             "nullable", nullable if nullable is not None else cls.default_nullable
         )
         if method := getattr(cls, f"_from_sqlglot_{typecode.name}", None):
-            dtype = method(*typ.expressions, nullable=nullable)
+            if typecode == sge.DataType.Type.ARRAY:
+                dtype = method(
+                    *typ.expressions,
+                    *(typ.args.get("values", ()) or ()),
+                    nullable=nullable,
+                )
+            else:
+                dtype = method(*typ.expressions, nullable=nullable)
         elif (known_typ := _from_sqlglot_types.get(typecode)) is not None:
             dtype = known_typ(nullable=nullable)
         else:
@@ -222,9 +229,16 @@ class SqlglotType(TypeMapper):
 
     @classmethod
     def _from_sqlglot_ARRAY(
-        cls, value_type: sge.DataType, nullable: bool | None = None
+        cls,
+        value_type: sge.DataType,
+        length: sge.Literal | None = None,
+        nullable: bool | None = None,
     ) -> dt.Array:
-        return dt.Array(cls.to_ibis(value_type), nullable=nullable)
+        return dt.Array(
+            cls.to_ibis(value_type),
+            length=None if length is None else int(length.this),
+            nullable=nullable,
+        )
 
     @classmethod
     def _from_sqlglot_MAP(
@@ -380,7 +394,12 @@ class SqlglotType(TypeMapper):
     @classmethod
     def _from_ibis_Array(cls, dtype: dt.Array) -> sge.DataType:
         value_type = cls.from_ibis(dtype.value_type)
-        return sge.DataType(this=typecode.ARRAY, expressions=[value_type], nested=True)
+        return sge.DataType(
+            this=typecode.ARRAY,
+            expressions=[value_type],
+            values=None if dtype.length is None else [sge.convert(dtype.length)],
+            nested=True,
+        )
 
     @classmethod
     def _from_ibis_Map(cls, dtype: dt.Map) -> sge.DataType:
@@ -775,7 +794,10 @@ class SnowflakeType(SqlglotType):
 
     @classmethod
     def _from_sqlglot_ARRAY(
-        cls, value_type=None, nullable: bool | None = None
+        cls,
+        value_type: sge.DataType | None = None,
+        length: sge.Literal | None = None,
+        nullable: bool | None = None,
     ) -> dt.Array:
         assert value_type is None
         return dt.Array(dt.json, nullable=nullable)
@@ -1050,7 +1072,12 @@ class ExasolType(SqlglotType):
         return sge.DataType(this=code)
 
     @classmethod
-    def _from_sqlglot_ARRAY(cls, value_type: sge.DataType) -> NoReturn:
+    def _from_sqlglot_ARRAY(
+        cls,
+        value_type: sge.DataType,
+        length: sge.Literal | None = None,
+        nullable: bool | None = None,
+    ) -> NoReturn:
         raise com.UnsupportedBackendType("Arrays not supported in Exasol")
 
     @classmethod
@@ -1105,7 +1132,12 @@ class MSSQLType(SqlglotType):
         raise com.UnsupportedBackendType("SQL Server does not support structs")
 
     @classmethod
-    def _from_sqlglot_ARRAY(cls) -> sge.DataType:
+    def _from_sqlglot_ARRAY(
+        cls,
+        value_type: sge.DataType,
+        length: sge.Literal | None = None,
+        nullable: bool | None = None,
+    ) -> NoReturn:
         raise com.UnsupportedBackendType("SQL Server does not support arrays")
 
     @classmethod

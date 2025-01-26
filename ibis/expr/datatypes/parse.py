@@ -74,7 +74,7 @@ def parse(
     >>> import ibis
     >>> import ibis.expr.datatypes as dt
     >>> dt.parse("array<int64>")
-    Array(value_type=Int64(nullable=True), nullable=True)
+    Array(value_type=Int64(nullable=True), length=None, nullable=True)
 
     You can avoid parsing altogether by constructing objects directly
 
@@ -182,8 +182,13 @@ def parse(
     )
 
     ty = parsy.forward_declaration()
-    angle_type = LANGLE.then(ty).skip(RANGLE)
-    array = spaceless_string("array").then(angle_type).map(dt.Array)
+
+    array = (
+        spaceless_string("array")
+        .then(LANGLE)
+        .then(parsy.seq(ty, COMMA.then(LENGTH).optional()).combine(dt.Array))
+        .skip(RANGLE)
+    )
 
     map = (
         spaceless_string("map")

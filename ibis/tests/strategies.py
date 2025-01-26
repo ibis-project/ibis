@@ -149,9 +149,11 @@ def primitive_dtypes(nullable=_nullable):
 
 _item_strategy = primitive_dtypes()
 
+_length = st.one_of(st.none(), st.integers(min_value=0))
 
-def array_dtypes(value_type=_item_strategy, nullable=_nullable):
-    return st.builds(dt.Array, value_type=value_type, nullable=nullable)
+
+def array_dtypes(value_type=_item_strategy, nullable=_nullable, length=_length):
+    return st.builds(dt.Array, value_type=value_type, nullable=nullable, length=length)
 
 
 def map_dtypes(key_type=_item_strategy, value_type=_item_strategy, nullable=_nullable):
@@ -180,7 +182,7 @@ def struct_dtypes(
 
 def geospatial_dtypes(nullable=_nullable):
     geotype = st.one_of(st.just("geography"), st.just("geometry"))
-    srid = st.one_of(st.just(None), st.integers(min_value=0))
+    srid = st.one_of(st.none(), st.integers(min_value=0))
     return st.one_of(
         st.builds(dt.Point, geotype=geotype, nullable=nullable, srid=srid),
         st.builds(dt.LineString, geotype=geotype, nullable=nullable, srid=srid),

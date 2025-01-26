@@ -571,6 +571,14 @@ def test_is_methods(dtype_class):
     assert is_dtype is True
 
 
+def test_is_fixed_length_array():
+    dtype = dt.Array(dt.int8)
+    assert not dtype.is_fixed_length_array()
+
+    dtype = dt.Array(dt.int8, 10)
+    assert dtype.is_fixed_length_array()
+
+
 def test_is_array():
     assert dt.Array(dt.string).is_array()
     assert not dt.string.is_array()
