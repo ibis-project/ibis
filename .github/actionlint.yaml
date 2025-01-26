@@ -1,3 +1,4 @@
 self-hosted-runner:
   labels:
-    - ubuntu-arm64-24.04
+    - ubuntu-arm64-24.04-small
+    - ubuntu-arm64-24.04-medium
