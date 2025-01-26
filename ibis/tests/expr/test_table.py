@@ -23,35 +23,24 @@ from ibis.expr.tests.test_newrels import join_tables
 from ibis.expr.types import Column, Table
 from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
-
-@pytest.fixture
-def set_ops_schema_top():
-    return [("key", "string"), ("value", "double")]
-
-
-@pytest.fixture
-def set_ops_schema_bottom():
-    return [("key", "string"), ("key2", "string"), ("value", "double")]
+set_ops_schema_top = [("key", "string"), ("value", "double")]
+set_ops_schema_bottom = [("key", "string"), ("key2", "string"), ("value", "double")]
+setops_relation_error_message = "Table schemas must be equal for set operations"
 
 
 @pytest.fixture
-def setops_table_foo(set_ops_schema_top):
+def setops_table_foo():
     return ibis.table(set_ops_schema_top, "foo")
 
 
 @pytest.fixture
-def setops_table_bar(set_ops_schema_top):
+def setops_table_bar():
     return ibis.table(set_ops_schema_top, "bar")
 
 
 @pytest.fixture
-def setops_table_baz(set_ops_schema_bottom):
+def setops_table_baz():
     return ibis.table(set_ops_schema_bottom, "baz")
-
-
-@pytest.fixture
-def setops_relation_error_message():
-    return "Table schemas must be equal for set operations"
 
 
 def test_empty_schema():
@@ -1350,12 +1339,7 @@ def test_unravel_compound_equijoin(table):
         assert joined.op() == expected
 
 
-def test_union(
-    setops_table_foo,
-    setops_table_bar,
-    setops_table_baz,
-    setops_relation_error_message,
-):
+def test_union(setops_table_foo, setops_table_bar, setops_table_baz: Table):
     result = setops_table_foo.union(setops_table_bar)
     assert isinstance(result.op(), ops.Union)
     assert not result.op().distinct
@@ -1367,12 +1351,7 @@ def test_union(
         setops_table_foo.union(setops_table_baz)
 
 
-def test_intersection(
-    setops_table_foo,
-    setops_table_bar,
-    setops_table_baz,
-    setops_relation_error_message,
-):
+def test_intersection(setops_table_foo, setops_table_bar, setops_table_baz):
     result = setops_table_foo.intersect(setops_table_bar)
     assert isinstance(result.op(), ops.Intersection)
 
@@ -1380,12 +1359,7 @@ def test_intersection(
         setops_table_foo.intersect(setops_table_baz)
 
 
-def test_difference(
-    setops_table_foo,
-    setops_table_bar,
-    setops_table_baz,
-    setops_relation_error_message,
-):
+def test_difference(setops_table_foo, setops_table_bar, setops_table_baz):
     result = setops_table_foo.difference(setops_table_bar)
     assert isinstance(result.op(), ops.Difference)
 
