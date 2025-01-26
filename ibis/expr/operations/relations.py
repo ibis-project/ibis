@@ -13,7 +13,6 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import (
-    ConflictingValuesError,
     FrozenDict,
     FrozenOrderedDict,
 )
@@ -338,19 +337,44 @@ class Set(Relation):
     values = FrozenOrderedDict()
 
     def __init__(self, left, right, **kwargs):
-        err_msg = "Table schemas must be equal for set operations."
-        try:
-            missing_from_left = right.schema - left.schema
-            missing_from_right = left.schema - right.schema
-        except ConflictingValuesError as e:
-            raise RelationError(err_msg + "\n" + str(e)) from e
-        if missing_from_left or missing_from_right:
-            msgs = [err_msg]
-            if missing_from_left:
-                msgs.append(f"Columns missing from the left:\n{missing_from_left}.")
-            if missing_from_right:
-                msgs.append(f"Columns missing from the right:\n{missing_from_right}.")
-            raise RelationError("\n".join(msgs))
+        # TODO: hoist this up into the user facing API so we can see
+        # all the tables at once and give a better error message
+        errs = ["Table schemas must be unifiable for set operations."]
+        missing_from_left = set(right.schema.names) - set(left.schema.names)
+        missing_from_right = set(left.schema.names) - set(right.schema.names)
+        if missing_from_left:
+            errs.append(f"Columns missing from the left:\n{missing_from_left}.")
+        if missing_from_right:
+            errs.append(f"Columns missing from the right:\n{missing_from_right}.")
+        if len(errs) > 1:
+            raise RelationError("\n".join(errs))
+
+        upcasts = {}
+        for name in left.schema.names:
+            ltype, rtype = left.schema[name], right.schema[name]
+            try:
+                unified_dt = dt.highest_precedence([ltype, rtype])
+                if unified_dt != ltype or unified_dt != rtype:
+                    upcasts[name] = unified_dt
+            except IbisTypeError:
+                errs.append(f"Unable to find a common dtype for column {name}")
+                errs.append(f"Left dtype: {ltype!s}")
+                errs.append(f"Right dtype: {rtype!s}")
+        if len(errs) > 1:
+            raise RelationError("\n".join(errs))
+
+        if upcasts:
+            from ibis.expr.operations.generic import Cast
+
+            def get_new_val(relation, name):
+                if name not in upcasts:
+                    return Field(relation, name)
+                return Cast(Field(relation, name), upcasts[name])
+
+            lcols = {name: get_new_val(left, name) for name in left.schema.names}
+            rcols = {name: get_new_val(right, name) for name in left.schema.names}
+            left = Project(left, lcols)
+            right = Project(right, rcols)
 
         if left.schema.names != right.schema.names:
             # rewrite so that both sides have the columns in the same order making it

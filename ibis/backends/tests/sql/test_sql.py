@@ -663,3 +663,20 @@ def test_ctes_in_order():
 
     sql = ibis.to_sql(expr, dialect="duckdb")
     assert sql.find('"first" AS (') < sql.find('"second" AS (')
+
+
+@pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
+def test_union_unified_schemas(snapshot, functional_alltypes, distinct):
+    a = functional_alltypes.select(
+        "id", i="tinyint_col", s=_.string_col.cast("!string")
+    )
+    b = functional_alltypes.select(
+        "id",
+        i=_.bigint_col + 256,  # ensure doesn't fit in a tinyint
+        s=_.string_col.cast("string"),
+    )
+    expr = ibis.union(a, b, distinct=distinct).order_by("id", "i", "s")
+
+    assert expr.i.type() == b.i.type()
+    assert expr.s.type() == b.s.type()
+    snapshot.assert_match(to_sql(expr), "out.sql")

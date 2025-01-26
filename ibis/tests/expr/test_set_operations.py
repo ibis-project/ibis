@@ -40,7 +40,7 @@ d = ibis.table(D)
 
 @pytest.mark.parametrize("method", ["union", "intersect", "difference"])
 def test_operation_requires_equal_schemas(method):
-    with pytest.raises(RelationError, match="`c`: string != float64"):
+    with pytest.raises(RelationError, match="Left dtype: int64\nRight dtype: string"):
         getattr(a, method)(d)
 
 

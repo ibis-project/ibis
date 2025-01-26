@@ -25,7 +25,7 @@ from ibis.tests.util import assert_equal, assert_pickle_roundtrip
 
 set_ops_schema_top = [("key", "string"), ("value", "double")]
 set_ops_schema_bottom = [("key", "string"), ("key2", "string"), ("value", "double")]
-setops_relation_error_message = "Table schemas must be equal for set operations"
+setops_relation_error_message = "Table schemas must be unifiable for set operations"
 
 
 @pytest.fixture
