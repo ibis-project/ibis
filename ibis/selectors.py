@@ -365,7 +365,7 @@ def matches(regex: str | re.Pattern) -> Selector:
     --------
     >>> import ibis
     >>> import ibis.selectors as s
-    >>> t = ibis.table(dict(ab="string", abd="int", be="array<string>"))
+    >>> t = ibis.table(dict(ab="string", abc="int", be="array<string>"))
     >>> expr = t.select(s.matches(r"ab+"))
     >>> expr.columns
     ('ab', 'abd')
