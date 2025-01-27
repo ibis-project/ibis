@@ -728,7 +728,7 @@ def random() -> ir.FloatingScalar:
     ## Repeated use of `random`
 
     `ibis.random()` will generate a column of distinct random numbers even if
-    the same instance of `ibis.random()` is re-used.
+    the same instance of `ibis.random()` is reused.
 
     When Ibis compiles an expression to SQL, each place where `random` is used
     will render as a separate call to the given backend's random number
