@@ -650,9 +650,7 @@ def test_integer_to_interval_date(backend, con, alltypes, df, unit):
             "ignore", category=(UserWarning, pd.errors.PerformanceWarning)
         )
         expected = (
-            pd.to_datetime(df.date_string_col)
-            .add(offset)
-            .map(lambda ts: ts.normalize().date(), na_action="ignore")
+            pd.to_datetime(df.date_string_col).add(offset).astype("datetime64[s]")
         )
 
     expected = backend.default_series_rename(expected)
@@ -727,12 +725,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() + ibis.interval(days=4),
-            lambda t, _: (
-                t.timestamp_col.dt.floor("d")
-                .add(pd.Timedelta(days=4))
-                .dt.normalize()
-                .dt.date
-            ),
+            lambda t, _: t.timestamp_col.dt.floor("d").add(pd.Timedelta(days=4)),
             id="date-add-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -743,12 +736,7 @@ timestamp_value = pd.Timestamp("2018-01-01 18:18:18")
         ),
         param(
             lambda t, _: t.timestamp_col.date() - ibis.interval(days=14),
-            lambda t, _: (
-                t.timestamp_col.dt.floor("d")
-                .sub(pd.Timedelta(days=14))
-                .dt.normalize()
-                .dt.date
-            ),
+            lambda t, _: t.timestamp_col.dt.floor("d").sub(pd.Timedelta(days=14)),
             id="date-subtract-interval",
             marks=[
                 pytest.mark.notimpl(
@@ -1013,14 +1001,15 @@ def test_interval_add_cast_column(backend, alltypes, df):
     delta = alltypes.bigint_col.cast("interval('D')")
     expr = alltypes.select("id", (timestamp_date + delta).name("tmp"))
     result = expr.execute().sort_values("id").reset_index().tmp
+
     df = df.sort_values("id").reset_index(drop=True)
     expected = (
         df["timestamp_col"]
         .dt.normalize()
         .add(df.bigint_col.astype("timedelta64[D]"))
         .rename("tmp")
-        .dt.date
     )
+
     backend.assert_series_equal(result, expected.astype(result.dtype))
 
 
@@ -2265,6 +2254,14 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.5"],
+                    raises=pd._libs.tslib.OutOfBoundsDatetime,
+                    reason=(
+                        "versions of pandas supported by PySpark <3.5 don't allow "
+                        "pd.Timestamps with out-of-bounds timestamp values"
+                    ),
+                ),
             ],
             id="large",
         ),
@@ -2278,6 +2275,14 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.5"],
+                    raises=pd._libs.tslib.OutOfBoundsDatetime,
+                    reason=(
+                        "versions of pandas supported by PySpark <3.5 don't allow "
+                        "pd.Timestamps with out-of-bounds timestamp values"
+                    ),
+                ),
             ],
         ),
         param(
@@ -2296,20 +2301,18 @@ def test_time_literal_sql(dialect, snapshot, micros):
 )
 def test_date_scalar(con, value, func):
     expr = ibis.date(func(value)).name("tmp")
-
     result = con.execute(expr)
 
-    assert not isinstance(result, datetime.datetime)
-    assert isinstance(result, datetime.date)
-
-    assert result == datetime.date.fromisoformat(value)
+    assert isinstance(result, pd.Timestamp)
+    assert result == pd.Timestamp.fromisoformat(value)
 
 
 @pytest.mark.notyet(
     ["datafusion", "druid", "exasol"], raises=com.OperationNotDefinedError
 )
 def test_simple_unix_date_offset(con):
-    d = ibis.date("2023-04-07")
+    s = "2023-04-07"
+    d = ibis.date(s)
     expr = d.epoch_days()
     result = con.execute(expr)
     delta = datetime.date(2023, 4, 7) - datetime.date(1970, 1, 1)

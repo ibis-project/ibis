@@ -274,3 +274,11 @@ you are going only up).
 ```bash
 $ colima delete
 ```
+
+### `x86_64` or `amd64` based containers
+
+While starting the containers based on `x86_64` / `amd64`, the architecture flag needs to be set in two places:
+1. Add `platform: linux/amd64` for the service in `compose.yaml`.
+2. Set the `--arch` flag while starting the VM `colima start --arch x86_64`
+
+For instance, this step is necessary for the `oracle` service in `compose.yaml`. Otherwise, the container will fail shortly after getting started.

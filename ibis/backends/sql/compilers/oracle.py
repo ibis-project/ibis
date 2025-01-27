@@ -203,7 +203,7 @@ class OracleCompiler(SQLGlotCompiler):
         return result
 
     def visit_Date(self, op, *, arg):
-        return sg.cast(arg, to="date")
+        return self.f.trunc(arg, "DDD")
 
     def visit_IsNan(self, op, *, arg):
         return arg.eq(self.NAN)
