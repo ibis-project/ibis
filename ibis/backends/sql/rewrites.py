@@ -15,9 +15,9 @@ from public import public
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict  # noqa: TC001
 from ibis.common.graph import Graph
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.rewrites import d, p, replace_parameter
 from ibis.expr.schema import Schema
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import functools
 from typing import TYPE_CHECKING, Any
-from koerce import Deferred
 
+from koerce import Deferred
 from public import public
 
 import ibis.expr.operations as ops

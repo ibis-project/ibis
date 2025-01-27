@@ -8,7 +8,6 @@ import ibis
 import ibis.expr.operations as ops
 from ibis import _
 from ibis.common.exceptions import IbisTypeError
-from ibis.common.grounds import ValidationError
 
 
 @pytest.mark.parametrize(

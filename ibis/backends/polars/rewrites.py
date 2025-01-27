@@ -6,7 +6,7 @@ from public import public
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.common.collections import FrozenDict
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.schema import Schema
 
 

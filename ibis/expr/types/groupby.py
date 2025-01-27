@@ -18,7 +18,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Annotated
 
-from koerce import Length  # noqa: TCH002
+from koerce import Length
 from public import public
 
 import ibis
@@ -26,7 +26,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.grounds import Concrete
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.rewrites import rewrite_window_input
 
 if TYPE_CHECKING:

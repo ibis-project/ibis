@@ -351,7 +351,7 @@ class DisjointSet(Mapping[K, set[K]]):
 
     """
 
-    __slots__ = ("_parents", "_classes")
+    __slots__ = ("_classes", "_parents")
     _parents: dict
     _classes: dict
 

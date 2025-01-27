@@ -13,8 +13,8 @@ import ibis.expr.rules as rlz
 import ibis.expr.types as ir
 from ibis import util
 from ibis.common.exceptions import IbisInputError
-from ibis.common.selectors import Selector  # noqa: TCH001
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.selectors import Selector  # noqa: TC001
+from ibis.common.typing import VarTuple  # noqa: TC001
 
 if TYPE_CHECKING:
     from typing_extensions import Self

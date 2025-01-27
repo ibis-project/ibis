@@ -9,6 +9,7 @@ from functools import partial
 
 import sqlglot as sg
 import sqlglot.expressions as sge
+from koerce import replace
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
@@ -35,7 +36,6 @@ from ibis.backends.sql.rewrites import (
     rewrite_empty_order_by_window,
     x,
 )
-from koerce import replace
 from ibis.expr.rewrites import p
 
 

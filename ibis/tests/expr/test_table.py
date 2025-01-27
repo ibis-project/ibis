@@ -4,6 +4,7 @@ import pickle
 import re
 
 import pytest
+from koerce import Deferred
 from pytest import param
 
 import ibis
@@ -14,7 +15,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
-from koerce import Deferred
 from ibis.common.exceptions import ExpressionError, IntegrityError, RelationError
 from ibis.common.grounds import ValidationError
 from ibis.expr import api

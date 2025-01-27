@@ -8,14 +8,14 @@ import toolz
 from koerce import Annotable, If, Item, _, namespace, replace, var
 
 import ibis.expr.operations as ops
-from ibis.common.collections import FrozenDict  # noqa: TCH001
+from ibis.common.collections import FrozenDict  # noqa: TC001
 from ibis.common.exceptions import ExpressionError, IbisInputError
 
 # from ibis.common.graph import Node as Traversable
 from ibis.common.graph import traverse
 
 # from ibis.common.patterns import Check, pattern, replace
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.util import promote_list
 
 p, d = namespace(ops)
