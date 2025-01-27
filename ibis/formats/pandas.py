@@ -349,10 +349,14 @@ class PandasData(DataMapper):
                 # TODO: can we do better than implicit truncation to microseconds?
                 import dateutil
 
-                value = datetime.datetime.fromtimestamp(value / 1e9, dateutil.tz.UTC)
+                value = pd.Timestamp.fromtimestamp(value / 1e9, dateutil.tz.UTC)
 
             if (tz := dtype.timezone) is not None:
-                return value.astimezone(normalize_timezone(tz))
+                value = pd.Timestamp(value)
+                normed_tz = normalize_timezone(tz)
+                if value.tzinfo is None:
+                    return value.tz_localize(normed_tz)
+                return value.tz_convert(normed_tz)
 
             return value.replace(tzinfo=None)
 
