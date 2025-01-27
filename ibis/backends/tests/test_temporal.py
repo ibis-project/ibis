@@ -2254,6 +2254,14 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates after 2149-06-06",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.5"],
+                    raises=pd._libs.tslib.OutOfBoundsDatetime,
+                    reason=(
+                        "versions of pandas supported by PySpark <3.5 don't allow "
+                        "pd.Timestamps with out-of-bounds timestamp values"
+                    ),
+                ),
             ],
             id="large",
         ),
@@ -2267,6 +2275,14 @@ def test_time_literal_sql(dialect, snapshot, micros):
                     reason="clickhouse doesn't support dates before the UNIX epoch",
                 ),
                 pytest.mark.notyet(["datafusion"], raises=Exception),
+                pytest.mark.xfail_version(
+                    pyspark=["pyspark<3.5"],
+                    raises=pd._libs.tslib.OutOfBoundsDatetime,
+                    reason=(
+                        "versions of pandas supported by PySpark <3.5 don't allow "
+                        "pd.Timestamps with out-of-bounds timestamp values"
+                    ),
+                ),
             ],
         ),
         param(
