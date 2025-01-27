@@ -2001,6 +2001,7 @@ version = "10.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "atpublic" },
+    { name = "koerce" },
     { name = "parsy" },
     { name = "python-dateutil" },
     { name = "pytz" },
@@ -2269,6 +2270,7 @@ requires-dist = [
     { name = "google-cloud-bigquery-storage", marker = "extra == 'bigquery'", specifier = ">=2,<3" },
     { name = "graphviz", marker = "extra == 'visualization'", specifier = ">=0.16,<1" },
     { name = "impyla", marker = "extra == 'impala'", specifier = ">=0.17,<1" },
+    { name = "koerce", specifier = ">=0.5.1,<1" },
     { name = "mysqlclient", marker = "extra == 'mysql'", specifier = ">=2.2.4,<3" },
     { name = "numpy", marker = "extra == 'athena'", specifier = ">=1.23.2,<3" },
     { name = "numpy", marker = "extra == 'bigquery'", specifier = ">=1.23.2,<3" },
@@ -3009,6 +3011,41 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/5d/eb/78d50346c51db22c7203c1611f9b513075f35c4e0e4877c5dde378d66043/kiwisolver-1.4.8-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:7cd2785b9391f2873ad46088ed7599a6a71e762e1ea33e87514b1a441ed1da1c", size = 81186 },
     { url = "https://files.pythonhosted.org/packages/43/f8/7259f18c77adca88d5f64f9a522792e178b2691f3748817a8750c2d216ef/kiwisolver-1.4.8-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c07b29089b7ba090b6f1a669f1411f27221c3662b3a1b7010e67b59bb5a6f10b", size = 80279 },
     { url = "https://files.pythonhosted.org/packages/3a/1d/50ad811d1c5dae091e4cf046beba925bcae0a610e79ae4c538f996f63ed5/kiwisolver-1.4.8-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:65ea09a5a3faadd59c2ce96dc7bf0f364986a315949dc6374f04396b0d60e09b", size = 71762 },
+]
+
+[[package]]
+name = "koerce"
+version = "0.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/53/00/3d1a70f4cbdb51f91c1a01295e0889e992ca67b35bca8c2fc030c4a61a8b/koerce-0.5.1.tar.gz", hash = "sha256:20db6412e7e2aed1b7ce893307152333f88d0313ba3bc91e0582756acea45bbe", size = 71675 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/3b/701d9aa4245f8839e42d839b1804e25ffcc1a240044158851995300b64e6/koerce-0.5.1-cp310-cp310-macosx_13_0_x86_64.whl", hash = "sha256:53ca3c48efe1848c68b6a0ff71d6b962873fae32d017ac73ad2d717ff65b8a7a", size = 628261 },
+    { url = "https://files.pythonhosted.org/packages/70/42/d45aa82dc3767601466e532524ee28c5115838f43d4e5379d26ad1ed787e/koerce-0.5.1-cp310-cp310-macosx_14_0_arm64.whl", hash = "sha256:3c4cd9d54194ef7692c893be44e4aac1f471cf8bc952004a68016f9303b2ecc4", size = 558843 },
+    { url = "https://files.pythonhosted.org/packages/c4/7e/65e5ee84df381a8d884d0d792a51c078fdbd48573f990271b9faa287343a/koerce-0.5.1-cp310-cp310-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:bac1a35126533320f569459b9d47e651b3053fcf8be4d2a8f0215b9aaaa54df6", size = 3518092 },
+    { url = "https://files.pythonhosted.org/packages/55/a1/c5f42f82fc4235aa6b1e3ecd6c4dc86166799ab7860be6616e9ed698ab7b/koerce-0.5.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b6742b840ab1feb80a31a086a3f24d64899ba9fb73466782c98b0df74231dfdf", size = 3816600 },
+    { url = "https://files.pythonhosted.org/packages/82/4f/7c3aff513d58d085e63abd327fccefec5c423d3572268b1a47b98e8136ad/koerce-0.5.1-cp310-cp310-musllinux_1_2_i686.whl", hash = "sha256:050238a030dd8726bec33890d79a2cbc1e5733f01438a7d37d7bf3566608ba63", size = 3272135 },
+    { url = "https://files.pythonhosted.org/packages/0b/c5/a50ba13d42dadf265401974759e9e7fdafc3e5870c76c67ded322f08be1c/koerce-0.5.1-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:f0e58cf2c40df250ea7daf5bc8e0acdb022c0ce6eaaa7de6b3075cbaab1bd7b7", size = 3415664 },
+    { url = "https://files.pythonhosted.org/packages/97/f7/46eb1283643ece7de523fc15a344beab5f68576705c945b65b2527a69344/koerce-0.5.1-cp310-cp310-win32.whl", hash = "sha256:0214febd4032d9a635a5a49ecad99d2ef8f6b3cb345e6ecfb444f0ad09356d27", size = 425095 },
+    { url = "https://files.pythonhosted.org/packages/44/a2/8621066c663a4e36d9173358982ee07aaffe24a52ef7a1c28ec9cd3d3ab6/koerce-0.5.1-cp310-cp310-win_amd64.whl", hash = "sha256:e4bb4729f7bb28e06c2ee0cf61ee505d487e14144d4471e1483e2897cbdfd76b", size = 513317 },
+    { url = "https://files.pythonhosted.org/packages/a7/21/7d08a92a16676c4007ab71bde6c7672a74b5cc6a0dfa2d389c4840e4e265/koerce-0.5.1-cp311-cp311-macosx_13_0_x86_64.whl", hash = "sha256:a05d31e8fed9451dedc4125736fdcfbe7e8f4ee6a42697ffb65dff791180a00a", size = 630459 },
+    { url = "https://files.pythonhosted.org/packages/75/bc/34fa6fd0a10b82fe2430edbc4ecfe8702732cd09e92e80d8af79168b84e8/koerce-0.5.1-cp311-cp311-macosx_14_0_arm64.whl", hash = "sha256:3bf30dd4b8875b69c2322a370fbe52267ff0f3291250ba56f26f39903a378d4d", size = 559744 },
+    { url = "https://files.pythonhosted.org/packages/19/d8/80c12e9142a029fc34e261665a77410350212b0a0d57c89b435aaa46a9f2/koerce-0.5.1-cp311-cp311-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:e00c4aaebc35c0c7c5e65a0f6ab76428ede0eda291baa5146512da505feb1397", size = 4004135 },
+    { url = "https://files.pythonhosted.org/packages/86/7d/d10201436b13f7b440c707889a24e85921bcd5c4f5434ec137a3029040c5/koerce-0.5.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a8ffbf5c66c0208a6b08cfd758102ec39fb89c0b1ff82c91ccde20396e013e18", size = 4321639 },
+    { url = "https://files.pythonhosted.org/packages/fe/9c/9f1ea6a7d2bda9383124bcf702593688f7140c2a38b658826dc7e07e6e8d/koerce-0.5.1-cp311-cp311-musllinux_1_2_i686.whl", hash = "sha256:03a133958b669c5a3dd7c08de6dc3b1c72d204e633957ce3c40e49357e36406e", size = 3774753 },
+    { url = "https://files.pythonhosted.org/packages/9b/89/b4b95a755fb79ca9bb7c684e03d979f341b0294c770ba23be9b08a893a69/koerce-0.5.1-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:942ab409d7c4930519310544f31f1446e2f4ac059415feffe2a811a52435b7c3", size = 3954388 },
+    { url = "https://files.pythonhosted.org/packages/a9/76/a051272d187ca4b49f8e29f02b0b313c4911a9524c70ae14680fd119a57d/koerce-0.5.1-cp311-cp311-win32.whl", hash = "sha256:5653f30ab9ecd4f55bd06aa2bf588d0c2a5604119d0677131751adb7a6ce635a", size = 425028 },
+    { url = "https://files.pythonhosted.org/packages/bd/37/0e33e9c868750da2df80e6a2a1fe22b3cea5324b9c85d27c6f05f1451b47/koerce-0.5.1-cp311-cp311-win_amd64.whl", hash = "sha256:38cc10a6e3480a51e1557788de570cdc42ff8c5cf83de4bc856062827f1e087c", size = 517233 },
+    { url = "https://files.pythonhosted.org/packages/21/b6/c1baa93b22fbf10d46deaa1019b4438191fe3da757b7f697a255f3720740/koerce-0.5.1-cp312-cp312-macosx_13_0_x86_64.whl", hash = "sha256:95b12440c2e00c90563fa327d70781f290d17602b9c71150f4d2541aae1b9744", size = 614415 },
+    { url = "https://files.pythonhosted.org/packages/ed/4d/4c2a05f0066639ccccb68e9a0e20d8e30f70de76d752fd80b8e9ef997f30/koerce-0.5.1-cp312-cp312-macosx_14_0_arm64.whl", hash = "sha256:813aa591e1b2dbfacef7f3311243b58a7be26115922d437e4c303d80aec56dcc", size = 561743 },
+    { url = "https://files.pythonhosted.org/packages/e8/8e/a2365ccceaea10afeb0b5d3bccfa6646595ee377ef78ead0acf023018544/koerce-0.5.1-cp312-cp312-manylinux_2_17_i686.manylinux_2_5_i686.manylinux1_i686.manylinux2014_i686.whl", hash = "sha256:d545eb05a33544e56df4c9ba1e780cba1eca9fcf5f7e4300d02922ce7ebadaab", size = 3890324 },
+    { url = "https://files.pythonhosted.org/packages/d3/f5/c18db790fafb964982bca5914f3b4b840b837fd3e073340e8dd63da9152b/koerce-0.5.1-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d924d9df9e8de3129bb8b4083d63ac246a4cd4fb4eb5af5c181c324fac9d50c3", size = 4201821 },
+    { url = "https://files.pythonhosted.org/packages/7a/a0/1eba9dfb0c9f02199ab44ca5224b7291fa5759a27b5fb6f5e97b554340fb/koerce-0.5.1-cp312-cp312-musllinux_1_2_i686.whl", hash = "sha256:03f0b03fa961c8f49d687ad351ea16b60878d09f5b3f36fc56b5f196f8d40db8", size = 3669864 },
+    { url = "https://files.pythonhosted.org/packages/01/d9/09a876e909a479345530ab40724bb0907fcfc21548a2841543ac321ea82e/koerce-0.5.1-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:64e94be035ec3b115576ed258ed293a7a81f074eea23108e8c2b2bc1482501da", size = 3876283 },
+    { url = "https://files.pythonhosted.org/packages/19/73/34866663ddf39d6b3ea5db4f822dc950894c9eb2764ee7eb14b423fd6359/koerce-0.5.1-cp312-cp312-win32.whl", hash = "sha256:de99f796f11490f9c900c1cc7b952e45973719007300e8a2de6f8149252bfb77", size = 411137 },
+    { url = "https://files.pythonhosted.org/packages/43/91/a438626128a0bb3a88d77bab60fa1e8bdd0ecaec8e6e6a658b8c2989a52e/koerce-0.5.1-cp312-cp312-win_amd64.whl", hash = "sha256:91d00ab89656a32cf669c2394595c89c8b147a2bc87d30ccc983e4c9cfa54a52", size = 496895 },
 ]
 
 [[package]]
