@@ -731,7 +731,7 @@ if not os.path.exists("thumbnail.png"):  # <2>
 1. Import extra libraries
 2. Check if the thumbnail already exists
 3. Use Marvin to generate a thumbnail from the blog post summary
-4. Get the thumbnail data from the URL
+4. Get the thumnail data from the URL
 5. Write the data's content to a file
 
 ```{python}
