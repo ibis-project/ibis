@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, ClassVar
 
 import sqlglot as sg
 import sqlglot.expressions as sge
-from koerce import Replace  # noqa: TCH002
+from koerce import Replace  # noqa: TC002
 from public import public
 
 import ibis.common.exceptions as com

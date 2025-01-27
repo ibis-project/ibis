@@ -415,7 +415,7 @@ class ArrayValue(Value):
             index = index_arg
 
         body = resolver_function(**kwargs)
-        
+
         return parameter, index, body
 
     def map(

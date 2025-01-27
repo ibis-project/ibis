@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from koerce import resolve, Deferred
+from koerce import Deferred, resolve
 
 import ibis
 import ibis.expr.datatypes as dt

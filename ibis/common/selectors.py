@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 
 from koerce import Annotable
 
-from ibis.common.typing import VarTuple  # noqa: TCH001
+from ibis.common.typing import VarTuple  # noqa: TC001
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

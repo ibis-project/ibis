@@ -3,10 +3,10 @@ from __future__ import annotations
 from operator import methodcaller
 
 import pytest
+from koerce import _
 
 import ibis
 import ibis.common.exceptions as com
-from koerce import _
 
 
 @pytest.mark.parametrize(
