@@ -41,6 +41,7 @@ from ibis.expr.types import (
     null,
     struct,
 )
+from ibis.expr.types.groupby import cube, group_id, grouping_sets, rollup
 from ibis.util import deprecated, experimental
 
 if TYPE_CHECKING:
@@ -73,6 +74,7 @@ __all__ = (
     "coalesce",
     "connect",
     "cross_join",
+    "cube",
     "cume_dist",
     "cumulative_window",
     "date",
@@ -86,6 +88,8 @@ __all__ = (
     "following",
     "get_backend",
     "greatest",
+    "group_id",
+    "grouping_sets",
     "ifelse",
     "infer_dtype",
     "infer_schema",
@@ -113,6 +117,7 @@ __all__ = (
     "read_delta",
     "read_json",
     "read_parquet",
+    "rollup",
     "row_number",
     "rows_window",
     "schema",

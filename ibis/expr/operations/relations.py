@@ -307,21 +307,40 @@ class Aggregate(Relation):
     """Aggregate a table by a set of group by columns and metrics."""
 
     parent: Relation
-    groups: FrozenOrderedDict[str, Unaliased[Value]]
+
     metrics: FrozenOrderedDict[str, Unaliased[Scalar]]
 
-    def __init__(self, parent, groups, metrics):
-        _check_integrity(groups.values(), {parent})
+    # duplication is needed so that the compiler will compile the elements of keys/groups
+    keys: FrozenOrderedDict[str, Unaliased[Value]]
+    """Values to always output in a projection. Unique expressions across `groups` and `grouping_sets` and friends."""
+
+    groups: FrozenOrderedDict[str, Unaliased[Value]]
+    """Grouping keys. Equivalent to `keys` when no grouping sets, rollups, or cubes are present."""
+
+    grouping_sets: VarTuple[VarTuple[VarTuple[Value]]] = ()
+    rollups: VarTuple[VarTuple[Value]] = ()
+    cubes: VarTuple[VarTuple[Value]] = ()
+
+    def __init__(self, parent, keys, groups, metrics, grouping_sets, rollups, cubes):
+        _check_integrity(keys.values(), {parent})
         _check_integrity(metrics.values(), {parent})
-        if duplicates := groups.keys() & metrics.keys():
+        if duplicates := keys.keys() & metrics.keys():
             raise RelationError(
                 f"Cannot add {duplicates} to aggregate, they are already in the groupby"
             )
-        super().__init__(parent=parent, groups=groups, metrics=metrics)
+        super().__init__(
+            parent=parent,
+            keys=keys,
+            groups=groups,
+            metrics=metrics,
+            grouping_sets=grouping_sets,
+            rollups=rollups,
+            cubes=cubes,
+        )
 
     @attribute
     def values(self):
-        return FrozenOrderedDict({**self.groups, **self.metrics})
+        return FrozenOrderedDict({**self.keys, **self.metrics})
 
     @attribute
     def schema(self):

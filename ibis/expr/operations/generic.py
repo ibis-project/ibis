@@ -338,4 +338,14 @@ class SearchedCase(Value):
         return rlz.highest_precedence_dtype(exprs)
 
 
+@public
+class GroupID(Value):
+    arg: Annotated[VarTuple[Value], Length(at_least=1)]
+
+    dtype = dt.int64
+
+    # scalar because it's always used in grouping context
+    shape = ds.scalar
+
+
 public(NULL=NULL)
