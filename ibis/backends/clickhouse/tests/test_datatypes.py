@@ -296,7 +296,7 @@ roundtrippable_types = st.deferred(
         | its.date_dtype()
         | its.time_dtype()
         | its.timestamp_dtype(scale=st.integers(0, 9))
-        | its.array_dtypes(roundtrippable_types, nullable=false)
+        | its.array_dtypes(roundtrippable_types, nullable=false, length=st.none())
         | its.map_dtypes(map_key_types, roundtrippable_types, nullable=false)
     )
 )

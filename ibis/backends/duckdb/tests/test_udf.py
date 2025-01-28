@@ -6,6 +6,7 @@ from pytest import param
 
 import ibis
 from ibis import udf
+from ibis.util import gen_name
 
 
 @udf.scalar.builtin
@@ -149,3 +150,31 @@ def test_builtin_udf_uses_dialect():
     e = regexp_extract("2023-04-15", r"(\d+)-(\d+)-(\d+)", ["y", "m", "d"])
     sql = str(ibis.to_sql(e, dialect="duckdb"))
     assert r"REGEXP_EXTRACT('2023-04-15', '(\d+)-(\d+)-(\d+)', ['y', 'm', 'd'])" in sql
+
+
+@pytest.fixture(scope="module")
+def array_cosine_t(con):
+    return con.create_table(
+        gen_name("array_cosine_t"),
+        obj={"fixed": [[1, 2, 3]], "varlen": [[1, 2, 3]]},
+        schema={"fixed": "array<double, 3>", "varlen": "array<double>"},
+        temp=True,
+    )
+
+
+@pytest.mark.parametrize(
+    ("column", "expr_fn"),
+    [
+        ("fixed", lambda c: c),
+        ("varlen", lambda c: c.cast("array<float, 3>")),
+    ],
+    ids=["no-cast", "cast"],
+)
+def test_builtin_fixed_length_array_udf(array_cosine_t, column, expr_fn):
+    @udf.scalar.builtin
+    def array_cosine_similarity(a, b) -> float: ...
+
+    expr = expr_fn(array_cosine_t[column])
+    expr = array_cosine_similarity(expr, expr)
+    result = expr.execute()
+    assert result.iat[0] == 1.0

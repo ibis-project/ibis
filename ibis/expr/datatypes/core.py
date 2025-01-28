@@ -8,6 +8,7 @@ from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from numbers import Integral, Real
 from typing import (
+    Annotated,
     Any,
     Generic,
     Literal,
@@ -27,7 +28,7 @@ from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet
 from ibis.common.dispatch import lazy_singledispatch
 from ibis.common.grounds import Concrete, Singleton
-from ibis.common.patterns import Coercible, CoercionError
+from ibis.common.patterns import Between, Coercible, CoercionError
 from ibis.common.temporal import IntervalUnit, TimestampUnit
 
 
@@ -50,14 +51,14 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
     >>> ibis.dtype("int32")
     Int32(nullable=True)
     >>> ibis.dtype("array<float>")
-    Array(value_type=Float64(nullable=True), nullable=True)
+    Array(value_type=Float64(nullable=True), length=None, nullable=True)
 
     DataType objects may also be created from Python types:
 
     >>> ibis.dtype(int)
     Int64(nullable=True)
     >>> ibis.dtype(list[float])
-    Array(value_type=Float64(nullable=True), nullable=True)
+    Array(value_type=Float64(nullable=True), length=None, nullable=True)
 
     Or other type systems, like numpy/pandas/pyarrow types:
 
@@ -308,6 +309,10 @@ class DataType(Concrete, Coercible):
     def is_enum(self) -> bool:
         """Return True if an instance of an Enum type."""
         return isinstance(self, Enum)
+
+    def is_fixed_length_array(self) -> bool:
+        """Return True if an instance of an Array type and has a known length."""
+        return isinstance(self, Array) and self.length is not None
 
     def is_float16(self) -> bool:
         """Return True if an instance of a Float16 type."""
@@ -904,13 +909,19 @@ class Array(Variadic, Parametric, Generic[T]):
     """Array values."""
 
     value_type: T
+    """Element type of the array."""
+    length: Annotated[int, Between(lower=0)] | None = None
+    """The length of the array if known."""
 
     scalar = "ArrayScalar"
     column = "ArrayColumn"
 
     @property
     def _pretty_piece(self) -> str:
-        return f"<{self.value_type}>"
+        value_type = self.value_type
+        if (length := self.length) is not None:
+            return f"<{value_type}, {length:d}>"
+        return f"<{value_type}>"
 
 
 K = TypeVar("K", bound=DataType, covariant=True)
@@ -922,7 +933,9 @@ class Map(Variadic, Parametric, Generic[K, V]):
     """Associative array values."""
 
     key_type: K
+    """Map key type."""
     value_type: V
+    """Map value type."""
 
     scalar = "MapScalar"
     column = "MapColumn"
