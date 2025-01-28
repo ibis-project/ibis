@@ -454,7 +454,7 @@ class OracleCompiler(SQLGlotCompiler):
 
         order = sge.Order(expressions=order_by) if order_by else None
 
-        spec = self._minimize_spec(op.start, op.end, spec)
+        spec = self._minimize_spec(op, spec)
 
         return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
 

@@ -1,3 +1,3 @@
 SELECT
-  MAX(`t0`.`f`) OVER (ORDER BY `t0`.`d` ASC) AS `foo`
+  MAX(`t0`.`f`) OVER (ORDER BY `t0`.`d` ASC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS `foo`
 FROM `alltypes` AS `t0`

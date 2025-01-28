@@ -10,7 +10,12 @@ from ibis import util
 from ibis.backends.sql.compilers.base import NULL, STAR, SQLGlotCompiler
 from ibis.backends.sql.datatypes import ImpalaType
 from ibis.backends.sql.dialects import Impala
-from ibis.backends.sql.rewrites import lower_sample, rewrite_empty_order_by_window
+from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
+    lower_sample,
+    rewrite_empty_order_by_window,
+)
 
 
 class ImpalaCompiler(SQLGlotCompiler):
@@ -73,28 +78,11 @@ class ImpalaCompiler(SQLGlotCompiler):
     }
 
     @staticmethod
-    def _minimize_spec(start, end, spec):
-        # start is None means unbounded preceding
-        if start is None:
-            # end is None: unbounded following
-            # end == 0 => current row
-            # these are treated the same because for the functions where these
-            # are not allowed they end up behaving the same
-            #
-            # I think we're not covering some cases here:
-            # These will be treated the same, even though they're not
-            # - window(order_by=x, rows=(None, None))  # should be equivalent to `over ()`
-            # - window(order_by=x, rows=(None, 0))     # equivalent to a cumulative aggregation
-            #
-            # TODO(cpcloud): we need to clean up the semantics of unbounded
-            # following vs current row at the API level.
-            #
-            if end is None or (
-                isinstance(getattr(end, "value", None), ops.Literal)
-                and end.value.value == 0
-                and end.following
-            ):
-                return None
+    def _minimize_spec(op, spec):
+        if isinstance(func := op.func, ops.Analytic) and not isinstance(
+            func, (ops.First, ops.Last, FirstValue, LastValue, ops.NthValue)
+        ):
+            return None
         return spec
 
     def visit_Log2(self, op, *, arg):

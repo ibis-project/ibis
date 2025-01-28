@@ -1185,12 +1185,12 @@ class SQLGlotCompiler(abc.ABC):
         )
         order = sge.Order(expressions=order_by) if order_by else None
 
-        spec = self._minimize_spec(op.start, op.end, spec)
+        spec = self._minimize_spec(op, spec)
 
         return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
 
     @staticmethod
-    def _minimize_spec(start, end, spec):
+    def _minimize_spec(op, spec):
         return spec
 
     def visit_LagLead(self, op, *, arg, offset, default):
