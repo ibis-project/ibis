@@ -7,7 +7,7 @@ import pandas.testing as tm
 import pytest
 
 import ibis
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 pytest.importorskip("clickhouse_connect")
 

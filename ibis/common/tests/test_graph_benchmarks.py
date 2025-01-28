@@ -3,16 +3,15 @@ from __future__ import annotations
 from typing import Any, Optional
 
 import pytest
+from koerce import Object, _
 from typing_extensions import Self
 
 from ibis.common.collections import frozendict
-from ibis.common.deferred import _
 from ibis.common.graph import Graph, Node
 from ibis.common.grounds import Concrete
-from ibis.common.patterns import Between, Object
 
 
-class MyNode(Concrete, Node):
+class MyNode(Node, Concrete):
     a: int
     b: str
     c: tuple[int, ...]
@@ -56,7 +55,7 @@ def test_dfs(benchmark):
 
 def test_replace_pattern(benchmark):
     node = generate_node(500)
-    pattern = Object(MyNode, a=Between(lower=100)) >> _.copy(a=_.a + 1)
+    pattern = Object(MyNode, a=int) >> _.copy(a=_.a + 1)
     benchmark(node.replace, pattern)
 
 
