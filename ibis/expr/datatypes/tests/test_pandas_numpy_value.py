@@ -195,5 +195,5 @@ def test_infer_numpy_array(numpy_array, expected_dtypes):
 def test_normalize_non_convertible_boolean():
     typ = dt.boolean
     value = np.array([1, 2, 3])
-    with pytest.raises(TypeError, match="Unable to normalize .+ to Boolean"):
+    with pytest.raises(TypeError, match="Unable to normalize .+ to boolean"):
         dt.normalize(typ, value)

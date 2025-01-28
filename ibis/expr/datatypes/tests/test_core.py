@@ -487,14 +487,14 @@ def test_timestamp_with_invalid_timezone():
     assert str(ts) == "timestamp('Foo/Bar&234')"
 
 
-def test_timestamp_with_timezone_repr():
-    ts = dt.Timestamp("UTC")
-    assert repr(ts) == "Timestamp(timezone='UTC', scale=None, nullable=True)"
-
-
 def test_timestamp_with_timezone_str():
     ts = dt.Timestamp("UTC")
     assert str(ts) == "timestamp('UTC')"
+
+
+def test_timestamp_with_timezone_scale_str():
+    ts = dt.Timestamp("UTC", scale=4)
+    assert str(ts) == "timestamp('UTC', 4)"
 
 
 def test_time_str():
