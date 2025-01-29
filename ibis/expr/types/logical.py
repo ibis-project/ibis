@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 @public
 class BooleanValue(NumericValue):
-    def ifelse(self, true_expr: ir.Value, false_expr: ir.Value) -> ir.Value:
+    def ifelse(self, true_expr: ir.Value, false_expr: ir.Value, /) -> ir.Value:
         """Construct a ternary conditional expression.
 
         Parameters
