@@ -2548,7 +2548,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ibis.cume_dist().over(order_by=self)
 
-    def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+    def ntile(self, buckets: int | ir.IntegerValue, /) -> ir.IntegerColumn:
         """Return the integer number of a partitioning of the column values.
 
         Parameters

@@ -1414,7 +1414,7 @@ def cume_dist() -> ir.FloatingColumn:
     return ops.CumeDist().to_expr()
 
 
-def ntile(buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+def ntile(buckets: int | ir.IntegerValue, /) -> ir.IntegerColumn:
     """Return the integer number of a partitioning of the column values.
 
     Parameters
