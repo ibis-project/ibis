@@ -14,8 +14,7 @@ from ibis.expr.types.generic import Column, Scalar, Value
 @public
 class BinaryValue(Value):
     def hashbytes(
-        self,
-        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+        self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
     ) -> ir.BinaryValue:
         """Compute the binary hash value of `arg`.
 
