@@ -831,6 +831,14 @@ $$""".format(
     def visit_ArrayAll(self, op, *, arg):
         return self._array_reduction(arg=arg, reduction="bool_and")
 
+    def visit_ArrayMode(self, op, *, arg):
+        name = sg.to_identifier(gen_name("pg_arr_mode"))
+        expr = sge.WithinGroup(
+            this=self.f.mode(),
+            expression=sge.Order(expressions=[sge.Ordered(this=name)]),
+        )
+        return sg.select(expr).from_(self._unnest(arg, as_=name)).subquery()
+
     def visit_StringToTime(self, op, *, arg, format_str):
         return self.cast(self.f.str_to_time(arg, format_str), to=dt.time)
 
