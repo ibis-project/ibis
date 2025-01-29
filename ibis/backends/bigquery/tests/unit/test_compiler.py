@@ -97,7 +97,7 @@ def test_hash(case, dtype, snapshot):
 @pytest.mark.parametrize("how", ["md5", "sha1", "sha256", "sha512"])
 def test_hashbytes(case, how, dtype, snapshot):
     var = ibis.literal(case, type=dtype)
-    expr = var.hashbytes(how=how).name("tmp")
+    expr = var.hashbytes(how).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -319,25 +319,34 @@ def test_geospatial_unary_union(snapshot):
 
 
 @pytest.mark.parametrize(
-    ("operation", "keywords"),
+    "operation",
     [
-        param("area", {}, id="aread"),
-        param("as_binary", {}, id="as_binary"),
-        param("as_text", {}, id="as_text"),
-        param("buffer", {"radius": 5.2}, id="buffer"),
-        param("centroid", {}, id="centroid"),
-        param("end_point", {}, id="end_point"),
-        param("geometry_type", {}, id="geometry_type"),
-        param("length", {}, id="length"),
-        param("n_points", {}, id="npoints"),
-        param("perimeter", {}, id="perimeter"),
-        param("point_n", {"n": 3}, id="point_n"),
-        param("start_point", {}, id="start_point"),
+        "area",
+        "as_binary",
+        "as_text",
+        "centroid",
+        "end_point",
+        "geometry_type",
+        "length",
+        "n_points",
+        "perimeter",
+        "start_point",
     ],
 )
-def test_geospatial_unary(operation, keywords, snapshot):
+def test_geospatial_unary(operation, snapshot):
     t = ibis.table([("geog", "geography")], name="t")
-    expr = getattr(t.geog, operation)(**keywords).name("tmp")
+    method = methodcaller(operation)
+    expr = method(t.geog).name("tmp")
+    snapshot.assert_match(to_sql(expr), "out.sql")
+
+
+@pytest.mark.parametrize(
+    ("operation", "arg"), [("buffer", 5.2), ("point_n", 3)], ids=["buffer", "point_n"]
+)
+def test_geospatial_unary_positional_only(operation, arg, snapshot):
+    t = ibis.table([("geog", "geography")], name="t")
+    method = methodcaller(operation, arg)
+    expr = method(t.geog).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
@@ -382,13 +391,13 @@ def test_geospatial_xy(dimension_name, snapshot):
 
 def test_geospatial_simplify(snapshot):
     t = ibis.table([("geog", "geography")], name="t")
-    expr = t.geog.simplify(5.2, preserve_collapsed=False).name("tmp")
+    expr = t.geog.simplify(tolerance=5.2, preserve_collapsed=False).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 
 def test_geospatial_simplify_error():
     t = ibis.table([("geog", "geography")], name="t")
-    expr = t.geog.simplify(5.2, preserve_collapsed=True).name("tmp")
+    expr = t.geog.simplify(tolerance=5.2, preserve_collapsed=True).name("tmp")
     with pytest.raises(
         Exception, match="simplify does not support preserving collapsed geometries"
     ):

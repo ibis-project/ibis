@@ -248,8 +248,8 @@ def test_where_simple_comparisons(star1, snapshot):
 @pytest.mark.parametrize(
     "expr_fn",
     [
-        lambda t: t.agg([t["f"].sum().name("total")], [t["foo_id"]]),
-        lambda t: t.agg([t["f"].sum().name("total")], ["foo_id", "bar_id"]),
+        lambda t: t.agg([t["f"].sum().name("total")], by=[t["foo_id"]]),
+        lambda t: t.agg([t["f"].sum().name("total")], by=["foo_id", "bar_id"]),
         lambda t: t.agg(
             [t.f.sum().name("total")], by=["foo_id"], having=[t.f.sum() > 10]
         ),

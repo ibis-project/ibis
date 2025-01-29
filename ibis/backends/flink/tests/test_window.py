@@ -57,7 +57,7 @@ def test_window_invalid_start_end(con, window):
 def test_tumble_window_by_grouped_agg(con):
     t = con.table("functional_alltypes_with_watermark")
     expr = (
-        t.window_by(time_col=t.timestamp_col)
+        t.window_by(t.timestamp_col)
         .tumble(size=ibis.interval(seconds=30))
         .agg(by=["string_col"], avg=_.float_col.mean())
     )
@@ -69,7 +69,7 @@ def test_tumble_window_by_grouped_agg(con):
 def test_tumble_window_by_ungrouped_agg(con):
     t = con.table("functional_alltypes_with_watermark")
     expr = (
-        t.window_by(time_col=t.timestamp_col)
+        t.window_by(t.timestamp_col)
         .tumble(size=ibis.interval(seconds=30))
         .agg(avg=_.float_col.mean())
     )

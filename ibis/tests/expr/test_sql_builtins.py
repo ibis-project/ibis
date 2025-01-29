@@ -20,7 +20,6 @@ import ibis.backends.sql.compilers as sc
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
-from ibis.common.annotations import SignatureValidationError
 from ibis.tests.util import assert_equal
 
 
@@ -221,7 +220,8 @@ def test_deferred(sql_table, function):
 
 def test_no_arguments_errors(function):
     with pytest.raises(
-        SignatureValidationError, match=".+ has failed due to the following errors:"
+        TypeError,
+        match=rf"{function.__name__}\(\) missing 1 required positional argument",
     ):
         function()
 

@@ -19,7 +19,7 @@ def test_mutate_with_analytic_functions(alltypes):
         f.rank(),
         f.dense_rank(),
         f.percent_rank(),
-        f.ntile(buckets=7),
+        f.ntile(7),
         f.first(),
         f.last(),
         f.first().over(ibis.window(preceding=10)),

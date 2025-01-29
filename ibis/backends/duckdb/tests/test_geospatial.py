@@ -39,7 +39,7 @@ def test_geospatial_unary_snapshot(operation, assert_sql):
 
 def test_geospatial_dwithin(assert_sql):
     t = ibis.table([("geom", "geometry")], name="t")
-    expr = t.geom.d_within(t.geom, 3.0).name("tmp")
+    expr = t.geom.d_within(t.geom, distance=3.0).name("tmp")
     assert_sql(expr)
 
 

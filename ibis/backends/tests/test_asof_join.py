@@ -104,7 +104,7 @@ def time_keyed_right(time_keyed_df2):
 )
 def test_asof_join(con, time_left, time_right, time_df1, time_df2, direction, op):
     on = op(time_left["time"], time_right["time"])
-    expr = time_left.asof_join(time_right, on=on, predicates="group")
+    expr = time_left.asof_join(time_right, on, "group")
 
     result = con.execute(expr)
     expected = pd.merge_asof(
@@ -160,7 +160,7 @@ def test_keyed_asof_join_with_tolerance(
 ):
     on = op(time_keyed_left["time"], time_keyed_right["time"])
     expr = time_keyed_left.asof_join(
-        time_keyed_right, on=on, predicates="key", tolerance=ibis.interval(days=2)
+        time_keyed_right, on, "key", tolerance=ibis.interval(days=2)
     )
 
     result = con.execute(expr)
