@@ -444,8 +444,7 @@ class StringValue(Value):
         return ops.StringContains(self, substr).to_expr()
 
     def hashbytes(
-        self,
-        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+        self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
     ) -> ir.BinaryValue:
         r"""Compute the binary hash value of the input.
 
@@ -468,8 +467,7 @@ class StringValue(Value):
         return ops.HashBytes(self, how).to_expr()
 
     def hexdigest(
-        self,
-        how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256",
+        self, how: Literal["md5", "sha1", "sha256", "sha512"] = "sha256", /
     ) -> ir.StringValue:
         """Return the hash digest of the input as a hex encoded string.
 
