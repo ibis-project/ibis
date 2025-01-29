@@ -175,7 +175,7 @@ ibis.Schema {
 """
 
 
-def param(type: dt.DataType) -> ir.Scalar:
+def param(type: dt.DataType, /) -> ir.Scalar:
     """Create a deferred parameter of a given type.
 
     Parameters
