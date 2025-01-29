@@ -326,6 +326,7 @@ def table(
 
 def memtable(
     data,
+    /,
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
