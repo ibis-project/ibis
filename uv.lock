@@ -2254,7 +2254,7 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "atpublic", specifier = ">=2.3" },
-    { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0,<25" },
+    { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0,<26" },
     { name = "clickhouse-connect", extras = ["arrow", "pandas", "numpy"], marker = "extra == 'clickhouse'", specifier = ">=0.5.23,<1" },
     { name = "databricks-sql-connector-core", marker = "extra == 'databricks'", specifier = ">=4,<5" },
     { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6,<44" },
