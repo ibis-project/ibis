@@ -1179,7 +1179,7 @@ def interval(
     return functools.reduce(operator.add, intervals)
 
 
-@deprecated(as_of="10.0.0", instead="use ibis.cases()")
+@deprecated(as_of="10.0.0", removed_in="11.0", instead="use ibis.cases()")
 def case() -> bl.SearchedCaseBuilder:
     """DEPRECATED: Use `ibis.cases()` instead."""
     return bl.SearchedCaseBuilder()
