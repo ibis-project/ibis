@@ -125,10 +125,9 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
-
         """
         return self.execute(expr, params=params, limit=limit, **kwargs)
 
@@ -151,7 +150,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         chunk_size
             Maximum number of rows in each returned `DataFrame` batch. This may have
             no effect depending on the backend.
@@ -200,7 +199,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
 
@@ -247,7 +246,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
 
@@ -283,7 +282,7 @@ class _FileIOHandler:
             Ibis expression to export to pyarrow
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
