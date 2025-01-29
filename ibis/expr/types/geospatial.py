@@ -408,6 +408,8 @@ class GeoSpatialValue(NumericValue):
     def d_within(
         self,
         right: GeoSpatialValue,
+        /,
+        *,
         distance: ir.FloatingValue,
     ) -> ir.BooleanValue:
         """Check if `self` is partially within `distance` from `right`.
@@ -435,7 +437,7 @@ class GeoSpatialValue(NumericValue):
 
         Check zones within 1000ft of Penn Station centroid
 
-        >>> t.geom.d_within(penn_lit, 1000).name("d_within_1000")
+        >>> t.geom.d_within(penn_lit, distance=1000).name("d_within_1000")
         ┏━━━━━━━━━━━━━━━┓
         ┃ d_within_1000 ┃
         ┡━━━━━━━━━━━━━━━┩
@@ -453,7 +455,7 @@ class GeoSpatialValue(NumericValue):
         │ False         │
         │ …             │
         └───────────────┘
-        >>> t.filter(t.geom.d_within(penn_lit, 1000))[["zone"]]
+        >>> t.filter(t.geom.d_within(penn_lit, distance=1000))[["zone"]]
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ zone                         ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
