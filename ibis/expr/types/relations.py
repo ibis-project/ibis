@@ -1298,7 +1298,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 self, fraction=fraction, method=method, seed=seed
             ).to_expr()
 
-    def limit(self, n: int | None, *, offset: int = 0) -> Table:
+    def limit(self, n: int | None, /, *, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
         ::: {.callout-note}
@@ -1361,7 +1361,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return ops.Limit(self, n, offset).to_expr()
 
-    def head(self, n: int = 5) -> Table:
+    def head(self, n: int = 5, /) -> Table:
         """Select the first `n` rows of a table.
 
         ::: {.callout-note}
@@ -1408,7 +1408,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         [`Table.limit`](#ibis.expr.types.relations.Table.limit)
         [`Table.order_by`](#ibis.expr.types.relations.Table.order_by)
         """
-        return self.limit(n=n)
+        return self.limit(n)
 
     def order_by(
         self,
