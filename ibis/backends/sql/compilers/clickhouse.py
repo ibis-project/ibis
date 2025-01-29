@@ -120,13 +120,8 @@ class ClickHouseCompiler(SQLGlotCompiler):
     }
 
     @staticmethod
-    def _minimize_spec(start, end, spec):
-        if (
-            start is None
-            and isinstance(getattr(end, "value", None), ops.Literal)
-            and end.value.value == 0
-            and end.following
-        ):
+    def _minimize_spec(op, spec):
+        if isinstance(op.func, ops.NTile):
             return None
         return spec
 

@@ -665,11 +665,6 @@ def test_simple_ungrouped_window_with_scalar_order_by(alltypes):
             id="ordered-mean",
             marks=[
                 pytest.mark.notimpl(
-                    ["impala"],
-                    reason="default window semantics are different",
-                    raises=AssertionError,
-                ),
-                pytest.mark.notimpl(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason="Feature is not yet implemented: Window function with empty PARTITION BY is not supported yet",
@@ -1242,3 +1237,52 @@ def test_windowed_order_by_sequence_is_preserved(con):
     result = con.execute(expr)
     value = result.bool_col.loc[result["rank"] == 4].item()
     assert pd.isna(value)
+
+
+@pytest.mark.notimpl(
+    ["polars"],
+    raises=com.OperationNotDefinedError,
+    reason="window functions aren't yet implemented for the polars backend",
+)
+@pytest.mark.notimpl(
+    ["flink"],
+    raises=AssertionError,
+    reason="default behavior is the same as bigquery and hasn't been addressed",
+)
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notimpl(
+    ["risingwave"],
+    raises=PsycoPg2InternalError,
+    reason="Window function with empty PARTITION BY is not supported due to performance issues",
+)
+def test_duplicate_ordered_sum(con):
+    expr = (
+        ibis.memtable(
+            {"id": range(4), "ranking": [1, 2, 3, 3], "rewards": [10, 20, 30, 40]}
+        )
+        .mutate(csum=lambda t: t.rewards.cumsum(order_by="ranking"))
+        .order_by("id")
+    )
+    arrow_table = con.to_pyarrow(expr)
+
+    result = arrow_table["csum"].to_pylist()
+
+    assert len(result) == 4
+
+    assert result[0] == 10
+    assert result[1] == 30
+    # why? because the order_by column is not unique, so both
+    #
+    # 10 -> 10 + 20 -> 10 + 20 + 30 => 10 -> 30 -> 60
+    #
+    # *AND*
+    #
+    # 10 -> 10 + 20 -> 10 + 20 + 40 => 10 -> 30 -> 70
+    #
+    # are valid, and it *may* depend on how the computation is distributed in
+    # the query engine
+    #
+    # this also means the final cumulative sum can be in the penultimate or
+    # final position, since the *output* order doesn't depend on ORDER BY
+    # provided by the user
+    assert result[2:] in ([60, 100], [70, 100], [100, 60], [100, 70])

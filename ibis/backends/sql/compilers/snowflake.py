@@ -25,6 +25,8 @@ from ibis.backends.sql.compilers.base import (
 from ibis.backends.sql.datatypes import SnowflakeType
 from ibis.backends.sql.dialects import Snowflake
 from ibis.backends.sql.rewrites import (
+    FirstValue,
+    LastValue,
     exclude_unsupported_window_frame_from_ops,
     exclude_unsupported_window_frame_from_row_number,
     lower_log2,
@@ -236,17 +238,6 @@ $$""",
 
     _compile_pandas_udf = _compile_udf
     _compile_python_udf = _compile_udf
-
-    @staticmethod
-    def _minimize_spec(start, end, spec):
-        if (
-            start is None
-            and isinstance(getattr(end, "value", None), ops.Literal)
-            and end.value.value == 0
-            and end.following
-        ):
-            return None
-        return spec
 
     def visit_Literal(self, op, *, value, dtype):
         if value is None:
@@ -668,47 +659,19 @@ $$""",
         # boolxor accepts numerics ... and returns a boolean? wtf?
         return self.f.boolxor(self.cast(left, dt.int8), self.cast(right, dt.int8))
 
-    def visit_WindowFunction(self, op, *, how, func, start, end, group_by, order_by):
-        if start is None:
-            start = {}
-        if end is None:
-            end = {}
-
-        start_value = start.get("value", "UNBOUNDED")
-        start_side = start.get("side", "PRECEDING")
-        end_value = end.get("value", "UNBOUNDED")
-        end_side = end.get("side", "FOLLOWING")
-
-        if getattr(start_value, "this", None) == "0":
-            start_value = "CURRENT ROW"
-            start_side = None
-
-        if getattr(end_value, "this", None) == "0":
-            end_value = "CURRENT ROW"
-            end_side = None
-
-        spec = sge.WindowSpec(
-            kind=how.upper(),
-            start=start_value,
-            start_side=start_side,
-            end=end_value,
-            end_side=end_side,
-            over="OVER",
-        )
-        order = sge.Order(expressions=order_by) if order_by else None
-
-        orig_spec = spec
-        spec = self._minimize_spec(op.start, op.end, orig_spec)
-
-        # due to https://docs.snowflake.com/en/sql-reference/functions-analytic#window-frame-usage-notes
-        # we need to make the default window rows (since range isn't supported)
-        # and we need to make the default frame unbounded preceding to current
-        # row
-        if spec is None and isinstance(op.func, (ops.First, ops.Last, ops.NthValue)):
-            spec = orig_spec
+    @staticmethod
+    def _minimize_spec(op, spec):
+        if isinstance(func := op.func, ops.Analytic) and not isinstance(
+            func, (ops.First, ops.Last, FirstValue, LastValue, ops.NthValue)
+        ):
+            return None
+        elif isinstance(op.func, (ops.First, ops.Last, ops.NthValue)):
+            # due to
+            # https://docs.snowflake.com/en/sql-reference/functions-analytic#window-frame-usage-notes
+            # we need to make the default window rows (since range isn't supported) and we need
+            # to make the default frame unbounded preceding to current row
             spec.args["kind"] = "ROWS"
-
-        return sge.Window(this=func, partition_by=group_by, order=order, spec=spec)
+        return spec
 
     def visit_WindowBoundary(self, op, *, value, preceding):
         if not isinstance(op.value, ops.Literal):

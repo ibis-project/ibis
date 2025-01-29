@@ -128,16 +128,16 @@ class FlinkCompiler(SQLGlotCompiler):
         return groups
 
     @staticmethod
-    def _minimize_spec(start, end, spec):
+    def _minimize_spec(op, spec):
         if (
-            start is None
-            and isinstance(getattr(end, "value", None), ops.Literal)
+            op.start is None
+            and isinstance(getattr(end := op.end, "value", None), ops.Literal)
             and end.value.value == 0
             and end.following
         ):
             return None
         elif (
-            isinstance(getattr(end, "value", None), ops.Cast)
+            isinstance(getattr(end := op.end, "value", None), ops.Cast)
             and end.value.arg.value == 0
             and end.following
         ):
