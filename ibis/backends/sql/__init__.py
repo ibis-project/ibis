@@ -212,12 +212,31 @@ class SQLBackend(BaseBackend):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
-    ) -> Any:
-        """Execute an expression."""
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
 
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame | Series | scalar
+            The result of the expression execution.
+        """
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
         sql = self.compile(table, params=params, limit=limit, **kwargs)

@@ -1318,15 +1318,19 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
-        **_: Any,
-    ) -> Any:
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
         import pandas as pd
         import pyarrow.types as pat
 
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).arrow()
 
         df = pd.DataFrame(
             {

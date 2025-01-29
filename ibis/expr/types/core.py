@@ -399,10 +399,11 @@ class Expr(Immutable, Coercible):
 
     def execute(
         self,
+        *,
         limit: int | str | None = "default",
         params: Mapping[ir.Value, Any] | None = None,
         **kwargs: Any,
-    ):
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression against its backend if one exists.
 
         Parameters

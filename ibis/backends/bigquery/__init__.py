@@ -807,7 +807,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             (_postprocess_arrow(b, colnames) for b in batch_iter),
         )
 
-    def execute(self, expr, params=None, limit="default", **kwargs):
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
         """Compile and execute the given Ibis expression.
 
         Compile and execute Ibis expression using this backend client

@@ -399,6 +399,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = "default",
         params: Mapping[ir.Scalar, Any] | None = None,
         external_tables: Mapping[str, pd.DataFrame] | None = None,

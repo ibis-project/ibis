@@ -459,10 +459,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
-    ) -> Any:
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
 
         self._run_pre_execute_hooks(expr)
