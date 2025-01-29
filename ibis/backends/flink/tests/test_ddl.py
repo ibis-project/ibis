@@ -507,9 +507,7 @@ def test_insert_simple_select(con, tempdir_sink_configs):
 def test_read_csv(con, awards_players_schema, csv_source_configs, table_name):
     source_configs = csv_source_configs("awards_players")
     table = con.read_csv(
-        path=source_configs["path"],
-        schema=awards_players_schema,
-        table_name=table_name,
+        source_configs["path"], schema=awards_players_schema, table_name=table_name
     )
     try:
         if table_name is None:
@@ -526,9 +524,7 @@ def test_read_parquet(con, data_dir, tmp_path, table_name, functional_alltypes_s
     fname = Path("functional_alltypes.parquet")
     fname = Path(data_dir) / "parquet" / fname.name
     table = con.read_parquet(
-        path=tmp_path / fname.name,
-        schema=functional_alltypes_schema,
-        table_name=table_name,
+        tmp_path / fname.name, schema=functional_alltypes_schema, table_name=table_name
     )
 
     try:
@@ -553,7 +549,7 @@ def test_read_json(con, data_dir, tmp_path, table_name, functional_alltypes_sche
     path = tmp_path / "functional_alltypes.json"
     df.to_json(path, orient="records", lines=True, date_format="iso")
     table = con.read_json(
-        path=path, schema=functional_alltypes_schema, table_name=table_name
+        path, schema=functional_alltypes_schema, table_name=table_name
     )
 
     try:

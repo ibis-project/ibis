@@ -993,7 +993,7 @@ def test_asof_join_with_by():
         )
         assert join_without_by.op() == expected
 
-    join_with_predicates = api.asof_join(left, right, "time", predicates="key")
+    join_with_predicates = api.asof_join(left, right, "time", "key")
     with join_tables(join_with_predicates) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
@@ -1762,8 +1762,7 @@ def test_filter_applied_to_join():
     gdp = ibis.table([("country_code", "string"), ("year", "int64")])
 
     expr = countries.inner_join(
-        gdp,
-        predicates=[countries["iso_alpha3"] == gdp["country_code"]],
+        gdp, [countries["iso_alpha3"] == gdp["country_code"]]
     ).filter(gdp["year"] == 2017)
     assert expr.columns == ("iso_alpha3", "country_code", "year")
 

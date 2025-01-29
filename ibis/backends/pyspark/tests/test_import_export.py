@@ -12,11 +12,12 @@ from ibis.backends.pyspark.datatypes import PySparkSchema
 @pytest.mark.parametrize(
     "method",
     [
-        methodcaller("read_delta", path="test.delta"),
-        methodcaller("read_csv", source_list="test.csv"),
-        methodcaller("read_parquet", path="test.parquet"),
-        methodcaller("read_json", source_list="test.json"),
+        methodcaller("read_delta", "test.delta"),
+        methodcaller("read_csv", "test.csv"),
+        methodcaller("read_parquet", "test.parquet"),
+        methodcaller("read_json", "test.json"),
     ],
+    ids=["read_delta", "read_csv", "read_parquet", "read_json"],
 )
 def test_streaming_import_not_implemented(con_streaming, method):
     with pytest.raises(NotImplementedError):

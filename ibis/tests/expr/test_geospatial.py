@@ -16,7 +16,7 @@ def test_geospatial_unary_op_repr(geo_table):
 
 
 def test_geospatial_bin_op_repr(geo_table):
-    expr = geo_table.geo1.d_within(geo_table.geo2, 3.0)
+    expr = geo_table.geo1.d_within(geo_table.geo2, distance=3.0)
     assert expr.op().name in repr(expr)
     assert "distance=" in repr(expr)
 

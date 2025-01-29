@@ -1411,12 +1411,12 @@ def test_clip(backend, alltypes, df, ibis_func, pandas_func):
 )
 def test_histogram(con, alltypes):
     n = 10
-    hist = con.execute(alltypes.int_col.histogram(n).name("hist"))
+    hist = con.execute(alltypes.int_col.histogram(nbins=n).name("hist"))
     vc = hist.value_counts().sort_index()
     vc_np, _bin_edges = np.histogram(alltypes.int_col.execute(), bins=n)
     expr = (
         ibis.memtable({"value": range(100)})
-        .select(bin=_.value.histogram(10))
+        .select(bin=_.value.histogram(nbins=10))
         .value_counts()
         .bin_count.nunique()
     )

@@ -516,7 +516,7 @@ def test_drop_null_invalid(alltypes):
     with pytest.raises(
         com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
     ):
-        alltypes.drop_null(subset=["invalid_col"])
+        alltypes.drop_null(["invalid_col"])
 
     with pytest.raises(ValidationError):
         alltypes.drop_null(how="invalid")
@@ -550,7 +550,7 @@ def test_drop_null_table(backend, alltypes, how, subset):
 
     table_pandas = table.execute()
     result = (
-        table.drop_null(subset, how).order_by("id").execute().reset_index(drop=True)
+        table.drop_null(subset, how=how).order_by("id").execute().reset_index(drop=True)
     )
     expected = (
         table_pandas.dropna(how=how, subset=subset)
@@ -2417,9 +2417,7 @@ def test_value_counts_on_tables(backend, df):
 
 
 def test_union_generates_predictable_aliases(con):
-    t = ibis.memtable(
-        data=[{"island": "Torgerson", "body_mass_g": 3750, "sex": "male"}]
-    )
+    t = ibis.memtable([{"island": "Torgerson", "body_mass_g": 3750, "sex": "male"}])
     sub1 = t.inner_join(t.view(), "island").mutate(island_right=lambda t: t.island)
     sub2 = t.inner_join(t.view(), "sex").mutate(sex_right=lambda t: t.sex)
     expr = ibis.union(sub1, sub2)

@@ -2041,7 +2041,7 @@ def test_timestamp_precision_output(con, ts, scale, unit):
     ],
 )
 def test_delta(con, start, end, unit, expected):
-    expr = end.delta(start, unit)
+    expr = end.delta(start, unit=unit)
     assert con.execute(expr) == expected
 
 
