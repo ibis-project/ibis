@@ -16,13 +16,13 @@ pytestmark = pytest.mark.duckdb
     [
         param(
             lambda star1, **_: star1.aggregate(
-                [star1["f"].sum().name("total")], [star1["foo_id"]]
+                [star1["f"].sum().name("total")], by=[star1["foo_id"]]
             ),
             id="agg_explicit_column",
         ),
         param(
             lambda star1, **_: star1.aggregate(
-                [star1["f"].sum().name("total")], ["foo_id", "bar_id"]
+                [star1["f"].sum().name("total")], by=["foo_id", "bar_id"]
             ),
             id="agg_string_columns",
         ),
@@ -917,7 +917,5 @@ def test_join_with_conditional_aggregate(snapshot):
     left = ibis.table({"on": "int", "by": "string"}, name="left")
     right = ibis.table({"on": "int", "by": "string", "val": "float"}, name="right")
     stat = right.filter(right.by == left.by, right.on <= left.on)["on"].max()
-    merged = left.join(right, how="left", predicates=left.by == right.by).filter(
-        right.on == stat
-    )
+    merged = left.join(right, left.by == right.by, how="left").filter(right.on == stat)
     snapshot.assert_match(to_sql(merged), "result.sql")

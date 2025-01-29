@@ -91,12 +91,14 @@ def test_geo_covered_by(geotable):
 
 
 def test_geo_d_fully_within(geotable):
-    expr = geotable.geo_point.d_fully_within(geotable.geo_point.buffer(1.0), 2.0)
+    expr = geotable.geo_point.d_fully_within(
+        geotable.geo_point.buffer(1.0), distance=2.0
+    )
     assert expr.execute().all()
 
 
 def test_geo_d_within(geotable):
-    expr = geotable.geo_point.d_within(geotable.geo_point.buffer(1.0), 1.0)
+    expr = geotable.geo_point.d_within(geotable.geo_point.buffer(1.0), distance=1.0)
     assert expr.execute().all()
 
 

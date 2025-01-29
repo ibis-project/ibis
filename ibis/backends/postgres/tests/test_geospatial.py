@@ -164,12 +164,12 @@ def test_geo_spatial_unops(geotable, expr_fn, expected):
             id="disjoint",
         ),
         param(
-            lambda t: t["geo_point"].d_within(point_geom_1_srid0, 2.0),
+            lambda t: t["geo_point"].d_within(point_geom_1_srid0, distance=2.0),
             [True, True, True, False, False],
             id="d_within",
         ),
         param(
-            lambda t: t["geo_point"].d_fully_within(t["geo_linestring"], 2.0),
+            lambda t: t["geo_point"].d_fully_within(t["geo_linestring"], distance=2.0),
             [True, True, True, True, True],
             id="d_fully_within",
         ),

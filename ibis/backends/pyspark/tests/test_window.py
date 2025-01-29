@@ -96,7 +96,7 @@ def test_multiple_windows(t, spark_table, ibis_windows, spark_range):
 def test_tumble_window_by_grouped_agg(con_streaming, tmp_path):
     t = con_streaming.table("functional_alltypes")
     expr = (
-        t.window_by(time_col=t.timestamp_col)
+        t.window_by(t.timestamp_col)
         .tumble(size=ibis.interval(seconds=30))
         .agg(by=["string_col"], avg=_.float_col.mean())
     )
@@ -119,7 +119,7 @@ def test_tumble_window_by_grouped_agg(con_streaming, tmp_path):
 def test_tumble_window_by_ungrouped_agg(con_streaming, tmp_path):
     t = con_streaming.table("functional_alltypes")
     expr = (
-        t.window_by(time_col=t.timestamp_col)
+        t.window_by(t.timestamp_col)
         .tumble(size=ibis.interval(seconds=30))
         .agg(avg=_.float_col.mean())
     )

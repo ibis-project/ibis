@@ -14,7 +14,12 @@ from ibis.backends import (
 from ibis.backends.sql import SQLBackend
 from ibis.backends.tests.signature.typecheck import compatible
 
-SKIP_METHODS = ["do_connect", "from_connection"]
+SKIP_METHODS = [
+    "do_connect",
+    "from_connection",
+    # lots of backend-specific options in this method
+    "create_table",
+]
 
 
 def _scrape_methods(modules, params):
@@ -39,98 +44,49 @@ marks = {
         BaseBackend,
         "compile",
         marks=pytest.mark.notyet(
-            [
-                "bigquery",
-                "clickhouse",
-                "datafusion",
-                "druid",
-                "duckdb",
-                "exasol",
-                "impala",
-                "mssql",
-                "mysql",
-                "oracle",
-                "postgres",
-                "pyspark",
-                "risingwave",
-                "snowflake",
-                "sqlite",
-                "trino",
-                "databricks",
-                "athena",
-            ],
+            ["bigquery"],
             reason="SQL backends all have an additional `pretty` argument for formatting the generated SQL",
         ),
     ),
     "create_database": pytest.param(
         CanCreateDatabase,
         "create_database",
-        marks=pytest.mark.notyet(["clickhouse", "flink", "impala", "mysql", "pyspark"]),
+        marks=pytest.mark.notyet(["impala", "mysql", "pyspark"]),
     ),
     "drop_database": pytest.param(
         CanCreateDatabase,
         "drop_database",
-        marks=pytest.mark.notyet(["clickhouse", "impala", "mysql", "pyspark"]),
+        marks=pytest.mark.notyet(["impala", "mysql", "pyspark"]),
     ),
     "drop_table": pytest.param(
         SQLBackend,
         "drop_table",
-        marks=pytest.mark.notyet(["bigquery", "druid", "flink", "impala", "polars"]),
+        marks=pytest.mark.notyet(["druid", "flink", "impala"]),
     ),
-    "execute": pytest.param(
-        SQLBackend,
-        "execute",
-        marks=pytest.mark.notyet(["clickhouse", "datafusion", "flink", "mysql"]),
-    ),
+    "execute": pytest.param(SQLBackend, "execute"),
+    "create_view": pytest.param(SQLBackend, "create_view"),
+    "drop_view": pytest.param(SQLBackend, "drop_view"),
     "insert": pytest.param(
         SQLBackend,
         "insert",
         marks=pytest.mark.notyet(["clickhouse", "flink", "impala"]),
     ),
-    "list_databases": pytest.param(
-        CanCreateDatabase,
-        "list_databases",
-        marks=pytest.mark.notyet(
-            [
-                "clickhouse",
-                "flink",
-                "impala",
-                "mysql",
-                "postgres",
-                "risingwave",
-                "sqlite",
-            ]
-        ),
-    ),
-    "list_tables": pytest.param(
-        BaseBackend,
-        "list_tables",
-        marks=pytest.mark.notyet(["flink"]),
-    ),
+    "list_databases": pytest.param(CanCreateDatabase, "list_databases"),
+    "list_tables": pytest.param(BaseBackend, "list_tables"),
     "read_csv": pytest.param(
         BaseBackend,
         "read_csv",
-        marks=pytest.mark.notyet(["duckdb", "flink", "pyspark", "datafusion"]),
+        marks=pytest.mark.notyet(["duckdb", "pyspark", "datafusion"]),
     ),
-    "read_delta": pytest.param(
-        BaseBackend,
-        "read_delta",
-        marks=pytest.mark.notyet(["datafusion", "duckdb", "polars", "pyspark"]),
-    ),
+    "read_delta": pytest.param(BaseBackend, "read_delta"),
     "read_json": pytest.param(
-        BaseBackend,
-        "read_json",
-        marks=pytest.mark.notyet(["duckdb", "flink", "pyspark"]),
+        BaseBackend, "read_json", marks=pytest.mark.notyet(["duckdb", "pyspark"])
     ),
     "read_parquet": pytest.param(
-        BaseBackend,
-        "read_parquet",
-        marks=pytest.mark.notyet(["duckdb", "flink"]),
+        BaseBackend, "read_parquet", marks=pytest.mark.notyet(["duckdb"])
     ),
     "to_parquet_dir": pytest.param(
-        BaseBackend,
-        "to_parquet_dir",
-        marks=pytest.mark.notyet(["pyspark"]),
+        BaseBackend, "to_parquet_dir", marks=pytest.mark.notyet(["pyspark"])
     ),
 }
 

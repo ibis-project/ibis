@@ -337,7 +337,7 @@ def test_two_inner_joins(snapshot):
 def test_destruct_selection(snapshot):
     table = ibis.table([("col", "int64")], name="t")
 
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9\\.0"):
 
         @udf.reduction(
             input_type=["int64"],
@@ -346,7 +346,10 @@ def test_destruct_selection(snapshot):
         def multi_output_udf(v):
             return v.sum(), v.mean()
 
-    expr = table.aggregate(multi_output_udf(table["col"]).destructure())
+    expr = multi_output_udf(table["col"])
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        agg = expr.destructure()
+    expr = table.aggregate(agg)
     result = repr(expr)
 
     snapshot.assert_match(result, "repr.txt")

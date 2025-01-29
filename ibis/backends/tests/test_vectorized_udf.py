@@ -486,9 +486,12 @@ def test_invalid_kwargs():
 
 @pytest.mark.parametrize("udf", add_one_struct_udfs)
 def test_elementwise_udf_destruct(udf_backend, udf_alltypes, udf):
-    result = udf_alltypes.mutate(
-        udf(udf_alltypes["double_col"]).destructure()
-    ).execute()
+    col = udf(udf_alltypes["double_col"])
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         col1=udf_alltypes["double_col"] + 1,
@@ -499,9 +502,12 @@ def test_elementwise_udf_destruct(udf_backend, udf_alltypes, udf):
 
 
 def test_elementwise_udf_overwrite_destruct(udf_backend, udf_alltypes):
-    result = udf_alltypes.mutate(
-        overwrite_struct_elementwise(udf_alltypes["double_col"]).destructure()
-    ).execute()
+    col = overwrite_struct_elementwise(udf_alltypes["double_col"])
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         double_col=udf_alltypes["double_col"] + 1,
@@ -518,12 +524,13 @@ def test_elementwise_udf_overwrite_destruct(udf_backend, udf_alltypes):
 
 
 def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes):
+    col = overwrite_struct_elementwise(udf_alltypes["double_col"])
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
     result = (
-        udf_alltypes.mutate(
-            overwrite_struct_elementwise(udf_alltypes["double_col"]).destructure()
-        )
-        .mutate(col3=udf_alltypes["int_col"] * 3)
-        .execute()
+        udf_alltypes.mutate(destruct).mutate(col3=udf_alltypes.int_col * 3).execute()
     )
 
     expected = udf_alltypes.mutate(
@@ -541,8 +548,12 @@ def test_elementwise_udf_overwrite_destruct_and_assign(udf_backend, udf_alltypes
     udf_backend.assert_frame_equal(result, expected, check_like=True)
 
 
-@pytest.mark.parametrize("method", ["destructure", "lift", "unpack"])
-def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
+@pytest.mark.parametrize(
+    "func",
+    [lambda t: t.struct.lift(), lambda t: t.unpack("struct")],
+    ids=["lift", "unpack"],
+)
+def test_elementwise_udf_destructure_exact_once(udf_alltypes, func, tmp_path):
     with pytest.warns(FutureWarning, match="v9.0"):
 
         @elementwise(
@@ -558,23 +569,18 @@ def test_elementwise_udf_destructure_exact_once(udf_alltypes, method, tmp_path):
 
     struct = add_one_struct_exact_once(udf_alltypes["id"])
 
-    if method == "destructure":
-        expr = udf_alltypes.mutate(struct.destructure())
-    elif method == "lift":
-        expr = udf_alltypes.mutate(struct=struct).struct.lift()
-    elif method == "unpack":
-        expr = udf_alltypes.mutate(struct=struct).unpack("struct")
-    else:
-        raise ValueError(f"Invalid method {method}")
-    result = expr.execute()
+    expr = func(udf_alltypes.mutate(struct=struct))
 
-    assert len(result) > 0
+    assert expr.count().execute()
 
 
 def test_elementwise_udf_multiple_overwrite_destruct(udf_backend, udf_alltypes):
-    result = udf_alltypes.mutate(
-        multiple_overwrite_struct_elementwise(udf_alltypes["double_col"]).destructure()
-    ).execute()
+    col = multiple_overwrite_struct_elementwise(udf_alltypes["double_col"])
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         double_col=udf_alltypes["double_col"] + 1,
@@ -597,10 +603,13 @@ def test_elementwise_udf_named_destruct(udf_alltypes):
     add_one_struct_udf = create_add_one_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     )
+
+    col = add_one_struct_udf(udf_alltypes["double_col"])
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
     with pytest.raises(com.InputTypeError, match="Unable to infer datatype"):
-        udf_alltypes.mutate(
-            new_struct=add_one_struct_udf(udf_alltypes["double_col"]).destructure()
-        )
+        udf_alltypes.mutate(new_struct=destruct)
 
 
 def test_elementwise_udf_struct(udf_backend, udf_alltypes):
@@ -628,9 +637,12 @@ def test_elementwise_udf_struct(udf_backend, udf_alltypes):
 def test_analytic_udf_destruct(udf_backend, udf_alltypes, udf):
     w = ibis.window(preceding=None, following=None, group_by="year")
 
-    result = udf_alltypes.mutate(
-        udf(udf_alltypes["double_col"], udf_alltypes["int_col"]).over(w).destructure()
-    ).execute()
+    col = udf(udf_alltypes["double_col"], udf_alltypes["int_col"]).over(w)
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         demean=udf_alltypes["double_col"] - udf_alltypes["double_col"].mean().over(w),
@@ -646,11 +658,12 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     demean_struct_udf = create_demean_struct_udf(
         result_formatter=lambda v1, v2: (v1, v2)
     )
-    result = udf_alltypes.mutate(
-        demean_struct_udf(udf_alltypes["double_col"], udf_alltypes["int_col"])
-        .over(w)
-        .destructure()
-    ).execute()
+    col = demean_struct_udf(udf_alltypes["double_col"], udf_alltypes["int_col"]).over(w)
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         demean=udf_alltypes["double_col"] - udf_alltypes["double_col"].mean().over(w),
@@ -664,11 +677,14 @@ def test_analytic_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
     w = ibis.window(preceding=None, following=None, group_by="year")
 
-    result = udf_alltypes.mutate(
-        overwrite_struct_analytic(udf_alltypes["double_col"], udf_alltypes["int_col"])
-        .over(w)
-        .destructure()
-    ).execute()
+    col = overwrite_struct_analytic(
+        udf_alltypes["double_col"], udf_alltypes["int_col"]
+    ).over(w)
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         double_col=udf_alltypes["double_col"]
@@ -688,13 +704,13 @@ def test_analytic_udf_destruct_overwrite(udf_backend, udf_alltypes):
 @pytest.mark.parametrize("udf", mean_struct_udfs)
 @pytest.mark.notimpl(["pyspark"])
 def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
+    col = udf(udf_alltypes["double_col"], udf_alltypes["int_col"])
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
     result = (
-        udf_alltypes.group_by("year")
-        .aggregate(
-            udf(udf_alltypes["double_col"], udf_alltypes["int_col"]).destructure()
-        )
-        .execute()
-    ).sort_values("year")
+        udf_alltypes.group_by("year").aggregate(destruct).execute().sort_values("year")
+    )
 
     expected = (
         udf_alltypes.group_by("year")
@@ -711,11 +727,12 @@ def test_reduction_udf_destruct_group_by(udf_backend, udf_alltypes, udf):
 @pytest.mark.notimpl(["pyspark"])
 def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
     mean_struct_udf = create_mean_struct_udf(result_formatter=lambda v1, v2: (v1, v2))
-    result = udf_alltypes.aggregate(
-        mean_struct_udf(
-            udf_alltypes["double_col"], udf_alltypes["int_col"]
-        ).destructure()
-    ).execute()
+    col = mean_struct_udf(udf_alltypes["double_col"], udf_alltypes["int_col"])
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.aggregate(destruct).execute()
 
     expected = udf_alltypes.aggregate(
         mean=udf_alltypes["double_col"].mean(),
@@ -726,11 +743,14 @@ def test_reduction_udf_destruct_no_group_by(udf_backend, udf_alltypes):
 
 @pytest.mark.notimpl(["pyspark"])
 def test_reduction_udf_destruct_no_group_by_overwrite(udf_backend, udf_alltypes):
-    result = udf_alltypes.aggregate(
-        overwrite_struct_reduction(
-            udf_alltypes["double_col"], udf_alltypes["int_col"]
-        ).destructure()
-    ).execute()
+    col = overwrite_struct_reduction(
+        udf_alltypes["double_col"], udf_alltypes["int_col"]
+    )
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.aggregate(destruct).execute()
 
     expected = udf_alltypes.aggregate(
         double_col=udf_alltypes["double_col"].mean(),
@@ -756,11 +776,12 @@ def test_reduction_udf_destruct_window(udf_backend, udf_alltypes):
     )
     mean_struct_udf = create_mean_struct_udf(result_formatter=lambda v1, v2: (v1, v2))
 
-    result = udf_alltypes.mutate(
-        mean_struct_udf(udf_alltypes["double_col"], udf_alltypes["int_col"])
-        .over(win)
-        .destructure()
-    ).execute()
+    col = mean_struct_udf(udf_alltypes["double_col"], udf_alltypes["int_col"]).over(win)
+
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        destruct = col.destructure()
+
+    result = udf_alltypes.mutate(destruct).execute()
 
     expected = udf_alltypes.mutate(
         mean=udf_alltypes["double_col"].mean().over(win),

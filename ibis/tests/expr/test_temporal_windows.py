@@ -21,7 +21,7 @@ from ibis.common.deferred import _
 )
 @pytest.mark.parametrize("by", ["g", _.g, ["g"]])
 def test_window_by_agg_schema(table, method, by):
-    expr = method(table.window_by(time_col=table.i))
+    expr = method(table.window_by(table.i))
     expr = expr.agg(by=by, a_sum=_.a.sum())
     expected_schema = ibis.schema(
         {
@@ -36,7 +36,7 @@ def test_window_by_agg_schema(table, method, by):
 
 def test_window_by_with_non_timestamp_column(table):
     with pytest.raises(com.IbisInputError):
-        table.window_by(time_col=table.a)
+        table.window_by(table.a)
 
 
 @pytest.mark.parametrize(
@@ -51,7 +51,7 @@ def test_window_by_with_non_timestamp_column(table):
 )
 @pytest.mark.parametrize("by", ["g", _.g, ["g"]])
 def test_window_by_grouped_agg(table, method, by):
-    expr = method(table.window_by(time_col=table.i))
+    expr = method(table.window_by(table.i))
     expr = expr.group_by(by).agg(a_sum=_.a.sum())
     expected_schema = ibis.schema(
         {
@@ -75,7 +75,7 @@ def test_window_by_grouped_agg(table, method, by):
     ids=["tumble", "hop"],
 )
 def test_window_by_global_agg(table, method):
-    expr = method(table.window_by(time_col=table.i))
+    expr = method(table.window_by(table.i))
     expr = expr.agg(a_sum=_.a.sum())
     expected_schema = ibis.schema(
         {

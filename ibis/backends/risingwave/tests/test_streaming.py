@@ -38,7 +38,7 @@ def test_mv_on_simple_source(con):
     }
     source = con.create_source(
         sc_name,
-        schema,
+        schema=schema,
         connector_properties=connector_properties,
         data_format="PLAIN",
         encode_format="JSON",
@@ -68,8 +68,7 @@ def test_mv_on_table_with_connector(con):
         "datagen.split.num": "1",
     }
     tblc = con.create_table(
-        name=tblc_name,
-        obj=None,
+        tblc_name,
         schema=schema,
         connector_properties=connector_properties,
         data_format="PLAIN",
@@ -93,18 +92,21 @@ def test_mv_on_table_with_connector(con):
 
 def test_sink_from(con, alltypes):
     sk_name = util.gen_name("sk_from")
-    connector_properties = {
-        "connector": "blackhole",
-    }
-    con.create_sink(sk_name, "functional_alltypes", connector_properties)
+    con.create_sink(
+        sk_name,
+        sink_from="functional_alltypes",
+        connector_properties={"connector": "blackhole"},
+    )
     con.drop_sink(sk_name)
 
 
 def test_sink_as_select(con, alltypes):
     sk_name = util.gen_name("sk_as_select")
     expr = alltypes[["string_col"]].distinct().order_by("string_col")
-    connector_properties = {
-        "connector": "blackhole",
-    }
-    con.create_sink(sk_name, None, connector_properties, obj=expr)
+    con.create_sink(
+        sk_name,
+        sink_from=None,
+        connector_properties={"connector": "blackhole"},
+        obj=expr,
+    )
     con.drop_sink(sk_name)
