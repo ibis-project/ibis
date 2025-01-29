@@ -234,7 +234,7 @@ def union(op, left, right, distinct):
 @translate.register(ops.Limit)
 def limit(op, parent, n, offset):
     if offset:
-        return f"{parent}.limit({n}, {offset})"
+        return f"{parent}.limit({n}, offset={offset})"
     else:
         return f"{parent}.limit({n})"
 
