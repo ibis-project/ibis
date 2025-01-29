@@ -212,6 +212,8 @@ def param(type: dt.DataType, /) -> ir.Scalar:
 
 def schema(
     pairs: SchemaLike | None = None,
+    /,
+    *,
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
