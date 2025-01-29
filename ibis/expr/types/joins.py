@@ -226,9 +226,10 @@ class Join(Table):
     def join(
         self,
         right,
+        /,
         predicates: Any = (),
-        how: JoinKind = "inner",
         *,
+        how: JoinKind = "inner",
         lname: str = "",
         rname: str = "{name}_right",
     ):
@@ -281,10 +282,11 @@ class Join(Table):
     def asof_join(
         self: Table,
         right: Table,
+        /,
         on,
         predicates=(),
-        tolerance=None,
         *,
+        tolerance=None,
         lname: str = "",
         rname: str = "{name}_right",
     ):
@@ -362,6 +364,7 @@ class Join(Table):
     def cross_join(
         self: Table,
         right: Table,
+        /,
         *rest: Table,
         lname: str = "",
         rname: str = "{name}_right",
