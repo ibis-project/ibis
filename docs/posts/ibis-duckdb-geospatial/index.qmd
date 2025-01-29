@@ -140,7 +140,7 @@ streets
 Using the deferred API, we can check which streets are within `d=10` meters of distance.
 
 ```{python}
-sts_near_broad = streets.filter(_.geom.d_within(broad_station_subquery, 10))
+sts_near_broad = streets.filter(_.geom.d_within(broad_station_subquery, distance=10))
 sts_near_broad
 ```
 
@@ -227,7 +227,9 @@ data we can't tell the street near which it happened. However, we can check if t
 distance of a street.
 
 ```{python}
-h_street = streets.filter(_.geom.d_within(h_near_broad.select(_.geom).as_scalar(), 2))
+h_street = streets.filter(
+    _.geom.d_within(h_near_broad.select(_.geom).as_scalar(), distance=2)
+)
 h_street
 ```
 
