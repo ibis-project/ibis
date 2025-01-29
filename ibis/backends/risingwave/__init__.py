@@ -122,7 +122,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def _fetch_from_cursor(self, cursor, schema: sch.Schema) -> pd.DataFrame:
         import pandas as pd
 
-        from ibis.backends.postgres.converter import PostgresPandasData
+        from ibis.backends.risingwave.converter import RisingWavePandasData
 
         try:
             df = pd.DataFrame.from_records(
@@ -135,7 +135,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             # artificially locked tables
             cursor.close()
             raise
-        df = PostgresPandasData.convert_table(df, schema)
+        df = RisingWavePandasData.convert_table(df, schema)
         return df
 
     @property

@@ -8,6 +8,7 @@ from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
 
+import psycopg
 import sqlglot as sg
 import sqlglot.expressions as sge
 from pandas.api.types import is_float_dtype
@@ -31,8 +32,12 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
-    import psycopg
     import pyarrow as pa
+
+
+class NatDumper(psycopg.adapt.Dumper):
+    def dump(self, obj, context: Any | None = None) -> str | None:
+        return None
 
 
 class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
@@ -233,6 +238,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
           year            int32
           month           int32
         """
+        import pandas as pd
         import psycopg
         import psycopg.types.json
 
@@ -247,6 +253,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
             **kwargs,
         )
+
+        self.con.adapters.register_dumper(type(pd.NaT), NatDumper)
 
         self._post_connect()
 

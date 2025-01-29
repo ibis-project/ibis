@@ -15,6 +15,7 @@ import ibis
 import ibis.expr.datatypes as dt
 import ibis.expr.types as ir
 from ibis import literal as L
+from ibis.util import gen_name
 
 pytest.importorskip("psycopg")
 
@@ -1230,3 +1231,18 @@ def test_array_discovery(con):
         )
     )
     assert t.schema() == expected
+
+
+@pytest.mark.parametrize("tz", [None, "UTC", "America/New_York"])
+def test_insert_null_timestamp(con, tz):
+    name = gen_name("test_insert_nat")
+    ts = pd.Timestamp(datetime(2025, 1, 3, 12, 37, 38, 234236), tz=tz)
+    df = pd.DataFrame({"ts": [ts, None]})
+
+    # check that timezones match the input
+    t = con.create_table(name, obj=df, temp=True)
+    assert t.ts.type().timezone == tz
+
+    # check that the NaT went into the database as NULL
+    res = t.ts.count().execute()
+    assert res == 1
