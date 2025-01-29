@@ -3580,15 +3580,33 @@ class Table(Expr, _FixedTextJupyterMixin):
         node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
         return node.to_expr()
 
-    def to_pandas(self, **kwargs) -> pd.DataFrame:
+    def to_pandas(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """Convert a table expression to a pandas DataFrame.
 
         Parameters
         ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
         kwargs
-            Same as keyword arguments to [`execute`](./expression-generic.qmd#ibis.expr.types.core.Expr.execute)
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame
+            The result of executing the expression as a pandas DataFrame
         """
-        return self.execute(**kwargs)
+        return self.execute(params=params, limit=limit, **kwargs)
 
     def cache(self) -> Table:
         """Cache the provided expression.

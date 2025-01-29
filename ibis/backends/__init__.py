@@ -106,6 +106,7 @@ class _FileIOHandler:
     def to_pandas(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -1169,8 +1170,29 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         """Compile an expression."""
         return self.compiler.to_sql(expr, params=params)
 
-    def execute(self, expr: ir.Expr) -> Any:
-        """Execute an expression."""
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+        """
 
     @abc.abstractmethod
     def create_table(

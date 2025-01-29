@@ -386,11 +386,32 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def _finalize_memtable(self, name: str) -> None:
         self.drop_view(name, temp=True, force=True)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
-        """Execute an expression."""
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+        """
         self._run_pre_execute_hooks(expr)
 
-        sql = self.compile(expr.as_table(), **kwargs)
+        sql = self.compile(expr.as_table(), params=params, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
 
         return expr.__pandas_result__(df)
