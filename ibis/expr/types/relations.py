@@ -1298,7 +1298,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 self, fraction=fraction, method=method, seed=seed
             ).to_expr()
 
-    def limit(self, n: int | None, offset: int = 0) -> Table:
+    def limit(self, n: int | None, *, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
         ::: {.callout-note}
