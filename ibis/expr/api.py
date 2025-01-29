@@ -1702,7 +1702,7 @@ def read_delta(
     return con.read_delta(source, table_name=table_name, **kwargs)
 
 
-def set_backend(backend: str | BaseBackend) -> None:
+def set_backend(backend: str | BaseBackend, /) -> None:
     """Set the default Ibis backend.
 
     Parameters
@@ -1743,7 +1743,7 @@ def set_backend(backend: str | BaseBackend) -> None:
     ibis.options.default_backend = backend
 
 
-def get_backend(expr: Expr | None = None) -> BaseBackend:
+def get_backend(expr: Expr | None = None, /) -> BaseBackend:
     """Get the current Ibis backend to use for a given expression.
 
     Parameters
