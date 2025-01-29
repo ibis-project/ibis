@@ -766,6 +766,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -786,6 +787,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
