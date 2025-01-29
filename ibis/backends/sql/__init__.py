@@ -285,13 +285,14 @@ class SQLBackend(BaseBackend):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        """Execute expression and return an iterator of pyarrow record batches.
+        """Execute expression and return an iterator of PyArrow record batches.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -312,7 +313,6 @@ class SQLBackend(BaseBackend):
         -------
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
-
         """
         pa = self._import_pyarrow()
 

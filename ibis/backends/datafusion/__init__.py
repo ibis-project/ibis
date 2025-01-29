@@ -498,6 +498,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
@@ -535,8 +536,18 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), make_gen())
 
-    def to_pyarrow(self, expr: ir.Expr, **kwargs: Any) -> pa.Table:
-        batch_reader = self.to_pyarrow_batches(expr, **kwargs)
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ):
+        batch_reader = self.to_pyarrow_batches(
+            expr, params=params, limit=limit, **kwargs
+        )
         arrow_table = batch_reader.read_all()
         return expr.__pyarrow_result__(arrow_table)
 

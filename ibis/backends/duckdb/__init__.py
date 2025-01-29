@@ -1268,6 +1268,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -1307,12 +1308,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> pa.Table:
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).arrow()
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(

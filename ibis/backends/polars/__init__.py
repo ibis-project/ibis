@@ -523,6 +523,8 @@ class Backend(BaseBackend, NoUrl):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         **kwargs: Any,
@@ -533,6 +535,7 @@ class Backend(BaseBackend, NoUrl):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
