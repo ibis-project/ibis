@@ -2423,7 +2423,7 @@ docs = [
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.5,<0.6" },
     { name = "lonboard", specifier = "==0.10.3" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
-    { name = "plotly", specifier = ">=5.16.1,<6" },
+    { name = "plotly", specifier = ">=5.16.1,<7" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
     { name = "py-cpuinfo", specifier = ">=9,<10" },
     { name = "quartodoc", specifier = ">=0.6.1,<1" },
@@ -3785,15 +3785,15 @@ wheels = [
 
 [[package]]
 name = "plotly"
-version = "5.24.1"
+version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
+    { name = "narwhals" },
     { name = "packaging" },
-    { name = "tenacity" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/79/4f/428f6d959818d7425a94c190a6b26fbc58035cbef40bf249be0b62a9aedd/plotly-5.24.1.tar.gz", hash = "sha256:dbc8ac8339d248a4bcc36e08a5659bacfe1b079390b8953533f4eb22169b4bae", size = 9479398 }
+sdist = { url = "https://files.pythonhosted.org/packages/9c/80/761c14012d6daf18e12b6d1e4f6b218e999bcceb694d7a9b180154f9e4db/plotly-6.0.0.tar.gz", hash = "sha256:c4aad38b8c3d65e4a5e7dd308b084143b9025c2cc9d5317fc1f1d30958db87d3", size = 8111782 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/ae/580600f441f6fc05218bd6c9d5794f4aef072a7d9093b291f1c50a9db8bc/plotly-5.24.1-py3-none-any.whl", hash = "sha256:f67073a1e637eb0dc3e46324d9d51e2fe76e9727c892dde64ddf1e1b51f29089", size = 19054220 },
+    { url = "https://files.pythonhosted.org/packages/0e/77/a946f38b57fb88e736c71fbdd737a1aebd27b532bda0779c137f357cf5fc/plotly-6.0.0-py3-none-any.whl", hash = "sha256:f708871c3a9349a68791ff943a5781b1ec04de7769ea69068adcd9202e57653a", size = 14805949 },
 ]
 
 [[package]]
