@@ -674,11 +674,11 @@ def asc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "asc", nulls_first=nulls_first)
 
 
-def preceding(value) -> ir.Value:
+def preceding(value, /) -> ir.Value:
     return ops.WindowBoundary(value, preceding=True).to_expr()
 
 
-def following(value) -> ir.Value:
+def following(value, /) -> ir.Value:
     return ops.WindowBoundary(value, preceding=False).to_expr()
 
 
