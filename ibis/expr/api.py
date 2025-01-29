@@ -2456,11 +2456,13 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any, /) -> ir.Value:
 
 
 @deferrable
-def coalesce(*args: Any) -> ir.Value:
+def coalesce(arg: Any, /, *args: Any) -> ir.Value:
     """Return the first non-null value from `args`.
 
     Parameters
     ----------
+    arg
+        First argument from which to choose the first non-null value
     args
         Arguments from which to choose the first non-null value
 
@@ -2483,17 +2485,19 @@ def coalesce(*args: Any) -> ir.Value:
     │ 4 │
     └───┘
     """
-    return ops.Coalesce(args).to_expr()
+    return ops.Coalesce((arg, *args)).to_expr()
 
 
 @deferrable
-def greatest(*args: Any) -> ir.Value:
+def greatest(arg: Any, /, *args: Any) -> ir.Value:
     """Compute the largest value among the supplied arguments.
 
     Parameters
     ----------
+    arg
+        First argument
     args
-        Arguments to choose from
+        Remaining arguments
 
     Returns
     -------
@@ -2509,17 +2513,19 @@ def greatest(*args: Any) -> ir.Value:
     │ 5 │
     └───┘
     """
-    return ops.Greatest(args).to_expr()
+    return ops.Greatest((arg, *args)).to_expr()
 
 
 @deferrable
-def least(*args: Any) -> ir.Value:
+def least(arg: Any, /, *args: Any) -> ir.Value:
     """Compute the smallest value among the supplied arguments.
 
     Parameters
     ----------
+    arg
+        First argument
     args
-        Arguments to choose from
+        Remaining arguments
 
     Returns
     -------
@@ -2535,4 +2541,4 @@ def least(*args: Any) -> ir.Value:
     │ 4 │
     └───┘
     """
-    return ops.Least(args).to_expr()
+    return ops.Least((arg, *args)).to_expr()
