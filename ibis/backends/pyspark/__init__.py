@@ -954,6 +954,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
@@ -978,10 +980,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        chunk_size: int = 1000000,
+        chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         if self.mode == "streaming":
