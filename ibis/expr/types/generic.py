@@ -1237,8 +1237,8 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-    def asc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression ascending.
+    def asc(self, *, nulls_first: bool = False) -> ir.Value:
+        """Sort an expression in ascending order.
 
         Parameters
         ----------
@@ -1284,8 +1284,8 @@ class Value(Expr):
         """
         return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
-    def desc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression descending.
+    def desc(self, *, nulls_first: bool = False) -> ir.Value:
+        """Sort an expression in descending order.
 
         Parameters
         ----------

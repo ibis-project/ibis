@@ -592,7 +592,7 @@ def _deferred_method_call(expr, method_name, **kwargs):
     return method(value)
 
 
-def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
+def desc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
@@ -633,7 +633,7 @@ def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "desc", nulls_first=nulls_first)
 
 
-def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
+def asc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
