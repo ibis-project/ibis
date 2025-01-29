@@ -60,6 +60,7 @@ def _regular_join_method(
     def f(  # noqa: D417
         self: ir.Table,
         right: ir.Table,
+        /,
         predicates: (
             str
             | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
@@ -3032,8 +3033,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         return t
 
     def join(
-        left: Table,
+        self,
         right: Table,
+        /,
         predicates: (
             str
             | Sequence[
@@ -3047,8 +3049,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                 ]
             ]
         ) = (),
-        how: JoinKind = "inner",
         *,
+        how: JoinKind = "inner",
         lname: str = "",
         rname: str = "{name}_right",
     ) -> Table:
@@ -3056,8 +3058,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Left table to join
         right
             Right table to join
         predicates
@@ -3208,17 +3208,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).join(
+        return Join(self.op()).join(
             right, predicates, how=how, lname=lname, rname=rname
         )
 
     def asof_join(
-        left: Table,
+        self,
         right: Table,
+        /,
         on: str | ir.BooleanColumn,
         predicates: str | ir.Column | Sequence[str | ir.Column] = (),
-        tolerance: str | ir.IntervalScalar | None = None,
         *,
+        tolerance: str | ir.IntervalScalar | None = None,
         lname: str = "",
         rname: str = "{name}_right",
     ) -> Table:
@@ -3229,8 +3230,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Table expression
         right
             Table expression
         on
@@ -3335,13 +3334,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).asof_join(
-            right, on, predicates, tolerance=tolerance, lname=lname, rname=rname
+        return Join(self.op()).asof_join(
+            right,
+            on=on,
+            predicates=predicates,
+            tolerance=tolerance,
+            lname=lname,
+            rname=rname,
         )
 
     def cross_join(
-        left: Table,
+        self,
         right: Table,
+        /,
         *rest: Table,
         lname: str = "",
         rname: str = "{name}_right",
@@ -3350,8 +3355,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Left table
         right
             Right table
         rest
@@ -3419,7 +3422,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).cross_join(right, *rest, lname=lname, rname=rname)
+        return Join(self.op()).cross_join(right, *rest, lname=lname, rname=rname)
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
