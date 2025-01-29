@@ -2003,7 +2003,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
     )
 
 
-def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
+def union(table: ir.Table, /, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     """Compute the set union of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2072,7 +2072,7 @@ def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     return table.union(*rest, distinct=distinct) if rest else table
 
 
-def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
+def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set intersection of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2153,7 +2153,7 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     return table.intersect(*rest, distinct=distinct) if rest else table
 
 
-def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
+def difference(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set difference of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2409,7 +2409,7 @@ def _timestamp_range(
 
 
 @deferrable
-def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
+def ifelse(condition: Any, true_expr: Any, false_expr: Any, /) -> ir.Value:
     """Construct a ternary conditional expression.
 
     Parameters
