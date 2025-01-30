@@ -549,7 +549,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                 pass
 
     def create_database(
-        self, name: str, *, force: bool = False, engine: str = "Atomic"
+        self, name: str, /, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
         src = sge.Create(
             this=sg.to_identifier(name),
@@ -562,7 +562,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src):
             pass
 
-    def drop_database(self, name: str, *, force: bool = False) -> None:
+    def drop_database(self, name: str, /, *, force: bool = False) -> None:
         src = sge.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
         with self._safe_raw_sql(src):
             pass
