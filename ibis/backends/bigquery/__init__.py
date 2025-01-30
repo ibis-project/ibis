@@ -270,7 +270,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
@@ -288,7 +288,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.CSV,

@@ -127,6 +127,8 @@ class Backend(BaseBackend, NoUrl):
     def read_csv(
         self,
         path: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -148,7 +150,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         source_list = normalize_filenames(path)
         # Flatten the list if there's only one element because Polars
