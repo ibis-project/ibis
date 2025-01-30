@@ -378,11 +378,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     @util.experimental
     @classmethod
-    def from_connection(
-        cls,
-        con,
-        memtable_volume: str | None = None,
-    ) -> Backend:
+    def from_connection(cls, con, /, *, memtable_volume: str | None = None) -> Backend:
         """Create an Ibis client from an existing connection to an Amazon Athena instance.
 
         Parameters

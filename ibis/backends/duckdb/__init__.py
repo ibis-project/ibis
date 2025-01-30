@@ -412,6 +412,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def from_connection(
         cls,
         con: duckdb.DuckDBPyConnection,
+        /,
+        *,
         extensions: Sequence[str] | None = None,
     ) -> Backend:
         """Create an Ibis client from an existing connection to a DuckDB database.

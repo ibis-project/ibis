@@ -127,7 +127,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     @util.experimental
     @classmethod
     def from_connection(
-        cls, con: pyexasol.ExaConnection, timezone: str | None = None
+        cls, con: pyexasol.ExaConnection, /, *, timezone: str | None = None
     ) -> Backend:
         """Create an Ibis client from an existing connection to an Exasol database.
 

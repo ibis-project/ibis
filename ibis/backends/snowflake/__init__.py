@@ -388,6 +388,7 @@ $$ {defn["source"]} $$"""
     def from_connection(
         cls,
         con: snowflake.connector.SnowflakeConnection | snowflake.snowpark.Session,
+        /,
         *,
         create_object_udfs: bool = True,
     ) -> Backend:
