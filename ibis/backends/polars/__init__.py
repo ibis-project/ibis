@@ -358,6 +358,7 @@ class Backend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,

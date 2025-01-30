@@ -632,6 +632,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
         *,
         schema: sch.Schema | None = None,
@@ -671,7 +672,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         Table
             The view that was created.
-
         """
         import pandas as pd
 
@@ -685,11 +685,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if overwrite and self.list_views(like=name, temp=temp):
             self.drop_view(
-                name=name,
-                database=database,
-                catalog=catalog,
-                temp=temp,
-                force=True,
+                name, database=database, catalog=catalog, temp=temp, force=True
             )
 
         if isinstance(obj, pd.DataFrame):
@@ -724,7 +720,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         else:
             raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
 
-        return self.table(name=name, database=database, catalog=catalog)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,
