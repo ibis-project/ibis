@@ -106,7 +106,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         )
         return sch.Schema.from_pyarrow(pa_schema)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         databases = self._table_env.list_databases()
         return self._filter_with_like(databases, like)
 

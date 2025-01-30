@@ -697,7 +697,7 @@ class CanCreateCatalog(CanListCatalog):
 class CanListDatabase(abc.ABC):
     @abc.abstractmethod
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         """List existing databases in the current connection.
 
@@ -726,7 +726,6 @@ class CanListDatabase(abc.ABC):
         list[str]
             The database names that exist in the current connection, that match
             the `like` pattern if provided.
-
         """
 
 

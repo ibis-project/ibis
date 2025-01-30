@@ -332,7 +332,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self._filter_with_like(dbs.to_pylist(), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         col = "schema_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
