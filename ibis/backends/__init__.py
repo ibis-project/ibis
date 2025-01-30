@@ -982,7 +982,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @abc.abstractmethod
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 

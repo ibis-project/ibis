@@ -202,7 +202,9 @@ class Backend(SQLBackend):
             databases = fetchall(cur)
         return self._filter_with_like(databases.name.tolist(), like)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         """Return the list of table names in the current database.
 
         Parameters
