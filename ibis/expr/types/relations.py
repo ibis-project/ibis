@@ -1214,6 +1214,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def sample(
         self,
         fraction: float,
+        /,
         *,
         method: Literal["row", "block"] = "row",
         seed: int | None = None,
