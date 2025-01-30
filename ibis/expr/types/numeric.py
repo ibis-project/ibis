@@ -768,6 +768,7 @@ class NumericScalar(Scalar, NumericValue):
 class NumericColumn(Column, NumericValue):
     def std(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
@@ -818,6 +819,7 @@ class NumericColumn(Column, NumericValue):
 
     def var(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
@@ -869,6 +871,8 @@ class NumericColumn(Column, NumericValue):
     def corr(
         self,
         right: NumericColumn,
+        /,
+        *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
@@ -926,6 +930,8 @@ class NumericColumn(Column, NumericValue):
     def cov(
         self,
         right: NumericColumn,
+        /,
+        *,
         where: ir.BooleanValue | None = None,
         how: Literal["sample", "pop"] = "sample",
     ) -> NumericScalar:
@@ -984,10 +990,7 @@ class NumericColumn(Column, NumericValue):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def mean(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> NumericScalar:
+    def mean(self, *, where: ir.BooleanValue | None = None) -> NumericScalar:
         """Return the mean of a numeric column.
 
         Parameters
@@ -1091,10 +1094,7 @@ class NumericColumn(Column, NumericValue):
             ibis.cumulative_window(group_by=group_by, order_by=order_by)
         )
 
-    def sum(
-        self,
-        where: ir.BooleanValue | None = None,
-    ) -> NumericScalar:
+    def sum(self, *, where: ir.BooleanValue | None = None) -> NumericScalar:
         """Return the sum of a numeric column.
 
         Parameters
@@ -1362,6 +1362,8 @@ class NumericColumn(Column, NumericValue):
     def approx_quantile(
         self,
         quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        /,
+        *,
         where: ir.BooleanValue | None = None,
     ) -> NumericScalar:
         """Compute one or more approximate quantiles of a column.
@@ -1600,7 +1602,7 @@ class IntegerScalar(NumericScalar, IntegerValue):
 
 @public
 class IntegerColumn(NumericColumn, IntegerValue):
-    def bit_and(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_and(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise and operator.
 
         Examples
@@ -1619,7 +1621,7 @@ class IntegerColumn(NumericColumn, IntegerValue):
         """
         return ops.BitAnd(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def bit_or(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_or(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise or operator.
 
         Examples
@@ -1638,7 +1640,7 @@ class IntegerColumn(NumericColumn, IntegerValue):
         """
         return ops.BitOr(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def bit_xor(self, where: ir.BooleanValue | None = None) -> IntegerScalar:
+    def bit_xor(self, *, where: ir.BooleanValue | None = None) -> IntegerScalar:
         """Aggregate the column using the bitwise exclusive or operator.
 
         Examples
