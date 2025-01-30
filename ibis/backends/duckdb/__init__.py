@@ -1486,6 +1486,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_geo(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         format: str,
