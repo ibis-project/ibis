@@ -836,7 +836,7 @@ class Backend(SQLBackend):
         statement = ddl.DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters
@@ -845,7 +845,6 @@ class Backend(SQLBackend):
             Table name
         database
             Database name
-
         """
         statement = ddl.TruncateTable(name, database=database)
         self._safe_exec_sql(statement)
