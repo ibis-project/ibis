@@ -1481,7 +1481,9 @@ def row_number() -> ir.IntegerColumn:
 
 
 def read_csv(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1492,7 +1494,7 @@ def read_csv(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.  Supports CSV and TSV files.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1529,12 +1531,11 @@ def read_csv(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_csv(sources, table_name=table_name, **kwargs)
+    return con.read_csv(paths, table_name=table_name, **kwargs)
 
 
 @experimental
