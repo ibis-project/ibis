@@ -137,7 +137,7 @@ class Expr(Immutable, Coercible):
     def __hash__(self):
         return hash((self.__class__, self._arg))
 
-    def equals(self, other) -> bool:
+    def equals(self, other, /) -> bool:
         """Return whether this expression is _structurally_ equivalent to `other`.
 
         If you want to produce an equality expression, use `==` syntax.
