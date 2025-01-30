@@ -170,11 +170,30 @@ class SQLBackend(BaseBackend):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        """Create a view from an Ibis expression.
+
+        Parameters
+        ----------
+        name
+            The name of the view to create.
+        obj
+            The Ibis expression to create the view from.
+        database
+            The database that the view should be created in.
+        overwrite
+            If `True`, replace an existing view with the same name.
+
+        Returns
+        -------
+        ir.Table
+            A table expression representing the view.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
