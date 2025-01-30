@@ -268,9 +268,7 @@ class Backend(SQLBackend, CanListDatabase):
             return cursor
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -292,8 +290,6 @@ class Backend(SQLBackend, CanListDatabase):
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
-
-
         """
         if database is not None:
             table_loc = database

@@ -619,9 +619,7 @@ $$ {defn["source"]} $$"""
         return self._filter_with_like(schemata, like)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 

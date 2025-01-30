@@ -213,9 +213,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(databases, like)
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in the database.
+        """List the tables in `database` matching the pattern `like`.
 
         Parameters
         ----------
@@ -224,6 +224,12 @@ class Backend(SQLBackend, CanCreateDatabase):
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
+
+        Returns
+        -------
+        list[str]
+            List of table names in `database` matching the optional pattern
+            `like`.
         """
 
         query = sg.select(C.name).from_(sg.table("tables", db="system"))

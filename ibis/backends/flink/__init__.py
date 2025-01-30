@@ -167,8 +167,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     def list_tables(
         self,
-        like: str | None = None,
         *,
+        like: str | None = None,
         database: str | None = None,
         catalog: str | None = None,
         temp: bool = False,
@@ -182,20 +182,19 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        like : str, optional
+        like
             A pattern in Python's regex format.
-        temp : bool, optional
+        temp
             Whether to list temporary tables or permanent tables.
-        database : str, optional
+        database
             The database to list tables of, if not the current one.
-        catalog : str, optional
+        catalog
             The catalog to list tables of, if not the current one.
 
         Returns
         -------
         list[str]
             The list of the table/view names that match the pattern `like`.
-
         """
         catalog = catalog or self.current_catalog
         database = database or self.current_database

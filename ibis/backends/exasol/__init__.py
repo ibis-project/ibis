@@ -188,7 +188,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self.begin() as cur:
             yield cur.execute(query, *args, **kwargs)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | tuple[str, str] | None = None
+    ) -> list[str]:
         """List the tables in the database.
 
         Parameters

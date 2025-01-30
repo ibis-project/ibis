@@ -83,7 +83,9 @@ class Backend(BaseBackend, NoUrl):
     def version(self) -> str:
         return pl.__version__
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         return self._filter_with_like(list(self._tables.keys()), like)
 
     def table(self, name: str, /, *, database: None = None) -> ir.Table:
