@@ -944,7 +944,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         **kwargs
             Additional keyword arguments passed to
             [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
