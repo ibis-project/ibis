@@ -648,7 +648,7 @@ class CanListCatalog(abc.ABC):
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Create a new catalog.
 
         ::: {.callout-note}
@@ -668,11 +668,10 @@ class CanCreateCatalog(CanListCatalog):
             Name of the new catalog.
         force
             If `False`, an exception is raised if the catalog already exists.
-
         """
 
     @abc.abstractmethod
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Drop a catalog with name `name`.
 
         ::: {.callout-note}
@@ -692,7 +691,6 @@ class CanCreateCatalog(CanListCatalog):
             Catalog to drop.
         force
             If `False`, an exception is raised if the catalog does not exist.
-
         """
 
 
