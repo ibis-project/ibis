@@ -598,7 +598,7 @@ GO"""
         return self._filter_with_like(map(itemgetter(0), out), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = sg.select(C.schema_name).from_(
             sg.table(

@@ -463,7 +463,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         if catalog is not None:
             raise NotImplementedError(

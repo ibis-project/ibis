@@ -183,7 +183,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             [(database,)] = cur.fetchall()
         return database
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         # In MySQL, "database" and "schema" are synonymous
         with self._safe_raw_sql("SHOW DATABASES") as cur:
             databases = list(map(itemgetter(0), cur.fetchall()))

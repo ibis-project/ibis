@@ -153,7 +153,7 @@ class Backend(SQLBackend, UrlFromPath):
         finally:
             cur.close()
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SELECT name FROM pragma_database_list()") as cur:
             results = [r[0] for r in cur.fetchall()]
 

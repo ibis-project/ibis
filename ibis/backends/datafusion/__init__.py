@@ -313,7 +313,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         return self._filter_with_like(
             self.con.catalog(catalog if catalog is not None else "datafusion").names(),

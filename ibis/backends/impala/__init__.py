@@ -197,7 +197,7 @@ class Backend(SQLBackend):
             (result,) = cursor.fetchone()
         return result
 
-    def list_databases(self, like=None):
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as cur:
             databases = fetchall(cur)
         return self._filter_with_like(databases.name.tolist(), like)
