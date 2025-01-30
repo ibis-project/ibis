@@ -817,7 +817,7 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement.compile())
 
     def drop_table(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop an Impala table.
 
@@ -835,7 +835,6 @@ class Backend(SQLBackend):
         >>> table = "my_table"
         >>> db = "operations"
         >>> con.drop_table(table, database=db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
-
         """
         statement = ddl.DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)

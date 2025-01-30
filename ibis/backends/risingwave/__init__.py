@@ -411,6 +411,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:

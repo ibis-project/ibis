@@ -369,7 +369,7 @@ class Backend(BaseBackend, NoUrl):
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )
 
-    def drop_table(self, name: str, *, force: bool = False) -> None:
+    def drop_table(self, name: str, /, *, force: bool = False) -> None:
         if name in self._tables:
             del self._tables[name]
             self._context.unregister(name)
