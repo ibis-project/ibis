@@ -13,7 +13,7 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
+from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated, promote_list
 
 if TYPE_CHECKING:
@@ -2988,6 +2988,15 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
 
     dtype = dt.infer(value) if type is None else dt.dtype(type)
     return ops.Literal(value, dtype=dtype).to_expr()
+
+
+def _is_null_literal(value: Any) -> bool:
+    """Detect whether `value` will be treated by ibis as a null literal."""
+    return value is None or (
+        isinstance(value, Expr)
+        and isinstance(op := value.op(), ops.Literal)
+        and op.value is None
+    )
 
 
 public(

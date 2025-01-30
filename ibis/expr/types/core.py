@@ -903,13 +903,3 @@ def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Va
         return NotImplemented
     else:
         return node.to_expr()
-
-
-def _is_null_literal(value: Any) -> bool:
-    """Detect whether `value` will be treated by ibis as a null literal."""
-    if value is None:
-        return True
-    if isinstance(value, Expr):
-        op = value.op()
-        return isinstance(op, ops.Literal) and op.value is None
-    return False
