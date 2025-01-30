@@ -150,9 +150,30 @@ class SQLBackend(BaseBackend):
     def sql(
         self,
         query: str,
+        /,
+        *,
         schema: SchemaLike | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
+        """Create an Ibis table expression from a SQL query.
+
+        Parameters
+        ----------
+        query
+            A SQL query string
+        schema
+            The schema of the query. If not provided, Ibis will try to infer
+            the schema of the query.
+        dialect
+            The SQL dialect of the query. If not provided, the backend's dialect
+            is assumed. This argument can be useful when the query is written
+            in a different dialect from the backend.
+
+        Returns
+        -------
+        ir.Table
+            The table expression representing the query
+        """
         query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
             schema = self._get_schema_using_query(query)
