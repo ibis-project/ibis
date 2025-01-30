@@ -501,7 +501,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     @util.experimental
     def read_json(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         columns: Mapping[str, str] | None = None,
         **kwargs,
@@ -514,7 +516,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             File or list of files
         table_name
             Optional table name
@@ -530,7 +532,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         Table
             An ibis table expression
-
         """
         if not table_name:
             table_name = util.gen_name("read_json")
@@ -558,7 +559,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             table_name,
             sg.select(STAR).from_(
                 self.compiler.f.read_json_auto(
-                    util.normalize_filenames(source_list), *options
+                    util.normalize_filenames(paths), *options
                 )
             ),
         )

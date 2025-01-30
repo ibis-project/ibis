@@ -987,7 +987,7 @@ $$ {defn["source"]} $$"""
         return self.table(table)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table, using Snowflake.
 
@@ -1006,7 +1006,6 @@ $$ {defn["source"]} $$"""
         -------
         Table
             An ibis table expression
-
         """
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
