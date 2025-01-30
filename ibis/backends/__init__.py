@@ -231,6 +231,7 @@ class _FileIOHandler:
     def to_polars(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,

@@ -485,6 +485,8 @@ class Backend(BaseBackend, NoUrl):
     def to_polars(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
