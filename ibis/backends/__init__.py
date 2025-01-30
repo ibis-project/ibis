@@ -443,6 +443,7 @@ class _FileIOHandler:
     def to_parquet(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -479,6 +480,7 @@ class _FileIOHandler:
     def to_parquet_dir(
         self,
         expr: ir.Table,
+        /,
         directory: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,

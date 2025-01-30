@@ -1386,6 +1386,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_parquet(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -1431,7 +1432,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         Partition on multiple columns.
 
         >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by=("year", "island"))
-
         """
         self._run_pre_execute_hooks(expr)
         query = self.compile(expr, params=params)
