@@ -1334,7 +1334,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         """
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
         """Return whether the backend implements support for `operation`.
 
         Parameters
@@ -1355,7 +1355,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         False
         >>> ibis.postgres.has_operation(ops.ArrayIndex)
         True
-
         """
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
