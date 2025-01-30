@@ -904,8 +904,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,
@@ -914,7 +916,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to insert data into.
         obj
             The source data or expression to insert.
@@ -942,7 +944,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
-                table_name,
+                name,
                 self.compile(obj),
                 database=database,
                 catalog=catalog,
@@ -951,7 +953,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             return self.raw_sql(statement.compile())
 
         identifier = sg.table(
-            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
+            name, db=database, catalog=catalog, quoted=self.compiler.quoted
         ).sql(self.dialect)
 
         if isinstance(obj, pa.Table):

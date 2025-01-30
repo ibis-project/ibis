@@ -572,8 +572,10 @@ class Backend(SQLBackend, UrlFromPath):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -581,7 +583,7 @@ class Backend(SQLBackend, UrlFromPath):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -596,20 +598,18 @@ class Backend(SQLBackend, UrlFromPath):
             If inserting data from a different database
         ValueError
             If the type of `obj` isn't supported
-
         """
-        table = sg.table(table_name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         if not isinstance(obj, ir.Expr):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
 
-        query = self._build_insert_from_table(
-            target=table_name, source=obj, catalog=database
-        )
-        insert_stmt = query.sql(self.name)
+        dialect = self.dialect
+        query = self._build_insert_from_table(target=name, source=obj, catalog=database)
+        insert_stmt = query.sql(dialect)
 
         with self.begin() as cur:
             if overwrite:
-                cur.execute(sge.Delete(this=table).sql(self.dialect))
+                cur.execute(sge.Delete(this=table).sql(dialect))
             cur.execute(insert_stmt)
