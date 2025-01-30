@@ -572,7 +572,7 @@ class Value(Expr):
         """
         return ops.Between(self, lower, upper).to_expr()
 
-    def isin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
+    def isin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
         """Check whether this expression's values are in `values`.
 
         `NULL` values are propagated in the output. See examples for details.
@@ -690,7 +690,7 @@ class Value(Expr):
         else:
             return ops.InValues(self, values).to_expr()
 
-    def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
+    def notin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
 
         Opposite of [`Value.isin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isin).
@@ -956,6 +956,7 @@ class Value(Expr):
     def cases(
         self,
         branch: tuple[Value, Value],
+        /,
         *branches: tuple[Value, Value],
         else_: Value | None = None,
     ) -> Value:
@@ -1118,7 +1119,7 @@ class Value(Expr):
             distinct=distinct,
         ).to_expr()
 
-    def identical_to(self, other: Value) -> ir.BooleanValue:
+    def identical_to(self, other: Value, /) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
 
         Corresponds to `IS NOT DISTINCT FROM` in SQL.
