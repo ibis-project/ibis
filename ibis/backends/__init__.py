@@ -1306,7 +1306,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @abc.abstractmethod
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a view.
 
@@ -1318,7 +1318,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the database where the view exists, if not the default.
         force
             If `False`, an exception is raised if the view does not exist.
-
         """
 
     @classmethod

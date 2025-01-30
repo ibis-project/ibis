@@ -190,12 +190,19 @@ class SQLBackend(BaseBackend):
         return self.table(name, database=(catalog, db))
 
     def drop_view(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
+        """Drop a view from the backend.
+
+        Parameters
+        ----------
+        name
+            The name of the view to drop.
+        database
+            The database that the view is located in.
+        force
+            If `True`, do not raise an error if the view does not exist.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
