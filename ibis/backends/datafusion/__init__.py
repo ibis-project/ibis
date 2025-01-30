@@ -301,13 +301,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         result = self.con.sql(code).to_pydict()
         return self._filter_with_like(result["table_catalog"], like)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_raw_sql(
             sge.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
         ):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
             "DataFusion does not support dropping databases"
         )
