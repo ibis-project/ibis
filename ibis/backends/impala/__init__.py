@@ -866,7 +866,9 @@ class Backend(SQLBackend):
         statement = ddl.RenameTable(old_name, new_name)
         self._safe_exec_sql(statement)
 
-    def drop_table_or_view(self, name, *, database=None, force=False):
+    def drop_table_or_view(
+        self, name, /, *, database: str | None = None, force: bool = False
+    ):
         """Drop view or table."""
         try:
             self.drop_table(name, database=database)
