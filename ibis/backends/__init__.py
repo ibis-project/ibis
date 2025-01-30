@@ -593,6 +593,7 @@ class _FileIOHandler:
     def to_json(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         **kwargs: Any,
     ) -> None:

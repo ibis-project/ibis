@@ -1587,6 +1587,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_json(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         compression: Literal["auto", "none", "gzip", "zstd"] = "auto",
@@ -1613,14 +1614,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         timestampformat
             Timestamp format string.
         """
-        opts = f", COMPRESSION '{compression.upper()}'"
+        opts = [f"COMPRESSION '{compression.upper()}'"]
         if dateformat:
-            opts += f", DATEFORMAT '{dateformat}'"
+            opts.append(f"DATEFORMAT '{dateformat}'")
         if timestampformat:
-            opts += f", TIMESTAMPFORMAT '{timestampformat}'"
-        self.raw_sql(
-            f"COPY ({self.compile(expr)}) TO '{path!s}' (FORMAT JSON, ARRAY true{opts});"
-        )
+            opts.append(f"TIMESTAMPFORMAT '{timestampformat}'")
+
+        options = f"FORMAT JSON, ARRAY TRUE, {', '.join(opts)}"
+
+        self.raw_sql(f"COPY ({self.compile(expr)}) TO '{path!s}' ({options})")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:
