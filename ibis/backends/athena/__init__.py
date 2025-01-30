@@ -473,7 +473,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             pass
 
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List tables and views.
 

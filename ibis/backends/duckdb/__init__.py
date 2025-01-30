@@ -872,9 +872,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self.table(table_name)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List tables and views.
 

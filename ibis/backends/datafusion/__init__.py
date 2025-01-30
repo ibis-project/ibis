@@ -336,9 +336,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             pass
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 
