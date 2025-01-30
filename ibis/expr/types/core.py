@@ -784,11 +784,7 @@ class Expr(Immutable, Coercible):
         )
 
     @experimental
-    def to_json(
-        self,
-        path: str | Path,
-        **kwargs: Any,
-    ) -> None:
+    def to_json(self, path: str | Path, /, **kwargs: Any) -> None:
         """Write the results of `expr` to a json file of [{column -> value}, ...] objects.
 
         This method is eager and will execute the associated expression
