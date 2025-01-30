@@ -37,7 +37,14 @@ class SQLBackend(BaseBackend):
         return self.compiler.dialect
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
+        """Return whether the backend supports the given operation.
+
+        Parameters
+        ----------
+        operation
+            Operation type, a Python class object.
+        """
         compiler = cls.compiler
         if operation in compiler.extra_supported_ops:
             return True

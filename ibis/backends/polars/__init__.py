@@ -387,7 +387,7 @@ class Backend(BaseBackend, NoUrl):
         return tuple(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
         # Polars doesn't support geospatial ops, but the dispatcher implements
         # a common base class that makes it appear that it does. Explicitly
         # exclude these operations.
