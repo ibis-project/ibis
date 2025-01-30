@@ -1028,6 +1028,7 @@ class Value(Expr):
 
     def collect(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
@@ -1698,7 +1699,9 @@ class Column(Value, _FixedTextJupyterMixin):
     def __deferred_repr__(self) -> str:
         return f"<column[{self.type()}]>"
 
-    def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def approx_nunique(
+        self, *, where: ir.BooleanValue | None = None
+    ) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
         ::: {.callout-note}
@@ -1740,7 +1743,7 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def approx_median(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def approx_median(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return an approximate of the median of `self`.
 
         ::: {.callout-note}
@@ -1780,7 +1783,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def mode(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column.
 
         Parameters
@@ -1809,7 +1812,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def max(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def max(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column.
 
         Parameters
@@ -1838,7 +1841,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def min(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def min(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column.
 
         Parameters
@@ -1867,7 +1870,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
+    def argmax(self, key: ir.Value, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
 
         If more than one value maximizes `key`, the returned value is backend
@@ -1905,7 +1908,7 @@ class Column(Value, _FixedTextJupyterMixin):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
+    def argmin(self, key: ir.Value, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that minimizes `key`.
 
         If more than one value minimizes `key`, the returned value is backend
@@ -1944,7 +1947,7 @@ class Column(Value, _FixedTextJupyterMixin):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def median(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def median(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the median of the column.
 
         Parameters
@@ -2004,6 +2007,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def quantile(
         self,
         quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        *,
         where: ir.BooleanValue | None = None,
     ) -> Scalar:
         """Return value at the given quantile.
@@ -2073,7 +2077,7 @@ class Column(Value, _FixedTextJupyterMixin):
             op = ops.Quantile
         return op(self, quantile, where=self._bind_to_parent_table(where)).to_expr()
 
-    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def nunique(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
 
         Parameters
@@ -2194,7 +2198,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
-    def arbitrary(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def arbitrary(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Select an arbitrary value in a column.
 
         Returns an arbitrary (nondeterministic, backend-specific) value from
@@ -2238,7 +2242,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def count(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.
 
         Parameters
@@ -2332,6 +2336,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
     def first(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
@@ -2385,6 +2390,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
     def last(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
