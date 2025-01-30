@@ -694,12 +694,29 @@ class Backend(SQLBackend, CanCreateDatabase):
     def compile(
         self,
         expr: ir.Expr,
-        limit: str | None = None,
-        params=None,
-        pretty: bool = True,
+        /,
+        *,
+        limit: str | int | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        pretty: bool = False,
         **kwargs: Any,
-    ):
-        """Compile an Ibis expression to a SQL string."""
+    ) -> str:
+        """Compile an expression.
+
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        pretty
+            If `True`, the resulting SQL will be formatted for human readability
+        kwargs
+            Additional keyword arguments
+        """
         session_dataset = self._session_dataset
         session_dataset_id = getattr(session_dataset, "dataset_id", None)
         session_project = getattr(session_dataset, "project", None)

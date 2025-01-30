@@ -1164,13 +1164,30 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
 
+    @abc.abstractmethod
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
+        limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
     ) -> Any:
-        """Compile an expression."""
-        return self.compiler.to_sql(expr, params=params)
+        """Compile an expression.
+
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        kwargs
+            Additional keyword arguments
+        """
 
     def execute(
         self,

@@ -1247,6 +1247,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        **kwargs: Any,
     ):
         """Preprocess the expr, and return a `duckdb.DuckDBPyRelation` object.
 
@@ -1259,7 +1260,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         """
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
-        sql = self.compile(table_expr, limit=limit, params=params)
+        sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         if table_expr.schema().geospatial:
             self._load_extensions(["spatial"])
         return self.con.sql(sql)

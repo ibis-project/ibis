@@ -457,6 +457,7 @@ class Expr(Immutable, Coercible):
 
     def compile(
         self,
+        *,
         limit: int | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
