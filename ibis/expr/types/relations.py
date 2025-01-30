@@ -2872,7 +2872,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
     def describe(
-        self, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
+        self, *, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
     ) -> Table:
         """Return summary information about a table.
 
