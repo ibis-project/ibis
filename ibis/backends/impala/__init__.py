@@ -720,8 +720,10 @@ class Backend(SQLBackend):
 
     def insert(
         self,
-        table_name,
+        name,
+        /,
         obj=None,
+        *,
         database=None,
         overwrite=False,
         partition=None,
@@ -731,7 +733,7 @@ class Backend(SQLBackend):
 
         Parameters
         ----------
-        table_name
+        name
             The table name
         obj
             Table expression or DataFrame
@@ -763,7 +765,7 @@ class Backend(SQLBackend):
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
 
-        table = self.table(table_name, database=database)
+        table = self.table(name, database=database)
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -782,14 +784,14 @@ class Backend(SQLBackend):
                 if set(insert_schema.names) != set(existing_schema.names):
                     raise com.IbisInputError("Schemas have different names")
 
-                for name in insert_schema:
-                    lt = insert_schema[name]
-                    rt = existing_schema[name]
+                for insert_name in insert_schema:
+                    lt = insert_schema[insert_name]
+                    rt = existing_schema[insert_name]
                     if not lt.castable(rt):
                         raise com.IbisInputError(f"Cannot safely cast {lt!r} to {rt!r}")
 
         if partition is not None:
-            partition_schema = self.get_partition_schema(table_name, database=database)
+            partition_schema = self.get_partition_schema(name, database=database)
             partition_schema_names = frozenset(partition_schema.names)
             obj = obj.select(
                 [
@@ -802,7 +804,7 @@ class Backend(SQLBackend):
             partition_schema = None
 
         statement = ddl.InsertSelect(
-            self._fully_qualified_name(table_name, database),
+            self._fully_qualified_name(name, database),
             self.compile(obj),
             partition=partition,
             partition_schema=partition_schema,

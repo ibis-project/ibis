@@ -442,7 +442,9 @@ class Backend(SQLBackend, CanCreateDatabase):
     def insert(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
+        *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
         database: str | None = None,

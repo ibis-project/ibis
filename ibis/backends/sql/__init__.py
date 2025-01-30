@@ -328,8 +328,10 @@ class SQLBackend(BaseBackend):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -348,7 +350,7 @@ class SQLBackend(BaseBackend):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -360,13 +362,12 @@ class SQLBackend(BaseBackend):
             strings like `("catalog", "database")`.
         overwrite
             If `True` then replace existing contents of table
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         if overwrite:
-            self.truncate_table(table_name, database=(catalog, db))
+            self.truncate_table(name, database=(catalog, db))
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -374,7 +375,7 @@ class SQLBackend(BaseBackend):
         self._run_pre_execute_hooks(obj)
 
         query = self._build_insert_from_table(
-            target=table_name, source=obj, db=db, catalog=catalog
+            target=name, source=obj, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
