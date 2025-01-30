@@ -859,7 +859,7 @@ $$ {defn["source"]} $$"""
         return self.table(name, database=(catalog, db))
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the Snowflake backend.
 
@@ -877,7 +877,6 @@ $$ {defn["source"]} $$"""
         -------
         Table
             The table that was read from the CSV file
-
         """
         stage = ibis.util.gen_name("stage")
         file_format = ibis.util.gen_name("format")

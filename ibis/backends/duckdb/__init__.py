@@ -567,7 +567,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         columns: Mapping[str, str | dt.DataType] | None = None,
         types: Mapping[str, str | dt.DataType] | None = None,
@@ -577,7 +579,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file or directory of CSV
             files, or an iterable of CSV files.
         table_name
@@ -644,17 +646,14 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         │     2.0 │     3.0 │ <POINT (2 3)>        │
         └─────────┴─────────┴──────────────────────┘
         """
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
 
         if not table_name:
             table_name = util.gen_name("read_csv")
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
-        if any(
-            source.startswith(("http://", "https://", "s3://"))
-            for source in source_list
-        ):
+        if any(source.startswith(("http://", "https://", "s3://")) for source in paths):
             self._load_extensions(["httpfs"])
 
         kwargs.setdefault("header", True)
@@ -694,7 +693,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         self._create_temp_view(
             table_name,
-            sg.select(STAR).from_(self.compiler.f.read_csv(source_list, *options)),
+            sg.select(STAR).from_(self.compiler.f.read_csv(paths, *options)),
         )
 
         return self.table(table_name)

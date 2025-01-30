@@ -368,7 +368,7 @@ class _FileIOHandler:
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current backend.
 
@@ -386,7 +386,6 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
-
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of CSV data."

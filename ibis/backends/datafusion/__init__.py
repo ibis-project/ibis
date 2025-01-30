@@ -394,7 +394,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
     def read_csv(
         self,
-        source_list: str | Path | list[str | Path] | tuple[str | Path],
+        paths: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -402,7 +404,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source. A string or Path to the CSV file.
         table_name
             An optional name to use for the created table. This defaults to
@@ -414,9 +416,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
-        path = normalize_filenames(source_list)
+        path = normalize_filenames(paths)
         table_name = table_name or gen_name("read_csv")
         # Our other backends support overwriting views / tables when re-registering
         self.con.deregister_table(table_name)

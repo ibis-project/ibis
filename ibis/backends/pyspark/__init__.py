@@ -832,7 +832,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -840,7 +842,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -854,7 +856,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -863,9 +864,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
         spark_df = self._session.read.csv(
-            source_list, inferSchema=inferSchema, header=header, **kwargs
+            paths, inferSchema=inferSchema, header=header, **kwargs
         )
         table_name = table_name or util.gen_name("read_csv")
 
@@ -1116,6 +1117,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_csv_dir(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         watermark: Watermark | None = None,
         **kwargs: Any,
@@ -1139,7 +1142,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
