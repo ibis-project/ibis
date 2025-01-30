@@ -237,7 +237,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_pandas(
-        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
+        self, source: pd.DataFrame, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Pandas DataFrame or pyarrow Table a table in the current database.
 
@@ -257,7 +257,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         table_name = table_name or gen_name("read_in_memory")
 
