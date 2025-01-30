@@ -1155,8 +1155,10 @@ $$ {defn["source"]} $$"""
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -1173,7 +1175,7 @@ $$ {defn["source"]} $$"""
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -1185,7 +1187,6 @@ $$ {defn["source"]} $$"""
             `("catalog", "database")`.
         overwrite
             If `True` then replace existing contents of table
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1196,16 +1197,15 @@ $$ {defn["source"]} $$"""
         self._run_pre_execute_hooks(obj)
 
         query = self._build_insert_from_table(
-            target=table_name, source=obj, db=db, catalog=catalog
+            target=name, source=obj, db=db, catalog=catalog
         )
-        table = sg.table(
-            table_name, db=db, catalog=catalog, quoted=self.compiler.quoted
-        )
+        table = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted)
 
+        dialect = self.dialect
         statements = []
         if overwrite:
-            statements.append(f"TRUNCATE TABLE {table.sql(self.name)}")
-        statements.append(query.sql(self.name))
+            statements.append(f"TRUNCATE TABLE {table.sql(dialect)}")
+        statements.append(query.sql(dialect))
 
         statement = ";".join(statements)
         with self._safe_raw_sql(statement):

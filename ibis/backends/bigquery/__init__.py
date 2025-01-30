@@ -718,38 +718,35 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
-    ):
+    ) -> None:
         """Insert data into a table.
 
         Parameters
         ----------
-        table_name
-            The name of the table to which data needs will be inserted
+        name
+            The name of the table to which data needs will be inserted.
         obj
-            The source data or expression to insert
+            The source data or expression to insert.
         database
             Name of the attached database that the table is located in.
         overwrite
-            If `True` then replace existing contents of table
-
+            If `True` then replace existing contents of table.
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if catalog is None:
             catalog = self.current_catalog
         if db is None:
             db = self.current_database
 
-        return super().insert(
-            table_name,
-            obj,
-            database=(catalog, db),
-            overwrite=overwrite,
-        )
+        return super().insert(name, obj, database=(catalog, db), overwrite=overwrite)
 
     def _to_query(
         self,
