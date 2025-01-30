@@ -481,6 +481,8 @@ class Backend(SQLBackend, CanListDatabase):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
