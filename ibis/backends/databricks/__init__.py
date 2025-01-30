@@ -199,7 +199,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters

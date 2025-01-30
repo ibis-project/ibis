@@ -582,6 +582,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)

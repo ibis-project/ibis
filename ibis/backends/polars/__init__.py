@@ -86,7 +86,7 @@ class Backend(BaseBackend, NoUrl):
     def list_tables(self, like=None, database=None):
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, database: None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: None = None) -> ir.Table:
         if database is not None:
             raise com.IbisError(
                 "Passing `database` to the Polars backend's `table()` method is not "
