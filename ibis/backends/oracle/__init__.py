@@ -382,6 +382,7 @@ class Backend(SQLBackend, CanListDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -414,7 +415,6 @@ class Backend(SQLBackend, CanListDatabase):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -465,9 +465,7 @@ class Backend(SQLBackend, CanListDatabase):
                 cur.execute(insert_stmt)
 
             if overwrite:
-                self.drop_table(
-                    name=final_table.name, database=final_table.db, force=True
-                )
+                self.drop_table(final_table.name, database=final_table.db, force=True)
                 cur.execute(
                     f"ALTER TABLE IF EXISTS {initial_table.sql(self.name)} RENAME TO {final_table.sql(self.name)}"
                 )

@@ -393,6 +393,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -436,7 +437,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             Add a comment to the table
         properties
             Table properties to set on creation
-
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")

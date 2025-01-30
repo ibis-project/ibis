@@ -941,6 +941,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -993,7 +994,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             The table that was just created
-
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")

@@ -637,6 +637,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -690,7 +691,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             The new table
-
         """
         if temp and overwrite:
             raise com.IbisInputError(

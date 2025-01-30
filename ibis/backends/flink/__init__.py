@@ -422,6 +422,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -481,7 +482,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         Table
             The table that was created.
-
         """
         import pandas as pd
         import pyarrow as pa
@@ -500,11 +500,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if overwrite:
             if self.list_tables(like=name, temp=temp):
                 self.drop_table(
-                    name=name,
-                    catalog=catalog,
-                    database=database,
-                    temp=temp,
-                    force=True,
+                    name, catalog=catalog, database=database, temp=temp, force=True
                 )
 
         # In-memory data is created as views in `pyflink`
@@ -532,7 +528,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             # which may not be ideal. We plan to get back to this later.
             # Ref: https://github.com/ibis-project/ibis/pull/7479#discussion_r1416237088
             return self.create_view(
-                name=name,
+                name,
                 obj=dataframe,
                 schema=schema,
                 database=database,

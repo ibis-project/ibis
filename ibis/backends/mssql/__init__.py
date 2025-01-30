@@ -614,6 +614,7 @@ GO"""
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -658,7 +659,6 @@ GO"""
         -------
         Table
             The table that was created.
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")

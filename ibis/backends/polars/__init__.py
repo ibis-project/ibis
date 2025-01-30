@@ -315,6 +315,7 @@ class Backend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table

@@ -424,6 +424,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -456,7 +457,6 @@ class Backend(SQLBackend, UrlFromPath):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if schema is None and obj is None:
             raise ValueError("Either `obj` or `schema` must be specified")

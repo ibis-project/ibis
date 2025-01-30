@@ -590,6 +590,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: (
             ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
         ) = None,
@@ -631,7 +632,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         Examples
         --------
         >>> con.create_table("new_table_name", table_expr)  # quartodoc: +SKIP # doctest: +SKIP
-
         """
         if temp is True:
             raise NotImplementedError(
