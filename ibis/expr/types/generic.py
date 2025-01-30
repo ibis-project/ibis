@@ -352,7 +352,7 @@ class Value(Expr):
 
         return op.to_expr()
 
-    def coalesce(self, *args: Value) -> Value:
+    def coalesce(self, /, *args: Value) -> Value:
         """Return the first non-null value from `args`.
 
         Parameters
@@ -428,7 +428,7 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fill_null(self, fill_value: Scalar) -> Value:
+    def fill_null(self, fill_value: Scalar, /) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
@@ -479,11 +479,11 @@ class Value(Expr):
         return ops.Coalesce((self, fill_value)).to_expr()
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
-    def fillna(self, fill_value: Scalar) -> Value:
+    def fillna(self, fill_value: Scalar, /) -> Value:
         """DEPRECATED: use `fill_null` instead."""
         return self.fill_null(fill_value)
 
-    def nullif(self, null_if_expr: Value) -> Value:
+    def nullif(self, null_if_expr: Value, /) -> Value:
         """Set values to null if they equal the values `null_if_expr`.
 
         Commonly used to avoid divide-by-zero problems by replacing zero with
@@ -2878,7 +2878,7 @@ class NullColumn(Column, NullValue):
 
 @public
 @deferrable
-def null(type: dt.DataType | str | None = None) -> Value:
+def null(type: dt.DataType | str | None = None, /) -> Value:
     """Create a NULL scalar.
 
     `NULL`s with an unspecified type are castable and comparable to values,
