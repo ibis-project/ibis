@@ -765,6 +765,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_delta(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -785,7 +787,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -917,7 +918,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_delta(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
@@ -1002,8 +1005,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     @util.experimental
     def read_kafka(
         self,
-        table_name: str | None = None,
         *,
+        table_name: str | None = None,
         watermark: Watermark | None = None,
         auto_parse: bool = False,
         schema: sch.Schema | None = None,
@@ -1067,6 +1070,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_kafka(
         self,
         expr: ir.Expr,
+        /,
         *,
         auto_format: bool = False,
         options: Mapping[str, str] | None = None,
@@ -1298,7 +1302,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_parquet_dir(
         self,
         expr: ir.Expr,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
@@ -1331,7 +1337,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_csv_dir(
         self,
         expr: ir.Expr,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
