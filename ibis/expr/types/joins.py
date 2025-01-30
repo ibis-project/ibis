@@ -43,8 +43,6 @@ def disambiguate_fields(
 ):
     """Resolve name collisions between the left and right tables."""
     collisions = set()
-    left_renamer = left_renamer or "{name}"
-    right_renamer = right_renamer or "{name}"
 
     if how == "inner" and util.all_of(predicates, ops.Equals):
         # for inner joins composed exclusively of equality predicates, we can
