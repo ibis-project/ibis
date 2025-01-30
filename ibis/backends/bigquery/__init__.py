@@ -476,6 +476,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def from_connection(
         cls,
         client: bq.Client,
+        /,
+        *,
         partition_column: str | None = "PARTITIONTIME",
         storage_client: bqstorage.BigQueryReadClient | None = None,
         dataset_id: str = "",

@@ -189,7 +189,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: pyodbc.Connection) -> Backend:
+    def from_connection(cls, con: pyodbc.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a MSSQL database.
 
         Parameters

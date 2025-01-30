@@ -332,7 +332,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: trino.dbapi.Connection) -> Backend:
+    def from_connection(cls, con: trino.dbapi.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a Trino database.
 
         Parameters

@@ -193,7 +193,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     @util.experimental
     @classmethod
     def from_connection(
-        cls, session: SparkSession, mode: ConnectionMode = "batch", **kwargs
+        cls, session: SparkSession, /, *, mode: ConnectionMode = "batch", **kwargs: Any
     ) -> Backend:
         """Create a PySpark `Backend` from an existing `SparkSession` instance.
 

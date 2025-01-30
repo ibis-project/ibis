@@ -100,6 +100,8 @@ class Backend(SQLBackend, UrlFromPath):
     def from_connection(
         cls,
         con: sqlite3.Connection,
+        /,
+        *,
         type_map: dict[str, str | dt.DataType] | None = None,
     ) -> Backend:
         """Create an Ibis client from an existing connection to a SQLite database.

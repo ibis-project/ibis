@@ -549,7 +549,7 @@ class SQLBackend(BaseBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: Any, **kwargs: Any) -> BaseBackend:
+    def from_connection(cls, con: Any, /, **kwargs: Any) -> BaseBackend:
         """Create an Ibis client from an existing connection.
 
         Parameters

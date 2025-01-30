@@ -174,7 +174,7 @@ class Backend(SQLBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: hs2.HiveServer2Connection) -> Backend:
+    def from_connection(cls, con: hs2.HiveServer2Connection, /) -> Backend:
         """Create an Impala `Backend` from an existing HS2 connection.
 
         Parameters

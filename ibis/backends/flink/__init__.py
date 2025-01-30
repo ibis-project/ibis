@@ -80,7 +80,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, table_env: TableEnvironment) -> Backend:
+    def from_connection(cls, table_env: TableEnvironment, /) -> Backend:
         """Create a Flink `Backend` from an existing table environment.
 
         Parameters
