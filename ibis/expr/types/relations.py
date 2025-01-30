@@ -44,6 +44,49 @@ if TYPE_CHECKING:
     from ibis.selectors import IfAnyAll
 
 
+def _rename(c: str, method) -> str:
+    if method in {"snake_case", "ALL_CAPS"}:
+        c = c.strip()
+        if " " in c:
+            # Handle "space case possibly with-hyphens and camelCase"
+            # gets turned into "space_case_possibly_with_hyphens_and_camelcase"
+            if method == "snake_case":
+                return "_".join(c.lower().split()).replace("-", "_")
+            elif method == "ALL_CAPS":
+                return "_".join(c.upper().split()).replace("-", "_")
+            else:
+                assert False  # noqa: B011
+        # Handle PascalCase, camelCase, and kebab-case
+        c = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", c)
+        c = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", c)
+        c = c.replace("-", "_")
+        if method == "snake_case":
+            return c.lower()
+        elif method == "ALL_CAPS":
+            return c.upper()
+        else:
+            assert False  # noqa: B011
+
+    elif isinstance(method, str):
+        f = lambda name: method.format(name=name)
+        # Detect the case of missing or extra format string parameters
+        try:
+            dummy_name1 = "_unlikely_column_name_1_"
+            dummy_name2 = "_unlikely_column_name_2_"
+            invalid = f(dummy_name1) == f(dummy_name2)
+        except KeyError:
+            invalid = True
+        if invalid:
+            raise ValueError("Format strings must take a single parameter `name`")
+        return f(c)
+    elif method is None:
+        return c
+    else:
+        if (raw_result := method(c)) is None:
+            return c
+        return raw_result
+
+
 def _regular_join_method(
     name: str,
     how: Literal[
@@ -2293,63 +2336,21 @@ class Table(Expr, _FixedTextJupyterMixin):
             substitutions.update(method)
             method = None
 
-        # A mapping from old_name -> renamed expr
-        renamed = {}
-
+        old2new = {}
         for new_name, old_name in substitutions.items():
-            if old_name not in renamed:
-                renamed[old_name] = (new_name, self[old_name].op())
+            if old_name not in old2new:
+                old2new[old_name] = (new_name, self[old_name].op())
             else:
                 raise ValueError("duplicate new names passed for renaming {old_name!r}")
-
-        if isinstance(method, str) and method in {"snake_case", "ALL_CAPS"}:
-
-            def rename(c):
-                c = c.strip()
-                if " " in c:
-                    # Handle "space case possibly with-hyphens"
-                    if method == "snake_case":
-                        return "_".join(c.lower().split()).replace("-", "_")
-                    elif method == "ALL_CAPS":
-                        return "_".join(c.upper().split()).replace("-", "_")
-                # Handle PascalCase, camelCase, and kebab-case
-                c = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", c)
-                c = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", c)
-                c = c.replace("-", "_")
-                if method == "snake_case":
-                    return c.lower()
-                elif method == "ALL_CAPS":
-                    return c.upper()
-                else:
-                    return None
-
-        elif isinstance(method, str):
-
-            def rename(name):
-                return method.format(name=name)
-
-            # Detect the case of missing or extra format string parameters
-            try:
-                dummy_name1 = "_unlikely_column_name_1_"
-                dummy_name2 = "_unlikely_column_name_2_"
-                invalid = rename(dummy_name1) == rename(dummy_name2)
-            except KeyError:
-                invalid = True
-            if invalid:
-                raise ValueError("Format strings must take a single parameter `name`")
-        else:
-            rename = method
 
         exprs = {}
         fields = self.op().fields
         for c in self.columns:
-            if (new_name_op := renamed.get(c)) is not None:
+            if (new_name_op := old2new.get(c)) is not None:
                 new_name, op = new_name_op
             else:
                 op = fields[c]
-                if rename is None or (new_name := rename(c)) is None:
-                    new_name = c
-
+                new_name = _rename(c, method)
             exprs[new_name] = op
 
         return ops.Project(self, exprs).to_expr()
