@@ -80,7 +80,7 @@ class MapValue(Value):
     └───────────────────┘
     """
 
-    def get(self, key: ir.Value, default: ir.Value | None = None) -> ir.Value:
+    def get(self, key: ir.Value, default: ir.Value | None = None, /) -> ir.Value:
         """Return the value for `key` from `expr`.
 
         Return `default` if `key` is not in the map.
@@ -258,7 +258,7 @@ class MapValue(Value):
         return ops.MapGet(self, key).to_expr()
 
     def contains(
-        self, key: int | str | ir.IntegerValue | ir.StringValue
+        self, key: int | str | ir.IntegerValue | ir.StringValue, /
     ) -> ir.BooleanValue:
         """Return whether the map contains `key`.
 
@@ -443,6 +443,7 @@ class MapColumn(Column, MapValue):
 def map(
     keys: Iterable[Any] | Mapping[Any, Any] | ArrayValue,
     values: Iterable[Any] | ArrayValue | None = None,
+    /,
 ) -> MapValue:
     """Create a MapValue.
 
