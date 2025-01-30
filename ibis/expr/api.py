@@ -1594,7 +1594,9 @@ def read_json(
 
 
 def read_parquet(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1605,7 +1607,7 @@ def read_parquet(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1643,12 +1645,11 @@ def read_parquet(
     │     2 │ h      │
     │     3 │ i      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_parquet(sources, table_name=table_name, **kwargs)
+    return con.read_parquet(paths, table_name=table_name, **kwargs)
 
 
 def read_delta(

@@ -424,7 +424,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         return self.table(table_name)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
 
@@ -442,7 +442,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_parquet")
