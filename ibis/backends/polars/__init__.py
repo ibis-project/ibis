@@ -115,7 +115,12 @@ class Backend(BaseBackend, NoUrl):
         self._context.register(name, obj)
 
     def sql(
-        self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
+        self,
+        query: str,
+        /,
+        *,
+        schema: sch.Schema | None = None,
+        dialect: str | None = None,
     ) -> ir.Table:
         query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
