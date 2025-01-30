@@ -111,7 +111,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoAsEWKB(self).to_expr()
 
-    def contains(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def contains(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometry contains the `right`.
 
         Parameters
@@ -153,7 +153,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoContains(self, right).to_expr()
 
-    def contains_properly(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def contains_properly(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the first geometry contains the second one.
 
         Excludes common border points.
@@ -170,7 +170,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoContainsProperly(self, right).to_expr()
 
-    def covers(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def covers(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the first geometry covers the second one.
 
         Parameters
@@ -215,7 +215,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoCovers(self, right).to_expr()
 
-    def covered_by(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def covered_by(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the first geometry is covered by the second one.
 
         Parameters
@@ -280,7 +280,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoCoveredBy(self, right).to_expr()
 
-    def crosses(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def crosses(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries have at least one, but not all, interior points in common.
 
         Parameters
@@ -345,6 +345,8 @@ class GeoSpatialValue(NumericValue):
     def d_fully_within(
         self,
         right: GeoSpatialValue,
+        /,
+        *,
         distance: ir.FloatingValue,
     ) -> ir.BooleanValue:
         """Check if `self` is entirely within `distance` from `right`.
@@ -363,7 +365,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoDFullyWithin(self, right, distance).to_expr()
 
-    def disjoint(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def disjoint(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries have no points in common.
 
         Parameters
@@ -468,7 +470,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoDWithin(self, right, distance).to_expr()
 
-    def geo_equals(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def geo_equals(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries are equal.
 
         Parameters
@@ -507,7 +509,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoEquals(self, right).to_expr()
 
-    def geometry_n(self, n: int | ir.IntegerValue) -> GeoSpatialValue:
+    def geometry_n(self, n: int | ir.IntegerValue, /) -> GeoSpatialValue:
         """Get the 1-based Nth geometry of a multi geometry.
 
         Parameters
@@ -556,7 +558,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoGeometryType(self).to_expr()
 
-    def intersects(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def intersects(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries share any points.
 
         Parameters
@@ -632,7 +634,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoIsValid(self).to_expr()
 
-    def ordering_equals(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def ordering_equals(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if two geometries are equal and have the same point ordering.
 
         Returns true if the two geometries are equal and the coordinates
@@ -650,7 +652,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoOrderingEquals(self, right).to_expr()
 
-    def overlaps(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def overlaps(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries share space, have the same dimension, and are not completely contained by each other.
 
         Parameters
@@ -695,7 +697,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoOverlaps(self, right).to_expr()
 
-    def touches(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def touches(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the geometries have at least one point in common, but do not intersect.
 
         Parameters
@@ -740,7 +742,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoTouches(self, right).to_expr()
 
-    def distance(self, right: GeoSpatialValue) -> ir.FloatingValue:
+    def distance(self, right: GeoSpatialValue, /) -> ir.FloatingValue:
         """Compute the distance between two geospatial expressions.
 
         Parameters
@@ -840,7 +842,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoPerimeter(self).to_expr()
 
-    def max_distance(self, right: GeoSpatialValue) -> ir.FloatingValue:
+    def max_distance(self, right: GeoSpatialValue, /) -> ir.FloatingValue:
         """Returns the 2-dimensional max distance between two geometries in projected units.
 
         If `self` and `right` are the same geometry the function will return
@@ -859,7 +861,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoMaxDistance(self, right).to_expr()
 
-    def union(self, right: GeoSpatialValue) -> GeoSpatialValue:
+    def union(self, right: GeoSpatialValue, /) -> GeoSpatialValue:
         """Merge two geometries into a union geometry.
 
         Returns the pointwise union of the two geometries.
@@ -1070,7 +1072,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoEndPoint(self).to_expr()
 
-    def point_n(self, n: ir.IntegerValue) -> PointValue:
+    def point_n(self, n: ir.IntegerValue, /) -> PointValue:
         """Return the Nth point in a single linestring in the geometry.
 
         Negative values are counted backwards from the end of the LineString,
@@ -1145,7 +1147,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoSRID(self).to_expr()
 
-    def set_srid(self, srid: ir.IntegerValue) -> GeoSpatialValue:
+    def set_srid(self, srid: ir.IntegerValue, /) -> GeoSpatialValue:
         """Set the spatial reference identifier for the `ST_Geometry`.
 
         Parameters
@@ -1160,7 +1162,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoSetSRID(self, srid=srid).to_expr()
 
-    def buffer(self, radius: float | ir.FloatingValue) -> GeoSpatialValue:
+    def buffer(self, radius: float | ir.FloatingValue, /) -> GeoSpatialValue:
         """Return all points whose distance from this geometry is less than or equal to `radius`.
 
         Calculations are in the Spatial Reference System of this Geometry.
@@ -1290,7 +1292,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoEnvelope(self).to_expr()
 
-    def within(self, right: GeoSpatialValue) -> ir.BooleanValue:
+    def within(self, right: GeoSpatialValue, /) -> ir.BooleanValue:
         """Check if the first geometry is completely inside of the second.
 
         Parameters
@@ -1326,7 +1328,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoWithin(self, right).to_expr()
 
-    def azimuth(self, right: GeoSpatialValue) -> ir.FloatingValue:
+    def azimuth(self, right: GeoSpatialValue, /) -> ir.FloatingValue:
         """Return the angle in radians from the horizontal of the vector defined by the inputs.
 
         Angle is computed clockwise from down-to-up on the clock: 12=0; 3=PI/2; 6=PI; 9=3PI/2.
@@ -1343,7 +1345,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoAzimuth(self, right).to_expr()
 
-    def intersection(self, right: GeoSpatialValue) -> GeoSpatialValue:
+    def intersection(self, right: GeoSpatialValue, /) -> GeoSpatialValue:
         """Return the intersection of two geometries.
 
         Parameters
@@ -1382,7 +1384,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoIntersection(self, right).to_expr()
 
-    def difference(self, right: GeoSpatialValue) -> GeoSpatialValue:
+    def difference(self, right: GeoSpatialValue, /) -> GeoSpatialValue:
         """Return the difference of two geometries.
 
         Parameters
@@ -1433,6 +1435,7 @@ class GeoSpatialValue(NumericValue):
 
     def simplify(
         self,
+        *,
         tolerance: ir.FloatingValue,
         preserve_collapsed: ir.BooleanValue,
     ) -> GeoSpatialValue:
@@ -1452,7 +1455,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoSimplify(self, tolerance, preserve_collapsed).to_expr()
 
-    def transform(self, srid: ir.IntegerValue) -> GeoSpatialValue:
+    def transform(self, srid: ir.IntegerValue, /) -> GeoSpatialValue:
         """Transform a geometry into a new SRID.
 
         Parameters
@@ -1529,7 +1532,7 @@ class GeoSpatialValue(NumericValue):
         """
         return ops.GeoConvert(self, source, target).to_expr()
 
-    def line_locate_point(self, right: PointValue) -> ir.FloatingValue:
+    def line_locate_point(self, right: PointValue, /) -> ir.FloatingValue:
         """Locate the distance a point falls along the length of a line.
 
         Returns a float between zero and one representing the location of the
@@ -1631,7 +1634,7 @@ class GeoSpatialScalar(NumericScalar, GeoSpatialValue):
 @public
 class GeoSpatialColumn(NumericColumn, GeoSpatialValue):
     def unary_union(
-        self, where: bool | ir.BooleanValue | None = None
+        self, *, where: bool | ir.BooleanValue | None = None
     ) -> ir.GeoSpatialScalar:
         """Aggregate a set of geometries into a union.
 
