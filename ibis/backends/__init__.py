@@ -1397,7 +1397,7 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 
-def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
+def connect(resource: Path | str, /, **kwargs: Any) -> BaseBackend:
     """Connect to `resource`, inferring the backend automatically.
 
     The general pattern for `ibis.connect` is
