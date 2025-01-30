@@ -54,7 +54,7 @@ class NumericValue(Value):
         """
         return self.negate()
 
-    def round(self, digits: int | IntegerValue = 0) -> NumericValue:
+    def round(self, digits: int | IntegerValue = 0, /) -> NumericValue:
         """Round values to an indicated number of decimal places.
 
         Parameters
@@ -102,7 +102,7 @@ class NumericValue(Value):
         │                2 │
         │                3 │
         └──────────────────┘
-        >>> t.values.round(digits=1)
+        >>> t.values.round(1)
         ┏━━━━━━━━━━━━━━━━━━┓
         ┃ Round(values, 1) ┃
         ┡━━━━━━━━━━━━━━━━━━┩
@@ -116,7 +116,7 @@ class NumericValue(Value):
         """
         return ops.Round(self, digits).to_expr()
 
-    def log(self, base: NumericValue | None = None) -> NumericValue:
+    def log(self, base: NumericValue | None = None, /) -> NumericValue:
         r"""Compute $\log_{\texttt{base}}\left(\texttt{self}\right)$.
 
         Parameters
@@ -150,7 +150,7 @@ class NumericValue(Value):
         >>> import ibis
         >>> ibis.options.interactive = True
         >>> t = ibis.memtable({"values": [10, 100, 1000]})
-        >>> t.values.log(base=10)
+        >>> t.values.log(10)
         ┏━━━━━━━━━━━━━━━━━┓
         ┃ Log(values, 10) ┃
         ┡━━━━━━━━━━━━━━━━━┩
@@ -532,7 +532,7 @@ class NumericValue(Value):
         """
         return ops.Atan(self).to_expr()
 
-    def atan2(self, other: NumericValue) -> NumericValue:
+    def atan2(self, other: NumericValue, /) -> NumericValue:
         """Compute the two-argument version of arc tangent.
 
         Examples
@@ -716,7 +716,7 @@ class NumericValue(Value):
 
     rmod = __rmod__
 
-    def point(self, right: int | float | NumericValue) -> ir.PointValue:
+    def point(self, right: int | float | NumericValue, /) -> ir.PointValue:
         """Return a point constructed from the coordinate values.
 
         Constant coordinates result in construction of a `POINT` literal or
@@ -1197,6 +1197,8 @@ class NumericColumn(Column, NumericValue):
     def bucket(
         self,
         buckets: Sequence[int],
+        /,
+        *,
         closed: Literal["left", "right"] = "left",
         close_extreme: bool = True,
         include_under: bool = False,
@@ -1268,6 +1270,7 @@ class NumericColumn(Column, NumericValue):
 
     def histogram(
         self,
+        *,
         nbins: int | None = None,
         binwidth: float | None = None,
         base: float | None = None,
@@ -1510,14 +1513,14 @@ class IntegerValue(NumericValue):
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
 
-    @deprecated(as_of="10.0", instead="use as_timestamp() instead")
+    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_timestamp() instead")
     def to_timestamp(
         self,
         unit: Literal["s", "ms", "us"] = "s",
     ) -> ir.TimestampValue:
         return self.as_timestamp(unit=unit)
 
-    @deprecated(as_of="10.0", instead="use as_interval() instead")
+    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_interval() instead")
     def to_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
