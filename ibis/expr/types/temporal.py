@@ -267,6 +267,7 @@ class _TimeComponentMixin:
         self,
         lower: str | datetime.time | TimeValue,
         upper: str | datetime.time | TimeValue,
+        *,
         timezone: str | None = None,
     ) -> ir.BooleanValue:
         """Check if the expr falls between `lower` and `upper`, inclusive.
@@ -326,7 +327,7 @@ class _TimeComponentMixin:
 
 @public
 class TimeValue(_TimeComponentMixin, Value):
-    def strftime(self, format_str: str) -> ir.StringValue:
+    def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a time according to `format_str`.
 
         Format string may depend on the backend, but we try to conform to ANSI
@@ -344,7 +345,7 @@ class TimeValue(_TimeComponentMixin, Value):
         """
         return ops.Strftime(self, format_str).to_expr()
 
-    def truncate(self, unit: Literal["h", "m", "s", "ms", "us", "ns"]) -> TimeValue:
+    def truncate(self, unit: Literal["h", "m", "s", "ms", "us", "ns"], /) -> TimeValue:
         """Truncate the expression to a time expression in units of `unit`.
 
         Commonly used for time series resampling.
@@ -421,7 +422,9 @@ class TimeValue(_TimeComponentMixin, Value):
     def delta(
         self,
         other: datetime.time | Value[dt.Time],
-        part: Literal[
+        /,
+        *,
+        unit: Literal[
             "hour", "minute", "second", "millisecond", "microsecond", "nanosecond"
         ]
         | Value[dt.String],
@@ -438,7 +441,7 @@ class TimeValue(_TimeComponentMixin, Value):
         ----------
         other
             A time expression
-        part
+        unit
             The unit of time to compute the difference in
 
         Returns
@@ -452,7 +455,7 @@ class TimeValue(_TimeComponentMixin, Value):
         >>> ibis.options.interactive = True
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
-        >>> end.delta(start, "hour")
+        >>> end.delta(start, unit="hour")
         ┌────┐
         │ 22 │
         └────┘
@@ -467,7 +470,7 @@ class TimeValue(_TimeComponentMixin, Value):
         >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
         >>> ride_duration = (
         ...     taxi.tpep_dropoff_datetime.time()
-        ...     .delta(taxi.tpep_pickup_datetime.time(), "minute")
+        ...     .delta(taxi.tpep_pickup_datetime.time(), unit="minute")
         ...     .name("ride_minutes")
         ... )
         >>> ride_duration
@@ -483,7 +486,7 @@ class TimeValue(_TimeComponentMixin, Value):
         │            5 │
         └──────────────┘
         """
-        return ops.TimeDelta(left=self, right=other, part=part).to_expr()
+        return ops.TimeDelta(left=self, right=other, part=unit).to_expr()
 
 
 @public
@@ -498,7 +501,7 @@ class TimeColumn(Column, TimeValue):
 
 @public
 class DateValue(Value, _DateComponentMixin):
-    def strftime(self, format_str: str) -> ir.StringValue:
+    def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a date according to `format_str`.
 
         Format string may depend on the backend, but we try to conform to ANSI
@@ -557,7 +560,7 @@ class DateValue(Value, _DateComponentMixin):
         """
         return ops.Strftime(self, format_str).to_expr()
 
-    def truncate(self, unit: Literal["Y", "Q", "M", "W", "D"]) -> DateValue:
+    def truncate(self, unit: Literal["Y", "Q", "M", "W", "D"], /) -> DateValue:
         """Truncate date expression to units of `unit`.
 
         Parameters
@@ -668,7 +671,9 @@ class DateValue(Value, _DateComponentMixin):
     def delta(
         self,
         other: datetime.date | Value[dt.Date],
-        part: Literal["year", "quarter", "month", "week", "day"] | Value[dt.String],
+        /,
+        *,
+        unit: Literal["year", "quarter", "month", "week", "day"] | Value[dt.String],
     ) -> ir.IntegerValue:
         """Compute the number of `part`s between two dates.
 
@@ -682,7 +687,7 @@ class DateValue(Value, _DateComponentMixin):
         ----------
         other
             A date expression
-        part
+        unit
             The unit of time to compute the difference in
 
         Returns
@@ -696,14 +701,14 @@ class DateValue(Value, _DateComponentMixin):
         >>> ibis.options.interactive = True
         >>> start = ibis.date("1992-09-30")
         >>> end = ibis.date("1992-10-01")
-        >>> end.delta(start, "day")
+        >>> end.delta(start, unit="day")
         ┌───┐
         │ 1 │
         └───┘
         >>> prez = ibis.examples.presidential.fetch()
         >>> prez.mutate(
-        ...     years_in_office=prez.end.delta(prez.start, "year"),
-        ...     hours_in_office=prez.end.delta(prez.start, "hour"),
+        ...     years_in_office=prez.end.delta(prez.start, unit="year"),
+        ...     hours_in_office=prez.end.delta(prez.start, unit="hour"),
         ... ).drop("party")
         ┏━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
         ┃ name       ┃ start      ┃ end        ┃ years_in_office ┃ hours_in_office ┃
@@ -723,7 +728,7 @@ class DateValue(Value, _DateComponentMixin):
         │ …          │ …          │ …          │               … │               … │
         └────────────┴────────────┴────────────┴─────────────────┴─────────────────┘
         """
-        return ops.DateDelta(left=self, right=other, part=part).to_expr()
+        return ops.DateDelta(left=self, right=other, part=unit).to_expr()
 
     def epoch_days(self) -> ir.IntegerValue:
         """Return the number of days since the UNIX epoch date.
@@ -759,7 +764,7 @@ class DateValue(Value, _DateComponentMixin):
         │ 2020-01-01 │ 18262 │
         └────────────┴───────┘
         """
-        return self.delta(ibis.date(1970, 1, 1), "day")
+        return self.delta(ibis.date(1970, 1, 1), unit="day")
 
 
 @public
@@ -774,7 +779,7 @@ class DateColumn(Column, DateValue):
 
 @public
 class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
-    def strftime(self, format_str: str) -> ir.StringValue:
+    def strftime(self, format_str: str, /) -> ir.StringValue:
         """Format a timestamp according to `format_str`.
 
         Format string may depend on the backend, but we try to conform to ANSI
@@ -847,8 +852,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         return ops.Strftime(self, format_str).to_expr()
 
     def truncate(
-        self,
-        unit: Literal["Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"],
+        self, unit: Literal["Y", "Q", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"], /
     ) -> TimestampValue:
         """Truncate timestamp expression to units of `unit`.
 
@@ -935,6 +939,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
     def bucket(
         self,
         interval: Any = None,
+        /,
         *,
         years: int | None = None,
         quarters: int | None = None,
@@ -1146,7 +1151,9 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
     def delta(
         self,
         other: datetime.datetime | Value[dt.Timestamp],
-        part: Literal[
+        /,
+        *,
+        unit: Literal[
             "year",
             "quarter",
             "month",
@@ -1173,7 +1180,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         ----------
         other
             A timestamp expression
-        part
+        unit
             The unit of time to compute the difference in
 
         Returns
@@ -1187,7 +1194,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         >>> ibis.options.interactive = True
         >>> start = ibis.time("01:58:00")
         >>> end = ibis.time("23:59:59")
-        >>> end.delta(start, "hour")
+        >>> end.delta(start, unit="hour")
         ┌────┐
         │ 22 │
         └────┘
@@ -1201,7 +1208,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         ...     nbytes = f.write(data)  # nbytes is unused
         >>> taxi = ibis.read_csv("/tmp/triptimes.csv")
         >>> ride_duration = taxi.tpep_dropoff_datetime.delta(
-        ...     taxi.tpep_pickup_datetime, "minute"
+        ...     taxi.tpep_pickup_datetime, unit="minute"
         ... ).name("ride_minutes")
         >>> ride_duration
         ┏━━━━━━━━━━━━━━┓
@@ -1216,7 +1223,7 @@ class TimestampValue(_DateComponentMixin, _TimeComponentMixin, Value):
         │            5 │
         └──────────────┘
         """
-        return ops.TimestampDelta(left=self, right=other, part=part).to_expr()
+        return ops.TimestampDelta(left=self, right=other, part=unit).to_expr()
 
 
 @public
@@ -1231,7 +1238,7 @@ class TimestampColumn(Column, TimestampValue):
 
 @public
 class IntervalValue(Value):
-    def as_unit(self, target_unit: str) -> IntervalValue:
+    def as_unit(self, target_unit: str, /) -> IntervalValue:
         """Convert this interval to units of `target_unit`."""
         # TODO(kszucs): should use a separate operation for unit conversion
         # which we can rewrite/simplify to integer multiplication/division
@@ -1251,8 +1258,8 @@ class IntervalValue(Value):
             return value.as_interval(target_unit)
 
     @deprecated(as_of="10.0", instead="use as_unit() instead")
-    def to_unit(self, target_unit: str) -> IntervalValue:
-        return self.as_unit(target_unit=target_unit)
+    def to_unit(self, target_unit: str, /) -> IntervalValue:
+        return self.as_unit(target_unit)
 
     @property
     def years(self) -> ir.IntegerValue:
