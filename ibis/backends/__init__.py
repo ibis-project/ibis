@@ -736,7 +736,7 @@ class CanListDatabase(abc.ABC):
 class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Create a database named `name` in `catalog`.
 
@@ -754,7 +754,7 @@ class CanCreateDatabase(CanListDatabase):
 
     @abc.abstractmethod
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop the database with `name` in `catalog`.
 

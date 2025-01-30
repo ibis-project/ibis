@@ -430,14 +430,14 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             cur.execute(f"REMOVE '{path}'")
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):

@@ -423,7 +423,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return schema
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise NotImplementedError(
@@ -438,7 +438,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             con.execute(drop_schema.sql(dialect=self.dialect))
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise NotImplementedError(
