@@ -702,23 +702,19 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self.table(table_name)
 
     def read_geo(
-        self,
-        source: str,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
-        """Register a GEO file as a table in the current database.
+        """Register a geospatial data file as a table in the current database.
 
         Parameters
         ----------
-        source
-            The data source(s). Path to a file of geospatial files supported
-            by duckdb.
+        path
+            The data source(s). Path to a file of geospatial files supported by duckdb.
             See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
             for more information.
@@ -727,7 +723,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         ir.Table
             The just-registered table
-
         """
 
         if not table_name:
@@ -736,13 +731,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # load geospatial extension
         self.load_extension("spatial")
 
-        source = util.normalize_filename(source)
-        if source.startswith(("http://", "https://", "s3://")):
+        path = util.normalize_filename(path)
+        if path.startswith(("http://", "https://", "s3://")):
             self._load_extensions(["httpfs"])
 
         source_expr = sg.select(STAR).from_(
             self.compiler.f.st_read(
-                source,
+                path,
                 *(sg.to_identifier(key).eq(val) for key, val in kwargs.items()),
             )
         )
