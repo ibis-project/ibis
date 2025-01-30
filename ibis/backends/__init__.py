@@ -617,7 +617,7 @@ class _FileIOHandler:
 
 class CanListCatalog(abc.ABC):
     @abc.abstractmethod
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         """List existing catalogs in the current connection.
 
         ::: {.callout-note}
@@ -642,7 +642,6 @@ class CanListCatalog(abc.ABC):
         list[str]
             The catalog names that exist in the current connection, that match
             the `like` pattern if provided.
-
         """
 
 
