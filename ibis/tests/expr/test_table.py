@@ -406,32 +406,6 @@ def test_filter_fusion_distinct_table_objects(con):
     assert_equal(expr, expr4)
 
 
-def test_relabel():
-    table = api.table({"x": "int32", "y": "string", "z": "double"})
-
-    # Using a mapping
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
-    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
-    assert_equal(res, sol)
-
-    # Using a function
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
-    assert_equal(res, sol)
-
-    # Using a format string
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel("_{name}_")
-        sol = table.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
-    assert_equal(res, sol)
-
-    # Mapping with unknown columns errors
-    with pytest.raises(com.IbisTypeError, match="'missing' is not found in table"):
-        with pytest.warns(FutureWarning, match="Table.rename"):
-            table.relabel({"missing": "oops"})
-
-
 def test_rename():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
     sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
