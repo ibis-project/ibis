@@ -654,6 +654,7 @@ class Expr(Immutable, Coercible):
     def to_parquet(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -695,12 +696,15 @@ class Expr(Immutable, Coercible):
         ## Hive-partitioned output is currently only supported when using DuckDB
         :::
         """
-        self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
+        self._find_backend(use_default=True).to_parquet(
+            self, path, params=params, **kwargs
+        )
 
     @experimental
     def to_parquet_dir(
         self,
         directory: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -721,7 +725,9 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to pyarrow.dataset.write_dataset
         """
-        self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
+        self._find_backend(use_default=True).to_parquet_dir(
+            self, directory, params=params, **kwargs
+        )
 
     @experimental
     def to_csv(
