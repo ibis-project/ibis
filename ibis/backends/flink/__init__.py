@@ -802,9 +802,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         }
 
         return self.create_table(
-            name=table_name,
-            schema=schema,
-            tbl_properties=tbl_properties,
+            table_name, schema=schema, tbl_properties=tbl_properties
         )
 
     def read_parquet(
