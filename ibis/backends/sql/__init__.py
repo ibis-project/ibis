@@ -454,11 +454,7 @@ class SQLBackend(BaseBackend):
             ),
         ).sql(self.dialect)
 
-    def truncate_table(
-        self,
-        name: str,
-        database: str | None = None,
-    ) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from a table.
 
         ::: {.callout-note}

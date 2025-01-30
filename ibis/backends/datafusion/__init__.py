@@ -666,11 +666,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         return self.table(name, database=database)
 
-    def truncate_table(
-        self,
-        name: str,
-        database: str | None = None,
-    ):
+    def truncate_table(self, name: str, /, *, database: str | None = None):
         """Delete all rows from a table.
 
         Parameters
@@ -679,7 +675,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             Table name
         database
             Database name
-
         """
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #
