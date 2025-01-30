@@ -936,6 +936,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def aggregate(
         self,
         metrics: Sequence[ir.Scalar] | None = (),
+        /,
+        *,
         by: Sequence[ir.Value] | None = (),
         having: Sequence[ir.BooleanValue] | None = (),
         **kwargs: ir.Value,
