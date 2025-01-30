@@ -141,7 +141,7 @@ class Value(Expr):
 
     @overload
     def cast(
-        self, target_type: Literal["string", "str"] | type[str]
+        self, target_type: Literal["string", "str"] | type[str], /
     ) -> ir.StringValue: ...
     @overload
     def cast(
@@ -159,29 +159,33 @@ class Value(Expr):
             "uint64",
         ]
         | type[int],
+        /,
     ) -> ir.IntegerValue: ...
     @overload
     def cast(
         self,
         target_type: Literal["float", "float8", "float16", "float32", "float64"]
         | type[float],
+        /,
     ) -> ir.FloatingValue: ...
     @overload
     def cast(
-        self, target_type: Literal["bool", "boolean"] | type[bool]
+        self, target_type: Literal["bool", "boolean"] | type[bool], /
     ) -> ir.BooleanValue: ...
     @overload
-    def cast(self, target_type: Literal["date"]) -> ir.DateValue: ...
+    def cast(self, target_type: Literal["date"], /) -> ir.DateValue: ...
     @overload
     def cast(
-        self, target_type: Literal["datetime", "timestamp"] | type[datetime.datetime]
+        self, target_type: Literal["datetime", "timestamp"] | type[datetime.datetime], /
     ) -> ir.TimestampValue: ...
     @overload
-    def cast(self, target_type: Literal["time"]) -> ir.TimeValue: ...
+    def cast(self, target_type: Literal["time"], /) -> ir.TimeValue: ...
     @overload
-    def cast(self, target_type: Literal["uuid"] | type[uuid.UUID]) -> ir.UUIDValue: ...
+    def cast(
+        self, target_type: Literal["uuid"] | type[uuid.UUID], /
+    ) -> ir.UUIDValue: ...
 
-    def cast(self, target_type: Any) -> Value:
+    def cast(self, target_type: Any, /) -> Value:
         """Cast expression to indicated data type.
 
         Similar to `pandas.Series.astype`.
@@ -288,7 +292,7 @@ class Value(Expr):
 
         return op.to_expr()
 
-    def try_cast(self, target_type: Any) -> Value:
+    def try_cast(self, target_type: Any, /) -> Value:
         """Try cast expression to indicated data type.
 
         If the cast fails for a row, the value is returned
