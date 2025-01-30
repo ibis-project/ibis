@@ -108,7 +108,7 @@ def _regular_join_method(
             | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
         ) = (),
         *,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ) -> ir.Table:
         """Perform a join between two tables.
@@ -3050,7 +3050,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ) = (),
         how: JoinKind = "inner",
         *,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ) -> Table:
         """Perform a join between two tables.
@@ -3220,7 +3220,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         predicates: str | ir.Column | Sequence[str | ir.Column] = (),
         tolerance: str | ir.IntervalScalar | None = None,
         *,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ) -> Table:
         """Perform an "as-of" join between `left` and `right`.
@@ -3344,7 +3344,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         left: Table,
         right: Table,
         *rest: Table,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ) -> Table:
         """Compute the cross join of a sequence of tables.

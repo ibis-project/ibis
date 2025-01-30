@@ -229,7 +229,7 @@ class Join(Table):
         predicates: Any = (),
         how: JoinKind = "inner",
         *,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ):
         if not isinstance(right, Table):
@@ -285,7 +285,7 @@ class Join(Table):
         predicates=(),
         tolerance=None,
         *,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ):
         predicates = util.promote_list(predicates)
@@ -363,7 +363,7 @@ class Join(Table):
         self: Table,
         right: Table,
         *rest: Table,
-        lname: str = "",
+        lname: str = "{name}",
         rname: str = "{name}_right",
     ):
         left = self.join(right, how="cross", predicates=(), lname=lname, rname=rname)
