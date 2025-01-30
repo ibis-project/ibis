@@ -321,7 +321,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         )
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         # not actually a table, but this is how sqlglot represents schema names
         db_name = sg.table(name, db=catalog)
@@ -329,7 +329,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         db_name = sg.table(name, db=catalog)
         with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):

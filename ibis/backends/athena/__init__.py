@@ -458,7 +458,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self._fs.rm(path, recursive=True)
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         sql = sge.Create(this=name, kind="SCHEMA", exists=force)
@@ -466,7 +466,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         sql = sge.Drop(this=name, kind="SCHEMA", exists=force)

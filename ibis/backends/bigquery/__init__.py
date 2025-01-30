@@ -534,6 +534,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
@@ -561,6 +563,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def drop_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,

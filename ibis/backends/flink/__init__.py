@@ -121,6 +121,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         db_properties: dict | None = None,
         catalog: str | None = None,
         force: bool = False,
@@ -146,7 +148,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self.raw_sql(statement.compile())
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop a database with name `name`.
 

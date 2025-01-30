@@ -709,7 +709,7 @@ $$ {defn["source"]} $$"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
@@ -749,7 +749,7 @@ $$ {defn["source"]} $$"""
             return cur
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if self.current_database == name and (
             catalog is None or self.current_catalog == catalog
