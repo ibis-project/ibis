@@ -2606,6 +2606,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def drop_null(
         self,
         subset: Sequence[str] | str | None = None,
+        /,
+        *,
         how: Literal["any", "all"] = "any",
     ) -> Table:
         """Remove rows with null values from the table.
@@ -2665,10 +2667,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             subset = self.bind(subset)
         return ops.DropNull(self, how, subset).to_expr()
 
-    def fill_null(
-        self,
-        replacements: ir.Scalar | Mapping[str, ir.Scalar],
-    ) -> Table:
+    def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
@@ -2769,17 +2768,16 @@ class Table(Expr, _FixedTextJupyterMixin):
     def dropna(
         self,
         subset: Sequence[str] | str | None = None,
+        /,
+        *,
         how: Literal["any", "all"] = "any",
     ) -> Table:
         """Deprecated - use `drop_null` instead."""
 
-        return self.drop_null(subset, how)
+        return self.drop_null(subset, how=how)
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
-    def fillna(
-        self,
-        replacements: ir.Scalar | Mapping[str, ir.Scalar],
-    ) -> Table:
+    def fillna(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Deprecated - use `fill_null` instead."""
 
         return self.fill_null(replacements)
@@ -3436,7 +3434,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     any_inner_join = _regular_join_method("any_inner_join", "any_inner")
     any_left_join = _regular_join_method("any_left_join", "any_left")
 
-    def alias(self, alias: str) -> ir.Table:
+    def alias(self, alias: str, /) -> ir.Table:
         """Create a table expression with a specific name `alias`.
 
         This method is useful for exposing an ibis expression to the underlying
@@ -4711,10 +4709,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return ops.Project(self, exprs).to_expr()
 
-    def window_by(
-        self,
-        time_col: str | ir.Value,
-    ) -> WindowedTable:
+    def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
         time_col = next(iter(self.bind(time_col)))
