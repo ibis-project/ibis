@@ -554,6 +554,7 @@ class _FileIOHandler:
     def to_delta(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
