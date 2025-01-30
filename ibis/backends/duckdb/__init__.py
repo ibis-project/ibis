@@ -321,7 +321,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         col = "catalog_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")

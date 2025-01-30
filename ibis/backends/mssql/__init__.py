@@ -379,7 +379,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
             [(database,)] = cur.fetchall()
         return database
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         s = sg.table("databases", db="sys")
 
         with self._safe_raw_sql(sg.select(C.name).from_(s)) as cur:
