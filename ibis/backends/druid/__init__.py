@@ -205,6 +205,7 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,

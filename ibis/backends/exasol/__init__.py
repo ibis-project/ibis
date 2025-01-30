@@ -323,6 +323,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -354,7 +355,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             if the table exists
         temp
             Create a temporary table (not supported)
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")

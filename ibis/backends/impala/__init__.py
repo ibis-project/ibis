@@ -446,6 +446,7 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -454,7 +455,7 @@ class Backend(SQLBackend):
         | None = None,
         *,
         schema: sch.SchemaLike | None = None,
-        database=None,
+        database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
         external: bool = False,

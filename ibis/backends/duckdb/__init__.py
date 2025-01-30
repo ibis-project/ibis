@@ -97,6 +97,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -133,7 +134,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         table_loc = self._to_sqlglot_table(database)
 
