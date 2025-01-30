@@ -33,6 +33,7 @@ class SQLBackend(BaseBackend):
 
     @property
     def dialect(self) -> sg.Dialect:
+        """Return the SQL dialect used by the backend."""
         return self.compiler.dialect
 
     @classmethod
@@ -535,8 +536,6 @@ class SQLBackend(BaseBackend):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -564,6 +563,7 @@ class SQLBackend(BaseBackend):
         )
 
     def disconnect(self):
+        """Disconnect from the backend."""
         # This is part of the Python DB-API specification so should work for
         # _most_ sqlglot backends
         self.con.close()
