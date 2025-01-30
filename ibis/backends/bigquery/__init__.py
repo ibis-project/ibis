@@ -298,7 +298,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
 
@@ -317,7 +317,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
