@@ -827,16 +827,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # explicitly.
 
     def read_delta(
-        self,
-        source_table: str,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -851,7 +848,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             The just-registered table.
 
         """
-        source_table = util.normalize_filenames(source_table)[0]
+        path = util.normalize_filenames(path)[0]
 
         table_name = table_name or util.gen_name("read_delta")
 
@@ -864,7 +861,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 "pip install 'ibis-framework[deltalake]'\n"
             )
 
-        delta_table = DeltaTable(source_table, **kwargs)
+        delta_table = DeltaTable(path, **kwargs)
 
         self.con.register(table_name, delta_table.to_pyarrow_dataset())
         return self.table(table_name)

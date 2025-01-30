@@ -452,15 +452,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         return self.table(table_name)
 
     def read_delta(
-        self, source_table: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
-            The data source. Must be a directory
-            containing a Delta Lake table.
+        path
+            The data source. Must be a directory containing a Delta Lake table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
@@ -471,9 +470,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
-        source_table = normalize_filename(source_table)
+        path = normalize_filename(path)
 
         table_name = table_name or gen_name("read_delta")
 
@@ -489,7 +487,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
                 "pip install 'ibis-framework[deltalake]'\n"
             )
 
-        delta_table = DeltaTable(source_table, **kwargs)
+        delta_table = DeltaTable(path, **kwargs)
         self.con.register_dataset(table_name, delta_table.to_pyarrow_dataset())
         return self.table(table_name)
 

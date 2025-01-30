@@ -201,7 +201,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_delta(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake as a table in the current database.
 
@@ -221,7 +221,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         try:
             import deltalake  # noqa: F401
