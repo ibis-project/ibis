@@ -2774,7 +2774,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Lead(self, offset, default).to_expr()
 
-    def nth(self, n: int | ir.IntegerValue) -> Column:
+    def nth(self, n: int | ir.IntegerValue, /) -> Column:
         """Return the `n`th value (0-indexed) over a window.
 
         `.nth(0)` is equivalent to `.first()`. Negative will result in `NULL`.
