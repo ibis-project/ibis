@@ -80,7 +80,7 @@ google-auth-oauthlib==1.2.1
 google-cloud-bigquery==3.29.0
 google-cloud-bigquery-storage==2.27.0
 google-cloud-core==2.4.1
-google-cloud-storage==2.19.0
+google-cloud-storage==3.0.0
 google-crc32c==1.6.0
 google-resumable-media==2.7.2
 googleapis-common-protos==1.66.0
