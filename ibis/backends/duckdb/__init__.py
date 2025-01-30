@@ -1357,10 +1357,11 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_torch(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> dict[str, torch.Tensor]:
         """Execute an expression and return results as a dictionary of torch tensors.
 
@@ -1379,9 +1380,10 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         dict[str, torch.Tensor]
             A dictionary of torch tensors, keyed by column name.
-
         """
-        return self._to_duckdb_relation(expr, params=params, limit=limit).torch()
+        return self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).torch()
 
     @util.experimental
     def to_parquet(
