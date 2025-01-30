@@ -1621,7 +1621,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         assert not queue, "items left in queue"
         return result.to_expr()
 
-    def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
+    def union(self, table: Table, /, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -1692,7 +1692,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._assemble_set_op(ops.Union, table, *rest, distinct=distinct)
 
-    def intersect(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
+    def intersect(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -1772,7 +1772,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._assemble_set_op(ops.Intersection, table, *rest, distinct=distinct)
 
-    def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
+    def difference(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
