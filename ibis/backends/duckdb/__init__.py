@@ -757,7 +757,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     def read_parquet(
         self,
-        source_list: str | Iterable[str],
+        paths: str | Path | Iterable[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -765,7 +767,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -779,9 +781,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         ir.Table
             The just-registered table
-
         """
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
 
         table_name = table_name or util.gen_name("read_parquet")
 
@@ -789,9 +790,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # If that fails because of auth issues, fall back to ingesting via
         # pyarrow dataset
         try:
-            self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
+            self._read_parquet_duckdb_native(paths, table_name, **kwargs)
         except duckdb.IOException:
-            self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
+            self._read_parquet_pyarrow_dataset(paths, table_name, **kwargs)
 
         return self.table(table_name)
 

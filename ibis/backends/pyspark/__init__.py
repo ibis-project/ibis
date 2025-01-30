@@ -798,10 +798,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.table(table_name)
 
     def read_parquet(
-        self,
-        path: str | Path,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
 
@@ -820,7 +817,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -1172,6 +1168,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_parquet_dir(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         watermark: Watermark | None = None,
         schema: sch.Schema | None = None,
@@ -1198,7 +1196,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         path = util.normalize_filename(path)
         if self.mode == "batch":

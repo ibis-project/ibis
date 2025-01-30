@@ -243,7 +243,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
 
@@ -260,7 +260,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         return self._read_file(
             path,
