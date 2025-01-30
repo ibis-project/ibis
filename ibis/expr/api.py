@@ -1540,7 +1540,9 @@ def read_csv(
 
 @experimental
 def read_json(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1551,7 +1553,7 @@ def read_json(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1586,12 +1588,11 @@ def read_json(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_json(sources, table_name=table_name, **kwargs)
+    return con.read_json(paths, table_name=table_name, **kwargs)
 
 
 def read_parquet(

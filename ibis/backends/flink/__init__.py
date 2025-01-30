@@ -876,6 +876,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_json(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -895,7 +897,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         return self._read_file(
             file_type="json", path=path, schema=schema, table_name=table_name
