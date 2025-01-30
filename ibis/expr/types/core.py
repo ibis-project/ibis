@@ -733,6 +733,7 @@ class Expr(Immutable, Coercible):
     def to_csv(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -753,7 +754,7 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
         """
-        self._find_backend(use_default=True).to_csv(self, path, **kwargs)
+        self._find_backend(use_default=True).to_csv(self, path, params=params, **kwargs)
 
     @experimental
     def to_delta(

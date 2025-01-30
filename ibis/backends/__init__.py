@@ -518,6 +518,7 @@ class _FileIOHandler:
     def to_csv(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -540,7 +541,6 @@ class _FileIOHandler:
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
-
         """
         self._import_pyarrow()
         import pyarrow.csv as pcsv
