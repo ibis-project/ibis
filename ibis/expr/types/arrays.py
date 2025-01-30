@@ -149,7 +149,7 @@ class ArrayValue(Value):
             op = ops.ArrayIndex(self, index)
         return op.to_expr()
 
-    def concat(self, other: ArrayValue, *args: ArrayValue) -> ArrayValue:
+    def concat(self, other: ArrayValue, /, *args: ArrayValue) -> ArrayValue:
         """Concatenate this array with one or more arrays.
 
         Parameters
@@ -231,7 +231,7 @@ class ArrayValue(Value):
     def __radd__(self, other: ArrayValue) -> ArrayValue:
         return ops.ArrayConcat((other, self)).to_expr()
 
-    def repeat(self, n: int | ir.IntegerValue) -> ArrayValue:
+    def repeat(self, n: int | ir.IntegerValue, /) -> ArrayValue:
         """Repeat this array `n` times.
 
         Parameters
@@ -338,7 +338,7 @@ class ArrayValue(Value):
         except com.ExpressionError:
             return expr
 
-    def join(self, sep: str | ir.StringValue) -> ir.StringValue:
+    def join(self, sep: str | ir.StringValue, /) -> ir.StringValue:
         """Join the elements of this array expression with `sep`.
 
         Parameters
@@ -423,6 +423,7 @@ class ArrayValue(Value):
         func: Deferred
         | Callable[[ir.Value], ir.Value]
         | Callable[[ir.Value, ir.Value], ir.Value],
+        /,
     ) -> ir.ArrayValue:
         """Apply a `func` or `Deferred` to each element of this array expression.
 
@@ -533,6 +534,7 @@ class ArrayValue(Value):
         predicate: Deferred
         | Callable[[ir.Value], bool | ir.BooleanValue]
         | Callable[[ir.Value, ir.IntegerValue], bool | ir.BooleanValue],
+        /,
     ) -> ir.ArrayValue:
         """Filter array elements using `predicate` function or `Deferred`.
 
@@ -638,7 +640,7 @@ class ArrayValue(Value):
         param, index, body = self._construct_array_func_inputs(predicate)
         return ops.ArrayFilter(self, param=param, index=index, body=body).to_expr()
 
-    def contains(self, other: ir.Value) -> ir.BooleanValue:
+    def contains(self, other: ir.Value, /) -> ir.BooleanValue:
         """Return whether the array contains `other`.
 
         Parameters
@@ -692,7 +694,7 @@ class ArrayValue(Value):
         """
         return ops.ArrayContains(self, other).to_expr()
 
-    def index(self, other: ir.Value) -> ir.IntegerValue:
+    def index(self, other: ir.Value, /) -> ir.IntegerValue:
         """Return the position of `other` in an array.
 
         Parameters
@@ -757,7 +759,7 @@ class ArrayValue(Value):
         """
         return ops.ArrayPosition(self, other).to_expr()
 
-    def remove(self, other: ir.Value) -> ir.ArrayValue:
+    def remove(self, other: ir.Value, /) -> ir.ArrayValue:
         """Remove `other` from `self`.
 
         Parameters
@@ -866,7 +868,7 @@ class ArrayValue(Value):
         """
         return ops.ArraySort(self).to_expr()
 
-    def union(self, other: ir.ArrayValue) -> ir.ArrayValue:
+    def union(self, other: ir.ArrayValue, /) -> ir.ArrayValue:
         """Union two arrays.
 
         Parameters
@@ -917,7 +919,7 @@ class ArrayValue(Value):
         """
         return ops.ArrayUnion(self, other).to_expr()
 
-    def intersect(self, other: ArrayValue) -> ArrayValue:
+    def intersect(self, other: ArrayValue, /) -> ArrayValue:
         """Intersect two arrays.
 
         Parameters
@@ -958,7 +960,7 @@ class ArrayValue(Value):
         """
         return ops.ArrayIntersect(self, other).to_expr()
 
-    def zip(self, other: ArrayValue, *others: ArrayValue) -> ArrayValue:
+    def zip(self, other: ArrayValue, /, *others: ArrayValue) -> ArrayValue:
         """Zip two or more arrays together.
 
         Parameters
@@ -1385,7 +1387,7 @@ class ArrayColumn(Column, ArrayValue):
 
 @public
 @deferrable
-def array(values: Iterable[V]) -> ArrayValue:
+def array(values: Iterable[V], /) -> ArrayValue:
     """Create an array expression.
 
     If any values are [column expressions](../concepts/datatypes.qmd) the
