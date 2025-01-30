@@ -1200,6 +1200,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
@@ -1232,7 +1233,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         -------
         Table
             The table that was created.
-
         """
 
     @abc.abstractmethod
