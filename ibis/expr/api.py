@@ -1655,13 +1655,13 @@ def read_parquet(
 
 
 def read_delta(
-    source: str | Path, table_name: str | None = None, **kwargs: Any
+    path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
 ) -> ir.Table:
     """Lazily load a Delta Lake table.
 
     Parameters
     ----------
-    source
+    path
         A filesystem path or URL.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1702,7 +1702,7 @@ def read_delta(
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_delta(source, table_name=table_name, **kwargs)
+    return con.read_delta(path, table_name=table_name, **kwargs)
 
 
 def set_backend(backend: str | BaseBackend, /) -> None:
