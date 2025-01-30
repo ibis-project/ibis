@@ -729,6 +729,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -749,10 +750,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             Whether the view is temporary or not.
         force
             If `False`, an exception is raised if the view does not exist.
-
         """
         # TODO(deepyaman): Support (and differentiate) permanent views.
-
         statement = DropView(
             name=name,
             database=database,
