@@ -400,8 +400,14 @@ class Backend(BaseBackend, NoUrl):
         return operation in op_classes or issubclass(operation, op_classes)
 
     def compile(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **_: Any
-    ):
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **_: Any,
+    ) -> pl.LazyFrame:
         if params is None:
             params = dict()
         else:

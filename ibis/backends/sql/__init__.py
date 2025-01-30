@@ -100,11 +100,30 @@ class SQLBackend(BaseBackend):
     def compile(
         self,
         expr: ir.Expr,
-        limit: str | None = None,
+        /,
+        *,
+        limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
-    ):
-        """Compile an Ibis expression to a SQL string."""
+    ) -> str:
+        """Compile an expression to a SQL string.
+
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        params
+            Mapping of scalar parameter expressions to value.
+        pretty
+            Pretty print the SQL query during compilation.
+
+        Returns
+        -------
+        str
+            Compiled expression
+        """
         query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
         sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
         self._log(sql)

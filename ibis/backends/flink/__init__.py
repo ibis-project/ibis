@@ -369,14 +369,17 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
+        limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
         **_: Any,
-    ) -> Any:
+    ) -> str:
         """Compile an Ibis expression to Flink."""
         return super().compile(
             expr, params=params, pretty=pretty
-        )  # Discard `limit` and other kwargs.
+        )  # Discard `limit` and other kwargs
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         if null_columns := op.schema.null_fields:
