@@ -2516,7 +2516,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.IbisInputError("You must pass at least one predicate to filter")
         return ops.Filter(self, preds).to_expr()
 
-    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def nunique(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.
 
         Parameters
@@ -2548,7 +2548,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌───┐
         │ 2 │
         └───┘
-        >>> t.nunique(t.a != "foo")
+        >>> t.nunique(where=t.a != "foo")
         ┌───┐
         │ 1 │
         └───┘
@@ -2557,7 +2557,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountDistinctStar(self, where=where).to_expr()
 
-    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def count(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
 
         Parameters
@@ -2589,7 +2589,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌───┐
         │ 3 │
         └───┘
-        >>> t.count(t.a != "foo")
+        >>> t.count(where=t.a != "foo")
         ┌───┐
         │ 2 │
         └───┘

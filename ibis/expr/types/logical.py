@@ -247,7 +247,7 @@ class BooleanScalar(NumericScalar, BooleanValue):
 
 @public
 class BooleanColumn(NumericColumn, BooleanValue):
-    def any(self, where: BooleanValue | None = None) -> BooleanValue:
+    def any(self, *, where: BooleanValue | None = None) -> BooleanValue:
         """Return whether at least one element is `True`.
 
         If the expression does not reference any foreign tables, the result
@@ -339,7 +339,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
 
         return op.to_expr()
 
-    def notany(self, where: BooleanValue | None = None) -> BooleanValue:
+    def notany(self, *, where: BooleanValue | None = None) -> BooleanValue:
         """Return whether no elements are `True`.
 
         Parameters
@@ -373,7 +373,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ~self.any(where=where)
 
-    def all(self, where: BooleanValue | None = None) -> BooleanScalar:
+    def all(self, *, where: BooleanValue | None = None) -> BooleanScalar:
         """Return whether all elements are `True`.
 
         Parameters
@@ -410,7 +410,7 @@ class BooleanColumn(NumericColumn, BooleanValue):
         """
         return ops.All(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def notall(self, where: BooleanValue | None = None) -> BooleanScalar:
+    def notall(self, *, where: BooleanValue | None = None) -> BooleanScalar:
         """Return whether not all elements are `True`.
 
         Parameters
