@@ -348,7 +348,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 catalog_api.setCurrentCatalog(prev_catalog)
                 catalog_api.setCurrentDatabase(prev_database)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
         return self._filter_with_like(catalogs, like)
 

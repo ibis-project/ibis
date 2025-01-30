@@ -292,7 +292,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         self._log(query)
         return self.con.sql(query)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
             .from_(sg.table("tables", db="information_schema"))

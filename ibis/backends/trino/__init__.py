@@ -188,7 +188,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             [(schema,)] = cur.fetchall()
         return schema
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         query = "SHOW CATALOGS"
         with self._safe_raw_sql(query) as cur:
             catalogs = cur.fetchall()

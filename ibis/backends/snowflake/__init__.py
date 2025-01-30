@@ -598,7 +598,7 @@ $$ {defn["source"]} $$"""
             }
         )
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as con:
             catalogs = list(map(itemgetter(1), con))
         return self._filter_with_like(catalogs, like)

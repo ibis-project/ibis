@@ -263,7 +263,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         return out
 
-    def list_catalogs(self, like=None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517
         cats = (
             sg.select(C.datname)

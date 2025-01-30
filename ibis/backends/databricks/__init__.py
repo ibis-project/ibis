@@ -281,7 +281,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         with self.con.cursor() as cur:
             yield cur.execute(query, *args, **kwargs)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         with self.con.cursor() as cur:
             out = cur.catalogs().fetchall_arrow()
         return self._filter_with_like(out["TABLE_CAT"].to_pylist(), like)

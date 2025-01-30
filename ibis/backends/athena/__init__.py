@@ -302,7 +302,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             else:
                 raise
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         response = self.con.client.list_data_catalogs()
         catalogs = [
             element["CatalogName"] for element in response["DataCatalogsSummary"]
