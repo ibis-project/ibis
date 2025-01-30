@@ -40,37 +40,24 @@ def _scrape_methods(modules, params):
 
 
 marks = {
-    "compile": pytest.param(
-        BaseBackend,
-        "compile",
-        marks=pytest.mark.notyet(
-            ["bigquery"],
-            reason="SQL backends all have an additional `pretty` argument for formatting the generated SQL",
-        ),
-    ),
+    "compile": pytest.param(BaseBackend, "compile"),
     "create_database": pytest.param(
         CanCreateDatabase,
         "create_database",
-        marks=pytest.mark.notyet(["impala", "mysql", "pyspark"]),
+        marks=pytest.mark.notyet(["impala", "mysql"]),
     ),
     "drop_database": pytest.param(
         CanCreateDatabase,
         "drop_database",
-        marks=pytest.mark.notyet(["impala", "mysql", "pyspark"]),
+        marks=pytest.mark.notyet(["impala", "mysql"]),
     ),
     "drop_table": pytest.param(
-        SQLBackend,
-        "drop_table",
-        marks=pytest.mark.notyet(["druid", "flink", "impala"]),
+        SQLBackend, "drop_table", marks=pytest.mark.notyet(["druid"])
     ),
     "execute": pytest.param(SQLBackend, "execute"),
     "create_view": pytest.param(SQLBackend, "create_view"),
     "drop_view": pytest.param(SQLBackend, "drop_view"),
-    "insert": pytest.param(
-        SQLBackend,
-        "insert",
-        marks=pytest.mark.notyet(["clickhouse", "flink", "impala"]),
-    ),
+    "insert": pytest.param(SQLBackend, "insert", marks=pytest.mark.notyet(["impala"])),
     "list_databases": pytest.param(CanCreateDatabase, "list_databases"),
     "list_tables": pytest.param(BaseBackend, "list_tables"),
     "read_csv": pytest.param(
