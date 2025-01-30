@@ -152,7 +152,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+    def from_connection(cls, con: psycopg2.extensions.connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a PostgreSQL database.
 
         Parameters
