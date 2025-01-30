@@ -3480,7 +3480,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return ops.View(child=self, name=alias).to_expr()
 
-    def sql(self, query: str, dialect: str | None = None) -> ir.Table:
+    def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
 
         Parameters
