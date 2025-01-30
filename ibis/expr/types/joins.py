@@ -21,6 +21,7 @@ from ibis.expr.types.generic import Value
 from ibis.expr.types.relations import (
     DerefMap,
     Table,
+    _rename,
     bind,
     unwrap_aliases,
 )
@@ -37,13 +38,13 @@ def disambiguate_fields(
     equalities,
     left_fields,
     right_fields,
-    left_template,
-    right_template,
+    left_renamer,
+    right_renamer,
 ):
     """Resolve name collisions between the left and right tables."""
     collisions = set()
-    left_template = left_template or "{name}"
-    right_template = right_template or "{name}"
+    left_renamer = left_renamer or "{name}"
+    right_renamer = right_renamer or "{name}"
 
     if how == "inner" and util.all_of(predicates, ops.Equals):
         # for inner joins composed exclusively of equality predicates, we can
@@ -74,7 +75,7 @@ def disambiguate_fields(
                 # there is a name collision and the fields are not equal, so
                 # rename the field from the left according to the provided
                 # template (which is the name itself by default)
-                name = left_template.format(name=name)
+                name = _rename(name, left_renamer)
 
         fields[name] = field
 
@@ -96,7 +97,7 @@ def disambiguate_fields(
                 # there is a name collision and the fields are not equal, so
                 # rename the field from the right according to the provided
                 # template
-                name = right_template.format(name=name)
+                name = _rename(name, right_renamer)
 
         if name in fields:
             # we can still have collisions after multiple joins, or a wrongly
@@ -266,8 +267,8 @@ class Join(Table):
             equalities=self._equalities,
             left_fields=chain.values,
             right_fields=right.fields,
-            left_template=lname,
-            right_template=rname,
+            left_renamer=lname,
+            right_renamer=rname,
         )
 
         # construct a new join link and add it to the join chain
@@ -347,8 +348,8 @@ class Join(Table):
             equalities=self._equalities,
             left_fields=chain.values,
             right_fields=right.fields,
-            left_template=lname,
-            right_template=rname,
+            left_renamer=lname,
+            right_renamer=rname,
         )
 
         # construct a new join link and add it to the join chain
