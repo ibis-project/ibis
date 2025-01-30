@@ -2153,27 +2153,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     projection = select
 
-    @util.deprecated(
-        as_of="7.0",
-        instead=(
-            "use `Table.rename` instead (if passing a mapping, note the meaning "
-            "of keys and values are swapped in Table.rename)."
-        ),
-    )
-    def relabel(
-        self,
-        substitutions: (
-            Mapping[str, str]
-            | Callable[[str], str | None]
-            | str
-            | Literal["snake_case", "ALL_CAPS"]
-        ),
-    ) -> Table:
-        """Deprecated in favor of `Table.rename`."""
-        if isinstance(substitutions, Mapping):
-            substitutions = {new: old for old, new in substitutions.items()}
-        return self.rename(substitutions)
-
     def rename(
         self,
         method: (

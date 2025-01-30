@@ -101,9 +101,9 @@ columns = {
     "SUB_ID": "drop",  # Submission ID. Unique number assigned to each transaction.
 }
 
-renaming = {old: new for old, new in zip(raw.columns, columns.keys())}
+renaming = dict(zip(columns.keys(), raw.columns))
 to_keep = [k for k, v in columns.items() if v == "keep"]
-kept = raw.relabel(renaming)[to_keep]
+kept = raw.rename(renaming)[to_keep]
 kept
 ```
 
