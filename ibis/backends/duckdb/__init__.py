@@ -1444,6 +1444,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_csv(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -1465,9 +1466,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             Mapping of scalar parameter expressions to value.
         header
             Whether to write the column names as the first line of the CSV file.
-        **kwargs
+        kwargs
             DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv/overview.html#parameters
-
         """
         self._run_pre_execute_hooks(expr)
         query = self.compile(expr, params=params)
