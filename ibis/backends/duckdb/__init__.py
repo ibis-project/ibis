@@ -941,7 +941,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self._filter_with_like(out[col].to_pylist(), like)
 
     def read_postgres(
-        self, uri: str, *, table_name: str | None = None, database: str = "public"
+        self, uri: str, /, *, table_name: str | None = None, database: str = "public"
     ) -> ir.Table:
         """Register a table from a postgres instance into a DuckDB table.
 
@@ -989,6 +989,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def read_mysql(
         self,
         uri: str,
+        /,
         *,
         catalog: str,
         table_name: str | None = None,
@@ -1028,7 +1029,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self.table(table_name, database=(catalog, database))
 
     def read_sqlite(
-        self, path: str | Path, *, table_name: str | None = None
+        self, path: str | Path, /, *, table_name: str | None = None
     ) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.
 
@@ -1059,7 +1060,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         <...>
         >>> con.close()
         >>> con = ibis.connect("duckdb://")
-        >>> t = con.read_sqlite(path="/tmp/sqlite.db", table_name="t")
+        >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
         ┏━━━━━━━┳━━━━━━━━┓
         ┃ a     ┃ b      ┃
