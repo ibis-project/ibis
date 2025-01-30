@@ -948,7 +948,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
         return self._filter_with_like(result, like)
 
-    def set_database(self, name):
+    def set_database(self, name, /):
         self.data_project, self.dataset = self._parse_project_and_dataset(name)
 
     @property
