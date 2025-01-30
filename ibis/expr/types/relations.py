@@ -370,7 +370,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SchemaLike) -> Table:
+    def cast(self, schema: SchemaLike, /) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -447,7 +447,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._cast(schema, cast_method="cast")
 
-    def try_cast(self, schema: SchemaLike) -> Table:
+    def try_cast(self, schema: SchemaLike, /) -> Table:
         """Cast the columns of a table.
 
         If the cast fails for a row, the value is returned
