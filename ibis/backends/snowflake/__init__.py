@@ -674,7 +674,7 @@ $$ {defn["source"]} $$"""
             pq.write_table(data, path, compression="zstd")
             self.read_parquet(path, table_name=name)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
         quoted = self.compiler.quoted
@@ -692,7 +692,7 @@ $$ {defn["source"]} $$"""
             # so we switch back to the original database and schema
             cur.execute(use_stmt)
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         if name == current_catalog:
             raise com.UnsupportedOperationError(
