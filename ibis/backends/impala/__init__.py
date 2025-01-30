@@ -436,7 +436,9 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement)
         return self.table(name, database=database)
 
-    def drop_view(self, name, database=None, force=False):
+    def drop_view(
+        self, name, /, *, database: str | None = None, force: bool = False
+    ) -> None:
         stmt = ddl.DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 
