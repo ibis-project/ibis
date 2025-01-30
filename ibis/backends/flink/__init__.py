@@ -816,6 +816,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:

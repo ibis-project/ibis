@@ -581,6 +581,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         engine: str = "MergeTree",
         **kwargs: Any,

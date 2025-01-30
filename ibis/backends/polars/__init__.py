@@ -266,7 +266,9 @@ class Backend(BaseBackend, NoUrl):
 
     def read_parquet(
         self,
-        path: str | Path | Iterable[str],
+        path: str | Path | Iterable[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -290,7 +292,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         table_name = table_name or gen_name("read_parquet")
         if not isinstance(path, (str, Path)) and len(path) == 1:
@@ -300,10 +301,9 @@ class Backend(BaseBackend, NoUrl):
             self._import_pyarrow()
             import pyarrow.dataset as ds
 
-            paths = [normalize_filename(p) for p in path]
+            path = [normalize_filename(p) for p in path]
             obj = pl.scan_pyarrow_dataset(
-                source=ds.dataset(paths, format="parquet"),
-                **kwargs,
+                source=ds.dataset(path, format="parquet"), **kwargs
             )
             self._add_table(table_name, obj)
         else:
