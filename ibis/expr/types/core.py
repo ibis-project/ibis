@@ -760,6 +760,7 @@ class Expr(Immutable, Coercible):
     def to_delta(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -778,7 +779,9 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to deltalake.writer.write_deltalake method
         """
-        self._find_backend(use_default=True).to_delta(self, path, **kwargs)
+        self._find_backend(use_default=True).to_delta(
+            self, path, params=params, **kwargs
+        )
 
     @experimental
     def to_json(
