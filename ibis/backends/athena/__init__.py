@@ -209,7 +209,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self.table(orig_table_ref.name, database=(catalog, db))
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -223,7 +223,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         Table
             Table expression
-
         """
         table_loc = self._to_sqlglot_table(database)
 

@@ -247,6 +247,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         catalog: str | None = None,
     ) -> ir.Table:
