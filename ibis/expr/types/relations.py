@@ -3670,6 +3670,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def pivot_longer(
         self,
         col: str | s.Selector,
+        /,
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
@@ -4769,7 +4770,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.group_by(columns).agg(lambda t: t.count().name(name))
 
     def unnest(
-        self, column, offset: str | None = None, keep_empty: bool = False
+        self, column, /, *, offset: str | None = None, keep_empty: bool = False
     ) -> Table:
         """Unnest an array `column` from a table.
 
