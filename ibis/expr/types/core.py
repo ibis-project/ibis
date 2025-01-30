@@ -260,7 +260,7 @@ class Expr(Immutable, Coercible):
         )
         webbrowser.open(f"file://{os.path.abspath(path)}")
 
-    def pipe(self, f, *args: Any, **kwargs: Any) -> Expr:
+    def pipe(self, f, /, *args: Any, **kwargs: Any) -> Expr:
         """Compose `f` with `self`.
 
         Parameters
