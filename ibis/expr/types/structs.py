@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 @deferrable
 def struct(
     value: Iterable[tuple[str, V]] | Mapping[str, V],
+    *,
     type: str | dt.DataType | None = None,
 ) -> StructValue:
     """Create a struct expression.
