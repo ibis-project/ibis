@@ -532,6 +532,8 @@ class Backend(SQLBackend, UrlFromPath):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:

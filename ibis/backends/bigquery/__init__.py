@@ -1103,6 +1103,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: tuple[str | str] | str | None = None,
         force: bool = False,

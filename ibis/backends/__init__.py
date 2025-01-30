@@ -1254,6 +1254,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,
@@ -1268,7 +1269,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the database where the table exists, if not the default.
         force
             If `False`, an exception is raised if the table does not exist.
-
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "drop_table"'

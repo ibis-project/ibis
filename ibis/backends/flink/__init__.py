@@ -571,6 +571,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -591,7 +592,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             Whether the table is temporary or not.
         force
             If `False`, an exception is raised if the table does not exist.
-
         """
         statement = DropTable(
             table_name=name,

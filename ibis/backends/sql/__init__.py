@@ -295,9 +295,22 @@ class SQLBackend(BaseBackend):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
+        """Drop a table from the backend.
+
+        Parameters
+        ----------
+        name
+            The name of the table to drop
+        database
+            The database that the table is located in.
+        force
+            If `True`, do not raise an error if the table does not exist.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
