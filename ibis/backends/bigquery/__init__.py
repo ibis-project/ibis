@@ -901,7 +901,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         results = [
             dataset.dataset_id

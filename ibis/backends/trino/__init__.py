@@ -195,7 +195,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self._filter_with_like(list(map(itemgetter(0), catalogs)), like=like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 

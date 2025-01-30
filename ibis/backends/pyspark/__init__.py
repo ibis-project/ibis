@@ -353,7 +353,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self._filter_with_like(catalogs, like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         with self._active_catalog(catalog):
             databases = [
