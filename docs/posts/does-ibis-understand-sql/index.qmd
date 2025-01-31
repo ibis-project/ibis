@@ -1,0 +1,70 @@
+---
+title: "Does Ibis understand SQL?"
+author: "Deepyaman Datta"
+date: "2025-01-31"
+categories:
+    - blog
+    - internals
+    - sql
+---
+
+Last week, an [insightful article on the dbt Developer Blog on what SQL comprehension really means](https://docs.getdbt.com/blog/the-levels-of-sql-comprehension)
+came across my LinkedIn feed. The big deal about SDF is that it, unlike dbt, actually _understands_
+SQL. As an Ibis user and contributor, several of the concepts covered in the post were familiar—in
+fact, I first learned about Ibis because the product I was working on required an
+[intermediate representation](https://en.wikipedia.org/wiki/Intermediate_representation) that could
+be compiled to Flink SQL code. In that case, as a dataframe library that interfaces with databases,
+does Ibis also understand SQL?
+
+## Tl;dr
+
+Ibis doesn't understand SQL per se, but it does understand what you're trying to do. Ibis, much like
+SQL, defines a standardized interface for working with databases. Because Ibis understands queries
+expressed through this user interface, it also provides users with some of the unique capabilities
+SDF offers, including the ability to execute said logic on the backend of the user's choice.
+
+## Building an expression
+
+Ibis provides a dataframe API for writing expressions. A
+[follow-up article on the dbt Developer Blog on the key technologies behind SQL comprehension](https://docs.getdbt.com/blog/sql-comprehension-technologies)
+used the following SQL query in illustrating what the parser and compiler do:
+
+```sql
+select x as u from t where x > 0
+```
+
+In SQL, the _binder_ adds type information to the syntax tree produced by the _parser_. This order
+of operations differs from the way Ibis works; in Ibis, [`Node`](../../concepts/internals.qmd#the-ibis.expr.types.node-class)s—
+the core operations that can be applied to expressions, such as `ibis.expr.operations.Add` and
+`ibis.expr.operations.WindowFunction`—must be applied to [`Expr`](../../concepts/internals.qmd#the-expr-class)
+objects containing data type and shape information.
+
+The [`Table`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table) is one of the
+core Ibis data structures, analogous to a SQL table. It's also an `Expr` subclass. We begin by
+manually defining a `Table` with our desired schema here, but one can also construct a table from an
+existing database table, file, or in-memory data representation:
+
+```{python}
+import ibis
+
+t = ibis.table(dict(x="int32", y="float", z="string"), name="my_data")
+```
+
+Next, we apply a filter and rename the `x` column as in the SQL query above:
+
+```{python}
+t.filter(t.x > 0).select(t.y.name("u"))
+```
+
+Look at that! Unsurprisingly, the resulting `repr()` matches the generated logical plan from the SQL
+comprehension technologies article:
+
+![Compilation from SQL to Executable Plan](compiler.png)
+
+## Compiling the expression
+
+...
+
+## Executing the compiled expression
+
+...
