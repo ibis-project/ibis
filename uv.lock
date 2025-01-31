@@ -2261,7 +2261,7 @@ requires-dist = [
     { name = "db-dtypes", marker = "extra == 'bigquery'", specifier = ">=0.3,<2" },
     { name = "deltalake", marker = "extra == 'deltalake'", specifier = ">=0.9.0,<1" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=0.10,<1.2" },
-    { name = "fsspec", extras = ["s3"], marker = "extra == 'athena'", specifier = "<2024.12.1" },
+    { name = "fsspec", extras = ["s3"], marker = "extra == 'athena'" },
     { name = "geoarrow-types", marker = "extra == 'geospatial'", specifier = ">=0.2,<1" },
     { name = "geopandas", marker = "extra == 'geospatial'", specifier = ">=0.6,<2" },
     { name = "google-cloud-bigquery", marker = "extra == 'bigquery'", specifier = ">=3,<4" },
@@ -2435,7 +2435,7 @@ docs = [
 tests = [
     { name = "cloudpickle" },
     { name = "filelock", specifier = ">=3.7.0,<4" },
-    { name = "fsspec", extras = ["s3"], specifier = "<2024.12.1" },
+    { name = "fsspec", extras = ["s3"] },
     { name = "hypothesis", specifier = ">=6.58.0,<7" },
     { name = "packaging", specifier = ">=21.3,<25" },
     { name = "pytest", specifier = ">=8.2.0,<9" },
