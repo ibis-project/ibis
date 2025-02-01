@@ -114,3 +114,8 @@ class TestConf(BackendTest):
     @property
     def awards_players(self):
         return self._remap_column_names("awards_players")
+
+
+@pytest.fixture(scope="session")
+def con(tmp_path_factory, data_dir, worker_id):
+    return TestConf.load_data(data_dir, tmp_path_factory, worker_id).connection

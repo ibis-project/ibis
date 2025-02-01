@@ -449,7 +449,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        sql = sge.Create(this=name, kind="SCHEMA", replace=force)
+        sql = sge.Create(this=name, kind="SCHEMA", exists=force)
         with self._safe_raw_sql(sql, unload=False):
             pass
 
@@ -457,7 +457,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self, name: str, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        sql = sge.Drop(this=name, kind="SCHEMA", replace=force)
+        sql = sge.Drop(this=name, kind="SCHEMA", exists=force)
         with self._safe_raw_sql(sql, unload=False):
             pass
 
