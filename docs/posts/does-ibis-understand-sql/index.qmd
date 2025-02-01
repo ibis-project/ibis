@@ -57,11 +57,13 @@ expr = t.filter(t.x > 0).select(t.y.name("u"))
 ```
 
 In SQL, the _parser_ translates the query into a syntax tree, but in Ibis, expressions are
-inherently represented as a tree of `Expr` and `Node` objects. Ibis enables users to [`visualize()`]
+inherently represented as a tree of `Expr` and `Node` objects. Ibis enables users to [`visualize()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.visualize)
 this intermediate representation for any expression:
 
 ```{python}
-expr.visualize()
+from ibis.expr.visualize import to_graph
+
+to_graph(expr)
 ```
 
 In non-interactive mode, pretty-printing the expression yields an equivalent textual representation:
