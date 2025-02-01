@@ -622,7 +622,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -654,10 +653,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         if not schema:
             schema = table.schema()
 
-        table_expr = sg.table(temp_name, db=database, quoted=self.compiler.quoted)
-        target = sge.Schema(
-            this=table_expr, expressions=schema.to_sqlglot(self.dialect)
-        )
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
+        table_expr = sg.table(temp_name, db=database, quoted=quoted)
+        target = sge.Schema(this=table_expr, expressions=schema.to_sqlglot(dialect))
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -665,20 +665,18 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             properties=sge.Properties(expressions=properties),
         )
 
-        this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        this = sg.table(name, catalog=database, quoted=quoted)
+        this_no_catalog = sg.table(name, quoted=quoted)
+
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
-                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
-                    self.dialect
-                )
+                insert_stmt = sge.Insert(this=table_expr, expression=query).sql(dialect)
                 cur.execute(insert_stmt)
 
             if overwrite:
+                cur.execute(sge.Drop(kind="TABLE", this=this, exists=True).sql(dialect))
                 cur.execute(
-                    sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
-                )
-                cur.execute(
-                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(dialect)} RENAME TO {this_no_catalog.sql(dialect)}"
                 )
 
         if schema is None:
