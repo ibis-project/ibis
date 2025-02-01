@@ -186,11 +186,3 @@ try:
     from pyathena.error import OperationalError as PyAthenaOperationalError
 except ImportError:
     PyAthenaDatabaseError = PyAthenaOperationalError = None
-
-
-try:
-    from botocore.errorfactory import (
-        InvalidRequestException as BotoInvalidRequestException,
-    )
-except ImportError:
-    BotoInvalidRequestException = None
