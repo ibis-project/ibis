@@ -622,7 +622,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -666,6 +665,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
 
         this = sg.table(name, catalog=database, quoted=self.compiler.quoted)
+        this_no_catalog = sg.table(name, quoted=self.compiler.quoted)
         with self._safe_raw_sql(create_stmt) as cur:
             if query is not None:
                 insert_stmt = sge.Insert(this=table_expr, expression=query).sql(
@@ -678,7 +678,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                     sge.Drop(kind="TABLE", this=this, exists=True).sql(self.dialect)
                 )
                 cur.execute(
-                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this.sql(self.dialect)}"
+                    f"ALTER TABLE IF EXISTS {table_expr.sql(self.dialect)} RENAME TO {this_no_catalog.sql(self.dialect)}"
                 )
 
         if schema is None:

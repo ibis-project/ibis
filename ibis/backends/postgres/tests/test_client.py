@@ -438,3 +438,17 @@ def test_parsing_oid_dtype(con):
     # Load a table that uses the OID type and check that we map it to Int64
     t = con.table("pg_class", database="pg_catalog")
     assert t.oid.type() == ibis.dtype("int64")
+
+
+@pytest.fixture
+def tmp_db(con):
+    name = gen_name("tmp_db")
+    con.create_database(name)
+    yield name
+    con.drop_database(name, cascade=True)
+
+
+def test_create_table_overwrite(con, tmp_db):
+    name = gen_name("overwrite_test")
+    t = con.create_table(name, schema={"id": "int32"}, database=tmp_db, overwrite=True)
+    assert t.schema() == ibis.schema({"id": dt.int32})
