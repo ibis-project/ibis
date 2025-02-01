@@ -51,7 +51,7 @@ athena = [
   "pandas>=1.5.3,<3",
   "rich>=12.4.4,<14",
   "packaging>=21.3,<25",
-  "fsspec[s3]<2024.12.1",
+  "fsspec[s3]",
 ]
 bigquery = [
   "db-dtypes>=0.3,<2",
@@ -239,7 +239,7 @@ dev = [
 tests = [
   "cloudpickle",
   "filelock>=3.7.0,<4",
-  "fsspec[s3]<2024.12.1",
+  "fsspec[s3]",
   "hypothesis>=6.58.0,<7",
   "packaging>=21.3,<25",
   "pytest>=8.2.0,<9",
