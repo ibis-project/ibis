@@ -159,11 +159,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         if location is None:
             location = f"{self._s3_staging_dir}/{name}"
 
-        property_list = [
-            sge.ExternalProperty(),
-            sge.FileFormatProperty(this=compiler.v[stored_as]),
-            sge.LocationProperty(this=sge.convert(location)),
-        ]
+        property_list = []
 
         for k, v in (properties or {}).items():
             name = sg.to_identifier(k)
@@ -196,6 +192,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             ).from_(compiler.to_sqlglot(table).subquery())
         else:
             select = None
+            property_list.append(sge.ExternalProperty())
+            property_list.append(sge.FileFormatProperty(this=compiler.v[stored_as]))
+            property_list.append(sge.LocationProperty(this=sge.convert(location)))
 
         create_stmt = sge.Create(
             kind="TABLE",
