@@ -22,18 +22,20 @@ env:
 
 jobs:
   test_backends:
-    name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}
+    name: ${{ matrix.backend.title }} python-${{ matrix.python-version }}-${{ matrix.os }}
     # only a single bigquery or snowflake run at a time, otherwise test data is
     # clobbered by concurrent runs
     concurrency:
       group: ${{ matrix.backend.title }}-${{ matrix.python-version }}-${{ github.event.label.name || 'ci-run-cloud' }}
       cancel-in-progress: false
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     if: github.event_name == 'push' || github.event.label.name == 'ci-run-cloud'
     strategy:
       fail-fast: false
       matrix:
+        os:
+          - ubuntu-latest
         python-version:
           - "3.10"
           - "3.13"
@@ -76,6 +78,13 @@ jobs:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
+              extras:
+                - --extra snowflake
+          - os: windows-latest
+            python-version: "3.12"
+            backend:
+              name: snowflake
+              title: Snowflake
               extras:
                 - --extra snowflake
     # this allows extractions/setup-just to list releases for `just` at a higher
@@ -138,6 +147,7 @@ jobs:
 
       - name: setup databricks credentials
         if: matrix.backend.name == 'databricks'
+        shell: bash
         run: |
           {
             echo "DATABRICKS_HTTP_PATH=${DATABRICKS_HTTP_PATH}"
@@ -151,6 +161,7 @@ jobs:
 
       - name: setup snowflake credentials
         if: matrix.backend.name == 'snowflake'
+        shell: bash
         run: |
           pyversion="${{ matrix.python-version }}"
           {
@@ -160,6 +171,9 @@ jobs:
             echo "SNOWFLAKE_DATABASE=${SNOWFLAKE_DATABASE}"
             echo "SNOWFLAKE_SCHEMA=${SNOWFLAKE_SCHEMA}_python${pyversion//./}_${{ matrix.backend.key }}"
             echo "SNOWFLAKE_WAREHOUSE=${SNOWFLAKE_WAREHOUSE}"
+            if ${{ matrix.backend.key == 'snowpark' }}; then
+              echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
+            fi
           } >> "$GITHUB_ENV"
         env:
           SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
@@ -175,10 +189,6 @@ jobs:
         with:
           aws-region: us-east-2
           role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
-
-      - name: enable snowpark testing
-        if: matrix.backend.key == 'snowpark'
-        run: echo "SNOWFLAKE_SNOWPARK=1" >> "$GITHUB_ENV"
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
