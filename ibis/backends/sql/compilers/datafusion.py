@@ -43,7 +43,7 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.RowID,
         ops.Strftime,
         ops.TimeDelta,
-        ops.TimestampBucket,
+        # ops.TimestampBucket,
         ops.TimestampDelta,
         ops.TypeOf,
         ops.StringToDate,
@@ -67,6 +67,10 @@ class DataFusionCompiler(SQLGlotCompiler):
         ops.EndsWith: "ends_with",
         ops.ArrayIntersect: "array_intersect",
         ops.ArrayUnion: "array_union",
+        ops.MapKeys: "map_keys",
+        ops.MapValues: "map_values",
+        ops.MapLength: "cardinality",
+        ops.IsNull: "ifnull",
     }
 
     def _to_timestamp(self, value, target_dtype, literal=False):
@@ -540,6 +544,34 @@ class DataFusionCompiler(SQLGlotCompiler):
             ),
             map(partial(self.cast, to=op.dtype), arg),
         )
+
+    def visit_MapGet(self, op, *, arg, key, default):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            self.f.ifnull(
+                self.f.list_extract(self.f.map_extract(arg, key), 1),
+                default,
+            ),
+        )
+
+    def visit_MapContains(self, op, *, arg, key):
+        return self.if_(
+            sg.or_(arg.is_(NULL), key.is_(NULL)),
+            NULL,
+            self.f.list_contains(self.f.map_keys(arg), key),
+        )
+
+    # ops.MapMerge: "mapUpdate", ## need to implement this as a visitor node
+
+    def visit_TimestampBucket(self, op, *, arg, interval, offset):
+        # https://datafusion.apache.org/user-guide/sql/scalar_functions.html#date-bin
+        origin = self.f.cast(
+            "1970-01-01T00:00:00Z", self.type_mapper.from_ibis(dt.timestamp)
+        )
+        if offset is not None:
+            origin += offset
+        return self.f.date_bin(interval, arg, origin)
 
 
 compiler = DataFusionCompiler()
