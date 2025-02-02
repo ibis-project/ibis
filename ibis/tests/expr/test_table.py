@@ -1780,7 +1780,7 @@ def test_join_lname_rname(how):
     expr = method(right, rname="right_{name}")
     assert expr.columns == ("id", "first_name", "right_id", "last_name")
 
-    expr = method(right, lname="left_{name}", rname="")
+    expr = method(right, lname="left_{name}", rname="{name}")
     assert expr.columns == ("left_id", "first_name", "id", "last_name")
 
     expr = method(right, rname="right_{name}", lname="left_{name}")
