@@ -106,6 +106,7 @@ class _FileIOHandler:
     def to_pandas(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -125,16 +126,16 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
-
         """
         return self.execute(expr, params=params, limit=limit, **kwargs)
 
     def to_pandas_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -151,7 +152,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         chunk_size
             Maximum number of rows in each returned `DataFrame` batch. This may have
             no effect depending on the backend.
@@ -182,6 +183,7 @@ class _FileIOHandler:
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -200,7 +202,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
 
@@ -229,6 +231,7 @@ class _FileIOHandler:
     def to_polars(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -247,7 +250,7 @@ class _FileIOHandler:
             Mapping of scalar parameter expressions to value.
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         kwargs
             Keyword arguments
 
@@ -266,6 +269,7 @@ class _FileIOHandler:
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -283,7 +287,7 @@ class _FileIOHandler:
             Ibis expression to export to pyarrow
         limit
             An integer to effect a specific row limit. A value of `None` means
-            "no limit". The default is in `ibis/config.py`.
+            no limit. The default is in `ibis/config.py`.
         params
             Mapping of scalar parameter expressions to value.
         chunk_size
@@ -303,6 +307,7 @@ class _FileIOHandler:
     def to_torch(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -339,7 +344,7 @@ class _FileIOHandler:
         }
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current backend.
 
@@ -357,14 +362,13 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
-
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of parquet data."
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the current backend.
 
@@ -382,14 +386,13 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
-
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of CSV data."
         )
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table in the current backend.
 
@@ -407,22 +410,20 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table
-
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of JSON data."
         )
 
     def read_delta(
-        self, source: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Register a Delta Lake table in the current database.
 
         Parameters
         ----------
-        source
-            The data source. Must be a directory
-            containing a Delta Lake table.
+        path
+            The data source. Must be a directory containing a Delta Lake table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
@@ -433,7 +434,6 @@ class _FileIOHandler:
         -------
         ir.Table
             The just-registered table.
-
         """
         raise NotImplementedError(
             f"{self.name} does not support direct registration of DeltaLake tables."
@@ -443,6 +443,7 @@ class _FileIOHandler:
     def to_parquet(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -479,6 +480,7 @@ class _FileIOHandler:
     def to_parquet_dir(
         self,
         expr: ir.Table,
+        /,
         directory: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -516,6 +518,7 @@ class _FileIOHandler:
     def to_csv(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -538,7 +541,6 @@ class _FileIOHandler:
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
 
         https://arrow.apache.org/docs/python/generated/pyarrow.csv.CSVWriter.html
-
         """
         self._import_pyarrow()
         import pyarrow.csv as pcsv
@@ -552,6 +554,7 @@ class _FileIOHandler:
     def to_delta(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -590,6 +593,7 @@ class _FileIOHandler:
     def to_json(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         **kwargs: Any,
     ) -> None:
@@ -615,7 +619,7 @@ class _FileIOHandler:
 
 class CanListCatalog(abc.ABC):
     @abc.abstractmethod
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         """List existing catalogs in the current connection.
 
         ::: {.callout-note}
@@ -640,13 +644,12 @@ class CanListCatalog(abc.ABC):
         list[str]
             The catalog names that exist in the current connection, that match
             the `like` pattern if provided.
-
         """
 
 
 class CanCreateCatalog(CanListCatalog):
     @abc.abstractmethod
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Create a new catalog.
 
         ::: {.callout-note}
@@ -666,11 +669,10 @@ class CanCreateCatalog(CanListCatalog):
             Name of the new catalog.
         force
             If `False`, an exception is raised if the catalog already exists.
-
         """
 
     @abc.abstractmethod
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         """Drop a catalog with name `name`.
 
         ::: {.callout-note}
@@ -690,14 +692,13 @@ class CanCreateCatalog(CanListCatalog):
             Catalog to drop.
         force
             If `False`, an exception is raised if the catalog does not exist.
-
         """
 
 
 class CanListDatabase(abc.ABC):
     @abc.abstractmethod
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         """List existing databases in the current connection.
 
@@ -726,14 +727,13 @@ class CanListDatabase(abc.ABC):
         list[str]
             The database names that exist in the current connection, that match
             the `like` pattern if provided.
-
         """
 
 
 class CanCreateDatabase(CanListDatabase):
     @abc.abstractmethod
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Create a database named `name` in `catalog`.
 
@@ -751,7 +751,7 @@ class CanCreateDatabase(CanListDatabase):
 
     @abc.abstractmethod
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop the database with `name` in `catalog`.
 
@@ -979,7 +979,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @abc.abstractmethod
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 
@@ -1017,7 +1017,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
     @abc.abstractmethod
     def table(
-        self, name: str, database: tuple[str, str] | str | None = None
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -1162,21 +1162,60 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         self._register_udfs(expr)
         self._register_in_memory_tables(expr)
 
+    @abc.abstractmethod
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
+        limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
+        **kwargs: Any,
     ) -> Any:
-        """Compile an expression."""
-        return self.compiler.to_sql(expr, params=params)
+        """Compile an expression.
 
-    def execute(self, expr: ir.Expr) -> Any:
-        """Execute an expression."""
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        kwargs
+            Additional keyword arguments
+        """
+
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+        """
 
     @abc.abstractmethod
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: ibis.Schema | None = None,
@@ -1209,13 +1248,13 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         -------
         Table
             The table that was created.
-
         """
 
     @abc.abstractmethod
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,
@@ -1230,7 +1269,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the database where the table exists, if not the default.
         force
             If `False`, an exception is raised if the table does not exist.
-
         """
         raise NotImplementedError(
             f'Backend "{self.name}" does not implement "drop_table"'
@@ -1255,6 +1293,7 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -1276,14 +1315,13 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
 
         Returns
         -------
-        Table
+        ir.Table
             The view that was created.
-
         """
 
     @abc.abstractmethod
     def drop_view(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a view.
 
@@ -1295,11 +1333,10 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
             Name of the database where the view exists, if not the default.
         force
             If `False`, an exception is raised if the view does not exist.
-
         """
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
         """Return whether the backend implements support for `operation`.
 
         Parameters
@@ -1320,7 +1357,6 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         False
         >>> ibis.postgres.has_operation(ops.ArrayIndex)
         True
-
         """
         raise NotImplementedError(
             f"{cls.name} backend has not implemented `has_operation` API"
@@ -1365,7 +1401,7 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 
-def connect(resource: Path | str, **kwargs: Any) -> BaseBackend:
+def connect(resource: Path | str, /, **kwargs: Any) -> BaseBackend:
     """Connect to `resource`, inferring the backend automatically.
 
     The general pattern for `ibis.connect` is

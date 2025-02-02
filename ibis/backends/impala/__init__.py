@@ -174,7 +174,7 @@ class Backend(SQLBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: hs2.HiveServer2Connection) -> Backend:
+    def from_connection(cls, con: hs2.HiveServer2Connection, /) -> Backend:
         """Create an Impala `Backend` from an existing HS2 connection.
 
         Parameters
@@ -197,12 +197,14 @@ class Backend(SQLBackend):
             (result,) = cursor.fetchone()
         return result
 
-    def list_databases(self, like=None):
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as cur:
             databases = fetchall(cur)
         return self._filter_with_like(databases.name.tolist(), like)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         """Return the list of table names in the current database.
 
         Parameters
@@ -424,6 +426,7 @@ class Backend(SQLBackend):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -434,13 +437,16 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement)
         return self.table(name, database=database)
 
-    def drop_view(self, name, database=None, force=False):
+    def drop_view(
+        self, name, /, *, database: str | None = None, force: bool = False
+    ) -> None:
         stmt = ddl.DropView(name, database=database, must_exist=not force)
         self._safe_exec_sql(stmt)
 
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -449,7 +455,7 @@ class Backend(SQLBackend):
         | None = None,
         *,
         schema: sch.SchemaLike | None = None,
-        database=None,
+        database: str | None = None,
         temp: bool | None = None,
         overwrite: bool = False,
         external: bool = False,
@@ -718,8 +724,10 @@ class Backend(SQLBackend):
 
     def insert(
         self,
-        table_name,
+        name,
+        /,
         obj=None,
+        *,
         database=None,
         overwrite=False,
         partition=None,
@@ -729,7 +737,7 @@ class Backend(SQLBackend):
 
         Parameters
         ----------
-        table_name
+        name
             The table name
         obj
             Table expression or DataFrame
@@ -761,7 +769,7 @@ class Backend(SQLBackend):
         if isinstance(obj, ir.Table):
             self._run_pre_execute_hooks(obj)
 
-        table = self.table(table_name, database=database)
+        table = self.table(name, database=database)
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -780,14 +788,14 @@ class Backend(SQLBackend):
                 if set(insert_schema.names) != set(existing_schema.names):
                     raise com.IbisInputError("Schemas have different names")
 
-                for name in insert_schema:
-                    lt = insert_schema[name]
-                    rt = existing_schema[name]
+                for insert_name in insert_schema:
+                    lt = insert_schema[insert_name]
+                    rt = existing_schema[insert_name]
                     if not lt.castable(rt):
                         raise com.IbisInputError(f"Cannot safely cast {lt!r} to {rt!r}")
 
         if partition is not None:
-            partition_schema = self.get_partition_schema(table_name, database=database)
+            partition_schema = self.get_partition_schema(name, database=database)
             partition_schema_names = frozenset(partition_schema.names)
             obj = obj.select(
                 [
@@ -800,7 +808,7 @@ class Backend(SQLBackend):
             partition_schema = None
 
         statement = ddl.InsertSelect(
-            self._fully_qualified_name(table_name, database),
+            self._fully_qualified_name(name, database),
             self.compile(obj),
             partition=partition,
             partition_schema=partition_schema,
@@ -809,7 +817,7 @@ class Backend(SQLBackend):
         self._safe_exec_sql(statement.compile())
 
     def drop_table(
-        self, name: str, *, database: str | None = None, force: bool = False
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop an Impala table.
 
@@ -827,12 +835,11 @@ class Backend(SQLBackend):
         >>> table = "my_table"
         >>> db = "operations"
         >>> con.drop_table(table, database=db, force=True)  # quartodoc: +SKIP # doctest: +SKIP
-
         """
         statement = ddl.DropTable(name, database=database, must_exist=not force)
         self._safe_exec_sql(statement)
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from an existing table.
 
         Parameters
@@ -841,7 +848,6 @@ class Backend(SQLBackend):
             Table name
         database
             Database name
-
         """
         statement = ddl.TruncateTable(name, database=database)
         self._safe_exec_sql(statement)
@@ -860,7 +866,9 @@ class Backend(SQLBackend):
         statement = ddl.RenameTable(old_name, new_name)
         self._safe_exec_sql(statement)
 
-    def drop_table_or_view(self, name, *, database=None, force=False):
+    def drop_table_or_view(
+        self, name, /, *, database: str | None = None, force: bool = False
+    ):
         """Drop view or table."""
         try:
             self.drop_table(name, database=database)
@@ -1333,6 +1341,8 @@ class Backend(SQLBackend):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
@@ -1355,6 +1365,7 @@ class Backend(SQLBackend):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,

@@ -100,6 +100,8 @@ class Backend(SQLBackend, UrlFromPath):
     def from_connection(
         cls,
         con: sqlite3.Connection,
+        /,
+        *,
         type_map: dict[str, str | dt.DataType] | None = None,
     ) -> Backend:
         """Create an Ibis client from an existing connection to a SQLite database.
@@ -153,14 +155,14 @@ class Backend(SQLBackend, UrlFromPath):
         finally:
             cur.close()
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SELECT name FROM pragma_database_list()") as cur:
             results = [r[0] for r in cur.fetchall()]
 
         return sorted(self._filter_with_like(results, like))
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -320,6 +322,7 @@ class Backend(SQLBackend, UrlFromPath):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -423,6 +426,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -455,7 +459,6 @@ class Backend(SQLBackend, UrlFromPath):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if schema is None and obj is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -531,6 +534,8 @@ class Backend(SQLBackend, UrlFromPath):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
@@ -545,6 +550,7 @@ class Backend(SQLBackend, UrlFromPath):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -571,8 +577,10 @@ class Backend(SQLBackend, UrlFromPath):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -580,7 +588,7 @@ class Backend(SQLBackend, UrlFromPath):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -595,20 +603,18 @@ class Backend(SQLBackend, UrlFromPath):
             If inserting data from a different database
         ValueError
             If the type of `obj` isn't supported
-
         """
-        table = sg.table(table_name, catalog=database, quoted=self.compiler.quoted)
+        table = sg.table(name, catalog=database, quoted=self.compiler.quoted)
         if not isinstance(obj, ir.Expr):
             obj = ibis.memtable(obj)
 
         self._run_pre_execute_hooks(obj)
 
-        query = self._build_insert_from_table(
-            target=table_name, source=obj, catalog=database
-        )
-        insert_stmt = query.sql(self.name)
+        dialect = self.dialect
+        query = self._build_insert_from_table(target=name, source=obj, catalog=database)
+        insert_stmt = query.sql(dialect)
 
         with self.begin() as cur:
             if overwrite:
-                cur.execute(sge.Delete(this=table).sql(self.dialect))
+                cur.execute(sge.Delete(this=table).sql(dialect))
             cur.execute(insert_stmt)

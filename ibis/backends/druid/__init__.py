@@ -111,7 +111,7 @@ class Backend(SQLBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: pydruid.db.api.Connection) -> Backend:
+    def from_connection(cls, con: pydruid.db.api.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a Druid database.
 
         Parameters
@@ -205,6 +205,7 @@ class Backend(SQLBackend):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,

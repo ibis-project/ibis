@@ -33,10 +33,18 @@ class SQLBackend(BaseBackend):
 
     @property
     def dialect(self) -> sg.Dialect:
+        """Return the SQL dialect used by the backend."""
         return self.compiler.dialect
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
+        """Return whether the backend supports the given operation.
+
+        Parameters
+        ----------
+        operation
+            Operation type, a Python class object.
+        """
         compiler = cls.compiler
         if operation in compiler.extra_supported_ops:
             return True
@@ -67,9 +75,7 @@ class SQLBackend(BaseBackend):
         return df
 
     def table(
-        self,
-        name: str,
-        database: tuple[str, str] | str | None = None,
+        self, name: str, /, *, database: tuple[str, str] | str | None = None
     ) -> ir.Table:
         """Construct a table expression.
 
@@ -102,11 +108,30 @@ class SQLBackend(BaseBackend):
     def compile(
         self,
         expr: ir.Expr,
-        limit: str | None = None,
+        /,
+        *,
+        limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
-    ):
-        """Compile an Ibis expression to a SQL string."""
+    ) -> str:
+        """Compile an expression to a SQL string.
+
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means no limit.
+        params
+            Mapping of scalar parameter expressions to value.
+        pretty
+            Pretty print the SQL query during compilation.
+
+        Returns
+        -------
+        str
+            Compiled expression
+        """
         query = self.compiler.to_sqlglot(expr, limit=limit, params=params)
         sql = query.sql(dialect=self.dialect, pretty=pretty, copy=False)
         self._log(sql)
@@ -125,9 +150,30 @@ class SQLBackend(BaseBackend):
     def sql(
         self,
         query: str,
+        /,
+        *,
         schema: SchemaLike | None = None,
         dialect: str | None = None,
     ) -> ir.Table:
+        """Create an Ibis table expression from a SQL query.
+
+        Parameters
+        ----------
+        query
+            A SQL query string
+        schema
+            The schema of the query. If not provided, Ibis will try to infer
+            the schema of the query.
+        dialect
+            The SQL dialect of the query. If not provided, the backend's dialect
+            is assumed. This argument can be useful when the query is written
+            in a different dialect from the backend.
+
+        Returns
+        -------
+        ir.Table
+            The table expression representing the query
+        """
         query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
             schema = self._get_schema_using_query(query)
@@ -172,11 +218,30 @@ class SQLBackend(BaseBackend):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> ir.Table:
+        """Create a view from an Ibis expression.
+
+        Parameters
+        ----------
+        name
+            The name of the view to create.
+        obj
+            The Ibis expression to create the view from.
+        database
+            The database that the view should be created in.
+        overwrite
+            If `True`, replace an existing view with the same name.
+
+        Returns
+        -------
+        ir.Table
+            A table expression representing the view.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
@@ -192,12 +257,19 @@ class SQLBackend(BaseBackend):
         return self.table(name, database=(catalog, db))
 
     def drop_view(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
+        """Drop a view from the backend.
+
+        Parameters
+        ----------
+        name
+            The name of the view to drop.
+        database
+            The database that the view is located in.
+        force
+            If `True`, do not raise an error if the view does not exist.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
@@ -212,12 +284,31 @@ class SQLBackend(BaseBackend):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
-    ) -> Any:
-        """Execute an expression."""
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
 
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame | Series | scalar
+            The result of the expression execution.
+        """
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
         sql = self.compile(table, params=params, limit=limit, **kwargs)
@@ -233,9 +324,22 @@ class SQLBackend(BaseBackend):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:
+        """Drop a table from the backend.
+
+        Parameters
+        ----------
+        name
+            The name of the table to drop
+        database
+            The database that the table is located in.
+        force
+            If `True`, do not raise an error if the table does not exist.
+        """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
@@ -266,13 +370,14 @@ class SQLBackend(BaseBackend):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         chunk_size: int = 1_000_000,
         **_: Any,
     ) -> pa.ipc.RecordBatchReader:
-        """Execute expression and return an iterator of pyarrow record batches.
+        """Execute expression and return an iterator of PyArrow record batches.
 
         This method is eager and will execute the associated expression
         immediately.
@@ -293,7 +398,6 @@ class SQLBackend(BaseBackend):
         -------
         RecordBatchReader
             Collection of pyarrow `RecordBatch`s.
-
         """
         pa = self._import_pyarrow()
 
@@ -311,8 +415,10 @@ class SQLBackend(BaseBackend):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -331,7 +437,7 @@ class SQLBackend(BaseBackend):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -343,13 +449,12 @@ class SQLBackend(BaseBackend):
             strings like `("catalog", "database")`.
         overwrite
             If `True` then replace existing contents of table
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
 
         if overwrite:
-            self.truncate_table(table_name, database=(catalog, db))
+            self.truncate_table(name, database=(catalog, db))
 
         if not isinstance(obj, ir.Table):
             obj = ibis.memtable(obj)
@@ -357,7 +462,7 @@ class SQLBackend(BaseBackend):
         self._run_pre_execute_hooks(obj)
 
         query = self._build_insert_from_table(
-            target=table_name, source=obj, db=db, catalog=catalog
+            target=name, source=obj, db=db, catalog=catalog
         )
 
         with self._safe_raw_sql(query):
@@ -436,11 +541,7 @@ class SQLBackend(BaseBackend):
             ),
         ).sql(self.dialect)
 
-    def truncate_table(
-        self,
-        name: str,
-        database: str | None = None,
-    ) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         """Delete all rows from a table.
 
         ::: {.callout-note}
@@ -463,8 +564,6 @@ class SQLBackend(BaseBackend):
             For backends that support multi-level table hierarchies, you can
             pass in a dotted string path like `"catalog.database"` or a tuple of
             strings like `("catalog", "database")`.
-
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -477,7 +576,7 @@ class SQLBackend(BaseBackend):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: Any, **kwargs: Any) -> BaseBackend:
+    def from_connection(cls, con: Any, /, **kwargs: Any) -> BaseBackend:
         """Create an Ibis client from an existing connection.
 
         Parameters
@@ -492,6 +591,7 @@ class SQLBackend(BaseBackend):
         )
 
     def disconnect(self):
+        """Disconnect from the backend."""
         # This is part of the Python DB-API specification so should work for
         # _most_ sqlglot backends
         self.con.close()

@@ -60,6 +60,7 @@ def _regular_join_method(
     def f(  # noqa: D417
         self: ir.Table,
         right: ir.Table,
+        /,
         predicates: (
             str
             | Sequence[str | tuple[str | ir.Column, str | ir.Column] | ir.BooleanValue]
@@ -369,7 +370,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return name in self.schema()
 
-    def cast(self, schema: SchemaLike) -> Table:
+    def cast(self, schema: SchemaLike, /) -> Table:
         """Cast the columns of a table.
 
         Similar to `pandas.DataFrame.astype`.
@@ -446,7 +447,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._cast(schema, cast_method="cast")
 
-    def try_cast(self, schema: SchemaLike) -> Table:
+    def try_cast(self, schema: SchemaLike, /) -> Table:
         """Cast the columns of a table.
 
         If the cast fails for a row, the value is returned
@@ -935,6 +936,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def aggregate(
         self,
         metrics: Sequence[ir.Scalar] | None = (),
+        /,
+        *,
         by: Sequence[ir.Value] | None = (),
         having: Sequence[ir.BooleanValue] | None = (),
         **kwargs: ir.Value,
@@ -1211,6 +1214,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def sample(
         self,
         fraction: float,
+        /,
         *,
         method: Literal["row", "block"] = "row",
         seed: int | None = None,
@@ -1298,7 +1302,7 @@ class Table(Expr, _FixedTextJupyterMixin):
                 self, fraction=fraction, method=method, seed=seed
             ).to_expr()
 
-    def limit(self, n: int | None, offset: int = 0) -> Table:
+    def limit(self, n: int | None, /, *, offset: int = 0) -> Table:
         """Select `n` rows from `self` starting at `offset`.
 
         ::: {.callout-note}
@@ -1361,7 +1365,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return ops.Limit(self, n, offset).to_expr()
 
-    def head(self, n: int = 5) -> Table:
+    def head(self, n: int = 5, /) -> Table:
         """Select the first `n` rows of a table.
 
         ::: {.callout-note}
@@ -1408,7 +1412,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         [`Table.limit`](#ibis.expr.types.relations.Table.limit)
         [`Table.order_by`](#ibis.expr.types.relations.Table.order_by)
         """
-        return self.limit(n=n)
+        return self.limit(n)
 
     def order_by(
         self,
@@ -1620,7 +1624,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         assert not queue, "items left in queue"
         return result.to_expr()
 
-    def union(self, table: Table, *rest: Table, distinct: bool = False) -> Table:
+    def union(self, table: Table, /, *rest: Table, distinct: bool = False) -> Table:
         """Compute the set union of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -1691,7 +1695,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._assemble_set_op(ops.Union, table, *rest, distinct=distinct)
 
-    def intersect(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
+    def intersect(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set intersection of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -1771,7 +1775,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return self._assemble_set_op(ops.Intersection, table, *rest, distinct=distinct)
 
-    def difference(self, table: Table, *rest: Table, distinct: bool = True) -> Table:
+    def difference(self, table: Table, /, *rest: Table, distinct: bool = True) -> Table:
         """Compute the set difference of multiple table expressions.
 
         The input tables must have identical schemas.
@@ -2149,27 +2153,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
     projection = select
 
-    @util.deprecated(
-        as_of="7.0",
-        instead=(
-            "use `Table.rename` instead (if passing a mapping, note the meaning "
-            "of keys and values are swapped in Table.rename)."
-        ),
-    )
-    def relabel(
-        self,
-        substitutions: (
-            Mapping[str, str]
-            | Callable[[str], str | None]
-            | str
-            | Literal["snake_case", "ALL_CAPS"]
-        ),
-    ) -> Table:
-        """Deprecated in favor of `Table.rename`."""
-        if isinstance(substitutions, Mapping):
-            substitutions = {new: old for old, new in substitutions.items()}
-        return self.rename(substitutions)
-
     def rename(
         self,
         method: (
@@ -2515,7 +2498,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             raise com.IbisInputError("You must pass at least one predicate to filter")
         return ops.Filter(self, preds).to_expr()
 
-    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def nunique(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of unique rows in the table.
 
         Parameters
@@ -2547,7 +2530,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌───┐
         │ 2 │
         └───┘
-        >>> t.nunique(t.a != "foo")
+        >>> t.nunique(where=t.a != "foo")
         ┌───┐
         │ 1 │
         └───┘
@@ -2556,7 +2539,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             (where,) = bind(self, where)
         return ops.CountDistinctStar(self, where=where).to_expr()
 
-    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def count(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in the table.
 
         Parameters
@@ -2588,7 +2571,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ┌───┐
         │ 3 │
         └───┘
-        >>> t.count(t.a != "foo")
+        >>> t.count(where=t.a != "foo")
         ┌───┐
         │ 2 │
         └───┘
@@ -2602,6 +2585,8 @@ class Table(Expr, _FixedTextJupyterMixin):
     def drop_null(
         self,
         subset: Sequence[str] | str | None = None,
+        /,
+        *,
         how: Literal["any", "all"] = "any",
     ) -> Table:
         """Remove rows with null values from the table.
@@ -2661,10 +2646,7 @@ class Table(Expr, _FixedTextJupyterMixin):
             subset = self.bind(subset)
         return ops.DropNull(self, how, subset).to_expr()
 
-    def fill_null(
-        self,
-        replacements: ir.Scalar | Mapping[str, ir.Scalar],
-    ) -> Table:
+    def fill_null(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Fill null values in a table expression.
 
         ::: {.callout-note}
@@ -2765,17 +2747,16 @@ class Table(Expr, _FixedTextJupyterMixin):
     def dropna(
         self,
         subset: Sequence[str] | str | None = None,
+        /,
+        *,
         how: Literal["any", "all"] = "any",
     ) -> Table:
         """Deprecated - use `drop_null` instead."""
 
-        return self.drop_null(subset, how)
+        return self.drop_null(subset, how=how)
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
-    def fillna(
-        self,
-        replacements: ir.Scalar | Mapping[str, ir.Scalar],
-    ) -> Table:
+    def fillna(self, replacements: ir.Scalar | Mapping[str, ir.Scalar], /) -> Table:
         """Deprecated - use `fill_null` instead."""
 
         return self.fill_null(replacements)
@@ -2891,7 +2872,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return ibis.union(*aggs).order_by(ibis.asc("pos"))
 
     def describe(
-        self, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
+        self, *, quantile: Sequence[ir.NumericValue | float] = (0.25, 0.5, 0.75)
     ) -> Table:
         """Return summary information about a table.
 
@@ -3032,8 +3013,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         return t
 
     def join(
-        left: Table,
+        self,
         right: Table,
+        /,
         predicates: (
             str
             | Sequence[
@@ -3047,8 +3029,8 @@ class Table(Expr, _FixedTextJupyterMixin):
                 ]
             ]
         ) = (),
-        how: JoinKind = "inner",
         *,
+        how: JoinKind = "inner",
         lname: str = "",
         rname: str = "{name}_right",
     ) -> Table:
@@ -3056,8 +3038,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Left table to join
         right
             Right table to join
         predicates
@@ -3208,17 +3188,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).join(
+        return Join(self.op()).join(
             right, predicates, how=how, lname=lname, rname=rname
         )
 
     def asof_join(
-        left: Table,
+        self,
         right: Table,
+        /,
         on: str | ir.BooleanColumn,
         predicates: str | ir.Column | Sequence[str | ir.Column] = (),
-        tolerance: str | ir.IntervalScalar | None = None,
         *,
+        tolerance: str | ir.IntervalScalar | None = None,
         lname: str = "",
         rname: str = "{name}_right",
     ) -> Table:
@@ -3229,8 +3210,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Table expression
         right
             Table expression
         on
@@ -3335,13 +3314,19 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).asof_join(
-            right, on, predicates, tolerance=tolerance, lname=lname, rname=rname
+        return Join(self.op()).asof_join(
+            right,
+            on=on,
+            predicates=predicates,
+            tolerance=tolerance,
+            lname=lname,
+            rname=rname,
         )
 
     def cross_join(
-        left: Table,
+        self,
         right: Table,
+        /,
         *rest: Table,
         lname: str = "",
         rname: str = "{name}_right",
@@ -3350,8 +3335,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        left
-            Left table
         right
             Right table
         rest
@@ -3419,7 +3402,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.joins import Join
 
-        return Join(left.op()).cross_join(right, *rest, lname=lname, rname=rname)
+        return Join(self.op()).cross_join(right, *rest, lname=lname, rname=rname)
 
     inner_join = _regular_join_method("inner_join", "inner")
     left_join = _regular_join_method("left_join", "left")
@@ -3430,7 +3413,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     any_inner_join = _regular_join_method("any_inner_join", "any_inner")
     any_left_join = _regular_join_method("any_left_join", "any_left")
 
-    def alias(self, alias: str) -> ir.Table:
+    def alias(self, alias: str, /) -> ir.Table:
         """Create a table expression with a specific name `alias`.
 
         This method is useful for exposing an ibis expression to the underlying
@@ -3477,7 +3460,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         return ops.View(child=self, name=alias).to_expr()
 
-    def sql(self, query: str, dialect: str | None = None) -> ir.Table:
+    def sql(self, query: str, /, *, dialect: str | None = None) -> ir.Table:
         '''Run a SQL query against a table expression.
 
         Parameters
@@ -3580,15 +3563,33 @@ class Table(Expr, _FixedTextJupyterMixin):
         node = ops.SQLStringView(child=self.op(), query=query, schema=schema)
         return node.to_expr()
 
-    def to_pandas(self, **kwargs) -> pd.DataFrame:
+    def to_pandas(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame:
         """Convert a table expression to a pandas DataFrame.
 
         Parameters
         ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
         kwargs
-            Same as keyword arguments to [`execute`](./expression-generic.qmd#ibis.expr.types.core.Expr.execute)
+            Keyword arguments
+
+        Returns
+        -------
+        DataFrame
+            The result of executing the expression as a pandas DataFrame
         """
-        return self.execute(**kwargs)
+        return self.execute(params=params, limit=limit, **kwargs)
 
     def cache(self) -> Table:
         """Cache the provided expression.
@@ -3669,6 +3670,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def pivot_longer(
         self,
         col: str | s.Selector,
+        /,
         *,
         names_to: str | Iterable[str] = "name",
         names_pattern: str | re.Pattern = r"(.+)",
@@ -4687,10 +4689,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return ops.Project(self, exprs).to_expr()
 
-    def window_by(
-        self,
-        time_col: str | ir.Value,
-    ) -> WindowedTable:
+    def window_by(self, time_col: str | ir.Value, /) -> WindowedTable:
         from ibis.expr.types.temporal_windows import WindowedTable
 
         time_col = next(iter(self.bind(time_col)))
@@ -4771,7 +4770,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         return self.group_by(columns).agg(lambda t: t.count().name(name))
 
     def unnest(
-        self, column, offset: str | None = None, keep_empty: bool = False
+        self, column, /, *, offset: str | None = None, keep_empty: bool = False
     ) -> Table:
         """Unnest an array `column` from a table.
 

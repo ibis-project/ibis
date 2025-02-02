@@ -67,6 +67,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -199,7 +200,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -280,13 +281,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         with self.con.cursor() as cur:
             yield cur.execute(query, *args, **kwargs)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         with self.con.cursor() as cur:
             out = cur.catalogs().fetchall_arrow()
         return self._filter_with_like(out["TABLE_CAT"].to_pylist(), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         with self.con.cursor() as cur:
             out = cur.schemas(
@@ -358,11 +359,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     @util.experimental
     @classmethod
-    def from_connection(
-        cls,
-        con,
-        memtable_volume: str | None = None,
-    ) -> Backend:
+    def from_connection(cls, con, /, *, memtable_volume: str | None = None) -> Backend:
         """Create an Ibis client from an existing connection to a Databricks cloud instance.
 
         Parameters
@@ -430,23 +427,21 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             cur.execute(f"REMOVE '{path}'")
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Create(this=name, kind="SCHEMA", replace=force)):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         with self._safe_raw_sql(sge.Drop(this=name, kind="SCHEMA", replace=force)):
             pass
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List tables and views.
 
@@ -513,6 +508,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -554,6 +550,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,

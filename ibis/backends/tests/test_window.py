@@ -150,7 +150,7 @@ with pytest.warns(FutureWarning, match="v9.0"):
             ],
         ),
         param(
-            lambda t, win: t.float_col.ntile(buckets=7).over(win),
+            lambda t, win: t.float_col.ntile(7).over(win),
             lambda t: pandas_ntile(t.float_col, 7),
             id="ntile",
             marks=[

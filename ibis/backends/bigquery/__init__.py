@@ -243,7 +243,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self.table(table_name, database=(catalog, database))
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ):
         """Read Parquet data into a BigQuery table.
 
@@ -260,7 +260,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         return self._read_file(
             path,
@@ -271,7 +270,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         )
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read CSV data into a BigQuery table.
 
@@ -289,7 +288,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.CSV,
@@ -300,7 +298,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._read_file(path, table_name=table_name, job_config=job_config)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON data into a BigQuery table.
 
@@ -319,7 +317,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             An Ibis table expression
-
         """
         job_config = bq.LoadJobConfig(
             source_format=bq.SourceFormat.NEWLINE_DELIMITED_JSON,
@@ -479,6 +476,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def from_connection(
         cls,
         client: bq.Client,
+        /,
+        *,
         partition_column: str | None = "PARTITIONTIME",
         storage_client: bqstorage.BigQueryReadClient | None = None,
         dataset_id: str = "",
@@ -534,6 +533,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         collate: str | None = None,
@@ -561,6 +562,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def drop_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
@@ -578,6 +581,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
     ) -> ir.Table:
         table_loc = self._to_sqlglot_table(database)
@@ -691,12 +696,29 @@ class Backend(SQLBackend, CanCreateDatabase):
     def compile(
         self,
         expr: ir.Expr,
-        limit: str | None = None,
-        params=None,
+        /,
+        *,
+        limit: str | int | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = True,
         **kwargs: Any,
-    ):
-        """Compile an Ibis expression to a SQL string."""
+    ) -> str:
+        """Compile an expression.
+
+        Parameters
+        ----------
+        expr
+            An ibis expression to compile.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        params
+            Mapping of scalar parameter expressions to value.
+        pretty
+            If `True`, the resulting SQL will be formatted for human readability
+        kwargs
+            Additional keyword arguments
+        """
         session_dataset = self._session_dataset
         session_dataset_id = getattr(session_dataset, "dataset_id", None)
         session_project = getattr(session_dataset, "project", None)
@@ -715,38 +737,35 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
-    ):
+    ) -> None:
         """Insert data into a table.
 
         Parameters
         ----------
-        table_name
-            The name of the table to which data needs will be inserted
+        name
+            The name of the table to which data needs will be inserted.
         obj
-            The source data or expression to insert
+            The source data or expression to insert.
         database
             Name of the attached database that the table is located in.
         overwrite
-            If `True` then replace existing contents of table
-
+            If `True` then replace existing contents of table.
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
+
         if catalog is None:
             catalog = self.current_catalog
         if db is None:
             db = self.current_database
 
-        return super().insert(
-            table_name,
-            obj,
-            database=(catalog, db),
-            overwrite=overwrite,
-        )
+        return super().insert(name, obj, database=(catalog, db), overwrite=overwrite)
 
     def _to_query(
         self,
@@ -766,6 +785,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -786,6 +806,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -807,7 +828,15 @@ class Backend(SQLBackend, CanCreateDatabase):
             (_postprocess_arrow(b, colnames) for b in batch_iter),
         )
 
-    def execute(self, expr, params=None, limit="default", **kwargs):
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
         """Compile and execute the given Ibis expression.
 
         Compile and execute Ibis expression using this backend client
@@ -874,7 +903,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         results = [
             dataset.dataset_id
@@ -885,9 +914,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(results, like)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -923,7 +950,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         result = [table.table_id for table in self.client.list_tables(dataset_ref)]
         return self._filter_with_like(result, like)
 
-    def set_database(self, name):
+    def set_database(self, name, /):
         self.data_project, self.dataset = self._parse_project_and_dataset(name)
 
     @property
@@ -933,6 +960,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -985,7 +1013,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             The table that was just created
-
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")
@@ -1078,6 +1105,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: tuple[str | str] | str | None = None,
         force: bool = False,
@@ -1098,6 +1126,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -1121,11 +1150,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self.table(name, database=(catalog, database))
 
     def drop_view(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)

@@ -24,6 +24,7 @@ if TYPE_CHECKING:
 @deferrable
 def struct(
     value: Iterable[tuple[str, V]] | Mapping[str, V],
+    *,
     type: str | dt.DataType | None = None,
 ) -> StructValue:
     """Create a struct expression.
@@ -341,7 +342,9 @@ class StructValue(Value):
 
         return table.to_expr().select([self[name] for name in self.names])
 
-    @util.deprecated(as_of="10.0", instead="use lift or unpack instead")
+    @util.deprecated(
+        as_of="10.0", removed_in="11.0", instead="use lift or unpack instead"
+    )
     def destructure(self) -> list[ir.Value]:
         """Destructure a `StructValue` into the corresponding struct fields.
 
@@ -368,8 +371,8 @@ class StructValue(Value):
         │ {'a': 3, 'b': None}         │
         │ NULL                        │
         └─────────────────────────────┘
-        >>> a, b = t.s.destructure()
-        >>> a
+        >>> a, b = t.s.destructure()  # doctest: +SKIP
+        >>> a  # doctest: +SKIP
         ┏━━━━━━━┓
         ┃ a     ┃
         ┡━━━━━━━┩
@@ -379,7 +382,7 @@ class StructValue(Value):
         │     3 │
         │  NULL │
         └───────┘
-        >>> b
+        >>> b  # doctest: +SKIP
         ┏━━━━━━━━┓
         ┃ b      ┃
         ┡━━━━━━━━┩

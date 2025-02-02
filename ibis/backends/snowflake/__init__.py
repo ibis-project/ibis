@@ -388,6 +388,7 @@ $$ {defn["source"]} $$"""
     def from_connection(
         cls,
         con: snowflake.connector.SnowflakeConnection | snowflake.snowpark.Session,
+        /,
         *,
         create_object_udfs: bool = True,
     ) -> Backend:
@@ -454,6 +455,7 @@ $$ {defn["source"]} $$"""
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -483,6 +485,7 @@ $$ {defn["source"]} $$"""
     def to_pandas_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -503,6 +506,7 @@ $$ {defn["source"]} $$"""
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -594,13 +598,13 @@ $$ {defn["source"]} $$"""
             }
         )
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         with self._safe_raw_sql("SHOW DATABASES") as con:
             catalogs = list(map(itemgetter(1), con))
         return self._filter_with_like(catalogs, like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 
@@ -616,9 +620,7 @@ $$ {defn["source"]} $$"""
         return self._filter_with_like(schemata, like)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -673,7 +675,7 @@ $$ {defn["source"]} $$"""
             pq.write_table(data, path, compression="zstd")
             self.read_parquet(path, table_name=name)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
         quoted = self.compiler.quoted
@@ -691,7 +693,7 @@ $$ {defn["source"]} $$"""
             # so we switch back to the original database and schema
             cur.execute(use_stmt)
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         current_catalog = self.current_catalog
         if name == current_catalog:
             raise com.UnsupportedOperationError(
@@ -706,7 +708,7 @@ $$ {defn["source"]} $$"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         current_database = self.current_database
@@ -746,7 +748,7 @@ $$ {defn["source"]} $$"""
             return cur
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if self.current_database == name and (
             catalog is None or self.current_catalog == catalog
@@ -766,6 +768,7 @@ $$ {defn["source"]} $$"""
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -858,7 +861,7 @@ $$ {defn["source"]} $$"""
         return self.table(name, database=(catalog, db))
 
     def read_csv(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a CSV file as a table in the Snowflake backend.
 
@@ -876,7 +879,6 @@ $$ {defn["source"]} $$"""
         -------
         Table
             The table that was read from the CSV file
-
         """
         stage = ibis.util.gen_name("stage")
         file_format = ibis.util.gen_name("format")
@@ -987,7 +989,7 @@ $$ {defn["source"]} $$"""
         return self.table(table)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read newline-delimited JSON into an ibis table, using Snowflake.
 
@@ -1006,7 +1008,6 @@ $$ {defn["source"]} $$"""
         -------
         Table
             An ibis table expression
-
         """
         stage = util.gen_name("read_json_stage")
         file_format = util.gen_name("read_json_format")
@@ -1076,7 +1077,7 @@ $$ {defn["source"]} $$"""
         return self.table(table)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Read a Parquet file into an ibis table, using Snowflake.
 
@@ -1095,7 +1096,6 @@ $$ {defn["source"]} $$"""
         -------
         Table
             An ibis table expression
-
         """
         import pyarrow.dataset as ds
 
@@ -1157,8 +1157,10 @@ $$ {defn["source"]} $$"""
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         overwrite: bool = False,
     ) -> None:
@@ -1175,7 +1177,7 @@ $$ {defn["source"]} $$"""
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to which data needs will be inserted
         obj
             The source data or expression to insert
@@ -1187,7 +1189,6 @@ $$ {defn["source"]} $$"""
             `("catalog", "database")`.
         overwrite
             If `True` then replace existing contents of table
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -1198,16 +1199,15 @@ $$ {defn["source"]} $$"""
         self._run_pre_execute_hooks(obj)
 
         query = self._build_insert_from_table(
-            target=table_name, source=obj, db=db, catalog=catalog
+            target=name, source=obj, db=db, catalog=catalog
         )
-        table = sg.table(
-            table_name, db=db, catalog=catalog, quoted=self.compiler.quoted
-        )
+        table = sg.table(name, db=db, catalog=catalog, quoted=self.compiler.quoted)
 
+        dialect = self.dialect
         statements = []
         if overwrite:
-            statements.append(f"TRUNCATE TABLE {table.sql(self.name)}")
-        statements.append(query.sql(self.name))
+            statements.append(f"TRUNCATE TABLE {table.sql(dialect)}")
+        statements.append(query.sql(dialect))
 
         statement = ";".join(statements)
         with self._safe_raw_sql(statement):

@@ -80,7 +80,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, table_env: TableEnvironment) -> Backend:
+    def from_connection(cls, table_env: TableEnvironment, /) -> Backend:
         """Create a Flink `Backend` from an existing table environment.
 
         Parameters
@@ -106,7 +106,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         )
         return sch.Schema.from_pyarrow(pa_schema)
 
-    def list_databases(self, like: str | None = None) -> list[str]:
+    def list_databases(self, *, like: str | None = None) -> list[str]:
         databases = self._table_env.list_databases()
         return self._filter_with_like(databases, like)
 
@@ -121,6 +121,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_database(
         self,
         name: str,
+        /,
+        *,
         db_properties: dict | None = None,
         catalog: str | None = None,
         force: bool = False,
@@ -146,7 +148,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         self.raw_sql(statement.compile())
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         """Drop a database with name `name`.
 
@@ -165,8 +167,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     def list_tables(
         self,
-        like: str | None = None,
         *,
+        like: str | None = None,
         database: str | None = None,
         catalog: str | None = None,
         temp: bool = False,
@@ -180,20 +182,19 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        like : str, optional
+        like
             A pattern in Python's regex format.
-        temp : bool, optional
+        temp
             Whether to list temporary tables or permanent tables.
-        database : str, optional
+        database
             The database to list tables of, if not the current one.
-        catalog : str, optional
+        catalog
             The catalog to list tables of, if not the current one.
 
         Returns
         -------
         list[str]
             The list of the table/view names that match the pattern `like`.
-
         """
         catalog = catalog or self.current_catalog
         database = database or self.current_database
@@ -245,6 +246,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         catalog: str | None = None,
     ) -> ir.Table:
@@ -366,14 +369,17 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def compile(
         self,
         expr: ir.Expr,
+        /,
+        *,
+        limit: str | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
         pretty: bool = False,
         **_: Any,
-    ) -> Any:
+    ) -> str:
         """Compile an Ibis expression to Flink."""
         return super().compile(
             expr, params=params, pretty=pretty
-        )  # Discard `limit` and other kwargs.
+        )  # Discard `limit` and other kwargs
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         if null_columns := op.schema.null_fields:
@@ -386,11 +392,32 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def _finalize_memtable(self, name: str) -> None:
         self.drop_view(name, temp=True, force=True)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any) -> Any:
-        """Execute an expression."""
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        """Execute an Ibis expression and return a pandas `DataFrame`, `Series`, or scalar.
+
+        Parameters
+        ----------
+        expr
+            Ibis expression to execute.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
+        kwargs
+            Keyword arguments
+        """
         self._run_pre_execute_hooks(expr)
 
-        sql = self.compile(expr.as_table(), **kwargs)
+        sql = self.compile(expr.as_table(), params=params, **kwargs)
         df = self._table_env.sql_query(sql).to_pandas()
 
         return expr.__pandas_result__(df)
@@ -398,6 +425,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | pa.Table | ir.Table | None = None,
         *,
         schema: sch.Schema | None = None,
@@ -457,7 +485,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         Table
             The table that was created.
-
         """
         import pandas as pd
         import pyarrow as pa
@@ -476,11 +503,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         if overwrite:
             if self.list_tables(like=name, temp=temp):
                 self.drop_table(
-                    name=name,
-                    catalog=catalog,
-                    database=database,
-                    temp=temp,
-                    force=True,
+                    name, catalog=catalog, database=database, temp=temp, force=True
                 )
 
         # In-memory data is created as views in `pyflink`
@@ -508,7 +531,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             # which may not be ideal. We plan to get back to this later.
             # Ref: https://github.com/ibis-project/ibis/pull/7479#discussion_r1416237088
             return self.create_view(
-                name=name,
+                name,
                 obj=dataframe,
                 schema=schema,
                 database=database,
@@ -548,6 +571,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def drop_table(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -568,7 +592,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             Whether the table is temporary or not.
         force
             If `False`, an exception is raised if the table does not exist.
-
         """
         statement = DropTable(
             table_name=name,
@@ -608,6 +631,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
         *,
         schema: sch.Schema | None = None,
@@ -647,7 +671,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         Table
             The view that was created.
-
         """
         import pandas as pd
 
@@ -661,11 +684,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if overwrite and self.list_views(like=name, temp=temp):
             self.drop_view(
-                name=name,
-                database=database,
-                catalog=catalog,
-                temp=temp,
-                force=True,
+                name, database=database, catalog=catalog, temp=temp, force=True
             )
 
         if isinstance(obj, pd.DataFrame):
@@ -700,11 +719,12 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         else:
             raise exc.IbisError(f"Unsupported `obj` type: {type(obj)}")
 
-        return self.table(name=name, database=database, catalog=catalog)
+        return self.table(name, database=database, catalog=catalog)
 
     def drop_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         catalog: str | None = None,
@@ -725,10 +745,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             Whether the view is temporary or not.
         force
             If `False`, an exception is raised if the view does not exist.
-
         """
         # TODO(deepyaman): Support (and differentiate) permanent views.
-
         statement = DropView(
             name=name,
             database=database,
@@ -784,14 +802,14 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         }
 
         return self.create_table(
-            name=table_name,
-            schema=schema,
-            tbl_properties=tbl_properties,
+            table_name, schema=schema, tbl_properties=tbl_properties
         )
 
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -820,6 +838,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_csv(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -848,6 +868,8 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def read_json(
         self,
         path: str | Path,
+        /,
+        *,
         schema: sch.Schema | None = None,
         table_name: str | None = None,
     ) -> ir.Table:
@@ -867,7 +889,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         return self._read_file(
             file_type="json", path=path, schema=schema, table_name=table_name
@@ -875,8 +896,10 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
     def insert(
         self,
-        table_name: str,
+        name: str,
+        /,
         obj: pa.Table | pd.DataFrame | ir.Table | list | dict,
+        *,
         database: str | None = None,
         catalog: str | None = None,
         overwrite: bool = False,
@@ -885,7 +908,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        table_name
+        name
             The name of the table to insert data into.
         obj
             The source data or expression to insert.
@@ -913,7 +936,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
 
         if isinstance(obj, ir.Table):
             statement = InsertSelect(
-                table_name,
+                name,
                 self.compile(obj),
                 database=database,
                 catalog=catalog,
@@ -922,7 +945,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
             return self.raw_sql(statement.compile())
 
         identifier = sg.table(
-            table_name, db=database, catalog=catalog, quoted=self.compiler.quoted
+            name, db=database, catalog=catalog, quoted=self.compiler.quoted
         ).sql(self.dialect)
 
         if isinstance(obj, pa.Table):
@@ -947,6 +970,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -972,6 +996,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl):
     def to_pyarrow_batches(
         self,
         expr: ir.Table,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         chunk_size: int | None = None,

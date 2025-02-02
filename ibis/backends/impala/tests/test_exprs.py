@@ -96,8 +96,8 @@ def test_builtins(con, alltypes):
         d.bucket([0, 10, 25, 50], include_over=True),
         d.bucket([0, 10, 25, 50], include_over=True, close_extreme=False),
         d.bucket([10, 25, 50, 100], include_under=True),
-        d.histogram(10),
-        d.histogram(5, base=10),
+        d.histogram(nbins=10),
+        d.histogram(nbins=5, base=10),
         d.histogram(base=10, binwidth=5),
         # coalesce-like cases
         api.coalesce(
@@ -359,7 +359,7 @@ def test_filter_predicates(con):
 
 def test_histogram_value_counts(alltypes):
     t = alltypes
-    expr = t.double_col.histogram(10).value_counts()
+    expr = t.double_col.histogram(nbins=10).value_counts()
     expr.execute()
 
 
@@ -492,7 +492,7 @@ def test_analytic_functions(alltypes):
         f.rank(),
         f.dense_rank(),
         f.percent_rank(),
-        f.ntile(buckets=7),
+        f.ntile(7),
         f.first(),
         f.last(),
         f.first().over(ibis.window(preceding=10)),

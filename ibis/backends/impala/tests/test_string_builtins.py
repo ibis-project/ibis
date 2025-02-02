@@ -51,7 +51,7 @@ def test_string_builtins(table, expr_fn, snapshot):
 
 
 def test_find(table, snapshot):
-    expr = table.string_col.find("a", start=table.tinyint_col)
+    expr = table.string_col.find("a", table.tinyint_col)
     snapshot.assert_match(translate(expr), "out.sql")
 
 

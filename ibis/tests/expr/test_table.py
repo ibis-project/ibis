@@ -406,32 +406,6 @@ def test_filter_fusion_distinct_table_objects(con):
     assert_equal(expr, expr4)
 
 
-def test_relabel():
-    table = api.table({"x": "int32", "y": "string", "z": "double"})
-
-    # Using a mapping
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel({"x": "x_1", "y": "y_1"}).schema()
-    sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
-    assert_equal(res, sol)
-
-    # Using a function
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel(lambda x: None if x == "z" else f"{x}_1").schema()
-    assert_equal(res, sol)
-
-    # Using a format string
-    with pytest.warns(FutureWarning, match="Table.rename"):
-        res = table.relabel("_{name}_")
-        sol = table.relabel({"x": "_x_", "y": "_y_", "z": "_z_"})
-    assert_equal(res, sol)
-
-    # Mapping with unknown columns errors
-    with pytest.raises(com.IbisTypeError, match="'missing' is not found in table"):
-        with pytest.warns(FutureWarning, match="Table.rename"):
-            table.relabel({"missing": "oops"})
-
-
 def test_rename():
     table = api.table({"x": "int32", "y": "string", "z": "double"})
     sol = sch.schema({"x_1": "int32", "y_1": "string", "z": "double"})
@@ -993,7 +967,7 @@ def test_asof_join_with_by():
         )
         assert join_without_by.op() == expected
 
-    join_with_predicates = api.asof_join(left, right, "time", predicates="key")
+    join_with_predicates = api.asof_join(left, right, "time", "key")
     with join_tables(join_with_predicates) as (r1, r2):
         expected = ops.JoinChain(
             first=r1,
@@ -1762,8 +1736,7 @@ def test_filter_applied_to_join():
     gdp = ibis.table([("country_code", "string"), ("year", "int64")])
 
     expr = countries.inner_join(
-        gdp,
-        predicates=[countries["iso_alpha3"] == gdp["country_code"]],
+        gdp, [countries["iso_alpha3"] == gdp["country_code"]]
     ).filter(gdp["year"] == 2017)
     assert expr.columns == ("iso_alpha3", "country_code", "year")
 

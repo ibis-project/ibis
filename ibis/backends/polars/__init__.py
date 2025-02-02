@@ -83,10 +83,12 @@ class Backend(BaseBackend, NoUrl):
     def version(self) -> str:
         return pl.__version__
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | None = None
+    ) -> list[str]:
         return self._filter_with_like(list(self._tables.keys()), like)
 
-    def table(self, name: str, database: None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: None = None) -> ir.Table:
         if database is not None:
             raise com.IbisError(
                 "Passing `database` to the Polars backend's `table()` method is not "
@@ -113,7 +115,12 @@ class Backend(BaseBackend, NoUrl):
         self._context.register(name, obj)
 
     def sql(
-        self, query: str, schema: sch.Schema | None = None, dialect: str | None = None
+        self,
+        query: str,
+        /,
+        *,
+        schema: sch.Schema | None = None,
+        dialect: str | None = None,
     ) -> ir.Table:
         query = self._transpile_sql(query, dialect=dialect)
         if schema is None:
@@ -125,6 +132,8 @@ class Backend(BaseBackend, NoUrl):
     def read_csv(
         self,
         path: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -146,7 +155,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         source_list = normalize_filenames(path)
         # Flatten the list if there's only one element because Polars
@@ -167,7 +175,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_json(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a JSON file as a table.
 
@@ -187,7 +195,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_json")
@@ -199,7 +206,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_delta(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake as a table in the current database.
 
@@ -219,7 +226,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         try:
             import deltalake  # noqa: F401
@@ -235,7 +241,7 @@ class Backend(BaseBackend, NoUrl):
         return self.table(table_name)
 
     def read_pandas(
-        self, source: pd.DataFrame, table_name: str | None = None, **kwargs: Any
+        self, source: pd.DataFrame, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Pandas DataFrame or pyarrow Table a table in the current database.
 
@@ -255,7 +261,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         table_name = table_name or gen_name("read_in_memory")
 
@@ -264,7 +269,9 @@ class Backend(BaseBackend, NoUrl):
 
     def read_parquet(
         self,
-        path: str | Path | Iterable[str],
+        path: str | Path | Iterable[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -288,7 +295,6 @@ class Backend(BaseBackend, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         table_name = table_name or gen_name("read_parquet")
         if not isinstance(path, (str, Path)) and len(path) == 1:
@@ -298,10 +304,9 @@ class Backend(BaseBackend, NoUrl):
             self._import_pyarrow()
             import pyarrow.dataset as ds
 
-            paths = [normalize_filename(p) for p in path]
+            path = [normalize_filename(p) for p in path]
             obj = pl.scan_pyarrow_dataset(
-                source=ds.dataset(paths, format="parquet"),
-                **kwargs,
+                source=ds.dataset(path, format="parquet"), **kwargs
             )
             self._add_table(table_name, obj)
         else:
@@ -313,6 +318,7 @@ class Backend(BaseBackend, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -356,6 +362,7 @@ class Backend(BaseBackend, NoUrl):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -365,14 +372,14 @@ class Backend(BaseBackend, NoUrl):
             name, obj=obj, temp=None, database=database, overwrite=overwrite
         )
 
-    def drop_table(self, name: str, *, force: bool = False) -> None:
+    def drop_table(self, name: str, /, *, force: bool = False) -> None:
         if name in self._tables:
             del self._tables[name]
             self._context.unregister(name)
         elif not force:
             raise com.IbisError(f"Table {name!r} does not exist")
 
-    def drop_view(self, name: str, *, force: bool = False) -> None:
+    def drop_view(self, name: str, /, *, force: bool = False) -> None:
         self.drop_table(name, force=force)
 
     def get_schema(self, table_name):
@@ -384,7 +391,7 @@ class Backend(BaseBackend, NoUrl):
         return tuple(op for op in translate.registry if issubclass(op, ops.Value))
 
     @classmethod
-    def has_operation(cls, operation: type[ops.Value]) -> bool:
+    def has_operation(cls, operation: type[ops.Value], /) -> bool:
         # Polars doesn't support geospatial ops, but the dispatcher implements
         # a common base class that makes it appear that it does. Explicitly
         # exclude these operations.
@@ -396,8 +403,14 @@ class Backend(BaseBackend, NoUrl):
         return operation in op_classes or issubclass(operation, op_classes)
 
     def compile(
-        self, expr: ir.Expr, params: Mapping[ir.Expr, object] | None = None, **_: Any
-    ):
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        limit: str | None = None,
+        params: Mapping[ir.Expr, Any] | None = None,
+        **_: Any,
+    ) -> pl.LazyFrame:
         if params is None:
             params = dict()
         else:
@@ -450,6 +463,8 @@ class Backend(BaseBackend, NoUrl):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
@@ -481,6 +496,8 @@ class Backend(BaseBackend, NoUrl):
     def to_polars(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         streaming: bool = False,
@@ -521,6 +538,8 @@ class Backend(BaseBackend, NoUrl):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Expr, object] | None = None,
         limit: int | None = None,
         **kwargs: Any,
@@ -531,6 +550,7 @@ class Backend(BaseBackend, NoUrl):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,

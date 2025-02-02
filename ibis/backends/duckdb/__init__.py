@@ -97,6 +97,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -133,7 +134,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         table_loc = self._to_sqlglot_table(database)
 
@@ -235,7 +235,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self.table(name, database=(catalog, database))
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -321,7 +321,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def _safe_raw_sql(self, *args, **kwargs):
         yield self.raw_sql(*args, **kwargs)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         col = "catalog_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
             sg.table("schemata", db="information_schema")
@@ -332,7 +332,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self._filter_with_like(dbs.to_pylist(), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         col = "schema_name"
         query = sg.select(sge.Distinct(expressions=[sg.column(col)])).from_(
@@ -412,6 +412,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def from_connection(
         cls,
         con: duckdb.DuckDBPyConnection,
+        /,
+        *,
         extensions: Sequence[str] | None = None,
     ) -> Backend:
         """Create an Ibis client from an existing connection to a DuckDB database.
@@ -475,7 +477,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self._load_extensions([extension], force_install=force_install)
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise exc.UnsupportedOperationError(
@@ -487,7 +489,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise exc.UnsupportedOperationError(
@@ -501,7 +503,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     @util.experimental
     def read_json(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         columns: Mapping[str, str] | None = None,
         **kwargs,
@@ -514,7 +518,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             File or list of files
         table_name
             Optional table name
@@ -530,7 +534,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         Table
             An ibis table expression
-
         """
         if not table_name:
             table_name = util.gen_name("read_json")
@@ -558,7 +561,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             table_name,
             sg.select(STAR).from_(
                 self.compiler.f.read_json_auto(
-                    util.normalize_filenames(source_list), *options
+                    util.normalize_filenames(paths), *options
                 )
             ),
         )
@@ -567,7 +570,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         columns: Mapping[str, str | dt.DataType] | None = None,
         types: Mapping[str, str | dt.DataType] | None = None,
@@ -577,7 +582,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file or directory of CSV
             files, or an iterable of CSV files.
         table_name
@@ -644,17 +649,14 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         │     2.0 │     3.0 │ <POINT (2 3)>        │
         └─────────┴─────────┴──────────────────────┘
         """
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
 
         if not table_name:
             table_name = util.gen_name("read_csv")
 
         # auto_detect and columns collide, so we set auto_detect=True
         # unless COLUMNS has been specified
-        if any(
-            source.startswith(("http://", "https://", "s3://"))
-            for source in source_list
-        ):
+        if any(source.startswith(("http://", "https://", "s3://")) for source in paths):
             self._load_extensions(["httpfs"])
 
         kwargs.setdefault("header", True)
@@ -694,29 +696,25 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         self._create_temp_view(
             table_name,
-            sg.select(STAR).from_(self.compiler.f.read_csv(source_list, *options)),
+            sg.select(STAR).from_(self.compiler.f.read_csv(paths, *options)),
         )
 
         return self.table(table_name)
 
     def read_geo(
-        self,
-        source: str,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
-        """Register a GEO file as a table in the current database.
+        """Register a geospatial data file as a table in the current database.
 
         Parameters
         ----------
-        source
-            The data source(s). Path to a file of geospatial files supported
-            by duckdb.
+        path
+            The data source(s). Path to a file of geospatial files supported by duckdb.
             See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to DuckDB loading function.
             See https://duckdb.org/docs/extensions/spatial.html#st_read---read-spatial-data-from-files
             for more information.
@@ -725,7 +723,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         ir.Table
             The just-registered table
-
         """
 
         if not table_name:
@@ -734,13 +731,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # load geospatial extension
         self.load_extension("spatial")
 
-        source = util.normalize_filename(source)
-        if source.startswith(("http://", "https://", "s3://")):
+        path = util.normalize_filename(path)
+        if path.startswith(("http://", "https://", "s3://")):
             self._load_extensions(["httpfs"])
 
         source_expr = sg.select(STAR).from_(
             self.compiler.f.st_read(
-                source,
+                path,
                 *(sg.to_identifier(key).eq(val) for key, val in kwargs.items()),
             )
         )
@@ -757,7 +754,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     def read_parquet(
         self,
-        source_list: str | Iterable[str],
+        paths: str | Path | Iterable[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -765,7 +764,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file, an iterable of files,
             or directory of parquet files.
         table_name
@@ -779,9 +778,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         ir.Table
             The just-registered table
-
         """
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
 
         table_name = table_name or util.gen_name("read_parquet")
 
@@ -789,9 +787,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # If that fails because of auth issues, fall back to ingesting via
         # pyarrow dataset
         try:
-            self._read_parquet_duckdb_native(source_list, table_name, **kwargs)
+            self._read_parquet_duckdb_native(paths, table_name, **kwargs)
         except duckdb.IOException:
-            self._read_parquet_pyarrow_dataset(source_list, table_name, **kwargs)
+            self._read_parquet_pyarrow_dataset(paths, table_name, **kwargs)
 
         return self.table(table_name)
 
@@ -829,16 +827,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # explicitly.
 
     def read_delta(
-        self,
-        source_table: str,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
+        path
             The data source. Must be a directory
             containing a Delta Lake table.
         table_name
@@ -853,7 +848,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             The just-registered table.
 
         """
-        source_table = util.normalize_filenames(source_table)[0]
+        path = util.normalize_filenames(path)[0]
 
         table_name = table_name or util.gen_name("read_delta")
 
@@ -866,15 +861,13 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
                 "pip install 'ibis-framework[deltalake]'\n"
             )
 
-        delta_table = DeltaTable(source_table, **kwargs)
+        delta_table = DeltaTable(path, **kwargs)
 
         self.con.register(table_name, delta_table.to_pyarrow_dataset())
         return self.table(table_name)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List tables and views.
 
@@ -948,7 +941,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self._filter_with_like(out[col].to_pylist(), like)
 
     def read_postgres(
-        self, uri: str, *, table_name: str | None = None, database: str = "public"
+        self, uri: str, /, *, table_name: str | None = None, database: str = "public"
     ) -> ir.Table:
         """Register a table from a postgres instance into a DuckDB table.
 
@@ -996,6 +989,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def read_mysql(
         self,
         uri: str,
+        /,
         *,
         catalog: str,
         table_name: str | None = None,
@@ -1035,7 +1029,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         return self.table(table_name, database=(catalog, database))
 
     def read_sqlite(
-        self, path: str | Path, *, table_name: str | None = None
+        self, path: str | Path, /, *, table_name: str | None = None
     ) -> ir.Table:
         """Register a table from a SQLite database into a DuckDB table.
 
@@ -1066,7 +1060,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         <...>
         >>> con.close()
         >>> con = ibis.connect("duckdb://")
-        >>> t = con.read_sqlite(path="/tmp/sqlite.db", table_name="t")
+        >>> t = con.read_sqlite("/tmp/sqlite.db", table_name="t")
         >>> t
         ┏━━━━━━━┳━━━━━━━━┓
         ┃ a     ┃ b      ┃
@@ -1248,6 +1242,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
+        **kwargs: Any,
     ):
         """Preprocess the expr, and return a `duckdb.DuckDBPyRelation` object.
 
@@ -1260,7 +1255,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         """
         self._run_pre_execute_hooks(expr)
         table_expr = expr.as_table()
-        sql = self.compile(table_expr, limit=limit, params=params)
+        sql = self.compile(table_expr, limit=limit, params=params, **kwargs)
         if table_expr.schema().geospatial:
             self._load_extensions(["spatial"])
         return self.con.sql(sql)
@@ -1268,6 +1263,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -1307,26 +1303,33 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> pa.Table:
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).arrow()
         return expr.__pyarrow_result__(table, data_mapper=DuckDBPyArrowData)
 
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
-        **_: Any,
-    ) -> Any:
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
         import pandas as pd
         import pyarrow.types as pat
 
-        table = self._to_duckdb_relation(expr, params=params, limit=limit).arrow()
+        table = self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).arrow()
 
         df = pd.DataFrame(
             {
@@ -1351,10 +1354,11 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_torch(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        **_: Any,
+        **kwargs: Any,
     ) -> dict[str, torch.Tensor]:
         """Execute an expression and return results as a dictionary of torch tensors.
 
@@ -1373,14 +1377,16 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         dict[str, torch.Tensor]
             A dictionary of torch tensors, keyed by column name.
-
         """
-        return self._to_duckdb_relation(expr, params=params, limit=limit).torch()
+        return self._to_duckdb_relation(
+            expr, params=params, limit=limit, **kwargs
+        ).torch()
 
     @util.experimental
     def to_parquet(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -1426,7 +1432,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         Partition on multiple columns.
 
         >>> con.to_parquet(penguins, tempfile.mkdtemp(), partition_by=("year", "island"))
-
         """
         self._run_pre_execute_hooks(expr)
         query = self.compile(expr, params=params)
@@ -1439,6 +1444,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_csv(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -1460,9 +1466,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             Mapping of scalar parameter expressions to value.
         header
             Whether to write the column names as the first line of the CSV file.
-        **kwargs
+        kwargs
             DuckDB CSV writer arguments. https://duckdb.org/docs/data/csv/overview.html#parameters
-
         """
         self._run_pre_execute_hooks(expr)
         query = self.compile(expr, params=params)
@@ -1479,6 +1484,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_geo(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         format: str,
@@ -1581,6 +1587,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_json(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
         *,
         compression: Literal["auto", "none", "gzip", "zstd"] = "auto",
@@ -1607,14 +1614,15 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         timestampformat
             Timestamp format string.
         """
-        opts = f", COMPRESSION '{compression.upper()}'"
+        opts = [f"COMPRESSION '{compression.upper()}'"]
         if dateformat:
-            opts += f", DATEFORMAT '{dateformat}'"
+            opts.append(f"DATEFORMAT '{dateformat}'")
         if timestampformat:
-            opts += f", TIMESTAMPFORMAT '{timestampformat}'"
-        self.raw_sql(
-            f"COPY ({self.compile(expr)}) TO '{path!s}' (FORMAT JSON, ARRAY true{opts});"
-        )
+            opts.append(f"TIMESTAMPFORMAT '{timestampformat}'")
+
+        options = f"FORMAT JSON, ARRAY TRUE, {', '.join(opts)}"
+
+        self.raw_sql(f"COPY ({self.compile(expr)}) TO '{path!s}' ({options})")
 
     def _get_schema_using_query(self, query: str) -> sch.Schema:
         with self._safe_raw_sql(f"DESCRIBE {query}") as cur:

@@ -127,7 +127,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     @util.experimental
     @classmethod
     def from_connection(
-        cls, con: pyexasol.ExaConnection, timezone: str | None = None
+        cls, con: pyexasol.ExaConnection, /, *, timezone: str | None = None
     ) -> Backend:
         """Create an Ibis client from an existing connection to an Exasol database.
 
@@ -188,7 +188,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self.begin() as cur:
             yield cur.execute(query, *args, **kwargs)
 
-    def list_tables(self, like=None, database=None):
+    def list_tables(
+        self, *, like: str | None = None, database: str | tuple[str, str] | None = None
+    ) -> list[str]:
         """List the tables in the database.
 
         Parameters
@@ -321,6 +323,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -352,7 +355,6 @@ class Backend(SQLBackend, CanCreateDatabase):
             if the table exists
         temp
             Create a temporary table (not supported)
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -423,7 +425,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         return schema
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise NotImplementedError(
@@ -438,7 +440,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             con.execute(drop_schema.sql(dialect=self.dialect))
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None:
             raise NotImplementedError(
@@ -461,7 +463,7 @@ class Backend(SQLBackend, CanCreateDatabase):
             )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         if catalog is not None:
             raise NotImplementedError(

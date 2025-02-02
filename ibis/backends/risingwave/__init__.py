@@ -152,7 +152,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: psycopg2.extensions.connection) -> Backend:
+    def from_connection(cls, con: psycopg2.extensions.connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a PostgreSQL database.
 
         Parameters
@@ -185,9 +185,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return res
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -265,7 +263,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         return out
 
-    def list_catalogs(self, like=None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         # http://dba.stackexchange.com/a/1304/58517
         cats = (
             sg.select(C.datname)
@@ -375,7 +373,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         if catalog is not None and catalog != self.current_catalog:
             raise exc.UnsupportedOperationError(
@@ -390,6 +388,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def drop_database(
         self,
         name: str,
+        /,
+        *,
         catalog: str | None = None,
         force: bool = False,
         cascade: bool = False,
@@ -411,6 +411,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: str | None = None,
         force: bool = False,
     ) -> None:
@@ -504,6 +506,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -683,6 +686,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_materialized_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -735,6 +739,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def drop_materialized_view(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,
@@ -761,8 +766,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_source(
         self,
         name: str,
-        schema: ibis.Schema,
+        /,
         *,
+        schema: ibis.Schema,
         database: str | None = None,
         connector_properties: dict,
         data_format: str,
@@ -815,11 +821,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.table(name, database=database)
 
     def drop_source(
-        self,
-        name: str,
-        *,
-        database: str | None = None,
-        force: bool = False,
+        self, name: str, /, *, database: str | None = None, force: bool = False
     ) -> None:
         """Drop a Source.
 
@@ -843,9 +845,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_sink(
         self,
         name: str,
+        /,
+        *,
         sink_from: str | None = None,
         connector_properties: dict | None = None,
-        *,
         obj: ir.Table | None = None,
         database: str | None = None,
         data_format: str | None = None,
@@ -906,6 +909,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def drop_sink(
         self,
         name: str,
+        /,
         *,
         database: str | None = None,
         force: bool = False,

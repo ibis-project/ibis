@@ -137,7 +137,7 @@ class Expr(Immutable, Coercible):
     def __hash__(self):
         return hash((self.__class__, self._arg))
 
-    def equals(self, other) -> bool:
+    def equals(self, other, /) -> bool:
         """Return whether this expression is _structurally_ equivalent to `other`.
 
         If you want to produce an equality expression, use `==` syntax.
@@ -260,7 +260,7 @@ class Expr(Immutable, Coercible):
         )
         webbrowser.open(f"file://{os.path.abspath(path)}")
 
-    def pipe(self, f, *args: Any, **kwargs: Any) -> Expr:
+    def pipe(self, f, /, *args: Any, **kwargs: Any) -> Expr:
         """Compose `f` with `self`.
 
         Parameters
@@ -399,10 +399,11 @@ class Expr(Immutable, Coercible):
 
     def execute(
         self,
+        *,
         limit: int | str | None = "default",
         params: Mapping[ir.Value, Any] | None = None,
         **kwargs: Any,
-    ):
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression against its backend if one exists.
 
         Parameters
@@ -456,6 +457,7 @@ class Expr(Immutable, Coercible):
 
     def compile(
         self,
+        *,
         limit: int | None = None,
         params: Mapping[ir.Value, Any] | None = None,
         pretty: bool = False,
@@ -652,6 +654,7 @@ class Expr(Immutable, Coercible):
     def to_parquet(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -693,12 +696,15 @@ class Expr(Immutable, Coercible):
         ## Hive-partitioned output is currently only supported when using DuckDB
         :::
         """
-        self._find_backend(use_default=True).to_parquet(self, path, **kwargs)
+        self._find_backend(use_default=True).to_parquet(
+            self, path, params=params, **kwargs
+        )
 
     @experimental
     def to_parquet_dir(
         self,
         directory: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -719,12 +725,15 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to pyarrow.dataset.write_dataset
         """
-        self._find_backend(use_default=True).to_parquet_dir(self, directory, **kwargs)
+        self._find_backend(use_default=True).to_parquet_dir(
+            self, directory, params=params, **kwargs
+        )
 
     @experimental
     def to_csv(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -745,12 +754,13 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to pyarrow.csv.CSVWriter
         """
-        self._find_backend(use_default=True).to_csv(self, path, **kwargs)
+        self._find_backend(use_default=True).to_csv(self, path, params=params, **kwargs)
 
     @experimental
     def to_delta(
         self,
         path: str | Path,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         **kwargs: Any,
@@ -769,14 +779,12 @@ class Expr(Immutable, Coercible):
         **kwargs
             Additional keyword arguments passed to deltalake.writer.write_deltalake method
         """
-        self._find_backend(use_default=True).to_delta(self, path, **kwargs)
+        self._find_backend(use_default=True).to_delta(
+            self, path, params=params, **kwargs
+        )
 
     @experimental
-    def to_json(
-        self,
-        path: str | Path,
-        **kwargs: Any,
-    ) -> None:
+    def to_json(self, path: str | Path, /, **kwargs: Any) -> None:
         """Write the results of `expr` to a json file of [{column -> value}, ...] objects.
 
         This method is eager and will execute the associated expression
@@ -895,13 +903,3 @@ def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Va
         return NotImplemented
     else:
         return node.to_expr()
-
-
-def _is_null_literal(value: Any) -> bool:
-    """Detect whether `value` will be treated by ibis as a null literal."""
-    if value is None:
-        return True
-    if isinstance(value, Expr):
-        op = value.op()
-        return isinstance(op, ops.Literal) and op.value is None
-    return False

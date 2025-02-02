@@ -188,14 +188,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             [(schema,)] = cur.fetchall()
         return schema
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         query = "SHOW CATALOGS"
         with self._safe_raw_sql(query) as cur:
             catalogs = cur.fetchall()
         return self._filter_with_like(list(map(itemgetter(0), catalogs)), like=like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = "SHOW SCHEMAS"
 
@@ -210,9 +210,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self._filter_with_like(list(map(itemgetter(0), databases)), like)
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -334,7 +332,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: trino.dbapi.Connection) -> Backend:
+    def from_connection(cls, con: trino.dbapi.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a Trino database.
 
         Parameters
@@ -369,7 +367,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         )
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Create(
@@ -381,7 +379,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         with self._safe_raw_sql(
             sge.Drop(
@@ -395,6 +393,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -438,7 +437,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             Add a comment to the table
         properties
             Table properties to set on creation
-
         """
         if obj is None and schema is None:
             raise com.IbisError("One of the `schema` or `obj` parameter is required")

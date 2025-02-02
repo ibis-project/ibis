@@ -72,6 +72,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -209,7 +210,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         return self.table(orig_table_ref.name, database=(catalog, db))
 
-    def table(self, name: str, database: str | None = None) -> ir.Table:
+    def table(self, name: str, /, *, database: str | None = None) -> ir.Table:
         """Construct a table expression.
 
         Parameters
@@ -223,7 +224,6 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         -------
         Table
             Table expression
-
         """
         table_loc = self._to_sqlglot_table(database)
 
@@ -302,7 +302,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             else:
                 raise
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         response = self.con.client.list_data_catalogs()
         catalogs = [
             element["CatalogName"] for element in response["DataCatalogsSummary"]
@@ -378,11 +378,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
     @util.experimental
     @classmethod
-    def from_connection(
-        cls,
-        con,
-        memtable_volume: str | None = None,
-    ) -> Backend:
+    def from_connection(cls, con, /, *, memtable_volume: str | None = None) -> Backend:
         """Create an Ibis client from an existing connection to an Amazon Athena instance.
 
         Parameters
@@ -458,7 +454,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         self._fs.rm(path, recursive=True)
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         sql = sge.Create(this=name, kind="SCHEMA", exists=force)
@@ -466,7 +462,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
         sql = sge.Drop(this=name, kind="SCHEMA", exists=force)
@@ -474,7 +470,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             pass
 
     def list_tables(
-        self, like: str | None = None, database: tuple[str, str] | str | None = None
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List tables and views.
 
@@ -542,6 +538,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -568,6 +565,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,

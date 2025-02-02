@@ -175,7 +175,7 @@ ibis.Schema {
 """
 
 
-def param(type: dt.DataType) -> ir.Scalar:
+def param(type: dt.DataType, /) -> ir.Scalar:
     """Create a deferred parameter of a given type.
 
     Parameters
@@ -212,6 +212,8 @@ def param(type: dt.DataType) -> ir.Scalar:
 
 def schema(
     pairs: SchemaLike | None = None,
+    /,
+    *,
     names: Iterable[str] | None = None,
     types: Iterable[str | dt.DataType] | None = None,
 ) -> sch.Schema:
@@ -324,6 +326,7 @@ def table(
 
 def memtable(
     data,
+    /,
     *,
     columns: Iterable[str] | None = None,
     schema: SchemaLike | None = None,
@@ -589,7 +592,7 @@ def _deferred_method_call(expr, method_name, **kwargs):
     return method(value)
 
 
-def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
+def desc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     """Create a descending sort key from `expr` or column name.
 
     Parameters
@@ -630,7 +633,7 @@ def desc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "desc", nulls_first=nulls_first)
 
 
-def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
+def asc(expr: ir.Column | str, /, *, nulls_first: bool = False) -> ir.Value:
     """Create a ascending sort key from `asc` or column name.
 
     Parameters
@@ -671,11 +674,11 @@ def asc(expr: ir.Column | str, nulls_first: bool = False) -> ir.Value:
     return _deferred_method_call(expr, "asc", nulls_first=nulls_first)
 
 
-def preceding(value) -> ir.Value:
+def preceding(value, /) -> ir.Value:
     return ops.WindowBoundary(value, preceding=True).to_expr()
 
 
-def following(value) -> ir.Value:
+def following(value, /) -> ir.Value:
     return ops.WindowBoundary(value, preceding=False).to_expr()
 
 
@@ -1176,7 +1179,7 @@ def interval(
     return functools.reduce(operator.add, intervals)
 
 
-@deprecated(as_of="10.0.0", instead="use ibis.cases()")
+@deprecated(as_of="10.0.0", removed_in="11.0", instead="use ibis.cases()")
 def case() -> bl.SearchedCaseBuilder:
     """DEPRECATED: Use `ibis.cases()` instead."""
     return bl.SearchedCaseBuilder()
@@ -1411,7 +1414,7 @@ def cume_dist() -> ir.FloatingColumn:
     return ops.CumeDist().to_expr()
 
 
-def ntile(buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+def ntile(buckets: int | ir.IntegerValue, /) -> ir.IntegerColumn:
     """Return the integer number of a partitioning of the column values.
 
     Parameters
@@ -1478,7 +1481,9 @@ def row_number() -> ir.IntegerColumn:
 
 
 def read_csv(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1489,7 +1494,7 @@ def read_csv(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.  Supports CSV and TSV files.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1526,17 +1531,18 @@ def read_csv(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_csv(sources, table_name=table_name, **kwargs)
+    return con.read_csv(paths, table_name=table_name, **kwargs)
 
 
 @experimental
 def read_json(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1547,7 +1553,7 @@ def read_json(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1582,16 +1588,17 @@ def read_json(
     │     2 │ NULL   │
     │  NULL │ f      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_json(sources, table_name=table_name, **kwargs)
+    return con.read_json(paths, table_name=table_name, **kwargs)
 
 
 def read_parquet(
-    sources: str | Path | Sequence[str | Path],
+    paths: str | Path | Sequence[str | Path],
+    /,
+    *,
     table_name: str | None = None,
     **kwargs: Any,
 ) -> ir.Table:
@@ -1602,7 +1609,7 @@ def read_parquet(
 
     Parameters
     ----------
-    sources
+    paths
         A filesystem path or URL or list of same.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1640,22 +1647,21 @@ def read_parquet(
     │     2 │ h      │
     │     3 │ i      │
     └───────┴────────┘
-
     """
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_parquet(sources, table_name=table_name, **kwargs)
+    return con.read_parquet(paths, table_name=table_name, **kwargs)
 
 
 def read_delta(
-    source: str | Path, table_name: str | None = None, **kwargs: Any
+    path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
 ) -> ir.Table:
     """Lazily load a Delta Lake table.
 
     Parameters
     ----------
-    source
+    path
         A filesystem path or URL.
     table_name
         A name to refer to the table.  If not provided, a name will be generated.
@@ -1696,10 +1702,10 @@ def read_delta(
     from ibis.config import _default_backend
 
     con = _default_backend()
-    return con.read_delta(source, table_name=table_name, **kwargs)
+    return con.read_delta(path, table_name=table_name, **kwargs)
 
 
-def set_backend(backend: str | BaseBackend) -> None:
+def set_backend(backend: str | BaseBackend, /) -> None:
     """Set the default Ibis backend.
 
     Parameters
@@ -1740,7 +1746,7 @@ def set_backend(backend: str | BaseBackend) -> None:
     ibis.options.default_backend = backend
 
 
-def get_backend(expr: Expr | None = None) -> BaseBackend:
+def get_backend(expr: Expr | None = None, /) -> BaseBackend:
     """Get the current Ibis backend to use for a given expression.
 
     Parameters
@@ -2000,7 +2006,7 @@ def trailing_range_window(preceding, order_by, group_by=None):
     )
 
 
-def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
+def union(table: ir.Table, /, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     """Compute the set union of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2069,7 +2075,7 @@ def union(table: ir.Table, *rest: ir.Table, distinct: bool = False) -> ir.Table:
     return table.union(*rest, distinct=distinct) if rest else table
 
 
-def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
+def intersect(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set intersection of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2150,7 +2156,7 @@ def intersect(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Tab
     return table.intersect(*rest, distinct=distinct) if rest else table
 
 
-def difference(table: ir.Table, *rest: ir.Table, distinct: bool = True) -> ir.Table:
+def difference(table: ir.Table, /, *rest: ir.Table, distinct: bool = True) -> ir.Table:
     """Compute the set difference of multiple table expressions.
 
     The input tables must have identical schemas.
@@ -2406,7 +2412,7 @@ def _timestamp_range(
 
 
 @deferrable
-def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
+def ifelse(condition: Any, true_expr: Any, false_expr: Any, /) -> ir.Value:
     """Construct a ternary conditional expression.
 
     Parameters
@@ -2453,11 +2459,13 @@ def ifelse(condition: Any, true_expr: Any, false_expr: Any) -> ir.Value:
 
 
 @deferrable
-def coalesce(*args: Any) -> ir.Value:
+def coalesce(arg: Any, /, *args: Any) -> ir.Value:
     """Return the first non-null value from `args`.
 
     Parameters
     ----------
+    arg
+        First argument from which to choose the first non-null value
     args
         Arguments from which to choose the first non-null value
 
@@ -2480,17 +2488,19 @@ def coalesce(*args: Any) -> ir.Value:
     │ 4 │
     └───┘
     """
-    return ops.Coalesce(args).to_expr()
+    return ops.Coalesce((arg, *args)).to_expr()
 
 
 @deferrable
-def greatest(*args: Any) -> ir.Value:
+def greatest(arg: Any, /, *args: Any) -> ir.Value:
     """Compute the largest value among the supplied arguments.
 
     Parameters
     ----------
+    arg
+        First argument
     args
-        Arguments to choose from
+        Remaining arguments
 
     Returns
     -------
@@ -2506,17 +2516,19 @@ def greatest(*args: Any) -> ir.Value:
     │ 5 │
     └───┘
     """
-    return ops.Greatest(args).to_expr()
+    return ops.Greatest((arg, *args)).to_expr()
 
 
 @deferrable
-def least(*args: Any) -> ir.Value:
+def least(arg: Any, /, *args: Any) -> ir.Value:
     """Compute the smallest value among the supplied arguments.
 
     Parameters
     ----------
+    arg
+        First argument
     args
-        Arguments to choose from
+        Remaining arguments
 
     Returns
     -------
@@ -2532,4 +2544,4 @@ def least(*args: Any) -> ir.Value:
     │ 4 │
     └───┘
     """
-    return ops.Least(args).to_expr()
+    return ops.Least((arg, *args)).to_expr()

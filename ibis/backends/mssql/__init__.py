@@ -189,7 +189,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: pyodbc.Connection) -> Backend:
+    def from_connection(cls, con: pyodbc.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to a MSSQL database.
 
         Parameters
@@ -379,7 +379,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
             [(database,)] = cur.fetchall()
         return database
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         s = sg.table("databases", db="sys")
 
         with self._safe_raw_sql(sg.select(C.name).from_(s)) as cur:
@@ -440,7 +440,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
         cursor.execute(query, **kwargs)
         return cursor
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         expr = (
             sg.select(STAR)
             .from_(sg.table("databases", db="sys"))
@@ -462,7 +462,7 @@ GO"""
         with self._safe_ddl(create_stmt):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_ddl(
             sge.Drop(
                 kind="DATABASE",
@@ -473,7 +473,7 @@ GO"""
             pass
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
@@ -517,7 +517,7 @@ GO"""
                 )
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         current_catalog = self.current_catalog
         should_switch_catalog = catalog is not None and catalog != current_catalog
@@ -548,9 +548,7 @@ GO"""
                 )
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -575,7 +573,6 @@ GO"""
             To specify a table in a separate catalog, you can pass in the
             catalog and database as a string `"catalog.database"`, or as a tuple of
             strings `("catalog", "database")`.
-
         """
         table_loc = self._to_sqlglot_table(database)
         catalog, db = self._to_catalog_db_tuple(table_loc)
@@ -601,7 +598,7 @@ GO"""
         return self._filter_with_like(map(itemgetter(0), out), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         query = sg.select(C.schema_name).from_(
             sg.table(
@@ -617,6 +614,7 @@ GO"""
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -661,7 +659,6 @@ GO"""
         -------
         Table
             The table that was created.
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")

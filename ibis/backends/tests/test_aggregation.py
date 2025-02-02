@@ -232,7 +232,7 @@ def test_aggregate_grouped(backend, alltypes, df, result_fn, expected_fn):
 def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
     """Tests .aggregate() on a multi-key group_by with a reduction
     operation."""
-    with pytest.warns(FutureWarning, match="v9.0"):
+    with pytest.warns(FutureWarning, match="v9\\.0"):
 
         @reduction(
             input_type=[dt.double],
@@ -243,9 +243,10 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
 
     grouping_key_cols = ["bigint_col", "int_col"]
 
-    expr1 = alltypes.group_by(grouping_key_cols).aggregate(
-        mean_and_std(alltypes["double_col"]).destructure()
-    )
+    with pytest.warns(FutureWarning, match="v10\\.0"):
+        agg = mean_and_std(alltypes["double_col"]).destructure()
+
+    expr1 = alltypes.group_by(grouping_key_cols).aggregate(agg)
 
     result1 = expr1.execute()
 

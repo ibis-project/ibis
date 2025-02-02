@@ -134,7 +134,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: SessionContext) -> Backend:
+    def from_connection(cls, con: SessionContext, /) -> Backend:
         """Create a DataFusion `Backend` from an existing `SessionContext` instance.
 
         Parameters
@@ -292,7 +292,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         self._log(query)
         return self.con.sql(query)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         code = (
             sg.select(C.table_catalog)
             .from_(sg.table("tables", db="information_schema"))
@@ -301,19 +301,19 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         result = self.con.sql(code).to_pydict()
         return self._filter_with_like(result["table_catalog"], like)
 
-    def create_catalog(self, name: str, force: bool = False) -> None:
+    def create_catalog(self, name: str, /, *, force: bool = False) -> None:
         with self._safe_raw_sql(
             sge.Create(kind="DATABASE", this=sg.to_identifier(name), exists=force)
         ):
             pass
 
-    def drop_catalog(self, name: str, force: bool = False) -> None:
+    def drop_catalog(self, name: str, /, *, force: bool = False) -> None:
         raise com.UnsupportedOperationError(
             "DataFusion does not support dropping databases"
         )
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         return self._filter_with_like(
             self.con.catalog(catalog if catalog is not None else "datafusion").names(),
@@ -321,7 +321,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         )
 
     def create_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         # not actually a table, but this is how sqlglot represents schema names
         db_name = sg.table(name, db=catalog)
@@ -329,16 +329,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             pass
 
     def drop_database(
-        self, name: str, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> None:
         db_name = sg.table(name, db=catalog)
         with self._safe_raw_sql(sge.Drop(kind="SCHEMA", this=db_name, exists=force)):
             pass
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: str | None = None,
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """Return the list of table names in the current database.
 
@@ -396,7 +394,9 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
     def read_csv(
         self,
-        source_list: str | Path | list[str | Path] | tuple[str | Path],
+        paths: str | Path | list[str | Path] | tuple[str | Path],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -404,7 +404,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source. A string or Path to the CSV file.
         table_name
             An optional name to use for the created table. This defaults to
@@ -416,9 +416,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
-        path = normalize_filenames(source_list)
+        path = normalize_filenames(paths)
         table_name = table_name or gen_name("read_csv")
         # Our other backends support overwriting views / tables when re-registering
         self.con.deregister_table(table_name)
@@ -426,7 +425,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         return self.table(table_name)
 
     def read_parquet(
-        self, path: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
 
@@ -444,7 +443,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
         path = normalize_filename(path)
         table_name = table_name or gen_name("read_parquet")
@@ -454,15 +452,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         return self.table(table_name)
 
     def read_delta(
-        self, source_table: str | Path, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
-        source_table
-            The data source. Must be a directory
-            containing a Delta Lake table.
+        path
+            The data source. Must be a directory containing a Delta Lake table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
@@ -473,9 +470,8 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         -------
         ir.Table
             The just-registered table
-
         """
-        source_table = normalize_filename(source_table)
+        path = normalize_filename(path)
 
         table_name = table_name or gen_name("read_delta")
 
@@ -491,13 +487,14 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
                 "pip install 'ibis-framework[deltalake]'\n"
             )
 
-        delta_table = DeltaTable(source_table, **kwargs)
+        delta_table = DeltaTable(path, **kwargs)
         self.con.register_dataset(table_name, delta_table.to_pyarrow_dataset())
         return self.table(table_name)
 
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         chunk_size: int = 1_000_000,
         **kwargs: Any,
@@ -535,13 +532,33 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         return pa.ipc.RecordBatchReader.from_batches(schema.to_pyarrow(), make_gen())
 
-    def to_pyarrow(self, expr: ir.Expr, **kwargs: Any) -> pa.Table:
-        batch_reader = self.to_pyarrow_batches(expr, **kwargs)
+    def to_pyarrow(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ):
+        batch_reader = self.to_pyarrow_batches(
+            expr, params=params, limit=limit, **kwargs
+        )
         arrow_table = batch_reader.read_all()
         return expr.__pyarrow_result__(arrow_table)
 
-    def execute(self, expr: ir.Expr, **kwargs: Any):
-        batch_reader = self.to_pyarrow_batches(expr, **kwargs)
+    def execute(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.DataFrame | pd.Series | Any:
+        batch_reader = self.to_pyarrow_batches(
+            expr, params=params, limit=limit, **kwargs
+        )
         return expr.__pandas_result__(
             batch_reader.read_pandas(timestamp_as_object=True)
         )
@@ -549,6 +566,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -583,7 +601,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -647,11 +664,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
 
         return self.table(name, database=database)
 
-    def truncate_table(
-        self,
-        name: str,
-        database: str | None = None,
-    ):
+    def truncate_table(self, name: str, /, *, database: str | None = None):
         """Delete all rows from a table.
 
         Parameters
@@ -660,7 +673,6 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
             Table name
         database
             Database name
-
         """
         # datafusion doesn't support `TRUNCATE TABLE` so we use `DELETE FROM`
         #

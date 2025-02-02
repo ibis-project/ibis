@@ -38,6 +38,7 @@ class WindowedTable(Concrete):
 
     def tumble(
         self,
+        *,
         size: ir.IntervalScalar,
         offset: ir.IntervalScalar | None = None,
     ) -> WindowedTable:
@@ -45,6 +46,7 @@ class WindowedTable(Concrete):
 
     def hop(
         self,
+        *,
         size: ir.IntervalScalar,
         slide: ir.IntervalScalar,
         offset: ir.IntervalScalar | None = None,
@@ -59,6 +61,8 @@ class WindowedTable(Concrete):
     def aggregate(
         self,
         metrics: Sequence[ir.Scalar] | None = (),
+        /,
+        *,
         by: str | ir.Value | Sequence[str] | Sequence[ir.Value] | None = (),
         **kwargs: ir.Value,
     ) -> ir.Table:

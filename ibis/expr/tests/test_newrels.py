@@ -933,7 +933,7 @@ def test_join_rhs_dereferencing():
 
 
 def test_aggregate():
-    agg = t.aggregate(by=[t.bool_col], metrics=[t.int_col.sum()])
+    agg = t.aggregate([t.int_col.sum()], by=[t.bool_col])
     expected = Aggregate(
         parent=t,
         groups={

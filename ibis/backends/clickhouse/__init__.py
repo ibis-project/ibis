@@ -172,7 +172,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: cc.driver.Client) -> Backend:
+    def from_connection(cls, con: cc.driver.Client, /) -> Backend:
         """Create an Ibis client from an existing ClickHouse Connect Client instance.
 
         Parameters
@@ -213,9 +213,9 @@ class Backend(SQLBackend, CanCreateDatabase):
         return self._filter_with_like(databases, like)
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
-        """List the tables in the database.
+        """List the tables in `database` matching the pattern `like`.
 
         Parameters
         ----------
@@ -224,6 +224,12 @@ class Backend(SQLBackend, CanCreateDatabase):
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
+
+        Returns
+        -------
+        list[str]
+            List of table names in `database` matching the optional pattern
+            `like`.
         """
 
         query = sg.select(C.name).from_(sg.table("tables", db="system"))
@@ -286,6 +292,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
@@ -305,11 +312,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         # the extra code to make this dance work without first converting to
         # record batches isn't worth it without some benchmarking
         with self.to_pyarrow_batches(
-            expr=expr,
-            params=params,
-            limit=limit,
-            external_tables=external_tables,
-            **kwargs,
+            expr, params=params, limit=limit, external_tables=external_tables, **kwargs
         ) as reader:
             table = reader.read_all()
 
@@ -318,6 +321,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         limit: int | str | None = None,
         params: Mapping[ir.Scalar, Any] | None = None,
@@ -399,6 +403,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
+        /,
+        *,
         limit: str | None = "default",
         params: Mapping[ir.Scalar, Any] | None = None,
         external_tables: Mapping[str, pd.DataFrame] | None = None,
@@ -436,7 +442,9 @@ class Backend(SQLBackend, CanCreateDatabase):
     def insert(
         self,
         name: str,
+        /,
         obj: pd.DataFrame | ir.Table,
+        *,
         settings: Mapping[str, Any] | None = None,
         overwrite: bool = False,
         database: str | None = None,
@@ -549,7 +557,7 @@ class Backend(SQLBackend, CanCreateDatabase):
                 pass
 
     def create_database(
-        self, name: str, *, force: bool = False, engine: str = "Atomic"
+        self, name: str, /, *, force: bool = False, engine: str = "Atomic"
     ) -> None:
         src = sge.Create(
             this=sg.to_identifier(name),
@@ -562,12 +570,12 @@ class Backend(SQLBackend, CanCreateDatabase):
         with self._safe_raw_sql(src):
             pass
 
-    def drop_database(self, name: str, *, force: bool = False) -> None:
+    def drop_database(self, name: str, /, *, force: bool = False) -> None:
         src = sge.Drop(this=sg.to_identifier(name), kind="DATABASE", exists=force)
         with self._safe_raw_sql(src):
             pass
 
-    def truncate_table(self, name: str, database: str | None = None) -> None:
+    def truncate_table(self, name: str, /, *, database: str | None = None) -> None:
         ident = sg.table(name, db=database).sql(self.name)
         with self._safe_raw_sql(f"TRUNCATE TABLE {ident}"):
             pass
@@ -575,6 +583,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def read_parquet(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         engine: str = "MergeTree",
         **kwargs: Any,
@@ -603,6 +613,8 @@ class Backend(SQLBackend, CanCreateDatabase):
     def read_csv(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         engine: str = "MergeTree",
         **kwargs: Any,
@@ -625,6 +637,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -678,7 +691,6 @@ class Backend(SQLBackend, CanCreateDatabase):
         -------
         Table
             The new table
-
         """
         if temp and overwrite:
             raise com.IbisInputError(
@@ -778,6 +790,7 @@ class Backend(SQLBackend, CanCreateDatabase):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,

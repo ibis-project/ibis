@@ -183,7 +183,7 @@ class Backend(SQLBackend, CanListDatabase):
 
     @util.experimental
     @classmethod
-    def from_connection(cls, con: oracledb.Connection) -> Backend:
+    def from_connection(cls, con: oracledb.Connection, /) -> Backend:
         """Create an Ibis client from an existing connection to an Oracle database.
 
         Parameters
@@ -268,9 +268,7 @@ class Backend(SQLBackend, CanListDatabase):
             return cursor
 
     def list_tables(
-        self,
-        like: str | None = None,
-        database: tuple[str, str] | str | None = None,
+        self, *, like: str | None = None, database: tuple[str, str] | str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -292,8 +290,6 @@ class Backend(SQLBackend, CanListDatabase):
         database
             Database to list tables from. Default behavior is to show tables in
             the current database.
-
-
         """
         if database is not None:
             table_loc = database
@@ -329,7 +325,7 @@ class Backend(SQLBackend, CanListDatabase):
         return self._filter_with_like(map(itemgetter(0), out), like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         if catalog is not None:
             raise exc.UnsupportedArgumentError(
@@ -386,6 +382,7 @@ class Backend(SQLBackend, CanListDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: ir.Table
         | pd.DataFrame
         | pa.Table
@@ -418,7 +415,6 @@ class Backend(SQLBackend, CanListDatabase):
         overwrite
             If `True`, replace the table if it already exists, otherwise fail
             if the table exists
-
         """
         if obj is None and schema is None:
             raise ValueError("Either `obj` or `schema` must be specified")
@@ -469,9 +465,7 @@ class Backend(SQLBackend, CanListDatabase):
                 cur.execute(insert_stmt)
 
             if overwrite:
-                self.drop_table(
-                    name=final_table.name, database=final_table.db, force=True
-                )
+                self.drop_table(final_table.name, database=final_table.db, force=True)
                 cur.execute(
                     f"ALTER TABLE IF EXISTS {initial_table.sql(self.name)} RENAME TO {final_table.sql(self.name)}"
                 )
@@ -487,6 +481,8 @@ class Backend(SQLBackend, CanListDatabase):
     def drop_table(
         self,
         name: str,
+        /,
+        *,
         database: tuple[str, str] | str | None = None,
         force: bool = False,
     ) -> None:

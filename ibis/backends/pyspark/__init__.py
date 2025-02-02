@@ -193,7 +193,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     @util.experimental
     @classmethod
     def from_connection(
-        cls, session: SparkSession, mode: ConnectionMode = "batch", **kwargs
+        cls, session: SparkSession, /, *, mode: ConnectionMode = "batch", **kwargs: Any
     ) -> Backend:
         """Create a PySpark `Backend` from an existing `SparkSession` instance.
 
@@ -348,12 +348,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 catalog_api.setCurrentCatalog(prev_catalog)
                 catalog_api.setCurrentDatabase(prev_database)
 
-    def list_catalogs(self, like: str | None = None) -> list[str]:
+    def list_catalogs(self, *, like: str | None = None) -> list[str]:
         catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
         return self._filter_with_like(catalogs, like)
 
     def list_databases(
-        self, like: str | None = None, catalog: str | None = None
+        self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         with self._active_catalog(catalog):
             databases = [
@@ -362,7 +362,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self._filter_with_like(databases, like)
 
     def list_tables(
-        self, like: str | None = None, database: str | None = None
+        self, *, like: str | None = None, database: str | None = None
     ) -> list[str]:
         """List the tables in the database.
 
@@ -459,10 +459,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def execute(
         self,
         expr: ir.Expr,
-        params: Mapping | None = None,
-        limit: str | None = "default",
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
         **kwargs: Any,
-    ) -> Any:
+    ) -> pd.DataFrame | pd.Series | Any:
         """Execute an expression."""
 
         self._run_pre_execute_hooks(expr)
@@ -479,6 +481,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_database(
         self,
         name: str,
+        /,
         *,
         catalog: str | None = None,
         path: str | Path | None = None,
@@ -516,7 +519,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 pass
 
     def drop_database(
-        self, name: str, *, catalog: str | None = None, force: bool = False
+        self, name: str, /, *, catalog: str | None = None, force: bool = False
     ) -> Any:
         """Drop a Spark database.
 
@@ -587,6 +590,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_table(
         self,
         name: str,
+        /,
         obj: (
             ir.Table | pd.DataFrame | pa.Table | pl.DataFrame | pl.LazyFrame | None
         ) = None,
@@ -628,7 +632,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         Examples
         --------
         >>> con.create_table("new_table_name", table_expr)  # quartodoc: +SKIP # doctest: +SKIP
-
         """
         if temp is True:
             raise NotImplementedError(
@@ -662,6 +665,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def create_view(
         self,
         name: str,
+        /,
         obj: ir.Table,
         *,
         database: str | None = None,
@@ -761,6 +765,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_delta(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -781,7 +787,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -795,10 +800,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         return self.table(table_name)
 
     def read_parquet(
-        self,
-        path: str | Path,
-        table_name: str | None = None,
-        **kwargs: Any,
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a parquet file as a table in the current database.
 
@@ -817,7 +819,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -833,7 +834,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_csv(
         self,
-        source_list: str | list[str] | tuple[str],
+        paths: str | list[str] | tuple[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -841,7 +844,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file or directory of CSV files, or an
             iterable of CSV files.
         table_name
@@ -855,7 +858,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -864,9 +866,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             )
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
-        source_list = util.normalize_filenames(source_list)
+        paths = util.normalize_filenames(paths)
         spark_df = self._session.read.csv(
-            source_list, inferSchema=inferSchema, header=header, **kwargs
+            paths, inferSchema=inferSchema, header=header, **kwargs
         )
         table_name = table_name or util.gen_name("read_csv")
 
@@ -875,7 +877,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def read_json(
         self,
-        source_list: str | Sequence[str],
+        paths: str | Sequence[str],
+        /,
+        *,
         table_name: str | None = None,
         **kwargs: Any,
     ) -> ir.Table:
@@ -883,7 +887,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         Parameters
         ----------
-        source_list
+        paths
             The data source(s). May be a path to a file or directory of JSON files, or an
             iterable of JSON files.
         table_name
@@ -897,15 +901,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
                 "Pyspark in streaming mode does not support direction registration of JSON files. "
                 "Please use `read_json_dir` instead."
             )
-        source_list = util.normalize_filenames(source_list)
-        spark_df = self._session.read.json(source_list, **kwargs)
+        paths = util.normalize_filenames(paths)
+        spark_df = self._session.read.json(paths, **kwargs)
         table_name = table_name or util.gen_name("read_json")
 
         spark_df.createOrReplaceTempView(table_name)
@@ -915,7 +918,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_delta(
         self,
         expr: ir.Table,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
@@ -939,7 +944,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         **kwargs
             Additional keyword arguments passed to
             [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
-
         """
         if self.mode == "streaming":
             raise NotImplementedError(
@@ -952,6 +956,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_pyarrow(
         self,
         expr: ir.Expr,
+        /,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         **kwargs: Any,
@@ -976,10 +982,11 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_pyarrow_batches(
         self,
         expr: ir.Expr,
+        /,
         *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
-        chunk_size: int = 1000000,
+        chunk_size: int = 1_000_000,
         **kwargs: Any,
     ) -> pa.ipc.RecordBatchReader:
         if self.mode == "streaming":
@@ -997,8 +1004,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     @util.experimental
     def read_kafka(
         self,
-        table_name: str | None = None,
         *,
+        table_name: str | None = None,
         watermark: Watermark | None = None,
         auto_parse: bool = False,
         schema: sch.Schema | None = None,
@@ -1062,6 +1069,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_kafka(
         self,
         expr: ir.Expr,
+        /,
         *,
         auto_format: bool = False,
         options: Mapping[str, str] | None = None,
@@ -1114,6 +1122,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_csv_dir(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         watermark: Watermark | None = None,
         **kwargs: Any,
@@ -1137,7 +1147,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         inferSchema = kwargs.pop("inferSchema", True)
         header = kwargs.pop("header", True)
@@ -1166,6 +1175,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_parquet_dir(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         watermark: Watermark | None = None,
         schema: sch.Schema | None = None,
@@ -1192,7 +1203,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         path = util.normalize_filename(path)
         if self.mode == "batch":
@@ -1221,6 +1231,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def read_json_dir(
         self,
         path: str | Path,
+        /,
+        *,
         table_name: str | None = None,
         watermark: Watermark | None = None,
         **kwargs: Any,
@@ -1244,7 +1256,6 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         -------
         ir.Table
             The just-registered table
-
         """
         path = util.normalize_filename(path)
         if self.mode == "batch":
@@ -1290,7 +1301,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_parquet_dir(
         self,
         expr: ir.Expr,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,
@@ -1323,7 +1336,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
     def to_csv_dir(
         self,
         expr: ir.Expr,
+        /,
         path: str | Path,
+        *,
         params: Mapping[ir.Scalar, Any] | None = None,
         limit: int | str | None = None,
         options: Mapping[str, str] | None = None,

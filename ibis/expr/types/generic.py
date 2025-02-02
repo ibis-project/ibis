@@ -13,12 +13,13 @@ import ibis.expr.operations as ops
 from ibis.common.deferred import Deferred, _, deferrable
 from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
-from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin, _is_null_literal
+from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated, promote_list
 
 if TYPE_CHECKING:
     import datetime
     import uuid
+    from collections.abc import Mapping
 
     import pandas as pd
     import polars as pl
@@ -38,7 +39,7 @@ _SENTINEL = object()
 class Value(Expr):
     """Base class for a data generating expression having a known type."""
 
-    def name(self, name):
+    def name(self, name: str, /) -> Value:
         """Rename an expression to `name`.
 
         Parameters
@@ -140,7 +141,7 @@ class Value(Expr):
 
     @overload
     def cast(
-        self, target_type: Literal["string", "str"] | type[str]
+        self, target_type: Literal["string", "str"] | type[str], /
     ) -> ir.StringValue: ...
     @overload
     def cast(
@@ -158,29 +159,33 @@ class Value(Expr):
             "uint64",
         ]
         | type[int],
+        /,
     ) -> ir.IntegerValue: ...
     @overload
     def cast(
         self,
         target_type: Literal["float", "float8", "float16", "float32", "float64"]
         | type[float],
+        /,
     ) -> ir.FloatingValue: ...
     @overload
     def cast(
-        self, target_type: Literal["bool", "boolean"] | type[bool]
+        self, target_type: Literal["bool", "boolean"] | type[bool], /
     ) -> ir.BooleanValue: ...
     @overload
-    def cast(self, target_type: Literal["date"]) -> ir.DateValue: ...
+    def cast(self, target_type: Literal["date"], /) -> ir.DateValue: ...
     @overload
     def cast(
-        self, target_type: Literal["datetime", "timestamp"] | type[datetime.datetime]
+        self, target_type: Literal["datetime", "timestamp"] | type[datetime.datetime], /
     ) -> ir.TimestampValue: ...
     @overload
-    def cast(self, target_type: Literal["time"]) -> ir.TimeValue: ...
+    def cast(self, target_type: Literal["time"], /) -> ir.TimeValue: ...
     @overload
-    def cast(self, target_type: Literal["uuid"] | type[uuid.UUID]) -> ir.UUIDValue: ...
+    def cast(
+        self, target_type: Literal["uuid"] | type[uuid.UUID], /
+    ) -> ir.UUIDValue: ...
 
-    def cast(self, target_type: Any) -> Value:
+    def cast(self, target_type: Any, /) -> Value:
         """Cast expression to indicated data type.
 
         Similar to `pandas.Series.astype`.
@@ -287,7 +292,7 @@ class Value(Expr):
 
         return op.to_expr()
 
-    def try_cast(self, target_type: Any) -> Value:
+    def try_cast(self, target_type: Any, /) -> Value:
         """Try cast expression to indicated data type.
 
         If the cast fails for a row, the value is returned
@@ -347,7 +352,7 @@ class Value(Expr):
 
         return op.to_expr()
 
-    def coalesce(self, *args: Value) -> Value:
+    def coalesce(self, /, *args: Value) -> Value:
         """Return the first non-null value from `args`.
 
         Parameters
@@ -423,7 +428,7 @@ class Value(Expr):
         """
         return ops.TypeOf(self).to_expr()
 
-    def fill_null(self, fill_value: Scalar) -> Value:
+    def fill_null(self, fill_value: Scalar, /) -> Value:
         """Replace any null values with the indicated fill value.
 
         Parameters
@@ -474,11 +479,11 @@ class Value(Expr):
         return ops.Coalesce((self, fill_value)).to_expr()
 
     @deprecated(as_of="9.1", instead="use fill_null instead")
-    def fillna(self, fill_value: Scalar) -> Value:
+    def fillna(self, fill_value: Scalar, /) -> Value:
         """DEPRECATED: use `fill_null` instead."""
         return self.fill_null(fill_value)
 
-    def nullif(self, null_if_expr: Value) -> Value:
+    def nullif(self, null_if_expr: Value, /) -> Value:
         """Set values to null if they equal the values `null_if_expr`.
 
         Commonly used to avoid divide-by-zero problems by replacing zero with
@@ -567,7 +572,7 @@ class Value(Expr):
         """
         return ops.Between(self, lower, upper).to_expr()
 
-    def isin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
+    def isin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
         """Check whether this expression's values are in `values`.
 
         `NULL` values are propagated in the output. See examples for details.
@@ -685,7 +690,7 @@ class Value(Expr):
         else:
             return ops.InValues(self, values).to_expr()
 
-    def notin(self, values: Value | Sequence[Value]) -> ir.BooleanValue:
+    def notin(self, values: Value | Sequence[Value], /) -> ir.BooleanValue:
         """Check whether this expression's values are not in `values`.
 
         Opposite of [`Value.isin()`](./expression-generic.qmd#ibis.expr.types.generic.Value.isin).
@@ -951,6 +956,7 @@ class Value(Expr):
     def cases(
         self,
         branch: tuple[Value, Value],
+        /,
         *branches: tuple[Value, Value],
         else_: Value | None = None,
     ) -> Value:
@@ -1027,6 +1033,7 @@ class Value(Expr):
 
     def collect(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
@@ -1112,7 +1119,7 @@ class Value(Expr):
             distinct=distinct,
         ).to_expr()
 
-    def identical_to(self, other: Value) -> ir.BooleanValue:
+    def identical_to(self, other: Value, /) -> ir.BooleanValue:
         """Return whether this expression is identical to other.
 
         Corresponds to `IS NOT DISTINCT FROM` in SQL.
@@ -1236,8 +1243,8 @@ class Value(Expr):
     def __lt__(self, other: Value) -> ir.BooleanValue:
         return _binop(ops.Less, self, other)
 
-    def asc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression ascending.
+    def asc(self, *, nulls_first: bool = False) -> ir.Value:
+        """Sort an expression in ascending order.
 
         Parameters
         ----------
@@ -1283,8 +1290,8 @@ class Value(Expr):
         """
         return ops.SortKey(self, ascending=True, nulls_first=nulls_first).to_expr()
 
-    def desc(self, nulls_first: bool = False) -> ir.Value:
-        """Sort an expression descending.
+    def desc(self, *, nulls_first: bool = False) -> ir.Value:
+        """Sort an expression in descending order.
 
         Parameters
         ----------
@@ -1330,29 +1337,31 @@ class Value(Expr):
         """
         return ops.SortKey(self, ascending=False, nulls_first=nulls_first).to_expr()
 
-    def to_pandas(self, **kwargs) -> pd.Series:
-        """Convert an expression to a pandas or scalar object.
+    def to_pandas(
+        self,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> pd.Series | Any:
+        """Convert a table expression to a pandas DataFrame.
 
         Parameters
         ----------
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            no limit. The default is in `ibis/config.py`.
         kwargs
-            Same as keyword arguments to [`execute`](#ibis.expr.types.core.Expr.execute)
+            Keyword arguments
 
-        Examples
-        --------
-        >>> import ibis
-        >>> ibis.options.interactive = True
-        >>> t = ibis.examples.penguins.fetch()
-        >>> t.to_pandas(limit=5)
-          species     island  bill_length_mm  ...  body_mass_g     sex  year
-        0  Adelie  Torgersen            39.1  ...       3750.0    male  2007
-        1  Adelie  Torgersen            39.5  ...       3800.0  female  2007
-        2  Adelie  Torgersen            40.3  ...       3250.0  female  2007
-        3  Adelie  Torgersen             NaN  ...          NaN    None  2007
-        4  Adelie  Torgersen            36.7  ...       3450.0  female  2007
-        [5 rows x 8 columns]
+        Returns
+        -------
+        DataFrame
+            The result of executing the expression as a pandas DataFrame
         """
-        return self.execute(**kwargs)
+        return self.execute(params=params, limit=limit, **kwargs)
 
 
 @public
@@ -1695,7 +1704,9 @@ class Column(Value, _FixedTextJupyterMixin):
     def __deferred_repr__(self) -> str:
         return f"<column[{self.type()}]>"
 
-    def approx_nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def approx_nunique(
+        self, *, where: ir.BooleanValue | None = None
+    ) -> ir.IntegerScalar:
         """Return the approximate number of distinct elements in `self`.
 
         ::: {.callout-note}
@@ -1737,7 +1748,7 @@ class Column(Value, _FixedTextJupyterMixin):
             self, where=self._bind_to_parent_table(where)
         ).to_expr()
 
-    def approx_median(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def approx_median(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return an approximate of the median of `self`.
 
         ::: {.callout-note}
@@ -1777,7 +1788,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.ApproxMedian(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def mode(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def mode(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the mode of a column.
 
         Parameters
@@ -1806,7 +1817,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Mode(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def max(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def max(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the maximum of a column.
 
         Parameters
@@ -1835,7 +1846,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Max(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def min(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def min(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the minimum of a column.
 
         Parameters
@@ -1864,7 +1875,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Min(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def argmax(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
+    def argmax(self, key: ir.Value, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that maximizes `key`.
 
         If more than one value maximizes `key`, the returned value is backend
@@ -1902,7 +1913,7 @@ class Column(Value, _FixedTextJupyterMixin):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def argmin(self, key: ir.Value, where: ir.BooleanValue | None = None) -> Scalar:
+    def argmin(self, key: ir.Value, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the value of `self` that minimizes `key`.
 
         If more than one value minimizes `key`, the returned value is backend
@@ -1941,7 +1952,7 @@ class Column(Value, _FixedTextJupyterMixin):
             where=self._bind_to_parent_table(where),
         ).to_expr()
 
-    def median(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def median(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Return the median of the column.
 
         Parameters
@@ -2001,6 +2012,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def quantile(
         self,
         quantile: float | ir.NumericValue | Sequence[ir.NumericValue | float],
+        *,
         where: ir.BooleanValue | None = None,
     ) -> Scalar:
         """Return value at the given quantile.
@@ -2070,7 +2082,7 @@ class Column(Value, _FixedTextJupyterMixin):
             op = ops.Quantile
         return op(self, quantile, where=self._bind_to_parent_table(where)).to_expr()
 
-    def nunique(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def nunique(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of distinct rows in an expression.
 
         Parameters
@@ -2191,7 +2203,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
         return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
 
-    def arbitrary(self, where: ir.BooleanValue | None = None) -> Scalar:
+    def arbitrary(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Select an arbitrary value in a column.
 
         Returns an arbitrary (nondeterministic, backend-specific) value from
@@ -2235,7 +2247,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Arbitrary(self, where=self._bind_to_parent_table(where)).to_expr()
 
-    def count(self, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
+    def count(self, *, where: ir.BooleanValue | None = None) -> ir.IntegerScalar:
         """Compute the number of rows in an expression.
 
         Parameters
@@ -2329,6 +2341,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
     def first(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
@@ -2382,6 +2395,7 @@ class Column(Value, _FixedTextJupyterMixin):
 
     def last(
         self,
+        *,
         where: ir.BooleanValue | None = None,
         order_by: Any = None,
         include_null: bool = False,
@@ -2545,7 +2559,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ibis.cume_dist().over(order_by=self)
 
-    def ntile(self, buckets: int | ir.IntegerValue) -> ir.IntegerColumn:
+    def ntile(self, buckets: int | ir.IntegerValue, /) -> ir.IntegerColumn:
         """Return the integer number of a partitioning of the column values.
 
         Parameters
@@ -2760,7 +2774,7 @@ class Column(Value, _FixedTextJupyterMixin):
         """
         return ops.Lead(self, offset, default).to_expr()
 
-    def nth(self, n: int | ir.IntegerValue) -> Column:
+    def nth(self, n: int | ir.IntegerValue, /) -> Column:
         """Return the `n`th value (0-indexed) over a window.
 
         `.nth(0)` is equivalent to `.first()`. Negative will result in `NULL`.
@@ -2865,7 +2879,7 @@ class NullColumn(Column, NullValue):
 
 @public
 @deferrable
-def null(type: dt.DataType | str | None = None) -> Value:
+def null(type: dt.DataType | str | None = None, /) -> Value:
     """Create a NULL scalar.
 
     `NULL`s with an unspecified type are castable and comparable to values,
@@ -2979,6 +2993,15 @@ def literal(value: Any, type: dt.DataType | str | None = None) -> Scalar:
 
     dtype = dt.infer(value) if type is None else dt.dtype(type)
     return ops.Literal(value, dtype=dtype).to_expr()
+
+
+def _is_null_literal(value: Any) -> bool:
+    """Detect whether `value` will be treated by ibis as a null literal."""
+    return value is None or (
+        isinstance(value, Expr)
+        and isinstance(op := value.op(), ops.Literal)
+        and op.value is None
+    )
 
 
 public(
