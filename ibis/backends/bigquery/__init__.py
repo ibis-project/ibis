@@ -700,7 +700,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         *,
         limit: str | int | None = None,
         params: Mapping[ir.Expr, Any] | None = None,
-        pretty: bool = False,
+        pretty: bool = True,
         **kwargs: Any,
     ) -> str:
         """Compile an expression.
