@@ -186,7 +186,7 @@ def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_c
         tbl_properties = None
 
     new_table = con.create_table(
-        name=temp_table,
+        temp_table,
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
@@ -203,7 +203,7 @@ def test_recreate_in_mem_table(con, schema, table_name, temp_table, csv_source_c
             match=r"An error occurred while calling o\d+\.createTemporaryView",
         ):
             new_table = con.create_table(
-                name=temp_table,
+                temp_table,
                 obj=employee_df,
                 schema=schema,
                 tbl_properties=tbl_properties,
@@ -229,7 +229,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
         tbl_properties = None
 
     new_table = con.create_table(
-        name=temp_table,
+        temp_table,
         obj=employee_df,
         schema=schema,
         tbl_properties=tbl_properties,
@@ -242,7 +242,7 @@ def test_force_recreate_in_mem_table(con, schema_props, temp_table, csv_source_c
 
         # force recreate the same table a second time should succeed
         new_table = con.create_table(
-            name=temp_table,
+            temp_table,
             obj=employee_df,
             schema=schema,
             tbl_properties=tbl_properties,
@@ -347,14 +347,14 @@ def test_create_view(
     con, temp_table, awards_players_schema, csv_source_configs, temp_view, temp
 ):
     table = con.create_table(
-        name=temp_table,
+        temp_table,
         schema=awards_players_schema,
         tbl_properties=csv_source_configs("awards_players"),
     )
     assert temp_table in con.list_tables()
 
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=False,
         temp=temp,
@@ -366,7 +366,7 @@ def test_create_view(
     # Try to re-create the same view with `force=False`
     with pytest.raises(Py4JJavaError):
         con.create_view(
-            name=temp_view,
+            temp_view,
             obj=table,
             force=False,
             temp=temp,
@@ -376,7 +376,7 @@ def test_create_view(
 
     # Try to re-create the same view with `force=True`
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=True,
         temp=temp,
@@ -386,7 +386,7 @@ def test_create_view(
 
     # Overwrite the view
     con.create_view(
-        name=temp_view,
+        temp_view,
         obj=table,
         force=False,
         temp=temp,
@@ -394,14 +394,14 @@ def test_create_view(
     )
     assert view_list == sorted(con.list_tables())
 
-    con.drop_view(name=temp_view, temp=temp, force=True)
+    con.drop_view(temp_view, temp=temp, force=True)
     assert temp_view not in con.list_tables()
 
 
 def test_rename_table(con, awards_players_schema, temp_table, csv_source_configs):
     table_name = temp_table
     con.create_table(
-        name=table_name,
+        table_name,
         schema=awards_players_schema,
         tbl_properties=csv_source_configs("awards_players"),
     )
