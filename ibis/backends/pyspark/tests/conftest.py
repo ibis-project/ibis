@@ -234,6 +234,9 @@ if IS_SPARK_REMOTE:
         data_volume = "/data"
         service_name = "spark-connect"
 
+        def __exit__(self, *args, **kwargs):
+            pass
+
         @property
         def parquet_dir(self) -> str:
             return self.data_volume
