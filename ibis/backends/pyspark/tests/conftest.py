@@ -234,6 +234,9 @@ if IS_SPARK_REMOTE:
         data_volume = "/data"
         service_name = "spark-connect"
 
+        def __exit__(self, *args, **kwargs):
+            pass
+
         @property
         def parquet_dir(self) -> str:
             return self.data_volume
@@ -398,11 +401,9 @@ else:
 
 
 @pytest.fixture(scope="session")
-def con(data_dir, tmp_path_factory, worker_id):
-    backend_test = TestConf.load_data(data_dir, tmp_path_factory, worker_id)
-    con = backend_test.connection
-
-    return con
+def con(tmp_path_factory, data_dir, worker_id):
+    with TestConf.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be.connection
 
 
 class IbisWindow:
