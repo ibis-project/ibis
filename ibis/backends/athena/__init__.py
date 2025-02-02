@@ -5,6 +5,7 @@ from __future__ import annotations
 import contextlib
 import getpass
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -159,11 +160,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         if location is None:
             location = f"{self._s3_staging_dir}/{name}"
 
-        property_list = [
-            sge.ExternalProperty(),
-            sge.FileFormatProperty(this=compiler.v[stored_as]),
-            sge.LocationProperty(this=sge.convert(location)),
-        ]
+        property_list = []
 
         for k, v in (properties or {}).items():
             name = sg.to_identifier(k)
@@ -196,6 +193,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
             ).from_(compiler.to_sqlglot(table).subquery())
         else:
             select = None
+            property_list.append(sge.ExternalProperty())
+            property_list.append(sge.FileFormatProperty(this=compiler.v[stored_as]))
+            property_list.append(sge.LocationProperty(this=sge.convert(location)))
 
         create_stmt = sge.Create(
             kind="TABLE",
@@ -287,8 +287,20 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     def _safe_raw_sql(self, query, *args, unload: bool = True, **kwargs):
         with contextlib.suppress(AttributeError):
             query = query.sql(self.dialect)
-        with self.con.cursor(unload=unload) as cur:
-            yield cur.execute(query, *args, **kwargs)
+        try:
+            with self.con.cursor(unload=unload) as cur:
+                yield cur.execute(query, *args, **kwargs)
+        except pyathena.error.OperationalError as e:
+            # apparently unload=True and can just nope out and not tell you
+            # why, but unload=False is "fine"
+            #
+            # if the error isn't this opaque "internal" error, then we raise the original
+            # exception, otherwise try to execute the query again with unload=False
+            if unload and re.search("ErrorCode: INTERNAL_ERROR_QUERY_ENGINE", str(e)):
+                with self.con.cursor(unload=False) as cur:
+                    yield cur.execute(query, *args, **kwargs)
+            else:
+                raise
 
     def list_catalogs(self, like: str | None = None) -> list[str]:
         response = self.con.client.list_data_catalogs()

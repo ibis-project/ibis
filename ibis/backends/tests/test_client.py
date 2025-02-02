@@ -26,7 +26,6 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis.backends.conftest import ALL_BACKENDS
 from ibis.backends.tests.errors import (
-    BotoInvalidRequestException,
     DatabricksServerOperationError,
     ExaQueryError,
     ImpalaHiveServer2Error,
@@ -97,11 +96,6 @@ def _create_temp_table_with_schema(backend, con, temp_table_name, schema, data=N
     ids=["no_schema", "dict_schema", "tuples", "schema"],
 )
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(
-    ["athena"],
-    raises=BotoInvalidRequestException,
-    reason="create table requires a location",
-)
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -952,6 +946,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "sqlite",
                         "trino",
                         "databricks",
+                        "athena",
                     ]
                 )
             ],
@@ -982,6 +977,7 @@ def test_self_join_memory_table(backend, con, monkeypatch):
                         "sqlite",
                         "trino",
                         "databricks",
+                        "athena",
                     ],
                     raises=com.UnsupportedOperationError,
                     reason="we don't materialize datasets to avoid perf footguns",
@@ -1033,7 +1029,6 @@ def test_self_join_memory_table(backend, con, monkeypatch):
     ],
 )
 @pytest.mark.notimpl(["druid"])
-@pytest.mark.notimpl(["athena"], raises=BotoInvalidRequestException)
 @pytest.mark.notimpl(
     ["flink"],
     reason="Flink backend supports creating only TEMPORARY VIEW for in-memory data.",
@@ -1417,7 +1412,6 @@ def create_and_destroy_db(con):
     reason="unclear whether Flink supports cross catalog/database inserts",
     raises=Py4JJavaError,
 )
-@pytest.mark.notimpl(["athena"])
 def test_insert_with_database_specified(con_create_database):
     con = con_create_database
 
@@ -1604,7 +1598,6 @@ def test_schema_with_caching(alltypes):
     ["druid"], raises=NotImplementedError, reason="doesn't support create_table"
 )
 @pytest.mark.notyet(["polars"], reason="Doesn't support insert")
-@pytest.mark.notyet(["athena"])
 @pytest.mark.notyet(
     ["datafusion"], reason="Doesn't support table creation from records"
 )
@@ -1698,7 +1691,6 @@ def test_no_accidental_cross_database_table_load(con_create_database):
 
 
 @pytest.mark.notyet(["druid"], reason="can't create tables")
-@pytest.mark.notimpl(["athena"], reason="can't create tables correctly in some cases")
 @pytest.mark.notyet(
     ["flink"], reason="can't create non-temporary tables from in-memory data"
 )
