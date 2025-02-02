@@ -54,10 +54,10 @@ def test_builtin_scalar(con, func):
 
 def test_builtin_scalar_noargs(con):
     @udf.scalar.builtin
-    def version() -> str: ...
+    def current_schema() -> str: ...
 
-    expr = version()
-    assert con.execute(expr) == f"v{con.version}"
+    expr = current_schema()
+    assert con.execute(expr) == con.current_database
 
 
 @udf.agg.builtin

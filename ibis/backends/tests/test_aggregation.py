@@ -476,11 +476,8 @@ def test_aggregate_multikey_group_reduction_udf(backend, alltypes, df):
             lambda t, where: t.string_col[where].nunique(),
             id="approx_nunique",
             marks=[
-                pytest.mark.xfail_version(
-                    duckdb=["duckdb>=1.1"],
-                    raises=AssertionError,
-                    reason="not exact, even at this tiny scale",
-                    strict=False,
+                pytest.mark.notyet(
+                    ["duckdb"], raises=AssertionError, reason="not exact", strict=False
                 ),
                 pytest.mark.notimpl(
                     ["datafusion"],
