@@ -101,6 +101,12 @@ class BackendTest(abc.ABC):
         self.data_dir = data_dir
         self.script_dir = data_dir.parent / "schema"
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.connection.disconnect()
+
     def __str__(self):
         return f"<BackendTest {self.name()}>"
 

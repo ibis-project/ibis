@@ -401,7 +401,8 @@ def backend(request, data_dir, tmp_path_factory, worker_id) -> BackendTest:
     """Return an instance of BackendTest, loaded with data."""
 
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_dir, tmp_path_factory, worker_id)
+    with cls.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be
 
 
 @pytest.fixture(scope="session")
@@ -414,7 +415,8 @@ def con(backend):
 def backend_no_data(request, data_dir, tmp_path_factory, worker_id):
     """Return an instance of BackendTest, with no data loaded."""
     cls = _get_backend_conf(request.param)
-    return cls(data_dir=data_dir, tmpdir=tmp_path_factory, worker_id=worker_id)
+    with cls(data_dir=data_dir, tmpdir=tmp_path_factory, worker_id=worker_id) as be:
+        yield be
 
 
 @pytest.fixture(scope="session")
@@ -464,7 +466,8 @@ def _setup_backend(request, data_dir, tmp_path_factory, worker_id):
 )
 def ddl_backend(request, data_dir, tmp_path_factory, worker_id):
     """Set up the backends that are SQL-based."""
-    return _setup_backend(request, data_dir, tmp_path_factory, worker_id)
+    with _setup_backend(request, data_dir, tmp_path_factory, worker_id) as be:
+        yield be
 
 
 @pytest.fixture(scope="session")
@@ -473,14 +476,12 @@ def ddl_con(ddl_backend):
     return ddl_backend.connection
 
 
-@pytest.fixture(
-    params=_get_backends_to_test(keep=("pyspark",)),
-    scope="session",
-)
+@pytest.fixture(params=_get_backends_to_test(keep=("pyspark",)), scope="session")
 def udf_backend(request, data_dir, tmp_path_factory, worker_id):
     """Runs the UDF-supporting backends."""
     cls = _get_backend_conf(request.param)
-    return cls.load_data(data_dir, tmp_path_factory, worker_id)
+    with cls.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be
 
 
 @pytest.fixture(scope="session")

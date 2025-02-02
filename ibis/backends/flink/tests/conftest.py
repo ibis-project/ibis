@@ -159,9 +159,8 @@ def simple_table(simple_schema):
 
 @pytest.fixture(scope="session")
 def con(tmp_path_factory, data_dir, worker_id):
-    return TestConfForStreaming.load_data(
-        data_dir, tmp_path_factory, worker_id
-    ).connection
+    with TestConfForStreaming.load_data(data_dir, tmp_path_factory, worker_id) as be:
+        yield be.connection
 
 
 @pytest.fixture
