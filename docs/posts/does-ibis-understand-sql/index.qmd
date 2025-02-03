@@ -23,7 +23,12 @@ SQL, defines a standardized interface for working with databases. Because Ibis u
 expressed through this user interface, it also provides users with some of the unique capabilities
 SDF offers, including the ability to execute said logic on the backend of the user's choice.
 
-## Building an expression
+## How does Ibis work?
+
+To answer the question of whether Ibis understands SQL, we first need to understand the internals of
+Ibis. Specifically, how is the code that users write with Ibis eventually executed on a SQL backend?
+
+### Building an expression
 
 Ibis provides a dataframe API for writing expressions. A
 [follow-up article on the dbt Developer Blog on the key technologies behind SQL comprehension](https://docs.getdbt.com/blog/sql-comprehension-technologies)
@@ -79,10 +84,53 @@ comprehension technologies article:
 
 Note that the abstract syntax tree is an artifact of the parsing step and has no direct Ibis analog.
 
-## Compiling the expression
+### Compiling the expression
+
+In the past, Ibis would compile expressions to SQL using its own SQL generation logic. However, with
+the [completion of "the big refactor" in Ibis 9.0](https://ibis-project.org/posts/ibis-version-9.0.0-release/),
+Ibis fully transitioned to producing [SQLGlot](https://github.com/tobymao/sqlglot) expressions under
+the hood.
+
+We can see the intermediate SQLGlot representation of our expression using the `to_sqlglot()` method
+on an Ibis backend compiler implementation:
+
+```{python}
+from ibis.backends.sql.compilers.duckdb import compiler
+
+query = compiler.to_sqlglot(expr)
+query
+```
+
+Ibis delegates SQL generation to SQLGlot, essentially calling the `sql()` method on the above query:
+
+```{python}
+query.sql()
+```
+
+Ibis also provides a top-level `to_sql()` method, so most users don't need to be aware of SQLGlot or
+the inner workings of Ibis expression compilation—unless they want to:
+
+```{python}
+ibis.to_sql(expr)
+```
+
+::: {.callout-tip}
+## Why SQLGlot?
+
+[SQLGlot is a no-dependency SQL parser, transpiler, optimizer, and engine.](https://sqlglot.com/sqlglot.html)
+It's a widely-used open-source project that powers the SQL comprehension and generation capabilities
+of tools like [SQLMesh](https://github.com/TobikoData/sqlmesh), [Apache Superset](https://github.com/apache/superset),
+and [Dagster](https://github.com/dagster-io/dagster). In fact, SQLGlot is also the engine behind the
+column-level lineage feature available in dbt Cloud!
+
+The specifics of why Ibis chose SQLGlot are beyond the scope of this article, but you can learn more
+about the reasoning from a [GitHub discussion on moving the SQL backends from SQLAlchemy to SQLGlot](https://github.com/ibis-project/ibis/discussions/7213).
+:::
+
+### Executing the compiled expression
 
 ...
 
-## Executing the compiled expression
+## Can Ibis execute SQL?
 
 ...
