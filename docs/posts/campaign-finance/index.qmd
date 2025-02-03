@@ -214,7 +214,7 @@ from ibis.expr.types import StringValue, DateValue
 
 
 def mmddyyyy_to_date(val: StringValue) -> DateValue:
-    return val.cast(str).lpad(8, "0").to_timestamp("%m%d%Y").date()
+    return val.cast(str).lpad(8, "0").nullif("").to_timestamp("%m%d%Y").date()
 
 
 cleaned = cleaned.mutate(date=mmddyyyy_to_date(_.TRANSACTION_DT)).drop("TRANSACTION_DT")
