@@ -73,7 +73,7 @@ raw
 ```
 
 ```{python}
-# For a more comprehesive description of the columns and their meaning, see
+# For a more comprehensive description of the columns and their meaning, see
 # https://www.fec.gov/campaign-finance-data/contributions-individuals-file-description/
 columns = {
     "CMTE_ID": "keep",  # Committee ID
