@@ -588,11 +588,11 @@ wheels = [
 
 [[package]]
 name = "babel"
-version = "2.16.0"
+version = "2.17.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2a/74/f1bc80f23eeba13393b7222b11d95ca3af2c1e28edca18af487137eefed9/babel-2.16.0.tar.gz", hash = "sha256:d1f3554ca26605fe173f3de0c65f750f5a42f924499bf134de6423582298e316", size = 9348104 }
+sdist = { url = "https://files.pythonhosted.org/packages/7d/6b/d52e42361e1aa00709585ecc30b3f9684b3ab62530771402248b1b1d6240/babel-2.17.0.tar.gz", hash = "sha256:0c54cffb19f690cdcc52a3b50bcbf71e07a808d1c80d549f2459b9d2cf0afb9d", size = 9951852 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ed/20/bc79bc575ba2e2a7f70e8a1155618bb1301eaa5132a8271373a6903f73f8/babel-2.16.0-py3-none-any.whl", hash = "sha256:368b5b98b37c06b7daf6696391c3240c938b37767d4584413e8438c5c435fa8b", size = 9587599 },
+    { url = "https://files.pythonhosted.org/packages/b7/b8/3fe70c75fe32afc4bb507f75563d39bc5642255d1d94f1f23604725780bf/babel-2.17.0-py3-none-any.whl", hash = "sha256:4d0b53093fdfb4b21c92b5213dba5a1b23885afa8383709427046b21c366e5f2", size = 10182537 },
 ]
 
 [[package]]
@@ -606,14 +606,15 @@ wheels = [
 
 [[package]]
 name = "beautifulsoup4"
-version = "4.12.3"
+version = "4.13.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "soupsieve" },
+    { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b3/ca/824b1195773ce6166d388573fc106ce56d4a805bd7427b624e063596ec58/beautifulsoup4-4.12.3.tar.gz", hash = "sha256:74e3d1928edc070d21748185c46e3fb33490f22f52a3addee9aee0f4f7781051", size = 581181 }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/d3/6f4047d1de55b7a290ef8d4b4ebf59dcc24742920ebbed0909f823424205/beautifulsoup4-4.13.0.tar.gz", hash = "sha256:b6e5afb3a2b1472c8db751a92eabf7834e5c7099f990c5e4b35f1f16b60bae64", size = 558514 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/fe/e8c672695b37eecc5cbf43e1d0638d88d66ba3a44c4d321c796f4e59167f/beautifulsoup4-4.12.3-py3-none-any.whl", hash = "sha256:b80878c9f40111313e55da8ba20bdba06d8fa3969fc68304167741bbf9e082ed", size = 147925 },
+    { url = "https://files.pythonhosted.org/packages/6e/74/d53cf0c527b20fc87351e6fd9d51aac9b5d1e32ec5a3a32b84671806ab40/beautifulsoup4-4.13.0-py3-none-any.whl", hash = "sha256:9c4c3dfa67aba55f6cd03769c441b21e6a369797fd6766e4b4c6b3399aae2735", size = 184993 },
 ]
 
 [[package]]
@@ -1586,11 +1587,11 @@ wheels = [
 
 [[package]]
 name = "fsspec"
-version = "2024.12.0"
+version = "2025.2.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ee/11/de70dee31455c546fbc88301971ec03c328f3d1138cfba14263f651e9551/fsspec-2024.12.0.tar.gz", hash = "sha256:670700c977ed2fb51e0d9f9253177ed20cbde4a3e5c0283cc5385b5870c8533f", size = 291600 }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/79/68612ed99700e6413de42895aa725463e821a6b3be75c87fcce1b4af4c70/fsspec-2025.2.0.tar.gz", hash = "sha256:1c24b16eaa0a1798afa0337aa0db9b256718ab2a89c425371f5628d22c3b6afd", size = 292283 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/86/5486b0188d08aa643e127774a99bac51ffa6cf343e3deb0583956dca5b22/fsspec-2024.12.0-py3-none-any.whl", hash = "sha256:b520aed47ad9804237ff878b504267a3b0b441e97508bd6d2d8774e3db85cee2", size = 183862 },
+    { url = "https://files.pythonhosted.org/packages/e2/94/758680531a00d06e471ef649e4ec2ed6bf185356a7f9fbfbb7368a40bd49/fsspec-2025.2.0-py3-none-any.whl", hash = "sha256:9de2ad9ce1f85e1931858535bc882543171d197001a0a5eb2ddc04f1781ab95b", size = 184484 },
 ]
 
 [package.optional-dependencies]
@@ -1600,7 +1601,7 @@ s3 = [
 
 [[package]]
 name = "gcsfs"
-version = "2024.12.0"
+version = "2025.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1611,9 +1612,9 @@ dependencies = [
     { name = "google-cloud-storage" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/20/a2/310a6f1cfdb39b2385af38620f299a8acb427b5c1fc36aa1037a81eea0d8/gcsfs-2024.12.0.tar.gz", hash = "sha256:e672413922108300ebc1fe78b8f99f3c7c1b94e7e088f5a6dc88de6d5a93d156", size = 80258 }
+sdist = { url = "https://files.pythonhosted.org/packages/01/8b/9a88bb359cac9f25ff5911a29fb6f8f1b1b6b7c9d43a98e3e91d3e851027/gcsfs-2025.2.0.tar.gz", hash = "sha256:1013b3f1213d867fffc732dbf1d963127dfa6e5e863f8077696b892696b3e3d9", size = 80824 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6b/0e/fb76438001cf6910be9f47b3ee1e3e1490caf0d44e2ff34625a97e3fbf63/gcsfs-2024.12.0-py2.py3-none-any.whl", hash = "sha256:ec88e48f77e466723705458af85dda238e43aa69fac071efd98829d06e9f095a", size = 35488 },
+    { url = "https://files.pythonhosted.org/packages/fe/9e/347d8b3271fcb009280fe2401866e7fb183df379a4402f2cd84f2a095bb5/gcsfs-2025.2.0-py2.py3-none-any.whl", hash = "sha256:293fc0bd40402f954b2f3edc7289116ece3995525abc04473834fcdd3f220bd9", size = 35823 },
 ]
 
 [[package]]
@@ -1982,16 +1983,16 @@ wheels = [
 
 [[package]]
 name = "hypothesis"
-version = "6.124.9"
+version = "6.125.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "exceptiongroup", marker = "python_full_version < '3.11'" },
     { name = "sortedcontainers" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/05/0f/b27f51d9112c7235fc45a8640dab8971e80e0b8e43f5995e55ca3a8416c4/hypothesis-6.124.9.tar.gz", hash = "sha256:c6d210fc1b46a7cfc3139b2230ca1cc8f73dce4e8ee440d004ceb17142acf6f5", size = 416948 }
+sdist = { url = "https://files.pythonhosted.org/packages/04/2a/1f5e87bca60441beff47bdca2c6c1d833881087db15d0c186029689bc52e/hypothesis-6.125.1.tar.gz", hash = "sha256:247fd85f965b3b3cfe648c10df87e8df7a26643baa3217f210a02e7590b040d5", size = 417933 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a0/3e/6210894a10e269193ba29738d692b844411d3938b6c996db524a15461c12/hypothesis-6.124.9-py3-none-any.whl", hash = "sha256:d2def7117f87c72e6408aba233f93e44d1b909c2a47aa85d598435b8c3d649dd", size = 479534 },
+    { url = "https://files.pythonhosted.org/packages/58/38/e1d5ec9e7350492eca79662a2d3ccc70b9328281356cdf2087fe6e3d96b3/hypothesis-6.125.1-py3-none-any.whl", hash = "sha256:cd2541e1e47d13c3437a431621779791e0f683992a5283cf15774b98d5b49641", size = 480624 },
 ]
 
 [[package]]
@@ -3339,11 +3340,11 @@ wheels = [
 
 [[package]]
 name = "narwhals"
-version = "1.24.1"
+version = "1.24.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/55/d6/4995660dc17fe4b4109dd1adf0b1eabaaabcba5ccb5acfa688d0882277ac/narwhals-1.24.1.tar.gz", hash = "sha256:b09b8253d945f23cdb683a84685abf3afb9f96114d89e9f35dc876e143f65007", size = 251739 }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/db/f5d3b2d2f759ac341f8ce909e8df5233945768344c44d0cec007bce41de6/narwhals-1.24.2.tar.gz", hash = "sha256:c7bbb96ec8efb22ee384872e4a57cff591df653dc49067c314f88e2a54d8a76b", size = 254303 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/68/0e/882f7c0e073bf1f310dce159af6186826ca9b8ee7c170771c23e52a373dc/narwhals-1.24.1-py3-none-any.whl", hash = "sha256:d8983fe14851c95d60576ddca37c094bd4ed24ab9ea98396844fb20ad9aaf184", size = 309462 },
+    { url = "https://files.pythonhosted.org/packages/f9/cf/6723d679c1eb75f9b976ed98bb3575c6bb571ffd427479288b98819604dd/narwhals-1.24.2-py3-none-any.whl", hash = "sha256:5d70dda4c032c86d0bda3f4d60a9d3f8dbd7d83deb8d23d68dd2f2eb3bc86417", size = 312773 },
 ]
 
 [[package]]
@@ -5212,16 +5213,16 @@ wheels = [
 
 [[package]]
 name = "s3fs"
-version = "2024.12.0"
+version = "2025.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiobotocore" },
     { name = "aiohttp" },
     { name = "fsspec" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/96/88/e2fc4fc2a618126ac3cea9b16a4abc5a37dff2522067c9730b5d72d67ac3/s3fs-2024.12.0.tar.gz", hash = "sha256:1b0f3a8f5946cca5ba29871d6792ab1e4528ed762327d8aefafc81b73b99fd56", size = 76578 }
+sdist = { url = "https://files.pythonhosted.org/packages/3e/28/6754f35bfca41a706f77d556e2e681c16a3cbc747fa8656beb080cc352cf/s3fs-2025.2.0.tar.gz", hash = "sha256:d94b985f55add51c655e9ca9b4ceecb5c4b6389aecde162bdebc89f489a4e9f2", size = 76700 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/af/eaec1466887348d7f6cc9d3a668b30b62a4629fb187d0268146118ba3d5e/s3fs-2024.12.0-py3-none-any.whl", hash = "sha256:d8665549f9d1de083151582437a2f10d5f3b3227c1f8e67a2b0b730db813e005", size = 30196 },
+    { url = "https://files.pythonhosted.org/packages/63/92/3c53f932cd1ce09e6c91044eed3dfbebea549b45d24c5484aa74ac0be7e1/s3fs-2025.2.0-py3-none-any.whl", hash = "sha256:4b66b773519c1983e3071e13a42a2f2498d87da13dee40fda0622f4ed1b55664", size = 30235 },
 ]
 
 [[package]]
