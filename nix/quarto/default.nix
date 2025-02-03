@@ -8,6 +8,7 @@
 , rPackages
 , autoPatchelfHook
 , libgcc
+, which
 }:
 
 let
@@ -54,7 +55,8 @@ stdenv.mkDerivation rec {
       wrapProgram $out/bin/quarto \
         --prefix QUARTO_ESBUILD : ${lib.getExe esbuild} \
         --prefix QUARTO_R : ${lib.getExe' rEnv "R"} \
-        --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass}
+        --prefix QUARTO_DART_SASS : ${lib.getExe dart-sass} \
+        --prefix PATH : ${lib.makeBinPath [ which ]}
     '';
 
   installPhase = ''
