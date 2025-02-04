@@ -72,18 +72,18 @@ def get_label(node):
     )
     if nodename is not None:
         if isinstance(node, ops.Relation):
-            label_fmt = "<<I>{}</I>: <B>{}</B>{}>"
+            label_fmt = "<<I>{}</I>: <B>{}</B>{}"
         else:
-            label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}>'
+            label_fmt = '<<I>{}</I>: <B>{}</B><BR ALIGN="LEFT" />:: {}'
         # typename is already escaped
         label = label_fmt.format(escape(nodename), escape(name), typename)
     else:
         if isinstance(node, ops.Relation):
-            label_fmt = "<<B>{}</B>{}>"
+            label_fmt = "<<B>{}</B>{}"
         else:
-            label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}>'
+            label_fmt = '<<B>{}</B><BR ALIGN="LEFT" />:: {}'
         label = label_fmt.format(escape(name), typename)
-    return label
+    return f'{label}<BR ALIGN="LEFT" />>'
 
 
 DEFAULT_NODE_ATTRS = {"shape": "box", "fontname": "Deja Vu Sans Mono"}
