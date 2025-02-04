@@ -129,7 +129,15 @@ about the reasoning from a [GitHub discussion on moving the SQL backends from SQ
 
 ### Executing the compiled expression
 
-...
+Execution is the most straightforward part of the process. For most Ibis-supported SQL backends, the
+`execute()` method uses the database connection associated with the backend instance—usually managed
+by the underlying Python client library—to submit and fetch results for the compiled query. Last but
+not least, Ibis massages the returned data into the desired format (e.g. a pandas DataFrame for easy
+consumption). Because this final processing step falls outside the expression-understanding process,
+we'll end our journey through the Ibis execution flow here.
+
+Note that the database still performs all of the activities covered by the SQL comprehension levels;
+the database is completely oblivious to whatever Ibis did prior to providing the raw SQL to execute.
 
 ## Can Ibis execute SQL?
 
