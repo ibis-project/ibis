@@ -294,14 +294,20 @@ def _to_rich_scalar(
     max_string: int | None = None,
     max_depth: int | None = None,
 ) -> Pretty:
-    value = format_values(
-        expr.type(),
-        [expr.to_pyarrow().as_py()],
-        max_length=max_length or ibis.options.repr.interactive.max_length,
-        max_string=max_string or ibis.options.repr.interactive.max_string,
-        max_depth=max_depth or ibis.options.repr.interactive.max_depth,
-    )[0]
-    return Panel(value, expand=False, box=box.SQUARE)
+    value = expr.to_pyarrow().as_py()
+
+    if value is None:
+        formatted_value = Text.styled("NULL", style="dim")
+    else:
+        (formatted_value,) = format_values(
+            expr.type(),
+            [value],
+            max_length=max_length or ibis.options.repr.interactive.max_length,
+            max_string=max_string or ibis.options.repr.interactive.max_string,
+            max_depth=max_depth or ibis.options.repr.interactive.max_depth,
+        )
+
+    return Panel(formatted_value, expand=False, box=box.SQUARE)
 
 
 def _to_rich_table(
