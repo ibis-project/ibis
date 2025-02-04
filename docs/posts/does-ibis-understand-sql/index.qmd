@@ -8,7 +8,7 @@ categories:
     - sql
 ---
 
-Last week, an [insightful article on the dbt Developer Blog on what SQL comprehension really means](https://docs.getdbt.com/blog/the-levels-of-sql-comprehension)
+Last month, an [insightful article on the dbt Developer Blog on what SQL comprehension really means](https://docs.getdbt.com/blog/the-levels-of-sql-comprehension)
 came across my LinkedIn feed. The big deal about SDF is that it, unlike dbt, actually _understands_
 SQL. As an Ibis user and contributor, several of the concepts covered in the post were familiar—in
 fact, I first learned about Ibis because the product I was working on required an
