@@ -507,7 +507,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
         sql = sge.Create(
             kind="DATABASE",
-            exist=force,
+            exists=force,
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             properties=properties,
         )
@@ -533,7 +533,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         """
         sql = sge.Drop(
             kind="DATABASE",
-            exist=force,
+            exists=force,
             this=sg.to_identifier(name, quoted=self.compiler.quoted),
             cascade=force,
         )

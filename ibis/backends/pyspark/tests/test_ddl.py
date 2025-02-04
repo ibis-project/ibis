@@ -9,6 +9,7 @@ import pytest
 
 import ibis
 from ibis import util
+from ibis.backends.tests.errors import PySparkAnalysisException
 from ibis.tests.util import assert_equal
 
 pyspark = pytest.importorskip("pyspark")
@@ -177,3 +178,35 @@ def test_create_table_reserved_identifier(con, alltypes, keyword_t):
     t = con.create_table(keyword_t, expr)
     result = t.count().execute()
     assert result == expected
+
+
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.5"],
+    raises=ValueError,
+    reason="PySparkAnalysisException is not available in PySpark <3.5",
+)
+def test_create_database_exists(con):
+    con.create_database(dbname := util.gen_name("dbname"))
+
+    with pytest.raises(PySparkAnalysisException):
+        con.create_database(dbname)
+
+    con.create_database(dbname, force=True)
+
+    con.drop_database(dbname, force=True)
+
+
+@pytest.mark.xfail_version(
+    pyspark=["pyspark<3.5"],
+    raises=ValueError,
+    reason="PySparkAnalysisException is not available in PySpark <3.5",
+)
+def test_drop_database_exists(con):
+    con.create_database(dbname := util.gen_name("dbname"))
+
+    con.drop_database(dbname)
+
+    with pytest.raises(PySparkAnalysisException):
+        con.drop_database(dbname)
+
+    con.drop_database(dbname, force=True)
