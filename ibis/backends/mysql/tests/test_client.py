@@ -18,7 +18,7 @@ from ibis.backends.mysql.tests.conftest import (
     MYSQL_PASS,
     MYSQL_USER,
 )
-from ibis.backends.tests.errors import MySQLOperationalError
+from ibis.backends.tests.errors import MySQLOperationalError, MySQLProgrammingError
 from ibis.util import gen_name
 
 MYSQL_TYPES = [
@@ -245,3 +245,25 @@ def test_invalid_port():
     url = f"mysql://{MYSQL_USER}:{MYSQL_PASS}@{MYSQL_HOST}:{port}/{IBIS_TEST_MYSQL_DB}"
     with pytest.raises(MySQLOperationalError):
         ibis.connect(url)
+
+
+def test_create_database_exists(con):
+    con.create_database(dbname := gen_name("dbname"))
+
+    with pytest.raises(MySQLProgrammingError):
+        con.create_database(dbname)
+
+    con.create_database(dbname, force=True)
+
+    con.drop_database(dbname, force=True)
+
+
+def test_drop_database_exists(con):
+    con.create_database(dbname := gen_name("dbname"))
+
+    con.drop_database(dbname)
+
+    with pytest.raises(MySQLOperationalError):
+        con.drop_database(dbname)
+
+    con.drop_database(dbname, force=True)
