@@ -1,15 +1,18 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:25.1.2.3-alpine
+    image: clickhouse/clickhouse-server:25.1.3.23-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
+    environment:
+      CLICKHOUSE_USER: ibis
+      CLICKHOUSE_PASSWORD: ""
     healthcheck:
       interval: 1s
       retries: 10
       test:
         - CMD-SHELL
-        - wget -qO- 'http://127.0.0.1:8123/?query=SELECT%201' # SELECT 1
+        - wget -qO- 'http://ibis@clickhouse:8123/?query=SELECT%201' # SELECT 1
     volumes:
       - clickhouse:/var/lib/clickhouse/user_files/ibis
     networks:
