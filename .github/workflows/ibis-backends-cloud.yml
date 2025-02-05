@@ -53,27 +53,31 @@ jobs:
             extras:
               - --extra athena
         include:
-          - python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.10"
             backend:
               name: bigquery
               title: BigQuery
               extras:
                 - --extra bigquery
-          - python-version: "3.13"
+          - os: ubuntu-latest
+            python-version: "3.13"
             backend:
               name: bigquery
               title: BigQuery
               extras:
                 - --extra bigquery
                 - --extra geospatial
-          - python-version: "3.10"
+          - os: ubuntu-latest
+            python-version: "3.10"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
               key: snowpark
               extras:
                 - --extra snowflake
-          - python-version: "3.11"
+          - os: ubuntu-latest
+            python-version: "3.11"
             backend:
               name: snowflake
               title: Snowflake + Snowpark
