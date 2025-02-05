@@ -58,7 +58,7 @@ t = ibis.table(dict(x="int32", y="float", z="string"), name="t")
 Next, we apply a filter and rename the `x` column as in the SQL query above:
 
 ```{python}
-expr = t.filter(t.x > 0).select(t.y.name("u"))
+expr = t.filter(t.x > 0).select(t.x.name("u"))
 ```
 
 In SQL, the _parser_ translates the query into a syntax tree, but in Ibis, expressions are
@@ -168,7 +168,8 @@ uses to validate any downstream operations.
 
 The main difference between `Table.sql()` and `Backend.sql()` is that `Backend.sql()` can only refer
 to tables that already exist in the database. We see that reflected in the expression tree `repr()`;
-the `DatabaseTable` node is not present in the `Backend.sql()` case:
+the `DatabaseTable` node is not present in the `Backend.sql()` case, and a [`SQLQueryResult`](../../reference/operations.qmd#ibis.expr.operations.relations.SQLQueryResult)
+node (that does not contain a reference to another Ibis relation) replaces the `SQLStringView` node:
 
 ```{python}
 expr = con.sql("select x as u from t where x > 0")
