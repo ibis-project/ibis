@@ -111,7 +111,7 @@ def test_hashbytes(case, how, dtype, snapshot):
     ),
 )
 def test_integer_to_timestamp(case, unit, snapshot):
-    expr = ibis.literal(case, type=dt.int64).as_timestamp(unit=unit).name("tmp")
+    expr = ibis.literal(case, type=dt.int64).as_timestamp(unit).name("tmp")
     snapshot.assert_match(to_sql(expr), "out.sql")
 
 

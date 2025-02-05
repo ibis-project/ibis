@@ -115,7 +115,7 @@ class TestConf(ServiceBackendTest):
             # tool that calls itself a time series database or "good for
             # working with time series", that lacks a first-class timestamp
             # type.
-            timestamp_col=t.timestamp_col.as_timestamp(unit="ms"),
+            timestamp_col=t.timestamp_col.as_timestamp("ms"),
         )
 
     @property
