@@ -65,6 +65,16 @@ in
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ final.editables ];
   });
 
+  psygnal = prev.psygnal.overrideAttrs (attrs: {
+    nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
+      final.hatchling
+      final.pathspec
+      final.pluggy
+      final.packaging
+      final.trove-classifiers
+    ];
+  });
+
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [ final.setuptools ];
     buildInputs = attrs.buildInputs or [ ] ++ [ pkgs.pkg-config pkgs.libmysqlclient ];
