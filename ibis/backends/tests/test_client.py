@@ -756,30 +756,14 @@ def test_unsigned_integer_type(con, temp_table):
     "url",
     [
         param(
-            "clickhouse://default@localhost:8123/default",
+            "clickhouse://ibis@localhost:8123/default",
             marks=mark.clickhouse,
             id="clickhouse",
         ),
-        param(
-            "datafusion://",
-            marks=mark.datafusion,
-            id="datafusion",
-        ),
-        param(
-            "impala://localhost:21050/default",
-            marks=mark.impala,
-            id="impala",
-        ),
-        param(
-            "mysql://ibis:ibis@localhost:3306",
-            marks=mark.mysql,
-            id="mysql",
-        ),
-        param(
-            "polars://",
-            marks=mark.polars,
-            id="polars",
-        ),
+        param("datafusion://", marks=mark.datafusion, id="datafusion"),
+        param("impala://localhost:21050/default", marks=mark.impala, id="impala"),
+        param("mysql://ibis:ibis@localhost:3306", marks=mark.mysql, id="mysql"),
+        param("polars://", marks=mark.polars, id="polars"),
         param(
             "postgres://postgres:postgres@localhost:5432",
             marks=mark.postgres,
@@ -1283,7 +1267,7 @@ def test_set_backend_name(name, monkeypatch):
     "url",
     [
         param(
-            "clickhouse://default@localhost:8123",
+            "clickhouse://ibis@localhost:8123",
             marks=mark.clickhouse,
             id="clickhouse",
         ),

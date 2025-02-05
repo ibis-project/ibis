@@ -217,7 +217,7 @@ def tmpcon(worker_id):
     dbname = f"clickhouse_database_{worker_id}"
     con = ibis.clickhouse.connect(
         host=os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost"),
-        user=os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default"),
+        user=os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "ibis"),
         port=int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123)),
         password=os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", ""),
     )

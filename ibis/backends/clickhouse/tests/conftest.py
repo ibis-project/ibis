@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 CLICKHOUSE_HOST = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
 CLICKHOUSE_PORT = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123))
-CLICKHOUSE_USER = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
+CLICKHOUSE_USER = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "ibis")
 CLICKHOUSE_PASS = os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", "")
 IBIS_TEST_CLICKHOUSE_DB = os.environ.get("IBIS_TEST_DATA_DB", "ibis_testing")
 
