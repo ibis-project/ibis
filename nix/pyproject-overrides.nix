@@ -51,15 +51,6 @@ in
     PROJ_DIR = "${lib.getBin pkgs.proj}";
     PROJ_INCDIR = "${lib.getDev pkgs.proj}";
   });
-
-  psygnal = prev.psygnal.overrideAttrs (_: {
-    src = pkgs.fetchFromGitHub {
-      owner = "pyapp-kit";
-      repo = prev.psygnal.pname;
-      rev = "refs/tags/v${prev.psygnal.version}";
-      hash = "sha256-eGJWtmw2Ps3jII4T8E6s3djzxfqcSdyPemvejal0cn4=";
-    };
-  });
 }) // lib.mapAttrs (name: spec: addBuildSystems prev.${name} spec) buildSystemOverrides // {
   hatchling = prev.hatchling.overrideAttrs (attrs: {
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ final.editables ];
@@ -73,6 +64,13 @@ in
       final.packaging
       final.trove-classifiers
     ];
+  } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
+    src = pkgs.fetchFromGitHub {
+      owner = "pyapp-kit";
+      repo = prev.psygnal.pname;
+      rev = "refs/tags/v${prev.psygnal.version}";
+      hash = "sha256-eGJWtmw2Ps3jII4T8E6s3djzxfqcSdyPemvejal0cn4=";
+    };
   });
 
   mysqlclient = prev.mysqlclient.overrideAttrs (attrs: {
