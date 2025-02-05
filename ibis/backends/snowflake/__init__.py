@@ -12,7 +12,7 @@ from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
-from urllib.request import urlretrieve
+from urllib.request import urlcleanup, urlretrieve
 
 import pyarrow as pa
 import pyarrow_hotfix  # noqa: F401
@@ -33,13 +33,23 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Generator, Iterable, Iterator, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
     import polars as pl
     import snowflake.connector
     import snowflake.snowpark
+
+
+@contextlib.contextmanager
+def download_file(url: str) -> Generator[str]:
+    assert url.startswith("https://"), str(url)
+    tmpfile, _ = urlretrieve(url)  # noqa: S310
+    try:
+        yield tmpfile
+    finally:
+        urlcleanup()
 
 
 _SNOWFLAKE_MAP_UDFS = {
@@ -916,10 +926,7 @@ $$ {defn["source"]} $$"""
         with self._safe_raw_sql(";\n".join(stmts)) as cur:
             # copy the local file to the stage
             if str(path).startswith("https://"):
-                with tempfile.NamedTemporaryFile() as tmp:
-                    tmpname = tmp.name
-                    urlretrieve(path, filename=tmpname)  # noqa: S310
-                    tmp.flush()
+                with download_file(str(path)) as tmpname:
                     cur.execute(
                         f"PUT 'file://{Path(tmpname).absolute().as_posix()}' @{stage} PARALLEL = {threads:d}"
                     )

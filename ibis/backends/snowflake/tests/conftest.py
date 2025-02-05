@@ -76,7 +76,7 @@ def copy_into(con, data_dir: Path, table: str) -> None:
         f"$1:{name}{'::VARCHAR' * typ.is_timestamp()}::{SnowflakeType.to_string(typ)}"
         for name, typ in schema.items()
     )
-    con.execute(f"PUT {file.as_uri()} @{stage}/{file.name}")
+    con.execute(f"PUT 'file://{file.as_posix()}' @{stage}/{file.name}")
     con.execute(
         f"""
         COPY INTO "{table}"
@@ -180,7 +180,7 @@ class TestConf(BackendTest):
                 assert os.path.exists(path)
                 assert os.path.getsize(path)
 
-                c.execute(f"PUT {Path(path).as_uri()} @MODELS")
+                c.execute(f"PUT 'file://{Path(path).absolute().as_posix()}' @MODELS")
 
             # not much we can do to make this faster, but running these in
             # multiple threads seems to save about 2x
