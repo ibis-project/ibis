@@ -52,7 +52,7 @@ existing database table, file, or in-memory data representation:
 ```{python}
 import ibis
 
-t = ibis.table(dict(x="int32", y="float", z="string"), name="my_data")
+t = ibis.table(dict(x="int32", y="float", z="string"), name="t")
 ```
 
 Next, we apply a filter and rename the `x` column as in the SQL query above:
@@ -107,8 +107,9 @@ Ibis delegates SQL generation to SQLGlot, essentially calling the `sql()` method
 query.sql()
 ```
 
-Ibis also provides a top-level `to_sql()` method, so most users don't need to be aware of SQLGlot or
-the inner workings of Ibis expression compilation—unless they want to:
+Ibis also provides a top-level [`to_sql()`](../../reference/expression-generic.qmd#ibis.to_sql)
+method, so most users don't need to be aware of SQLGlot or the inner workings of Ibis expression
+compilation—unless they want to:
 
 ```{python}
 ibis.to_sql(expr)
@@ -139,6 +140,58 @@ we'll end our journey through the Ibis execution flow here.
 Note that the database still performs all of the activities covered by the SQL comprehension levels;
 the database is completely oblivious to whatever Ibis did prior to providing the raw SQL to execute.
 
-## Can Ibis execute SQL?
+## So, does Ibis understand SQL?
 
-...
+Ibis's expressive dataframe API lets users avoid writing handcrafted SQL queries in most situations,
+but there are still cases where you may need to [use SQL strings in your Ibis code](../../how-to/extending/sql).
+[`Table.sql()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.sql) and
+[`Backend.sql()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.sql) work very similarly to
+each other. To explore both of these options, we'll need to initialize a backend connection (DuckDB
+works perfectly for this purpose) and register our table:
+
+```{python}
+con = ibis.duckdb.connect()
+t = con.create_table("t", t)
+```
+
+Now we can use the `Table.sql()` method to handle our SQL query:
+
+```{python}
+expr = t.sql("select x as u from t where x > 0")
+expr
+```
+
+Note that the expression tree doesn't have the same level of detail as the one we built using the
+dataframe API in the first section. Instead, a [`SQLStringView`](../../reference/operations.qmd#ibis.expr.operations.relations.SQLStringView)
+node encapsulates the query. Ibis only understands the output schema for the operation, which it
+uses to validate any downstream operations.
+
+The main difference between `Table.sql()` and `Backend.sql()` is that `Backend.sql()` can only refer
+to tables that already exist in the database. We see that reflected in the expression tree `repr()`;
+the `DatabaseTable` node is not present in the `Backend.sql()` case:
+
+```{python}
+expr = con.sql("select x as u from t where x > 0")
+expr
+```
+
+That said, the intermediate SQLGlot representations are identical for both alternatives:
+
+```{python}
+con.compiler.to_sqlglot(expr)
+```
+
+In fact, the resulting SQLGlot expression is only slightly, nonfunctionally different from the one
+we got from the dataframe API. Similarly, the compiled SQL is identical except for the table alias:
+
+```{python}
+ibis.to_sql(expr)
+```
+
+In short, while Ibis doesn't understand the inner structure of SQL queries passed to `Table.sql()`
+or `Backend.sql()`, it still compiles to SQLGlot expressions under the hood, which means SQLGlot's
+capabilities (like producing column-level lineage) are still applicable.
+
+The third option for writing SQL strings in Ibis, [`Backend.raw_sql()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.raw_sql),
+is opaque and only exists for situations where the user needs to run arbitrary SQL code. Ibis simply
+executes the code and returns the associated cursor; it does not attempt to understand the SQL.
