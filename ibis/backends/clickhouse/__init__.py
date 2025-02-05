@@ -149,7 +149,7 @@ class Backend(SQLBackend, CanCreateDatabase):
         Examples
         --------
         >>> import ibis
-        >>> client = ibis.clickhouse.connect()
+        >>> client = ibis.clickhouse.connect(user="ibis")
         >>> client
         <ibis.backends.clickhouse.Backend object at 0x...>
         """
