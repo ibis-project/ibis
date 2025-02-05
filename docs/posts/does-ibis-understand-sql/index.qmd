@@ -1,7 +1,7 @@
 ---
 title: "Does Ibis understand SQL?"
 author: "Deepyaman Datta"
-date: "2025-01-31"
+date: "2025-02-06"
 categories:
     - blog
     - internals
