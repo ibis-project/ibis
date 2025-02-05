@@ -137,6 +137,11 @@ return count !== 0 ? true : null;""",
 }
 
 
+def as_uri(path: str | Path) -> str:
+    """Convert a path to a file URI."""
+    return Path(path).absolute().as_uri()
+
+
 class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
     name = "snowflake"
     compiler = sc.snowflake.compiler
@@ -921,12 +926,10 @@ $$ {defn["source"]} $$"""
                     urlretrieve(path, filename=tmpname)  # noqa: S310
                     tmp.flush()
                     cur.execute(
-                        f"PUT 'file://{tmpname}' @{stage} PARALLEL = {threads:d}"
+                        f"PUT '{as_uri(tmpname)}' @{stage} PARALLEL = {threads:d}"
                     )
             else:
-                cur.execute(
-                    f"PUT 'file://{Path(path).absolute()}' @{stage} PARALLEL = {threads:d}"
-                )
+                cur.execute(f"PUT '{as_uri(path)}' @{stage} PARALLEL = {threads:d}")
 
             # handle setting up the schema in python because snowflake is
             # broken for csv globs: it cannot parse the result of the following
