@@ -19,6 +19,7 @@ import ibis
 import ibis.expr.datatypes as dt
 
 if TYPE_CHECKING:
+    from ibis.config import Interactive
     from ibis.expr.types import Column, Expr, Scalar, Table
 
 
@@ -261,64 +262,43 @@ def format_dtype(dtype, max_string: int) -> Text:
 def to_rich(
     expr: Expr,
     *,
-    max_rows: int | None = None,
-    max_columns: int | None = None,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
     console_width: int | float | None = None,
+    options: Interactive | None = None,
 ) -> Pretty:
     """Truncate, evaluate, and render an Ibis expression as a rich object."""
+    if options is None:
+        options = ibis.options.repr.interactive
     from ibis.expr.types import Scalar
 
     if isinstance(expr, Scalar):
-        return _to_rich_scalar(
-            expr, max_length=max_length, max_string=max_string, max_depth=max_depth
-        )
+        return _to_rich_scalar(expr, options)
     else:
-        return _to_rich_table(
-            expr,
-            max_rows=max_rows,
-            max_columns=max_columns,
-            max_length=max_length,
-            max_string=max_string,
-            max_depth=max_depth,
-            console_width=console_width,
-        )
+        return _to_rich_table(expr, options, console_width=console_width)
 
 
-def _to_rich_scalar(
-    expr: Scalar,
-    *,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
-) -> Pretty:
+def _to_rich_scalar(expr: Scalar, options: Interactive) -> Pretty:
     value = format_values(
         expr.type(),
         [expr.to_pyarrow().as_py()],
-        max_length=max_length or ibis.options.repr.interactive.max_length,
-        max_string=max_string or ibis.options.repr.interactive.max_string,
-        max_depth=max_depth or ibis.options.repr.interactive.max_depth,
+        max_length=options.max_length,
+        max_string=options.max_string,
+        max_depth=options.max_depth,
     )[0]
     return Panel(value, expand=False, box=box.SQUARE)
 
 
 def _to_rich_table(
     tablish: Table | Column,
-    *,
-    max_rows: int | None = None,
-    max_columns: int | None = None,
-    max_length: int | None = None,
-    max_string: int | None = None,
-    max_depth: int | None = None,
+    options: Interactive,
     console_width: int | float | None = None,
 ) -> rich.table.Table:
-    max_rows = max_rows or ibis.options.repr.interactive.max_rows
-    max_columns = max_columns or ibis.options.repr.interactive.max_columns
+    from ibis.expr import types as ir
+
     console_width = console_width or float("inf")
-    max_string = max_string or ibis.options.repr.interactive.max_string
-    show_types = ibis.options.repr.interactive.show_types
+    max_rows = options.max_rows
+    max_columns = options.max_columns
+    max_string = options.max_string
+    show_types = options.show_types
 
     table = tablish.as_table()
     orig_ncols = len(table.columns)
@@ -360,9 +340,9 @@ def _to_rich_table(
         formatted, min_width, max_width = format_column(
             dtype,
             result[name].to_pylist()[:max_rows],
-            max_length=max_length,
+            max_length=options.max_length,
             max_string=max_string,
-            max_depth=max_depth,
+            max_depth=options.max_depth,
         )
         dtype_str = format_dtype(dtype, max_string)
         if show_types and not isinstance(dtype, (dt.Struct, dt.Map, dt.Array)):
@@ -433,7 +413,18 @@ def _to_rich_table(
             if not next_flex_cols:
                 break
 
-    rich_table = rich.table.Table(padding=(0, 1, 0, 1))
+    if options.show_count:
+        # use underscore to be friendly to i18n and python REPL
+        nrows = f"{table.count().execute():_}"
+    else:
+        nrows = "…"
+    if isinstance(tablish, ir.Table):
+        dims = f"{orig_ncols:_} cols by {nrows} rows"
+    else:
+        dims = f"{nrows} rows"
+    rich_table = rich.table.Table(
+        title=dims, title_justify="left", padding=(0, 1, 0, 1)
+    )
 
     # Configure the columns on the rich table.
     for name, dtype, _, max_width in col_info:
