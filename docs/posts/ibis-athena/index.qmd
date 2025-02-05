@@ -1,0 +1,152 @@
+---
+title: "Querying Amazon Athena from the comfort of your Python interpreter"
+author: "Anja Boskovic"
+error: false
+date: "2025-02-04"
+categories:
+    - blog
+    - athena
+---
+
+Have you ever wanted to harness the power of AWS Athena, but found yourself tangled up in Presto SQL syntax? Good news! Ibis now supports [Amazon Athena](https://aws.amazon.com/athena/) as its [newest backend](https://ibis-project.org/backends/athena), bringing you the familiar comfort of DataFrame operations while tapping into AWS's robust data lake architecture.
+
+## Why?
+
+There's even more to love about this integration. Athena's pay-per-query pricing model means that users pay for each query they run. With Ibis' query optimisation before execution, you can potentially reduce costs without needing to agonise over query efficiency. Plus, since Athena can query data directly from S3, this new backend lets you analyse your data lake contents with beloved Python libraries like PyArrow and pandas without the hassle of downloading or moving massive datasets.
+
+## Installation Prerequisites
+
+Make sure you have an [IAM account](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-prereqs.html) and that your [credentials are in an expected location in your local environment](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-configure.html).
+
+Additionally, using the same account and region that you are using for Athena, you will need to [create an S3 bucket](https://docs.aws.amazon.com/AmazonS3/latest/user-guide/create-bucket.html) where Athena can dump query results. This bucket will be set to `s3_staging_dir` in the connection call to the Athena backend.
+
+::: {.callout-note}
+If you are not able to query Athena through awscli, your queries will similarly not work on Ibis. Please note that AWS charges will apply for queries to Athena executed in following this tutorial.
+:::
+
+## Installation
+
+Install Ibis with the dependencies needed to work with AWS Athena:
+
+```bash
+$ pip install 'ibis-framework[athena]'
+```
+
+## Data
+
+We are going to be creating some sample ecological data about ibis behaviour. The data will contain multiple columns with information about species, location, weather, group size, behaviour, and location temperature.
+
+```{python}
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+
+def create_observations():
+
+    ibis_species = ["Sacred Ibis", "Scarlet Ibis", "Glossy Ibis", "White Ibis"]
+    locations = ["Wetland", "Grassland", "Coastal"]
+    behaviors = ["Feeding", "Nesting", "Flying"]
+    weather_conditions = ["Sunny", "Rainy"]
+
+    num_observations = 1000
+    np.random.seed(42)  # For reproducibility
+
+    data = {
+        'observation_id': list(range(1, num_observations + 1)),
+        'observation_date': [
+            (datetime(2024, 1, 1) + timedelta(days=np.random.randint(0, 365)))
+            for _ in range(num_observations)
+        ],
+        'species': np.random.choice(ibis_species, num_observations),
+        'location': np.random.choice(locations, num_observations),
+        'group_size': np.random.randint(1, 20, num_observations),
+        'behavior': np.random.choice(behaviors, num_observations),
+        'weather': np.random.choice(weather_conditions, num_observations),
+        'temperature_c': np.random.normal(25, 5, num_observations)  # Mean 25°C, std 5°C
+    }
+
+    ibis_observations = pd.DataFrame(data)
+    ibis_observations['observation_date'] = pd.to_datetime(ibis_observations['observation_date'])
+    ibis_observations.set_index('observation_id', inplace=True)
+    return ibis_observations
+    ibis_observations = pd.DataFrame(data)
+
+    ibis_observations['observation_date'] = pd.to_datetime(ibis_observations['observation_date'])
+    ibis_observations.set_index('observation_id', inplace=True)
+    return ibis_observations
+
+ibis_observations = create_observations()
+```
+
+## Demo
+
+Let's start by opening a connection to AWS Athena with Ibis, using the S3 bucket we created to store query results.
+
+```{python}
+from ibis.interactive import *
+
+con = ibis.athena.connect(s3_staging_dir="s3://aws-athena-query-results-ibis-testing", region_name="us-east-2")
+```
+
+A wonderful thing about this Ibis backend, is you can also create Athena databases and tables. Let's create some data using our `ibis_observations` pandas dataframe: You can also create tables from Parquet files or PyArrow tables!
+
+```{python}
+con.create_database('mydatabase')
+con.create_table('ibis_observations', obj=ibis_observations, database='mydatabase')
+con.list_tables(database='mydatabase')
+```
+And we can grab information about table schemas to help us out with our queries:
+
+```{python}
+con.get_schema('ibis_observations', database='mydatabase')
+```
+
+And now we are able to grab the table, and make some Ibis queries! Like what is the average group size by "species"?
+
+```{python}
+t = con.table('ibis_observations', 'mydatabase')
+
+# Average group size by species
+t.group_by('species').aggregate(avg_group=t.group_size.mean())
+```
+
+And ibis does all the work on generating the PrestoSQL Athena can understand:
+
+How about most common behaviour during rainy weather?
+
+```{python}
+t.filter(t.weather == 'Rainy').group_by('behavior').aggregate(count=lambda t: t.count()).order_by(ibis.desc('count'))
+```
+
+Temperature effects on behaviour?
+
+```{python}
+t.group_by(['behavior']).aggregate(avg_temp=t.temperature_c.mean()).order_by('avg_temp')
+```
+
+Now that we're nearing the end of this demo, I wanted to show you that you can also delete tables and databases using ibis:
+
+```{python}
+con.drop_table('ibis_observations', database='mydatabase', force=True)
+con.drop_database('mydatabase', force=True)
+con.disconnect()
+```
+
+You wouldn't need to fiddle with Athena's SDK!
+
+## How does this all work?
+
+Under the hood, AWS Athena runs on a version of Trino (formerly known as Presto SQL). Instead of writing a completely new SQL compiler for Athena, we were able to leverage Ibis' existing Trino compiler with some careful adjstments.
+
+This provides significant benefits in code efficiency - the Athena backend implementation required only about 40 lines of unique code.
+
+There are some nuances to note: since Athena runs on an older version of Trino, not all of Trino's newest features are available. For a detailed comparison of supported features across different backends, please check out the [Ibis backend support matrix](ihttps://ibis-project.org/backends/support/matrix).
+
+If you're new here, welcome. Here are some resources to learn more about Ibis:
+
+- [Ibis Docs](https://ibis-project.org/)
+- [Ibis GitHub](https://github.com/ibis-project/ibis)
+
+Chat with us on Zulip:
+
+- [Ibis Zulip Chat](https://ibis-project.zulipchat.com/)
