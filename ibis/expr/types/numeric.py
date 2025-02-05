@@ -1454,6 +1454,7 @@ class IntegerValue(NumericValue):
     def as_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+        /,
     ) -> ir.IntervalValue:
         """Convert an integer to an interval.
 
@@ -1518,8 +1519,9 @@ class IntegerValue(NumericValue):
     def to_interval(
         self,
         unit: Literal["Y", "M", "W", "D", "h", "m", "s", "ms", "us", "ns"] = "s",
+        /,
     ) -> ir.IntervalValue:
-        return self.as_interval(unit=unit)
+        return self.as_interval(unit)
 
     def convert_base(
         self,

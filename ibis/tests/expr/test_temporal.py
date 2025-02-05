@@ -641,10 +641,10 @@ def test_integer_to_interval(column, unit, table):
 @pytest.mark.parametrize(
     "operands",
     [
-        lambda t, u: (api.interval(3, unit=u), api.interval(2, unit=u)),
-        lambda t, u: (api.interval(3, unit=u), api.interval(3, unit=u)),
-        lambda t, u: (t.c.as_interval(unit=u), api.interval(2, unit=u)),
-        lambda t, u: (t.c.as_interval(unit=u), t.d.as_interval(unit=u)),
+        lambda _, u: (api.interval(3, unit=u), api.interval(2, unit=u)),
+        lambda _, u: (api.interval(3, unit=u), api.interval(3, unit=u)),
+        lambda t, u: (t.c.as_interval(u), api.interval(2, unit=u)),
+        lambda t, u: (t.c.as_interval(u), t.d.as_interval(u)),
     ],
 )
 @pytest.mark.parametrize(
@@ -688,15 +688,15 @@ def test_interval_comparisons(unit, operands, operator, table):
 @pytest.mark.parametrize(
     "interval",
     [
-        lambda t: api.interval(years=4),
-        lambda t: api.interval(quarters=4),
-        lambda t: api.interval(months=3),
-        lambda t: api.interval(weeks=2),
-        lambda t: api.interval(days=1),
-        lambda t: t.c.as_interval(unit="Y"),
-        lambda t: t.c.as_interval(unit="M"),
-        lambda t: t.c.as_interval(unit="W"),
-        lambda t: t.c.as_interval(unit="D"),
+        lambda _: api.interval(years=4),
+        lambda _: api.interval(quarters=4),
+        lambda _: api.interval(months=3),
+        lambda _: api.interval(weeks=2),
+        lambda _: api.interval(days=1),
+        lambda t: t.c.as_interval("Y"),
+        lambda t: t.c.as_interval("M"),
+        lambda t: t.c.as_interval("W"),
+        lambda t: t.c.as_interval("D"),
     ],
     ids=[
         "years",
