@@ -196,3 +196,14 @@ capabilities (like producing column-level lineage) are still applicable.
 The third option for writing SQL strings in Ibis, [`Backend.raw_sql()`](../../backends/duckdb.qmd#ibis.backends.duckdb.Backend.raw_sql),
 is opaque and only exists for situations where the user needs to run arbitrary SQL code. Ibis simply
 executes the code and returns the associated cursor; it does not attempt to understand the SQL.
+
+## Further reading
+
+In this article, we explored how Ibis constructs expressions and compiles them to SQL using SQLGlot.
+Even as somebody who has contributed significantly to Ibis over the years, I learned a lot about the
+inner workings of the library. While it was too much to cover in a single blog post, I'll end with a
+few resources I found interesting while drafting this article for those interested in diving deeper:
+
+- [Phillip Cloud on why Ibis moved away from SQLAlchemy to SQLGlot](https://github.com/ibis-project/ibis/discussions/7213)
+- [Toby Mao on the way SQLGlot computes column-level lineage](https://www.linkedin.com/posts/toby-mao_the-way-sqlglot-computes-column-level-lineage-activity-7166683013311852547-on21/)
+- [Krisztián Szűcs's PR that split the relational operations and created a new Ibis expression IR](https://github.com/ibis-project/ibis/pull/7752)
