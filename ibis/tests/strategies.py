@@ -128,7 +128,7 @@ def interval_dtype(interval=_interval, nullable=_nullable):
     return st.builds(dt.Interval, unit=interval, nullable=nullable)
 
 
-def temporal_dtypes(timezone=_timezone, interval=_interval, nullable=_nullable):
+def temporal_dtypes(timezone=_timezone, nullable=_nullable):
     return st.one_of(
         date_dtype(nullable=nullable),
         time_dtype(nullable=nullable),
@@ -136,15 +136,17 @@ def temporal_dtypes(timezone=_timezone, interval=_interval, nullable=_nullable):
     )
 
 
-def primitive_dtypes(nullable=_nullable):
-    return st.one_of(
-        null_dtype,
-        boolean_dtype(nullable=nullable),
-        integer_dtypes(nullable=nullable),
-        floating_dtypes(nullable=nullable),
-        date_dtype(nullable=nullable),
-        time_dtype(nullable=nullable),
+def primitive_dtypes(nullable=_nullable, include_null=True):
+    primitive = (
+        boolean_dtype(nullable=nullable)
+        | integer_dtypes(nullable=nullable)
+        | floating_dtypes(nullable=nullable)
+        | date_dtype(nullable=nullable)
+        | time_dtype(nullable=nullable)
     )
+    if include_null:
+        primitive |= null_dtype
+    return primitive
 
 
 _item_strategy = primitive_dtypes()
@@ -174,7 +176,7 @@ def struct_dtypes(
     nullable=_nullable,
 ):
     num_fields = draw(num_fields)
-    names = draw(st.lists(names, min_size=num_fields, max_size=num_fields))
+    names = draw(st.lists(names, min_size=num_fields, max_size=num_fields, unique=True))
     types = draw(st.lists(types, min_size=num_fields, max_size=num_fields))
     fields = dict(zip(names, types))
     return dt.Struct(fields, nullable=draw(nullable))

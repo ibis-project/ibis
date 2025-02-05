@@ -2895,7 +2895,7 @@ def null(type: dt.DataType | str | None = None, /) -> Value:
     AttributeError: 'NullScalar' object has no attribute 'upper'
     >>> ibis.null(str).upper()
     ┌──────┐
-    │ None │
+    │ NULL │
     └──────┘
     >>> ibis.null(str).upper().isnull()
     ┌──────┐
