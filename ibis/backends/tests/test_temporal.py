@@ -556,7 +556,7 @@ def test_date_truncate(backend, alltypes, df, unit):
 def test_integer_to_interval_timestamp(
     backend, con, alltypes, df, unit, displacement_type
 ):
-    interval = alltypes.int_col.as_interval(unit=unit)
+    interval = alltypes.int_col.as_interval(unit)
     expr = (alltypes.timestamp_col + interval).name("tmp")
 
     def convert_to_offset(offset, displacement_type=displacement_type):
@@ -629,7 +629,7 @@ def test_integer_to_interval_timestamp(
 @pytest.mark.notimpl(["datafusion", "druid"], raises=com.OperationNotDefinedError)
 @pytest.mark.notimpl(["exasol"], raises=com.OperationNotDefinedError)
 def test_integer_to_interval_date(backend, con, alltypes, df, unit):
-    interval = alltypes.int_col.as_interval(unit=unit)
+    interval = alltypes.int_col.as_interval(unit)
     month = alltypes.date_string_col[:2]
     day = alltypes.date_string_col[3:5]
     year = alltypes.date_string_col[6:8]
