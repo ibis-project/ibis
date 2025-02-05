@@ -22,7 +22,7 @@ def test_count_star(simple_table, assert_sql):
     ],
 )
 def test_timestamp_from_unix(simple_table, unit, assert_sql):
-    expr = simple_table.d.as_timestamp(unit=unit)
+    expr = simple_table.d.as_timestamp(unit)
     assert_sql(expr)
 
 

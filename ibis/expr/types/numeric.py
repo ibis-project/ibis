@@ -1420,10 +1420,7 @@ class NumericColumn(Column, NumericValue):
 
 @public
 class IntegerValue(NumericValue):
-    def as_timestamp(
-        self,
-        unit: Literal["s", "ms", "us"],
-    ) -> ir.TimestampValue:
+    def as_timestamp(self, unit: Literal["s", "ms", "us"], /) -> ir.TimestampValue:
         """Convert an integral UNIX timestamp to a timestamp expression.
 
         Parameters
@@ -1440,11 +1437,7 @@ class IntegerValue(NumericValue):
         --------
         >>> import ibis
         >>> ibis.options.interactive = True
-        >>> t = ibis.memtable(
-        ...     {
-        ...         "int_col": [0, 1730501716, 2147483647],
-        ...     }
-        ... )
+        >>> t = ibis.memtable({"int_col": [0, 1730501716, 2147483647]})
         >>> t.int_col.as_timestamp("s")
         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
         ┃ TimestampFromUNIX(int_col, SECOND) ┃
@@ -1513,12 +1506,13 @@ class IntegerValue(NumericValue):
         """
         return ops.IntervalFromInteger(self, unit).to_expr()
 
-    @deprecated(as_of="10.0", removed_in="11.0", instead="use as_timestamp() instead")
+    @deprecated(
+        as_of="10.0", removed_in="11.0", instead="use as_timestamp(unit) instead"
+    )
     def to_timestamp(
-        self,
-        unit: Literal["s", "ms", "us"] = "s",
+        self, unit: Literal["s", "ms", "us"] = "s", /
     ) -> ir.TimestampValue:
-        return self.as_timestamp(unit=unit)
+        return self.as_timestamp(unit)
 
     @deprecated(as_of="10.0", removed_in="11.0", instead="use as_interval() instead")
     def to_interval(
