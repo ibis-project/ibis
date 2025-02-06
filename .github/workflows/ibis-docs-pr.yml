@@ -79,12 +79,6 @@ jobs:
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
           extraPullNames: nix-community
 
-      - name: setup aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-region: us-east-2
-          role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
-
       - name: checkout
         uses: actions/checkout@v4
 
