@@ -580,7 +580,7 @@ def if_any(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     >>> import ibis
     >>> from ibis import selectors as s, _
     >>> ibis.options.interactive = True
-    >>> penguins = ibis.examples.penguins.fetch()
+    >>> penguins = ibis.examples.penguins.fetch().mutate(idx=ibis.row_number().over())
     >>> cols = s.across(s.endswith("_mm"), (_ - _.mean()) / _.std())
     >>> expr = penguins.mutate(cols).filter(s.if_any(s.endswith("_mm"), _.abs() > 2))
     >>> expr_by_hand = penguins.mutate(cols).filter(
@@ -590,25 +590,24 @@ def if_any(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     ... )
     >>> expr.equals(expr_by_hand)
     True
-    >>> expr
-    ┏━━━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
-    ┃ species ┃ island ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
-    ┡━━━━━━━━━╇━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
-    │ string  │ string │ float64        │ float64       │ float64           │ … │
-    ├─────────┼────────┼────────────────┼───────────────┼───────────────────┼───┤
-    │ Adelie  │ Biscoe │      -1.103002 │      0.733662 │         -2.056307 │ … │
-    │ Gentoo  │ Biscoe │       1.113285 │     -0.431017 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       2.871660 │     -0.076550 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       1.900890 │     -0.734846 │          2.139483 │ … │
-    │ Gentoo  │ Biscoe │       1.076652 │     -0.177826 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       0.856855 │     -0.582932 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       1.497929 │     -0.076550 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       1.388031 │     -0.431017 │          2.068368 │ … │
-    │ Gentoo  │ Biscoe │       2.047422 │     -0.582932 │          2.068368 │ … │
-    │ Adelie  │ Dream  │      -2.165354 │     -0.836123 │         -0.918466 │ … │
-    │ …       │ …      │              … │             … │                 … │ … │
-    └─────────┴────────┴────────────────┴───────────────┴───────────────────┴───┘
-
+    >>> expr.order_by(_.idx)
+    ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+    ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+    ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+    │ string  │ string    │ float64        │ float64       │ float64           │ … │
+    ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+    │ Adelie  │ Torgersen │      -0.974787 │      2.050255 │         -0.705121 │ … │
+    │ Adelie  │ Torgersen │       0.380628 │      2.202170 │         -0.491775 │ … │
+    │ Adelie  │ Biscoe    │      -1.103002 │      0.733662 │         -2.056307 │ … │
+    │ Adelie  │ Dream     │      -0.297079 │      2.050255 │         -0.705121 │ … │
+    │ Adelie  │ Dream     │      -2.165354 │     -0.836123 │         -0.918466 │ … │
+    │ Gentoo  │ Biscoe    │       0.398944 │     -2.000802 │          0.717181 │ … │
+    │ Gentoo  │ Biscoe    │       1.113285 │     -0.431017 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe    │      -0.187181 │     -2.051440 │          1.001641 │ … │
+    │ Gentoo  │ Biscoe    │       2.871660 │     -0.076550 │          2.068368 │ … │
+    │ Gentoo  │ Biscoe    │       1.900890 │     -0.734846 │          2.139483 │ … │
+    │ …       │ …         │              … │             … │                 … │ … │
+    └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
     """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.or_)
 
