@@ -101,7 +101,7 @@ services:
       - trino
 
   minio:
-    image: bitnami/minio:2025.1.20
+    image: bitnami/minio:2025.2.3
     environment:
       MINIO_ROOT_USER: accesskey
       MINIO_ROOT_PASSWORD: secretkey
