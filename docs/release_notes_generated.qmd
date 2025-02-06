@@ -111,7 +111,7 @@ instead.
 
 
 ## Issues closed
-* **api:** Removed hierarchical usage of schema. 
+* **api:** Removed hierarchical usage of schema.
 
 Ibis uses the following naming conventions:
 - schema: a mapping of column names to datatypes
