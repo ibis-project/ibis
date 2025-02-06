@@ -14,6 +14,22 @@ Ibis follows a [Semantic Versioning](https://semver.org/) scheme
   public APIs that should remain compatible with previous Ibis versions with
   the same `MAJOR` version number.
 
+## Transitive dependencies
+
+Ibis depends on a number of other libraries, for example pyarrow.
+Ibis does not set upper version bounds on it's dependencies
+(unless we *know* that a later version is incompatible).
+This has the benefit that if pyarrow releases a new version,
+you as an application developer will be able to use it without waiting for
+Ibis to release a new version with increased upper bounds.
+However, this has the downside that if the new pyarrow
+release has a change which breaks Ibis, your installation may break.
+To avoid this, we recommend pinning your dependencies with a
+uv.lock/poetry.lock/pdm.lock/requirements.txt/etc file
+(this is good practice anyway).
+
+See https://github.com/ibis-project/ibis/pull/10797 for more information.
+
 ## Supported Python versions
 
 Ibis follows [NEP29](https://numpy.org/neps/nep-0029-deprecation_policy.html)
