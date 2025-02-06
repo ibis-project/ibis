@@ -994,7 +994,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     total_cost=_.price.sum(),
         ...     avg_cost=_.price.mean(),
         ...     having=_.price.sum() < 0.5,
-        ... )
+        ... ).order_by("fruit")
         ┏━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━━┓
         ┃ fruit  ┃ total_cost ┃ avg_cost ┃
         ┡━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━━┩
@@ -3137,7 +3137,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         sequence. Find all instances where a user both tagged and
         rated a movie:
 
-        >>> tags.join(ratings, ["userId", "movieId"]).head(5).order_by("userId")
+        >>> tags.join(ratings, ["userId", "movieId"]).head(5).order_by("userId", "movieId")
         ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┓
         ┃ userId ┃ movieId ┃ tag            ┃ timestamp  ┃ rating  ┃
         ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━┩
@@ -3145,9 +3145,9 @@ class Table(Expr, _FixedTextJupyterMixin):
         ├────────┼─────────┼────────────────┼────────────┼─────────┤
         │     62 │       2 │ Robin Williams │ 1528843907 │     4.0 │
         │     62 │     110 │ sword fight    │ 1528152535 │     4.5 │
-        │     62 │     410 │ gothic         │ 1525636609 │     4.5 │
-        │     62 │    2023 │ mafia          │ 1525636733 │     5.0 │
         │     62 │    2124 │ quirky         │ 1525636846 │     5.0 │
+        │     62 │    2953 │ sequel         │ 1525636887 │     3.5 │
+        │     62 │    3114 │ Tom Hanks      │ 1525636925 │     3.0 │
         └────────┴─────────┴────────────────┴────────────┴─────────┘
 
         To self-join a table with itself, you need to call
@@ -4819,7 +4819,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Unnest the array column `x`, replacing the **existing** `x` column.
 
-        >>> t.unnest("x")
+        >>> t.unnest("x").order_by(_.x)
         ┏━━━━━━━┳━━━━━━━┓
         ┃ x     ┃ y     ┃
         ┡━━━━━━━╇━━━━━━━┩
@@ -4835,7 +4835,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Unnest the array column `x` with an offset. The `offset` parameter is
         the name of the resulting index column.
 
-        >>> t.unnest(t.x, offset="idx")
+        >>> t.unnest(t.x, offset="idx").order_by(_.x)
         ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ x     ┃ y     ┃ idx   ┃
         ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -4851,7 +4851,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         Unnest the array column `x` keep empty array values as `NULL` in the
         output table.
 
-        >>> t.unnest(_.x, offset="idx", keep_empty=True)
+        >>> t.unnest(_.x, offset="idx", keep_empty=True).order_by(_.x, _.y)
         ┏━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ x     ┃ y     ┃ idx   ┃
         ┡━━━━━━━╇━━━━━━━╇━━━━━━━┩
@@ -4875,7 +4875,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         ...     t.mutate(original_row=ibis.row_number())
         ...     .unnest("x", offset="idx", keep_empty=True)
         ...     .relocate("original_row")
-        ...     .order_by("original_row")
+        ...     .order_by("original_row", "idx")
         ... )
         ┏━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━┳━━━━━━━┓
         ┃ original_row ┃ x     ┃ y     ┃ idx   ┃
@@ -4894,7 +4894,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         You can also unnest more complex expressions, and the resulting column
         will be projected as the last expression in the result.
 
-        >>> t.unnest(_.x.map(lambda v: v + 1).name("plus_one"))
+        >>> t.unnest(_.x.map(lambda v: v + 1).name("plus_one")).order_by(_.plus_one)
         ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━━━┓
         ┃ x                    ┃ y     ┃ plus_one ┃
         ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━╇━━━━━━━━━━┩

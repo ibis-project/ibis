@@ -465,18 +465,7 @@ def no_roundtrip(
                 reason="duckdb can't write this because it doesn't expose GDAL's dataset creation options"
             ),
         ),
-        param(
-            "ODS",
-            "ods",
-            {},
-            lambda t: t.mutate(geom=t.geom.as_text()),
-            marks=pytest.mark.xfail(
-                condition=WINDOWS,
-                raises=duckdb.IOException,
-                reason="not working on windows",
-            ),
-            id="ods",
-        ),
+        param("ODS", "ods", {}, lambda t: t.mutate(geom=t.geom.as_text()), id="ods"),
         param("XLSX", "xlsx", {}, lambda t: t.mutate(geom=t.geom.as_text()), id="xlsx"),
         param(
             "Selafin",
