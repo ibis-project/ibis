@@ -1997,7 +1997,7 @@ wheels = [
 
 [[package]]
 name = "ibis-framework"
-version = "9.5.0"
+version = "10.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "atpublic" },
