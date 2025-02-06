@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import inspect
+import warnings
 from operator import itemgetter
 from typing import TYPE_CHECKING, Any
 from urllib.parse import unquote_plus
@@ -723,12 +724,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         try:
             # try to load hstore
             psycopg.types.hstore.register_hstore(
-                psycopg.types.TypeInfo.fetch(con, "hstore"),
-                cursor,
+                psycopg.types.TypeInfo.fetch(con, "hstore"), cursor
             )
-        except (psycopg.InternalError, psycopg.ProgrammingError):
-            cursor.close()
-            raise
+        except psycopg.Error as e:
+            warnings.warn(f"Failed to load hstore extension: {e}")
         except TypeError:
             pass
 
