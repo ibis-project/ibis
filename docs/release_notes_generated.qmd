@@ -95,33 +95,23 @@
 * **duckdb:** The DuckDB lower bound has been bumped to a version that has storage backwards compatibility. You may need to migrate your DuckDB database files.
 * **api:** `has_name` has always returned `True` since 9.0. It is safe to remove any calls to `has_name`.
 * **backends:** `execute` now returns non-numpy objects for scalar values.
-* **api:** `ibis.negate` is removed.  Use the `negate` method on a
-specific column, instead.
-* **api:** All `ibis.geo_*` functions are removed. Equivalent
-methods are available on all geo columns.
+* **api:** `ibis.negate` is removed.  Use the `negate` method on a specific column, instead.
+* **api:** All `ibis.geo_*` functions are removed. Equivalent methods are available on all geo columns.
 * **api:** `where` is removed. Use `ibis.ifelse` instead.
-* **value:** `Value.greatest` and `Value.least` are removed. Use
-`ibis.greatest` and `ibis.least`, instead.
-* **joins:** Passing a `pyarrow.Table` or a `pandas.DataFrame` as
-the right-hand-side of a join is no longer supported.
-
-To join against in-memory data, you can pass the in-memory object to
-`ibis.memtable` or `con.create_table` and use the resulting table object
-instead.
+* **value:** `Value.greatest` and `Value.least` are removed. Use `ibis.greatest` and `ibis.least`, instead.
+* **joins:** Passing a `pyarrow.Table` or a `pandas.DataFrame` as the right-hand-side of a join is no longer supported. To join against in-memory data, you can pass the in-memory object to `ibis.memtable` or `con.create_table` and use the resulting table object instead.
 
 
 ## Issues closed
 * **api:** Removed hierarchical usage of schema.
-
-Ibis uses the following naming conventions:
-- schema: a mapping of column names to datatypes
-- database: a collection of tables
-- catalog: a collection of databases
+  Ibis uses the following naming conventions:
+  - schema: a mapping of column names to datatypes
+  - database: a collection of tables
+  - catalog: a collection of databases
 * **mysql:** Ibis now uses the `MySQLdb` driver. You may need to install MySQL client libraries to **build** the extension.
 * **padding:** String padding operations now follow Python semantics and leave strings greater than the padding length untouched.
 * **pandas:** The `pandas` backend is removed. Note that **pandas DataFrames are STILL VALID INPUTS AND OUTPUTS** and will remain so for the foreseeable future. Please use one of the other local backends like DuckDB, Polars, or DataFusion to perform operations directly on pandas DataFrames.
-* **dask:** The `dask` backend is removed. Please use one of the
-other backends that Ibis supports.
+* **dask:** The `dask` backend is removed. Please use one of the other backends that Ibis supports.
 
 * **api:** remove deprecated `where` methodism ([886b2d1](https://github.com/ibis-project/ibis/commit/886b2d1ae095836f405876aa2f659c5bfd746321))
 * **api:** remove top-level `negate` function ([c8c37dd](https://github.com/ibis-project/ibis/commit/c8c37dd801be84de0d29679313e5758b116f4cd5))
