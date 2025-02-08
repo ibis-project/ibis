@@ -51,7 +51,7 @@ coverage==7.6.10
 cryptography==44.0.0
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
-datafusion==43.1.0
+datafusion==44.0.0
 db-dtypes==1.4.1
 debugpy==1.8.12
 decorator==5.1.1
