@@ -31,7 +31,6 @@ class ClickHouse(_ClickHouse):
             sge.ArraySort: rename_func("arraySort"),
             sge.LogicalAnd: rename_func("min"),
             sge.LogicalOr: rename_func("max"),
-            sge.Median: rename_func("median"),
         }
 
         def except_op(self, expression: sge.Except) -> str:
@@ -41,6 +40,10 @@ class ClickHouse(_ClickHouse):
             return (
                 f"INTERSECT{' DISTINCT' if expression.args.get('distinct') else ' ALL'}"
             )
+
+
+with contextlib.suppress(AttributeError):
+    ClickHouse.Generator.TRANSFORMS[sge.Median] = rename_func("median")
 
 
 class DataFusion(Postgres):
@@ -55,8 +58,11 @@ class DataFusion(Postgres):
             sge.Array: rename_func("make_array"),
             sge.ArrayContains: rename_func("array_has"),
             sge.ArraySize: rename_func("array_length"),
-            sge.Median: rename_func("median"),
         }
+
+
+with contextlib.suppress(AttributeError):
+    DataFusion.Generator.TRANSFORMS[sge.Median] = rename_func("median")
 
 
 class Druid(Postgres):
