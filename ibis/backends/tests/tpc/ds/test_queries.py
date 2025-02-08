@@ -2443,6 +2443,7 @@ def test_48(store_sales, store, customer_demographics, customer_address, date_di
     )
 
 
+@pytest.mark.notyet(["datafusion"], raises=AssertionError, reason="incorrect result")
 @tpc_test("ds")
 def test_49(
     web_sales,
@@ -4646,7 +4647,6 @@ def test_83(store_returns, item, date_dim, catalog_returns, web_returns):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["datafusion"], reason="coercion failure", raises=Exception)
 def test_84(
     customer,
     customer_address,
