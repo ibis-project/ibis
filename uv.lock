@@ -2262,7 +2262,7 @@ requires-dist = [
     { name = "black", marker = "extra == 'decompiler'", specifier = ">=22.1.0,<26" },
     { name = "clickhouse-connect", extras = ["arrow", "pandas", "numpy"], marker = "extra == 'clickhouse'", specifier = ">=0.5.23,<1" },
     { name = "databricks-sql-connector-core", marker = "extra == 'databricks'", specifier = ">=4,<5" },
-    { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6,<44" },
+    { name = "datafusion", marker = "extra == 'datafusion'", specifier = ">=0.6,<45" },
     { name = "db-dtypes", marker = "extra == 'bigquery'", specifier = ">=0.3,<2" },
     { name = "deltalake", marker = "extra == 'deltalake'", specifier = ">=0.9.0,<1" },
     { name = "duckdb", marker = "extra == 'duckdb'", specifier = ">=0.10,<2" },

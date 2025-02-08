@@ -81,7 +81,7 @@ databricks = [
   "rich>=12.4.4,<14",
 ]
 datafusion = [
-  "datafusion>=0.6,<44",
+  "datafusion>=0.6,<45",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4,<1",
   "numpy>=1.23.2,<3",
