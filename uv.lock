@@ -1253,19 +1253,19 @@ wheels = [
 
 [[package]]
 name = "datafusion"
-version = "43.1.0"
+version = "44.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pyarrow" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/87/195496ccdc4bf557fcac60a6d42878ffc347eceab20509866291f6193930/datafusion-43.1.0.tar.gz", hash = "sha256:271fee9ed931e976bd095ceb50ba9907fd93267f4f9517a6ea83cd46c1aa42d5", size = 141499 }
+sdist = { url = "https://files.pythonhosted.org/packages/30/24/83468ebfe6f5ed9d7d483c8c09d88001ff57290d3f052b303a635a35a34b/datafusion-44.0.0.tar.gz", hash = "sha256:5fc3740406ff531527aa8baa5954fe0bf1f02ea72170e172746b38cffc0d8d50", size = 144129 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/88/71/180fb6861e3315a1df9aa719ab46f22479bd86bc5cfd3b8e082f4775dd2b/datafusion-43.1.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:b40afe48762c7649d1ec3a0116e31d3ee5226812fc4896c0f309d3d490a855c8", size = 20362799 },
-    { url = "https://files.pythonhosted.org/packages/f8/e6/024b1dba599897eaf538d11b107132188c74a33dcbf041b231c8531cbc51/datafusion-43.1.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:a61d3efa91578108631ae5f8f070e15656d8eb125a34fe9a1df13db72ce1bcde", size = 18561250 },
-    { url = "https://files.pythonhosted.org/packages/32/8f/d6329d65ae83f5485b41b216138bab45bd206465cf6df537f5753178eee7/datafusion-43.1.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:eb46deaf625558819cff708acb115d1d249a18adf51e1eaabda898979b344b5b", size = 22558573 },
-    { url = "https://files.pythonhosted.org/packages/2b/f4/b9ad6cec2702ff988b3d45386c2fb92744b3b13126da29abaec43d894573/datafusion-43.1.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:0d9ae56162304475a147c8e7284b85bda1849659c4495da4d071834a2e6392cd", size = 21381501 },
-    { url = "https://files.pythonhosted.org/packages/39/ea/5b14fa3866e7b2aad824a07b33fc719531443952cef8c0678f0cc545b9cb/datafusion-43.1.0-cp38-abi3-win_amd64.whl", hash = "sha256:930830dad47925b1a84b281184eafc00152f02a84a8acc770ac3ebd36b4db5ac", size = 22112172 },
+    { url = "https://files.pythonhosted.org/packages/94/0e/c4a3b57566222280218ecaad324da9d9b1f226a43a2de9a80ea5c114c28d/datafusion-44.0.0-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:4786f0a09c6b422ac18c6ea095650c14454be5af3df880b5c169688f610ab41a", size = 23836633 },
+    { url = "https://files.pythonhosted.org/packages/84/24/bccab6dc3017252b0db611d64dc34363f4209625c3bf2bacc64c74299f67/datafusion-44.0.0-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:bbad11b33c424a658edbc52db39dfe4ddc30339ffac7c43cdc1aa128c260ae76", size = 22345779 },
+    { url = "https://files.pythonhosted.org/packages/41/a1/751df680b8e53e79a3226ad82e91e681ac41ee4aed94822c0e46faab1c50/datafusion-44.0.0-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:4ca3b47fd34e1c96cf6d40a877245afd36f3ccf8b39dda1e5b6f811f273af781", size = 24659036 },
+    { url = "https://files.pythonhosted.org/packages/ab/e8/22d3f02545a572d8bbfc22ac32d1e5d7d8efc9bbe57ba2045182e4bdc387/datafusion-44.0.0-cp38-abi3-manylinux_2_28_aarch64.whl", hash = "sha256:22d2e3ecf5d0b1b75c8ad48c8d9af14a0ac4de1633e86d3b397614f68aa8123c", size = 23768362 },
+    { url = "https://files.pythonhosted.org/packages/48/40/76906a8644da47b658da050c1a52202b97eed4f0b41007a77e72e3427c30/datafusion-44.0.0-cp38-abi3-win_amd64.whl", hash = "sha256:b36774dca54a0e1c88c8080b8c72cc2df5e95f4340a0cdbdd18a0473401551c5", size = 23647042 },
 ]
 
 [[package]]
