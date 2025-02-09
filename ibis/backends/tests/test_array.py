@@ -1466,29 +1466,20 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
         param(
             None,
             id="none",
-            marks=[
-                pytest.mark.notyet(
-                    ["bigquery"],
-                    raises=com.IbisTypeError,
-                    reason="bigquery doesn't support datetime ranges, only timestamp ranges",
-                ),
-            ],
+            marks=pytest.mark.notyet(
+                ["bigquery"],
+                raises=com.IbisTypeError,
+                reason="bigquery doesn't support datetime ranges, only timestamp ranges",
+            ),
         ),
         param(
             pytz.UTC,
             id="utc",
-            marks=[
-                pytest.mark.notyet(
-                    ["trino"],
-                    raises=TrinoUserError,
-                    reason="trino doesn't support timestamp with time zone arguments to its sequence function",
-                ),
-                pytest.mark.notyet(
-                    ["polars"],
-                    raises=(TypeError, com.UnsupportedOperationError),
-                    reason="polars doesn't work with dateutil timezones",
-                ),
-            ],
+            marks=pytest.mark.notyet(
+                ["trino"],
+                raises=TrinoUserError,
+                reason="trino doesn't support timestamp with time zone arguments to its sequence function",
+            ),
         ),
     ],
 )
@@ -1526,6 +1517,11 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                     raises=PsycoPg2InternalError,
                     reason="function neg(interval) does not exist",
                 ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=(TypeError, com.UnsupportedOperationError),
+                    reason="polars doesn't allow negative intervals",
+                ),
             ],
         ),
         param(
@@ -1545,6 +1541,11 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason="function neg(interval) does not exist",
+                ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=(TypeError, com.UnsupportedOperationError),
+                    reason="polars doesn't allow negative intervals",
                 ),
             ],
         ),
@@ -1572,11 +1573,15 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
             ibis.interval(hours=0),
             id="pos",
             marks=[
-                pytest.mark.notyet(["polars"], raises=PolarsComputeError),
                 pytest.mark.notyet(
                     ["risingwave"],
                     raises=PsycoPg2InternalError,
                     reason="function make_interval() does not exist",
+                ),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=(com.UnsupportedOperationError, PolarsComputeError),
+                    reason="doesn't allow negative or zero intervals",
                 ),
             ],
         ),
@@ -1586,7 +1591,11 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
             -ibis.interval(hours=0),
             id="neg",
             marks=[
-                pytest.mark.notyet(["polars"], raises=com.UnsupportedOperationError),
+                pytest.mark.notyet(
+                    ["polars"],
+                    raises=(com.UnsupportedOperationError, PolarsComputeError),
+                    reason="doesn't allow negative intervals",
+                ),
                 pytest.mark.notyet(["bigquery"], raises=GoogleBadRequest),
                 pytest.mark.notyet(
                     ["clickhouse", "snowflake"],

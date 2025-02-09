@@ -937,7 +937,14 @@ def test_table_describe_large(con):
     ("ibis_op", "pandas_op"),
     [
         param(_.string_col.isin([]), lambda df: df.string_col.isin([]), id="isin"),
-        param(_.string_col.notin([]), lambda df: ~df.string_col.isin([]), id="notin"),
+        param(
+            _.string_col.notin([]),
+            lambda df: ~df.string_col.isin([]),
+            id="notin",
+            marks=pytest.mark.notyet(
+                ["polars"], reason="broken upstream in polars", raises=AssertionError
+            ),
+        ),
         param(
             (_.string_col.length() * 1).isin([1]),
             lambda df: (df.string_col.str.len() * 1).isin([1]),

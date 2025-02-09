@@ -925,11 +925,6 @@ def test_temporal_binop_pandas_timedelta(
 
 @pytest.mark.parametrize("func_name", ["gt", "ge", "lt", "le", "eq", "ne"])
 @pytest.mark.notimpl(
-    ["polars"],
-    raises=TypeError,
-    reason="casting a timezone aware value to timezone aware dtype was removed",
-)
-@pytest.mark.notimpl(
     ["druid"],
     raises=PyDruidProgrammingError,
     reason="Invalid SQL; druid doesn't know about TIMESTAMPTZ",
