@@ -278,56 +278,51 @@ type, number of cores, and memory in gigabytes:
 ```{python}
 #| code-fold: true
 #| code-summary: "Show code to get instance details"
-cpu_type_cases = ibis.cases(
-    (
+cpu_type_cases = (
+    ibis.case()
+    .when(
         ibis._["instance_type"].startswith("n2d"),
         "AMD EPYC",
-    ),
-    (
+    )
+    .when(
         ibis._["instance_type"].startswith("n2"),
         "Intel Cascade and Ice Lake",
-    ),
-    (
+    )
+    .when(
         ibis._["instance_type"].startswith("c3"),
         "Intel Sapphire Rapids",
-    ),
-    (
+    )
+    .when(
         ibis._["instance_type"] == "work laptop",
         "Apple M1 Max",
-    ),
-    (
+    )
+    .when(
         ibis._["instance_type"] == "personal laptop",
         "Apple M2 Max",
-    ),
-    else_="unknown",
+    )
+    .else_("unknown")
+    .end()
 )
-
-cpu_num_cases = ibis.cases(
-    (
+cpu_num_cases = (
+    ibis.case()
+    .when(
         ibis._["instance_type"].contains("-"),
         ibis._["instance_type"].split("-")[-1].cast("int"),
-    ),
-    (
-        ibis._["instance_type"].contains("laptop"),
-        12,
-    ),
-    else_=0,
+    )
+    .when(ibis._["instance_type"].contains("laptop"), 12)
+    .else_(0)
+    .end()
 )
-
-memory_gb_cases = ibis.cases(
-    (
+memory_gb_cases = (
+    ibis.case()
+    .when(
         ibis._["instance_type"].contains("-"),
         ibis._["instance_type"].split("-")[-1].cast("int") * 4,
-    ),
-    (
-        ibis._["instance_type"] == "work laptop",
-        32,
-    ),
-    (
-        ibis._["instance_type"] == "personal laptop",
-        96,
-    ),
-    else_=0,
+    )
+    .when(ibis._["instance_type"] == "work laptop", 32)
+    .when(ibis._["instance_type"] == "personal laptop", 96)
+    .else_(0)
+    .end()
 )
 
 instance_details = (
