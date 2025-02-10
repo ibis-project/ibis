@@ -2337,13 +2337,15 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return ops.Project(self, exprs).to_expr()
 
-    def drop(self, *fields: str | Selector) -> Table:
+    def drop(self, *fields: str | Selector, missing_ok: bool = False) -> Table:
         """Remove fields from a table.
 
         Parameters
         ----------
         fields
             Fields to drop. Strings and selectors are accepted.
+        missing_ok
+            If True, do not raise an error if a given field does not exist.
 
         Returns
         -------
@@ -2401,6 +2403,28 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │          19.3 │               193 │        3450 │ female │ … │
         └───────────┴───────────────┴───────────────────┴─────────────┴────────┴───┘
 
+        If a given column does not exist, then by default an error is raised.
+        If you want to ignore missing columns, you can pass `missing_ok=True`.
+        This is useful if you need a column to not exist,
+        but you don't know if it does or not.
+
+        >>> t.drop("column_that_must_not_exist_afterwards")  # doctest: +SKIP
+        Traceback (most recent call last):
+        ...
+        >>> t.drop("column_that_must_not_exist_afterwards", missing_ok=True).head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
         Drop with selectors, mix and match
 
         >>> import ibis.selectors as s
@@ -2417,12 +2441,31 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │               193 │        3450 │ female │  2007 │
         └───────────┴───────────────────┴─────────────┴────────┴───────┘
         """
-        if not fields:
+
+        def _get_cols(field) -> list[str]:
+            try:
+                cols = self._fast_bind(field)
+            except com.IbisTypeError as e:
+                if "is not found in table" in str(e):
+                    if missing_ok:
+                        return []
+                    raise
+            except AttributeError as e:
+                if "has no attribute" in str(e):
+                    if missing_ok:
+                        return []
+                    raise
+            return [Expr.get_name(c) for c in cols]
+
+        to_drop = []
+        for field in fields:
+            to_drop.extend(_get_cols(field))
+        if not to_drop:
             # no-op if nothing to be dropped
             return self
-
-        columns_to_drop = frozenset(map(Expr.get_name, self._fast_bind(*fields)))
-        return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
+        return ops.DropColumns(
+            parent=self, columns_to_drop=frozenset(to_drop)
+        ).to_expr()
 
     def filter(
         self,
