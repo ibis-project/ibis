@@ -47,7 +47,7 @@ codespell==2.4.1
 colorama==0.4.6
 comm==0.2.2
 contourpy==1.3.1
-coverage==7.6.10
+coverage==7.6.11
 cryptography==44.0.0
 cycler==0.12.1
 databricks-sql-connector-core==4.0.1
@@ -94,7 +94,7 @@ httpcore==1.0.7
 httpx==0.28.1
 humanize==4.11.0
 hypothesis==6.125.2
-identify==2.6.6
+identify==2.6.7
 idna==3.10
 importlib-metadata==8.6.1
 importlib-resources==6.5.2
@@ -169,7 +169,7 @@ plotly==5.24.1
 plotnine==0.14.5
 pluggy==1.5.0
 plum-dispatch==2.5.7
-polars==1.21.0
+polars==1.22.0
 pprintpp==0.4.0
 pre-commit==4.1.0
 prometheus-client==0.21.1
