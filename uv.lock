@@ -2423,7 +2423,7 @@ docs = [
     { name = "jupyterlab-night", specifier = ">=0.4.6,<1" },
     { name = "jupyterlite-core", specifier = ">=0.5,<0.6" },
     { name = "jupyterlite-pyodide-kernel", specifier = ">=0.5,<0.6" },
-    { name = "lonboard", specifier = "==0.10.3" },
+    { name = "lonboard", specifier = "==0.10.4" },
     { name = "nbclient", specifier = ">=0.8.0,<1" },
     { name = "plotly", specifier = ">=5.16.1,<6" },
     { name = "plotnine", specifier = ">=0.12.2,<1" },
@@ -3014,7 +3014,7 @@ wheels = [
 
 [[package]]
 name = "lonboard"
-version = "0.10.3"
+version = "0.10.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anywidget" },
@@ -3027,9 +3027,9 @@ dependencies = [
     { name = "traitlets" },
     { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ae/9b/8b1c61690c22e39f73df47e394f92d084eafd36e9915140b632e7f53561a/lonboard-0.10.3.tar.gz", hash = "sha256:0e0202279a83f05ba5dfffd6193e09d9f40b20dda3c89b3098de06b620abc1eb", size = 868459 }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/5b/4d9ca59bf5bb7b00f155caad1549e7cdf349b332a365192bac3657759cbf/lonboard-0.10.4.tar.gz", hash = "sha256:12164ce778fb1fd179b18da9841a2994e8477971b63a11b42bb147d9922b7074", size = 867160 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e5/49/6ffe26b064da51817950f86e44540a7148b149ad24c8eb4b18561b13d02f/lonboard-0.10.3-py3-none-any.whl", hash = "sha256:27c77c4021afe49d70377de5af879f9afd9fe133508c54f936fd222e4cf8d98c", size = 884201 },
+    { url = "https://files.pythonhosted.org/packages/c2/9d/92f437e1a611135218783e843356febe4fe5e9b57921b8b04b977526dcbf/lonboard-0.10.4-py3-none-any.whl", hash = "sha256:80783ad48666c37236c2704cdb5ccf6a397d6c6788d13a891a62e7b700df7381", size = 884107 },
 ]
 
 [[package]]
@@ -4123,6 +4123,7 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/df/36/0017e838d3c63081a64e6d2252c8dda368a6d0898c7ecf689ba678fe4127/psygnal-0.12.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:7a67ec8e0c8a6553dd56ed653f87c46ef652b0c512bb8c8f8c5adcff3907751f", size = 785239 },
     { url = "https://files.pythonhosted.org/packages/67/d0/7057151debcd5c7d8ce7789d276e18681d5c141c9222c9cf99ce3a418680/psygnal-0.12.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:742abb2d0e230521b208161eeab06abb682a19239e734e543a269214c84a54d2", size = 779690 },
     { url = "https://files.pythonhosted.org/packages/5e/ae/a3d6815db583b6d05878b3647ea0e2aa21ce6941d03c9d2c6caad1afbcf6/psygnal-0.12.0-cp313-cp313-win_amd64.whl", hash = "sha256:d779f20c6977ec9d5b9fece23b4b28bbcf0a7773539a4a176b5527aea5da27c7", size = 382622 },
+    { url = "https://files.pythonhosted.org/packages/eb/fa/84fc30ad391081cb119099aae5491ba4a9ebd34ce5139bf05b31813abb84/psygnal-0.12.0-py3-none-any.whl", hash = "sha256:15f39abd8bee2926e79da76bec31a258d03dbe3e61d22d6251f65caefbae5d54", size = 78492 },
 ]
 
 [[package]]
