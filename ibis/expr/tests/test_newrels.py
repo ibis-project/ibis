@@ -11,8 +11,8 @@ import ibis.expr.operations as ops
 import ibis.expr.types as ir
 import ibis.selectors as s
 from ibis import _
-from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisInputError, IntegrityError
+from ibis.common.grounds import ValidationError
 from ibis.expr.operations import (
     Aggregate,
     Field,

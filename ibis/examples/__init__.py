@@ -161,7 +161,9 @@ def __getattr__(name: str) -> Example:
 
         description = meta[name].get("description")
 
-        fields = {"__doc__": description} if description is not None else {}
+        fields = {"__module__": __name__}
+        if description is not None:
+            fields["__doc__"] = description
 
         example_class = type(name, (Example,), fields)
         example_class.fetch.__doc__ = _FETCH_DOCSTRING_TEMPLATE.format(name=name)

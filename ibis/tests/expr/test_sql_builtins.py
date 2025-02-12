@@ -14,6 +14,7 @@
 from __future__ import annotations
 
 import pytest
+from koerce import resolve
 
 import ibis
 import ibis.backends.sql.compilers as sc
@@ -213,7 +214,7 @@ def test_floats(sql_table, function):
 
 def test_deferred(sql_table, function):
     expr = function(None, _.v3, 2)
-    res = expr.resolve(sql_table)
+    res = resolve(expr, _=sql_table)
     sol = function(None, sql_table.v3, 2)
     assert res.equals(sol)
 

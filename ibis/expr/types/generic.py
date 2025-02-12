@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, overload
 
+from koerce import Deferred, _, deferrable, resolve
 from public import public
 
 import ibis
@@ -10,8 +11,6 @@ import ibis.common.exceptions as com
 import ibis.expr.builders as bl
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.deferred import Deferred, _, deferrable
-from ibis.common.grounds import Singleton
 from ibis.expr.rewrites import rewrite_window_input
 from ibis.expr.types.core import Expr, _binop, _FixedTextJupyterMixin
 from ibis.util import deprecated, promote_list
@@ -1693,7 +1692,7 @@ class Column(Value, _FixedTextJupyterMixin):
             if isinstance(value, str):
                 return table[value]
             elif isinstance(value, Deferred):
-                return value.resolve(table)
+                return resolve(value, _=table)
             else:
                 value = value(table)
 
@@ -2868,13 +2867,16 @@ class NullValue(Value):
 
 
 @public
-class NullScalar(Scalar, NullValue, Singleton):
+class NullScalar(Scalar, NullValue):
     pass
 
 
 @public
 class NullColumn(Column, NullValue):
     pass
+
+
+_THE_NULL = None
 
 
 @public
@@ -2902,8 +2904,11 @@ def null(type: dt.DataType | str | None = None, /) -> Value:
     │ True │
     └──────┘
     """
+    global _THE_NULL  # noqa: PLW0603
     if type is None:
-        type = dt.null
+        if _THE_NULL is None:
+            _THE_NULL = ops.Literal(None, dt.null).to_expr()
+        return _THE_NULL
     return ops.Literal(None, type).to_expr()
 
 

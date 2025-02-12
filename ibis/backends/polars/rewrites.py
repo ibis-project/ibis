@@ -1,12 +1,11 @@
 from __future__ import annotations
 
+from koerce import attribute, replace
 from public import public
 
 import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
-from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenDict
-from ibis.common.patterns import replace
 from ibis.common.typing import VarTuple  # noqa: TC001
 from ibis.expr.schema import Schema
 

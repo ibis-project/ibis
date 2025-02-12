@@ -3,22 +3,20 @@ from __future__ import annotations
 from abc import abstractmethod
 from typing import Generic, Optional
 
+from koerce import attribute
 from public import public
 from typing_extensions import Any, Self, TypeVar
 
 import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 import ibis.expr.rules as rlz
-from ibis.common.annotations import attribute
-from ibis.common.graph import Node as Traversable
-from ibis.common.grounds import Concrete
-from ibis.common.patterns import Coercible, CoercionError
+from ibis.common.graph import Node as GraphNode
 from ibis.common.typing import DefaultTypeVars
 from ibis.util import is_iterable
 
 
 @public
-class Node(Concrete, Traversable):
+class Node(GraphNode):
     def equals(self, other) -> bool:
         if not isinstance(other, Node):
             raise TypeError(
@@ -29,18 +27,13 @@ class Node(Concrete, Traversable):
     # Avoid custom repr for performance reasons
     __repr__ = object.__repr__
 
-    # TODO(kszucs): hidrate the __children__ traversable attribute
-    # @attribute
-    # def __children__(self):
-    #     return super().__children__
-
 
 T = TypeVar("T", bound=dt.DataType, covariant=True)
 S = TypeVar("S", bound=ds.DataShape, default=ds.Any, covariant=True)
 
 
 @public
-class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
+class Value(Node, DefaultTypeVars, Generic[T, S]):
     @classmethod
     def __coerce__(
         cls, value: Any, T: Optional[type] = None, S: Optional[type] = None
@@ -74,7 +67,7 @@ class Value(Node, Coercible, DefaultTypeVars, Generic[T, S]):
         try:
             return Literal(value, dtype=dtype)
         except TypeError:
-            raise CoercionError(f"Unable to coerce {value!r} to Value[{T!r}]")
+            raise ValueError(f"Unable to coerce {value!r} to Value[{T!r}]")
 
     # TODO(kszucs): cover it with tests
     # TODO(kszucs): figure out how to represent not named arguments

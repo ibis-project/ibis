@@ -5,14 +5,12 @@ import os
 import webbrowser
 from typing import TYPE_CHECKING, Any, NoReturn
 
+from koerce import Immutable, MatchError
 from public import public
 
 import ibis
 import ibis.expr.operations as ops
-from ibis.common.annotations import ValidationError
 from ibis.common.exceptions import IbisError, TranslationError
-from ibis.common.grounds import Immutable
-from ibis.common.patterns import Coercible, CoercionError
 from ibis.common.typing import get_defining_scope
 from ibis.config import _default_backend
 from ibis.config import options as opts
@@ -40,10 +38,14 @@ except ImportError:
 
     class _FixedTextJupyterMixin:
         """No-op when rich is not installed."""
+
+        __slots__ = ()
 else:
 
     class _FixedTextJupyterMixin(JupyterMixin):
         """JupyterMixin adds a spurious newline to text, this fixes the issue."""
+
+        __slots__ = ()
 
         def _repr_mimebundle_(self, *args, **kwargs):
             try:
@@ -65,7 +67,7 @@ def _capture_rich_renderable(renderable: RenderableType) -> str:
 
 
 @public
-class Expr(Immutable, Coercible):
+class Expr(Immutable):
     """Base expression class."""
 
     __slots__ = ("_arg",)
@@ -122,6 +124,9 @@ class Expr(Immutable, Coercible):
     def __iter__(self) -> NoReturn:
         raise TypeError(f"{self.__class__.__name__!r} object is not iterable")
 
+    def __setattr__(self, name: str, value: Any) -> NoReturn:
+        raise AttributeError("Ibis expressions are immutable")
+
     @classmethod
     def __coerce__(cls, value):
         if isinstance(value, cls):
@@ -129,7 +134,7 @@ class Expr(Immutable, Coercible):
         elif isinstance(value, ops.Node):
             return value.to_expr()
         else:
-            raise CoercionError("Unable to coerce value to an expression")
+            raise ValueError("Unable to coerce value to an expression")
 
     def __reduce__(self):
         return (self.__class__, (self._arg,))
@@ -899,7 +904,7 @@ def _binop(op_class: type[ops.Binary], left: ir.Value, right: ir.Value) -> ir.Va
     """
     try:
         node = op_class(left, right)
-    except (ValidationError, NotImplementedError):
+    except (MatchError, NotImplementedError):
         return NotImplemented
     else:
         return node.to_expr()

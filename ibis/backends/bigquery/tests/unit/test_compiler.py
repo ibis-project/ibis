@@ -14,7 +14,7 @@ import ibis.expr.datatypes as dt
 import ibis.expr.operations as ops
 from ibis import _
 from ibis.backends.sql.compilers import BigQueryCompiler
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 to_sql = ibis.bigquery.compile
 

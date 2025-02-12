@@ -8,12 +8,12 @@ import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis.common.collections import FrozenOrderedDict  # noqa: TC001
-from ibis.common.grounds import Concrete
 from ibis.expr.operations.relations import Unaliased  # noqa: TC001
 from ibis.expr.types.relations import unwrap_aliases
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+from ibis.common.grounds import Concrete
 
 
 @public

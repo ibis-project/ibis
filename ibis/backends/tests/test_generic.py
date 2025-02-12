@@ -35,7 +35,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
-from ibis.common.annotations import ValidationError
+from ibis.common.grounds import ValidationError
 
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
