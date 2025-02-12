@@ -173,10 +173,13 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
             # connection string and use it as a database
             kwargs["database"] = database
 
+        if password is not None:
+            password = self._escape_special_characters(password)
+
         self.con = pyodbc.connect(
             user=user,
             server=f"{host},{port}",
-            password=self._escape_special_characters(password),
+            password=password,
             driver=driver,
             **kwargs,
         )
