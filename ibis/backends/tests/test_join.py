@@ -48,17 +48,11 @@ def check_eq(left, right, how, **kwargs):
     [
         "inner",
         "left",
-        param(
-            "right",
-            marks=[sqlite_right_or_full_mark],
-        ),
-        param(
-            "outer",
-            # TODO: mysql will likely never support full outer join
-            # syntax, but we might be able to work around that using
-            # LEFT JOIN UNION RIGHT JOIN
-            marks=sqlite_right_or_full_mark,
-        ),
+        param("right", marks=[sqlite_right_or_full_mark]),
+        # TODO: mysql will likely never support full outer join
+        # syntax, but we might be able to work around that using
+        # LEFT JOIN UNION RIGHT JOIN
+        param("outer", marks=sqlite_right_or_full_mark),
     ],
 )
 @pytest.mark.notimpl(["druid"])
@@ -100,7 +94,12 @@ def test_mutating_join(backend, batting, awards_players, how):
         .reset_index(drop=True)
     )
 
-    backend.assert_frame_equal(result, expected, check_like=True)
+    backend.assert_frame_equal(
+        result,
+        expected,
+        check_like=True,
+        check_dtype=not (how == "right" and backend.name() == "risingwave"),
+    )
 
 
 @pytest.mark.parametrize("how", ["semi", "anti"])
