@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from functools import partial
 from typing import NoReturn
 
@@ -66,41 +67,13 @@ _from_sqlglot_types = {
     typecode.VARBINARY: dt.Binary,
     typecode.VARCHAR: dt.String,
     typecode.VARIANT: dt.JSON,
-    typecode.UNIQUEIDENTIFIER: dt.UUID,
     typecode.SET: partial(dt.Array, dt.string),
-    #############################
-    # Unsupported sqlglot types #
-    #############################
-    # BIT = auto() # mysql
-    # BIGSERIAL = auto()
-    # DATETIME64 = auto() # clickhouse
-    # ENUM = auto()
-    # INT4RANGE = auto()
-    # INT4MULTIRANGE = auto()
-    # INT8RANGE = auto()
-    # INT8MULTIRANGE = auto()
-    # NUMRANGE = auto()
-    # NUMMULTIRANGE = auto()
-    # TSRANGE = auto()
-    # TSMULTIRANGE = auto()
-    # TSTZRANGE = auto()
-    # TSTZMULTIRANGE = auto()
-    # DATERANGE = auto()
-    # DATEMULTIRANGE = auto()
-    # HLLSKETCH = auto()
-    # IMAGE = auto()
-    # IPPREFIX = auto()
-    # SERIAL = auto()
-    # SET = auto()
-    # SMALLSERIAL = auto()
-    # SUPER = auto()
-    # TIMESTAMPLTZ = auto()
-    # UNKNOWN = auto()  # Sentinel value, useful for type annotation
-    # UINT128 = auto()
-    # UINT256 = auto()
-    # USERDEFINED = "USER-DEFINED"
-    # XML = auto()
 }
+
+
+# typecode.UNIQUEIDENTIFIER was supplanted by typecode.UUID around sqlglot 26.6
+with contextlib.suppress(AttributeError):
+    _from_sqlglot_types[typecode.UNIQUEIDENTIFIER] = dt.UUID
 
 if sg.__version_tuple__[0] >= 26:
     _from_sqlglot_types |= {

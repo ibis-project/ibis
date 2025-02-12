@@ -385,10 +385,11 @@ class MSSQLCompiler(SQLGlotCompiler):
                 value.hour, value.minute, value.second, value.microsecond, 0
             )
         elif dtype.is_uuid():
-            return sge.Cast(
-                this=sge.convert(str(value)),
-                to=sge.DataType(this=sge.DataType.Type.UNIQUEIDENTIFIER),
-            )
+            try:
+                this = sge.DataType.Type.UUID
+            except AttributeError:
+                this = sge.DataType.Type.UNIQUEIDENTIFIER
+            return sge.Cast(this=sge.convert(str(value)), to=sge.DataType(this=this))
         elif dtype.is_binary():
             return self.f.convert(
                 sge.DataType(this=sge.DataType.Type.VARBINARY),
