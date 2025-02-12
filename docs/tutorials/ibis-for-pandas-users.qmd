@@ -311,8 +311,8 @@ We can evaluate the value counts to see how many rows we will expect to get back
 expr.value_counts()
 ```
 
-Now we apply the filter to the table. Since there are 6 True values in the expression, we should
-get 6 rows back.
+Now we apply the filter to the table. Since there are 300 True values in the expression, we should
+get 300 rows back.
 
 
 ```{python}
