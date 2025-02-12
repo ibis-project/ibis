@@ -1,7 +1,7 @@
 ---
 title: "Dynamic UDF Rewriting with Predicate Pushdowns"
 author: "Hussain Sultan"
-date: "2025-02-04"
+date: "2025-02-12"
 categories:
     - blog
     - case study
@@ -339,7 +339,7 @@ the filter conditions might be.
 
 ## LetSQL: simplifying UDF rewriting
 
-[LetSQL](https://letsql.com/)) makes advanced UDF rewriting and multi-engine
+[LetSQL](https://letsql.com/) makes advanced UDF rewriting and multi-engine
 pipelines much simpler. It builds on the same ideas we explored here but wraps
 them in a higher-level API.
 
