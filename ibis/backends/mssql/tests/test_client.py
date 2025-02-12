@@ -319,3 +319,17 @@ def test_non_ascii_column_name(con):
     names = schema.names
     assert len(names) == 1
     assert names[0] == "калона"
+
+
+def test_mssql_without_password_is_valid():
+    with pytest.raises(
+        PyODBCProgrammingError, match=f"Login failed for user '{MSSQL_USER}'"
+    ):
+        ibis.mssql.connect(
+            user=MSSQL_USER,
+            host=MSSQL_HOST,
+            password=None,
+            port=MSSQL_PORT,
+            database=IBIS_TEST_MSSQL_DB,
+            driver=MSSQL_PYODBC_DRIVER,
+        )
