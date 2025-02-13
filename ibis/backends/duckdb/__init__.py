@@ -827,43 +827,43 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         # explicitly.
 
     def read_delta(
-        self, path: str, /, *, table_name: str | None = None, **kwargs: Any
+        self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
     ) -> ir.Table:
         """Register a Delta Lake table as a table in the current database.
 
         Parameters
         ----------
         path
-            The data source. Must be a directory
-            containing a Delta Lake table.
+            The data source. Must be a directory containing a Delta Lake table.
         table_name
             An optional name to use for the created table. This defaults to
             a sequentially generated name.
-        **kwargs
+        kwargs
             Additional keyword arguments passed to deltalake.DeltaTable.
 
         Returns
         -------
         ir.Table
             The just-registered table.
-
         """
-        path = util.normalize_filenames(path)[0]
+        (path,) = util.normalize_filenames(path)
+
+        extensions = ["delta"]
+        if path.startswith(("http://", "https://", "s3://")):
+            extensions.append("httpfs")
 
         table_name = table_name or util.gen_name("read_delta")
 
-        try:
-            from deltalake import DeltaTable
-        except ImportError:
-            raise ImportError(
-                "The deltalake extra is required to use the "
-                "read_delta method. You can install it using pip:\n\n"
-                "pip install 'ibis-framework[deltalake]'\n"
-            )
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
 
-        delta_table = DeltaTable(path, **kwargs)
+        self._load_extensions(extensions)
 
-        self.con.register(table_name, delta_table.to_pyarrow_dataset())
+        self._create_temp_view(
+            table_name,
+            sg.select(STAR).from_(self.compiler.f.delta_scan(path, *options)),
+        )
         return self.table(table_name)
 
     def list_tables(

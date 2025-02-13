@@ -12,7 +12,6 @@ import ibis.expr.datatypes as dt
 from ibis import util
 from ibis.backends.tests.errors import (
     DatabricksServerOperationError,
-    DuckDBInvalidInputException,
     DuckDBNotImplementedException,
     DuckDBParserException,
     ExaQueryError,
@@ -475,11 +474,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     pyspark=["pyspark<4"],
     condition=CI and IS_SPARK_REMOTE,
     reason="not supported until pyspark 4",
-)
-@pytest.mark.xfail_version(
-    duckdb=["pyarrow>=19"],
-    raises=DuckDBInvalidInputException,
-    reason="decoding delta file fails",
 )
 @pytest.mark.xfail_version(
     datafusion=["pyarrow>=19", "datafusion>=44"],
