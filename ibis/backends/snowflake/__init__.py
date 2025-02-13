@@ -1126,15 +1126,14 @@ $$ {defn["source"]} $$"""
 
         type_mapper = self.compiler.type_mapper
 
+        dialect = self.dialect
         stmts = [
             f"CREATE TEMP STAGE {stage} FILE_FORMAT = (TYPE = PARQUET {options})",
             sge.Create(
                 kind="TABLE",
-                this=sge.Schema(
-                    this=qtable, expressions=schema.to_sqlglot(self.dialect)
-                ),
+                this=sge.Schema(this=qtable, expressions=schema.to_sqlglot(dialect)),
                 properties=sge.Properties(expressions=[sge.TemporaryProperty()]),
-            ).sql(self.dialect),
+            ).sql(dialect),
         ]
 
         query = ";\n".join(stmts)
@@ -1144,7 +1143,7 @@ $$ {defn["source"]} $$"""
             sg.select(
                 *(
                     sg.cast(
-                        self.compiler.f.get_path(param, sge.convert(col)),
+                        self.compiler.f.get(param, sge.convert(col)),
                         type_mapper.from_ibis(typ),
                     )
                     for col, typ in schema.items()
@@ -1153,9 +1152,7 @@ $$ {defn["source"]} $$"""
             .from_(sge.Table(this=sge.Var(this=f"@{stage}")))
             .subquery()
         )
-        copy_query = sge.Copy(this=qtable, kind=True, files=[copy_select]).sql(
-            self.dialect
-        )
+        copy_query = sge.Copy(this=qtable, kind=True, files=[copy_select]).sql(dialect)
         with self._safe_raw_sql(query) as cur:
             cur.execute(f"PUT 'file://{abspath}' @{stage} PARALLEL = {threads:d}")
             cur.execute(copy_query)
