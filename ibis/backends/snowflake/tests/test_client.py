@@ -4,6 +4,8 @@ import json
 import os
 from collections import Counter
 
+import hypothesis as h
+import hypothesis.strategies as st
 import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
@@ -436,3 +438,16 @@ def test_insert_dict_variants(con):
 
     con.insert(name, ibis.memtable(data))
     assert len(t.execute()) == 4
+
+
+@h.given(
+    column_name=st.text(
+        st.characters(exclude_characters="\x00"), min_size=1, max_size=255
+    )
+)
+def test_fancy_column_names(con, column_name):
+    name = gen_name("test_fancy_column_names")
+    testdf = pd.DataFrame({column_name: [1, 2, 3]})
+    t = con.create_table(name, obj=testdf, temp=True)
+    assert t.columns == (column_name,)
+    assert t.count().execute() == 3
