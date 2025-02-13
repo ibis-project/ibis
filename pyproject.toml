@@ -97,7 +97,7 @@ druid = [
   "rich>=12.4.4,<14",
 ]
 duckdb = [
-  "duckdb>=0.10,<2",
+  "duckdb>=0.10.3,<2",
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4,<1",
   "numpy>=1.23.2,<3",
