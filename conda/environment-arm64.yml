@@ -58,7 +58,6 @@ dependencies:
   - pytest-benchmark >=3.4.1,<5
   - pytest-clarity >=1.0.1,<2
   - pytest-cov >=3.0.0,<5
-  - pytest-httpserver >=1.0.5,<2
   - pytest-mock >=3.6.1,<4
   - pytest-randomly >=3.10.1,<4
   - pytest-repeat >=0.9.1,<0.10

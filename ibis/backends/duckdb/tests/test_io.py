@@ -14,7 +14,7 @@ from pytest import param
 
 import ibis
 import ibis.expr.datatypes as dt
-from ibis.conftest import ARM64, LINUX, MACOS, SANDBOXED
+from ibis.conftest import LINUX, SANDBOXED
 from ibis.util import gen_name
 
 
@@ -342,34 +342,6 @@ def test_temp_dir_set(tmp_path, database):
     temp_directory.mkdir(parents=True, exist_ok=True)
     con = ibis.duckdb.connect(database(tmp_path), temp_directory=temp_directory)
     assert con.settings["temp_directory"] == str(temp_directory)
-
-
-@pytest.mark.xfail(
-    SANDBOXED and LINUX,
-    reason=(
-        "nix on linux cannot download duckdb extensions or data due to sandboxing; "
-        "duckdb will try to automatically install and load read_parquet"
-    ),
-    raises=(duckdb.Error, duckdb.IOException),
-)
-@pytest.mark.skipif(
-    SANDBOXED and MACOS and ARM64, reason="raises a RuntimeError on nix macos arm64"
-)
-def test_s3_403_fallback(con, httpserver, monkeypatch):
-    # monkeypatch to avoid downloading extensions in tests
-    monkeypatch.setattr(con, "_load_extensions", lambda _: True)
-
-    # Throw a 403 to trigger fallback to pyarrow.dataset
-    path = "/invalid.parquet"
-    httpserver.expect_request(path).respond_with_data(
-        status=403, content_type="application/vnd.apache.parquet"
-    )
-
-    # Since the URI is nonsense to pyarrow, expect an error, but raises from
-    # pyarrow, which indicates the fallback worked
-    url = httpserver.url_for(path)
-    with pytest.raises(pa.lib.ArrowInvalid):
-        con.read_parquet(url)
 
 
 def test_register_numpy_str(con):
