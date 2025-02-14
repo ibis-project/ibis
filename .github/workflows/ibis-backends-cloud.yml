@@ -195,6 +195,7 @@ jobs:
           role-to-assume: arn:aws:iam::070284473168:role/ibis-project-athena
 
       - name: "run parallel tests: ${{ matrix.backend.name }}"
+        timeout-minutes: 60
         run: just ci-check "${{ join(matrix.backend.extras, ' ') }} --extra examples" -m ${{ matrix.backend.name }} --numprocesses auto --dist loadgroup
 
       - name: upload code coverage
