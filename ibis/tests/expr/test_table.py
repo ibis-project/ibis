@@ -1759,6 +1759,9 @@ def test_join_lname_rname(how):
     expr = method(right, rname="right_{name}", lname="left_{name}")
     assert expr.columns == ("left_id", "first_name", "right_id", "last_name")
 
+    expr = method(right, rname="{name}_z", lname="{name}_z")
+    assert expr.columns == ("id_z", "first_name", "last_name")
+
 
 def test_join_lname_rname_still_collide():
     t1 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})
