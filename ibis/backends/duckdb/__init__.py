@@ -11,8 +11,6 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 import duckdb
-import pyarrow as pa
-import pyarrow_hotfix  # noqa: F401
 import sqlglot as sg
 import sqlglot.expressions as sge
 from packaging.version import parse as vparse
@@ -26,7 +24,6 @@ import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
 from ibis.backends import CanCreateDatabase, UrlFromPath
-from ibis.backends.duckdb.converter import DuckDBPandasData, DuckDBPyArrowData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
@@ -37,6 +34,8 @@ if TYPE_CHECKING:
 
     import pandas as pd
     import polars as pl
+    import pyarrow as pa
+    import pyarrow_hotfix  # noqa: F401
     import torch
     from fsspec import AbstractFileSystem
 
@@ -783,23 +782,7 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
 
         table_name = table_name or util.gen_name("read_parquet")
 
-        # Default to using the native duckdb parquet reader
-        # If that fails because of auth issues, fall back to ingesting via
-        # pyarrow dataset
-        try:
-            self._read_parquet_duckdb_native(paths, table_name, **kwargs)
-        except duckdb.IOException:
-            self._read_parquet_pyarrow_dataset(paths, table_name, **kwargs)
-
-        return self.table(table_name)
-
-    def _read_parquet_duckdb_native(
-        self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
-    ) -> None:
-        if any(
-            source.startswith(("http://", "https://", "s3://"))
-            for source in source_list
-        ):
+        if any(path.startswith(("http://", "https://", "s3://")) for path in paths):
             self._load_extensions(["httpfs"])
 
         options = [
@@ -807,24 +790,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         ]
         self._create_temp_view(
             table_name,
-            sg.select(STAR).from_(self.compiler.f.read_parquet(source_list, *options)),
+            sg.select(STAR).from_(self.compiler.f.read_parquet(paths, *options)),
         )
-
-    def _read_parquet_pyarrow_dataset(
-        self, source_list: str | Iterable[str], table_name: str, **kwargs: Any
-    ) -> None:
-        import pyarrow.dataset as ds
-
-        dataset = ds.dataset(list(map(ds.dataset, source_list)), **kwargs)
-        self._load_extensions(["httpfs"])
-        # We don't create a view since DuckDB special cases Arrow Datasets
-        # so if we also create a view we end up with both a "lazy table"
-        # and a view with the same name
-        self.con.register(table_name, dataset)
-        # DuckDB normally auto-detects Arrow Datasets that are defined
-        # in local variables but the `dataset` variable won't be local
-        # by the time we execute against this so we register it
-        # explicitly.
+        return self.table(table_name)
 
     def read_delta(
         self, path: str | Path, /, *, table_name: str | None = None, **kwargs: Any
@@ -1288,6 +1256,9 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         chunk_size
             The number of rows to fetch per batch
         """
+        import pyarrow as pa
+        import pyarrow_hotfix  # noqa: F401
+
         self._run_pre_execute_hooks(expr)
         table = expr.as_table()
         sql = self.compile(table, limit=limit, params=params)
@@ -1309,6 +1280,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         limit: int | str | None = None,
         **kwargs: Any,
     ) -> pa.Table:
+        from ibis.backends.duckdb.converter import DuckDBPyArrowData
+
         table = self._to_duckdb_relation(
             expr, params=params, limit=limit, **kwargs
         ).arrow()
@@ -1326,10 +1299,12 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
         """Execute an expression."""
         import pandas as pd
         import pyarrow.types as pat
+        import pyarrow_hotfix  # noqa: F401
 
-        table = self._to_duckdb_relation(
-            expr, params=params, limit=limit, **kwargs
-        ).arrow()
+        from ibis.backends.duckdb.converter import DuckDBPandasData
+
+        rel = self._to_duckdb_relation(expr, params=params, limit=limit, **kwargs)
+        table = rel.arrow()
 
         df = pd.DataFrame(
             {
