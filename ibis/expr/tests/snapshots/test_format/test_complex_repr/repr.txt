@@ -10,9 +10,11 @@ r2 := Project[r1]
   x: r1.a + 42
 
 r3 := Aggregate[r2]
-  groups:
-    x: r2.x
   metrics:
     y: Sum(r2.a)
+  keys:
+    x: r2.x
+  groups:
+    x: r2.x
 
 Limit[r3, n=10]
