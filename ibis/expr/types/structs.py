@@ -9,7 +9,7 @@ from public import public
 import ibis.expr.operations as ops
 from ibis import util
 from ibis.common.deferred import deferrable
-from ibis.common.exceptions import IbisError
+from ibis.common.exceptions import FieldNotFoundError, IbisError
 from ibis.expr.types.generic import Column, Scalar, Value, literal
 
 if TYPE_CHECKING:
@@ -203,10 +203,10 @@ class StructValue(Value):
         >>> t.s["foo_bar"]
         Traceback (most recent call last):
             ...
-        KeyError: 'foo_bar'
+        ibis.common.exceptions.FieldNotFoundError: 'foo_bar' not found in StructColumn object. Possible options: {'a', 'b'}
         """
         if name not in self.names:
-            raise KeyError(name)
+            raise FieldNotFoundError(self, name, self.names)
         return ops.StructField(self, name).to_expr()
 
     def __setstate__(self, instance_dictionary):
@@ -263,12 +263,9 @@ class StructValue(Value):
         >>> t.s.foo_bar
         Traceback (most recent call last):
             ...
-        AttributeError: foo_bar
+        ibis.common.exceptions.FieldNotFoundError: 'foo_bar' not found in StructColumn object. Possible options: {'a', 'b'}
         """
-        try:
-            return self[name]
-        except KeyError:
-            raise AttributeError(name) from None
+        return self[name]
 
     @property
     def names(self) -> Sequence[str]:
