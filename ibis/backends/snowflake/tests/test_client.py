@@ -10,6 +10,8 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
+import sqlglot as sg
+import sqlglot.expressions as sge
 from pytest import param
 
 import ibis
@@ -442,16 +444,21 @@ def test_insert_dict_variants(con):
 
 @h.given(
     column_name=st.text(
-        # \x00 fails with the driver
-        # \ud800 fails in pyarrow
-        st.characters(exclude_characters="\x00\ud800"),
-        min_size=1,
+        st.characters(
+            # ignore surrogates, because they fail in PyArrow
+            exclude_categories=("Cs",),
+            # \x00 fails inside snowflake-connector-python
+            exclude_characters="\x00",
+        ),
+        min_size=0,
+        # upper limit of identifier length dictated by snowflake
         max_size=255,
     )
 )
 def test_fancy_column_names(con, column_name):
-    name = gen_name("test_fancy_column_names")
-    testdf = pd.DataFrame({column_name: [1, 2, 3]})
-    t = con.create_table(name, obj=testdf, temp=True)
+    value = 2
+    t = con.sql(
+        sg.select(sge.convert(value).as_(column_name, quoted=True)).sql("snowflake")
+    )
     assert t.columns == (column_name,)
-    assert t.count().execute() == 3
+    assert t[column_name].sum().execute() == value
