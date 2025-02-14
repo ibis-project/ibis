@@ -442,7 +442,11 @@ def test_insert_dict_variants(con):
 
 @h.given(
     column_name=st.text(
-        st.characters(exclude_characters="\x00"), min_size=1, max_size=255
+        # \x00 fails with the driver
+        # \ud800 fails in pyarrow
+        st.characters(exclude_characters="\x00\ud800"),
+        min_size=1,
+        max_size=255,
     )
 )
 def test_fancy_column_names(con, column_name):
