@@ -207,6 +207,8 @@ def test_to_pyarrow_batches_memtable(con):
 
 
 def test_table_to_parquet(tmp_path, backend, awards_players):
+    if backend.name() == "pyspark" and IS_SPARK_REMOTE:
+        pytest.skip("writes to remote output directory")
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet)
 
@@ -257,15 +259,32 @@ def test_table_to_parquet_writer_kwargs(version, tmp_path, backend, awards_playe
     outparquet = tmp_path / "out.parquet"
     awards_players.to_parquet(outparquet, version=version)
 
-    df = pd.read_parquet(outparquet)
+    if backend.name() == "pyspark":
+        if IS_SPARK_REMOTE:
+            pytest.skip("writes to remote output directory")
+        # Pyspark will write more than one parquet file under outparquet as directory
+        parquet_files = sorted(outparquet.glob("*.parquet"))
+        df = (
+            pd.concat(map(pd.read_parquet, parquet_files))
+            .sort_values(list(awards_players.columns))
+            .reset_index(drop=True)
+        )
+        result = (
+            awards_players.to_pandas()
+            .sort_values(list(awards_players.columns))
+            .reset_index(drop=True)
+        )
+        backend.assert_frame_equal(result, df)
+    else:
+        df = pd.read_parquet(outparquet)
 
-    backend.assert_frame_equal(
-        awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
-    )
+        backend.assert_frame_equal(
+            awards_players.to_pandas().fillna(pd.NA), df.fillna(pd.NA)
+        )
 
-    md = pa.parquet.read_metadata(outparquet)
+        md = pa.parquet.read_metadata(outparquet)
 
-    assert md.format_version == version
+        assert md.format_version == version
 
 
 @pytest.mark.notimpl(
@@ -333,7 +352,12 @@ def test_memtable_to_file(tmp_path, con, ftype, monkeypatch):
 
     getattr(con, f"to_{ftype}")(memtable, outfile)
 
-    assert outfile.is_file()
+    if con.name == "pyspark" and ftype == "parquet":
+        if IS_SPARK_REMOTE:
+            pytest.skip("writes to remote output directory")
+        assert outfile.is_dir()
+    else:
+        assert outfile.is_file()
 
 
 def test_table_to_csv(tmp_path, backend, awards_players):

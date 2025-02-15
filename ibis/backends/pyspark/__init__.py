@@ -600,6 +600,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         temp: bool | None = None,
         overwrite: bool = False,
         format: str = "parquet",
+        partition_by: str | list[str] | None = None,
     ) -> ir.Table:
         """Create a new table in Spark.
 
@@ -623,6 +624,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             If `True`, overwrite existing data
         format
             Format of the table on disk
+        partition_by
+            Name(s) of partitioning column(s)
 
         Returns
         -------
@@ -651,7 +654,9 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
             with self._active_catalog_database(catalog, db):
                 self._run_pre_execute_hooks(table)
                 df = self._session.sql(query)
-                df.write.saveAsTable(name, format=format, mode=mode)
+                df.write.saveAsTable(
+                    name, format=format, mode=mode, partitionBy=partition_by
+                )
         elif schema is not None:
             schema = ibis.schema(schema)
             schema = PySparkSchema.from_ibis(schema)
@@ -952,6 +957,45 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         self._run_pre_execute_hooks(expr)
         df = self._session.sql(self.compile(expr, params=params, limit=limit))
         df.write.format("delta").save(os.fspath(path), **kwargs)
+
+    @util.experimental
+    def to_parquet(
+        self,
+        expr: ir.Table,
+        /,
+        path: str | Path,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        """Write the results of executing the given expression to a Parquet file.
+
+        This method is eager and will execute the associated expression
+        immediately.
+
+        Parameters
+        ----------
+        expr
+            The ibis expression to execute and persist to a Parquet file.
+        path
+            The data source. A string or Path to the Parquet file.
+        params
+            Mapping of scalar parameter expressions to value.
+        limit
+            An integer to effect a specific row limit. A value of `None` means
+            "no limit". The default is in `ibis/config.py`.
+        **kwargs
+            Additional keyword arguments passed to
+            [pyspark.sql.DataFrameWriter](https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/api/pyspark.sql.DataFrameWriter.html).
+        """
+        if self.mode == "streaming":
+            raise NotImplementedError(
+                "Writing to a Parquet file in streaming mode is not supported."
+            )
+        self._run_pre_execute_hooks(expr)
+        df = self._session.sql(self.compile(expr, params=params, limit=limit))
+        df.write.format("parquet").save(os.fspath(path), **kwargs)
 
     def to_pyarrow(
         self,
