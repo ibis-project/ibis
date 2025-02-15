@@ -5,8 +5,10 @@ from time import sleep
 
 import pandas as pd
 import pytest
+from pandas.testing import assert_frame_equal
 
 from ibis.backends.pyspark.datatypes import PySparkSchema
+from ibis.conftest import IS_SPARK_REMOTE
 
 
 @pytest.mark.parametrize(
@@ -73,3 +75,40 @@ def test_to_parquet_dir(con_streaming, tmp_path):
     sleep(2)
     df = pd.concat([pd.read_parquet(f) for f in path.glob("*.parquet")])
     assert len(df) == 5
+
+
+@pytest.mark.skipif(
+    IS_SPARK_REMOTE, reason="Spark remote does not support assertions about local paths"
+)
+def test_to_parquet_read_parquet(con, tmp_path):
+    # No Partitions
+    t_out = con.table("awards_players")
+
+    t_out.to_parquet(tmp_path / "out_np")
+
+    t_in = con.read_parquet(tmp_path / "out_np")
+
+    cols = list(t_out.columns)
+    expected = t_out.to_pandas()[cols].sort_values(cols).reset_index(drop=True)
+    result = t_in.to_pandas()[cols].sort_values(cols).reset_index(drop=True)
+
+    assert_frame_equal(expected, result)
+
+    # Partitions
+    t_out = con.table("awards_players")
+
+    t_out.to_parquet(tmp_path / "out_p", partitionBy=["playerID"])
+
+    # Check partition paths
+    distinct_playerids = t_out.select("playerID").distinct().to_pandas()
+
+    for pid in distinct_playerids["playerID"]:
+        assert (tmp_path / "out_p" / f"playerID={pid}").exists()
+
+    t_in = con.read_parquet(tmp_path / "out_p")
+
+    cols = list(t_out.columns)
+    expected = t_out.to_pandas()[cols].sort_values(cols).reset_index(drop=True)
+    result = t_in.to_pandas()[cols].sort_values(cols).reset_index(drop=True)
+
+    assert_frame_equal(expected, result)

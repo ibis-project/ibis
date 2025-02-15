@@ -54,3 +54,131 @@ def test_create_table_no_catalog(con):
 
     assert "t2" not in con.list_tables(database="default")
     assert con.current_database != "default"
+
+
+@pytest.mark.xfail_version(pyspark=["pyspark<3.4"], reason="no catalog support")
+def test_create_table_with_partition_and_catalog(con):
+    # Create a sample table with a partition column
+    data = {
+        "epoch": [1712848119, 1712848121, 1712848155, 1712848169],
+        "category1": ["A", "B", "A", "C"],
+        "category2": ["G", "J", "G", "H"],
+    }
+
+    t = ibis.memtable(data)
+
+    # 1D partition
+    table_name = "pt1"
+
+    con.create_table(
+        table_name,
+        database=("spark_catalog", "default"),
+        obj=t,
+        overwrite=True,
+        partition_by="category1",
+    )
+    assert table_name in con.list_tables(database="spark_catalog.default")
+
+    partitions = (
+        con.raw_sql(f"SHOW PARTITIONS spark_catalog.default.{table_name}")
+        .toPandas()
+        .to_dict()
+    )
+    expected_partitions = {
+        "partition": {0: "category1=A", 1: "category1=B", 2: "category1=C"}
+    }
+    assert partitions == expected_partitions
+
+    # Cleanup
+    con.drop_table(table_name, database="spark_catalog.default")
+    assert table_name not in con.list_tables(database="spark_catalog.default")
+
+    # 2D partition
+    table_name = "pt2"
+
+    con.create_table(
+        table_name,
+        database=("spark_catalog", "default"),
+        obj=t,
+        overwrite=True,
+        partition_by=["category1", "category2"],
+    )
+    assert table_name in con.list_tables(database="spark_catalog.default")
+
+    partitions = (
+        con.raw_sql(f"SHOW PARTITIONS spark_catalog.default.{table_name}")
+        .toPandas()
+        .to_dict()
+    )
+    expected_partitions = {
+        "partition": {
+            0: "category1=A/category2=G",
+            1: "category1=B/category2=J",
+            2: "category1=C/category2=H",
+        }
+    }
+    assert partitions == expected_partitions
+
+    # Cleanup
+    con.drop_table(table_name, database="spark_catalog.default")
+    assert table_name not in con.list_tables(database="spark_catalog.default")
+
+
+def test_create_table_with_partition_no_catalog(con):
+    data = {
+        "epoch": [1712848119, 1712848121, 1712848155, 1712848169],
+        "category1": ["A", "B", "A", "C"],
+        "category2": ["G", "J", "G", "H"],
+    }
+
+    t = ibis.memtable(data)
+
+    # 1D partition
+    table_name = "pt1"
+
+    con.create_table(
+        table_name,
+        obj=t,
+        overwrite=True,
+        partition_by="category1",
+    )
+    assert table_name in con.list_tables()
+
+    partitions = (
+        con.raw_sql(f"SHOW PARTITIONS ibis_testing.{table_name}").toPandas().to_dict()
+    )
+    expected_partitions = {
+        "partition": {0: "category1=A", 1: "category1=B", 2: "category1=C"}
+    }
+    assert partitions == expected_partitions
+
+    # Cleanup
+    con.drop_table(table_name)
+    assert table_name not in con.list_tables()
+
+    # 2D partition
+    table_name = "pt2"
+
+    con.create_table(
+        table_name,
+        obj=t,
+        overwrite=True,
+        partition_by=["category1", "category2"],
+    )
+    assert table_name in con.list_tables()
+
+    partitions = (
+        con.raw_sql(f"SHOW PARTITIONS ibis_testing.{table_name}").toPandas().to_dict()
+    )
+    expected_partitions = {
+        "partition": {
+            0: "category1=A/category2=G",
+            1: "category1=B/category2=J",
+            2: "category1=C/category2=H",
+        }
+    }
+    assert partitions == expected_partitions
+
+    # Cleanup
+    con.drop_table(table_name)
+    assert table_name not in con.list_tables()
