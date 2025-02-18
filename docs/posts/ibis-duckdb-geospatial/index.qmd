@@ -38,21 +38,9 @@ subway stations, streets, neighborhood, census data and, homicides. The datasets
 18N projection, EPSG:26918.
 
 ```{python}
-from pathlib import Path
-from zipfile import ZipFile
 from urllib.request import urlretrieve
 
-# Download and unzip
-url = "https://open.gishub.org/data/duckdb/nyc_data.db.zip"
-zip_path = Path("nyc_data.db.zip")
-db_path = Path("nyc_data.db")
-
-if not zip_path.exists():
-    urlretrieve(url, zip_path)
-
-if not db_path.exists():
-    with ZipFile(zip_path) as zip_file:
-        zip_file.extract("nyc_data.db")
+path, _ = urlretrieve("https://storage.googleapis.com/ibis-blog-data-public/nyc_data.ddb")
 ```
 
 ## Let's get started
@@ -65,7 +53,7 @@ from ibis import _
 
 ibis.options.interactive = True
 
-con = ibis.duckdb.connect("nyc_data.db")
+con = ibis.duckdb.connect(path)
 con.list_tables()
 ```
 
