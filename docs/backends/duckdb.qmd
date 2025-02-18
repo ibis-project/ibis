@@ -117,6 +117,26 @@ Given an empty path, `ibis.connect` will connect to an ephemeral, in-memory data
 con = ibis.connect("duckdb://")
 ```
 
+## Cloud bucket reads
+
+DuckDB has [a secret management
+system](https://duckdb.org/docs/configuration/secrets_manager.html) that is
+designed to support reading data from both public and private cloud blob
+storage systems like Amazon's S3.
+
+To make your life easier, you should probably start with the `CREDENTIAL_CHAIN`
+provider, which mimics the default behavior of the `aws` CLI and SDKs.
+
+Ibis doesn't have an Ibis-native API for dealing with DuckDB's secrets, but you can of course
+run `raw_sql` to set them up:
+
+```{python}
+con.raw_sql("CREATE SECRET s3 (TYPE S3, PROVIDER CREDENTIAL_CHAIN)")
+```
+
+Assuming you've got the appropriate authorizations in AWS, this should allow
+DuckDB to read from any bucket you're authorized to access.
+
 ## MotherDuck
 
 The DuckDB backend supports [MotherDuck](https://motherduck.com). If you have an
