@@ -452,3 +452,24 @@ def test_create_table_overwrite(con, tmp_db):
     name = gen_name("overwrite_test")
     t = con.create_table(name, schema={"id": "int32"}, database=tmp_db, overwrite=True)
     assert t.schema() == ibis.schema({"id": dt.int32})
+
+
+@pytest.mark.parametrize("overwrite", [True, False], ids=["overwrite", "no-overwrite"])
+@pytest.mark.parametrize(
+    ("insert_overwrite", "expected_count"),
+    [(True, 2), (False, 7)],
+    ids=["insert-overwrite", "no-insert-overwrite"],
+)
+def test_insert_overwrite(con, tmp_db, overwrite, insert_overwrite, expected_count):
+    table = gen_name("insert_overwrite")
+    schema = tmp_db
+
+    t = ibis.memtable({"key": [1, 2, 3, 4, 5]})
+
+    con.create_table(table, obj=t, database=schema, overwrite=overwrite)
+
+    t = t.filter(lambda table: table["key"] > 3)
+
+    con.insert(table, obj=t, overwrite=insert_overwrite, database=schema)
+    assert table in con.list_tables(database=schema)
+    assert con.table(table, database=schema).count().execute() == expected_count
