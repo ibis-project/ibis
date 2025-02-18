@@ -115,7 +115,11 @@ class MySQLCompiler(SQLGlotCompiler):
             # for TEXT (except when casting of course!)
             return arg
         elif from_.is_integer() and to.is_timestamp():
-            return self.f.from_unixtime(arg)
+            return self.if_(
+                arg.eq(0),
+                self.f.timestamp("1970-01-01 00:00:00"),
+                self.f.from_unixtime(arg),
+            )
         return super().visit_Cast(op, arg=arg, to=to)
 
     def visit_TimestampDiff(self, op, *, left, right):
