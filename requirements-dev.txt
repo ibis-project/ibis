@@ -92,8 +92,8 @@ grpcio-status==1.70.0
 h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
-humanize==4.11.0
-hypothesis==6.125.3
+humanize==4.12.0
+hypothesis==6.126.0
 identify==2.6.7
 idna==3.10
 importlib-metadata==8.6.1
@@ -141,7 +141,7 @@ mizani==0.13.1
 multidict==6.1.0
 mypy-extensions==1.0.0
 mysqlclient==2.2.7
-narwhals==1.26.0
+narwhals==1.27.1
 nbclient==0.10.2
 nbconvert==7.16.6
 nbformat==5.10.4
@@ -205,7 +205,7 @@ pyodbc==5.2.0
 pyogrio==0.10.0
 pyopenssl==24.3.0
 pyparsing==3.2.1
-pyproj==3.7.0
+pyproj==3.7.1
 pyspark==3.5.4
 pytest==8.3.4
 pytest-benchmark==5.1.0
@@ -240,7 +240,7 @@ ruff==0.9.6
 s3fs==2025.2.0
 s3transfer==0.11.2
 scikit-learn==1.6.1
-scipy==1.15.1
+scipy==1.15.2
 seaborn==0.13.2
 send2trash==1.8.3
 setuptools==75.8.0
