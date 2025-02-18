@@ -12,7 +12,7 @@ lock:
     set -euo pipefail
 
     uv sync --all-extras --group dev --group tests --group docs --no-install-project --no-install-workspace
-    just export-deps
+    just export-deps > requirements-dev.txt
 
 # update locked dependencies
 update *packages:
@@ -32,7 +32,7 @@ update *packages:
 
     uv sync "${args[@]}"
 
-    just export-deps
+    just export-deps > requirements-dev.txt
 
 # export locked dependencies
 @export-deps:
@@ -44,7 +44,7 @@ update *packages:
         --group tests \
         --group docs \
         --no-hashes \
-        --no-header > requirements-dev.txt
+        --no-header
 
 # show all backends
 @list-backends:
