@@ -211,6 +211,7 @@ down *backends:
 # stop all containers, prune networks, and remove all volumes
 stop *backends:
     just down {{ backends }}
+    docker system prune --force --volumes
     docker network prune -f
     docker volume prune -af
 

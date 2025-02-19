@@ -298,12 +298,17 @@ class Backend(SQLBackend, CanListDatabase):
 
         table_loc = self._to_sqlglot_table(table_loc)
 
+        dialect = self.dialect
+
         # Deeply frustrating here where if we call `convert` on `table_loc`,
         # which is a sg.exp.Table, the quotes are rendered as double-quotes
-        # which are invalid. With no `convert`, the same thing happens.
-        # If we call `convert` on the stringified SQL output, they get reparsed
-        # as literal strings and those are rendered correctly.
-        conditions = C.owner.eq(sge.convert(table_loc.sql(self.name)))
+        # which are invalid. So, we unquote the database name here.
+        def unquote(node):
+            if isinstance(node, sg.exp.Identifier):
+                return sg.to_identifier(node.name, quoted=False)
+            return node
+
+        conditions = C.owner.eq(sge.convert(table_loc.transform(unquote).sql(dialect)))
 
         tables = (
             sg.select("table_name", "owner")
@@ -317,7 +322,7 @@ class Backend(SQLBackend, CanListDatabase):
             .distinct()
             .where(conditions)
         )
-        sql = tables.union(views).sql(self.name)
+        sql = tables.union(views).sql(dialect)
 
         with self._safe_raw_sql(sql) as cur:
             out = cur.fetchall()

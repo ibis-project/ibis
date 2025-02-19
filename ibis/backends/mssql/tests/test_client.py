@@ -333,3 +333,10 @@ def test_mssql_without_password_is_valid():
             database=IBIS_TEST_MSSQL_DB,
             driver=MSSQL_PYODBC_DRIVER,
         )
+
+
+@pytest.mark.parametrize(
+    "database", ["ibis-testing.dbo", ("ibis-testing", "dbo")], ids=["string", "tuple"]
+)
+def test_list_tables_with_dash(con, database):
+    assert con.list_tables(database=database)

@@ -317,6 +317,7 @@ def test_create_table_from_schema(con, new_schema, temp_table):
 
 @mark.notimpl(
     ["oracle"],
+    raises=AssertionError,
     reason="oracle temp tables aren't cleaned up on reconnect -- they need to "
     "be switched from using atexit to weakref.finalize",
 )
@@ -669,7 +670,7 @@ def test_list_catalogs(con):
         "duckdb": {"memory"},
         "exasol": set(),
         "flink": set(),
-        "mssql": {"ibis_testing"},
+        "mssql": {"ibis-testing"},
         "oracle": set(),
         "postgres": {"postgres", "ibis_testing"},
         "risingwave": {"dev"},
