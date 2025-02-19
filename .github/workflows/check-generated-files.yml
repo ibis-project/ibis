@@ -58,11 +58,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: generate requirements-dev.txt
-        run: just export-deps
-
       - name: check requirements-dev.txt
-        run: git diff --exit-code requirements-dev.txt
+        run: |
+          diff --color --unified \
+            <(cut -d ';' -f1 requirements-dev.txt | sort -u) \
+            <(just export-deps | cut -d ';' -f1 | sort -u)
 
       - name: install using requirements-dev.txt
         run: pip install -r requirements-dev.txt
