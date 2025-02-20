@@ -1759,6 +1759,23 @@ def test_join_lname_rname(how):
     expr = method(right, rname="right_{name}", lname="left_{name}")
     assert expr.columns == ("left_id", "first_name", "right_id", "last_name")
 
+    expr = method(right, rname="{name}_z", lname="{name}_z")
+    # As is, the two id columns collide with each other
+    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+        expr.columns  # noqa: B018
+    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+        expr.schema()
+    with pytest.raises(com.IntegrityError, match="Name collisions: {'id_z'}"):
+        expr.count()
+    # But if we are explicit about selecting out the id columns,
+    # we can avoid the collision.
+    assert expr.select(left.id, "first_name").columns == ("id", "first_name")
+    assert expr.select(left.id, "first_name", foo=right.id).columns == (
+        "id",
+        "first_name",
+        "foo",
+    )
+
 
 def test_join_lname_rname_still_collide():
     t1 = ibis.table({"id": "int64", "col1": "int64", "col2": "int64"})

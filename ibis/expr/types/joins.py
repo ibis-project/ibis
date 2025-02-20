@@ -395,6 +395,11 @@ class Join(Table):
         node = chain.copy(values=values)
         return Table(node)
 
+    @property
+    @functools.wraps(Table.columns)
+    def columns(self):
+        return self._finish().columns
+
     aggregate = finished(Table.aggregate)
     alias = finished(Table.alias)
     cast = finished(Table.cast)
@@ -414,6 +419,7 @@ class Join(Table):
     nunique = finished(Table.nunique)
     order_by = finished(Table.order_by)
     sample = finished(Table.sample)
+    schema = finished(Table.schema)
     sql = finished(Table.sql)
     unbind = finished(Table.unbind)
     union = finished(Table.union)
