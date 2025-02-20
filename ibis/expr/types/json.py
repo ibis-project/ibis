@@ -17,6 +17,75 @@ if TYPE_CHECKING:
 
 @public
 class JSONValue(Value):
+    """A json-like collection with dynamic keys and values.
+
+    Examples
+    --------
+    Construct a table with a JSON column
+
+    >>> import json, ibis
+    >>> ibis.options.interactive = True
+    >>> rows = [{"js": json.dumps({"a": [i, 1]})} for i in range(2)]
+    >>> t = ibis.memtable(rows, schema=ibis.schema(dict(js="json")))
+    >>> t
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ js                   ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ json                 │
+    ├──────────────────────┤
+    │ {'a': [...]}         │
+    │ {'a': [...]}         │
+    └──────────────────────┘
+
+    Extract the `"a"` field
+
+    >>> t.js["a"]
+    ┏━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ JSONGetItem(js, 'a') ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━┩
+    │ json                 │
+    ├──────────────────────┤
+    │ [0, 1]               │
+    │ [1, 1]               │
+    └──────────────────────┘
+
+    Extract the first element of the JSON array at `"a"`
+
+    >>> t.js["a"][0]
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ JSONGetItem(JSONGetItem(js, 'a'), 0) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ json                                 │
+    ├──────────────────────────────────────┤
+    │ 0                                    │
+    │ 1                                    │
+    └──────────────────────────────────────┘
+
+    Extract a non-existent field
+
+    >>> t.js["a"]["foo"]
+    ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ JSONGetItem(JSONGetItem(js, 'a'), 'foo') ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+    │ json                                     │
+    ├──────────────────────────────────────────┤
+    │ NULL                                     │
+    │ NULL                                     │
+    └──────────────────────────────────────────┘
+
+    Try to extract an array element, returns `NULL`
+
+    >>> t.js[20]
+    ┏━━━━━━━━━━━━━━━━━━━━━┓
+    ┃ JSONGetItem(js, 20) ┃
+    ┡━━━━━━━━━━━━━━━━━━━━━┩
+    │ json                │
+    ├─────────────────────┤
+    │ NULL                │
+    │ NULL                │
+    └─────────────────────┘
+    """
+
     def __getitem__(
         self, key: str | int | ir.StringValue | ir.IntegerValue
     ) -> JSONValue:
@@ -31,72 +100,6 @@ class JSONValue(Value):
         -------
         JSONValue
             Element located at `key`
-
-        Examples
-        --------
-        Construct a table with a JSON column
-
-        >>> import json, ibis
-        >>> ibis.options.interactive = True
-        >>> rows = [{"js": json.dumps({"a": [i, 1]})} for i in range(2)]
-        >>> t = ibis.memtable(rows, schema=ibis.schema(dict(js="json")))
-        >>> t
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ js                   ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ json                 │
-        ├──────────────────────┤
-        │ {'a': [...]}         │
-        │ {'a': [...]}         │
-        └──────────────────────┘
-
-        Extract the `"a"` field
-
-        >>> t.js["a"]
-        ┏━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ JSONGetItem(js, 'a') ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━┩
-        │ json                 │
-        ├──────────────────────┤
-        │ [0, 1]               │
-        │ [1, 1]               │
-        └──────────────────────┘
-
-        Extract the first element of the JSON array at `"a"`
-
-        >>> t.js["a"][0]
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ JSONGetItem(JSONGetItem(js, 'a'), 0) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ json                                 │
-        ├──────────────────────────────────────┤
-        │ 0                                    │
-        │ 1                                    │
-        └──────────────────────────────────────┘
-
-        Extract a non-existent field
-
-        >>> t.js["a"]["foo"]
-        ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ JSONGetItem(JSONGetItem(js, 'a'), 'foo') ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-        │ json                                     │
-        ├──────────────────────────────────────────┤
-        │ NULL                                     │
-        │ NULL                                     │
-        └──────────────────────────────────────────┘
-
-        Try to extract an array element, returns `NULL`
-
-        >>> t.js[20]
-        ┏━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ JSONGetItem(js, 20) ┃
-        ┡━━━━━━━━━━━━━━━━━━━━━┩
-        │ json                │
-        ├─────────────────────┤
-        │ NULL                │
-        │ NULL                │
-        └─────────────────────┘
         """
         return ops.JSONGetItem(self, key).to_expr()
 
