@@ -250,21 +250,37 @@ class Table(Expr, _FixedTextJupyterMixin):
                 args = ()
             else:
                 args = util.promote_list(args[0])
-        # bind positional arguments
-        values = []
-        for arg in args:
-            values.extend(bind(self, arg))
 
-        # bind keyword arguments where each entry can produce only one value
-        # which is then named with the given key
+        values: list[ir.Value] = []
+        not_found: list[str] = []
+
+        def _bind_one(arg, name=None):
+            try:
+                # need tuple to cause generator to evaluate
+                bindings = tuple(bind(self, arg))
+            except com.FieldsNotFoundError as e:
+                not_found.extend(e.names)
+            except AttributeError as e:
+                if e.obj is self:
+                    not_found.append(str(e.name))
+                else:
+                    raise
+            else:
+                if name is not None:
+                    if len(bindings) != 1:
+                        raise com.IbisInputError(
+                            "Keyword arguments cannot produce more than one value"
+                        )
+                    bindings = tuple(v.name(name) for v in bindings)
+                values.extend(bindings)
+
+        # bind positional arguments
+        for arg in args:
+            _bind_one(arg)
         for key, arg in kwargs.items():
-            bindings = tuple(bind(self, arg))
-            if len(bindings) != 1:
-                raise com.IbisInputError(
-                    "Keyword arguments cannot produce more than one value"
-                )
-            (value,) = bindings
-            values.append(value.name(key))
+            _bind_one(arg, key)
+        if not_found:
+            raise com.FieldsNotFoundError(self, not_found, self.columns)
         return values
 
     def bind(self, *args: Any, **kwargs: Any) -> tuple[Value, ...]:
@@ -682,13 +698,18 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         from ibis.expr.types.logical import BooleanValue
 
-        if isinstance(what, str):
-            return ops.Field(self.op(), what).to_expr()
-        elif isinstance(what, int):
-            return ops.Field(self.op(), self.columns[what]).to_expr()
-        elif isinstance(what, slice):
-            limit, offset = util.slice_to_limit_offset(what, self.count())
-            return self.limit(limit, offset=offset)
+        try:
+            if isinstance(what, str):
+                return ops.Field(self.op(), what).to_expr()
+            elif isinstance(what, int):
+                return ops.Field(self.op(), self.columns[what]).to_expr()
+            elif isinstance(what, slice):
+                limit, offset = util.slice_to_limit_offset(what, self.count())
+                return self.limit(limit, offset=offset)
+        except com.FieldsNotFoundError:
+            # the raised FieldsNotFoundError contains the Op, but we want
+            # to only expose the Expr.
+            raise com.FieldsNotFoundError(self, what, self.columns) from None
 
         columns = self.columns
         args = [
@@ -755,7 +776,7 @@ class Table(Expr, _FixedTextJupyterMixin):
         """
         try:
             return ops.Field(self, key).to_expr()
-        except com.IbisTypeError:
+        except com.FieldsNotFoundError:
             pass
 
         # A mapping of common attribute typos, mapping them to the proper name
@@ -769,10 +790,14 @@ class Table(Expr, _FixedTextJupyterMixin):
         if key in common_typos:
             hint = common_typos[key]
             raise AttributeError(
-                f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}"
+                f"{type(self).__name__} object has no attribute {key!r}, did you mean {hint!r}",
+                name=key,
+                obj=self,
             )
 
-        raise AttributeError(f"'Table' object has no attribute {key!r}")
+        raise AttributeError(
+            f"'Table' object has no attribute {key!r}", name=key, obj=self
+        )
 
     def __dir__(self) -> list[str]:
         out = set(dir(type(self)))
