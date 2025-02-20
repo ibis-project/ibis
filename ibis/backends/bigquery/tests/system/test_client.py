@@ -496,3 +496,12 @@ def test_geom_from_pyarrow(con, monkeypatch):
         assert len(t.to_pandas()) == 2
     finally:
         con.drop_table(name)
+
+
+def test_raw_sql_params_with_alias(con):
+    name = "cutoff"
+    cutoff = ibis.param("date").name(name)
+    value = datetime.date(2024, 10, 28)
+    query_parameters = {cutoff: value}
+    result = con.raw_sql(f"SELECT @{name} AS {name}", params=query_parameters)
+    assert list(map(dict, result)) == [{name: value}]
