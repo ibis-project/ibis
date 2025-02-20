@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 @public
 class JSONValue(Value):
     """A json-like collection with dynamic keys and values.
-    
+
     Examples
     --------
     Construct a table with a JSON column
