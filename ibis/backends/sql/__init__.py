@@ -607,6 +607,9 @@ class SQLBackend(BaseBackend):
         return sg_cat, sg_db
 
     def _to_sqlglot_table(self, database):
+        quoted = self.compiler.quoted
+        dialect = self.dialect
+
         if database is None:
             # Create "table" with empty catalog and db
             database = sge.Table(catalog=None, db=None)
@@ -629,8 +632,8 @@ class SQLBackend(BaseBackend):
                     '\n("database",)'
                 )
             database = sge.Table(
-                catalog=sg.to_identifier(catalog, quoted=self.compiler.quoted),
-                db=sg.to_identifier(database, quoted=self.compiler.quoted),
+                catalog=sg.to_identifier(catalog, quoted=quoted),
+                db=sg.to_identifier(database, quoted=quoted),
             )
         elif isinstance(database, str):
             # There is no definition of a sqlglot catalog.database hierarchy outside
@@ -638,10 +641,17 @@ class SQLBackend(BaseBackend):
             # sqlglot parsing of the string will assume that it's a Table
             # so we unpack the arguments into a new sqlglot object, switching
             # table (this) -> database (db) and database (db) -> catalog
-            table = sg.parse_one(database, into=sge.Table, dialect=self.dialect)
+            table = sg.parse_one(
+                ".".join(
+                    sg.to_identifier(part, quoted=quoted).sql(dialect)
+                    for part in database.split(".")
+                ),
+                into=sge.Table,
+                dialect=dialect,
+            )
             if table.args["catalog"] is not None:
                 raise exc.IbisInputError(
-                    f"Overspecified table hierarchy provided: `{table.sql(self.dialect)}`"
+                    f"Overspecified table hierarchy provided: `{table.sql(dialect)}`"
                 )
             catalog = table.args["db"]
             db = table.args["this"]

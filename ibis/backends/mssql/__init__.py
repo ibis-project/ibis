@@ -133,7 +133,7 @@ class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
         >>> host = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
         >>> user = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")
         >>> password = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
-        >>> database = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis_testing")
+        >>> database = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis-testing")
         >>> driver = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
         >>> con = ibis.mssql.connect(
         ...     database=database,
