@@ -8,7 +8,11 @@ from pytest import param
 import ibis
 import ibis.expr.types as ir
 from ibis import _
-from ibis.backends.tests.errors import PsycoPg2InternalError, PyDruidProgrammingError
+from ibis.backends.tests.errors import (
+    OracleDatabaseError,
+    PsycoPg2InternalError,
+    PyDruidProgrammingError,
+)
 
 pd = pytest.importorskip("pandas")
 
@@ -47,6 +51,39 @@ def test_union(backend, union_subsets, distinct):
         expected = expected.drop_duplicates("id")
 
     backend.assert_frame_equal(result, expected)
+
+
+@pytest.mark.parametrize("distinct", [False, True], ids=["all", "distinct"])
+@pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notyet(
+    ["oracle"], raises=OracleDatabaseError, reason="does not support NOT NULL types"
+)
+def test_unified_schemas(backend, con, distinct):
+    a = con.table("functional_alltypes").select(
+        "id",
+        i="tinyint_col",
+        s=_.string_col.cast("!string"),
+    )
+    b = con.table("functional_alltypes").select(
+        "id",
+        i=_.bigint_col + 256,  # ensure doesn't fit in a tinyint
+        s=_.string_col.cast("string"),
+    )
+
+    expr = ibis.union(a, b, distinct=distinct).order_by("id", "i", "s")
+    assert expr.i.type() == b.i.type()
+    assert expr.s.type() == b.s.type()
+    result = expr.execute()
+
+    expected = (
+        pd.concat([a.execute(), b.execute()], axis=0)
+        .sort_values(["id", "i", "s"])
+        .reset_index(drop=True)
+    )
+    if distinct:
+        expected = expected.drop_duplicates(["id", "i", "s"])
+
+    backend.assert_frame_equal(result, expected, check_dtype=False)
 
 
 @pytest.mark.notimpl(["druid"], raises=PyDruidProgrammingError)
