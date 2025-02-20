@@ -663,15 +663,7 @@ class Backend(SQLBackend, CanCreateDatabase):
 
     def raw_sql(self, query: str, params=None, page_size: int | None = None):
         query_parameters = [
-            bigquery_param(
-                param.type(),
-                value,
-                (
-                    param.get_name()
-                    if not isinstance(op := param.op(), ops.Alias)
-                    else op.arg.name
-                ),
-            )
+            bigquery_param(param.type(), value, param.get_name())
             for param, value in (params or {}).items()
         ]
         with contextlib.suppress(AttributeError):
