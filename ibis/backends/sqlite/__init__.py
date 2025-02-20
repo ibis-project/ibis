@@ -218,19 +218,20 @@ class Backend(SQLBackend, UrlFromPath):
         if database is None:
             database = "main"
 
-        quoted = self.compiler.quoted
+        compiler = self.compiler
+        quoted = compiler.quoted
         quoted_db = sg.to_identifier(database, quoted=quoted)
-        quoted_table = sg.to_identifier(table_name, quoted=quoted)
 
+        dialect = self.dialect
         sql = (
             sg.select("name", "type", sg.to_identifier("notnull", quoted=quoted))
             .from_(
                 sge.Table(
-                    this=self.compiler.f.anon.pragma_table_info(quoted_table),
+                    this=compiler.f.anon.pragma_table_info(sge.convert(table_name)),
                     db=quoted_db,
                 )
             )
-            .sql(self.dialect)
+            .sql(dialect)
         )
         cur.execute(sql)
         rows = cur.fetchall()
@@ -244,14 +245,14 @@ class Backend(SQLBackend, UrlFromPath):
         unknown = [name for name, (typ, _) in table_info.items() if not typ]
         if unknown:
             queries = (
-                self.compiler.f.typeof(sg.to_identifier(name, quoted=quoted))
+                compiler.f.typeof(sg.to_identifier(name, quoted=quoted))
                 for name in unknown
             )
             cur.execute(
                 sg.select(*queries)
                 .from_(sg.table(table_name, db=database, quoted=quoted))
                 .limit(1)
-                .sql(self.dialect)
+                .sql(dialect)
             )
             row = cur.fetchone()
             if row is not None:
