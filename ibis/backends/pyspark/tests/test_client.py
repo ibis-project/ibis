@@ -39,6 +39,10 @@ def test_catalog_db_args(con):
     assert con.current_database == "ibis_testing"
 
 
+def test_list_databases(con):
+    assert "ibis_testing" in con.list_databases(catalog="spark_catalog")
+
+
 def test_create_table_no_catalog(con):
     t = ibis.memtable({"epoch": [1712848119, 1712848121, 1712848155]})
 
