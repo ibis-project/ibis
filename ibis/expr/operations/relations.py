@@ -17,7 +17,7 @@ from ibis.common.collections import (
     FrozenDict,
     FrozenOrderedDict,
 )
-from ibis.common.exceptions import IbisTypeError, IntegrityError, RelationError
+from ibis.common.exceptions import FieldsNotFoundError, IntegrityError, RelationError
 from ibis.common.grounds import Concrete
 from ibis.common.patterns import Between, InstanceOf
 from ibis.common.typing import Coercible, VarTuple
@@ -90,13 +90,9 @@ class Field(Value):
 
     shape = ds.columnar
 
-    def __init__(self, rel, name):
+    def __init__(self, rel: Relation, name: str):
         if name not in rel.schema:
-            columns_formatted = ", ".join(map(repr, rel.schema.names))
-            raise IbisTypeError(
-                f"Column {name!r} is not found in table. "
-                f"Existing columns: {columns_formatted}."
-            )
+            raise FieldsNotFoundError(rel.to_expr(), name, rel.schema.names)
         super().__init__(rel=rel, name=name)
 
     @attribute

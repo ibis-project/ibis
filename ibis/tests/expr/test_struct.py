@@ -5,6 +5,7 @@ from collections import OrderedDict
 import pytest
 
 import ibis
+import ibis.common.exceptions as com
 import ibis.expr.operations as ops
 import ibis.expr.types as ir
 from ibis import _
@@ -41,7 +42,21 @@ def test_struct_getattr():
     assert isinstance(expr.a, ir.IntegerValue)
     assert expr.a.get_name() == "a"
     with pytest.raises(AttributeError, match="bad"):
-        expr.bad  # # noqa: B018
+        expr.bad  # noqa: B018
+
+
+def test_struct_getitem():
+    expr = ibis.struct({"a": 1, "b": 2})
+    assert isinstance(expr.a, ir.IntegerValue)
+    assert expr["a"].get_name() == "a"
+
+    with pytest.raises(TypeError, match="Deferred") as excinfo:
+        expr[_.A]
+
+    with pytest.raises(com.FieldsNotFoundError, match="A") as excinfo:
+        expr["A"]
+    assert excinfo.value.existing_options == ("a", "b")
+    assert excinfo.value.names == ("A",)
 
 
 def test_struct_tab_completion():

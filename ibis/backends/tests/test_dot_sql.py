@@ -86,7 +86,7 @@ def test_con_dot_sql(backend, con, schema, ftname):
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
 @pytest.mark.notyet(
-    ["druid"], raises=com.IbisTypeError, reason="druid does not preserve case"
+    ["druid"], raises=com.FieldsNotFoundError, reason="druid does not preserve case"
 )
 def test_table_dot_sql(backend):
     alltypes = backend.functional_alltypes
@@ -126,7 +126,7 @@ def test_table_dot_sql(backend):
     ["bigquery"], raises=GoogleBadRequest, reason="requires a qualified name"
 )
 @pytest.mark.notyet(
-    ["druid"], raises=com.IbisTypeError, reason="druid does not preserve case"
+    ["druid"], raises=com.FieldsNotFoundError, reason="druid does not preserve case"
 )
 @pytest.mark.notimpl(
     ["oracle"],
