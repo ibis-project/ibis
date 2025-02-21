@@ -30,7 +30,7 @@ dependencies = [
   "parsy>=2",
   "python-dateutil>=2.8.2",
   "pytz>=2022.7",
-  "sqlglot>=23.4,<26.7",
+  "sqlglot>=23.4",
   "toolz>=0.11",
   "typing-extensions>=4.3.0",
 ]
@@ -44,183 +44,183 @@ Chat = "https://ibis-project.zulipchat.com"
 
 [project.optional-dependencies]
 athena = [
-  "PyAthena[Pandas,Arrow]>=3.11.0,<4",
+  "PyAthena[Pandas,Arrow]>=3.11.0",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
-  "packaging>=21.3,<25",
+  "rich>=12.4.4",
+  "packaging>=21.3",
   "fsspec[s3]",
 ]
 bigquery = [
-  "db-dtypes>=0.3,<2",
-  "google-cloud-bigquery>=3,<4",
-  "google-cloud-bigquery-storage>=2,<3",
+  "db-dtypes>=0.3",
+  "google-cloud-bigquery>=3",
+  "google-cloud-bigquery-storage>=2",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
-  "pydata-google-auth>=1.4.0,<2",
+  "pyarrow-hotfix>=0.4",
+  "pydata-google-auth>=1.4.0",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 clickhouse = [
-  "clickhouse-connect[arrow,pandas,numpy]>=0.5.23,<1",
+  "clickhouse-connect[arrow,pandas,numpy]>=0.5.23",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 databricks = [
-  "databricks-sql-connector-core>=4,<5",
+  "databricks-sql-connector-core>=4",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 datafusion = [
-  "datafusion>=0.6,<45",
+  "datafusion>=0.6",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 druid = [
-  "pydruid>=0.6.7,<1",
+  "pydruid>=0.6.7",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 duckdb = [
-  "duckdb>=0.10.3,<2",
+  "duckdb>=0.10.3",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
-  "packaging>=21.3,<25",
+  "rich>=12.4.4",
+  "packaging>=21.3",
 ]
 exasol = [
-  "pyexasol>=0.25.2,<1",
+  "pyexasol>=0.25.2",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 flink = [
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 impala = [
-  "impyla>=0.17,<1",
+  "impyla>=0.17",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 mssql = [
-  "pyodbc>=4.0.39,<6",
+  "pyodbc>=4.0.39",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 mysql = [
-  "mysqlclient>=2.2.4,<3",
+  "mysqlclient>=2.2.4",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 oracle = [
-  "oracledb>=1.3.1,<3",
-  "packaging>=21.3,<25",
+  "oracledb>=1.3.1",
+  "packaging>=21.3",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 polars = [
-  "polars>=1,<2",
-  "packaging>=21.3,<25",
+  "polars>=1",
+  "packaging>=21.3",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 postgres = [
-  "psycopg[binary]>=3.2.0,<4",
+  "psycopg[binary]>=3.2.0",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 pyspark = [
-  "pyspark>=3.3.3,<4",
-  "packaging>=21.3,<25",
+  "pyspark>=3.3.3",
+  "packaging>=21.3",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 snowflake = [
-  "snowflake-connector-python>=3.0.2,<4,!=3.3.0b1",
+  "snowflake-connector-python>=3.0.2,!=3.3.0b1",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 sqlite = [
   "regex>=2021.7.6",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 risingwave = [
-  "psycopg2>=2.8.4,<3",
+  "psycopg2>=2.8.4",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 trino = [
-  "trino>=0.321,<1",
+  "trino>=0.321",
   "pyarrow>=10.0.1",
-  "pyarrow-hotfix>=0.4,<1",
+  "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
-  "rich>=12.4.4,<14",
+  "rich>=12.4.4",
 ]
 # non-backend extras
-visualization = ["graphviz>=0.16,<1"]
-decompiler = ["black>=22.1.0,<26"]
-deltalake = ["deltalake>=0.9.0,<1"]
-examples = ["pins[gcs]>=0.8.3,<1"]
+visualization = ["graphviz>=0.16"]
+decompiler = ["black>=22.1.0"]
+deltalake = ["deltalake>=0.9.0"]
+examples = ["pins[gcs]>=0.8.3"]
 geospatial = [
-  "geoarrow-types>=0.2,<1",
-  "geopandas>=0.6,<2",
-  "pyproj>=3.3.0,<4",
-  "shapely>=2,<3",
+  "geoarrow-types>=0.2",
+  "geopandas>=0.6",
+  "pyproj>=3.3.0",
+  "shapely>=2",
 ]
 
 [dependency-groups]
