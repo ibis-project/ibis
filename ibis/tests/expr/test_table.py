@@ -1811,8 +1811,17 @@ def test_drop():
     res = t.drop(_.a, "b")
     assert res.schema() == t.select("c", "d").schema()
 
+    res = t.drop(s.cols("a", "b"), "d")
+    assert res.schema() == t.select("c").schema()
+
     with pytest.raises(com.IbisTypeError):
         t.drop("e")
+
+    res = t.drop("e", missing_ok=True)
+    assert res.schema() == t.schema()
+
+    res = t.drop("a", _.e, missing_ok=True)
+    assert res.schema() == t.select("b", "c", "d").schema()
 
 
 def test_drop_equality():
