@@ -792,8 +792,6 @@ class Expr(Immutable, Coercible):
 
         Parameters
         ----------
-        expr
-            The ibis expression to execute and persist to Delta Lake table.
         path
             The data source. A string or Path to the Delta Lake table.
         kwargs
