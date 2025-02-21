@@ -240,6 +240,9 @@ class MSSQLCompiler(SQLGlotCompiler):
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.datepart(self.v.weekday, arg) - 1
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return self.f.datepart(self.v.weekday, arg)
+
     def visit_DayOfWeekName(self, op, *, arg):
         days = calendar.day_name
         return sge.Case(
