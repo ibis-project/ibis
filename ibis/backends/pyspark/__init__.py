@@ -349,16 +349,14 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
                 catalog_api.setCurrentDatabase(prev_database)
 
     def list_catalogs(self, *, like: str | None = None) -> list[str]:
-        catalogs = [res.catalog for res in self._session.sql("SHOW CATALOGS").collect()]
+        catalogs = [cat.name for cat in self._session.catalog.listCatalogs()]
         return self._filter_with_like(catalogs, like)
 
     def list_databases(
         self, *, like: str | None = None, catalog: str | None = None
     ) -> list[str]:
         with self._active_catalog(catalog):
-            databases = [
-                db.namespace for db in self._session.sql("SHOW DATABASES").collect()
-            ]
+            databases = [db.name for db in self._session.catalog.listDatabases()]
         return self._filter_with_like(databases, like)
 
     def list_tables(
@@ -382,10 +380,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
         catalog, db = self._to_catalog_db_tuple(table_loc)
         with self._active_catalog(catalog):
             tables = [
-                row.tableName
-                for row in self._session.sql(
-                    f"SHOW TABLES IN {db or self.current_database}"
-                ).collect()
+                table.name
+                for table in self._session.catalog.listTables(
+                    dbName=db or self.current_database
+                )
             ]
         return self._filter_with_like(tables, like)
 
