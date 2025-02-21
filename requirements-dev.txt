@@ -1,5 +1,5 @@
 -e .
-aiobotocore==2.19.0
+aiobotocore==2.20.0
 aiohappyeyeballs==2.4.6
 aiohttp==3.11.12
 aioitertools==0.12.0
@@ -32,9 +32,9 @@ beautifulsoup4==4.13.3
 bitarray==2.9.3
 black==25.1.0
 bleach==6.2.0
-boto3==1.36.3
-botocore==1.36.3
-cachetools==5.5.1
+boto3==1.36.23
+botocore==1.36.23
+cachetools==5.5.2
 certifi==2025.1.31
 cffi==1.17.1
 cfgv==3.4.0
@@ -80,11 +80,11 @@ google-auth==2.38.0
 google-auth-oauthlib==1.2.1
 google-cloud-bigquery==3.29.0
 google-cloud-bigquery-storage==2.28.0
-google-cloud-core==2.4.1
+google-cloud-core==2.4.2
 google-cloud-storage==3.0.0
 google-crc32c==1.6.0
 google-resumable-media==2.7.2
-googleapis-common-protos==1.67.0
+googleapis-common-protos==1.68.0
 graphviz==0.20.3
 greenlet==3.1.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64') or (python_full_version < '3.14' and platform_machine == 'WIN32') or (python_full_version < '3.14' and platform_machine == 'aarch64') or (python_full_version < '3.14' and platform_machine == 'amd64') or (python_full_version < '3.14' and platform_machine == 'ppc64le') or (python_full_version < '3.14' and platform_machine == 'win32') or (python_full_version < '3.14' and platform_machine == 'x86_64')
 griffe==1.5.7
@@ -93,7 +93,7 @@ grpcio-status==1.70.0
 h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
-humanize==4.12.0
+humanize==4.12.1
 hypothesis==6.126.0
 identify==2.6.7
 idna==3.10
@@ -140,7 +140,7 @@ matplotlib==3.9.4 ; python_full_version < '3.10'
 matplotlib==3.10.0 ; python_full_version >= '3.10'
 matplotlib-inline==0.1.7
 mdurl==0.1.2
-mistune==3.1.1
+mistune==3.1.2
 mizani==0.11.4 ; python_full_version < '3.10'
 mizani==0.13.1 ; python_full_version >= '3.10'
 multidict==6.1.0
@@ -169,7 +169,7 @@ patsy==1.0.1
 pexpect==4.9.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten') or (sys_platform != 'emscripten' and sys_platform != 'win32')
 pillow==11.1.0
 pins==0.8.7
-pkginfo==1.12.0
+pkginfo==1.12.1.2
 platformdirs==4.3.6
 plotly==5.24.1
 plotnine==0.13.6 ; python_full_version < '3.10'
@@ -182,7 +182,7 @@ pprintpp==0.4.0
 pre-commit==4.1.0
 prometheus-client==0.21.1
 prompt-toolkit==3.0.50
-propcache==0.2.1
+propcache==0.3.0
 proto-plus==1.26.0
 protobuf==5.29.3
 psutil==7.0.0
@@ -195,7 +195,7 @@ pure-eval==0.2.3
 pure-sasl==0.6.2
 py-cpuinfo==9.0.0
 py4j==0.10.9.7
-pyarrow==19.0.0
+pyarrow==19.0.1
 pyarrow-hotfix==0.6
 pyasn1==0.6.1
 pyasn1-modules==0.4.1
@@ -242,9 +242,9 @@ requests-oauthlib==2.0.0
 rfc3339-validator==0.1.4
 rfc3986-validator==0.1.1
 rich==13.9.4
-rpds-py==0.22.3
+rpds-py==0.23.0
 rsa==4.9
-ruff==0.9.6
+ruff==0.9.7
 s3fs==2025.2.0
 s3transfer==0.11.2
 scikit-learn==1.6.1
