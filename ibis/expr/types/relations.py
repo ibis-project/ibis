@@ -3574,8 +3574,6 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         Parameters
         ----------
-        expr
-            Ibis expression to execute.
         params
             Mapping of scalar parameter expressions to value.
         limit
