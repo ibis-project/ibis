@@ -6,7 +6,7 @@ def main():
 
     version = Version.from_git(latest_tag=True, pattern="default-unprefixed")
     if version.distance:
-        version = version.bump(index=0)
+        version = version.bump(index=-1)
         format = "{base}.dev{distance}"
     else:
         format = None
