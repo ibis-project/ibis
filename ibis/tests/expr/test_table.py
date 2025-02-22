@@ -1502,6 +1502,20 @@ def test_filter(table):
     expected = m.filter([m.foo > 10, m.bar < 0])
     assert_equal(result, expected)
 
+    result = m.filter(
+        m.e == 5,
+        foo=10,
+        bar=_ < 0,
+        b=lambda col: col.notnull(),
+    )
+    expected = m.filter(
+        m.e == 5,
+        m.foo == 10,
+        m.bar < 0,
+        m.b.notnull(),
+    )
+    assert_equal(result, expected)
+
 
 def test_order_by2(table):
     m = table.mutate(foo=table.e + table.f)

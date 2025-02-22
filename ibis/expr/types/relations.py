@@ -2427,6 +2427,7 @@ class Table(Expr, _FixedTextJupyterMixin):
     def filter(
         self,
         *predicates: ir.BooleanValue | Sequence[ir.BooleanValue] | IfAnyAll,
+        **named_predicates: Deferred | Callable[[Table], Any] | Any,
     ) -> Table:
         """Select rows from `table` based on `predicates`.
 
@@ -2478,6 +2479,13 @@ class Table(Expr, _FixedTextJupyterMixin):
         from ibis.expr.rewrites import flatten_predicates, rewrite_filter_input
 
         preds = self.bind(*predicates)
+        for column_name, predicate in named_predicates.items():
+            if isinstance(predicate, Deferred):
+                preds = (*preds, predicate.resolve(self[column_name]))
+            elif callable(predicate):
+                preds = (*preds, predicate(self[column_name]))
+            else:
+                preds = (*preds, self[column_name] == predicate)
 
         # we can't use `unwrap_aliases` here because that function
         # deduplicates based on name alone
