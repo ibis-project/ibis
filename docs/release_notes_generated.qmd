@@ -1,6 +1,48 @@
 ---
 ---
 
+## [10.1.0](https://github.com/ibis-project/ibis/compare/10.0.0...10.1.0) (2025-02-22)
+
+### Features
+
+* **pyspark:** add partitionBy argument to create_table ([c99cc23](https://github.com/ibis-project/ibis/commit/c99cc236be8132b237d4871e21c327955fe02f50)), closes [#8900](https://github.com/ibis-project/ibis/issues/8900)
+* **python:** allow python 3.9 installations ([#10859](https://github.com/ibis-project/ibis/issues/10859)) ([fbe8c8b](https://github.com/ibis-project/ibis/commit/fbe8c8bfea80a2d619c816f2aee17e7e3e9cd780))
+
+### Bug Fixes
+
+* **bigquery:** allow sane use of `params` with `raw_sql` ([#10874](https://github.com/ibis-project/ibis/issues/10874)) ([0a684c3](https://github.com/ibis-project/ibis/commit/0a684c32446d944f203bb0b0a7a970abf4260006))
+* **deps:** update dependency datafusion to v44 ([979cf59](https://github.com/ibis-project/ibis/commit/979cf59a82a8772a4a5634e8f50f10f0e2adf851))
+* **deps:** update dependency sqlglot to >=23.4,<26.5 ([#10807](https://github.com/ibis-project/ibis/issues/10807)) ([f09e8e2](https://github.com/ibis-project/ibis/commit/f09e8e21a5bd2bd2977e5f4dbbd282f8c26daae9))
+* **deps:** update dependency sqlglot to >=23.4,<26.7 ([15111f8](https://github.com/ibis-project/ibis/commit/15111f8de2997ca92feb8f096594f35e303af050))
+* **dev-tools:** ensure that bump is minimal so that later release sort properly ([#10878](https://github.com/ibis-project/ibis/issues/10878)) ([39729c7](https://github.com/ibis-project/ibis/commit/39729c72709c436243cc62b613bdaeb01b053c34))
+* **duckdb:** use the `delta` extension for reading deltalake data ([#10833](https://github.com/ibis-project/ibis/issues/10833)) ([beeaa29](https://github.com/ibis-project/ibis/commit/beeaa29544d632d7e6f9bb0355539443f324d4cb)), closes [#10829](https://github.com/ibis-project/ibis/issues/10829)
+* **join:** error in more places on colliding column names ([#10778](https://github.com/ibis-project/ibis/issues/10778)) ([ec06e1e](https://github.com/ibis-project/ibis/commit/ec06e1ecf0937bcd6ee83109e78a2e37e8573724))
+* **mssql:** ensure that dots in `database` parameter to `list_tables` are used as path delineators ([#10863](https://github.com/ibis-project/ibis/issues/10863)) ([cdbbcb9](https://github.com/ibis-project/ibis/commit/cdbbcb915a8e351b46d07d765e9ffb1806a9c4b2))
+* **mssql:** ensure that we only escape passwords if the password is not `None` ([e589344](https://github.com/ibis-project/ibis/commit/e589344d812a9b8080756371498948bfa40d5985))
+* **mysql:** explicitly handle the zero integer -> timestamp case ([f5e8c4f](https://github.com/ibis-project/ibis/commit/f5e8c4f5e978087a10417cdd05ca770ea160ebfc))
+* **pyspark:** avoid potentially different field names produced by SQL by using python-native APIs ([#10877](https://github.com/ibis-project/ibis/issues/10877)) ([9538d51](https://github.com/ibis-project/ibis/commit/9538d51a8188695247a6bdb62f3d9f187ad4663c))
+* **snowflake:** use `get` instead of `get_path`; `get_path` does not support columns with spaces ([#10836](https://github.com/ibis-project/ibis/issues/10836)) ([50c978b](https://github.com/ibis-project/ibis/commit/50c978baa2d7149444c912945b84a7527713b121)), closes [#10835](https://github.com/ibis-project/ibis/issues/10835)
+* **sqlglot:** ensure that `sge.Median` is only accessed when it exists ([dc6b7e0](https://github.com/ibis-project/ibis/commit/dc6b7e01fd82aae5c148a7819b62dfd2d8503f56))
+* **sqlite:** avoid generating double-quoted string literals ([#10873](https://github.com/ibis-project/ibis/issues/10873)) ([76b0114](https://github.com/ibis-project/ibis/commit/76b01148e18f7de4e3bd3dc2ea1acba96f772408))
+
+### Documentation
+
+* add blogpost for Athena backend ([#10796](https://github.com/ibis-project/ibis/issues/10796)) ([f2f09eb](https://github.com/ibis-project/ibis/commit/f2f09eb9694a6ed32c21c7951c6720775045c0e2))
+* add information about reading from cloud buckets ([32e82c7](https://github.com/ibis-project/ibis/commit/32e82c7054d97853e05cc1cb20ca59df184438f7))
+* add udf rewriting blog post ([c6ecf6b](https://github.com/ibis-project/ibis/commit/c6ecf6b060803c8fce6436de94307e866735229e))
+* **blog:** add post on SQL understanding and Ibis ([#10762](https://github.com/ibis-project/ibis/issues/10762)) ([94425ec](https://github.com/ibis-project/ibis/commit/94425ec1a9cfa088d63d56a18f90ffd21a90e470))
+* **blog:** convert case to cases in blog posts ([#10560](https://github.com/ibis-project/ibis/issues/10560)) ([bbf98de](https://github.com/ibis-project/ibis/commit/bbf98de4a71e4e9318919053cf2cdc8a0304a41e))
+* **blog:** use more reliable URL for geospatial data ([72b7673](https://github.com/ibis-project/ibis/commit/72b7673ee442cf21cbda21697d0a823ede4a07b0))
+* fix reference to incorrect value ([1945237](https://github.com/ibis-project/ibis/commit/1945237041c8e8cddf748df97813961f667fbb0f))
+* move `__getitem__` docs so that quarto publishes them ([#10870](https://github.com/ibis-project/ibis/issues/10870)) ([269cdfe](https://github.com/ibis-project/ibis/commit/269cdfebc42934d3fca138c4ce7515fa4a3c0e76))
+* **release-notes:** fixup release notes ([fb0798e](https://github.com/ibis-project/ibis/commit/fb0798ee0060a06783742d55b343a04fa3d8886f))
+* remove incorrect parameters ([#10876](https://github.com/ibis-project/ibis/issues/10876)) ([a707778](https://github.com/ibis-project/ibis/commit/a707778fde8b1fe2ddca9a379d2babd40332029a))
+* update post date ([ea0cc95](https://github.com/ibis-project/ibis/commit/ea0cc954351977d1c73cbc87c04a302afa40c20d))
+
+### Refactors
+
+* **duckdb:** remove the pyarrow `read_parquet` fallback ([5fa0103](https://github.com/ibis-project/ibis/commit/5fa01036117a57058ad40f70c7abd1452d53072c))
+
 ## [10.0.0](https://github.com/ibis-project/ibis/compare/9.5.0...10.0.0) (2025-02-06)
 
 ### ⚠ BREAKING CHANGES
