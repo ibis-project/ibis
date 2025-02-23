@@ -58,8 +58,8 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
 
     DataType objects may also be created from Python types:
 
-    >>> ibis.dtype(int)
-    Int64(nullable=True)
+    >>> ibis.dtype(int, nullable=False)
+    Int64(nullable=False)
     >>> ibis.dtype(list[float])
     Array(value_type=Float64(nullable=True), length=None, nullable=True)
 
@@ -73,7 +73,7 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
     if isinstance(value, DataType):
         return value
     else:
-        return DataType.from_typehint(value)
+        return DataType.from_typehint(value, nullable)
 
 
 @dtype.register(str)
