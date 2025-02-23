@@ -239,6 +239,7 @@ def schema(
     >>> from ibis import schema, Schema
     >>> sc = schema([("foo", "string"), ("bar", "int64"), ("baz", "boolean")])
     >>> sc = schema(names=["foo", "bar", "baz"], types=["string", "int64", "boolean"])
+    >>> sc = schema({"nullable-str": "string", "non-nullable-str": "!string"})
     >>> sc = schema(dict(foo="string"))
     >>> sc = schema(Schema(dict(foo="string")))  # no-op
 
