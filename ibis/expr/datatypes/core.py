@@ -44,12 +44,15 @@ def dtype(value: Any, nullable: bool = True) -> DataType:
         pyarrow types.
     nullable
         Whether the type should be nullable. Defaults to True.
+        If `value` is a string prefixed by "!", the type is always non-nullable.
 
     Examples
     --------
     >>> import ibis
     >>> ibis.dtype("int32")
     Int32(nullable=True)
+    >>> ibis.dtype("!int32")
+    Int32(nullable=False)
     >>> ibis.dtype("array<float>")
     Array(value_type=Float64(nullable=True), length=None, nullable=True)
 
