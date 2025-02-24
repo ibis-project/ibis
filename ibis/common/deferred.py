@@ -94,6 +94,8 @@ class Deferred(Slotted, Immutable, Final):
         return repr(self._resolver) if self._repr is None else self._repr
 
     def __getattr__(self, name):
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(name)
         return Deferred(Attr(self, name))
 
     def __iter__(self):
