@@ -3,7 +3,6 @@ from __future__ import annotations
 import subprocess
 import sys
 from importlib.metadata import EntryPoint
-from typing import NamedTuple
 
 import pytest
 from pytest import param
@@ -37,24 +36,12 @@ def test_missing_backend():
 
 
 def test_multiple_backends(mocker):
-    class Distribution(NamedTuple):
-        entry_points: list[EntryPoint]
-
-    entrypoints = [
-        EntryPoint(
-            name="foo",
-            value="ibis.backends.backend1",
-            group="ibis.backends",
-        ),
-        EntryPoint(
-            name="foo",
-            value="ibis.backends.backend2",
-            group="ibis.backends",
-        ),
+    return_value = [
+        EntryPoint(name="foo", value="ibis.backends.backend1", group="ibis.backends"),
+        EntryPoint(name="foo", value="ibis.backends.backend2", group="ibis.backends"),
     ]
-    return_value = entrypoints
 
-    mocker.patch("importlib.metadata.entry_points", return_value=return_value)
+    mocker.patch("ibis.util.backend_entry_points", return_value=return_value)
 
     msg = r"\d+ packages found for backend 'foo'"
     with pytest.raises(RuntimeError, match=msg):
