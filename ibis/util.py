@@ -445,6 +445,7 @@ def experimental(func):
     return func
 
 
+@functools.cache
 def backend_entry_points() -> list[importlib.metadata.EntryPoint]:
     """Get the list of installed `ibis.backend` entrypoints."""
 
