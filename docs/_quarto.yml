@@ -573,30 +573,12 @@ quartodoc:
             - udf
             - window
         - kind: page
+          path: selectors
+          package: ibis
           summary:
             name: Column selectors
-            desc: Choose Table columns based on dtype, regex, and other criteria
-          path: selectors
-          package: ibis.selectors
           contents:
-            - where
-            - numeric
-            - of_type
-            - startswith
-            - endswith
-            - contains
-            - matches
-            - any_of
-            - all_of
-            - cols
-            - across
-            - if_any
-            - if_all
-            - index
-            - first
-            - last
-            - all
-            - none
+            - selectors
 
     - title: Type System
       desc: "Data types and schemas"
