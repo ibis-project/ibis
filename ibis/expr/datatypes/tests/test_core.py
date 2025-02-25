@@ -54,6 +54,19 @@ def test_dtype(spec, expected):
 
 
 @pytest.mark.parametrize(
+    ("args", "expected"),
+    [
+        ((int,), dt.Int64(nullable=True)),
+        ((int, False), dt.Int64(nullable=False)),
+        (("!int",), dt.Int64(nullable=False)),
+        (("!int", True), dt.Int64(nullable=False)),  # "!" overrides `nullable`
+    ],
+)
+def test_nullable_dtype(args, expected):
+    assert dt.dtype(*args) == expected
+
+
+@pytest.mark.parametrize(
     ("klass", "expected"),
     [
         (dt.Int16, dt.int16),
