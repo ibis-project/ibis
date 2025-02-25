@@ -57,6 +57,11 @@ con = ibis.duckdb.connect(path)
 con.list_tables()
 ```
 
+```{python}
+#| echo: false
+con.con.execute("PRAGMA disabled_optimizers='extension'")
+```
+
 We have multiple tables with information about New York City. Following Dr. Wu's class, we'll take a look at some
 spatial relations.
 
