@@ -25,4 +25,4 @@ FROM (
   FROM "countries" AS "t0"
 ) AS t0
 GROUP BY
-  "cont"
+  1

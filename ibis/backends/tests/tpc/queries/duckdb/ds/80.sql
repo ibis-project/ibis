@@ -55,8 +55,8 @@ WITH ssr AS
      AND ws_promo_sk = p_promo_sk
      AND p_channel_tv = 'N'
    GROUP BY web_site_id)
-SELECT channel ,
-       id ,
+SELECT nullif(channel, '') AS channel ,
+       nullif(id, '') AS id ,
        sum(sales) AS sales ,
        sum(returns_) AS returns_ ,
        sum(profit) AS profit
