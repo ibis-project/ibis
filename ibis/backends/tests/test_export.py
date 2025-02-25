@@ -740,3 +740,11 @@ def test_all_null_scalar(con):
     e = ibis.literal(None)
     result = con.to_pyarrow(e)
     assert pat.is_null(result.type)
+
+
+def test_cast_non_null(con):
+    new_ids = ibis.memtable({"id": ["my_id"]}).cast({"id": "!string"})
+    assert not new_ids.schema()["id"].nullable
+
+    table = con.to_pyarrow(new_ids)
+    assert not table.schema.field("id").nullable

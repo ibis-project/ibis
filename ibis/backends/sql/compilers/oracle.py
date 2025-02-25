@@ -166,7 +166,11 @@ class OracleCompiler(SQLGlotCompiler):
             return self._value_to_interval(arg, to.unit)
         elif from_.is_string() and to.is_date():
             return self.f.to_date(arg, "FXYYYY-MM-DD")
-        return self.cast(arg, to)
+
+        # casting anything to NOT NULL doesn't make sense, since nullability in
+        # SQL databases is a constraint on physical tables, not on the
+        # operations on the data
+        return self.cast(arg, to.copy(nullable=True))
 
     def visit_Limit(self, op, *, parent, n, offset):
         # push limit/offset into subqueries
