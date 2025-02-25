@@ -332,7 +332,7 @@ class PyArrowData(DataMapper):
         arrays = [
             cls.convert_column(table[name], dtype) for name, dtype in schema.items()
         ]
-        return pa.Table.from_arrays(arrays, names=list(schema.keys()))
+        return pa.Table.from_arrays(arrays, schema=desired_schema)
 
 
 class PyArrowTableProxy(TableProxy[V]):
