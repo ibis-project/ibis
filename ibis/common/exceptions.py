@@ -15,10 +15,13 @@
 
 from __future__ import annotations
 
+import difflib
 from typing import TYPE_CHECKING, Any
 
+from ibis import util
+
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Iterable
 
 
 class TableNotFound(Exception):
@@ -43,6 +46,40 @@ class ExpressionError(IbisError):
 
 class RelationError(ExpressionError):
     """RelationError."""
+
+
+class FieldsNotFoundError(IbisError):
+    """When you try to access `table_or_struct.select("foo", "bar")` or `table_or_struct["foo"]`."""
+
+    def __init__(
+        self,
+        container: object,
+        names: str | Iterable[str],
+        existing_options: Iterable[str],
+    ) -> None:
+        self.names: tuple[str] = util.promote_tuple(names)
+        self.existing_options = tuple(existing_options)
+
+        def norm(s: str) -> str:
+            return s.lower().replace("_", "").replace("-", "")
+
+        msgs = []
+        norm2orig = {norm(o): o for o in self.existing_options}
+        for name in self.names:
+            typos = tuple(
+                norm2orig[normed_typo]
+                for normed_typo in difflib.get_close_matches(
+                    norm(name), norm2orig.keys()
+                )
+            )
+            if len(typos) == 1:
+                msg = f"'{name}' not found in {container.__class__.__name__} object. Did you mean '{next(iter(typos))}'?"
+            elif len(typos) > 1:
+                msg = f"'{name}' not found in {container.__class__.__name__} object. Did you mean one of {typos}?"
+            else:
+                msg = f"'{name}' not found in {container.__class__.__name__} object. Possible options: {self.existing_options}"
+            msgs.append(msg)
+        super().__init__("\n".join(msgs))
 
 
 class TranslationError(IbisError):
