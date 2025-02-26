@@ -29,13 +29,6 @@ def t():
     )
 
 
-@pytest.mark.parametrize("name,sol", [("c", s.cols), ("r", s.index)])
-def test_deprecated(name, sol):
-    with pytest.warns(FutureWarning):
-        res = getattr(s, name)
-    assert res is sol
-
-
 @pytest.mark.parametrize(
     "sel",
     [s.where(lambda _: False), s.startswith("X"), s.endswith("🙂")],
