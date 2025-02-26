@@ -4,7 +4,8 @@ version = "10.1.0"
 requires-python = ">=3.9"
 description = "The portable Python dataframe library"
 readme = "README.md"
-license = "Apache-2.0"
+license = { text = "Apache-2.0" }
+license-files = ["LICENSE.txt"]
 authors = [
   { name = "Ibis Maintainers", email = "maintainers@ibis-project.org" },
 ]
@@ -24,6 +25,27 @@ classifiers = [
   "Topic :: Scientific/Engineering",
   "Topic :: Software Development :: Code Generators",
   "Topic :: Software Development :: User Interfaces",
+  "License :: OSI Approved :: Apache Software License",
+]
+keywords = [
+  "sql",
+  "database",
+  "expressions",
+  "mysql",
+  "bigquery",
+  "clickhouse",
+  "sqlite",
+  "impala",
+  "postgresql",
+  "snowflake",
+  "pandas",
+  "pyspark",
+  "mssql",
+  "trino",
+  "pyarrow",
+  "datafusion",
+  "duckdb",
+  "polars",
 ]
 dependencies = [
   "atpublic>=2.3",
@@ -37,10 +59,11 @@ dependencies = [
 
 [project.urls]
 Homepage = "https://ibis-project.org"
+Chat = "https://ibis-project.zulipchat.com"
 Repository = "https://github.com/ibis-project/ibis"
 Documentation = "https://ibis-project.org"
 Issues = "https://github.com/ibis-project/ibis/issues"
-Chat = "https://ibis-project.zulipchat.com"
+Changelog = "https://ibis-project.org/release_notes"
 
 [project.optional-dependencies]
 athena = [
