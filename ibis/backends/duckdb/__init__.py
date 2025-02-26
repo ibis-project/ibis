@@ -6,7 +6,6 @@ import ast
 import contextlib
 import urllib
 import warnings
-from operator import itemgetter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -450,17 +449,35 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
     ) -> None:
         f = self.compiler.f
         query = (
-            sg.select(f.anon.unnest(f.list_append(C.aliases, C.extension_name)))
+            sg.select(
+                f.anon.unnest(
+                    f.list_intersect(
+                        f.list_append(C.aliases, C.extension_name),
+                        f.list_value(*extensions),
+                    )
+                ),
+                C.installed,
+                C.loaded,
+            )
             .from_(f.duckdb_extensions())
-            .where(C.installed, C.loaded)
+            .where(sg.not_(C.installed & C.loaded))
         )
         with self._safe_raw_sql(query) as cur:
-            installed = map(itemgetter(0), cur.fetchall())
-            # Install and load all other extensions
-            todo = frozenset(extensions).difference(installed)
-            for extension in todo:
-                cur.install_extension(extension, force_install=force_install)
-                cur.load_extension(extension)
+            if not (not_installed_or_loaded := cur.fetchall()):
+                return
+
+            commands = [
+                "FORCE " * force_install + f"INSTALL '{extension}'"
+                for extension, installed, _ in not_installed_or_loaded
+                if not installed
+            ]
+            commands.extend(
+                f"LOAD '{extension}'"
+                for extension, _, loaded in not_installed_or_loaded
+                if not loaded
+            )
+            command = ";".join(commands)
+            cur.execute(command)
 
     def load_extension(self, extension: str, force_install: bool = False) -> None:
         """Install and load a duckdb extension by name or path.
