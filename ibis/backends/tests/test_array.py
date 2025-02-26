@@ -916,11 +916,6 @@ def test_array_remove(con, input, expected):
 @pytest.mark.notyet(
     ["flink"], raises=Py4JJavaError, reason="empty arrays not supported"
 )
-@pytest.mark.notyet(
-    ["datafusion"],
-    raises=Exception,
-    reason="arrays with NaN returns a different number of rows than expected",
-)
 @pytest.mark.parametrize(
     ("input", "expected"),
     [
@@ -947,6 +942,11 @@ def test_array_remove(con, input, expected):
                     ["athena"],
                     raises=AssertionError,
                     reason="pyarrow doesn't return non-numpy objects for arrays",
+                ),
+                pytest.mark.notyet(
+                    ["datafusion"],
+                    raises=Exception,
+                    reason="arrays with NaN returns a different number of rows than expected",
                 ),
             ],
         ),

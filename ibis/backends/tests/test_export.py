@@ -499,11 +499,6 @@ def test_to_pyarrow_decimal(backend, dtype, pyarrow_dtype):
     condition=CI and IS_SPARK_REMOTE,
     reason="not supported until pyspark 4",
 )
-@pytest.mark.xfail_version(
-    datafusion=["pyarrow>=19", "datafusion>=44"],
-    raises=Exception,
-    reason="decoding delta file fails",
-)
 def test_roundtrip_delta(backend, con, alltypes, tmp_path, monkeypatch):
     if con.name == "pyspark":
         pytest.importorskip("delta")
