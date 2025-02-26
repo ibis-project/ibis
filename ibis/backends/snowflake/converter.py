@@ -87,7 +87,15 @@ class SnowflakePyArrowData(PyArrowData):
     @classmethod
     def convert_table(cls, table: pa.Table, schema: Schema) -> pa.Table:
         columns = [cls.convert_column(table[name], typ) for name, typ in schema.items()]
-        return pa.Table.from_arrays(columns, names=schema.names)
+        return pa.Table.from_arrays(
+            columns,
+            schema=pa.schema(
+                [
+                    pa.field(name, array.type, nullable=ibis_dtype.nullable)
+                    for array, (name, ibis_dtype) in zip(columns, schema.items())
+                ]
+            ),
+        )
 
     @classmethod
     def convert_column(cls, column: pa.Array, dtype: dt.DataType) -> pa.Array:
