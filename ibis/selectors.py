@@ -1,17 +1,17 @@
 """Convenient column selectors.
 
+Column selectors ("selectors") are convenience functions for selecting columns
+that satisfy a particular condition. For example, selecting all string-typed
+columns.
+
 ::: {.callout-tip}
-## Check out the [blog post on selectors](../posts/selectors) for examples!
+## Check out the [blog post on selectors](../posts/selectors) for more examples!
 :::
 
-## Rationale
-
-Column selectors are convenience functions for selecting columns that share some property.
-
-## Discussion
-
-For example, a common task is to be able to select all numeric columns for a
-subsequent computation.
+Examples
+--------
+A common task is to be able to select all numeric columns for a subsequent
+computation.
 
 Without selectors this becomes quite verbose and tedious to write:
 
@@ -72,20 +72,6 @@ from ibis.common.selectors import All, Any, Expandable, Selector
 from ibis.common.typing import VarTuple  # noqa: TC001
 
 
-def __getattr__(name):
-    if name == "c":
-        util.warn_deprecated(
-            "c", instead="use `ibis.selectors.cols` instead", as_of="9.5"
-        )
-        return cols
-    elif name == "r":
-        util.warn_deprecated(
-            "r", instead="use `ibis.selectors.index` instead", as_of="9.5"
-        )
-        return index
-    raise AttributeError(name)
-
-
 class Where(Selector):
     predicate: Callable[[ir.Value], bool]
 
@@ -113,7 +99,6 @@ def where(predicate: Callable[[ir.Value], bool]) -> Selector:
     >>> expr = t.select(s.where(lambda col: col.get_name() == "a"))
     >>> expr.columns
     ('a',)
-
     """
     return Where(predicate)
 
@@ -136,7 +121,6 @@ def numeric() -> Selector:
     See Also
     --------
     [`of_type`](#ibis.selectors.of_type)
-
     """
     return of_type(dt.Numeric)
 
@@ -190,7 +174,6 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
     See Also
     --------
     [`numeric`](#ibis.selectors.numeric)
-
     """
     if isinstance(dtype, str):
         # A mapping of abstract or parametric types, to allow selecting all
@@ -252,7 +235,6 @@ def startswith(prefixes: str | tuple[str, ...]) -> Selector:
     See Also
     --------
     [`endswith`](#ibis.selectors.endswith)
-
     """
     return StartsWith(prefixes)
 
@@ -286,7 +268,6 @@ def endswith(suffixes: str | tuple[str, ...]) -> Selector:
     See Also
     --------
     [`startswith`](#ibis.selectors.startswith)
-
     """
     return EndsWith(suffixes)
 
@@ -340,7 +321,6 @@ def contains(
     See Also
     --------
     [`matches`](#ibis.selectors.matches)
-
     """
     return Contains(tuple(util.promote_list(needles)), how=how)
 
@@ -373,7 +353,6 @@ def matches(regex: str | re.Pattern) -> Selector:
     See Also
     --------
     [`contains`](#ibis.selectors.contains)
-
     """
     return Matches(re.compile(regex))
 
@@ -538,7 +517,6 @@ def across(
     │           42.0 │          20.2 │                -1.92193 │ … │
     │              … │             … │                       … │ … │
     └────────────────┴───────────────┴─────────────────────────┴───┘
-
     """
     if names is None:
         names = lambda col, fn: "_".join(filter(None, (col, fn)))
@@ -653,14 +631,11 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
     │ Gentoo  │ Biscoe    │       1.241499 │     -1.089314 │          1.570562 │ … │
     │ Gentoo  │ Biscoe    │       1.351398 │     -1.494420 │          1.214987 │ … │
     └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
-
     """
     return IfAnyAll(selector=selector, predicate=predicate, summarizer=operator.and_)
 
 
 class Slice(Concrete):
-    """Hashable and smaller-scoped slice object versus the builtin one."""
-
     start: int | str | None = None
     stop: int | str | None = None
     step: int | None = None
