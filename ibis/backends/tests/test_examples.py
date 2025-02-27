@@ -4,6 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
+from ibis.backends.tests.errors import PyODBCProgrammingError
 from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
@@ -16,18 +17,7 @@ pytest.importorskip("pins")
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
 @pytest.mark.notimpl(["pyspark", "exasol", "databricks"])
-@pytest.mark.notyet(
-    [
-        "clickhouse",
-        "druid",
-        "impala",
-        "mssql",
-        "trino",
-        "risingwave",
-        "datafusion",
-        "athena",
-    ]
-)
+@pytest.mark.notyet(["druid", "impala", "trino", "risingwave", "datafusion", "athena"])
 @pytest.mark.parametrize(
     ("example", "columns"),
     [
@@ -67,6 +57,7 @@ pytest.importorskip("pins")
                 "year",
             ],
             id="has-null-integer-values",
+            marks=pytest.mark.notyet(["mssql"], raises=PyODBCProgrammingError),
         ),
     ],
 )
