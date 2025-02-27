@@ -505,3 +505,45 @@ def test_raw_sql_params_with_alias(con):
     query_parameters = {cutoff: value}
     result = con.raw_sql(f"SELECT @{name} AS {name}", params=query_parameters)
     assert list(map(dict, result)) == [{name: value}]
+
+
+@pytest.fixture(scope="module")
+def tmp_table(con):
+    data = pd.DataFrame(
+        {"foo": [1, 1, 2, 2, 3, 3], "bar": ["a", "b", "a", "a", "b", "b"]}
+    )
+    name = gen_name("test_window_with_count_distinct")
+    test_table = con.create_table(name, data)
+    yield test_table
+    con.drop_table(name, force=True)
+
+
+@pytest.mark.parametrize(
+    ("expr", "query"),
+    [
+        (
+            lambda t: t.group_by("foo").mutate(bar=lambda t: t.bar.nunique()),
+            "SELECT foo, COUNT(DISTINCT bar) OVER (PARTITION BY foo) AS bar FROM {}".format,
+        ),
+        (
+            lambda t: t.filter(
+                lambda t: t.bar.nunique().over(ibis.window(group_by="foo")) > 1
+            ),
+            "SELECT * FROM {} QUALIFY COUNT(DISTINCT bar) OVER (PARTITION BY foo) > 1".format,
+        ),
+    ],
+    ids=["project", "qualify"],
+)
+def test_window_with_count_distinct(tmp_table, expr, query):
+    identifier = tmp_table.get_name()
+    sql = query(identifier)
+    result = (
+        expr(tmp_table).to_pandas().sort_values(["foo", "bar"]).reset_index(drop=True)
+    )
+    expected = (
+        tmp_table.sql(sql)
+        .to_pandas()
+        .sort_values(["foo", "bar"])
+        .reset_index(drop=True)
+    )
+    tm.assert_frame_equal(result, expected)

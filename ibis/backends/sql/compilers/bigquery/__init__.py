@@ -327,8 +327,14 @@ class BigQueryCompiler(SQLGlotCompiler):
     @staticmethod
     def _minimize_spec(op, spec):
         # bigquery doesn't allow certain window functions to specify a window frame
-        if isinstance(func := op.func, ops.Analytic) and not isinstance(
-            func, (ops.First, ops.Last, FirstValue, LastValue, ops.NthValue)
+        if (
+            isinstance(func := op.func, ops.CountDistinct)
+            and (spec.args["start"], spec.args["end"]) == ("UNBOUNDED", "UNBOUNDED")
+        ) or (
+            isinstance(func, ops.Analytic)
+            and not isinstance(
+                func, (ops.First, ops.Last, FirstValue, LastValue, ops.NthValue)
+            )
         ):
             return None
         return spec
