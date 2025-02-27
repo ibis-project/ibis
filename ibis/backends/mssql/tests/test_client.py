@@ -200,17 +200,20 @@ def test_create_temp_table_from_obj(con):
 
     t = con.create_table("team", obj, temp=True)
 
-    t2 = con.table("##team", database="tempdb.dbo")
+    try:
+        t2 = con.table("##team", database="tempdb.dbo")
 
-    assert t.to_pyarrow().equals(t2.to_pyarrow())
+        assert t.to_pyarrow().equals(t2.to_pyarrow())
 
-    persisted_from_temp = con.create_table("fuhreal", t2)
+        persisted_from_temp = con.create_table("fuhreal", t2)
 
-    assert "fuhreal" in con.list_tables()
-
-    assert persisted_from_temp.to_pyarrow().equals(t2.to_pyarrow())
-
-    con.drop_table("fuhreal")
+        try:
+            assert "fuhreal" in con.list_tables()
+            assert persisted_from_temp.to_pyarrow().equals(t2.to_pyarrow())
+        finally:
+            con.drop_table("fuhreal")
+    finally:
+        con.drop_table("#team", force=True)
 
 
 @pytest.mark.parametrize("explicit_schema", [False, True])

@@ -82,7 +82,7 @@ class Example(Concrete):
             # backends support passing a `pyarrow.Table` to `create_table`
             # directly.
             obj = ibis.memtable(table)
-            return backend.create_table(table_name, obj, temp=True, overwrite=True)
+            return backend.create_table(table_name, obj, temp=True)
 
 
 _FETCH_DOCSTRING_TEMPLATE = """\
