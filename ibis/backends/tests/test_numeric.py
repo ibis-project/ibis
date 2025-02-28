@@ -36,6 +36,7 @@ from ibis.backends.tests.errors import (
     SnowflakeProgrammingError,
     TrinoUserError,
 )
+from ibis.conftest import IS_SPARK_REMOTE
 from ibis.expr import datatypes as dt
 
 np = pytest.importorskip("numpy")
@@ -1602,12 +1603,7 @@ def test_scalar_round_is_integer(con):
                     raises=pa.ArrowInvalid,
                 ),
                 pytest.mark.notyet(
-                    ["pyspark"],
-                    raises=(
-                        # PySparkValueError is raised when using Spark connect
-                        PySparkValueError,
-                        TypeError,
-                    ),
+                    ["pyspark"], condition=IS_SPARK_REMOTE, raises=PySparkValueError
                 ),
             ],
             id="ints",

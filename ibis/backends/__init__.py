@@ -1379,6 +1379,137 @@ class BaseBackend(abc.ABC, _FileIOHandler, CacheHandler):
         return query
 
 
+class BaseExampleLoader(abc.ABC):
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def _load_example(self, *, path: str | Path, table_name: str) -> ir.Table:
+        # Read directly into these backends. This helps reduce memory
+        # usage, making the larger example datasets easier to work with.
+        if path.endswith(".parquet"):
+            return self._load_parquet(path=path, table_name=table_name)
+        else:
+            return self._load_csv(path=path, table_name=table_name)
+
+
+class ExampleLoader(BaseExampleLoader):
+    __slots__ = ()
+
+    def _load_example(self, *, path: str | Path, table_name: str) -> ir.Table:
+        # Read directly into these backends. This helps reduce memory
+        # usage, making the larger example datasets easier to work with.
+        if path.endswith(".parquet"):
+            return self._load_parquet(path=path, table_name=table_name)
+        else:
+            return self._load_csv(path=path, table_name=table_name)
+
+    @abc.abstractmethod
+    def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
+        """Load an example Apache Parquet file."""
+
+    @abc.abstractmethod
+    def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
+        """Load an example CSV file."""
+
+
+class NoExampleLoader(BaseExampleLoader):
+    __slots__ = ()
+
+    def _load_example(self, *, path: str | Path, table_name: str) -> ir.Table:
+        raise NotImplementedError(f"{self.name} does not support loading example data.")
+
+
+class DirectExampleLoader(ExampleLoader):
+    __slots__ = ()
+
+    def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
+        return self.read_parquet(path, table_name=table_name)
+
+    def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
+        return self.read_csv(path, table_name=table_name)
+
+
+class DirectPyArrowExampleLoader(DirectExampleLoader):
+    __slots__ = ()
+
+    overwrite_example: bool = False
+    temporary_example: bool = False
+
+    def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
+        import pyarrow as pa
+        import pyarrow.csv
+
+        # The convert options lets pyarrow treat empty strings as null for
+        # string columns, but not quoted empty strings.
+        table = pyarrow.csv.read_csv(
+            path,
+            convert_options=pyarrow.csv.ConvertOptions(
+                strings_can_be_null=True, quoted_strings_can_be_null=False
+            ),
+        )
+
+        # All null columns are inferred as null-type, but not all
+        # backends support null-type columns. Cast to an all-null
+        # string column instead.
+        for i, field in enumerate(table.schema):
+            if pyarrow.types.is_null(field.type):
+                table = table.set_column(i, field.name, table[i].cast(pa.string()))
+
+        return self.create_table(
+            table_name,
+            obj=table,
+            temp=self.temporary_example,
+            overwrite=self.overwrite_example,
+        )
+
+
+class PyArrowExampleLoader(ExampleLoader):
+    __slots__ = ()
+
+    overwrite_example: bool = False
+    temporary_example: bool = True
+
+    def _load_parquet(self, *, path: str | Path, table_name: str) -> ir.Table:
+        import pyarrow_hotfix  # noqa: F401, I001
+        import pyarrow.parquet as pq
+
+        table = pq.read_table(path)
+        return self.create_table(
+            table_name,
+            obj=table,
+            temp=self.temporary_example,
+            overwrite=self.overwrite_example,
+        )
+
+    def _load_csv(self, *, path: str | Path, table_name: str) -> ir.Table:
+        import pyarrow_hotfix  # noqa: F401, I001
+        import pyarrow as pa
+        import pyarrow.csv
+
+        # The convert options lets pyarrow treat empty strings as null for
+        # string columns, but not quoted empty strings.
+        table = pyarrow.csv.read_csv(
+            path,
+            convert_options=pyarrow.csv.ConvertOptions(
+                strings_can_be_null=True, quoted_strings_can_be_null=False
+            ),
+        )
+
+        # All null columns are inferred as null-type, but not all
+        # backends support null-type columns. Cast to an all-null
+        # string column instead.
+        for i, field in enumerate(table.schema):
+            if pyarrow.types.is_null(field.type):
+                table = table.set_column(i, field.name, table[i].cast(pa.string()))
+
+        return self.create_table(
+            table_name,
+            obj=table,
+            temp=self.temporary_example,
+            overwrite=self.overwrite_example,
+        )
+
+
 @functools.cache
 def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
     """Return the set of known backend names.

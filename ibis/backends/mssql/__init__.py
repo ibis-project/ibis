@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, C
 
@@ -75,7 +75,7 @@ def datetimeoffset_to_datetime(value):
 # Databases: sys.schemas
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, PyArrowExampleLoader):
     name = "mssql"
     compiler = sc.mssql.compiler
     supports_create_or_replace = False

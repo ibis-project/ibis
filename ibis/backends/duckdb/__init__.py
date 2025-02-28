@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, UrlFromPath
+from ibis.backends import CanCreateDatabase, DirectExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, C, RenameTable
 from ibis.common.dispatch import lazy_singledispatch
@@ -66,7 +66,7 @@ class _Settings:
         return repr(self.con.sql("from duckdb_settings()"))
 
 
-class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
     name = "duckdb"
     compiler = sc.duckdb.compiler
 

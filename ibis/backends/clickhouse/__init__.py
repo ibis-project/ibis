@@ -26,7 +26,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import BaseBackend, CanCreateDatabase
+from ibis.backends import BaseBackend, CanCreateDatabase, DirectExampleLoader
 from ibis.backends.clickhouse.converter import ClickHousePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
@@ -44,7 +44,7 @@ def _to_memtable(v):
     return ibis.memtable(v).op() if not isinstance(v, ops.InMemoryTable) else v
 
 
-class Backend(SQLBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase, DirectExampleLoader):
     name = "clickhouse"
     compiler = sc.clickhouse.compiler
 

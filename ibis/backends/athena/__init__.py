@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, UrlFromPath
+from ibis.backends import CanCreateDatabase, NoExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, RenameTable
 
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
     from pyathena.cursor import Cursor
 
 
-class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
     name = "athena"
     compiler = sc.athena.compiler
 

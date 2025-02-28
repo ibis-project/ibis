@@ -22,7 +22,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase
+from ibis.backends import CanCreateDatabase, PyArrowExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, TRUE, C, RenameTable
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import pyarrow as pa
 
 
-class Backend(SQLBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase, PyArrowExampleLoader):
     name = "mysql"
     compiler = sc.mysql.compiler
     supports_create_or_replace = False

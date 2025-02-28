@@ -27,7 +27,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase
+from ibis.backends import CanCreateCatalog, CanCreateDatabase, DirectExampleLoader
 from ibis.backends.snowflake.converter import SnowflakePandasData
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
@@ -147,7 +147,7 @@ return count !== 0 ? true : null;""",
 }
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, DirectExampleLoader):
     name = "snowflake"
     compiler = sc.snowflake.compiler
     supports_python_udfs = True

@@ -4,7 +4,7 @@ import pytest
 from pytest import param
 
 import ibis
-from ibis.backends.tests.errors import PyODBCProgrammingError
+from ibis.backends.tests.errors import ClickHouseDatabaseError, PyODBCProgrammingError
 from ibis.conftest import LINUX, MACOS, SANDBOXED
 
 pytestmark = pytest.mark.examples
@@ -16,8 +16,9 @@ pytest.importorskip("pins")
     (LINUX or MACOS) and SANDBOXED,
     reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
 )
-@pytest.mark.notimpl(["pyspark", "exasol", "databricks"])
-@pytest.mark.notyet(["druid", "impala", "trino", "risingwave", "datafusion", "athena"])
+@pytest.mark.notyet(
+    ["athena", "databricks", "druid", "exasol", "impala", "risingwave", "trino"]
+)
 @pytest.mark.parametrize(
     ("example", "columns"),
     [
@@ -26,23 +27,26 @@ pytest.importorskip("pins")
             ["Map_ID", "Location_Type", "Location_Name", "Game_Version"],
             id="parquet",
         ),
-        param(
-            "band_instruments",
-            ["name", "plays"],
-            id="csv",
-        ),
+        param("band_instruments", ["name", "plays"], id="csv"),
         param(
             "AwardsManagers",
             ["player_id", "award_id", "year_id", "lg_id", "tie", "notes"],
             id="csv-all-null",
-            marks=pytest.mark.notimpl(
-                ["flink"],
-                raises=TypeError,
-                reason=(
-                    "Unsupported type: NULL, "
-                    "it is not supported yet in current python type system"
+            marks=[
+                pytest.mark.notimpl(
+                    ["flink"],
+                    raises=TypeError,
+                    reason=(
+                        "Unsupported type: NULL, "
+                        "it is not supported yet in current python type system"
+                    ),
                 ),
-            ),
+                pytest.mark.notyet(
+                    ["clickhouse"],
+                    raises=ClickHouseDatabaseError,
+                    reason="All null doesn't have a corresponding column type in clickhouse",
+                ),
+            ],
         ),
         param(
             "penguins",

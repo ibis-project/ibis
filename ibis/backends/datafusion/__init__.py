@@ -21,7 +21,12 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateCatalog, CanCreateDatabase, NoUrl
+from ibis.backends import (
+    CanCreateCatalog,
+    CanCreateDatabase,
+    DirectPyArrowExampleLoader,
+    NoUrl,
+)
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.common.dispatch import lazy_singledispatch
@@ -68,7 +73,9 @@ def as_nullable(dtype: dt.DataType) -> dt.DataType:
         return dtype.copy(nullable=True)
 
 
-class Backend(SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl):
+class Backend(
+    SQLBackend, CanCreateCatalog, CanCreateDatabase, NoUrl, DirectPyArrowExampleLoader
+):
     name = "datafusion"
     supports_arrays = True
     compiler = sc.datafusion.compiler
