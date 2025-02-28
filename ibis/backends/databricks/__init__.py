@@ -24,7 +24,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, UrlFromPath
+from ibis.backends import CanCreateDatabase, PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR, AlterTable, RenameTable
 
@@ -37,7 +37,7 @@ if TYPE_CHECKING:
     from ibis.expr.schema import SchemaLike
 
 
-class Backend(SQLBackend, CanCreateDatabase, UrlFromPath):
+class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
     name = "databricks"
     compiler = sc.databricks.compiler
 

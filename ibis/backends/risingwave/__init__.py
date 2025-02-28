@@ -20,7 +20,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanListCatalog
+from ibis.backends import CanCreateDatabase, CanListCatalog, NoExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 from ibis.util import experimental
@@ -51,7 +51,7 @@ def format_properties(props):
     return "( {} ) ".format(", ".join(tokens))
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
     name = "risingwave"
     compiler = sc.risingwave.compiler
     supports_python_udfs = False

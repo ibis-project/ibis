@@ -25,7 +25,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase
+from ibis.backends import CanCreateDatabase, DirectPyArrowExampleLoader
 from ibis.backends.bigquery.client import (
     bigquery_param,
     parse_project_and_dataset,
@@ -155,10 +155,13 @@ def _postprocess_arrow(
     return table_or_batch.rename_columns(names)
 
 
-class Backend(SQLBackend, CanCreateDatabase):
+class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
     name = "bigquery"
     compiler = sc.bigquery.compiler
     supports_python_udfs = False
+    # bigquery supports parquet examples directly, and csv examples indirectly
+    # through pyarrow
+    overwrite_example = True
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)

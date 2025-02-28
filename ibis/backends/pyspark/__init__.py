@@ -21,7 +21,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanListCatalog
+from ibis.backends import CanCreateDatabase, CanListCatalog, PyArrowExampleLoader
 from ibis.backends.pyspark.converter import PySparkPandasData
 from ibis.backends.pyspark.datatypes import PySparkSchema, PySparkType
 from ibis.backends.sql import SQLBackend
@@ -102,9 +102,10 @@ def _interval_to_string(interval):
     return f"{interval.op().value} {interval.op().dtype.unit.name.lower()}"
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoader):
     name = "pyspark"
     compiler = sc.pyspark.compiler
+    temporary_example = False
 
     class Options(ibis.config.Config):
         """PySpark options.
@@ -437,7 +438,13 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
 
     def _register_in_memory_table(self, op: ops.InMemoryTable) -> None:
         schema = PySparkSchema.from_ibis(op.schema)
-        df = self._session.createDataFrame(data=op.data.to_frame(), schema=schema)
+        data = op.data.to_frame()
+        try:
+            df = self._session.createDataFrame(data, schema=schema, verifySchema=False)
+        except TypeError:
+            # remote sessions don't have optional schema verification
+            df = self._session.createDataFrame(data, schema=schema)
+
         df.createOrReplaceTempView(op.name)
 
     def _finalize_memtable(self, name: str) -> None:

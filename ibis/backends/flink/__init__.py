@@ -14,7 +14,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, NoUrl
+from ibis.backends import CanCreateDatabase, NoUrl, PyArrowExampleLoader
 from ibis.backends.flink.ddl import (
     CreateDatabase,
     CreateTableWithSchema,
@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 _INPUT_TYPE_TO_FUNC_TYPE = {InputType.PYTHON: "general", InputType.PANDAS: "pandas"}
 
 
-class Backend(SQLBackend, CanCreateDatabase, NoUrl):
+class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
     name = "flink"
     compiler = sc.flink.compiler
     supports_temporary_tables = True

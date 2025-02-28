@@ -16,7 +16,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import UrlFromPath
+from ibis.backends import PyArrowExampleLoader, UrlFromPath
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import C
 from ibis.backends.sqlite.converter import SQLitePandasData
@@ -43,7 +43,7 @@ def _quote(name: str) -> str:
     return sg.to_identifier(name, quoted=True).sql("sqlite")
 
 
-class Backend(SQLBackend, UrlFromPath):
+class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
     name = "sqlite"
     compiler = sc.sqlite.compiler
     supports_python_udfs = True

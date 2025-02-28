@@ -20,7 +20,7 @@ import ibis.common.exceptions as com
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanListCatalog
+from ibis.backends import CanCreateDatabase, CanListCatalog, NoExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import AlterTable, C, RenameTable
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     import ibis.expr.operations as ops
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
     name = "trino"
     compiler = sc.trino.compiler
     supports_create_or_replace = False

@@ -16,11 +16,6 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
     from ibis.backends import BaseBackend
 
-# These backends load the data directly using `read_csv`/`read_parquet`. All
-# other backends load the data using pyarrow, then passing it off to
-# `create_table`.
-_DIRECT_BACKENDS = frozenset({"duckdb", "polars"})
-
 
 class Example(Concrete):
     name: str
@@ -41,48 +36,8 @@ class Example(Concrete):
             table_name = name
 
         board = _get_board()
-
         (path,) = board.pin_download(name)
-
-        if backend.name in _DIRECT_BACKENDS:
-            # Read directly into these backends. This helps reduce memory
-            # usage, making the larger example datasets easier to work with.
-            if path.endswith(".parquet"):
-                return backend.read_parquet(path, table_name=table_name)
-            else:
-                return backend.read_csv(path, table_name=table_name)
-        else:
-            import pyarrow_hotfix  # noqa: F401
-
-            if path.endswith(".parquet"):
-                import pyarrow.parquet
-
-                table = pyarrow.parquet.read_table(path)
-            else:
-                import pyarrow.csv
-
-                # The convert options lets pyarrow treat empty strings as null for
-                # string columns, but not quoted empty strings.
-                table = pyarrow.csv.read_csv(
-                    path,
-                    convert_options=pyarrow.csv.ConvertOptions(
-                        strings_can_be_null=True,
-                        quoted_strings_can_be_null=False,
-                    ),
-                )
-
-                # All null columns are inferred as null-type, but not all
-                # backends support null-type columns. Cast to an all-null
-                # string column instead.
-                for i, field in enumerate(table.schema):
-                    if pyarrow.types.is_null(field.type):
-                        table = table.set_column(i, field.name, table[i].cast("string"))
-
-            # TODO: It should be possible to avoid this memtable call, once all
-            # backends support passing a `pyarrow.Table` to `create_table`
-            # directly.
-            obj = ibis.memtable(table)
-            return backend.create_table(table_name, obj, temp=True)
+        return backend._load_example(path=path, table_name=table_name)
 
 
 _FETCH_DOCSTRING_TEMPLATE = """\

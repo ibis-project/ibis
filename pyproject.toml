@@ -83,6 +83,7 @@ bigquery = [
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "pydata-google-auth>=1.4.0",
+  "pandas-gbq>=0.26.1",
   "numpy>=1.23.2,<3",
   "pandas>=1.5.3,<3",
   "rich>=12.4.4",

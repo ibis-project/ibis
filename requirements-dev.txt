@@ -161,6 +161,7 @@ oracledb==2.5.1
 overrides==7.7.0
 packaging==24.2
 pandas==2.2.3
+pandas-gbq==0.28.0
 pandocfilters==1.5.1
 parso==0.8.4
 parsy==2.1

@@ -16,6 +16,7 @@ import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
 import ibis.expr.schema as sch
 from ibis import util
+from ibis.backends import NoExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import STAR
 from ibis.backends.sql.datatypes import DruidType
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     import ibis.expr.types as ir
 
 
-class Backend(SQLBackend):
+class Backend(SQLBackend, NoExampleLoader):
     name = "druid"
     compiler = sc.druid.compiler
     supports_create_or_replace = False

@@ -23,7 +23,7 @@ import ibis.expr.operations as ops
 import ibis.expr.schema as sch
 import ibis.expr.types as ir
 from ibis import util
-from ibis.backends import CanCreateDatabase, CanListCatalog
+from ibis.backends import CanCreateDatabase, CanListCatalog, PyArrowExampleLoader
 from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 
@@ -41,7 +41,7 @@ class NatDumper(psycopg.adapt.Dumper):
         return None
 
 
-class Backend(SQLBackend, CanListCatalog, CanCreateDatabase):
+class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoader):
     name = "postgres"
     compiler = sc.postgres.compiler
     supports_python_udfs = True
