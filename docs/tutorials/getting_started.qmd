@@ -111,10 +111,13 @@ penguins.select("species", "island", penguins.year)
 
 ### mutate
 
-`mutate` lets you add new columns to your table, derived from the values of existing columns.
+`mutate` lets you add new columns to your table. You can derive them from existing columns, or use constant values with `literal`.
 
 ```{python}
-penguins.mutate(bill_length_cm=penguins.bill_length_mm / 10)
+penguins.mutate(
+    bill_length_cm=penguins.bill_length_mm / 10,
+    continent=ibis.literal("Antarctica")
+)
 ```
 
 Notice that the table is a little too wide to display all the columns now (depending on your screen-size). `bill_length` is now present in millimeters AND centimeters. Use a `select` to trim down the number of columns we're looking at.
