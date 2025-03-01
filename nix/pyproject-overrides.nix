@@ -33,6 +33,7 @@ let
     google-crc32c.setuptools = [ ];
     lz4.setuptools = [ ];
     snowflake-connector-python.setuptools = [ ];
+    pyrepl.setuptools = [ ];
   } // lib.optionalAttrs stdenv.hostPlatform.isDarwin {
     duckdb = {
       setuptools = [ ];
