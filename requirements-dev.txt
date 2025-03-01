@@ -66,6 +66,7 @@ et-xmlfile==2.0.0
 exceptiongroup==1.2.2 ; python_full_version < '3.11'
 execnet==2.1.1
 executing==2.2.0
+fancycompleter==0.9.1
 fastjsonschema==2.21.1
 filelock==3.17.0
 fonttools==4.56.0
@@ -169,6 +170,7 @@ parso==0.8.4
 parsy==2.1
 pathspec==0.12.1
 patsy==1.0.1
+pdbpp==0.10.3
 pexpect==4.9.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten') or (sys_platform != 'emscripten' and sys_platform != 'win32')
 pillow==11.1.0
 pins==0.8.7
@@ -218,6 +220,8 @@ pyopenssl==24.3.0
 pyparsing==3.2.1
 pyproj==3.6.1 ; python_full_version < '3.10'
 pyproj==3.7.1 ; python_full_version >= '3.10'
+pyreadline==2.1 ; sys_platform == 'win32'
+pyrepl==0.9.0
 pyspark==3.5.5
 pytest==8.3.4
 pytest-benchmark==5.1.0
@@ -295,6 +299,7 @@ webcolors==24.11.1
 webencodings==0.5.1
 websocket-client==1.8.0
 widgetsnbextension==4.0.13
+wmctrl==0.5
 wrapt==1.17.2
 xxhash==3.5.0
 yarl==1.18.3

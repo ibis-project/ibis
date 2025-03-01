@@ -259,6 +259,7 @@ dev = [
   "tqdm>=4.66.1,<5",
   "dunamai>=1.22.0",
   "aws-sso-util>=4.33,<5",
+  "pdbpp>=0.10.3,<1",
 ]
 tests = [
   "cloudpickle",
