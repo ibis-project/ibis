@@ -3,6 +3,7 @@ from __future__ import annotations
 import concurrent.futures
 import getpass
 import sys
+import uuid
 from os import environ as env
 from typing import TYPE_CHECKING, Any
 
@@ -38,7 +39,7 @@ CONNECT_ARGS = dict(
 )
 
 
-def create_table(con, *, fs: s3fs.S3FileSystem, file: Path, folder: str) -> None:
+def create_table(connection, *, fs: s3fs.S3FileSystem, file: Path, folder: str) -> None:
     from ibis.formats.pyarrow import PyArrowSchema
 
     arrow_schema = pq.read_metadata(file).schema.to_arrow_schema()
@@ -48,7 +49,6 @@ def create_table(con, *, fs: s3fs.S3FileSystem, file: Path, folder: str) -> None
 
     ddl = sge.Create(
         kind="TABLE",
-        exists=True,
         this=sge.Schema(this=sg.table(name), expressions=sg_schema),
         properties=sge.Properties(
             expressions=[
@@ -61,10 +61,16 @@ def create_table(con, *, fs: s3fs.S3FileSystem, file: Path, folder: str) -> None
 
     fs.put(str(file), f"{folder.removeprefix('s3://')}/{name}/{file.name}")
 
+    drop_query = sge.Drop(kind="TABLE", this=sg.to_identifier(name, quoted=True)).sql(
+        Athena
+    )
     create_query = ddl.sql(Athena)
 
-    with con.cursor() as cur:
+    with connection.con.cursor() as cur:
+        cur.execute(drop_query)
         cur.execute(create_query)
+
+    assert connection.table(name).count().execute() > 0
 
 
 class TestConf(BackendTest):
@@ -83,16 +89,18 @@ class TestConf(BackendTest):
 
         user = getpass.getuser()
         python_version = "".join(map(str, sys.version_info[:3]))
-        folder = f"{user}_{python_version}"
+        folder = f"{user}_{python_version}_{uuid.uuid4()}"
 
         fs = fsspec.filesystem("s3")
 
-        con = self.connection.con
+        connection = self.connection
         folder = f"{IBIS_ATHENA_S3_STAGING_DIR}/{folder}"
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for future in concurrent.futures.as_completed(
-                executor.submit(create_table, con, fs=fs, file=file, folder=folder)
+                executor.submit(
+                    create_table, connection, fs=fs, file=file, folder=folder
+                )
                 for file in files
             ):
                 future.result()
