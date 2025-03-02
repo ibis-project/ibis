@@ -106,9 +106,9 @@ website:
       contents:
         - tutorials/basics.qmd
         - install.qmd
+        - tutorials/browser/repl.qmd
         - section: Coming from
           contents: tutorials/coming-from/*
-        - auto: tutorials/browser
         - auto: tutorials/cloud-data-platforms
         - auto: tutorials/open-source-software
     - id: concepts
