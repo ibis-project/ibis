@@ -1,7 +1,7 @@
 ---
 execute:
   freeze: auto
-title: "Coming from dplyr"
+title: "dplyr"
 ---
 
 [R](https://www.r-project.org/) users familiar with

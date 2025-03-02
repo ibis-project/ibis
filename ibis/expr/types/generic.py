@@ -1493,7 +1493,7 @@ class Column(Value, _FixedTextJupyterMixin):
     def __getitem__(self, _):
         raise TypeError(
             f"{self.__class__.__name__!r} is not subscriptable: "
-            "see https://ibis-project.org/tutorials/ibis-for-x-users/pandas for details."
+            "see https://ibis-project.org/tutorials/coming-from/pandas for details."
         )
 
     def __array__(self, dtype=None):
