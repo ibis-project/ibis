@@ -1,8 +1,10 @@
-# Tutorial: Ibis for pandas users
+---
+title: "Coming from pandas"
+---
 
 ## Prerequisites
 
-{{< include ../_tabsets/install_default.qmd >}}
+{{< include /_tabsets/install_default.qmd >}}
 
 ## Overview
 

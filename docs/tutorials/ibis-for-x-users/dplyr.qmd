@@ -1,8 +1,8 @@
 ---
 execute:
   freeze: auto
+title: "Coming from dplyr"
 ---
-# Tutorial: Ibis for dplyr users
 
 [R](https://www.r-project.org/) users familiar with
 [dplyr](https://dplyr.tidyverse.org/), [tidyr](https://tidyr.tidyverse.org/),
@@ -23,7 +23,7 @@ Ibis itself, you may notice some big differences right away:
 - **No unquoted column names:** Non-standard evaluation is common in R but not
   present in Python. To reference a column in Ibis, you can pass a string,
   property on a table (e.g., `tbl.some_column`), or you can make use of
-  [selectors](../reference/selectors.qmd).
+  [selectors](../../reference/selectors.qmd).
 - **Ibis is lazy by default:** Similar to
   [dbplyr](https://dbplyr.tidyverse.org/) and its `collect()` method, Ibis does
   not evaluate our queries until we call `.to_pandas()`. For the purposes of
@@ -284,7 +284,7 @@ To select columns by name based on a condition, dplyr has helpers such as:
 - `ends_with()`: Ends with a suffix.
 - `contains()`: Contains a literal string.
 
-These and many more [selectors](../reference/selectors.qmd) are available in
+These and many more [selectors](../../reference/selectors.qmd) are available in
 Ibis as well, with slightly different names:
 
 
@@ -302,7 +302,7 @@ starwars.select(s.endswith("color"))
 starwars.select(s.contains("world"))
 ```
 
-See the Ibis [Column Selectors](../reference/selectors.qmd) documentation for
+See the Ibis [Column Selectors](../../reference/selectors.qmd) documentation for
 the full list of selectors in Ibis.
 
 ## Renaming columns with `rename()`
@@ -362,7 +362,7 @@ starwars %>%
     BMI = mass / (height_m^2)
   ) %>%
   select(BMI, everything())
-  ```
+```
 
 In Ibis, for `BMI` to reference `height_m`, it needs to be in a separate `mutate` call:
 
@@ -497,8 +497,8 @@ In Ibis:
 ## Next Steps
 
 Now that you've gotten an introduction to the common differences between dplyr
-and Ibis, head over to [Getting started with ibis](./getting_started.qmd) for a
+and Ibis, head over to [Getting started with ibis](../basics.qmd) for a
 full introduction. If you're familiar with SQL, check out [Ibis for SQL
-users](./ibis-for-sql-users.qmd). If you're
+users](./sql.qmd). If you're
 familiar with pandas, take a look at [Ibis for pandas
-users](./ibis-for-pandas-users.qmd)
+users](./pandas.qmd)

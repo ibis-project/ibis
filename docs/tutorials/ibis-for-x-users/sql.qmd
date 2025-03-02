@@ -1,8 +1,10 @@
-# Tutorial: Ibis for SQL users
+---
+title: "Coming from SQL"
+---
 
 ## Prerequisites
 
-{{< include ../_tabsets/install_default.qmd >}}
+{{< include /_tabsets/install_default.qmd >}}
 
 ## Overview
 
@@ -331,7 +333,7 @@ expression that is correct for your query engine.
 ibis.to_sql(expr)
 ```
 
-### Counting rows with [`Table.count()`](../reference/expression-tables.qmd#ibis.expr.types.relations.Table.count):
+### Counting rows with [`Table.count()`](../../reference/expression-tables.qmd#ibis.expr.types.relations.Table.count):
 
 Computing group frequencies can be done by calling `count()` after calling
 `group_by()`:
@@ -427,7 +429,7 @@ ibis.to_sql(limited)
 
 ## Common column expressions
 
-See the full [API documentation](../reference/expression-generic.qmd) for all
+See the full [API documentation](../../reference/expression-generic.qmd) for all
 of the available value methods and tools for creating value expressions.
 
 We mention a few common ones here as they relate to common SQL queries.

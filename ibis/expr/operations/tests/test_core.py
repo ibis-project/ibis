@@ -208,10 +208,10 @@ def test_too_many_or_too_few_args_not_allowed():
 def test_getitem_on_column_is_error():
     t = ibis.table(dict(a="int"))
 
-    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+    with pytest.raises(TypeError, match="ibis-for-x-users/pandas"):
         t.a[0]
 
-    with pytest.raises(TypeError, match="#ibis-for-pandas-users"):
+    with pytest.raises(TypeError, match="ibis-for-x-users/pandas"):
         t.a[:1]
 
 

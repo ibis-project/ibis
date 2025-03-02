@@ -106,7 +106,7 @@ website:
       contents:
         - tutorials/basics.qmd
         - install.qmd
-        - auto: tutorials/*.qmd
+        - auto: tutorials/ibis-for-x-users/
         - auto: tutorials/browser
         - auto: tutorials/cloud-data-platforms
         - auto: tutorials/open-source-software
