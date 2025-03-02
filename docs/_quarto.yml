@@ -104,6 +104,7 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
+        - tutorials/basics.qmd
         - install.qmd
         - auto: tutorials/*.qmd
         - auto: tutorials/browser

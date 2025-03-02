@@ -1,4 +1,6 @@
-# Tutorial: getting started
+---
+title: "10 minutes to Ibis"
+---
 
 This is a quick tour of some basic commands and usage patterns, just to get your flippers wet.
 
@@ -10,7 +12,7 @@ You can run this tutorial in a GitHub Codespace with everything setup for you:
 
 ## Install Ibis
 
-{{< include ../_tabsets/install_default.qmd >}}
+{{< include /_tabsets/install_default.qmd >}}
 
 ## Create a database file
 

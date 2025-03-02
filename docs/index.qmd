@@ -22,7 +22,7 @@ about:
     - icon: download
       href: install.qmd
     - icon: book
-      href: tutorials/getting_started.qmd
+      href: tutorials/basics.qmd
     - icon: postcard
       text: Blog
       href: posts.qmd
@@ -255,7 +255,7 @@ would otherwise be tedious to do in pure SQL."
 :::
 
 ::: {.index-g-col-4}
-[Tutorial: getting started](tutorials/getting_started.qmd){.btn .btn-primary .w-100}
+[10 minutes to Ibis](tutorials/basics.qmd){.btn .btn-primary .w-100}
 :::
 
 ::: {.index-g-col-4}
