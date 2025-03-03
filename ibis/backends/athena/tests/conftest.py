@@ -3,7 +3,6 @@ from __future__ import annotations
 import concurrent.futures
 import getpass
 import sys
-import uuid
 from os import environ as env
 from typing import TYPE_CHECKING, Any
 
@@ -30,6 +29,9 @@ pq = pytest.importorskip("pyarrow.parquet")
 IBIS_ATHENA_S3_STAGING_DIR = env.get(
     "IBIS_ATHENA_S3_STAGING_DIR", "s3://aws-athena-query-results-ibis-testing"
 )
+IBIS_ATHENA_TEST_DATABASE = (
+    f"{getpass.getuser()}_{''.join(map(str, sys.version_info[:3]))}"
+)
 AWS_REGION = env.get("AWS_REGION", "us-east-2")
 AWS_PROFILE = env.get("AWS_PROFILE")
 CONNECT_ARGS = dict(
@@ -49,7 +51,10 @@ def create_table(connection, *, fs: s3fs.S3FileSystem, file: Path, folder: str) 
 
     ddl = sge.Create(
         kind="TABLE",
-        this=sge.Schema(this=sg.table(name), expressions=sg_schema),
+        this=sge.Schema(
+            this=sg.table(name, db=IBIS_ATHENA_TEST_DATABASE, quoted=True),
+            expressions=sg_schema,
+        ),
         properties=sge.Properties(
             expressions=[
                 sge.ExternalProperty(),
@@ -61,16 +66,19 @@ def create_table(connection, *, fs: s3fs.S3FileSystem, file: Path, folder: str) 
 
     fs.put(str(file), f"{folder.removeprefix('s3://')}/{name}/{file.name}")
 
-    drop_query = sge.Drop(kind="TABLE", this=sg.to_identifier(name, quoted=True)).sql(
-        Athena
-    )
+    drop_query = sge.Drop(
+        kind="TABLE", this=sg.table(name, db=IBIS_ATHENA_TEST_DATABASE), exists=True
+    ).sql(Athena)
+
     create_query = ddl.sql(Athena)
 
     with connection.con.cursor() as cur:
         cur.execute(drop_query)
         cur.execute(create_query)
 
-    assert connection.table(name).count().execute() > 0
+    assert (
+        connection.table(name, database=IBIS_ATHENA_TEST_DATABASE).count().execute() > 0
+    )
 
 
 class TestConf(BackendTest):
@@ -82,35 +90,41 @@ class TestConf(BackendTest):
 
     deps = ("pyathena", "fsspec")
 
+    @staticmethod
+    def format_table(name: str) -> str:
+        return sg.table(name, db=IBIS_ATHENA_TEST_DATABASE, quoted=True).sql(Athena)
+
     def _load_data(self, **_: Any) -> None:
         import fsspec
 
         files = self.data_dir.joinpath("parquet").glob("*.parquet")
 
-        user = getpass.getuser()
-        python_version = "".join(map(str, sys.version_info[:3]))
-        folder = f"{user}_{python_version}_{uuid.uuid4()}"
-
         fs = fsspec.filesystem("s3")
 
         connection = self.connection
-        folder = f"{IBIS_ATHENA_S3_STAGING_DIR}/{folder}"
+
+        connection.create_database(
+            IBIS_ATHENA_TEST_DATABASE,
+            location=f"{IBIS_ATHENA_S3_STAGING_DIR}/{IBIS_ATHENA_TEST_DATABASE}",
+            force=True,
+        )
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for future in concurrent.futures.as_completed(
-                executor.submit(
-                    create_table, connection, fs=fs, file=file, folder=folder
-                )
+                executor.submit(create_table, connection, fs=fs, file=file)
                 for file in files
             ):
                 future.result()
+
+    def postload(self, **kw):
+        self.connection = self.connect(schema_name=IBIS_ATHENA_TEST_DATABASE, **kw)
 
     @staticmethod
     def connect(*, tmpdir, worker_id, **kw) -> BaseBackend:
         return ibis.athena.connect(**CONNECT_ARGS, **kw)
 
     def _remap_column_names(self, table_name: str) -> dict[str, str]:
-        table = self.connection.table(table_name)
+        table = self.connection.table(table_name, database=IBIS_ATHENA_TEST_DATABASE)
         return table.rename(
             dict(zip(TEST_TABLES[table_name].names, table.schema().names))
         )

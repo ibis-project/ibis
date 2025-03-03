@@ -344,11 +344,17 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         s3_staging_dir: str,
         cursor_class: type[Cursor] = ArrowCursor,
         memtable_volume: str | None = None,
+        schema_name: str = "default",
+        catalog_name: str = "awsdatacatalog",
         **config: Any,
     ) -> None:
         """Create an Ibis client connected to an Amazon Athena instance."""
         self.con = pyathena.connect(
-            s3_staging_dir=s3_staging_dir, cursor_class=cursor_class, **config
+            s3_staging_dir=s3_staging_dir,
+            cursor_class=cursor_class,
+            schema_name=schema_name,
+            catalog_name=catalog_name,
+            **config,
         )
 
         if memtable_volume is None:
@@ -441,23 +447,29 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
                 pass
 
     def _finalize_memtable(self, name: str) -> None:
-        path = f"{self._memtable_volume_path}/{name}"
-        sql = sge.Drop(
-            kind="TABLE",
-            this=sg.to_identifier(name, quoted=self.compiler.quoted),
-            exists=True,
-        )
-
-        with self._safe_raw_sql(sql, unload=False):
-            pass
-
-        self._fs.rm(path, recursive=True)
+        self.drop_table(name, force=True)
+        self._fs.rm(f"{self._memtable_volume_path}/{name}", recursive=True)
 
     def create_database(
-        self, name: str, /, *, catalog: str | None = None, force: bool = False
+        self,
+        name: str,
+        /,
+        *,
+        location: str | None = None,
+        catalog: str | None = None,
+        force: bool = False,
     ) -> None:
         name = sg.table(name, catalog=catalog, quoted=self.compiler.quoted)
-        sql = sge.Create(this=name, kind="SCHEMA", exists=force)
+        sql = sge.Create(
+            this=name,
+            kind="SCHEMA",
+            exists=force,
+            properties=None
+            if location is None
+            else sge.Properties(
+                expressions=[sge.LocationProperty(this=sge.convert(location))]
+            ),
+        )
         with self._safe_raw_sql(sql, unload=False):
             pass
 
