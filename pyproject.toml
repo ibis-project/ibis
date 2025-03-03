@@ -1,6 +1,6 @@
 [project]
 name = "ibis-framework"
-version = "10.1.0"
+version = "10.2.0"
 requires-python = ">=3.9"
 description = "The portable Python dataframe library"
 readme = "README.md"

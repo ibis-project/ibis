@@ -1,6 +1,36 @@
 ---
 ---
 
+## [10.2.0](https://github.com/ibis-project/ibis/compare/10.1.0...10.2.0) (2025-03-03)
+
+### Features
+
+* **examples:** expand examples functionality to more backends ([#10916](https://github.com/ibis-project/ibis/issues/10916)) ([90a174b](https://github.com/ibis-project/ibis/commit/90a174b229d6363b1ade89921d21dc96687e53c0))
+
+### Bug Fixes
+
+* **bigquery:** ensure that count distinct can be used in window functions without a specified window ([#10911](https://github.com/ibis-project/ibis/issues/10911)) ([c9120e1](https://github.com/ibis-project/ibis/commit/c9120e111da9baaa3622f38674924dd448430a80))
+* **build:** ensure that legacy tools can recognize the validity of the Ibis license ([#10905](https://github.com/ibis-project/ibis/issues/10905)) ([c29d83a](https://github.com/ibis-project/ibis/commit/c29d83af231fd95c429a9276787f3dc83582d53c))
+* **datatypes:** document "!" as meaning non-nullable, enable `nullable` arg for type hints ([#10893](https://github.com/ibis-project/ibis/issues/10893)) ([601aabe](https://github.com/ibis-project/ibis/commit/601aabe2fee5910d82d304d11513def76a23a76c))
+* **examples:** ensure that examples work on mssql and avoid using overwrite ([#10909](https://github.com/ibis-project/ibis/issues/10909)) ([8336483](https://github.com/ibis-project/ibis/commit/833648309ff0f7b38aef97b4764b1cbf1c550f14))
+* **pyarrow-conversion:** ensure that non-nullability is preserved ([#10897](https://github.com/ibis-project/ibis/issues/10897)) ([b2c5a0c](https://github.com/ibis-project/ibis/commit/b2c5a0c8dfb9de728f8a6858371e8725889f391d))
+* **snowflake:** use schema when constructing pyarrow table ([#10903](https://github.com/ibis-project/ibis/issues/10903)) ([8b9b143](https://github.com/ibis-project/ibis/commit/8b9b143d57d12bfb534e26e84c1a02d83829e174))
+
+### Documentation
+
+* add an example with `literal` in "Getting started" ([#10918](https://github.com/ibis-project/ibis/issues/10918)) ([b69061b](https://github.com/ibis-project/ibis/commit/b69061bcb1f371264aeff9f49aaf6822372a24ae))
+* **build:** disable misbehaving duckdb spatial optimizer ([#10898](https://github.com/ibis-project/ibis/issues/10898)) ([c37116f](https://github.com/ibis-project/ibis/commit/c37116f1f104dc63518fc58ede9f94caf3e2c9de))
+* **selectors:** render the module instead of hand-picking the documented components ([#10892](https://github.com/ibis-project/ibis/issues/10892)) ([d841481](https://github.com/ibis-project/ibis/commit/d841481d31d2de11d23881c6911d2a21fd40f4a7))
+
+### Refactors
+
+* **duckdb:** simplify loading and installation of extensions ([#10900](https://github.com/ibis-project/ibis/issues/10900)) ([421972a](https://github.com/ibis-project/ibis/commit/421972a6b2d62af8e94472dd6ac34d77fae88c0e))
+
+### Performance
+
+* cache entry points ([#10889](https://github.com/ibis-project/ibis/issues/10889)) ([62e9bca](https://github.com/ibis-project/ibis/commit/62e9bca2c8f9d5928b9c2c75bcd7da759044e713))
+* disallow __dunder__ attributes on Deferred ([#10888](https://github.com/ibis-project/ibis/issues/10888)) ([40b20f1](https://github.com/ibis-project/ibis/commit/40b20f19541508110fa0a39db3409d0d3af76188))
+
 ## [10.1.0](https://github.com/ibis-project/ibis/compare/10.0.0...10.1.0) (2025-02-22)
 
 ### Features
