@@ -26,6 +26,7 @@ from ibis.backends.sql.rewrites import (
     lower_bucket,
     lower_capitalize,
     lower_sample,
+    numeric_comparison_replacements,
     one_to_zero_index,
     sqlize,
 )
@@ -256,6 +257,7 @@ class SQLGlotCompiler(abc.ABC):
         add_order_by_to_empty_ranking_window_functions,
         one_to_zero_index,
         add_one_to_nth_value_input,
+        *numeric_comparison_replacements,
     )
     """A sequence of rewrites to apply to the expression tree before SQL-specific transforms."""
 
@@ -760,13 +762,13 @@ class SQLGlotCompiler(abc.ABC):
         to handle compiling every kind of non-null literal value.
         """
         if dtype.is_integer():
-            return sge.convert(value)
+            return self.cast(value, dtype)
         elif dtype.is_floating():
             if math.isnan(value):
                 return self.NAN
             elif math.isinf(value):
                 return self.POS_INF if value > 0 else self.NEG_INF
-            return sge.convert(value)
+            return self.cast(value, dtype)
         elif dtype.is_decimal():
             return self.cast(str(value), dtype)
         elif dtype.is_interval():
@@ -833,6 +835,9 @@ class SQLGlotCompiler(abc.ABC):
             return self.f.st_geomfromtext(*args)
 
         raise NotImplementedError(f"Unsupported type: {dtype!r}")
+
+    def visit_UntypedNumericLiteral(self, op, *, value, dtype):
+        return sge.convert(value)
 
     def visit_BitwiseNot(self, op, *, arg):
         return sge.BitwiseNot(this=arg)

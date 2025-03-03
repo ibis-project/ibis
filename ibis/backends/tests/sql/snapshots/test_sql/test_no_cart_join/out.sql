@@ -3,7 +3,7 @@ SELECT
 FROM (
   SELECT
     "t5"."ancestor_node_sort_order",
-    1 AS "n"
+    CAST(1 AS TINYINT) AS "n"
   FROM (
     SELECT
       "t2"."product_id",
@@ -22,16 +22,19 @@ FROM (
         CASE
           WHEN (
             (
-              "t1"."ancestor_level_number" - 1
-            ) * 7
+              "t1"."ancestor_level_number" - CAST(1 AS TINYINT)
+            ) * CAST(7 AS TINYINT)
           ) <= LENGTH('-')
           THEN '-'
           ELSE CONCAT(
-            REPEAT('-', (
+            REPEAT(
+              '-',
               (
-                "t1"."ancestor_level_number" - 1
-              ) * 7
-            ) - LENGTH('-')),
+                (
+                  "t1"."ancestor_level_number" - CAST(1 AS TINYINT)
+                ) * CAST(7 AS TINYINT)
+              ) - LENGTH('-')
+            ),
             '-'
           )
         END || "t1"."ancestor_level_name" AS "product_level_name"

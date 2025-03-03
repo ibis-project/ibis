@@ -1,6 +1,6 @@
 SELECT
   "t0"."a",
-  9 AS "i",
+  CAST(9 AS TINYINT) AS "i",
   'foo' AS "s"
 FROM "test" AS "t0"
 ORDER BY
