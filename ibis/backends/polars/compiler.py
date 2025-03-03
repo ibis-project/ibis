@@ -1635,6 +1635,18 @@ def visit_StringFind(op, **kw):
     return pl.when(expr.is_null()).then(-1).otherwise(expr + start)
 
 
+@translate.register(ops.Lag)
+@translate.register(ops.Lead)
+def execute_shift(op: ops.Lag | ops.Lead, **kw):
+    """Implement Lead and Lag."""
+    offset = translate(op.offset, **kw) if op.offset is not None else 1
+    if isinstance(op, ops.Lead):
+        offset *= -1
+    fill_value = translate(op.default, **kw) if op.default else None
+    arg = translate(op.arg, **kw)
+    return arg.shift(offset, fill_value=fill_value)
+
+
 @translate.register(ops.SortKey)
 def execute_sort_key(op: ops.SortKey, **kw):
     """Sort key."""
