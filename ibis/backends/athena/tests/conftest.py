@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 import sqlglot as sg
-import sqlglot.expressions as sge
 from sqlglot.dialects import Athena
 
 import ibis
@@ -46,39 +45,20 @@ def create_table(connection, *, fs: s3fs.S3FileSystem, file: Path, folder: str) 
 
     arrow_schema = pq.read_metadata(file).schema.to_arrow_schema()
     ibis_schema = PyArrowSchema.to_ibis(arrow_schema)
-    sg_schema = ibis_schema.to_sqlglot(Athena)
     name = file.with_suffix("").name
-
-    ddl = sge.Create(
-        kind="TABLE",
-        this=sge.Schema(
-            this=sg.table(name, db=IBIS_ATHENA_TEST_DATABASE, quoted=True),
-            expressions=sg_schema,
-        ),
-        properties=sge.Properties(
-            expressions=[
-                sge.ExternalProperty(),
-                sge.FileFormatProperty(this=sge.Var(this="PARQUET")),
-                sge.LocationProperty(this=sge.convert(f"{folder}/{name}")),
-            ]
-        ),
-    )
 
     fs.put(str(file), f"{folder.removeprefix('s3://')}/{name}/{file.name}")
 
-    drop_query = sge.Drop(
-        kind="TABLE", this=sg.table(name, db=IBIS_ATHENA_TEST_DATABASE), exists=True
-    ).sql(Athena)
+    connection.drop_table(name, database=IBIS_ATHENA_TEST_DATABASE, force=True)
 
-    create_query = ddl.sql(Athena)
-
-    with connection.con.cursor() as cur:
-        cur.execute(drop_query)
-        cur.execute(create_query)
-
-    assert (
-        connection.table(name, database=IBIS_ATHENA_TEST_DATABASE).count().execute() > 0
+    t = connection.create_table(
+        name,
+        schema=ibis_schema,
+        location=f"{folder}/{name}",
+        database=IBIS_ATHENA_TEST_DATABASE,
     )
+
+    assert t.count().execute() > 0
 
 
 class TestConf(BackendTest):
