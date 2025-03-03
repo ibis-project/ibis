@@ -102,16 +102,17 @@ class TestConf(BackendTest):
         fs = fsspec.filesystem("s3")
 
         connection = self.connection
+        db_dir = f"{IBIS_ATHENA_S3_STAGING_DIR}/{IBIS_ATHENA_TEST_DATABASE}"
 
         connection.create_database(
-            IBIS_ATHENA_TEST_DATABASE,
-            location=f"{IBIS_ATHENA_S3_STAGING_DIR}/{IBIS_ATHENA_TEST_DATABASE}",
-            force=True,
+            IBIS_ATHENA_TEST_DATABASE, location=db_dir, force=True
         )
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
             for future in concurrent.futures.as_completed(
-                executor.submit(create_table, connection, fs=fs, file=file)
+                executor.submit(
+                    create_table, connection, fs=fs, file=file, folder=db_dir
+                )
                 for file in files
             ):
                 future.result()
