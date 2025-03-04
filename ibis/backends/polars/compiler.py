@@ -572,7 +572,7 @@ def string_join(op, **kw):
 def array_string_join(op, **kw):
     arg = translate(op.arg, **kw)
     sep = _literal_value(op.sep)
-    return arg.list.join(sep)
+    return pl.when(arg.list.len() > 0).then(arg.list.join(sep)).otherwise(None)
 
 
 @translate.register(ops.Substring)
