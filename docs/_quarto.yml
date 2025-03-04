@@ -109,8 +109,8 @@ website:
         - tutorials/browser/repl.qmd
         - section: Coming from
           contents: tutorials/coming-from/*
-        - auto: tutorials/cloud-data-platforms
-        - auto: tutorials/backends
+        - section: Backend examples
+          contents: tutorials/backends/**/*
     - id: concepts
       title: "Concepts"
       style: "docked"

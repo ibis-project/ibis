@@ -23,10 +23,10 @@ ibis.options.interactive = True # <2>
 
 load_dotenv() # <3>
 
-user = os.getenv("USERNAME") # <4>
-password = os.getenv("PASSWORD") # <4>
-host = os.getenv("HOSTNAME") # <4>
-port = os.getenv("PORTNUMBER") # <4>
+user = os.getenv("STARBURST_USERNAME") # <4>
+password = os.getenv("STARBURST_PASSWORD") # <4>
+host = os.getenv("STARBURST_HOSTNAME") # <4>
+port = os.getenv("STARBURST_PORTNUMBER") # <4>
 catalog = "sample" # <5>
 schema = "demo" # <5>
 
