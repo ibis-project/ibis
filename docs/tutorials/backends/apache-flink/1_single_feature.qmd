@@ -230,14 +230,14 @@ windows:
 
 ```{python}
 windowed_stream = source_table.window_by(
-    time_col=source_table.trans_date_trans_time,
-).tumble(window_size=ibis.interval(minutes=360))
+    source_table.trans_date_trans_time,
+).tumble(size=ibis.interval(minutes=360))
 
 user_trans_amt_last_360m_agg_windowed_stream = windowed_stream.group_by(
-    ["window_start", "window_end", "user_id"]
+    ["user_id"]
 ).agg(
-    user_mean_trans_amt_last_360min=windowed_stream.amt.mean(),
-    user_trans_count_last_360min=windowed_stream.amt.count(),
+    user_mean_trans_amt_last_360min=ibis._.amt.mean(),
+    user_trans_count_last_360min=ibis._.amt.count(),
 )
 ```
 ### Connect to a data sink
@@ -271,6 +271,7 @@ sink_configs = {
 
 sink_table = connection.create_table(
     "user_trans_amt_last_360min",
+    overwrite=True,
     schema=sink_schema,
     tbl_properties=sink_configs,
 )
@@ -326,10 +327,9 @@ You can inspect the Kafka topic using the Python Kafka client
 if you have it installed or via console Kafka consumer:
 
 ```{python}
-from kafka import KafkaConsumer
-
 consumer = KafkaConsumer(
-    "user_trans_amt_last_360min"
+    "user_trans_amt_last_360min",
+    auto_offset_reset="earliest"
 )  # or "user_trans_amt_last_360min_windowed"
 for _, msg in zip(range(10), consumer):
     print(msg)

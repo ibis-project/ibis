@@ -177,6 +177,7 @@ REDIRECTS = {
     "/tutorials/ibis-for-dplyr-users/": "/tutorials/coming-from/dplyr",
     "/tutorials/ibis-for-pandas-users/": "/tutorials/coming-from/pandas",
     "/tutorials/ibis-for-sql-users/": "/tutorials/coming-from/sql",
+    "/tutorials/open-source-software": "tutorials/backends",
     "/repl": "/tutorials/browser/repl",
     # TODO: "/how_to/memtable-join/": "/how_to/memtable_join/",
     # TODO: "/how_to/memtable_join/"
