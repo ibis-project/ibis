@@ -74,7 +74,7 @@ Then use Ibis:
 
 > 💡 **Tip**
 >
-> See the [getting started tutorial](https://ibis-project.org/tutorials/getting_started) for a full introduction to Ibis.
+> See the [getting started tutorial](https://ibis-project.org/tutorials/basics) for a full introduction to Ibis.
 
 ## Python + SQL: better together
 

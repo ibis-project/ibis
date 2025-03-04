@@ -1,5 +1,5 @@
 ---
-title: JupyterLite console
+title: Try it online
 format:
   html:
     page-layout: full
