@@ -107,7 +107,7 @@ website:
         - tutorials/basics.qmd
         - install.qmd
         - tutorials/browser/repl.qmd
-        - section: Coming from
+        - section: Coming from ...
           contents: tutorials/coming-from/*
         - section: Backend examples
           contents: tutorials/backends/**/*

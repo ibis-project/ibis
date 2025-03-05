@@ -1,5 +1,5 @@
 ---
-title: Try it online
+title: Online playground
 format:
   html:
     page-layout: full
