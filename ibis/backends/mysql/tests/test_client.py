@@ -44,7 +44,7 @@ MYSQL_TYPES = [
     param("date", dt.date, id="date"),
     param("time", dt.time, id="time"),
     param("datetime", dt.timestamp, id="datetime"),
-    param("year", dt.int8, id="year"),
+    param("year", dt.uint8, id="year"),
     param("char(32)", dt.string, id="char"),
     param("char byte", dt.binary, id="char_byte"),
     param("varchar(42)", dt.string, id="varchar"),
@@ -61,6 +61,11 @@ MYSQL_TYPES = [
     param("set('a', 'b', 'c', 'd')", dt.Array(dt.string), id="set"),
     param("mediumblob", dt.binary, id="mediumblob"),
     param("blob", dt.binary, id="blob"),
+    param("mediumint(8) unsigned", dt.uint32, id="mediumint-unsigned"),
+    param("bigint unsigned", dt.uint64, id="bigint-unsigned"),
+    param("int unsigned", dt.uint32, id="int-unsigned"),
+    param("smallint unsigned", dt.uint16, id="smallint-unsigned"),
+    param("tinyint unsigned", dt.uint8, id="tinyint-unsigned"),
 ] + [
     param(
         f"datetime({scale:d})",

@@ -62,6 +62,7 @@ _from_sqlglot_types = {
     typecode.UBIGINT: dt.UInt64,
     typecode.UINT: dt.UInt32,
     typecode.USMALLINT: dt.UInt16,
+    typecode.UMEDIUMINT: dt.UInt32,
     typecode.UTINYINT: dt.UInt8,
     typecode.UUID: dt.UUID,
     typecode.VARBINARY: dt.Binary,
@@ -544,12 +545,7 @@ class MySQLType(SqlglotType):
     default_decimal_precision = 10
     default_decimal_scale = 0
 
-    unknown_type_strings = FrozenDict(
-        {
-            "year(4)": dt.int8,
-            "inet6": dt.inet,
-        }
-    )
+    unknown_type_strings = FrozenDict({"year(4)": dt.uint8, "inet6": dt.inet})
 
     @classmethod
     def _from_sqlglot_BIT(

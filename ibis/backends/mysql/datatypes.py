@@ -67,6 +67,8 @@ def _type_from_cursor_info(*, flags, type_code, field_length, scale) -> dt.DataT
         typ = partial(dt.Timestamp, scale=scale or None)
     else:
         typ = _type_mapping[typename]
+        if issubclass(typ, dt.SignedInteger) and flags.is_unsigned:
+            typ = getattr(dt, f"U{typ.__name__}")
 
     # projection columns are always nullable
     return typ(nullable=True)
@@ -93,7 +95,7 @@ _type_mapping = {
     "DATE": dt.Date,
     "TIME": dt.Time,
     "DATETIME": dt.Timestamp,
-    "YEAR": dt.Int8,
+    "YEAR": dt.UInt8,
     "VARCHAR": dt.String,
     "JSON": dt.JSON,
     "NEWDECIMAL": dt.Decimal,
