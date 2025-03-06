@@ -14,13 +14,11 @@ from typing import (
     Optional,
     TypeVar,
     Union,
-    get_args,
-    get_origin,
 )
 from typing import Any as AnyType
 
 import toolz
-from typing_extensions import GenericMeta
+from typing_extensions import GenericMeta, get_args, get_origin
 
 from ibis.common.bases import FrozenSlotted as Slotted
 from ibis.common.bases import Hashable, Singleton
@@ -43,7 +41,7 @@ from ibis.common.typing import (
     get_bound_typevars,
     get_type_params,
 )
-from ibis.util import import_object, is_iterable, unalias_package
+from ibis.util import import_object, is_iterable, promote_list, unalias_package
 
 T_co = TypeVar("T_co", covariant=True)
 
@@ -648,8 +646,16 @@ class InstanceOf(Slotted, Singleton, Pattern):
     __slots__ = ("type",)
     type: _ClassInfo
 
-    def __init__(self, typ):
+    def __init__(self, typ: type | tuple[type, ...]) -> None:
         super().__init__(type=typ)
+
+    def __eq__(self, other: Pattern) -> bool:
+        return type(other) is type(self) and frozenset(
+            promote_list(self.type)
+        ) == frozenset(promote_list(other.type))
+
+    def __hash__(self) -> int:
+        return super().__hash__()
 
     def describe(self, plural=False):
         return _describe_type(self.type, plural=plural)
@@ -917,9 +923,16 @@ class AnyOf(Slotted, Pattern):
     __slots__ = ("patterns",)
     patterns: tuple[Pattern, ...]
 
-    def __init__(self, *pats):
-        patterns = tuple(map(pattern, pats))
-        super().__init__(patterns=patterns)
+    def __init__(self, *patterns: Pattern) -> None:
+        super().__init__(patterns=tuple(map(pattern, patterns)))
+
+    def __eq__(self, other: Pattern) -> bool:
+        return type(self) is type(other) and frozenset(self.patterns) == frozenset(
+            other.patterns
+        )
+
+    def __hash__(self) -> int:
+        return super().__hash__()
 
     def describe(self, plural=False):
         *rest, last = self.patterns

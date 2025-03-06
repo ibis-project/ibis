@@ -477,10 +477,18 @@ markers = [
   "tpcds: TPC-DS tests",
 ]
 
+[tool.uv]
+python-downloads = "never"
+concurrent-installs = 1
+compile-bytecode = false
+
 [tool.ruff]
 line-length = 88
 respect-gitignore = true
 exclude = [".direnv", "result-*", "*_py310.py", "decompiled.py", "out_tpch.py"]
+
+[tool.ruff.per-file-target-version]
+"ibis/common/tests/test_grounds_py310.py" = "py310"
 
 [tool.ruff.lint]
 select = [

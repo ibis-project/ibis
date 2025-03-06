@@ -1338,3 +1338,17 @@ def test_node():
     )
     result = six.replace(pat)
     assert result == Mul(two, Add(Lit(101), two))
+
+
+@pytest.mark.parametrize(
+    ("p1", "p2"),
+    [
+        (InstanceOf((str, int)), InstanceOf((int, str))),
+        (
+            AnyOf(InstanceOf(int), InstanceOf(str)),
+            AnyOf(InstanceOf(str), InstanceOf(int)),
+        ),
+    ],
+)
+def test_order_does_not_matter(p1, p2):
+    assert p1 == p2
