@@ -2521,10 +2521,8 @@ def test_table_describe_with_multiple_decimal_columns(con):
 
 @pytest.mark.parametrize(
     "input",
-    [
-        [],
-        pa.table([[]], pa.schema({"x": pa.int64()})),
-    ],
+    [[], pa.table([[]], pa.schema({"x": pa.int64()}))],
+    ids=["list", "pyarrow-table"],
 )
 @pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
 @pytest.mark.notyet(
