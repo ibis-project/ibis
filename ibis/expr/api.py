@@ -429,15 +429,24 @@ def _memtable(
     schema: SchemaLike | None = None,
     name: str | None = None,
 ) -> Table:
+    import ibis
+
     if hasattr(data, "__arrow_c_stream__"):
         # Support objects exposing arrow's PyCapsule interface
         import pyarrow as pa
 
-        data = pa.table(data)
+        data = pa.table(
+            data,
+            schema=ibis.schema(schema).to_pyarrow() if schema is not None else None,
+        )
     else:
         import pandas as pd
 
-        data = pd.DataFrame(data, columns=columns)
+        data = pd.DataFrame(
+            data,
+            columns=columns
+            or (ibis.schema(schema).names if schema is not None else None),
+        )
     return _memtable(data, columns=columns, schema=schema, name=name)
 
 
