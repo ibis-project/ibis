@@ -3,7 +3,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.6.5 /uv /uvx /bin/
 ARG USERNAME=vscode
 
 RUN apt-get update && \
-  apt-get install -y --no-install-recommends libgdal-dev && \
+  apt-get install -y --no-install-recommends libgdal-dev python3-dev && \
   rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install pipx --no-cache-dir
@@ -24,8 +24,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv venv && uv sync --group dev --group tests \
-        --extra duckdb --extra clickhouse  --extra examples --extra geospatial
+    uv venv && just sync duckdb
 
 ENV VENV_DIR=.venv
 RUN chown -R $USERNAME $VENV_DIR && chmod -R 755 $VENV_DIR
