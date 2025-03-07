@@ -6,7 +6,6 @@ import glob
 import itertools
 import json
 import os
-import tempfile
 import warnings
 from operator import itemgetter
 from pathlib import Path
@@ -341,8 +340,8 @@ $$ {defn["source"]} $$"""
                         f"Unable to create Ibis UDFs, some functionality will not work: {e}"
                     )
 
-    @util.deprecated(as_of="10.0", instead="use from_connection instead")
     @classmethod
+    @util.deprecated(as_of="10.0", instead="use from_connection instead")
     def from_snowpark(
         cls, session: snowflake.snowpark.Session, *, create_object_udfs: bool = True
     ) -> Backend:
@@ -678,7 +677,7 @@ $$ {defn["source"]} $$"""
         name = op.name
         data = op.data.to_pyarrow(schema=op.schema)
 
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
+        with util.mktempd() as tmpdir:
             path = Path(tmpdir, f"{name}.parquet")
             # optimize for bandwidth so use zstd which typically compresses
             # better than the other options without much loss in speed
