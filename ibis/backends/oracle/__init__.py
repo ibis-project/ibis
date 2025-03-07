@@ -311,20 +311,16 @@ class Backend(SQLBackend, CanListDatabase, PyArrowExampleLoader):
         conditions = C.owner.eq(sge.convert(table_loc.transform(unquote).sql(dialect)))
 
         tables = (
-            sg.select("table_name", "owner")
-            .from_(sg.table("all_tables"))
+            sg.select(C.table_name)
+            .from_("all_tables")
             .distinct()
             .where(conditions)
+            .union(
+                sg.select(C.view_name).from_("all_views").distinct().where(conditions)
+            )
         )
-        views = (
-            sg.select("view_name", "owner")
-            .from_(sg.table("all_views"))
-            .distinct()
-            .where(conditions)
-        )
-        sql = tables.union(views).sql(dialect)
 
-        with self._safe_raw_sql(sql) as cur:
+        with self._safe_raw_sql(tables) as cur:
             out = cur.fetchall()
 
         return self._filter_with_like(map(itemgetter(0), out), like)

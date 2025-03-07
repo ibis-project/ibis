@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, Optional
 
 from public import public
 
@@ -22,12 +22,12 @@ class WindowedTable(Concrete):
 
     parent: ir.Table
     time_col: ops.Column
-    window_type: Literal["tumble", "hop"] | None = None
-    window_size: ir.IntervalScalar | None = None
-    window_slide: ir.IntervalScalar | None = None
-    window_offset: ir.IntervalScalar | None = None
-    groups: FrozenOrderedDict[str, Unaliased[ops.Column]] | None = None
-    metrics: FrozenOrderedDict[str, Unaliased[ops.Column]] | None = None
+    window_type: Optional[Literal["tumble", "hop"]] = None
+    window_size: Optional[ir.IntervalScalar] = None
+    window_slide: Optional[ir.IntervalScalar] = None
+    window_offset: Optional[ir.IntervalScalar] = None
+    groups: Optional[FrozenOrderedDict[str, Unaliased[ops.Column]]] = None
+    metrics: Optional[FrozenOrderedDict[str, Unaliased[ops.Column]]] = None
 
     def __init__(self, time_col: ops.Column, **kwargs):
         if time_col is None:

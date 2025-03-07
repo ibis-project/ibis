@@ -1,6 +1,6 @@
 services:
   clickhouse:
-    image: clickhouse/clickhouse-server:25.1.5.31-alpine
+    image: clickhouse/clickhouse-server:25.2.1.3085-alpine
     ports:
       - 8123:8123 # http port
       - 9000:9000 # native protocol port
@@ -163,7 +163,7 @@ services:
       test:
         - CMD-SHELL
         - trino --output-format null --execute 'show schemas in hive; show schemas in memory'
-    image: trinodb/trino:471
+    image: trinodb/trino:472
     ports:
       - 8080:8080
     networks:

@@ -154,6 +154,7 @@ Ibis supports nearly 20 backends:
 - [SQL Server](https://ibis-project.org/backends/mssql/)
 - [SQLite](https://ibis-project.org/backends/sqlite/)
 - [Snowflake](https://ibis-project.org/backends/snowflake)
+- [Theseus](https://voltrondata.com/start)
 - [Trino](https://ibis-project.org/backends/trino/)
 
 ## How it works

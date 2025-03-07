@@ -56,6 +56,23 @@ in
     propagatedBuildInputs = attrs.propagatedBuildInputs or [ ] ++ [ final.editables ];
   });
 
+  # pandas python 3.10 wheels on manylinux aarch64 somehow ships shared objects
+  # for all versions of python
+  pandas = prev.pandas.overrideAttrs (attrs:
+    let
+      py = final.python;
+      shortVersion = lib.replaceStrings [ "." ] [ "" ] py.pythonVersion;
+      impl = py.implementation;
+    in
+    lib.optionalAttrs (stdenv.isAarch64 && stdenv.isLinux && shortVersion == "310") {
+      postInstall = (attrs.postInstall or "") + ''
+        find $out \
+          \( -name '*.${impl}-*.so' -o -name 'libgcc*' -o -name 'libstdc*' \) \
+          -a ! -name '*.${impl}-${shortVersion}-*.so' \
+          -delete
+      '';
+    });
+
   psygnal = prev.psygnal.overrideAttrs (attrs: {
     nativeBuildInputs = attrs.nativeBuildInputs or [ ] ++ [
       final.hatchling

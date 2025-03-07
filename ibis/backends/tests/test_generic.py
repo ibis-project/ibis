@@ -40,6 +40,7 @@ from ibis.common.annotations import ValidationError
 np = pytest.importorskip("numpy")
 pd = pytest.importorskip("pandas")
 tm = pytest.importorskip("pandas.testing")
+pa = pytest.importorskip("pyarrow")
 
 NULL_BACKEND_TYPES = {
     "bigquery": "NULL",
@@ -2016,6 +2017,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     assert count == expected_count
 
 
+@pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError)
 @pytest.mark.parametrize(
     ("slc", "expected_count_fn"),
     [
@@ -2046,7 +2048,6 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                     raises=PyODBCProgrammingError,
                     reason="sqlglot generates code that requires > 0 fetch rows",
                 ),
-                pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError),
             ],
         ),
         ##################
@@ -2516,3 +2517,17 @@ def test_table_describe_with_multiple_decimal_columns(con):
     expr = t.describe()
     result = con.to_pyarrow(expr)
     assert len(result) == 2
+
+
+@pytest.mark.parametrize(
+    "input",
+    [[], pa.table([[]], pa.schema({"x": pa.int64()}))],
+    ids=["list", "pyarrow-table"],
+)
+@pytest.mark.notyet(["druid"], raises=PyDruidProgrammingError)
+@pytest.mark.notyet(
+    ["flink"], raises=ValueError, reason="flink doesn't support empty tables"
+)
+def test_empty_memtable(con, input):
+    t = ibis.memtable(input, schema={"x": "int64"})
+    assert not len(con.to_pyarrow(t))

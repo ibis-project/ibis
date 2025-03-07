@@ -5,8 +5,7 @@ import pickle
 import sys
 import weakref
 from abc import ABCMeta
-from collections.abc import Callable
-from typing import TYPE_CHECKING, Generic, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Callable, Generic, Optional, TypeVar, Union
 
 import pytest
 

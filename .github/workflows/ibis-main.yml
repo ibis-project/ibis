@@ -44,8 +44,10 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-24.04-arm
           - windows-latest
         python-version:
+          - "3.9"
           - "3.10"
           - "3.11"
           - "3.12"
@@ -67,7 +69,7 @@ jobs:
         uses: astral-sh/setup-uv@v5.3.1
 
       - name: install ${{ matrix.os }} system dependencies
-        if: matrix.os == 'ubuntu-latest'
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           set -euo pipefail
 
@@ -117,7 +119,7 @@ jobs:
         uses: actions/setup-python@v5
         id: install_python
         with:
-          python-version: "3.13"
+          python-version: "3.9"
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.3.1
@@ -150,7 +152,7 @@ jobs:
         uses: actions/setup-python@v5
         id: install_python
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: install uv
         uses: astral-sh/setup-uv@v5.3.1

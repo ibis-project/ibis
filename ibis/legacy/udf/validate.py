@@ -8,13 +8,10 @@ DO NOT USE DIRECTLY.
 from __future__ import annotations
 
 from inspect import Parameter, Signature, signature
-from typing import TYPE_CHECKING, Any
+from typing import Any, Callable
 
 import ibis.common.exceptions as com
 import ibis.expr.datatypes as dt
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 def _parameter_count(funcsig: Signature) -> int:

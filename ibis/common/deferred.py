@@ -5,8 +5,7 @@ import functools
 import inspect
 import operator
 from abc import abstractmethod
-from collections.abc import Callable
-from typing import Any, TypeVar, overload
+from typing import Any, Callable, TypeVar, overload
 
 from ibis.common.bases import Final, FrozenSlotted, Hashable, Immutable, Slotted
 from ibis.common.collections import FrozenDict

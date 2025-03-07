@@ -54,9 +54,9 @@ import builtins
 import inspect
 import operator
 import re
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from functools import reduce
-from typing import Optional, Union
+from typing import Callable, Optional, Union
 
 from public import public
 
@@ -207,7 +207,7 @@ def of_type(dtype: dt.DataType | str | type[dt.DataType]) -> Selector:
 
 
 class StartsWith(Selector):
-    prefixes: str | VarTuple[str]
+    prefixes: Union[str, VarTuple[str]]
 
     def expand_names(self, table: ir.Table) -> frozenset[str]:
         prefixes = self.prefixes
@@ -240,7 +240,7 @@ def startswith(prefixes: str | tuple[str, ...]) -> Selector:
 
 
 class EndsWith(Selector):
-    suffixes: str | VarTuple[str]
+    suffixes: Union[str, VarTuple[str]]
 
     def expand_names(self, table: ir.Table) -> frozenset[str]:
         suffixes = self.suffixes
@@ -636,13 +636,13 @@ def if_all(selector: Selector, predicate: Deferred | Callable) -> IfAnyAll:
 
 
 class Slice(Concrete):
-    start: int | str | None = None
-    stop: int | str | None = None
-    step: int | None = None
+    start: Optional[Union[int, str]] = None
+    stop: Optional[Union[int, str]] = None
+    step: Optional[int] = None
 
 
 class ColumnIndex(Selector):
-    key: str | int | Slice | VarTuple[int | str]
+    key: Union[str, int, Slice, VarTuple[Union[int, str]]]
 
     @staticmethod
     def slice_key_to_int(

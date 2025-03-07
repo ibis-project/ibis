@@ -37,7 +37,7 @@ jobs:
         os:
           - ubuntu-latest
         python-version:
-          - "3.10"
+          - "3.9"
           - "3.13"
         backend:
           - name: snowflake
@@ -54,7 +54,7 @@ jobs:
               - --extra athena
         include:
           - os: ubuntu-latest
-            python-version: "3.10"
+            python-version: "3.9"
             backend:
               name: bigquery
               title: BigQuery

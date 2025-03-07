@@ -3,14 +3,9 @@ from __future__ import annotations
 import abc
 import functools
 from collections import defaultdict
-from types import UnionType
 from typing import Union
 
-from ibis.common.typing import (
-    evaluate_annotations,
-    get_args,
-    get_origin,
-)
+from ibis.common.typing import UnionType, evaluate_annotations, get_args, get_origin
 from ibis.util import import_object, unalias_package
 
 

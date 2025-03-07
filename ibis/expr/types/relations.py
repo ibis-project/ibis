@@ -5,9 +5,9 @@ import operator
 import re
 import warnings
 from collections import deque
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from keyword import iskeyword
-from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
+from typing import TYPE_CHECKING, Any, Callable, Literal, NoReturn, overload
 
 import toolz
 from public import public

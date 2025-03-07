@@ -14,10 +14,9 @@ from ibis.common.patterns import Coercible
 from ibis.util import indent
 
 if TYPE_CHECKING:
-    from typing import TypeAlias
-
     import sqlglot as sg
     import sqlglot.expressions as sge
+    from typing_extensions import TypeAlias
 
 
 class Schema(Concrete, Coercible, MapSet):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import inspect
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable
 
 from public import public
 
@@ -12,7 +12,7 @@ from ibis.common.deferred import Deferred, deferrable
 from ibis.expr.types.generic import Column, Scalar, Value
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable
+    from collections.abc import Iterable
 
     import ibis.expr.types as ir
     from ibis.expr.types.typing import V
