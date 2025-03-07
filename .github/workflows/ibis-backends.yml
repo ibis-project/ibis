@@ -491,9 +491,6 @@ jobs:
         if: matrix.backend.additional_deps != null
         run: uv add --no-sync --optional ${{ matrix.backend.name }} ${{ join(matrix.backend.additional_deps, ' ') }}
 
-      - name: show installed deps
-        run: uv tree
-
       - name: "run parallel tests: ${{ matrix.backend.name }}"
         if: ${{ !matrix.backend.serial }}
         timeout-minutes: 60
