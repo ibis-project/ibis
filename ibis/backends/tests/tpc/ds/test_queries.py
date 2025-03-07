@@ -111,7 +111,6 @@ def test_03(date_dim, store_sales, item):
 @pytest.mark.notimpl(
     ["datafusion"], reason="Optimizer rule 'common_sub_expression_eliminate' failed"
 )
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_04(customer, store_sales, catalog_sales, web_sales, date_dim):
     def profile(sales, *, name):
         char = name[0]
@@ -1145,7 +1144,6 @@ def test_18(
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_19(date_dim, store_sales, item, customer, customer_address, store):
     return (
         date_dim.join(store_sales, [("d_date_sk", "ss_sold_date_sk")])
@@ -1303,7 +1301,6 @@ def test_23(store_sales, date_dim, item, customer, catalog_sales, web_sales):
 
 
 @tpc_test("ds", result_is_empty=True)
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_24(store_sales, store_returns, store, item, customer, customer_address):
     ssales = (
         store_sales.join(
@@ -3264,7 +3261,6 @@ def test_63(item, store_sales, date_dim, store):
 
 
 @tpc_test("ds", result_is_empty=True)
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_64(
     catalog_sales,
     catalog_returns,
@@ -3764,7 +3760,6 @@ def test_71(item, web_sales, date_dim, catalog_sales, store_sales, time_dim):
     raises=OperationNotDefinedError,
     reason="No DateDelta op defined",
 )
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_72(
     catalog_sales,
     inventory,
@@ -3897,7 +3892,6 @@ def test_73(store_sales, date_dim, store, household_demographics, customer):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_74(customer, store_sales, date_dim, web_sales):
     renames = {
         "customer_id": "c_customer_id",
@@ -5066,7 +5060,6 @@ def test_94(web_sales, date_dim, customer_address, web_site, web_returns):
 
 
 @tpc_test("ds")
-@pytest.mark.notyet(["clickhouse"], reason="Broken")
 def test_95(web_sales, date_dim, customer_address, web_site, web_returns):
     ws1 = web_sales.view()
     ws2 = web_sales.view()
