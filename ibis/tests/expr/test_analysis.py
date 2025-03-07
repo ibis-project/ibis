@@ -149,6 +149,7 @@ def test_filter_self_join():
     agged = purchases.group_by(["region", "kind"]).aggregate(metric)
     assert agged.op() == ops.Aggregate(
         parent=purchases,
+        keys={"region": purchases.region, "kind": purchases.kind},
         groups={"region": purchases.region, "kind": purchases.kind},
         metrics={"total": purchases.amount.sum()},
     )
