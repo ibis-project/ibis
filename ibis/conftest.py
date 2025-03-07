@@ -3,6 +3,7 @@ from __future__ import annotations
 import builtins
 import os
 import platform
+from pathlib import Path
 
 import pytest
 
@@ -44,3 +45,17 @@ not_windows = pytest.mark.skipif(
     condition=WINDOWS,
     reason="windows prevents two connections to the same file even in the same process",
 )
+
+
+@pytest.fixture(scope="session")
+def data_dir() -> Path:
+    """Return the test data directory.
+
+    Returns
+    -------
+    Path
+        Test data directory
+    """
+    root = Path(__file__).absolute().parents[1]
+
+    return root / "ci" / "ibis-testing-data"
