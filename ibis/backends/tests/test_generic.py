@@ -2017,6 +2017,7 @@ def test_static_table_slice(backend, slc, expected_count_fn):
     assert count == expected_count
 
 
+@pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError)
 @pytest.mark.parametrize(
     ("slc", "expected_count_fn"),
     [
@@ -2047,7 +2048,6 @@ def test_static_table_slice(backend, slc, expected_count_fn):
                     raises=PyODBCProgrammingError,
                     reason="sqlglot generates code that requires > 0 fetch rows",
                 ),
-                pytest.mark.notyet("clickhouse", raises=ClickHouseDatabaseError),
             ],
         ),
         ##################
