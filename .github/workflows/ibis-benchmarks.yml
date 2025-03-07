@@ -42,6 +42,9 @@ jobs:
       - name: spin up services
         run: just up postgres
 
+      - name: download testing data
+        run: just download-data
+
       - name: install system dependencies
         run: sudo apt-get install -qq -y build-essential libgeos-dev freetds-dev unixodbc-dev
 
