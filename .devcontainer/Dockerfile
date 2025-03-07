@@ -24,7 +24,7 @@ COPY . /app
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv venv && just sync-light
+    uv venv && just sync duckdb
 
 ENV VENV_DIR=.venv
 RUN chown -R $USERNAME $VENV_DIR && chmod -R 755 $VENV_DIR
