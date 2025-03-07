@@ -9,13 +9,10 @@ import inspect
 import textwrap
 from collections import ChainMap
 from inspect import _empty as EMPTY
-from typing import TYPE_CHECKING
+from typing import Callable
 
 from ibis.backends.sql.compilers.bigquery.udf.find import find_names
 from ibis.backends.sql.compilers.bigquery.udf.rewrite import rewrite
-
-if TYPE_CHECKING:
-    from collections.abc import Callable
 
 
 class SymbolTable(ChainMap):

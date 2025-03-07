@@ -1528,7 +1528,10 @@ def _get_backend_names(*, exclude: tuple[str] = ()) -> frozenset[str]:
 
     """
 
-    entrypoints = importlib.metadata.entry_points(group="ibis.backends")
+    if sys.version_info < (3, 10):
+        entrypoints = importlib.metadata.entry_points()["ibis.backends"]
+    else:
+        entrypoints = importlib.metadata.entry_points(group="ibis.backends")
     return frozenset(ep.name for ep in entrypoints).difference(exclude)
 
 

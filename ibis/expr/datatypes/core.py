@@ -15,14 +15,12 @@ from typing import (
     NamedTuple,
     Optional,
     TypeVar,
-    get_args,
-    get_origin,
     get_type_hints,
 )
 
 import toolz
 from public import public
-from typing_extensions import Self
+from typing_extensions import Self, get_args, get_origin
 
 from ibis.common.annotations import attribute
 from ibis.common.collections import FrozenOrderedDict, MapSet
@@ -913,7 +911,7 @@ class Array(Variadic, Parametric, Generic[T]):
 
     value_type: T
     """Element type of the array."""
-    length: Annotated[int, Between(lower=0)] | None = None
+    length: Optional[Annotated[int, Between(lower=0)]] = None
     """The length of the array if known."""
 
     scalar = "ArrayScalar"

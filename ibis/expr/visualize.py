@@ -3,9 +3,8 @@ from __future__ import annotations
 import contextlib
 import sys
 import tempfile
-from collections.abc import Callable
 from html import escape
-from typing import Optional
+from typing import Callable, Optional
 
 import graphviz as gv
 

@@ -9,7 +9,7 @@ import functools
 import inspect
 import itertools
 import typing
-from typing import TYPE_CHECKING, Any, Optional, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Callable, Optional, TypeVar, overload
 
 from public import public
 
@@ -24,7 +24,7 @@ from ibis.common.collections import FrozenDict
 from ibis.common.deferred import deferrable
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, MutableMapping
+    from collections.abc import Iterable, MutableMapping
 
     import ibis.expr.types as ir
 

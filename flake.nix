@@ -93,9 +93,6 @@
 
           # Get repository root using git. This is expanded at runtime by the editable `.pth` machinery.
           export REPO_ROOT=$(git rev-parse --show-toplevel)
-
-          # Prevent uv from downloading managed Python's
-          export UV_PYTHON_DOWNLOADS=never
         '';
 
         preCommitDeps = with pkgs; [
@@ -163,11 +160,12 @@
         packages = {
           default = packages.ibis313;
 
-          inherit (pkgs) ibis310 ibis311 ibis312 ibis313
+          inherit (pkgs) ibis39 ibis310 ibis311 ibis312 ibis313
             update-lock-files check-release-notes-spelling;
         };
 
         checks = {
+          ibis39-pytest = pkgs.ibis39.passthru.tests.pytest;
           ibis310-pytest = pkgs.ibis310.passthru.tests.pytest;
           ibis311-pytest = pkgs.ibis311.passthru.tests.pytest;
           ibis312-pytest = pkgs.ibis312.passthru.tests.pytest;
@@ -175,6 +173,7 @@
         };
 
         devShells = rec {
+          ibis39 = mkDevShell pkgs.ibisDevEnv39;
           ibis310 = mkDevShell pkgs.ibisDevEnv310;
           ibis311 = mkDevShell pkgs.ibisDevEnv311;
           ibis312 = mkDevShell pkgs.ibisDevEnv312;
