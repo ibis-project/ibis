@@ -6,6 +6,14 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
+# install all dependencies
+sync:
+    uv sync --all-groups --all-extras
+
+# install most useful dependencies for a lightweight dev environment
+sync-light:
+    uv sync --group dev --group tests --extra duckdb --extra examples --extra geospatial
+
 # lock dependencies without updating existing versions
 lock:
     #!/usr/bin/env bash
