@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import contextlib
 import itertools
 import operator
 import re
 import warnings
 from collections import deque
 from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
+from functools import partial
 from keyword import iskeyword
 from typing import TYPE_CHECKING, Any, Literal, NoReturn, overload
 
@@ -95,28 +97,43 @@ def _regular_join_method(
     return f
 
 
-def bind(table: Table, value) -> Iterator[ir.Value]:
+def bind(table: Table, value, missing_ok: bool = False) -> Iterator[ir.Value]:
     """Bind a value to a table expression."""
     if isinstance(value, str):
-        # TODO(kszucs): perhaps use getattr(table, value) instead for nicer error msg
-        yield ops.Field(table, value).to_expr()
+        if missing_ok:
+            with contextlib.suppress(com.IbisTypeError):
+                yield getattr(table, value)
+        else:
+            yield getattr(table, value)
     elif isinstance(value, ops.Value):
         yield value.to_expr()
     elif isinstance(value, Value):
         yield value
     elif isinstance(value, Table):
-        for name in value.columns:
-            yield ops.Field(value, name).to_expr()
+        if missing_ok:
+            for name in value.columns:
+                with contextlib.suppress(com.IbisTypeError):
+                    yield getattr(value, name)
+        else:
+            yield from map(partial(getattr, value), value.columns)
     elif isinstance(value, Deferred):
-        yield value.resolve(table)
+        if missing_ok:
+            with contextlib.suppress(com.IbisTypeError):
+                yield value.resolve(table)
+        else:
+            yield value.resolve(table)
     elif isinstance(value, Resolver):
-        yield value.resolve({"_": table})
+        if missing_ok:
+            with contextlib.suppress(com.IbisTypeError):
+                yield value.resolve({"_": table})
+        else:
+            yield value.resolve({"_": table})
     elif isinstance(value, Expandable):
-        yield from value.expand(table)
+        yield from value.expand(table, missing_ok=missing_ok)
     elif callable(value):
         # rebind, otherwise the callable is required to return an expression
         # which would preclude support for expressions like lambda _: 2
-        yield from bind(table, value(table))
+        yield from bind(table, value(table), missing_ok=missing_ok)
     else:
         yield literal(value)
 
@@ -242,7 +259,7 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return PolarsData.convert_table(df, self.schema())
 
-    def _fast_bind(self, *args, **kwargs):
+    def _fast_bind(self, *args, missing_ok: bool = False, **kwargs):
         # allow the first argument to be either a dictionary or a list of values
         if len(args) == 1:
             if isinstance(args[0], dict):
@@ -253,12 +270,12 @@ class Table(Expr, _FixedTextJupyterMixin):
         # bind positional arguments
         values = []
         for arg in args:
-            values.extend(bind(self, arg))
+            values.extend(bind(self, arg, missing_ok=missing_ok))
 
         # bind keyword arguments where each entry can produce only one value
         # which is then named with the given key
         for key, arg in kwargs.items():
-            bindings = tuple(bind(self, arg))
+            bindings = tuple(bind(self, arg, missing_ok=missing_ok))
             if len(bindings) != 1:
                 raise com.IbisInputError(
                     "Keyword arguments cannot produce more than one value"
@@ -2337,13 +2354,15 @@ class Table(Expr, _FixedTextJupyterMixin):
 
         return ops.Project(self, exprs).to_expr()
 
-    def drop(self, *fields: str | Selector) -> Table:
+    def drop(self, *fields: str | Selector, missing_ok: bool = False) -> Table:
         """Remove fields from a table.
 
         Parameters
         ----------
         fields
             Fields to drop. Strings and selectors are accepted.
+        missing_ok
+            If `True`, do not raise an error if a field does not exist.
 
         Returns
         -------
@@ -2401,6 +2420,28 @@ class Table(Expr, _FixedTextJupyterMixin):
         │ Torgersen │          19.3 │               193 │        3450 │ female │ … │
         └───────────┴───────────────┴───────────────────┴─────────────┴────────┴───┘
 
+        If a given column does not exist, then by default an error is raised.
+        If you want to ignore missing columns, you can pass `missing_ok=True`.
+        This is useful if you need a column to not exist,
+        but you don't know if it does or not.
+
+        >>> t.drop("column_that_must_not_exist_afterwards")  # doctest: +SKIP
+        Traceback (most recent call last):
+        ...
+        >>> t.drop("column_that_must_not_exist_afterwards", missing_ok=True).head()
+        ┏━━━━━━━━━┳━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┳━━━┓
+        ┃ species ┃ island    ┃ bill_length_mm ┃ bill_depth_mm ┃ flipper_length_mm ┃ … ┃
+        ┡━━━━━━━━━╇━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━╇━━━┩
+        │ string  │ string    │ float64        │ float64       │ int64             │ … │
+        ├─────────┼───────────┼────────────────┼───────────────┼───────────────────┼───┤
+        │ Adelie  │ Torgersen │           39.1 │          18.7 │               181 │ … │
+        │ Adelie  │ Torgersen │           39.5 │          17.4 │               186 │ … │
+        │ Adelie  │ Torgersen │           40.3 │          18.0 │               195 │ … │
+        │ Adelie  │ Torgersen │           NULL │          NULL │              NULL │ … │
+        │ Adelie  │ Torgersen │           36.7 │          19.3 │               193 │ … │
+        │ …       │ …         │              … │             … │                 … │ … │
+        └─────────┴───────────┴────────────────┴───────────────┴───────────────────┴───┘
+
         Drop with selectors, mix and match
 
         >>> import ibis.selectors as s
@@ -2421,7 +2462,9 @@ class Table(Expr, _FixedTextJupyterMixin):
             # no-op if nothing to be dropped
             return self
 
-        columns_to_drop = frozenset(map(Expr.get_name, self._fast_bind(*fields)))
+        columns_to_drop = frozenset(
+            map(Expr.get_name, self._fast_bind(*fields, missing_ok=missing_ok))
+        )
         return ops.DropColumns(parent=self, columns_to_drop=columns_to_drop).to_expr()
 
     def filter(
