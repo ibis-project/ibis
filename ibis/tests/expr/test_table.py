@@ -130,8 +130,22 @@ def test_getitem_attribute(table):
 
 
 def test_getitem_missing_column(table):
-    with pytest.raises(com.IbisTypeError, match="oops"):
+    with pytest.raises(com.FieldsNotFoundError, match="oops") as excinfo:
         table["oops"]
+    assert excinfo.value.names == ("oops",)
+    assert excinfo.value.existing_options == tuple(table.columns)
+
+    with pytest.raises(com.FieldsNotFoundError, match="A") as excinfo:
+        table["A"]
+    assert excinfo.value.names == ("A",)
+    assert excinfo.value.existing_options == tuple(table.columns)
+
+
+def test_select_missing_columns(table):
+    with pytest.raises(com.FieldsNotFoundError, match="foo") as excinfo:
+        table.select("a", "B", "foo", _.bar.upper(), baz=_.qux)
+    assert excinfo.value.names == ("B", "foo", "bar", "qux")
+    assert excinfo.value.existing_options == tuple(table.columns)
 
 
 def test_getattr_missing_column(table):
@@ -546,13 +560,13 @@ def test_order_by_scalar(table, key, expected):
 
 
 @pytest.mark.parametrize(
-    ("key", "exc_type"),
+    "key",
     [
-        ("bogus", com.IbisTypeError),
-        (("bogus", False), com.IbisTypeError),
-        (ibis.desc("bogus"), com.IbisTypeError),
-        (_.bogus, AttributeError),
-        (_.bogus.desc(), AttributeError),
+        "bogus",
+        ("bogus", False),
+        ibis.desc("bogus"),
+        _.bogus,
+        _.bogus.desc(),
     ],
 )
 @pytest.mark.parametrize(
@@ -563,11 +577,11 @@ def test_order_by_scalar(table, key, expected):
         param(lambda t: t.group_by("a").agg(new=_.b.sum()), id="aggregation"),
     ],
 )
-def test_order_by_nonexistent_column_errors(table, expr_func, key, exc_type):
+def test_order_by_nonexistent_column_errors(table, expr_func, key):
     # `order_by` is implemented on a few different operations, we check them
     # all in turn here.
     expr = expr_func(table)
-    with pytest.raises(exc_type):
+    with pytest.raises(com.FieldsNotFoundError):
         expr.order_by(key)
 
 
@@ -1811,7 +1825,7 @@ def test_drop():
     res = t.drop(_.a, "b")
     assert res.schema() == t.select("c", "d").schema()
 
-    with pytest.raises(com.IbisTypeError):
+    with pytest.raises(com.FieldsNotFoundError):
         t.drop("e")
 
 

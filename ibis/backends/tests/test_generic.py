@@ -515,7 +515,7 @@ def test_mutate_rename(alltypes):
 
 def test_drop_null_invalid(alltypes):
     with pytest.raises(
-        com.IbisTypeError, match=r"Column 'invalid_col' is not found in table"
+        com.FieldsNotFoundError, match=r"'invalid_col' not found in Table object"
     ):
         alltypes.drop_null(["invalid_col"])
 

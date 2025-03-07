@@ -8,7 +8,7 @@ import ibis.expr.operations as ops
 from ibis import _
 from ibis.common.annotations import ValidationError
 from ibis.common.deferred import Deferred
-from ibis.common.exceptions import IbisTypeError
+from ibis.common.exceptions import FieldsNotFoundError
 
 
 @pytest.mark.parametrize(
@@ -148,7 +148,7 @@ def test_ordered_aggregations(method):
     q8 = func(order_by=t.b.desc())
     assert q7.equals(q8)
 
-    with pytest.raises(IbisTypeError):
+    with pytest.raises(FieldsNotFoundError):
         func(order_by="oops")
 
 
