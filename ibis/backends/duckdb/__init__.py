@@ -1074,6 +1074,58 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
 
         return self.table(table_name)
 
+    @util.experimental
+    def read_xlsx(
+        self,
+        path: str | Path,
+        /,
+        *,
+        sheet: str | None = None,
+        range: str | None = None,
+        **kwargs,
+    ) -> ir.Table:
+        """Read an Excel file into a DuckDB table. This requires duckdb>=1.2.0.
+
+        Parameters
+        ----------
+        path
+            The path to the Excel file.
+        sheet
+            The name of the sheet to read, eg 'Sheet3'.
+        range
+            The range of cells to read, eg 'A5:Z'.
+        kwargs
+            Additional args passed to the backend's read function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+
+        See Also
+        --------
+        [DuckDB's `excel` extension docs](https://duckdb.org/docs/stable/extensions/excel.html)
+        """
+        path = str(path)
+        table_name = util.gen_name("read_xlsx")
+
+        if sheet:
+            kwargs["sheet"] = sheet
+
+        if range:
+            kwargs["range"] = range
+
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
+
+        self._load_extensions(["excel"])
+        self._create_temp_view(
+            table_name,
+            sg.select(STAR).from_(self.compiler.f.read_xlsx(path, *options)),
+        )
+        return self.table(table_name)
+
     def attach(
         self, path: str | Path, name: str | None = None, read_only: bool = False
     ) -> None:
