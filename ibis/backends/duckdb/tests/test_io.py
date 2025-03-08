@@ -441,3 +441,42 @@ def test_read_csv_with_duckdb_specific_types(con):
     columns = {"a": "STRUCT(a INTEGER)"}
     with pytest.raises(duckdb.IOException, match="No files found"):
         con.read_csv(path, columns=columns)
+
+
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_roundtrip_xlsx(con, tmp_path):
+    path = tmp_path / "test.xlsx"
+
+    ft = con.tables.functional_alltypes
+
+    ft.to_xlsx(path, header=True)
+
+    t = con.read_xlsx(path)
+
+    assert t.columns == ft.columns
+    assert t.count().execute() == ft.count().execute()
+
+
+@pytest.mark.xfail(
+    LINUX and SANDBOXED,
+    reason="nix on linux cannot download duckdb extensions or data due to sandboxing",
+)
+def test_roundtrip_xlsx_with_sheet(con, tmp_path):
+    path = tmp_path / "test.xlsx"
+
+    con.load_extension("excel")
+
+    ft = con.tables.functional_alltypes
+    ft.to_xlsx(path, sheet="Sheet2", header=True)
+
+    t = con.read_xlsx(path, sheet="Sheet2", range="A1:E3")
+
+    ncolumns = len(t.columns)
+
+    # A1:E3 is 5 columns (A-E), 2 rows (1-3, first is header)
+    assert ncolumns == 5
+    assert t.columns == ft.columns[:ncolumns]
+    assert t.count().execute() == 2
