@@ -196,7 +196,7 @@ def test_array_concat_scalar(con, op):
 )
 @pytest.mark.notyet(
     ["bigquery"],
-    raises=ValueError,
+    raises=(AssertionError, ValueError),
     reason=(
         "bigquery treats null arrays as empty "
         "and a ValueError is raised from `pd.isna` "
@@ -208,7 +208,8 @@ def test_array_concat_with_null(con, op):
     null_value = ibis.null(non_null_value.type())
     expr = op(non_null_value, null_value)
     result = con.execute(expr)
-    assert pd.isna(result)
+    isna = pd.isna(result)
+    assert isna is True or isna is np.True_
 
 
 @pytest.mark.notyet(

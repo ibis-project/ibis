@@ -404,8 +404,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, PyArrowExampleLoader):
                 sg.table(upstream_path, db="parquet", quoted=quoted)
             ),
         ).sql(self.dialect)
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-            data = op.data.to_pyarrow(schema=op.schema)
+        data = op.data.to_pyarrow(schema=op.schema)
+        with util.mktempd() as tmpdir:
             path = Path(tmpdir, stem)
             put_into = f"PUT '{path}' INTO '{upstream_path}' OVERWRITE"
             # optimize for bandwidth so use zstd which typically compresses

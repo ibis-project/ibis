@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import collections
 import collections.abc
+import contextlib
 import functools
 import importlib.metadata
 import itertools
@@ -12,6 +13,7 @@ import operator
 import os
 import re
 import sys
+import tempfile
 import textwrap
 import types
 import uuid
@@ -751,3 +753,19 @@ def get_subclasses(obj: type[T]) -> Iterator[type[S]]:
     for child_class in obj.__subclasses__():
         yield child_class
         yield from get_subclasses(child_class)
+
+
+if sys.version_info[:2] < (3, 10):
+
+    @contextlib.contextmanager
+    def mktempd():
+        tmpdir = tempfile.TemporaryDirectory()
+        try:
+            yield tmpdir.name
+        finally:
+            with contextlib.suppress(Exception):
+                tmpdir.cleanup()
+else:
+
+    def mktempd():
+        return tempfile.TemporaryDirectory(ignore_cleanup_errors=True)

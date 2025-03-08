@@ -6,6 +6,15 @@ default:
 clean:
     git clean -fdx -e 'ci/ibis-testing-data'
 
+# install dependencies for a given backend, or all dependencies if none is given
+sync backend="":
+    #!/usr/bin/env bash
+    if [ ! "{{ backend }}" ]; then
+        uv sync --all-groups --all-extras
+    else
+        uv sync --group dev --group tests --extra {{ backend }} --extra examples --extra geospatial
+    fi
+
 # lock dependencies without updating existing versions
 lock:
     #!/usr/bin/env bash

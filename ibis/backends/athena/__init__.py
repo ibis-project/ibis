@@ -7,7 +7,6 @@ import getpass
 import os
 import re
 import sys
-import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -435,8 +434,8 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, NoExampleLoader):
         raw_upstream_dir = upstream_path.removeprefix("s3://")
         raw_upstream_path = f"{raw_upstream_dir}/data.parquet"
 
-        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-            data = op.data.to_pyarrow(schema=schema)
+        data = op.data.to_pyarrow(schema=schema)
+        with util.mktempd() as tmpdir:
             path = Path(tmpdir, name)
             # optimize for bandwidth so use zstd which typically compresses
             # better than the other options without much loss in speed
