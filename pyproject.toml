@@ -441,6 +441,9 @@ filterwarnings = [
   "ignore:The 'warn' method is deprecated, use 'warning' instead:DeprecationWarning",
   # botocore is still using utcnow
   "ignore:datetime\\.datetime\\.utcnow\\(\\) is deprecated and scheduled for removal:DeprecationWarning",
+  # snowflake has decided once again to start warning about pyarrow versions,
+  # for what seems to be a niche case only affecting azure users
+  "ignore:You have an incompatible version of 'pyarrow' installed:UserWarning",
 ]
 empty_parameter_set_mark = "fail_at_collect"
 markers = [

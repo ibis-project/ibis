@@ -3134,21 +3134,27 @@ class Table(Expr, _FixedTextJupyterMixin):
         └────────┴─────────┴─────────────────┴────────────┘
 
         You can join on multiple columns/conditions by passing in a
-        sequence. Find all instances where a user both tagged and
-        rated a movie:
+        sequence. Show the top 5 users by the number of unique movies that
+        they both rated *and* tagged:
 
-        >>> tags.join(ratings, ["userId", "movieId"]).head(5).order_by("userId", "movieId")
-        ┏━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━┳━━━━━━━━━┓
-        ┃ userId ┃ movieId ┃ tag            ┃ timestamp  ┃ rating  ┃
-        ┡━━━━━━━━╇━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━╇━━━━━━━━━┩
-        │ int64  │ int64   │ string         │ int64      │ float64 │
-        ├────────┼─────────┼────────────────┼────────────┼─────────┤
-        │     62 │       2 │ Robin Williams │ 1528843907 │     4.0 │
-        │     62 │     110 │ sword fight    │ 1528152535 │     4.5 │
-        │     62 │    2124 │ quirky         │ 1525636846 │     5.0 │
-        │     62 │    2953 │ sequel         │ 1525636887 │     3.5 │
-        │     62 │    3114 │ Tom Hanks      │ 1525636925 │     3.0 │
-        └────────┴─────────┴────────────────┴────────────┴─────────┘
+        >>> (
+        ...     tags.join(ratings, ["userId", "movieId"])
+        ...     .group_by(_.userId)
+        ...     .agg(n_rated_and_tagged=_.movieId.nunique())
+        ...     .order_by(_.n_rated_and_tagged.desc())
+        ...     .head(5)
+        ... )
+        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━┓
+        ┃ userId ┃ n_rated_and_tagged ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━┩
+        │ int64  │ int64              │
+        ├────────┼────────────────────┤
+        │    474 │               1149 │
+        │    567 │                109 │
+        │     62 │                 69 │
+        │    477 │                 66 │
+        │    424 │                 58 │
+        └────────┴────────────────────┘
 
         To self-join a table with itself, you need to call
         `.view()` on one of the arguments so the two tables
