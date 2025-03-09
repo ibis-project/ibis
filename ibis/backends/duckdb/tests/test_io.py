@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from pathlib import Path
 
 import duckdb
 import numpy as np
@@ -441,3 +442,33 @@ def test_read_csv_with_duckdb_specific_types(con):
     columns = {"a": "STRUCT(a INTEGER)"}
     with pytest.raises(duckdb.IOException, match="No files found"):
         con.read_csv(path, columns=columns)
+
+
+def test_read_xlsx(con):
+    here = Path(__file__).parent
+    path = here / "../../tests/test.xlsx"
+    t = con.read_xlsx(path)
+    expected_schema = ibis.schema(
+        {
+            "ints1": "float64",  # duckdb's type inference isn't perfect
+            "strings1": "string",
+            "dates1": "date",
+            "booleans1": "boolean",
+            "floats1": "float64",
+        }
+    )
+    assert t.schema() == expected_schema
+    assert t.count().execute() == 3
+
+    t = con.read_xlsx(path, sheet="Sheet2", range="A1:E3")
+    expected_schema = ibis.schema(
+        {
+            "ints2": "float64",  # duckdb's type inference isn't perfect
+            "strings2": "string",
+            "dates2": "date",
+            "booleans2": "boolean",
+            "floats2": "float64",
+        }
+    )
+    assert t.schema() == expected_schema
+    assert t.count().execute() == 2
