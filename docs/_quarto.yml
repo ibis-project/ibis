@@ -104,11 +104,13 @@ website:
       style: "docked"
       collapse-level: 2
       contents:
+        - tutorials/basics.qmd
         - install.qmd
-        - auto: tutorials/*.qmd
-        - auto: tutorials/browser
-        - auto: tutorials/cloud-data-platforms
-        - auto: tutorials/open-source-software
+        - tutorials/browser/repl.qmd
+        - section: Coming from ...
+          contents: tutorials/coming-from/*
+        - section: Backend examples
+          contents: tutorials/backends/**/*
     - id: concepts
       title: "Concepts"
       style: "docked"

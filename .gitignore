@@ -135,19 +135,9 @@ ibis/examples/descriptions
 ci/odbc/odbc.ini
 *-citibike-tripdata.tar.xz
 
-# data downloaded by the geospatial tutorial
-docs/posts/ibis-duckdb-geospatial/nyc_data.db.wal
-
 # pixi environment directory
 .pixi
 
-# jupyter cache directories
-docs/**/.jupyter_cache
-
-# quarto generated files
-docs/posts-listing.json
-docs/posts.feed-full-staged
-docs/**/*.html
 
 # jupyterlite stuff
 .jupyterlite.doit.db
