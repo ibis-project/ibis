@@ -1019,3 +1019,34 @@ def test_dedup_schema(benchmark):
             itertools.cycle(("int", "string", "array<int>", "float")),
         ),
     )
+
+
+@pytest.fixture(scope="session")
+def pgtable(data_dir):
+    pd = pytest.importorskip("pandas")
+    pytest.importorskip("psycopg")
+
+    from ibis.backends.postgres.tests.conftest import (
+        IBIS_TEST_POSTGRES_DB,
+        PG_HOST,
+        PG_PASS,
+        PG_PORT,
+        PG_USER,
+    )
+
+    con = ibis.postgres.connect(
+        user=PG_USER,
+        password=PG_PASS,
+        host=PG_HOST,
+        port=PG_PORT,
+        database=IBIS_TEST_POSTGRES_DB,
+    )
+    name = ibis.util.gen_name("functional_alltypes_bench")
+    yield con.create_table(
+        name, obj=pd.read_csv(data_dir / "csv" / "functional_alltypes.csv"), temp=True
+    )
+    con.disconnect()
+
+
+def test_postgres_record_batches(pgtable, benchmark):
+    benchmark(pgtable.to_pyarrow)

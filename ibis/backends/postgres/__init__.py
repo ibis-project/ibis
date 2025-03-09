@@ -28,7 +28,7 @@ from ibis.backends.sql import SQLBackend
 from ibis.backends.sql.compilers.base import TRUE, C, ColGen
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
     from urllib.parse import ParseResult
 
     import pandas as pd
@@ -740,3 +740,53 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         else:
             con.commit()
             return cursor
+
+    @util.experimental
+    def to_pyarrow_batches(
+        self,
+        expr: ir.Expr,
+        /,
+        *,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        limit: int | str | None = None,
+        chunk_size: int = 1_000_000,
+        **_: Any,
+    ) -> pa.ipc.RecordBatchReader:
+        import pandas as pd
+        import pyarrow as pa
+
+        self._run_pre_execute_hooks(expr)
+
+        schema = expr.as_table().schema()
+
+        query = self.compile(expr, limit=limit, params=params)
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.dialect)
+
+        con = self.con
+        # server-side cursors need to be uniquely named
+        cursor = con.cursor(name=util.gen_name("postgres_cursor"))
+
+        try:
+            cursor.execute(query)
+        except Exception:
+            con.rollback()
+            cursor.close()
+            raise
+
+        def _batches(schema: pa.Schema):
+            columns = schema.names
+            try:
+                while batch := cursor.fetchmany(chunk_size):
+                    yield pa.RecordBatch.from_pandas(
+                        pd.DataFrame(batch, columns=columns), schema=schema
+                    )
+            except Exception:
+                con.rollback()
+                cursor.close()
+                raise
+            else:
+                con.commit()
+
+        pa_schema = schema.to_pyarrow()
+        return pa.RecordBatchReader.from_batches(pa_schema, _batches(pa_schema))
