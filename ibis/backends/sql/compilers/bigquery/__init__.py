@@ -470,6 +470,9 @@ class BigQueryCompiler(SQLGlotCompiler):
     def visit_DayOfWeekIndex(self, op, *, arg):
         return self.f.mod(self.f.extract(self.v.dayofweek, arg) + 5, 7)
 
+    def visit_IsoDayOfWeekIndex(self, op, *, arg):
+        return self.f.mod(self.f.extract(self.v.dayofweek, arg) + 5, 7) + 1
+
     def visit_DayOfWeekName(self, op, *, arg):
         return self.f.initcap(sge.Cast(this=arg, to="STRING FORMAT 'DAY'"))
 
