@@ -700,6 +700,60 @@ class Expr(Immutable, Coercible):
             self, path, params=params, **kwargs
         )
 
+    def to_xlsx(
+        self,
+        path: str | Path,
+        /,
+        *,
+        sheet: str = "Sheet1",
+        header: bool = False,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ):
+        """Write a table to an Excel file.
+
+        Parameters
+        ----------
+        expr
+            Ibis table expression to write to an excel file.
+        path
+            Excel output path.
+        sheet
+            The name of the sheet to write to, eg 'Sheet3'.
+        header
+            Whether to include the column names as the first row.
+        params
+            Additional Ibis expression parameters to pass to the backend's
+            write function.
+        kwargs
+            Additional arguments passed to the backend's write function.
+
+        Notes
+        -----
+        Requires DuckDB >= 1.2.0.
+
+        See Also
+        --------
+        [DuckDB's `excel` extension docs for writing](https://duckdb.org/docs/stable/extensions/excel.html#writing-xlsx-files)
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> con = ibis.duckdb.connect()
+        >>> t = con.create_table(
+        ...     "t",
+        ...     ibis.memtable({"a": [1, 2, 3], "b": ["a", "b", "c"]}),
+        ...     temp=True,
+        ... )
+        >>> t.to_xlsx("/tmp/test.xlsx")
+        >>> os.path.exists("/tmp/test.xlsx")
+        True
+        """
+        self._find_backend(use_default=True).to_xlsx(
+            self, path, sheet=sheet, header=header, params=params, **kwargs
+        )
+
     @experimental
     def to_parquet_dir(
         self,
