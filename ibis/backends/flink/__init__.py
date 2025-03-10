@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import itertools
 import re
+import zoneinfo
 from typing import TYPE_CHECKING, Any
 
 import sqlglot as sg
@@ -1055,7 +1056,6 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
     ):
         import pyarrow as pa
         import pyarrow_hotfix  # noqa: F401
-        import pytz
         from pyflink.java_gateway import get_gateway
         from pyflink.table.serializers import ArrowSerializer
         from pyflink.table.types import create_arrow_schema
@@ -1084,7 +1084,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
             pyflink_schema.get_field_names(), get_field_data_types(pyflink_schema)
         )
 
-        timezone = pytz.timezone(
+        timezone = zoneinfo.ZoneInfo(
             table._j_table.getTableEnvironment().getConfig().getLocalTimeZone().getId()
         )
         serializer = ArrowSerializer(
