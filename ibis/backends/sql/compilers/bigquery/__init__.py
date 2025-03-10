@@ -391,7 +391,7 @@ class BigQueryCompiler(SQLGlotCompiler):
             arg = self.if_(where, arg, NULL)
 
         if order_by:
-            sep = sge.Order(this=sep, expressions=order_by)
+            arg = sge.Order(this=arg, expressions=order_by)
 
         return sge.GroupConcat(this=arg, separator=sep)
 
