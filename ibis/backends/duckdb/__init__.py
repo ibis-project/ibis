@@ -1074,6 +1074,126 @@ class Backend(SQLBackend, CanCreateDatabase, UrlFromPath, DirectExampleLoader):
 
         return self.table(table_name)
 
+    @util.experimental
+    def read_xlsx(
+        self,
+        path: str | Path,
+        /,
+        *,
+        sheet: str | None = None,
+        range: str | None = None,
+        **kwargs,
+    ) -> ir.Table:
+        """Read an Excel file into a DuckDB table. This requires duckdb>=1.2.0.
+
+        Parameters
+        ----------
+        path
+            The path to the Excel file.
+        sheet
+            The name of the sheet to read, eg 'Sheet3'.
+        range
+            The range of cells to read, eg 'A5:Z'.
+        kwargs
+            Additional args passed to the backend's read function.
+
+        Returns
+        -------
+        ir.Table
+            The just-registered table.
+
+        See Also
+        --------
+        [DuckDB's `excel` extension docs for reading](https://duckdb.org/docs/stable/extensions/excel.html#reading-xlsx-files)
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        >>> con = ibis.duckdb.connect()
+        >>> con.to_xlsx(t, "/tmp/test.xlsx", header=True)
+        >>> assert os.path.exists("/tmp/test.xlsx")
+        >>> t = con.read_xlsx("/tmp/test.xlsx")
+        >>> t.columns
+        ('a', 'b')
+        """
+        table_name = util.gen_name("read_xlsx")
+
+        if sheet:
+            kwargs["sheet"] = sheet
+
+        if range:
+            kwargs["range"] = range
+
+        options = [
+            sg.to_identifier(key).eq(sge.convert(val)) for key, val in kwargs.items()
+        ]
+
+        self.load_extension("excel")
+        self._create_temp_view(
+            table_name,
+            sg.select(STAR).from_(self.compiler.f.read_xlsx(str(path), *options)),
+        )
+        return self.table(table_name)
+
+    def to_xlsx(
+        self,
+        expr: ir.Table,
+        /,
+        path: str | Path,
+        *,
+        sheet: str = "Sheet1",
+        header: bool = False,
+        params: Mapping[ir.Scalar, Any] | None = None,
+        **kwargs: Any,
+    ):
+        """Write a table to an Excel file.
+
+        Parameters
+        ----------
+        expr
+            Ibis table expression to write to an excel file.
+        path
+            Excel output path.
+        sheet
+            The name of the sheet to write to, eg 'Sheet3'.
+        header
+            Whether to include the column names as the first row.
+        params
+            Additional Ibis expression parameters to pass to the backend's
+            write function.
+        kwargs
+            Additional arguments passed to the backend's write function.
+
+        Notes
+        -----
+        Requires DuckDB >= 1.2.0.
+
+        See Also
+        --------
+        [DuckDB's `excel` extension docs for writing](https://duckdb.org/docs/stable/extensions/excel.html#writing-xlsx-files)
+
+        Examples
+        --------
+        >>> import os
+        >>> import ibis
+        >>> t = ibis.memtable({"a": [1, 2, 3], "b": ["a", "b", "c"]})
+        >>> con = ibis.duckdb.connect()
+        >>> con.to_xlsx(t, "/tmp/test.xlsx")
+        >>> os.path.exists("/tmp/test.xlsx")
+        True
+        """
+        self._run_pre_execute_hooks(expr)
+        query = self.compile(expr, params=params)
+        kwargs["sheet"] = sheet
+        kwargs["header"] = header
+        args = ["FORMAT 'xlsx'"]
+        args.extend(f"{k.upper()} {v!r}" for k, v in kwargs.items())
+        copy_cmd = f"COPY ({query}) TO {str(path)!r} ({', '.join(args)})"
+        self.load_extension("excel")
+        self.con.execute(copy_cmd).fetchall()
+
     def attach(
         self, path: str | Path, name: str | None = None, read_only: bool = False
     ) -> None:
