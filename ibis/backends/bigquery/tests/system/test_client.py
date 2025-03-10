@@ -10,7 +10,6 @@ import pandas as pd
 import pandas.testing as tm
 import pyarrow as pa
 import pytest
-import pytz
 from google.api_core.exceptions import Forbidden
 
 import ibis
@@ -256,7 +255,7 @@ def test_multiple_project_queries_execute(con):
 
 def test_string_as_timestamp(con):
     timestamp = pd.Timestamp(
-        datetime.datetime(year=2017, month=2, day=6), tz=pytz.timezone("UTC")
+        datetime.datetime(year=2017, month=2, day=6), tz=datetime.timezone.utc
     )
     expr = ibis.literal("2017-02-06").as_timestamp("%F")
     result = con.execute(expr)
@@ -264,7 +263,7 @@ def test_string_as_timestamp(con):
 
     timestamp_tz = pd.Timestamp(
         datetime.datetime(year=2017, month=2, day=6, hour=5),
-        tz=pytz.timezone("UTC"),
+        tz=datetime.timezone.utc,
     )
     expr_tz = ibis.literal("2017-02-06 America/New_York").as_timestamp("%F %Z")
     result_tz = con.execute(expr_tz)
