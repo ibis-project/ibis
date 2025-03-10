@@ -2114,12 +2114,13 @@ class Column(Value, _FixedTextJupyterMixin):
         ).to_expr()
 
     def topk(
-        self, k: int, by: ir.Value | None = None, *, name: str | None = None
+        self,
+        k: int | None = None,
+        by: ir.Value | None = None,
+        *,
+        name: str | None = None,
     ) -> ir.Table:
-        """Return a "top k" expression.
-
-        Computes a Table containing the top `k` values by a certain metric
-        (defaults to count).
+        """Computes a Table of the top values by a metric (defaults to count).
 
         ::: {.callout-note title="Changed in version 9.5.0"}
         Added `name` parameter.
@@ -2129,16 +2130,23 @@ class Column(Value, _FixedTextJupyterMixin):
         ----------
         k
             The number of rows to return.
+            If `None`, all values are returned in descending order.
         by
             The metric to compute "top" by. Defaults to `count`.
         name
-            The name to use for the metric column. A suitable name will be
-            automatically generated if not provided.
+            The name to use for the metric column.
+            If not provided, a suitable name will be generated.
 
         Returns
         -------
         Table
             The top `k` values.
+
+        See Also
+        --------
+        [`Column.value_counts`](./expression-generic.qmd#ibis.expr.types.generic.Column.value_counts)
+        [`Table.topk`](./expression-tables.qmd#ibis.expr.types.relations.Table.topk)
+        [`Table.value_counts`](./expression-tables.qmd#ibis.expr.types.relations.Table.value_counts)
 
         Examples
         --------
@@ -2149,15 +2157,15 @@ class Column(Value, _FixedTextJupyterMixin):
         Compute the top 3 diamond colors by frequency:
 
         >>> t.color.topk(3)
-        ┏━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓
-        ┃ color  ┃ CountStar(diamonds) ┃
-        ┡━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━┩
-        │ string │ int64               │
-        ├────────┼─────────────────────┤
-        │ G      │               11292 │
-        │ E      │                9797 │
-        │ F      │                9542 │
-        └────────┴─────────────────────┘
+        ┏━━━━━━━━┳━━━━━━━━━━━━━┓
+        ┃ color  ┃ color_count ┃
+        ┡━━━━━━━━╇━━━━━━━━━━━━━┩
+        │ string │ int64       │
+        ├────────┼─────────────┤
+        │ G      │       11292 │
+        │ E      │        9797 │
+        │ F      │        9542 │
+        └────────┴─────────────┘
 
         Compute the top 3 diamond colors by mean price:
 
@@ -2172,9 +2180,9 @@ class Column(Value, _FixedTextJupyterMixin):
         │ H      │ 4486.669196 │
         └────────┴─────────────┘
 
-        Compute the top 2 diamond colors by max carat:
+        Rank all the colors by max carat:
 
-        >>> t.color.topk(2, by=t.carat.max(), name="max_carat")
+        >>> t.color.topk(by=t.carat.max(), name="max_carat")
         ┏━━━━━━━━┳━━━━━━━━━━━┓
         ┃ color  ┃ max_carat ┃
         ┡━━━━━━━━╇━━━━━━━━━━━┩
@@ -2182,6 +2190,11 @@ class Column(Value, _FixedTextJupyterMixin):
         ├────────┼───────────┤
         │ J      │      5.01 │
         │ H      │      4.13 │
+        │ I      │      4.01 │
+        │ D      │      3.40 │
+        │ E      │      3.05 │
+        │ F      │      3.01 │
+        │ G      │      3.01 │
         └────────┴───────────┘
         """
         from ibis.expr.types.relations import bind
@@ -2193,15 +2206,20 @@ class Column(Value, _FixedTextJupyterMixin):
 
         table = table.to_expr()
 
+        if by is None and name is None:
+            # if `by` is something more complex, the _count doesn't make sense.
+            name = f"{self.get_name()}_count"
         if by is None:
             by = lambda t: t.count()
 
         (metric,) = bind(table, by)
-
         if name is not None:
             metric = metric.name(name)
 
-        return table.aggregate(metric, by=[self]).order_by(metric.desc()).limit(k)
+        in_desc = table.aggregate(metric, by=[self]).order_by(metric.desc())
+        if k is not None:
+            in_desc = in_desc.limit(k)
+        return in_desc
 
     def arbitrary(self, *, where: ir.BooleanValue | None = None) -> Scalar:
         """Select an arbitrary value in a column.
@@ -2287,13 +2305,19 @@ class Column(Value, _FixedTextJupyterMixin):
         Parameters
         ----------
         name
-            The name to use for the frequency column. A suitable name will be
-            automatically generated if not provided.
+            The name to use for the frequency column.
+            If not provided, a suitable name will be generated.
 
         Returns
         -------
         Table
             The frequency table.
+
+        See Also
+        --------
+        [`Column.topk`](./expression-generic.qmd#ibis.expr.types.generic.Column.topk)
+        [`Table.value_counts`](./expression-tables.qmd#ibis.expr.types.relations.Table.value_counts)
+        [`Table.topk`](./expression-tables.qmd#ibis.expr.types.relations.Table.topk)
 
         Examples
         --------
