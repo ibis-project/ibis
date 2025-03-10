@@ -138,6 +138,8 @@ exasol = [
   "rich>=12.4.4",
 ]
 flink = [
+  # adding apache-flink would lock pyarrow to an old version (for all backends),
+  # due to the transitional dependency apache-beam imposing a low upper bound.
   "pyarrow>=10.0.1",
   "pyarrow-hotfix>=0.4",
   "numpy>=1.23.2,<3",
