@@ -4,10 +4,9 @@ import decimal
 import enum
 import json
 from collections import OrderedDict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
-import pytz
 
 import ibis.expr.datatypes as dt
 
@@ -94,9 +93,9 @@ def test_infer_mixed_type_fails():
 
 
 def test_infer_timestamp_with_tz():
-    now_utc = datetime.now(pytz.UTC)
-    assert now_utc.tzinfo == pytz.UTC
-    assert dt.infer(now_utc).timezone == str(pytz.UTC)
+    now_utc = datetime.now(timezone.utc)
+    assert now_utc.tzinfo == timezone.utc
+    assert dt.infer(now_utc).timezone == str(timezone.utc)
 
 
 def test_infer_timedelta():
@@ -127,19 +126,19 @@ def test_infer_timedelta():
         ("2019-01-01 01:02:03.000004", datetime(2019, 1, 1, 1, 2, 3, 4)),
         (
             "2019-01-01 01:02:03.000004+00:00",
-            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=pytz.utc),
+            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=timezone.utc),
         ),
         (
             "2019-01-01 01:02:03.000004+01:00",
-            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=pytz.FixedOffset(60)),
+            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=timezone(timedelta(hours=1))),
         ),
         (
             "2019-01-01 01:02:03.000004-01:00",
-            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=pytz.FixedOffset(-60)),
+            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=timezone(timedelta(hours=-1))),
         ),
         (
             "2019-01-01 01:02:03.000004+01",
-            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=pytz.FixedOffset(60)),
+            datetime(2019, 1, 1, 1, 2, 3, 4, tzinfo=timezone(timedelta(hours=1))),
         ),
         (datetime(2019, 1, 1), datetime(2019, 1, 1)),
         (datetime(2019, 1, 1, 1, 2, 3, 4), datetime(2019, 1, 1, 1, 2, 3, 4)),
