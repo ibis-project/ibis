@@ -19,6 +19,7 @@ _from_sqlglot_types = {
     typecode.BIGDECIMAL: partial(dt.Decimal, 76, 38),
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
+    typecode.BLOB: dt.Binary,
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
