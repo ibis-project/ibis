@@ -710,26 +710,28 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:
             yield result
 
-    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
-        import psycopg
+    def _register_hstore(self, cursor: psycopg.Cursor) -> None:
         import psycopg.types
         import psycopg.types.hstore
 
+        try:
+            # try to load hstore
+            psycopg.types.hstore.register_hstore(
+                psycopg.types.TypeInfo.fetch(self.con, "hstore"), cursor
+            )
+        except psycopg.Error as e:
+            warnings.warn(f"Failed to load hstore extension: {e}")
+        except TypeError:
+            pass
+
+    def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
             query = query.sql(dialect=self.dialect)
 
         con = self.con
         cursor = con.cursor()
 
-        try:
-            # try to load hstore
-            psycopg.types.hstore.register_hstore(
-                psycopg.types.TypeInfo.fetch(con, "hstore"), cursor
-            )
-        except psycopg.Error as e:
-            warnings.warn(f"Failed to load hstore extension: {e}")
-        except TypeError:
-            pass
+        self._register_hstore(cursor)
 
         try:
             cursor.execute(query, **kwargs)
@@ -760,12 +762,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         schema = expr.as_table().schema()
 
         query = self.compile(expr, limit=limit, params=params)
-        with contextlib.suppress(AttributeError):
-            query = query.sql(dialect=self.dialect)
 
         con = self.con
         # server-side cursors need to be uniquely named
         cursor = con.cursor(name=util.gen_name("postgres_cursor"))
+
+        self._register_hstore(cursor)
 
         try:
             cursor.execute(query)
