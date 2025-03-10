@@ -13,7 +13,6 @@ import ibis.expr.datashape as ds
 import ibis.expr.datatypes as dt
 from ibis.common.annotations import attribute
 from ibis.common.collections import (
-    ConflictingValuesError,
     FrozenDict,
     FrozenOrderedDict,
 )
@@ -328,6 +327,61 @@ class Aggregate(Relation):
         return Schema({k: v.dtype for k, v in self.values.items()})
 
 
+Relations = TypeVar("Relations", bound=tuple[Relation, ...])
+
+
+def _unify_schemas(relations: Relations) -> Relations:
+    from ibis.expr.operations.generic import Cast
+
+    # TODO: hoist this up into the user facing API so we can see
+    # all the tables at once and give a better error message
+    errs = ["Table schemas must be unifiable for set operations."]
+    first, *rest = relations
+    all_names = set(first.schema.names)
+    for relation in rest:
+        all_names |= set(relation.schema.names)
+    for relation in relations:
+        if missing := all_names - set(relation.schema.names):
+            errs.append(f"Columns missing from {relation}: {missing}")
+    if len(errs) > 1:
+        raise RelationError("\n".join(errs))
+    # Make it so we get consistent column order, using the first relation
+    names = first.schema.names
+    assert set(names) == all_names
+
+    unified_types: dict[str, dt.DataType] = {}
+    for name in names:
+        types = [relation.schema[name] for relation in relations]
+        try:
+            unified_types[name] = dt.highest_precedence(types)
+        except IbisTypeError:
+            errs.append(f"Unable to find a common dtype for column {name}")
+            errs.append(f"types: {types}")
+    if len(errs) > 1:
+        raise RelationError("\n".join(errs))
+
+    def get_new_relation(relation: Relation):
+        cols: dict[str, Value] = {}
+        unchanged = True
+        if relation.schema.names != names:
+            # order is different, will need to reorder
+            unchanged = False
+        for name in names:
+            old_type = relation.schema[name]
+            new_type = unified_types[name]
+            f = Field(relation, name)
+            if old_type == new_type:
+                cols[name] = f
+            else:
+                cols[name] = Cast(f, new_type)
+                unchanged = False
+        if unchanged:
+            return relation
+        return Project(relation, cols)
+
+    return tuple(get_new_relation(relation) for relation in relations)
+
+
 @public
 class Set(Relation):
     """Base class for set operations."""
@@ -337,26 +391,8 @@ class Set(Relation):
     distinct: bool = False
     values = FrozenOrderedDict()
 
-    def __init__(self, left, right, **kwargs):
-        err_msg = "Table schemas must be equal for set operations."
-        try:
-            missing_from_left = right.schema - left.schema
-            missing_from_right = left.schema - right.schema
-        except ConflictingValuesError as e:
-            raise RelationError(err_msg + "\n" + str(e)) from e
-        if missing_from_left or missing_from_right:
-            msgs = [err_msg]
-            if missing_from_left:
-                msgs.append(f"Columns missing from the left:\n{missing_from_left}.")
-            if missing_from_right:
-                msgs.append(f"Columns missing from the right:\n{missing_from_right}.")
-            raise RelationError("\n".join(msgs))
-
-        if left.schema.names != right.schema.names:
-            # rewrite so that both sides have the columns in the same order making it
-            # easier for the backends to implement set operations
-            cols = {name: Field(right, name) for name in left.schema.names}
-            right = Project(right, cols)
+    def __init__(self, left: Relation, right: Relation, **kwargs):
+        left, right = _unify_schemas((left, right))
         super().__init__(left=left, right=right, **kwargs)
 
     @attribute
