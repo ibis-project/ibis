@@ -5,7 +5,6 @@ from datetime import date, datetime, time, timedelta, timezone
 
 import dateutil
 import pytest
-import pytz
 
 from ibis.common.patterns import CoercedTo
 from ibis.common.temporal import (
@@ -125,7 +124,7 @@ def test_interval_unit_compatibility():
     ("value", "expected"),
     [
         (None, None),
-        (pytz.UTC, pytz.UTC),
+        (timezone.utc, timezone.utc),
         ("UTC", dateutil.tz.tzutc()),
         ("Europe/Budapest", dateutil.tz.gettz("Europe/Budapest")),
         (+2, timezone(timedelta(seconds=7200))),
