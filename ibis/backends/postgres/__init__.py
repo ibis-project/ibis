@@ -776,7 +776,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             cursor.close()
             raise
 
-        def _batches(schema: pa.Schema):
+        # cursor must be passed into the function, otherwise it's liable to be
+        # cleaned up by GC when the function exists, due to the fact that `_batches`
+        # is a generator
+        def _batches(schema: pa.Schema, cursor: psycopg.ServerCursor):
             columns = schema.names
             try:
                 while batch := cursor.fetchmany(chunk_size):
@@ -791,4 +794,4 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
                 con.commit()
 
         pa_schema = schema.to_pyarrow()
-        return pa.RecordBatchReader.from_batches(pa_schema, _batches(pa_schema))
+        return pa.RecordBatchReader.from_batches(pa_schema, _batches(pa_schema, cursor))
