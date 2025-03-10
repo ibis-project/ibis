@@ -13,7 +13,6 @@ import random
 import string
 
 import pytest
-import pytz
 from pytest import param
 
 import ibis
@@ -977,8 +976,8 @@ def test_wide_relocate(benchmark, input, column, relative, cols):
 
 
 def test_duckdb_timestamp_conversion(benchmark, con):
-    start = datetime.datetime(2000, 1, 1, tzinfo=pytz.UTC)
-    stop = datetime.datetime(2000, 2, 1, tzinfo=pytz.UTC)
+    start = datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)
+    stop = datetime.datetime(2000, 2, 1, tzinfo=datetime.timezone.utc)
     expr = ibis.range(start, stop, ibis.interval(seconds=1)).unnest()
 
     series = benchmark(con.execute, expr)
