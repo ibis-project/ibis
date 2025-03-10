@@ -1,5 +1,5 @@
 ---
-title: JupyterLite console
+title: Online playground
 format:
   html:
     page-layout: full

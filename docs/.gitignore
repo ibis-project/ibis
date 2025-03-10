@@ -20,6 +20,17 @@ objects.json
 *_files
 backends/*_methods.json
 
+# cache directories
+**/*_cache
+
+# quarto generated files
+posts-listing.json
+posts.feed-full-staged
+**/*.html
+
+# data downloaded by the geospatial tutorial
+posts/ibis-duckdb-geospatial/nyc_data.db.wal
+
 # inventories
 _inv
 objects.txt

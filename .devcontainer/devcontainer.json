@@ -6,7 +6,7 @@
   "workspaceFolder": "/app",
   "customizations": {
     "codespaces": {
-      "openFiles": ["docs/tutorials/getting_started.qmd"]
+      "openFiles": ["docs/tutorials/basics.qmd"]
     },
     "vscode": {
       "extensions": ["ms-toolsai.jupyter", "ms-python.python", "quarto.quarto"]

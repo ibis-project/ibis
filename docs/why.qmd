@@ -367,4 +367,4 @@ Community discussions primarily take place on
 ## Getting started
 
 If you're interested in trying Ibis we recommend the [getting started
-tutorial](./tutorials/getting_started.qmd).
+tutorial](./tutorials/basics.qmd).
