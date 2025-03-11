@@ -819,8 +819,10 @@ def test_unsigned_integer_type(con, temp_table):
 )
 def test_connect_url(url):
     con = ibis.connect(url)
-    one = ibis.literal(1)
-    assert con.execute(one) == 1
+    try:
+        assert con.execute(ibis.literal(1)) == 1
+    finally:
+        con.disconnect()
 
 
 @pytest.mark.parametrize(
@@ -1295,7 +1297,11 @@ def test_set_backend_url(url, monkeypatch):
     monkeypatch.setattr(ibis.options, "default_backend", None)
     name = url.split("://")[0]
     ibis.set_backend(url)
-    assert ibis.get_backend().name == name
+    con = ibis.get_backend()
+    try:
+        assert con.name == name
+    finally:
+        con.disconnect()
 
 
 @pytest.mark.notyet(
