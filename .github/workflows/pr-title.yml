@@ -16,7 +16,7 @@ jobs:
       - name: install node
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "20 || 22"
 
       - name: checkout code to pick up commitlint configuration
         uses: actions/checkout@v4
