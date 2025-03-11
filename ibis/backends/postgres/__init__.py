@@ -757,41 +757,33 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         import pandas as pd
         import pyarrow as pa
 
+        def _batches(*, schema: pa.Schema, con: psycopg.Connection, query: str):
+            columns = schema.names
+            # server-side cursors need to be uniquely named
+            with con.cursor(name=util.gen_name("postgres_cursor")) as cursor:
+                self._register_hstore(cursor)
+
+                try:
+                    cur = cursor.execute(query)
+                except Exception:
+                    con.rollback()
+                    raise
+                else:
+                    try:
+                        while batch := cur.fetchmany(chunk_size):
+                            yield pa.RecordBatch.from_pandas(
+                                pd.DataFrame(batch, columns=columns), schema=schema
+                            )
+                    except Exception:
+                        con.rollback()
+                        raise
+                    else:
+                        con.commit()
+
         self._run_pre_execute_hooks(expr)
 
-        schema = expr.as_table().schema()
-
+        schema = expr.as_table().schema().to_pyarrow()
         query = self.compile(expr, limit=limit, params=params)
-
-        con = self.con
-        # server-side cursors need to be uniquely named
-        cursor = con.cursor(name=util.gen_name("postgres_cursor"))
-
-        self._register_hstore(cursor)
-
-        try:
-            cursor.execute(query)
-        except Exception:
-            con.rollback()
-            cursor.close()
-            raise
-
-        # cursor must be passed into the function, otherwise it's liable to be
-        # cleaned up by GC when the function exists, due to the fact that `_batches`
-        # is a generator
-        def _batches(schema: pa.Schema, cursor: psycopg.ServerCursor):
-            columns = schema.names
-            try:
-                while batch := cursor.fetchmany(chunk_size):
-                    yield pa.RecordBatch.from_pandas(
-                        pd.DataFrame(batch, columns=columns), schema=schema
-                    )
-            except Exception:
-                con.rollback()
-                cursor.close()
-                raise
-            else:
-                con.commit()
-
-        pa_schema = schema.to_pyarrow()
-        return pa.RecordBatchReader.from_batches(pa_schema, _batches(pa_schema, cursor))
+        return pa.RecordBatchReader.from_batches(
+            schema, _batches(schema=schema, con=self.con, query=query)
+        )
