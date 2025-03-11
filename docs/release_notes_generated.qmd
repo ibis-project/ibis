@@ -1,6 +1,38 @@
 ---
 ---
 
+## [10.3.0](https://github.com/ibis-project/ibis/compare/10.2.0...10.3.0) (2025-03-11)
+
+### Features
+
+* **duckdb:** add `read_xlsx` implementation ([705aa16](https://github.com/ibis-project/ibis/commit/705aa1661612421084103f4707b8ad2db14b8ebc))
+* **duckdb:** add `to_xlsx` implementation ([1800abd](https://github.com/ibis-project/ibis/commit/1800abd7bed8375563419233e79904a6c12d9f4d))
+* **python:** support python 3.9 again ([#10949](https://github.com/ibis-project/ibis/issues/10949)) ([786d8f0](https://github.com/ibis-project/ibis/commit/786d8f0976121c299a26319a698ca5bf68c7aa52))
+
+### Bug Fixes
+
+* **bigquery:** adjust codegen for newer version of sqlglot ([8105a09](https://github.com/ibis-project/ibis/commit/8105a09180df951e005f3c48150b439393d2b75d))
+* **memtable:** ensure that constructing an empty memtable from a dataframe works ([#10945](https://github.com/ibis-project/ibis/issues/10945)) ([29c796a](https://github.com/ibis-project/ibis/commit/29c796a62d95d3319dd7087aafaf0e84f4f357f4)), closes [#10940](https://github.com/ibis-project/ibis/issues/10940)
+* **mysql:** add regular blob to type mapping ([365c157](https://github.com/ibis-project/ibis/commit/365c15795de40efb348f98b337dcdb7603039d14))
+* **mysql:** ensure that unsigned integers are mapped to the ibis type system ([#10947](https://github.com/ibis-project/ibis/issues/10947)) ([3eb76f8](https://github.com/ibis-project/ibis/commit/3eb76f8de6e76a3245649c4072845cfb4874012f)), closes [#10946](https://github.com/ibis-project/ibis/issues/10946)
+* **postgres:** create server-side cursors in the iterator to ensure cursor is not cleaned up before it is used ([f5f798e](https://github.com/ibis-project/ibis/commit/f5f798e0fffe20c0218953cb60d4bd2b318bd209))
+* **postgres:** ensure that cursor lifetime is at least as long as the generator ([f42ab45](https://github.com/ibis-project/ibis/commit/f42ab458cdc45d0e9a98f64172d82749b0569adb))
+
+### Documentation
+
+* mention theseus in the readme and docs landing page diagram ([360c25b](https://github.com/ibis-project/ibis/commit/360c25b5e29f60e64d1342790864141b97263a7a))
+* **setup:** add `just` recipe and setup entry for `uv` ([#10959](https://github.com/ibis-project/ibis/issues/10959)) ([dd33f47](https://github.com/ibis-project/ibis/commit/dd33f47e173ef4d54ede5aafd4192a2a20e1f345))
+* **tutorials:** reorganize the "Getting started" tab ([f78a8fb](https://github.com/ibis-project/ibis/commit/f78a8fb21da227560ffe74a4c7fff8a269b4045c))
+
+### Refactors
+
+* **oracle:** remove unused `owner` column from `select` metadata query ([#10935](https://github.com/ibis-project/ibis/issues/10935)) ([56dcc42](https://github.com/ibis-project/ibis/commit/56dcc42f709b7130e7fec0737aef8e47fffbe734))
+* **postgres:** split out `hstore` extension registration into separate method ([0bdb5a0](https://github.com/ibis-project/ibis/commit/0bdb5a0139461492b4e3e65e3709a7252b219e4b))
+
+### Performance
+
+* **postgres:** improve `to_pyarrow_batches` by using server-side cursors ([#10954](https://github.com/ibis-project/ibis/issues/10954)) ([cb17b8b](https://github.com/ibis-project/ibis/commit/cb17b8b3149533a19da93acedc863c964e154817)), closes [#10938](https://github.com/ibis-project/ibis/issues/10938)
+
 ## [10.2.0](https://github.com/ibis-project/ibis/compare/10.1.0...10.2.0) (2025-03-03)
 
 ### Features
