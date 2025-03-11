@@ -3,7 +3,6 @@ from __future__ import annotations
 import warnings
 
 import hypothesis as h
-import hypothesis.extra.pytz as tzst
 import hypothesis.strategies as st
 import pytest
 
@@ -115,7 +114,7 @@ def time_dtype(nullable=_nullable):
     return st.builds(dt.Time, nullable=nullable)
 
 
-_timezone = st.none() | tzst.timezones().map(str)
+_timezone = st.none() | st.timezones().map(str)
 _interval = st.sampled_from(list(IntervalUnit))
 _timestamp_scale = st.none() | st.integers(min_value=0, max_value=9)
 
