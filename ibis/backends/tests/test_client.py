@@ -362,6 +362,7 @@ def test_create_temporary_table_from_schema(con_no_data, new_schema):
             == column_type
         )
 
+    con_no_data.disconnect()
     con_no_data.reconnect()
     # verify table no longer exist after reconnect
     assert temp_table not in con_no_data.list_tables()
@@ -1261,7 +1262,11 @@ def test_set_backend_name(name, monkeypatch):
     # plumbed through correctly.
     monkeypatch.setattr(ibis.options, "default_backend", None)
     ibis.set_backend(name)
-    assert ibis.get_backend().name == name
+    try:
+        con = ibis.get_backend()
+        assert con.name == name
+    finally:
+        con.disconnect()
 
 
 @pytest.mark.parametrize(

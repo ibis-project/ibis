@@ -15,20 +15,23 @@ from ibis.conftest import not_windows
 def test_attach_file(tmp_path):
     dbpath = str(tmp_path / "attached.db")
     path_client = ibis.sqlite.connect(dbpath)
-    path_client.create_table("test", schema=ibis.schema(dict(a="int")))
-
     client = ibis.sqlite.connect()
+    try:
+        path_client.create_table("test", schema=ibis.schema(dict(a="int")))
 
-    assert not client.list_tables()
+        assert not client.list_tables()
 
-    client.attach("baz", Path(dbpath))
-    client.attach("bar", dbpath)
+        client.attach("baz", Path(dbpath))
+        client.attach("bar", dbpath)
 
-    foo_tables = client.list_tables(database="baz")
-    bar_tables = client.list_tables(database="bar")
+        foo_tables = client.list_tables(database="baz")
+        bar_tables = client.list_tables(database="bar")
 
-    assert foo_tables == ["test"]
-    assert foo_tables == bar_tables
+        assert foo_tables == ["test"]
+        assert foo_tables == bar_tables
+    finally:
+        client.disconnect()
+        path_client.disconnect()
 
 
 def test_builtin_scalar_udf(con):
@@ -75,8 +78,10 @@ def test_connect(url, ext, tmp_path):
     sqlite3.connect(path).close()
 
     con = ibis.connect(url(path))
-    one = ibis.literal(1)
-    assert con.execute(one) == 1
+    try:
+        assert con.execute(ibis.literal(1)) == 1
+    finally:
+        con.disconnect()
 
 
 def test_has_operation(con):
