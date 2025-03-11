@@ -32,7 +32,7 @@ jobs:
             access-tokens = github.com=${{ steps.generate_token.outputs.token }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v15
+        uses: cachix/cachix-action@v16
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
