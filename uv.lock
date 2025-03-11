@@ -2306,6 +2306,7 @@ dependencies = [
     { name = "sqlglot" },
     { name = "toolz" },
     { name = "typing-extensions" },
+    { name = "tzdata" },
 ]
 
 [package.optional-dependencies]
@@ -2720,6 +2721,7 @@ requires-dist = [
     { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321" },
     { name = "typing-extensions", specifier = ">=4.3.0" },
+    { name = "tzdata", specifier = ">=2022.7" },
 ]
 provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 
