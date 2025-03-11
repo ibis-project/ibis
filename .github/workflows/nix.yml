@@ -66,7 +66,7 @@ jobs:
             access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
 
       - name: setup cachix
-        uses: cachix/cachix-action@v15
+        uses: cachix/cachix-action@v16
         with:
           name: ibis
           authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
