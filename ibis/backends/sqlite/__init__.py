@@ -124,10 +124,7 @@ class Backend(SQLBackend, UrlFromPath, PyArrowExampleLoader):
     def _post_connect(
         self, type_map: dict[str, str | dt.DataType] | None = None
     ) -> None:
-        if type_map:
-            self._type_map = {k.lower(): ibis.dtype(v) for k, v in type_map.items()}
-        else:
-            self._type_map = {}
+        self._type_map = {k.lower(): ibis.dtype(v) for k, v in (type_map or {}).items()}
 
         register_all(self.con)
         self.con.execute("PRAGMA case_sensitive_like=ON")
