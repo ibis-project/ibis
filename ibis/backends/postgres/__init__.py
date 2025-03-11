@@ -34,6 +34,7 @@ if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
     import pyarrow as pa
+    from typing_extensions import Self
 
 
 class NatDumper(psycopg.adapt.Dumper):
@@ -131,23 +132,17 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             name, schema=schema, columns=True, placeholder="%s"
         )
 
-        with self.begin() as cur:
-            cur.execute(create_stmt_sql)
-            cur.executemany(sql, data)
+        with self.begin() as cursor:
+            cursor.execute(create_stmt_sql)
+            cursor.executemany(sql, data)
 
     @contextlib.contextmanager
-    def begin(self):
-        con = self.con
-        cursor = con.cursor()
-        try:
+    def begin(self, *, name: str = "", withhold: bool = False):
+        with (
+            (con := self.con).transaction(),
+            con.cursor(name=name, withhold=withhold) as cursor,
+        ):
             yield cursor
-        except Exception:
-            con.rollback()
-            raise
-        else:
-            con.commit()
-        finally:
-            cursor.close()
 
     def _fetch_from_cursor(
         self, cursor: psycopg.Cursor, schema: sch.Schema
@@ -190,6 +185,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         port: int = 5432,
         database: str | None = None,
         schema: str | None = None,
+        autocommit: bool = True,
         **kwargs: Any,
     ) -> None:
         """Create an Ibis client connected to PostgreSQL database.
@@ -208,6 +204,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             Database to connect to
         schema
             PostgreSQL schema to use. If `None`, use the default `search_path`.
+        autocommit
+            Whether or not to autocommit
         kwargs
             Additional keyword arguments to pass to the backend client connection.
 
@@ -252,6 +250,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             password=password,
             dbname=database,
             options=(f"-csearch_path={schema}" * (schema is not None)) or None,
+            autocommit=autocommit,
             **kwargs,
         )
 
@@ -276,8 +275,21 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         return new_backend
 
     def _post_connect(self) -> None:
-        with self.begin() as cur:
-            cur.execute("SET TIMEZONE = UTC")
+        import psycopg.types
+        import psycopg.types.hstore
+
+        try:
+            # try to load hstore
+            psycopg.types.hstore.register_hstore(
+                psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
+            )
+        except psycopg.Error as e:
+            warnings.warn(f"Failed to load hstore extension: {e}")
+        except TypeError:
+            pass
+
+        with self.begin() as cursor:
+            cursor.execute("SET TIMEZONE = UTC")
 
     @property
     def _session_temp_db(self) -> str | None:
@@ -706,23 +718,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
             pass
 
     @contextlib.contextmanager
-    def _safe_raw_sql(self, *args, **kwargs):
-        with contextlib.closing(self.raw_sql(*args, **kwargs)) as result:
-            yield result
+    def _safe_raw_sql(self, query: str | sg.Expression, **kwargs: Any):
+        with contextlib.suppress(AttributeError):
+            query = query.sql(dialect=self.dialect)
 
-    def _register_hstore(self, cursor: psycopg.Cursor) -> None:
-        import psycopg.types
-        import psycopg.types.hstore
-
-        try:
-            # try to load hstore
-            psycopg.types.hstore.register_hstore(
-                psycopg.types.TypeInfo.fetch(self.con, "hstore"), cursor
-            )
-        except psycopg.Error as e:
-            warnings.warn(f"Failed to load hstore extension: {e}")
-        except TypeError:
-            pass
+        with self.begin() as cursor:
+            yield cursor.execute(query, **kwargs)
 
     def raw_sql(self, query: str | sg.Expression, **kwargs: Any) -> Any:
         with contextlib.suppress(AttributeError):
@@ -731,16 +732,12 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         con = self.con
         cursor = con.cursor()
 
-        self._register_hstore(cursor)
-
         try:
             cursor.execute(query, **kwargs)
         except Exception:
-            con.rollback()
             cursor.close()
             raise
         else:
-            con.commit()
             return cursor
 
     @util.experimental
@@ -757,33 +754,22 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
         import pandas as pd
         import pyarrow as pa
 
-        def _batches(*, schema: pa.Schema, con: psycopg.Connection, query: str):
+        def _batches(self: Self, *, schema: pa.Schema, query: str):
             columns = schema.names
             # server-side cursors need to be uniquely named
-            with con.cursor(name=util.gen_name("postgres_cursor")) as cursor:
-                self._register_hstore(cursor)
-
-                try:
-                    cur = cursor.execute(query)
-                except Exception:
-                    con.rollback()
-                    raise
-                else:
-                    try:
-                        while batch := cur.fetchmany(chunk_size):
-                            yield pa.RecordBatch.from_pandas(
-                                pd.DataFrame(batch, columns=columns), schema=schema
-                            )
-                    except Exception:
-                        con.rollback()
-                        raise
-                    else:
-                        con.commit()
+            with self.begin(
+                name=util.gen_name("postgres_cursor"), withhold=True
+            ) as cursor:
+                cursor.execute(query)
+                while batch := cursor.fetchmany(chunk_size):
+                    yield pa.RecordBatch.from_pandas(
+                        pd.DataFrame(batch, columns=columns), schema=schema
+                    )
 
         self._run_pre_execute_hooks(expr)
 
         schema = expr.as_table().schema().to_pyarrow()
         query = self.compile(expr, limit=limit, params=params)
         return pa.RecordBatchReader.from_batches(
-            schema, _batches(schema=schema, con=self.con, query=query)
+            schema, _batches(self, schema=schema, query=query)
         )
