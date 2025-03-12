@@ -88,7 +88,7 @@ class SignatureValidationError(ValidationError):
 
         errors = ""
         for name, value, pattern in self.errors:
-            errors += f"\n  `{name}`: {value!r} is not {pattern.describe()}"
+            errors += f"\n  `{name}`: {value!r} of type {type(value)} is not {pattern.describe()}"
 
         sig = f"{self.func.__name__}{self.sig}"
         cause = str(self.__cause__) if self.__cause__ else ""
