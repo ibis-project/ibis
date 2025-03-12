@@ -280,6 +280,8 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, PyArrowExampleLoade
 
         try:
             # try to load hstore
+            with self.begin() as cursor:
+                cursor.execute("CREATE EXTENSION IF NOT EXISTS hstore")
             psycopg.types.hstore.register_hstore(
                 psycopg.types.TypeInfo.fetch(self.con, "hstore"), self.con
             )
