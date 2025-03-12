@@ -255,7 +255,10 @@ def test_kwargs_passthrough_in_connect():
     con = ibis.connect(
         "postgresql://postgres:postgres@localhost:5432/ibis_testing?sslmode=allow"
     )
-    assert con.current_catalog == "ibis_testing"
+    try:
+        assert con.current_catalog == "ibis_testing"
+    finally:
+        con.disconnect()
 
 
 def test_port():

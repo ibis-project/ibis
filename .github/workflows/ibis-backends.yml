@@ -141,6 +141,7 @@ jobs:
               - default-libmysqlclient-dev
           - name: postgres
             title: PostgreSQL
+            serial: true
             extras:
               - --extra postgres
               - --extra geospatial
@@ -150,6 +151,7 @@ jobs:
               - libgeos-dev
           - name: postgres
             title: PostgreSQL + Torch
+            serial: true
             extras:
               - --extra postgres
               - --extra geospatial
@@ -319,6 +321,7 @@ jobs:
             backend:
               name: postgres
               title: PostgreSQL
+              serial: true
               extras:
                 - --extra postgres
                 - --extra geospatial
@@ -339,6 +342,7 @@ jobs:
             backend:
               name: postgres
               title: PostgreSQL + Torch
+              serial: true
               extras:
                 - --extra postgres
                 - --extra geospatial
