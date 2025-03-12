@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Phillip Cloud">
+<meta name="dcterms.date" content="2023-06-27">
+
+<title>Ibis on 🔥: Supercharge Your Workflow with DuckDB and PyTorch – Ibis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete-preset-algolia.umd.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../logo.svg" rel="icon" type="image/svg+xml">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-e67ff5f79a98c6389aa7c0b9e6712459.css" rel="stylesheet" class="quarto-color-scheme" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-14475e581903c9a7e5ed069634c08d5c.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-12c8c4cf821d2fd1848e951be45237d8.min.css" rel="stylesheet" append-hash="true" class="quarto-color-scheme" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-dark.min.css" rel="prefetch" class="quarto-color-scheme quarto-color-alternate" id="quarto-bootstrap" data-mode="dark">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "algolia": {
+    "application-id": "TNU9HG3L41",
+    "search-only-api-key": "26350948d1961209df16d9717a7e01d6",
+    "index-name": "prod_ibis",
+    "analytics-events": true,
+    "show-logo": true,
+    "libDir": "site_libs"
+  },
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/algoliasearch@4.5.1/dist/algoliasearch-lite.umd.js"></script>
+
+
+<script type="text/javascript">
+var ALGOLIA_INSIGHTS_SRC = "https://cdn.jsdelivr.net/npm/search-insights/dist/search-insights.iife.min.js";
+!function(e,a,t,n,s,i,c){e.AlgoliaAnalyticsObject=s,e[s]=e[s]||function(){
+(e[s].queue=e[s].queue||[]).push(arguments)},i=a.createElement(t),c=a.getElementsByTagName(t)[0],
+i.async=1,i.src=n,c.parentNode.insertBefore(i,c)
+}(window,document,"script",ALGOLIA_INSIGHTS_SRC,"aa");
+</script>
+
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/autocomplete-plugin-algolia-insights">
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+<script data-goatcounter="https://ibis.goatcounter.com/count" async="" src="//gc.zgo.at/count.js"></script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta property="og:title" content="Ibis on 🔥: Supercharge Your Workflow with DuckDB and PyTorch – Ibis">
+<meta property="og:description" content="the portable Python dataframe library">
+<meta property="og:image" content="https://ibis-project.org/posts/torch/logo.png">
+<meta property="og:site_name" content="Ibis">
+<meta name="twitter:title" content="Ibis on 🔥: Supercharge Your Workflow with DuckDB and PyTorch – Ibis">
+<meta name="twitter:description" content="the portable Python dataframe library">
+<meta name="twitter:image" content="https://ibis-project.org/posts/torch/logo.png">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../logo.svg" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">Ibis</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll me-auto">
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-getting-started" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Getting started</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-getting-started">    
+        <li>
+    <a class="dropdown-item" href="../../install.html">
+ <span class="dropdown-text">Installation</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/getting_started.html">
+ <span class="dropdown-text">Tutorial: getting started</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-dplyr-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for dplyr users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-pandas-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for pandas users</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/ibis-for-sql-users.html">
+ <span class="dropdown-text">Tutorial: Ibis for SQL users</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Browser</li>
+        <li>
+    <a class="dropdown-item" href="../../tutorials/browser/repl.html">
+ <span class="dropdown-text">JupyterLite console</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cloud Data Platforms</li>
+        <li>
+    <a class="dropdown-item" href="../../tutorials/cloud-data-platforms/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../tutorials/cloud-data-platforms/starburst-galaxy/0_setup.html">
+ <span class="dropdown-text">Starburst Galaxy</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Open Source Software</li>
+        <li>
+    <a class="dropdown-item" href="../../tutorials/open-source-software/apache-flink/0_setup.html">
+ <span class="dropdown-text">Apache Flink</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-concepts" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Concepts</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-concepts">    
+        <li>
+    <a class="dropdown-item" href="../../why.html">
+ <span class="dropdown-text">Why Ibis?</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/composable-ecosystem.html">
+ <span class="dropdown-text">Composable data ecosystem</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/datatypes.html">
+ <span class="dropdown-text">Datatypes and Datashapes</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/internals.html">
+ <span class="dropdown-text">Internals</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/user-testimonials.html">
+ <span class="dropdown-text">User testimonials</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/versioning.html">
+ <span class="dropdown-text">Versioning policy</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../concepts/who.html">
+ <span class="dropdown-text">Who supports Ibis?</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-backends" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Backends</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-backends">    
+        <li>
+    <a class="dropdown-item" href="../../backends/bigquery.html">
+ <span class="dropdown-text">BigQuery</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/clickhouse.html">
+ <span class="dropdown-text">ClickHouse</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/dask.html">
+ <span class="dropdown-text">Dask</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/datafusion.html">
+ <span class="dropdown-text">DataFusion</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/druid.html">
+ <span class="dropdown-text">Druid</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/duckdb.html">
+ <span class="dropdown-text">DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/exasol.html">
+ <span class="dropdown-text">Exasol</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/flink.html">
+ <span class="dropdown-text">Flink</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/impala.html">
+ <span class="dropdown-text">Impala</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mssql.html">
+ <span class="dropdown-text">MSSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/mysql.html">
+ <span class="dropdown-text">MySQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/oracle.html">
+ <span class="dropdown-text">Oracle</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pandas.html">
+ <span class="dropdown-text">pandas</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/polars.html">
+ <span class="dropdown-text">Polars</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/postgresql.html">
+ <span class="dropdown-text">PostgreSQL</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/pyspark.html">
+ <span class="dropdown-text">PySpark</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/risingwave.html">
+ <span class="dropdown-text">RisingWave</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/snowflake.html">
+ <span class="dropdown-text">Snowflake</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/sqlite.html">
+ <span class="dropdown-text">SQLite</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/trino.html">
+ <span class="dropdown-text">Trino</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Support</li>
+        <li>
+    <a class="dropdown-item" href="../../backends/support/matrix.html">
+ <span class="dropdown-text">Operation support matrix</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../backends/support/operations.html">
+ <span class="dropdown-text">Operations</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-how-to" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">How-to</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-how-to">    
+        <li class="dropdown-header">Configure</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/configure/basics.html">
+ <span class="dropdown-text">Basic configuration</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Input Output</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/basics.html">
+ <span class="dropdown-text">Basic input/output</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/duckdb-parquet.html">
+ <span class="dropdown-text">Read parquet files with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/gcs_duckdb.html">
+ <span class="dropdown-text">Loading Google Cloud Storage files with DuckDB</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/input-output/multiple-backends.html">
+ <span class="dropdown-text">Work with multiple backends</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Analytics</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/basics.html">
+ <span class="dropdown-text">Basic analytics</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/chain_expressions.html">
+ <span class="dropdown-text">Chaining expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/analytics/imdb.html">
+ <span class="dropdown-text">Analyze IMDB data using Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Visualization</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/altair.html">
+ <span class="dropdown-text">Altair + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/graphs.html">
+ <span class="dropdown-text">GraphViz + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/matplotlib.html">
+ <span class="dropdown-text">matplotlib + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotly.html">
+ <span class="dropdown-text">Plotly + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/plotnine.html">
+ <span class="dropdown-text">plotnine + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/seaborn.html">
+ <span class="dropdown-text">seaborn + Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/visualization/streamlit.html">
+ <span class="dropdown-text">Streamlit + Ibis</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Extending</li>
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/builtin.html">
+ <span class="dropdown-text">Reference built-in functions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/sql.html">
+ <span class="dropdown-text">Using SQL strings with Ibis</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/streaming.html">
+ <span class="dropdown-text">Ibis for streaming</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../how-to/extending/unbound_expression.html">
+ <span class="dropdown-text">Write and execute unbound expressions</span></a>
+  </li>  
+    </ul>
+  </li>
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-reference" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Reference</span>
+    </a>
+    <ul class="dropdown-menu" aria-labelledby="nav-menu-reference">    
+        <li class="dropdown-header">Expression API</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-tables.html">
+ <span class="dropdown-text">Table expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/selectors.html">
+ <span class="dropdown-text">Column selectors</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-generic.html">
+ <span class="dropdown-text">Generic expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-numeric.html">
+ <span class="dropdown-text">Numeric and Boolean expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-strings.html">
+ <span class="dropdown-text">String expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-temporal.html">
+ <span class="dropdown-text">Temporal expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-collections.html">
+ <span class="dropdown-text">Collection expressions</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/expression-geospatial.html">
+ <span class="dropdown-text">Geospatial expressions</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Type system</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/datatypes.html">
+ <span class="dropdown-text">Data types</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/schemas.html">
+ <span class="dropdown-text">Schemas</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">UDFs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/scalar-udfs.html">
+ <span class="dropdown-text">Scalar UDFs</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/aggregate-udfs.html">
+ <span class="dropdown-text">Aggregate UDFs (experimental)</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Connection APIs</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/connection.html">
+ <span class="dropdown-text">Top-level connection APIs</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Configuration</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/Interactive.html">
+ <span class="dropdown-text">Interactive</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Options.html">
+ <span class="dropdown-text">Options</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/Repr.html">
+ <span class="dropdown-text">Repr</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../reference/SQL.html">
+ <span class="dropdown-text">SQL</span></a>
+  </li>  
+        <li><hr class="dropdown-divider"></li>
+        <li class="dropdown-header">Cursed Knowledge</li>
+        <li>
+    <a class="dropdown-item" href="../../reference/cursed_knowledge.html">
+ <span class="dropdown-text">Cursed Knowledge</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../posts.html"> 
+<span class="menu-text">Posts</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../presentations.html"> 
+<span class="menu-text">Presentations</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../release_notes.html"> 
+<span class="menu-text">Release notes</span></a>
+  </li>  
+  <li class="nav-item dropdown ">
+    <a class="nav-link dropdown-toggle" href="#" id="nav-menu-contribute" role="link" data-bs-toggle="dropdown" aria-expanded="false">
+ <span class="menu-text">Contribute</span>
+    </a>
+    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="nav-menu-contribute">    
+        <li class="dropdown-header">Contribute</li>
+        <li>
+    <a class="dropdown-item" href="../../contribute/01_environment.html">
+ <span class="dropdown-text">Setting up a development environment</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/02_workflow.html">
+ <span class="dropdown-text">Contribute to the Ibis codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/03_style.html">
+ <span class="dropdown-text">Style and formatting</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/04_maintainers_guide.html">
+ <span class="dropdown-text">Maintaining the codebase</span></a>
+  </li>  
+        <li>
+    <a class="dropdown-item" href="../../contribute/05_reference.html">
+ <span class="dropdown-text">Test class reference</span></a>
+  </li>  
+    </ul>
+  </li>
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <div class="dropdown">
+      <a href="" title="" id="quarto-navigation-tool-dropdown-0" class="quarto-navigation-tool dropdown-toggle px-1" data-bs-toggle="dropdown" aria-expanded="false" role="link" aria-label=""><i class="bi bi-github"></i></a>
+      <ul class="dropdown-menu" aria-labelledby="quarto-navigation-tool-dropdown-0">
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis">
+            Source code
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=bug&amp;projects=&amp;template=bug-report.yml&amp;title=bug">
+            Report a bug
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=docs&amp;projects=&amp;template=docs-issue.yml&amp;title=docs">
+            Report a documentation issue
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/issues/new?assignees=&amp;labels=feature&amp;projects=&amp;template=feature-request.yml&amp;title=feat">
+            Submit a feature request
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item quarto-navbar-tools-item" href="https://github.com/ibis-project/ibis/discussions/new?category=q-a">
+            Ask the community for help
+            </a>
+          </li>
+      </ul>
+    </div>
+  <a href="" class="quarto-color-scheme-toggle quarto-navigation-tool  px-1" onclick="window.quartoToggleColorScheme(); return false;" title="Toggle dark mode"><i class="bi"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Ibis on 🔥: Supercharge Your Workflow with DuckDB and PyTorch</h1>
+                                <div class="quarto-categories">
+                <div class="quarto-category">blog</div>
+                <div class="quarto-category">case study</div>
+                <div class="quarto-category">machine learning</div>
+                <div class="quarto-category">ecosystem</div>
+                <div class="quarto-category">new feature</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Phillip Cloud </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">June 27, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#define-a-function-to-clean-inputs" id="toc-define-a-function-to-clean-inputs" class="nav-link active" data-scroll-target="#define-a-function-to-clean-inputs">Define a Function to Clean Inputs</a></li>
+  <li><a href="#execute-the-query-and-convert-to-torch-tensors" id="toc-execute-the-query-and-convert-to-torch-tensors" class="nav-link" data-scroll-target="#execute-the-query-and-convert-to-torch-tensors">Execute the Query and Convert to Torch Tensors</a></li>
+  <li><a href="#train-the-model" id="toc-train-the-model" class="nav-link" data-scroll-target="#train-the-model">Train the Model</a></li>
+  <li><a href="#define-an-ibis-udf-that-predicts-fares" id="toc-define-an-ibis-udf-that-predicts-fares" class="nav-link" data-scroll-target="#define-an-ibis-udf-that-predicts-fares">Define an Ibis UDF that predicts fares</a></li>
+  <li><a href="#prepare-the-data-for-plotting" id="toc-prepare-the-data-for-plotting" class="nav-link" data-scroll-target="#prepare-the-data-for-plotting">Prepare the Data for Plotting</a></li>
+  <li><a href="#plot-the-results" id="toc-plot-the-results" class="nav-link" data-scroll-target="#plot-the-results">Plot the Results</a></li>
+  <li><a href="#appendix-model.py" id="toc-appendix-model.py" class="nav-link" data-scroll-target="#appendix-model.py">Appendix: <code>model.py</code></a></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/posts/torch/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<p>In this blog post we show how to leverage ecosystem tools to build an end-to-end ML pipeline using Ibis, DuckDB and PyTorch.</p>
+<p>Check out the live stream of this notebook below!</p>
+<div class="quarto-video ratio ratio-16x9"><iframe data-external="1" src="https://www.youtube.com/embed/L4_deAdStKs" title="" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen=""></iframe></div>
+<p>Let’s get started!</p>
+<div id="00698153" class="cell" data-execution_count="1">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ibis.expr.datatypes <span class="im">as</span> dt</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis <span class="im">import</span> _, selectors <span class="im">as</span> s, udf</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>ibis.options.interactive <span class="op">=</span> <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<section id="define-a-function-to-clean-inputs" class="level2">
+<h2 class="anchored" data-anchor-id="define-a-function-to-clean-inputs">Define a Function to Clean Inputs</h2>
+<p>Let’s define a function to clean the data in a few different ways:</p>
+<ul>
+<li>Remove outliers (Z-score based)</li>
+<li>Remove negative trip distances and negative fare amounts</li>
+<li>Cast inputs to <code>float32</code>, since that’s what PyTorch wants</li>
+</ul>
+<p>We use a function here to ensure that we can run the same code on the test data set before prediction.</p>
+<div id="958d91ec" class="cell" data-execution_count="2">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clean_input(path):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="co"># load parquet</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        ibis.read_parquet(path)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="co"># compute fare_amount_zscore and trip_distance_zscore</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>        .mutate(s.across([<span class="st">"fare_amount"</span>, <span class="st">"trip_distance"</span>], <span class="bu">dict</span>(zscore<span class="op">=</span>(_ <span class="op">-</span> _.mean()) <span class="op">/</span> _.std())))</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>        <span class="co"># filter out negative trip distance and bizarre transactions</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">filter</span>([_.trip_distance <span class="op">&gt;</span> <span class="fl">0.0</span>, _.fare_amount <span class="op">&gt;=</span> <span class="fl">0.0</span>])</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># keep values that within 2 standard deviations</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>        .<span class="bu">filter</span>(s.if_all(s.endswith(<span class="st">"_zscore"</span>), _.<span class="bu">abs</span>() <span class="op">&lt;=</span> <span class="dv">2</span>))</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>        <span class="co"># drop columns that aren't necessary for further analysis</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        .drop(s.endswith(<span class="st">"_zscore"</span>))</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># select the columns we care about</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        .select(s.across([<span class="st">"fare_amount"</span>, <span class="st">"trip_distance"</span>], _.cast(<span class="st">"float32"</span>)))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="859cdcf4" class="cell" data-execution_count="3">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>training_data <span class="op">=</span> clean_input(<span class="st">"https://storage.googleapis.com/ibis-tutorial-data/nyctaxi/yellow/yellow_tripdata_2016-01.parquet"</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>training_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="3">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> trip_distance </span>┃<span style="font-weight: bold"> fare_amount </span>┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>     │
+├───────────────┼─────────────┤
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.20</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">14.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.00</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9.5</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.90</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.80</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.80</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.30</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11.0</span> │
+│         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">13.80</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">43.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.46</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">20.0</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.83</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">5.5</span> │
+│          <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.87</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.0</span> │
+│             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└───────────────┴─────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="execute-the-query-and-convert-to-torch-tensors" class="level2">
+<h2 class="anchored" data-anchor-id="execute-the-query-and-convert-to-torch-tensors">Execute the Query and Convert to Torch Tensors</h2>
+<p>New in Ibis 6.0 is the <code>to_torch</code> method, which executes a query and returns the results as a dictionary of <code>torch.Tensor</code>s keyed by column names.</p>
+<p>We’ll use that to get our input data for training.</p>
+<div id="0e01d8f2" class="cell" data-execution_count="4">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>torch_training_data: <span class="bu">dict</span>[<span class="bu">str</span>, torch.Tensor] <span class="op">=</span> training_data.to_torch()</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>torch_training_data</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="4">
+<pre><code>{'trip_distance': tensor([3.2000, 1.0000, 0.9000,  ..., 5.6300, 0.7700, 1.2600]),
+ 'fare_amount': tensor([14.0000,  9.5000,  6.0000,  ..., 18.5000,  5.0000,  6.5000])}</code></pre>
+</div>
+</div>
+</section>
+<section id="train-the-model" class="level2">
+<h2 class="anchored" data-anchor-id="train-the-model">Train the Model</h2>
+<p>Let’s assume for now we don’t have access to the model code. Maybe your co-worker wrote the model or it’s part of an API that you don’t control. Either way, it’s a black box to us.</p>
+<p>The API looks like this:</p>
+<div id="4345f20d" class="cell" data-execution_count="5">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PredictCabFare:</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, data: <span class="bu">dict</span>[<span class="bu">str</span>, torch.Tensor]) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Initialize the model with training data."""</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> train(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Train the model."""</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__call__</span>(<span class="va">self</span>, <span class="bu">input</span>: pyarrow.ChunkedArray) <span class="op">-&gt;</span> pyarrow.Array:</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        <span class="co">"""Invoke the trained model on unseen input."""</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="f1f6ccd5" class="cell" data-execution_count="6">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> model <span class="im">import</span> PredictCabFare</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> PredictCabFare(torch_training_data)</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>model.train()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="define-an-ibis-udf-that-predicts-fares" class="level2">
+<h2 class="anchored" data-anchor-id="define-an-ibis-udf-that-predicts-fares">Define an Ibis UDF that predicts fares</h2>
+<p>Now we get to the meaty part: defining an Ibis UDF (user-defined function) that invokes our model on unseen data!</p>
+<div id="190a3ea6" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ibis.expr.operations <span class="im">import</span> udf</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">@udf.scalar.pyarrow</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> predict_fare(distance: dt.float64) <span class="op">-&gt;</span> dt.float32:</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> model(distance)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Let’s run our UDF</p>
+<div id="ce8225d3" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>prediction <span class="op">=</span> (</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    clean_input(<span class="st">"https://storage.googleapis.com/ibis-tutorial-data/nyctaxi/yellow/yellow_tripdata_2016-02.parquet"</span>)</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    .limit(<span class="dv">10_000</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    .mutate(predicted_fare<span class="op">=</span><span class="kw">lambda</span> t: predict_fare(t.trip_distance.cast(<span class="st">"float32"</span>)))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>prediction</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="8">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> trip_distance </span>┃<span style="font-weight: bold"> fare_amount </span>┃<span style="font-weight: bold"> predicted_fare </span>┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>     │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>        │
+├───────────────┼─────────────┼────────────────┤
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9.1</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">27.0</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">29.085516</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.3</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11.5</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">12.626410</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.5</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.0</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.680637</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.4</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">26.5</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">24.261295</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.6</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.5</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.802191</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.8</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">16.0</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">14.045299</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.1</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.0</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.383303</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.8</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">21.0</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">22.558630</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">2.9</span> │        <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">12.0</span> │      <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11.491301</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.2</span> │         <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.5</span> │       <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">6.667080</span> │
+│             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │           <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │              <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└───────────────┴─────────────┴────────────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="prepare-the-data-for-plotting" class="level2">
+<h2 class="anchored" data-anchor-id="prepare-the-data-for-plotting">Prepare the Data for Plotting</h2>
+<p>Here we <a href="https://r4ds.had.co.nz/tidy-data.html">tidy up our data</a> to make it easier to adjust plotting style based on the data.</p>
+<p>In this case, we’re interested in visually distinguishing the model’s <strong>predicted</strong> fare amount from the <strong>actual</strong> fare amount so we pivot the data into a <a href="https://r4ds.had.co.nz/tidy-data.html#longer">longer form</a> which adds a string column <code>metric</code> that indicates the kind of fare a given row contains.</p>
+<div id="e4794df0" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>pivoted_prediction <span class="op">=</span> prediction.pivot_longer(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    s.contains(<span class="st">"fare"</span>),</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    values_to<span class="op">=</span><span class="st">"fare"</span>,</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    names_to<span class="op">=</span><span class="st">"metric"</span>,</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>pivoted_prediction</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="9">
+<pre style="white-space:pre;overflow-x:auto;line-height:normal;font-family:Menlo,'DejaVu Sans Mono',consolas,'Courier New',monospace">┏━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┓
+┃<span style="font-weight: bold"> trip_distance </span>┃<span style="font-weight: bold"> metric         </span>┃<span style="font-weight: bold"> fare      </span>┃
+┡━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━╇━━━━━━━━━━━┩
+│ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>       │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">string</span>         │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">float32</span>   │
+├───────────────┼────────────────┼───────────┤
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9.1</span> │ <span style="color: #008000; text-decoration-color: #008000">fare_amount   </span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">27.000000</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">9.1</span> │ <span style="color: #008000; text-decoration-color: #008000">predicted_fare</span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">29.085516</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.3</span> │ <span style="color: #008000; text-decoration-color: #008000">fare_amount   </span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">11.500000</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">3.3</span> │ <span style="color: #008000; text-decoration-color: #008000">predicted_fare</span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">12.626410</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.5</span> │ <span style="color: #008000; text-decoration-color: #008000">fare_amount   </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.000000</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">0.5</span> │ <span style="color: #008000; text-decoration-color: #008000">predicted_fare</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">4.680637</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.4</span> │ <span style="color: #008000; text-decoration-color: #008000">fare_amount   </span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">26.500000</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.4</span> │ <span style="color: #008000; text-decoration-color: #008000">predicted_fare</span> │ <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">24.261295</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.6</span> │ <span style="color: #008000; text-decoration-color: #008000">fare_amount   </span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.500000</span> │
+│           <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">1.6</span> │ <span style="color: #008000; text-decoration-color: #008000">predicted_fare</span> │  <span style="color: #008080; text-decoration-color: #008080; font-weight: bold">7.802191</span> │
+│             <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │ <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span>              │         <span style="color: #7f7f7f; text-decoration-color: #7f7f7f">…</span> │
+└───────────────┴────────────────┴───────────┘
+</pre>
+</div>
+</div>
+</section>
+<section id="plot-the-results" class="level2">
+<h2 class="anchored" data-anchor-id="plot-the-results">Plot the Results</h2>
+<p>There are a bunch of strange and interesting data points and observations that don’t have an obvious explanation:</p>
+<ul>
+<li>There seem to be a good number of \$50-ish rides regardless of distance. What’s going on there?</li>
+<li>What’s going on with the extreme outliers? For instance, the 50 mile ride that only cost about \$60 or the 25 mile ride that cost about \$140.</li>
+</ul>
+<div id="eb2af3ac" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> plotnine <span class="im">import</span> aes, ggtitle, ggplot, geom_point, xlab, ylab</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>(</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    ggplot(pivoted_prediction, aes(x<span class="op">=</span><span class="st">"trip_distance"</span>, y<span class="op">=</span><span class="st">"fare"</span>, color<span class="op">=</span><span class="st">"metric"</span>))</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> geom_point()</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> xlab(<span class="st">"Trip Distance"</span>)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> ylab(<span class="st">"Fare"</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="op">+</span> ggtitle(<span class="st">"Predicted Fare vs Actual Fare by Trip Distance"</span>)</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display" data-execution_count="10">
+<pre><code>&lt;Figure Size: (640 x 480)&gt;</code></pre>
+</div>
+</div>
+</section>
+<section id="appendix-model.py" class="level1">
+<h1>Appendix: <code>model.py</code></h1>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">"""Linear regression model for predicting cab fares using PyTorch.</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">Adapted from https://gist.github.com/pdet/e8d38734232c08e6c15aba79b4eb8368#file-taxi_prediction_example-py.</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">"""</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> __future__ <span class="im">import</span> annotations</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pyarrow <span class="im">as</span> pa</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> tqdm</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> torch <span class="im">import</span> nn</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> LinearRegression(nn.Module):</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, input_dim, output_dim):</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.linear <span class="op">=</span> nn.Linear(input_dim, output_dim)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> forward(<span class="va">self</span>, distances):</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="va">self</span>.linear(distances)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> PredictCabFare:</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, data, learning_rate: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.01</span>, epochs: <span class="bu">int</span> <span class="op">=</span> <span class="dv">100</span>) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Define the input and output dimensions</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        input_dim <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>        output_dim <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create a linear regression model instance</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.data <span class="op">=</span> data</span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.model <span class="op">=</span> LinearRegression(input_dim, output_dim)</span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.learning_rate <span class="op">=</span> learning_rate</span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.epochs <span class="op">=</span> epochs</span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> train(<span class="va">self</span>):</span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>        distances <span class="op">=</span> <span class="va">self</span>.data[<span class="st">"trip_distance"</span>].reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>        fares <span class="op">=</span> <span class="va">self</span>.data[<span class="st">"fare_amount"</span>].reshape(<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>)</span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Define the loss function</span></span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>        criterion <span class="op">=</span> nn.MSELoss()</span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Define the optimizer</span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>        optimizer <span class="op">=</span> torch.optim.SGD(<span class="va">self</span>.model.parameters(), lr<span class="op">=</span><span class="va">self</span>.learning_rate)</span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Train the model</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> _ <span class="kw">in</span> tqdm.trange(<span class="va">self</span>.epochs):</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Forward pass</span></span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>            y_pred <span class="op">=</span> <span class="va">self</span>.model(distances)</span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Compute loss</span></span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>            loss <span class="op">=</span> criterion(y_pred, fares)</span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Backward pass and optimize</span></span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a>            optimizer.zero_grad()</span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a>            loss.backward()</span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>            optimizer.step()</span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> predict(<span class="va">self</span>, <span class="bu">input</span>):</span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="va">self</span>.model(<span class="bu">input</span>)</span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__call__</span>(<span class="va">self</span>, <span class="bu">input</span>: pa.ChunkedArray):</span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Convert the input to numpy so it can be fed to the model</span></span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a>        <span class="co">#</span></span>
+<span id="cb13-64"><a href="#cb13-64" aria-hidden="true" tabindex="-1"></a>        <span class="co"># .copy() to avoid the warning about undefined behavior from torch</span></span>
+<span id="cb13-65"><a href="#cb13-65" aria-hidden="true" tabindex="-1"></a>        <span class="bu">input</span> <span class="op">=</span> torch.from_numpy(<span class="bu">input</span>.to_numpy().copy())[:, <span class="va">None</span>]</span>
+<span id="cb13-66"><a href="#cb13-66" aria-hidden="true" tabindex="-1"></a>        predicted <span class="op">=</span> <span class="va">self</span>.predict(<span class="bu">input</span>).ravel()</span>
+<span id="cb13-67"><a href="#cb13-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> pa.array(predicted.numpy())</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+
+
+</section>
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const disableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'prefetch';
+    }
+  }
+  const enableStylesheet = (stylesheets) => {
+    for (let i=0; i < stylesheets.length; i++) {
+      const stylesheet = stylesheets[i];
+      stylesheet.rel = 'stylesheet';
+    }
+  }
+  const manageTransitions = (selector, allowTransitions) => {
+    const els = window.document.querySelectorAll(selector);
+    for (let i=0; i < els.length; i++) {
+      const el = els[i];
+      if (allowTransitions) {
+        el.classList.remove('notransition');
+      } else {
+        el.classList.add('notransition');
+      }
+    }
+  }
+  const toggleGiscusIfUsed = (isAlternate, darkModeDefault) => {
+    const baseTheme = document.querySelector('#giscus-base-theme')?.value ?? 'light';
+    const alternateTheme = document.querySelector('#giscus-alt-theme')?.value ?? 'dark';
+    let newTheme = '';
+    if(darkModeDefault) {
+      newTheme = isAlternate ? baseTheme : alternateTheme;
+    } else {
+      newTheme = isAlternate ? alternateTheme : baseTheme;
+    }
+    const changeGiscusTheme = () => {
+      // From: https://github.com/giscus/giscus/issues/336
+      const sendMessage = (message) => {
+        const iframe = document.querySelector('iframe.giscus-frame');
+        if (!iframe) return;
+        iframe.contentWindow.postMessage({ giscus: message }, 'https://giscus.app');
+      }
+      sendMessage({
+        setConfig: {
+          theme: newTheme
+        }
+      });
+    }
+    const isGiscussLoaded = window.document.querySelector('iframe.giscus-frame') !== null;
+    if (isGiscussLoaded) {
+      changeGiscusTheme();
+    }
+  }
+  const toggleColorMode = (alternate) => {
+    // Switch the stylesheets
+    const alternateStylesheets = window.document.querySelectorAll('link.quarto-color-scheme.quarto-color-alternate');
+    manageTransitions('#quarto-margin-sidebar .nav-link', false);
+    if (alternate) {
+      enableStylesheet(alternateStylesheets);
+      for (const sheetNode of alternateStylesheets) {
+        if (sheetNode.id === "quarto-bootstrap") {
+          toggleBodyColorMode(sheetNode);
+        }
+      }
+    } else {
+      disableStylesheet(alternateStylesheets);
+      toggleBodyColorPrimary();
+    }
+    manageTransitions('#quarto-margin-sidebar .nav-link', true);
+    // Switch the toggles
+    const toggles = window.document.querySelectorAll('.quarto-color-scheme-toggle');
+    for (let i=0; i < toggles.length; i++) {
+      const toggle = toggles[i];
+      if (toggle) {
+        if (alternate) {
+          toggle.classList.add("alternate");     
+        } else {
+          toggle.classList.remove("alternate");
+        }
+      }
+    }
+    // Hack to workaround the fact that safari doesn't
+    // properly recolor the scrollbar when toggling (#1455)
+    if (navigator.userAgent.indexOf('Safari') > 0 && navigator.userAgent.indexOf('Chrome') == -1) {
+      manageTransitions("body", false);
+      window.scrollTo(0, 1);
+      setTimeout(() => {
+        window.scrollTo(0, 0);
+        manageTransitions("body", true);
+      }, 40);  
+    }
+  }
+  const isFileUrl = () => { 
+    return window.location.protocol === 'file:';
+  }
+  const hasAlternateSentinel = () => {  
+    let styleSentinel = getColorSchemeSentinel();
+    if (styleSentinel !== null) {
+      return styleSentinel === "alternate";
+    } else {
+      return false;
+    }
+  }
+  const setStyleSentinel = (alternate) => {
+    const value = alternate ? "alternate" : "default";
+    if (!isFileUrl()) {
+      window.localStorage.setItem("quarto-color-scheme", value);
+    } else {
+      localAlternateSentinel = value;
+    }
+  }
+  const getColorSchemeSentinel = () => {
+    if (!isFileUrl()) {
+      const storageValue = window.localStorage.getItem("quarto-color-scheme");
+      return storageValue != null ? storageValue : localAlternateSentinel;
+    } else {
+      return localAlternateSentinel;
+    }
+  }
+  const darkModeDefault = false;
+  let localAlternateSentinel = darkModeDefault ? 'alternate' : 'default';
+  // Dark / light mode switch
+  window.quartoToggleColorScheme = () => {
+    // Read the current dark / light value 
+    let toAlternate = !hasAlternateSentinel();
+    toggleColorMode(toAlternate);
+    setStyleSentinel(toAlternate);
+    toggleGiscusIfUsed(toAlternate, darkModeDefault);
+  };
+  // Ensure there is a toggle, if there isn't float one in the top right
+  if (window.document.querySelector('.quarto-color-scheme-toggle') === null) {
+    const a = window.document.createElement('a');
+    a.classList.add('top-right');
+    a.classList.add('quarto-color-scheme-toggle');
+    a.href = "";
+    a.onclick = function() { try { window.quartoToggleColorScheme(); } catch {} return false; };
+    const i = window.document.createElement("i");
+    i.classList.add('bi');
+    a.appendChild(i);
+    window.document.body.appendChild(a);
+  }
+  // Switch to dark mode if need be
+  if (hasAlternateSentinel()) {
+    toggleColorMode(true);
+  } else {
+    toggleColorMode(false);
+  }
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/ibis-project\.org");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      const annoteTargets = window.document.querySelectorAll('.code-annotation-anchor');
+      for (let i=0; i<annoteTargets.length; i++) {
+        const annoteTarget = annoteTargets[i];
+        const targetCell = annoteTarget.getAttribute("data-target-cell");
+        const targetAnnotation = annoteTarget.getAttribute("data-target-annotation");
+        const contentFn = () => {
+          const content = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          if (content) {
+            const tipContent = content.cloneNode(true);
+            tipContent.classList.add("code-annotation-tip-content");
+            return tipContent.outerHTML;
+          }
+        }
+        const config = {
+          allowHTML: true,
+          content: contentFn,
+          onShow: (instance) => {
+            selectCodeLines(instance.reference);
+            instance.reference.classList.add('code-annotation-active');
+            window.tippy.hideAll();
+          },
+          onHide: (instance) => {
+            unselectCodeLines();
+            instance.reference.classList.remove('code-annotation-active');
+          },
+          maxWidth: 300,
+          delay: [50, 0],
+          duration: [200, 0],
+          offset: [5, 10],
+          arrow: true,
+          appendTo: function(el) {
+            return el.parentElement.parentElement.parentElement;
+          },
+          interactive: true,
+          interactiveBorder: 10,
+          theme: 'quarto',
+          placement: 'right',
+          popperOptions: {
+            modifiers: [
+            {
+              name: 'flip',
+              options: {
+                flipVariations: false, // true by default
+                allowedAutoPlacements: ['right'],
+                fallbackPlacements: ['right', 'top', 'top-start', 'top-end', 'bottom', 'bottom-start', 'bottom-end', 'left'],
+              },
+            },
+            {
+              name: 'preventOverflow',
+              options: {
+                mainAxis: false,
+                altAxis: false
+              }
+            }
+            ]        
+          }      
+        };
+        window.tippy(annoteTarget, config); 
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+<script src="https://giscus.app/client.js" data-repo="ibis-project/ibis" data-repo-id="MDEwOlJlcG9zaXRvcnkzNDEzOTIzMA==" data-category="Q&amp;A" data-category-id="DIC_kwDOAgjsXs4CASeT" data-mapping="title" data-reactions-enabled="0" data-emit-metadata="0" data-input-position="top" data-theme="light" data-lang="en" crossorigin="anonymous" async="">
+</script>
+<input type="hidden" id="giscus-base-theme" value="light">
+<input type="hidden" id="giscus-alt-theme" value="dark">
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+      &nbsp;
+    </div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    <div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ibis-project/ibis/edit/main/docs/posts/torch/index.qmd" class="toc-action"><i class="bi bi-github"></i>Edit this page</a></li><li><a href="https://github.com/ibis-project/ibis/issues/new/choose" class="toc-action"><i class="bi empty"></i>Report an issue</a></li></ul></div></div>
+    <div class="nav-footer-right">
+      <ul class="footer-items list-unstyled">
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ibis-project">
+      <i class="bi bi-github" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.zulipchat.com">
+      <i class="bi bi-zulip" role="img">
+</i> 
+    </a>
+  </li>  
+    <li class="nav-item compact">
+    <a class="nav-link" href="https://ibis-project.org/posts.xml">
+      <i class="bi bi-rss" role="img">
+</i> 
+    </a>
+  </li>  
+</ul>
+    </div>
+  </div>
+</footer>
+
+
+
+
+</body></html>

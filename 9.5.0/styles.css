@@ -1,0 +1,38 @@
+section#parameters {
+  /* scroll when child contents overflow the width */
+  overflow-x: auto;
+}
+
+section[id^="parameters-"] {
+  /* scroll when child contents overflow the width */
+  overflow-x: auto;
+}
+
+.bi-zulip::before {
+  display: inline-block;
+  content: url("./zulip.svg");
+  vertical-align: -0.125em;
+  width: 1em;
+  filter: grayscale(1);
+}
+
+.jupyterlite-console {
+  width: 100%;
+  height: 95%;
+  margin: auto;
+  display: block;
+}
+
+.index-grid {
+  @extend .grid;
+  display: flex;
+  justify-content: space-between;
+}
+
+.index-g-col-4 {
+  @extend .g-col-4;
+  flex: 1;
+  /* Ensures all columns grow to fill the same space */
+  margin: 0 5px;
+  /* Adds a small margin between columns */
+}

@@ -1,0 +1,340 @@
+{
+  "jupyter-config-data": {
+    "appName": "Ibis JupyterLite Console",
+    "appUrl": "./lab",
+    "appVersion": "0.3.0",
+    "baseUrl": "./",
+    "defaultKernelName": "python",
+    "disabledExtensions": [
+      "@jupyterlab/markdownviewer-extension:plugin",
+      "@jupyterlab/mathjax-extension:plugin",
+      "@jupyterlab/mathjax2-extension:plugin"
+    ],
+    "faviconUrl": "./lab/favicon.ico",
+    "federated_extensions": [
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.e4ff09401a2f575928c0.js",
+        "name": "@jupyter-widgets/jupyterlab-manager"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": true,
+        "load": "static/remoteEntry.7af44f20e4662309de92.js",
+        "name": "@jupyterlite/pyodide-kernel-extension"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "./static/remoteEntry.66089da2.js",
+        "name": "anywidget"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.6a37df5d4590b29196a3.js",
+        "name": "jupyterlab-night"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.41e12212782f05d7d17b.js",
+        "mimeExtension": "./mimeExtension",
+        "name": "jupyterlab-plotly"
+      },
+      {
+        "extension": "./extension",
+        "liteExtension": false,
+        "load": "static/remoteEntry.5cbb9d2323598fbda535.js",
+        "name": "jupyterlab_pygments",
+        "style": "./style"
+      }
+    ],
+    "fileTypes": {
+      "css": {
+        "extensions": [
+          ".css"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/css"
+        ],
+        "name": "css"
+      },
+      "csv": {
+        "extensions": [
+          ".csv"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/csv"
+        ],
+        "name": "csv"
+      },
+      "fasta": {
+        "extensions": [
+          ".fasta"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "fasta"
+      },
+      "geojson": {
+        "extensions": [
+          ".geojson"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/geo+json"
+        ],
+        "name": "geojson"
+      },
+      "gzip": {
+        "extensions": [
+          ".tgz",
+          ".gz",
+          ".gzip"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/gzip"
+        ],
+        "name": "gzip"
+      },
+      "html": {
+        "extensions": [
+          ".html"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/html"
+        ],
+        "name": "html"
+      },
+      "ical": {
+        "extensions": [
+          ".ical",
+          ".ics",
+          ".ifb",
+          ".icalendar"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/calendar"
+        ],
+        "name": "ical"
+      },
+      "ico": {
+        "extensions": [
+          ".ico"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/x-icon"
+        ],
+        "name": "ico"
+      },
+      "ipynb": {
+        "extensions": [
+          ".ipynb"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/x-ipynb+json"
+        ],
+        "name": "ipynb"
+      },
+      "jpeg": {
+        "extensions": [
+          ".jpeg",
+          ".jpg"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/jpeg"
+        ],
+        "name": "jpeg"
+      },
+      "js": {
+        "extensions": [
+          ".js",
+          ".mjs"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/javascript"
+        ],
+        "name": "js"
+      },
+      "jsmap": {
+        "extensions": [
+          ".map"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/json"
+        ],
+        "name": "jsmap"
+      },
+      "json": {
+        "extensions": [
+          ".json"
+        ],
+        "fileFormat": "json",
+        "mimeTypes": [
+          "application/json"
+        ],
+        "name": "json"
+      },
+      "manifest": {
+        "extensions": [
+          ".manifest"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/cache-manifest"
+        ],
+        "name": "manifest"
+      },
+      "md": {
+        "extensions": [
+          ".md",
+          ".markdown"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/markdown"
+        ],
+        "name": "md"
+      },
+      "pdf": {
+        "extensions": [
+          ".pdf"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/pdf"
+        ],
+        "name": "pdf"
+      },
+      "plain": {
+        "extensions": [
+          ".txt"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "plain"
+      },
+      "png": {
+        "extensions": [
+          ".png"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "image/png"
+        ],
+        "name": "png"
+      },
+      "py": {
+        "extensions": [
+          ".py"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/x-python",
+          "application/x-python-code"
+        ],
+        "name": "py"
+      },
+      "svg": {
+        "extensions": [
+          ".svg"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "image/svg+xml"
+        ],
+        "name": "svg"
+      },
+      "toml": {
+        "extensions": [
+          ".toml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/toml"
+        ],
+        "name": "toml"
+      },
+      "vue": {
+        "extensions": [
+          ".vue"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "text/plain"
+        ],
+        "name": "vue"
+      },
+      "wasm": {
+        "extensions": [
+          ".wasm"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "application/wasm"
+        ],
+        "name": "wasm"
+      },
+      "wheel": {
+        "extensions": [
+          ".whl"
+        ],
+        "fileFormat": "base64",
+        "mimeTypes": [
+          "octet/stream",
+          "application/x-wheel+zip"
+        ],
+        "name": "wheel"
+      },
+      "xml": {
+        "extensions": [
+          ".xml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/xml"
+        ],
+        "name": "xml"
+      },
+      "yaml": {
+        "extensions": [
+          ".yaml",
+          ".yml"
+        ],
+        "fileFormat": "text",
+        "mimeTypes": [
+          "application/x-yaml"
+        ],
+        "name": "yaml"
+      }
+    },
+    "fullLabextensionsUrl": "./extensions",
+    "fullStaticUrl": "./build",
+    "licensesUrl": "./lab/api/licenses",
+    "litePluginSettings": {
+      "@jupyterlite/pyodide-kernel-extension:kernel": {
+        "pipliteUrls": [
+          "./pypi/all.json?sha256=b9b2e2cb55c2150d66d4cd7c2749e0ae9d61fc25d509cf92d1acd023399c9e52",
+          "./extensions/@jupyterlite/pyodide-kernel-extension/static/pypi/all.json?sha256=1b78ca78aa8231a4d8f2e338cd5fdc79dd29c8557e213c38e69a745747e19d81"
+        ]
+      }
+    }
+  },
+  "jupyter-lite-schema-version": 0
+}

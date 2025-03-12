@@ -1,0 +1,54 @@
+{
+  "duckdb": {
+    "releases": {
+      "1.0.0": [
+        {
+          "comment_text": "",
+          "digests": {
+            "md5": "7752295e5de756acb309fe1fbd26c1bb",
+            "sha256": "2806b9721104ffbc42e2f84baf9f8b342de047ceb3c3d89c3655a07cbab49059"
+          },
+          "downloads": -1,
+          "filename": "duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl",
+          "has_sig": false,
+          "md5_digest": "7752295e5de756acb309fe1fbd26c1bb",
+          "packagetype": "bdist_wheel",
+          "python_version": "py3",
+          "requires_python": ">=3.7.0",
+          "size": 9855522,
+          "upload_time": "1980-01-01T00:00:00Z",
+          "upload_time_iso_8601": "1980-01-01T00:00:00Z",
+          "url": "./duckdb-1.0.0-cp311-cp311-emscripten_3_1_46_wasm32.whl",
+          "yanked": false,
+          "yanked_reason": null
+        }
+      ]
+    }
+  },
+  "ibis-framework": {
+    "releases": {
+      "9.5.0": [
+        {
+          "comment_text": "",
+          "digests": {
+            "md5": "78664c2bcba810d141cfcaaec49b4f35",
+            "sha256": "e0b0725b885db311ae3ea146995f54b75d4fa7322a0b860bbc9e19a0c6b415cc"
+          },
+          "downloads": -1,
+          "filename": "ibis_framework-9.5.0-py3-none-any.whl",
+          "has_sig": false,
+          "md5_digest": "78664c2bcba810d141cfcaaec49b4f35",
+          "packagetype": "bdist_wheel",
+          "python_version": "py3",
+          "requires_python": ">=3.10,<4.0",
+          "size": 1964984,
+          "upload_time": "1980-01-01T00:00:00Z",
+          "upload_time_iso_8601": "1980-01-01T00:00:00Z",
+          "url": "./ibis_framework-9.5.0-py3-none-any.whl",
+          "yanked": false,
+          "yanked_reason": null
+        }
+      ]
+    }
+  }
+}
