@@ -180,6 +180,7 @@ jobs:
               - ninja-build
           - name: mssql
             title: MS SQL Server
+            serial: true
             extras:
               - --extra mssql
               - --extra polars
@@ -380,6 +381,7 @@ jobs:
             backend:
               name: mssql
               title: MS SQL Server
+              serial: true
               extras:
                 - --extra mssql
                 - --extra polars
