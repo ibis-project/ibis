@@ -431,6 +431,7 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
 
     def do_connect(
         self,
+        *,
         host: str | None = None,
         user: str | None = None,
         password: str | None = None,
@@ -439,6 +440,10 @@ class Backend(SQLBackend, CanListCatalog, CanCreateDatabase, NoExampleLoader):
         schema: str | None = None,
     ) -> None:
         """Create an Ibis client connected to RisingWave database.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"risingwave://{user}:{password}@{host}:{port}/{database}")`.
 
         Parameters
         ----------

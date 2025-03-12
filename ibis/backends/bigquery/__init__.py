@@ -337,6 +337,7 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
 
     def do_connect(
         self,
+        *,
         project_id: str | None = None,
         dataset_id: str = "",
         credentials: google.auth.credentials.Credentials | None = None,
@@ -350,6 +351,10 @@ class Backend(SQLBackend, CanCreateDatabase, DirectPyArrowExampleLoader):
         location: str | None = None,
     ) -> Backend:
         """Create a `Backend` for use with Ibis.
+
+        This method is useful if you have individual connection parameters.
+        If you have a connection URL then you can connect directly using
+        `ibis.connect(f"bigquery://{project_id}/{dataset_id}")`.
 
         Parameters
         ----------

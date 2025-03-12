@@ -61,7 +61,7 @@ class Backend(SQLBackend, CanCreateDatabase, NoUrl, PyArrowExampleLoader):
         # TODO: remove when ported to sqlglot
         return self.compiler.dialect
 
-    def do_connect(self, table_env: TableEnvironment) -> None:
+    def do_connect(self, table_env: TableEnvironment, /) -> None:
         """Create a Flink `Backend` for use with Ibis.
 
         Parameters
