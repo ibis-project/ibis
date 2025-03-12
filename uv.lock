@@ -2308,10 +2308,10 @@ dependencies = [
     { name = "atpublic" },
     { name = "parsy" },
     { name = "python-dateutil" },
-    { name = "pytz" },
     { name = "sqlglot" },
     { name = "toolz" },
     { name = "typing-extensions" },
+    { name = "tzdata" },
 ]
 
 [package.optional-dependencies]
@@ -2699,7 +2699,6 @@ requires-dist = [
     { name = "pyproj", marker = "extra == 'geospatial'", specifier = ">=3.3.0" },
     { name = "pyspark", marker = "extra == 'pyspark'", specifier = ">=3.3.3" },
     { name = "python-dateutil", specifier = ">=2.8.2" },
-    { name = "pytz", specifier = ">=2022.7" },
     { name = "regex", marker = "extra == 'sqlite'", specifier = ">=2021.7.6" },
     { name = "rich", marker = "extra == 'athena'", specifier = ">=12.4.4" },
     { name = "rich", marker = "extra == 'bigquery'", specifier = ">=12.4.4" },
@@ -2727,6 +2726,7 @@ requires-dist = [
     { name = "toolz", specifier = ">=0.11" },
     { name = "trino", marker = "extra == 'trino'", specifier = ">=0.321" },
     { name = "typing-extensions", specifier = ">=4.3.0" },
+    { name = "tzdata", specifier = ">=2022.7" },
 ]
 provides-extras = ["athena", "bigquery", "clickhouse", "databricks", "datafusion", "druid", "duckdb", "exasol", "flink", "impala", "mssql", "mysql", "oracle", "polars", "postgres", "pyspark", "snowflake", "sqlite", "risingwave", "trino", "visualization", "decompiler", "deltalake", "examples", "geospatial"]
 

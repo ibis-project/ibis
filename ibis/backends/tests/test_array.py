@@ -3,11 +3,10 @@ from __future__ import annotations
 import math
 import statistics
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import partial
 
 import pytest
-import pytz
 import toolz
 from pytest import param
 
@@ -1474,7 +1473,7 @@ timestamp_range_tzinfos = pytest.mark.parametrize(
             ),
         ),
         param(
-            pytz.UTC,
+            timezone.utc,
             id="utc",
             marks=pytest.mark.notyet(
                 ["trino"],
@@ -1569,8 +1568,8 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
     ("start", "stop", "step"),
     [
         param(
-            datetime(2017, 1, 1, tzinfo=pytz.UTC),
-            datetime(2017, 1, 2, tzinfo=pytz.UTC),
+            datetime(2017, 1, 1, tzinfo=timezone.utc),
+            datetime(2017, 1, 2, tzinfo=timezone.utc),
             ibis.interval(hours=0),
             id="pos",
             marks=[
@@ -1587,8 +1586,8 @@ def test_timestamp_range(con, start, stop, step, freq, tzinfo):
             ],
         ),
         param(
-            datetime(2017, 1, 1, tzinfo=pytz.UTC),
-            datetime(2017, 1, 2, tzinfo=pytz.UTC),
+            datetime(2017, 1, 1, tzinfo=timezone.utc),
+            datetime(2017, 1, 2, tzinfo=timezone.utc),
             -ibis.interval(hours=0),
             id="neg",
             marks=[

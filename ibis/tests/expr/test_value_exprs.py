@@ -5,12 +5,11 @@ import ipaddress
 import operator
 import uuid
 from collections import OrderedDict
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from operator import attrgetter, methodcaller
 
 import pytest
-import pytz
 import toolz
 from pytest import param
 
@@ -1116,7 +1115,7 @@ def test_timestamp_with_timezone():
     assert expr.op().value == expected
 
     expr = ibis.timestamp("2017-01-01", timezone="UTC")
-    expected = datetime(2017, 1, 1, tzinfo=pytz.timezone("UTC"))
+    expected = datetime(2017, 1, 1, tzinfo=timezone.utc)
     assert expr.op().value == expected
 
 

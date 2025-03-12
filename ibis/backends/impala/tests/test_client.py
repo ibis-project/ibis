@@ -5,7 +5,6 @@ from contextlib import closing
 
 import pandas as pd
 import pytest
-import pytz
 
 import ibis
 import ibis.expr.datatypes as dt
@@ -220,7 +219,9 @@ def test_day_of_week(con):
 
 
 def test_datetime_to_int_cast(con):
-    timestamp = pytz.utc.localize(datetime.datetime(2021, 9, 12, 14, 45, 33, 0))
+    timestamp = datetime.datetime(
+        2021, 9, 12, 14, 45, 33, 0, tzinfo=datetime.timezone.utc
+    )
     d = ibis.literal(timestamp)
     result = con.execute(d.cast("int64"))
     assert result == pd.Timestamp(timestamp).value // 1000

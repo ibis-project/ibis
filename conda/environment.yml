@@ -40,7 +40,6 @@ dependencies:
   - python-dateutil >=2.8.2
   - python-duckdb >=0.8.1
   - python-graphviz >=0.16
-  - pytz >=2022.7
   - regex >=2021.7.6
   - requests >=2
   - rich >=13.8.0
