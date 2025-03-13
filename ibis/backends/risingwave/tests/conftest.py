@@ -19,7 +19,7 @@ PG_PASS = os.environ.get(
 PG_HOST = os.environ.get(
     "IBIS_TEST_RISINGWAVE_HOST", os.environ.get("PGHOST", "localhost")
 )
-PG_PORT = os.environ.get("IBIS_TEST_RISINGWAVE_PORT", os.environ.get("PGPORT", 4566))
+PG_PORT = os.environ.get("IBIS_TEST_RISINGWAVE_PORT", os.environ.get("PGPORT", "4566"))
 IBIS_TEST_RISINGWAVE_DB = os.environ.get(
     "IBIS_TEST_RISINGWAVE_DATABASE", os.environ.get("PGDATABASE", "dev")
 )

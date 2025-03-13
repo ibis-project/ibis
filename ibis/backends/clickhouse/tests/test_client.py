@@ -218,7 +218,7 @@ def tmpcon(worker_id):
     con = ibis.clickhouse.connect(
         host=os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost"),
         user=os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "ibis"),
-        port=int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123)),
+        port=int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", "8123")),
         password=os.environ.get("IBIS_TEST_CLICKHOUSE_PASSWORD", ""),
     )
     con.create_database(dbname, force=True)
@@ -373,7 +373,7 @@ def test_password_with_bracket():
     quoted_pass = quote_plus(password)
     host = os.environ.get("IBIS_TEST_CLICKHOUSE_HOST", "localhost")
     user = os.environ.get("IBIS_TEST_CLICKHOUSE_USER", "default")
-    port = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", 8123))
+    port = int(os.environ.get("IBIS_TEST_CLICKHOUSE_PORT", "8123"))
     with pytest.raises(
         cc.driver.exceptions.DatabaseError, match="password is incorrect"
     ):

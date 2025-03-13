@@ -16,7 +16,7 @@ import ibis.expr.visualize as viz  # noqa: E402
 from ibis.expr import api  # noqa: E402
 
 pytestmark = pytest.mark.skipif(
-    int(os.environ.get("CONDA_BUILD", 0)) == 1, reason="CONDA_BUILD defined"
+    int(os.environ.get("CONDA_BUILD", "0")) == 1, reason="CONDA_BUILD defined"
 )
 
 
