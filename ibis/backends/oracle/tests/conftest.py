@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 ORACLE_USER = os.environ.get("IBIS_TEST_ORACLE_USER", "ibis")
 ORACLE_PASS = os.environ.get("IBIS_TEST_ORACLE_PASSWORD", "ibis")
 ORACLE_HOST = os.environ.get("IBIS_TEST_ORACLE_HOST", "localhost")
-ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", 1521))
+ORACLE_PORT = int(os.environ.get("IBIS_TEST_ORACLE_PORT", "1521"))
 
 # Creating test DB and user
 # The ORACLE_DB env-var needs to be set in the compose.yaml file

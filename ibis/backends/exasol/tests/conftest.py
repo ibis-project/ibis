@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 EXASOL_USER = os.environ.get("IBIS_TEST_EXASOL_USER", "sys")
 EXASOL_PASS = os.environ.get("IBIS_TEST_EXASOL_PASSWORD", "exasol")
 EXASOL_HOST = os.environ.get("IBIS_TEST_EXASOL_HOST", "localhost")
-EXASOL_PORT = int(os.environ.get("IBIS_TEST_EXASOL_PORT", 8563))
+EXASOL_PORT = int(os.environ.get("IBIS_TEST_EXASOL_PORT", "8563"))
 IBIS_TEST_EXASOL_DB = os.environ.get("IBIS_TEST_EXASOL_DATABASE", "EXASOL")
 
 

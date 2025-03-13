@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 MSSQL_USER = os.environ.get("IBIS_TEST_MSSQL_USER", "sa")
 MSSQL_PASS = os.environ.get("IBIS_TEST_MSSQL_PASSWORD", "1bis_Testing!")
 MSSQL_HOST = os.environ.get("IBIS_TEST_MSSQL_HOST", "localhost")
-MSSQL_PORT = int(os.environ.get("IBIS_TEST_MSSQL_PORT", 1433))
+MSSQL_PORT = int(os.environ.get("IBIS_TEST_MSSQL_PORT", "1433"))
 IBIS_TEST_MSSQL_DB = os.environ.get("IBIS_TEST_MSSQL_DATABASE", "ibis-testing")
 MSSQL_PYODBC_DRIVER = os.environ.get("IBIS_TEST_MSSQL_PYODBC_DRIVER", "FreeTDS")
 

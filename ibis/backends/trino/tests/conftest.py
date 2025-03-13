@@ -28,7 +28,7 @@ TRINO_HOST = os.environ.get(
     "IBIS_TEST_TRINO_HOST", os.environ.get("TRINO_HOST", "localhost")
 )
 TRINO_PORT = int(
-    os.environ.get("IBIS_TEST_TRINO_PORT", os.environ.get("TRINO_PORT", 8080))
+    os.environ.get("IBIS_TEST_TRINO_PORT", os.environ.get("TRINO_PORT", "8080"))
 )
 
 

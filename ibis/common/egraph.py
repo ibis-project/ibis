@@ -773,7 +773,7 @@ class EGraph:
         """
         enode = self._as_enode(node)
         enode = self._eclasses.find(enode)
-        costs = {en: (math.inf, None) for en in self._eclasses.keys()}
+        costs = dict.fromkeys(self._eclasses.keys(), (math.inf, None))
 
         def enode_cost(enode):
             cost = 1
