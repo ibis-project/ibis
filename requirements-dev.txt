@@ -22,7 +22,7 @@ asttokens==3.0.0
 async-lru==2.0.4
 async-timeout==5.0.1 ; python_full_version < '3.11'
 atpublic==5.1
-attrs==25.2.0
+attrs==25.3.0
 aws-error-utils==2.7.0
 aws-sso-lib==1.14.0
 aws-sso-util==4.33.0
@@ -79,7 +79,7 @@ google-api-core==2.24.2
 google-auth==2.38.0
 google-auth-oauthlib==1.2.1
 google-cloud-bigquery==3.30.0
-google-cloud-bigquery-storage==2.29.0
+google-cloud-bigquery-storage==2.29.1
 google-cloud-core==2.4.3
 google-cloud-storage==3.1.0
 google-crc32c==1.6.0
@@ -94,12 +94,12 @@ h11==0.14.0
 httpcore==1.0.7
 httpx==0.28.1
 humanize==4.12.1
-hypothesis==6.129.0
+hypothesis==6.129.1
 identify==2.6.9
 idna==3.10
 importlib-metadata==8.6.1
 importlib-resources==6.5.2
-impyla==0.20.0
+impyla==0.21.0
 iniconfig==2.0.0
 ipykernel==6.29.5
 ipython==8.18.1 ; python_full_version < '3.10'
@@ -189,8 +189,8 @@ propcache==0.3.0
 proto-plus==1.26.1
 protobuf==5.29.3
 psutil==7.0.0
-psycopg==3.2.5
-psycopg-binary==3.2.5 ; implementation_name != 'pypy'
+psycopg==3.2.6
+psycopg-binary==3.2.6 ; implementation_name != 'pypy'
 psycopg2==2.9.10
 psygnal==0.12.0
 ptyprocess==0.7.0 ; (python_full_version < '3.10' and sys_platform == 'emscripten') or os_name != 'nt' or (sys_platform != 'emscripten' and sys_platform != 'win32')
@@ -247,7 +247,7 @@ rfc3986-validator==0.1.1
 rich==13.9.4
 rpds-py==0.23.1
 rsa==4.9
-ruff==0.9.10
+ruff==0.10.0
 s3fs==2025.3.0
 s3transfer==0.11.3
 scikit-learn==1.6.1
@@ -264,13 +264,13 @@ sortedcontainers==2.4.0
 soupsieve==2.6
 sphobjinv==2.3.1.2
 sqlalchemy==2.0.39
-sqlglot==26.9.0
+sqlglot==26.10.1
 stack-data==0.6.3
 statsmodels==0.14.4
 tabulate==0.9.0
 tenacity==9.0.0
 terminado==0.18.1
-threadpoolctl==3.5.0
+threadpoolctl==3.6.0
 thrift==0.16.0
 thrift-sasl==0.4.3
 tinycss2==1.4.0
