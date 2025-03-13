@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import contextlib
 from functools import partial
 from typing import NoReturn
 
@@ -19,7 +18,6 @@ _from_sqlglot_types = {
     typecode.BIGDECIMAL: partial(dt.Decimal, 76, 38),
     typecode.BIGINT: dt.Int64,
     typecode.BINARY: dt.Binary,
-    typecode.BLOB: dt.Binary,
     typecode.BOOLEAN: dt.Boolean,
     typecode.CHAR: dt.String,
     typecode.DATE: dt.Date,
@@ -73,15 +71,19 @@ _from_sqlglot_types = {
 }
 
 
-# typecode.UNIQUEIDENTIFIER was supplanted by typecode.UUID around sqlglot 26.6
-with contextlib.suppress(AttributeError):
-    _from_sqlglot_types[typecode.UNIQUEIDENTIFIER] = dt.UUID
+# these types are not present in all versions of sqlglot that we support, so we
+# need to check if they exist before using them
+for _attr, _ibis_type in (
+    ("UNIQUEIDENTIFIER", dt.UUID),
+    ("BLOB", dt.Binary),
+    ("DATETIME2", dt.Timestamp),
+    ("SMALLDATETIME", dt.Timestamp),
+):
+    if (_sg_type := getattr(typecode, _attr, None)) is not None:
+        _from_sqlglot_types[_sg_type] = _ibis_type
 
-if sg.__version_tuple__[0] >= 26:
-    _from_sqlglot_types |= {
-        typecode.DATETIME2: dt.Timestamp,
-        typecode.SMALLDATETIME: dt.Timestamp,
-    }
+del _attr, _ibis_type, _sg_type
+
 
 _to_sqlglot_types = {
     dt.Null: typecode.NULL,
